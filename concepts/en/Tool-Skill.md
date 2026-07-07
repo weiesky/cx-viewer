@@ -2,7 +2,9 @@
 
 ## Definition
 
-Executes a skill within the main conversation. Skills are specialized capabilities that users can invoke via slash commands (e.g., `/commit`, `/review-pr`).
+Represents Codex skill capability metadata and skill-triggered behavior. Skills are specialized instruction packs that can be made available to Codex by the app/runtime.
+
+This is not a `ThreadItem` tool type in the app-server schema checked for this pass. CX Viewer keeps it as a documented capability because skill availability appears in Codex context and can explain why a turn uses specialized workflows.
 
 ## Parameters
 
@@ -24,33 +26,5 @@ Executes a skill within the main conversation. Skills are specialized capabiliti
 
 ## Notes
 
-- Once invoked, the skill expands into a full prompt
-- Supports fully qualified names (e.g., `ms-office-suite:pdf`)
-- The available skills list is provided in system-reminder messages
-- When you see a `<command-name>` tag, it means the skill is already loaded — execute it directly rather than calling this tool again
-- Do not mention a skill without actually calling the tool
-
-## Original Text
-
-<textarea readonly>Execute a skill within the main conversation
-
-When users ask you to perform tasks, check if any of the available skills match. Skills provide specialized capabilities and domain knowledge.
-
-When users reference a "slash command" or "/<something>" (e.g., "/commit", "/review-pr"), they are referring to a skill. Use this tool to invoke it.
-
-How to invoke:
-- Use this tool with the skill name and optional arguments
-- Examples:
-  - `skill: "pdf"` - invoke the pdf skill
-  - `skill: "commit", args: "-m 'Fix bug'"` - invoke with arguments
-  - `skill: "review-pr", args: "123"` - invoke with arguments
-  - `skill: "ms-office-suite:pdf"` - invoke using fully qualified name
-
-Important:
-- Available skills are listed in system-reminder messages in the conversation
-- When a skill matches the user's request, this is a BLOCKING REQUIREMENT: invoke the relevant Skill tool BEFORE generating any other response about the task
-- NEVER mention a skill without actually calling this tool
-- Do not invoke a skill that is already running
-- Do not use this tool for built-in CLI commands (like /help, /clear, etc.)
-- If you see a <command-name> tag in the current conversation turn, the skill has ALREADY been loaded - follow the instructions directly instead of calling this tool again
-</textarea>
+- Skill loading and invocation details are controlled by Codex runtime instructions.
+- Tool calls produced while following a skill should still appear as their concrete events, such as `Bash`, `FileChange`, `MCPToolCall`, or `DynamicToolCall`.

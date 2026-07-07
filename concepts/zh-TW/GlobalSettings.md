@@ -227,6 +227,5 @@ claude() { ... }
 | `cxv_cacheExpireAt` | 缓存倒计时到期时间 |
 | `cxv_cacheType` | 缓存类型标签 |
 | `ccv_sseSlim` | 启用 SSE 增量裁剪（桌面端性能优化） |
-| `ccv_calibrationModel` | KV-Cache 上下文窗口校准模型 |
 | `ccv_fileExplorerOpen` | 文件浏览器面板开关 |
 | `cx-viewer-terminal-width` | 终端面板宽度（像素） |

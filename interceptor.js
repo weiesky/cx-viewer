@@ -253,17 +253,19 @@ function checkAndRotateLogFile() {
   }
 }
 
-// 从环境变量 OPENAI_BASE_URL 提取域名用于请求匹配
-function getBaseUrlHost() {
+// 匹配 OpenAI API 主机名（默认 api.openai.com 及 OPENAI_BASE_URL 自定义主机）
+function isOpenAiHost(urlStr) {
   try {
+    const hostname = new URL(urlStr).hostname;
+    if (hostname === 'api.openai.com') return true;
     const baseUrl = process.env.OPENAI_BASE_URL;
     if (baseUrl) {
-      return new URL(baseUrl).hostname;
+      const customHost = new URL(baseUrl).hostname;
+      if (hostname === customHost) return true;
     }
   } catch { }
-  return null;
+  return false;
 }
-const CUSTOM_API_HOST = getBaseUrlHost();
 
 // 保存 viewer 模块引用
 let viewerModule = null;
@@ -334,7 +336,7 @@ export function setupInterceptor() {
       const isProxyTrace = headers['x-cx-viewer-trace'] === 'true' || headers['x-cx-viewer-trace'] === true;
 
       // 如果是 proxy 转发的，或者符合 URL 规则
-      if (isProxyTrace || urlStr.includes('codex') || (CUSTOM_API_HOST && urlStr.includes(CUSTOM_API_HOST)) || isOpenAiApiPath(urlStr)) {
+      if (isProxyTrace || isOpenAiHost(urlStr) || isOpenAiApiPath(urlStr)) {
         // 如果是 proxy 转发的，需要清理掉标记 header 避免发给上游
         if (isProxyTrace && options?.headers) {
           delete options.headers['x-cx-viewer-trace'];

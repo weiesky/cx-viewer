@@ -2,32 +2,35 @@
 
 ## Definition
 
-Executes shell commands with optional timeout and background execution settings. CX Viewer records the command, working directory, output, exit code, duration, and agent identity.
+Represents a Codex terminal command event. In the app-server schema this is `ThreadItem.type = "commandExecution"`, not a free-form Claude-style tool definition.
 
-## Parameters
+CX Viewer displays this event as `Bash` because that is the established terminal card name in the UI.
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `command` | string | Yes | Shell command to execute |
-| `description` | string | No | Short command description |
-| `timeout` | number | No | Timeout in milliseconds |
-| `run_in_background` | boolean | No | Whether to run independently |
+## Fields Checked
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `command` | string | Command executed by Codex |
+| `cwd` | string | Working directory |
+| `processId` | string/null | Underlying PTY process id when available |
+| `source` | string | Source of the command execution |
+| `status` | string | Current execution status |
+| `commandActions` | array | Best-effort parsed command actions |
+| `aggregatedOutput` | string/null | Combined stdout/stderr output |
+| `exitCode` | number/null | Process exit code |
+| `durationMs` | number/null | Runtime in milliseconds |
 
 ## Use Cases
 
-**Good for:**
+**Usually represents:**
 - Running test/build commands
 - Git status/diff/log operations
 - Package manager commands
 - Inspecting system state
 
-**Not good for:**
-- Editing files when a structured edit tool is available
-- Reading many files when direct read/search tools are clearer
-- Long-running dev servers unless the task explicitly needs them
-
 ## Notes
 
-- Prefer explicit working directories and absolute paths.
-- Commands that require elevated permissions or write outside the workspace may require approval.
-- Root-thread command events are tool events; SubAgent commands inherit the SubAgent identity.
+- `item/commandExecution/outputDelta` and PTY output deltas are collected before the final item arrives.
+- `item/commandExecution/requestApproval` is handled when Codex needs approval for a command.
+- Sandbox and approval behavior comes from Codex runtime policy; CX Viewer only records and displays it.
+- SubAgent commands inherit the thread/subagent identity from the app-server source metadata.

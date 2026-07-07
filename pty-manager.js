@@ -24,7 +24,7 @@ let _ptyImportForTests = null;
 let outputHistoryPath = null;
 
 function ensureOutputHistory({ reset = false } = {}) {
-  const historyDir = join(homedir(), '.codex', 'cx-viewer', 'runtime');
+  const historyDir = process.env.CXV_RUNTIME_DIR || join(homedir(), '.codex', 'cx-viewer', 'runtime');
   mkdirSync(historyDir, { recursive: true });
   if (reset || !outputHistoryPath) {
     outputHistoryPath = join(historyDir, `terminal-history-${Date.now()}.log`);
@@ -34,6 +34,22 @@ function ensureOutputHistory({ reset = false } = {}) {
 
 export function _setPtyImportForTests(fn) {
   _ptyImportForTests = fn;
+}
+
+export function _resetPtyManagerForTests() {
+  killPty();
+  dataListeners = [];
+  exitListeners = [];
+  lastExitCode = null;
+  outputBuffer = '';
+  currentWorkspacePath = null;
+  lastWorkspacePath = null;
+  lastPtyCols = 120;
+  lastPtyRows = 30;
+  batchBuffer = '';
+  batchScheduled = false;
+  _ptyImportForTests = null;
+  outputHistoryPath = null;
 }
 
 async function getPty() {

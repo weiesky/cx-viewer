@@ -6485,6 +6485,26 @@ const i18nData = {
     "tr": "Web",
     "uk": "Веб"
   },
+  "ui.toolCatalog.cat.integration": {
+    "zh": "集成与扩展",
+    "en": "Integrations",
+    "zh-TW": "整合與擴充",
+    "ko": "통합",
+    "ja": "連携",
+    "de": "Integrationen",
+    "es": "Integraciones",
+    "fr": "Intégrations",
+    "it": "Integrazioni",
+    "da": "Integrationer",
+    "pl": "Integracje",
+    "ru": "Интеграции",
+    "ar": "التكاملات",
+    "no": "Integrasjoner",
+    "pt-BR": "Integrações",
+    "th": "การผสานรวม",
+    "tr": "Entegrasyonlar",
+    "uk": "Інтеграції"
+  },
   "ui.toolCatalog.cat.planning": {
     "zh": "计划与交互",
     "en": "Planning & Interaction",

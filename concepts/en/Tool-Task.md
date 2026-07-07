@@ -1,26 +1,18 @@
 # Task
 
-> **Note:** `Task` is kept as a legacy name for SubAgent launches. Codex-native traffic should prefer the `Agent` terminology when available. See [Tool-Agent](Tool-Agent).
+> **Note:** `Task` is kept as a legacy compatibility name. Codex-native traffic should prefer [Agent](Tool-Agent.md).
 
 ## Definition
 
-Launches a SubAgent to autonomously handle a multi-step task. In CX Viewer, legacy `Task` and newer `Agent` calls normalize to the same SubAgent display model.
+Represents older imported logs where a subagent launch was named `Task`. In current Codex app-server traffic, subagent and collaborative-agent activity is represented through `collabAgentToolCall`, `subAgentActivity`, and thread source metadata.
 
-## Parameters
+## CX Viewer Mapping
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `prompt` | string | Yes | Task description for the SubAgent |
-| `description` | string | Yes | Short label |
-| `subagent_type` | string | Yes | SubAgent profile or capability set |
-| `model` | string | No | Optional model override |
-| `max_turns` | integer | No | Maximum autonomous turns |
-| `run_in_background` | boolean | No | Whether the task can continue independently |
-| `resume` | string | No | Existing agent/session id to continue |
-| `isolation` | string | No | Optional isolation mode such as a worktree |
+- Imported `Task` calls normalize to the same visual subagent model as `Agent`.
+- Native Codex `spawnAgent` and related collab calls should be documented under [Agent](Tool-Agent.md).
+- If a log contains old `Task` arguments, CX Viewer treats them as best-effort display data rather than a current Codex schema.
 
 ## Notes
 
-- Use direct file/search tools for narrow lookups.
-- Use SubAgents for broad exploration, parallel research, or isolated multi-step work.
-- CX Viewer relies on explicit Codex/app-server metadata when available and falls back to request-shape heuristics for imported legacy logs.
+- Keep this page for old JSONL imports and historical UI links.
+- Do not use this page as the source of truth for current Codex subagent fields.

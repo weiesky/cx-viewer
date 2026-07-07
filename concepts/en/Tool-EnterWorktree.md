@@ -2,7 +2,7 @@
 
 ## Definition
 
-Creates an isolated git worktree and switches the current session into it. Only used when the user explicitly asks to work in a worktree.
+Compatibility doc for older worktree transition logs. During this Codex review, `EnterWorktree` was not found as a current app-server `ThreadItem` tool type. CX Viewer keeps the page so historical links and imported logs still have an explanation.
 
 ## Parameters
 
@@ -21,36 +21,5 @@ Creates an isolated git worktree and switches the current session into it. Only 
 
 ## Notes
 
-- Must be in a git repository, or have WorktreeCreate/WorktreeRemove hooks configured
-- Must not already be in a worktree
-
-## Original Text
-
-<textarea readonly>Use this tool ONLY when the user explicitly asks to work in a worktree. This tool creates an isolated git worktree and switches the current session into it.
-
-## When to Use
-
-- The user explicitly says "worktree" (e.g., "start a worktree", "work in a worktree", "create a worktree", "use a worktree")
-
-## When NOT to Use
-
-- The user asks to create a branch, switch branches, or work on a different branch — use git commands instead
-- The user asks to fix a bug or work on a feature — use normal git workflow unless they specifically mention worktrees
-- Never use this tool unless the user explicitly mentions "worktree"
-
-## Requirements
-
-- Must be in a git repository, OR have WorktreeCreate/WorktreeRemove hooks configured in settings.json
-- Must not already be in a worktree
-
-## Behavior
-
-- In a git repository: creates a new git worktree inside `.claude/worktrees/` with a new branch based on HEAD
-- Outside a git repository: delegates to WorktreeCreate/WorktreeRemove hooks for VCS-agnostic isolation
-- Switches the session's working directory to the new worktree
-- On session exit, the user will be prompted to keep or remove the worktree
-
-## Parameters
-
-- `name` (optional): A name for the worktree. If not provided, a random name is generated.
-</textarea>
+- Treat this as a compatibility surface, not as the current Codex app-server source of truth.
+- Current branch/worktree behavior should be inferred from Codex runtime events, git commands, or app metadata when available.

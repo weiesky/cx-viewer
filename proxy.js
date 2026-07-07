@@ -5,13 +5,24 @@ import { readFileSync, existsSync, appendFileSync } from 'node:fs';
 import { join, basename } from 'node:path';
 import { DEFAULT_API_BASE } from './lib/constants.js';
 import { homedir } from 'node:os';
-import { setupInterceptor } from './interceptor.js';
 import { extractApiErrorMessage, formatProxyRequestError } from './lib/proxy-errors.js';
-import { LOG_FILE } from './interceptor.js';
 import { isStaleLocalCodexBaseUrl } from './lib/codex-config.js';
 
-// Setup interceptor to patch fetch
-setupInterceptor();
+let _interceptorReady = null;
+let _proxyLogFile = null;
+
+async function ensureProxyInterceptor() {
+  if (process.env.CXV_TEST === '1') return;
+  if (!_interceptorReady) {
+    _interceptorReady = import('./interceptor.js').then(mod => {
+      _proxyLogFile = mod.LOG_FILE;
+      mod.setupInterceptor();
+    }).catch(err => {
+      if (process.env.CXV_DEBUG) console.warn('[CX-Proxy] interceptor setup skipped:', err.message);
+    });
+  }
+  await _interceptorReady;
+}
 
 function getBaseUrlFromSettings(settingsPath) {
   try {
@@ -134,7 +145,7 @@ function parseWsFrames(buf) {
 
 // Log a WebSocket session (connect + messages) to the interceptor JSONL file
 function logWsEntry(url, direction, messages, startTime) {
-  if (!LOG_FILE) return;
+  if (!_proxyLogFile) return;
   try {
     for (const msg of messages) {
       let parsed = null;
@@ -152,15 +163,24 @@ function logWsEntry(url, direction, messages, startTime) {
         isStream: false,
         mainAgent: false,
       };
-      appendFileSync(LOG_FILE, JSON.stringify(entry) + '\n---\n');
+      appendFileSync(_proxyLogFile, JSON.stringify(entry) + '\n---\n');
     }
   } catch (err) {
     if (process.env.CXV_DEBUG) console.warn('[CX-Viewer Proxy] logWsEntry error:', err.message);
   }
 }
 
+let _proxyServer = null;
+
+export function stopProxy() {
+  if (_proxyServer) {
+    try { _proxyServer.close(); } catch { }
+    _proxyServer = null;
+  }
+}
+
 export function startProxy() {
-  return new Promise((resolve, reject) => {
+  return ensureProxyInterceptor().then(() => new Promise((resolve, reject) => {
     const server = createServer(async (req, res) => {
       const { fullUrl, originalBaseUrl } = buildUpstreamUrl(req.url);
       if (process.env.CXV_DEBUG) console.error(`[CX-Proxy] ${req.method} ${req.url} → ${originalBaseUrl}`);
@@ -356,6 +376,9 @@ export function startProxy() {
       proxyReq.end();
     });
 
+    // Store server reference for stopProxy()
+    _proxyServer = server;
+
     // Start on random port
     server.listen(0, '127.0.0.1', () => {
       const address = server.address();
@@ -363,7 +386,12 @@ export function startProxy() {
     });
 
     server.on('error', (err) => {
+      _proxyServer = null;
       reject(err);
     });
-  });
+
+    server.on('close', () => {
+      _proxyServer = null;
+    });
+  }));
 }

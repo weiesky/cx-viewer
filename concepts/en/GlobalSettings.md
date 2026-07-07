@@ -228,6 +228,5 @@ Plugin enable/disable managed via `disabledPlugins` array in `preferences.json`.
 | `cxv_cacheExpireAt` | Cache countdown expiration time |
 | `cxv_cacheType` | Cache type label |
 | `cxv_viewMode` | Current responsive view mode override |
-| `cxv_calibrationModel` | Context window calibration model |
 | `cxv_fileExplorerOpen` | File explorer panel toggle |
 | `cx-viewer-terminal-width` | Terminal panel width (pixels) |

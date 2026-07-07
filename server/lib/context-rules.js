@@ -70,7 +70,7 @@ export function sumCacheCreationTokens(usage) {
 }
 
 /**
- * 输入侧上下文用量(不含 output_tokens)。用于自适应纠偏判定。
+ * 输入侧上下文用量(不含 output_tokens)。
  * @param {object|null|undefined} usage
  * @returns {number}
  */

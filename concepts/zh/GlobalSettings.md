@@ -228,6 +228,5 @@ codex() { ... }
 | `cxv_cacheExpireAt` | 缓存倒计时到期时间 |
 | `cxv_cacheType` | 缓存类型标签 |
 | `cxv_viewMode` | 当前响应式视图模式覆盖 |
-| `cxv_calibrationModel` | 上下文窗口校准模型 |
 | `cxv_fileExplorerOpen` | 文件浏览器面板开关 |
 | `cx-viewer-terminal-width` | 终端面板宽度（像素） |

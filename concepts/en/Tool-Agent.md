@@ -2,36 +2,47 @@
 
 ## Definition
 
-Launches a Codex SubAgent to handle a bounded task with its own context and tool access. CX Viewer marks these turns as `subAgent: true` and keeps their request/response bodies separate from the MainAgent turn that spawned them.
+Represents Codex subagent and collaborative-agent activity. In the app-server schema this is not one single `Agent` item; CX Viewer builds the Agent view from several verified sources:
 
-## Parameters
+- `ThreadItem.type = "collabAgentToolCall"`
+- `ThreadItem.type = "subAgentActivity"`
+- thread source metadata such as `source.subAgent`
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `prompt` | string | Yes | Task description for the SubAgent |
-| `description` | string | Yes | Short label shown in the UI |
-| `subagent_type` | string | Yes | SubAgent profile or capability set |
-| `model` | string | No | Optional model override |
-| `max_turns` | integer | No | Maximum autonomous turns |
-| `run_in_background` | boolean | No | Whether the task can continue independently |
-| `resume` | string | No | Existing agent/session id to continue |
-| `isolation` | string | No | Optional isolation mode such as a worktree |
+Codex subagents are spawned only when the user or runtime explicitly asks for that mode. The manual describes built-in profiles such as default, worker, and explorer; CX Viewer records the profile or activity kind when the app-server sends it.
+
+## Fields Checked
+
+For `collabAgentToolCall`:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `tool` | enum | One of `spawnAgent`, `sendInput`, `resumeAgent`, `wait`, `closeAgent` |
+| `status` | string | Current tool-call status |
+| `senderThreadId` | string | Thread issuing the collab request |
+| `receiverThreadIds` | array | Target or newly spawned agent threads |
+| `prompt` | string/null | Prompt sent to the target agent |
+| `model` | string/null | Requested model when present |
+| `reasoningEffort` | string/null | Requested reasoning effort when present |
+| `agentsStates` | object | Last known target-agent states |
+
+For `subAgentActivity`:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `kind` | string | Activity kind or agent role |
+| `agentThreadId` | string | Agent thread id |
+| `agentPath` | string | Agent path reported by the app-server |
 
 ## Use Cases
 
-**Good for:**
-- Broad codebase exploration
-- Parallel research
-- Long-running implementation subtasks
-- Work that benefits from an isolated context
-
-**Not good for:**
-- Reading one known file
-- Searching a small known file set
-- Tiny edits where direct tool calls are clearer
+**Usually represents:**
+- A subagent being spawned or resumed
+- The main thread sending input to a worker/explorer agent
+- Waiting for or closing an agent
+- A subagent activity marker from app-server metadata
 
 ## Notes
 
-- SubAgent output must be relayed by the MainAgent if the user needs to see it.
-- Tool entries emitted by a SubAgent keep the same `subAgentName` and parent thread metadata.
-- Root tool calls are displayed as synthetic/tool events, not as SubAgent turns.
+- CX Viewer marks subagent turns as `subAgent: true` and keeps them separate from MainAgent turns.
+- `Task` is kept as a legacy alias for imported logs. Prefer `Agent` for Codex-native documentation.
+- Tool entries emitted by a subagent inherit the same subagent identity.

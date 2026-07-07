@@ -2,7 +2,7 @@
 
 ## Definition
 
-Switches Codex into a planning-focused mode before implementation. The agent explores the codebase, designs an approach, and asks for approval before making substantive edits.
+Compatibility doc for older plan-mode transition logs. Current Codex app-server plan content is normally reported as `turn/plan/updated` or `ThreadItem.type = "plan"` and displayed through [ExitPlanMode](Tool-ExitPlanMode.md).
 
 ## Parameters
 
@@ -10,7 +10,7 @@ No parameters.
 
 ## Use Cases
 
-**Good for:**
+**Usually represented older logs for:**
 - New feature implementation
 - Multi-file changes
 - Architectural decisions
@@ -24,15 +24,15 @@ No parameters.
 
 ## Behavior
 
-After entering plan mode, Codex typically:
+In older logs, entering plan mode usually meant:
 
 1. Searches and reads relevant files.
 2. Identifies existing patterns and constraints.
 3. Presents an implementation plan.
 4. Waits for user approval.
-5. Exits plan mode before editing.
+5. Leaving plan mode before editing.
 
 ## Notes
 
-- CX Viewer displays plan-mode transitions as tool/synthetic events.
-- Planning is most useful when the implementation path is uncertain or has meaningful tradeoffs.
+- `EnterPlanMode` is kept in the catalog for imported/historical logs.
+- For Codex-native app-server transcripts, plan updates are explained under [ExitPlanMode](Tool-ExitPlanMode.md).

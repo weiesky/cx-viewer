@@ -2,61 +2,38 @@
 
 ## 定义
 
-退出规划模式并将方案提交给用户审批。方案内容从之前写入的计划文件中读取。
+表示 Codex plan update 展示成的计划卡片。CX Viewer 保留历史展示名 `ExitPlanMode`，因为现有 UI 组件已经用这个名字渲染计划审批卡。
 
-## 参数
+本轮核对到的 Codex traffic：
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `allowedPrompts` | array | 否 | 实施方案所需的权限描述列表 |
+- 实时 JSON-RPC notification `turn/plan/updated`
+- 历史 `ThreadItem.type = "plan"`
 
-`allowedPrompts` 数组中每个元素：
+## 已核对字段
+
+`turn/plan/updated`：
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `tool` | enum | 是 | 适用的工具，目前仅支持 `Bash` |
-| `prompt` | string | 是 | 操作的语义描述（如 "run tests"、"install dependencies"） |
+| `plan` | array | 是 | 包含状态和文本的计划项 |
+| `explanation` | string/null | 否 | 可选说明文本 |
+| `turnId` | string | 否 | 用于稳定卡片 id 的 turn id |
+
+`ThreadItem.type = "plan"`：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `text` | string | 是 | 历史计划文本 |
 
 ## 使用场景
 
-**适合使用：**
-- 规划模式中方案已完成，准备提交用户审批
-- 仅用于需要编写代码的实施任务
-
-**不适合使用：**
-- 纯研究/探索任务——不需要退出规划模式
-- 想问用户"方案可以吗？"——这正是此工具的功能，不要用 AskUserQuestion 来问
+**通常表示：**
+- Codex 发布或更新当前计划
+- 历史 transcript 中包含 plan item
+- 线程回放中的非交互式计划卡片
 
 ## 注意事项
 
-- 此工具不接受方案内容作为参数——它从之前写入的计划文件中读取
-- 用户会看到计划文件的内容来审批
-- 不要在调用此工具前用 AskUserQuestion 问"方案是否可以"，这是重复的
-- 不要在问题中提及"计划"，因为用户在 ExitPlanMode 之前看不到计划内容
-
-## 原文
-
-<textarea readonly>Use this tool when you are in plan mode and have finished writing your plan to the plan file and are ready for user approval.
-
-## How This Tool Works
-- You should have already written your plan to the plan file specified in the plan mode system message
-- This tool does NOT take the plan content as a parameter - it will read the plan from the file you wrote
-- This tool simply signals that you're done planning and ready for the user to review and approve
-- The user will see the contents of your plan file when they review it
-
-## When to Use This Tool
-IMPORTANT: Only use this tool when the task requires planning the implementation steps of a task that requires writing code. For research tasks where you're gathering information, searching files, reading files or in general trying to understand the codebase - do NOT use this tool.
-
-## Before Using This Tool
-Ensure your plan is complete and unambiguous:
-- If you have unresolved questions about requirements or approach, use AskUserQuestion first (in earlier phases)
-- Once your plan is finalized, use THIS tool to request approval
-
-**Important:** Do NOT use AskUserQuestion to ask "Is this plan okay?" or "Should I proceed?" - that's exactly what THIS tool does. ExitPlanMode inherently requests user approval of your plan.
-
-## Examples
-
-1. Initial task: "Search for and understand the implementation of vim mode in the codebase" - Do not use the exit plan mode tool because you are not planning the implementation steps of a task.
-2. Initial task: "Help me implement yank mode for vim" - Use the exit plan mode tool after you have finished planning the implementation steps of the task.
-3. Initial task: "Add a new feature to handle user authentication" - If unsure about auth method (OAuth, JWT, etc.), use AskUserQuestion first, then use exit plan mode tool after clarifying the approach.
-</textarea>
+- 当前 CX Viewer 的 Codex 映射中，除非存在单独审批流，否则计划卡片是非交互式的。
+- 它不同于 [AskUserQuestion](Tool-AskUserQuestion.md)；后者表示结构化输入请求。
+- 旧 Claude 风格“从 plan file 读取并退出 plan mode”的行为，不再作为 Codex app-server 日志的事实来源。

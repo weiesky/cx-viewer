@@ -11,9 +11,9 @@ import modelMinimaxUrl from '../img/model-minimax.svg';
 import modelDeepseekUrl from '../img/model-deepseek.svg';
 import modelCodexAnimatedSvg from '../img/codex/writing.svg?raw';
 
-// 上下文窗口规则唯一事实源在 server/lib/context-rules.js(CLIENT-SAFE,无 node 依赖,
+// 上下文相关规则唯一事实源在 server/lib/context-rules.js(CLIENT-SAFE,无 node 依赖,
 // Vite 跨目录打包,先例见 toolsXmlFormatter.js)。前端一律经此处 re-export 取用,
-// 保证血条档位/纠偏/usage 分子与服务端 SSE 路径同源,杜绝三份规则表漂移的旧病。
+// 保证固定血条总量与 usage 分子和服务端 SSE 路径同源。
 export {
   CODEX_CONTEXT_WINDOW_TOKENS,
   getModelMaxTokens,

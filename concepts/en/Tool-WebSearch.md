@@ -2,25 +2,26 @@
 
 ## Definition
 
-Runs a web search and returns source-backed results for current information.
+Represents a Codex web search event. In the app-server schema this is `ThreadItem.type = "webSearch"` with a search `query` and optional `action`.
 
-## Parameters
+Codex web search availability depends on runtime configuration and policy. CX Viewer records the event when Codex reports it; it does not decide whether search is enabled, cached, live, or disabled.
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `query` | string | Yes | Search query |
-| `allowed_domains` | string[] | No | Limit results to these domains |
-| `blocked_domains` | string[] | No | Exclude these domains |
+## Fields Checked
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `query` | string | Search query |
+| `action` | object/null | Search action metadata reported by app-server |
 
 ## Use Cases
 
-**Good for:**
+**Usually represents:**
 - Current events and recently changed facts
 - Latest product, package, API, or policy information
 - Finding primary documentation for technical questions
 
 ## Notes
 
-- Search output should be cited in the final answer when it informs the response.
-- Prefer primary sources for technical, legal, financial, or medical topics.
-- CX Viewer records web-search tool events separately from MainAgent/SubAgent request bodies.
+- CX Viewer displays this event as `web_search` for compatibility with older logs.
+- `Tool-web_search` links are aliased to this page.
+- Final-answer citation behavior is handled by Codex; CX Viewer only preserves the event.

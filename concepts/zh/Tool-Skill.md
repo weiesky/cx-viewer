@@ -2,7 +2,9 @@
 
 ## 定义
 
-在主对话中执行一个技能（skill）。技能是用户可通过 slash command（如 `/commit`、`/review-pr`）调用的专用能力。
+表示 Codex skill 能力 metadata 与 skill 触发的行为。Skill 是由 app/runtime 提供给 Codex 的专用指令包。
+
+本轮核对的 app-server schema 中，它不是 `ThreadItem` 工具类型。CX Viewer 保留此文档，是因为 skill 可用性会出现在 Codex 上下文中，并可解释某个 turn 为什么使用了特定专用流程。
 
 ## 参数
 
@@ -24,33 +26,5 @@
 
 ## 注意事项
 
-- 技能被调用后会展开为完整的 prompt
-- 支持完全限定名称（如 `ms-office-suite:pdf`）
-- 可用技能列表在 system-reminder 消息中提供
-- 看到 `<command-name>` 标签时说明技能已加载，应直接执行而非再次调用此工具
-- 不要在未实际调用工具的情况下提及某个技能
-
-## 原文
-
-<textarea readonly>Execute a skill within the main conversation
-
-When users ask you to perform tasks, check if any of the available skills match. Skills provide specialized capabilities and domain knowledge.
-
-When users reference a "slash command" or "/<something>" (e.g., "/commit", "/review-pr"), they are referring to a skill. Use this tool to invoke it.
-
-How to invoke:
-- Use this tool with the skill name and optional arguments
-- Examples:
-  - `skill: "pdf"` - invoke the pdf skill
-  - `skill: "commit", args: "-m 'Fix bug'"` - invoke with arguments
-  - `skill: "review-pr", args: "123"` - invoke with arguments
-  - `skill: "ms-office-suite:pdf"` - invoke using fully qualified name
-
-Important:
-- Available skills are listed in system-reminder messages in the conversation
-- When a skill matches the user's request, this is a BLOCKING REQUIREMENT: invoke the relevant Skill tool BEFORE generating any other response about the task
-- NEVER mention a skill without actually calling this tool
-- Do not invoke a skill that is already running
-- Do not use this tool for built-in CLI commands (like /help, /clear, etc.)
-- If you see a <command-name> tag in the current conversation turn, the skill has ALREADY been loaded - follow the instructions directly instead of calling this tool again
-</textarea>
+- Skill 加载与调用细节由 Codex runtime 指令控制。
+- 按 skill 执行过程中产生的工具调用仍应按具体事件展示，例如 `Bash`、`FileChange`、`MCPToolCall` 或 `DynamicToolCall`。

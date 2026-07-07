@@ -2,36 +2,47 @@
 
 ## 定义
 
-启动一个 Codex SubAgent，用独立上下文和工具权限处理边界清晰的任务。CX Viewer 会把这些 turn 标记为 `subAgent: true`，并与触发它们的 MainAgent turn 分开展示请求和响应。
+表示 Codex 的 subagent 与协作 agent 活动。在 app-server schema 中它不是单一的 `Agent` item；CX Viewer 会从以下已核对来源组装 Agent 视图：
 
-## 参数
+- `ThreadItem.type = "collabAgentToolCall"`
+- `ThreadItem.type = "subAgentActivity"`
+- 线程 source metadata，例如 `source.subAgent`
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `prompt` | string | 是 | SubAgent 要执行的任务描述 |
-| `description` | string | 是 | UI 中显示的简短标签 |
-| `subagent_type` | string | 是 | SubAgent profile 或能力集 |
-| `model` | string | 否 | 可选模型覆盖 |
-| `max_turns` | integer | 否 | 最大自主执行轮数 |
-| `run_in_background` | boolean | 否 | 是否允许后台独立运行 |
-| `resume` | string | 否 | 要继续的已有 agent/session id |
-| `isolation` | string | 否 | 可选隔离模式，例如 worktree |
+Codex 只有在用户或 runtime 明确要求时才会 spawn subagent。manual 中描述了 default、worker、explorer 等内置 profile；app-server 上报时，CX Viewer 会记录对应 profile 或 activity kind。
+
+## 已核对字段
+
+`collabAgentToolCall`：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `tool` | enum | `spawnAgent`、`sendInput`、`resumeAgent`、`wait`、`closeAgent` 之一 |
+| `status` | string | 当前工具调用状态 |
+| `senderThreadId` | string | 发起协作请求的线程 |
+| `receiverThreadIds` | array | 目标或新建 agent 线程 |
+| `prompt` | string/null | 发送给目标 agent 的 prompt |
+| `model` | string/null | 存在时表示请求的模型 |
+| `reasoningEffort` | string/null | 存在时表示请求的 reasoning effort |
+| `agentsStates` | object | 目标 agent 的最后状态 |
+
+`subAgentActivity`：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `kind` | string | 活动类型或 agent 角色 |
+| `agentThreadId` | string | agent 线程 id |
+| `agentPath` | string | app-server 上报的 agent 路径 |
 
 ## 使用场景
 
-**适合使用：**
-- 大范围代码库探索
-- 并行研究
-- 长时间运行的实现子任务
-- 需要隔离上下文的工作
-
-**不适合使用：**
-- 读取一个已知文件
-- 在少量已知文件里搜索
-- 很小的修改，直接调用工具更清晰
+**通常表示：**
+- spawn 或 resume subagent
+- main thread 给 worker/explorer agent 发送输入
+- 等待或关闭某个 agent
+- app-server metadata 中的 subagent activity 标记
 
 ## 注意事项
 
-- 如果用户需要看到结果，SubAgent 输出需要由 MainAgent 转述。
-- SubAgent 产生的工具事件会保留相同的 `subAgentName` 和父线程元数据。
-- 根线程工具调用会显示为 synthetic/tool 事件，不会被误判为 SubAgent turn。
+- CX Viewer 会将 subagent turn 标记为 `subAgent: true`，并与 MainAgent turn 分开展示。
+- `Task` 保留为导入日志的旧 alias。Codex 原生文档优先使用 `Agent`。
+- subagent 产生的工具事件会继承同一个 subagent 身份。

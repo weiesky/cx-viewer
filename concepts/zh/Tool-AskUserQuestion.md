@@ -2,74 +2,43 @@
 
 ## 定义
 
-在执行过程中向用户提问，用于获取澄清、验证假设或请求决策。
+表示 Codex 在 turn 执行过程中请求结构化用户输入。CX Viewer 会把两种 Codex request 形态映射到现有 `AskUserQuestion` 卡片：
 
-## 参数
+- JSON-RPC server request `item/tool/requestUserInput`
+- MCP elicitation request `mcpServer/elicitation/request`
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `questions` | array | 是 | 问题列表（1-4 个问题） |
-| `answers` | object | 否 | 用户收集的答案 |
-| `annotations` | object | 否 | 每个问题的注释（如预览选择的备注） |
-| `metadata` | object | 否 | 跟踪和分析用的元数据 |
+## 已核对字段
 
-每个 `question` 对象：
+`item/tool/requestUserInput`：
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `question` | string | 是 | 完整的问题文本，应以问号结尾 |
-| `header` | string | 是 | 短标签（最多 12 字符），显示为标签芯片 |
-| `options` | array | 是 | 2-4 个选项 |
-| `multiSelect` | boolean | 是 | 是否允许多选 |
+| `questions` | array | 是 | 包含 id、标签、问题文本与选项的结构化问题 |
+| `autoResolutionMs` | number/null | 否 | 可选的自动处理超时 |
+| `itemId` | string | 否 | 用于匹配 pending result 的 request item id |
+| `turnId` | string | 否 | 用于匹配 pending result 的 turn id |
 
-每个 `option` 对象：
+每个归一化 question：
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `label` | string | 是 | 选项显示文本（1-5 个词） |
-| `description` | string | 是 | 选项说明 |
-| `markdown` | string | 否 | 预览内容（用于 ASCII 布局、代码片段等的可视化对比） |
+| `id` | string | 是 | 稳定的问题 id |
+| `header` | string | 否 | 简短 UI 标签 |
+| `question` | string | 是 | 问题文本 |
+| `options` | array | 否 | 可选项 |
+
+对于 `mcpServer/elicitation/request`，CX Viewer 会把 requested schema 转成一个或多个 question，并保存 `serverName`、`mode`、`requestedSchema`、`url`、`elicitationId` 等 MCP metadata。
 
 ## 使用场景
 
-**适合使用：**
+**通常表示：**
 - 收集用户偏好或需求
 - 澄清模糊的指令
-- 在实施过程中获取决策
-- 向用户提供方向选择
-
-**不适合使用：**
-- 问"方案可以吗？"——应使用 ExitPlanMode
+- MCP server 需要用户补充凭证、字段或选择
+- Codex turn 暂停等待 app 返回结构化答案
 
 ## 注意事项
 
-- 用户始终可以选择 "Other" 提供自定义输入
-- 推荐选项放在第一位，并在 label 末尾加 "(Recommended)"
-- `markdown` 预览仅支持单选问题
-- 有 `markdown` 的选项会切换为左右并排布局
-- 在规划模式中，用于在确定方案前澄清需求
-
-## 原文
-
-<textarea readonly>Use this tool when you need to ask the user questions during execution. This allows you to:
-1. Gather user preferences or requirements
-2. Clarify ambiguous instructions
-3. Get decisions on implementation choices as you work
-4. Offer choices to the user about what direction to take.
-
-Usage notes:
-- Users will always be able to select "Other" to provide custom text input
-- Use multiSelect: true to allow multiple answers to be selected for a question
-- If you recommend a specific option, make that the first option in the list and add "(Recommended)" at the end of the label
-
-Plan mode note: In plan mode, use this tool to clarify requirements or choose between approaches BEFORE finalizing your plan. Do NOT use this tool to ask "Is my plan ready?" or "Should I proceed?" - use ExitPlanMode for plan approval. IMPORTANT: Do not reference "the plan" in your questions (e.g., "Do you have feedback about the plan?", "Does the plan look good?") because the user cannot see the plan in the UI until you call ExitPlanMode. If you need plan approval, use ExitPlanMode instead.
-
-Preview feature:
-Use the optional `markdown` field on options when presenting concrete artifacts that users need to visually compare:
-- ASCII mockups of UI layouts or components
-- Code snippets showing different implementations
-- Diagram variations
-- Configuration examples
-
-When any option has a markdown, the UI switches to a side-by-side layout with a vertical option list on the left and preview on the right. Do not use previews for simple preference questions where labels and descriptions suffice. Note: previews are only supported for single-select questions (not multiSelect).
-</textarea>
+- `AskUserQuestion` 是 viewer 归一化名称，不一定是 wire item 原名。
+- pending server request 通过 JSON-RPC id 匹配，并在 app 返回答案后转为 tool result。
+- plan 更新由 [ExitPlanMode](Tool-ExitPlanMode.md) 表示，不归到本页。
