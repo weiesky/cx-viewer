@@ -2,7 +2,7 @@
 
 ## What is UltraPlan
 
-UltraPlan is cc-viewer's **localized implementation** of Claude Code's native `/ultraplan` command. It allows you to use the full capabilities of `/ultraplan` in your local environment **without needing to launch Claude's official remote service**, guiding Claude Code to accomplish complex planning and implementation tasks using **multi-agent collaboration**.
+UltraPlan is CX Viewer's **localized planning workflow** for Codex. It guides Codex through complex planning and implementation tasks using **multi-agent collaboration**.
 
 Compared to regular Plan mode or Agent Team, UltraPlan can:
 - Automatically assess task complexity and select the optimal planning strategy
@@ -23,12 +23,12 @@ UltraPlan's templates and workflows are deeply optimized for programming project
 
 ### 3. Execution Time and Context Window Requirements
 - A successful UltraPlan run typically takes **30 minutes or more**
-- Requires MainAgent to have a large context window (1M context Opus model recommended)
-- If you only have a 200K model, **make sure to `/clear` context before running**
-- Claude Code's `/compact` performs poorly when the context window is insufficient — avoid running out of space
+- Requires MainAgent to have a large enough context window for multi-agent findings and review output
+- If your active model has a smaller context window, **make sure to `/clear` context before running**
+- Compaction is less reliable when the context window is already nearly full — avoid running out of space
 - Maintaining sufficient context space is a critical prerequisite for successful UltraPlan execution
 
-If you have any questions or suggestions about the localized UltraPlan, feel free to open [Issues on GitHub](https://github.com/anthropics/claude-code/issues) to discuss and collaborate.
+If you have any questions or suggestions about the localized UltraPlan workflow, open an issue in the CX Viewer project to discuss and collaborate.
 
 ---
 

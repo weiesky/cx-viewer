@@ -1,46 +1,46 @@
 # 为什么工具排在第一位？
 
-在 cx-viewer 的 Context 面板中，**工具（Tools）被放在 System Prompt 和 Messages 之前**。这不是随意排列，而是为了**精确反映 Anthropic API 的实际 KV-Cache 前缀顺序**。
+在 CX Viewer 的 Context 面板中，**工具（Tools）被放在 System Prompt 和 Messages 之前**。对 Codex 来说，这是一个诊断视图：工具定义是请求结构里体积大、影响强的一部分，因此先展示能力面，再展示约束它的指令和消息栈。
 
-## KV-Cache 前缀序列
+## 请求上下文布局
 
-Anthropic API 在构建 KV-Cache 时，按以下**固定顺序**将上下文拼接为前缀序列：
+Codex 流量可能来自 OpenAI Responses API、Codex app-server 事件或 SDK 流事件。CX Viewer 会把这些来源归一化成一致的 Context 视图：
 
 ```
 ┌─────────────────────────────────────────────────┐
-│ 1. Tools (JSON Schema 定义)                      │  ← 缓存前缀的最前端
+│ 1. Tools (JSON Schema 定义)                      │  ← 能力面
 │ 2. System Prompt                                 │
-│ 3. Messages (历史对话 + 当前 turn)               │  ← 缓存前缀的最后端
+│ 3. Messages (历史对话 + 当前 turn)               │
 └─────────────────────────────────────────────────┘
 ```
 
-这意味着 **Tools 比 System Prompt 更靠近缓存前缀的起始位置**。
+这个顺序不声称某个供应商一定按同样方式序列化请求，而是让你稳定地先检查可用能力，再阅读 prompt 和消息历史。
 
-## 为什么 Tools 的缓存权重比 System 还高？
+## 为什么 Tools 往往最值得先看？
 
-在 KV-Cache 的前缀匹配机制中，**越靠前的内容越稳定**，对缓存命中的影响越大：
+工具定义通常是 agent 请求中最大的静态结构。一个 UI 开关、一个 MCP server 或一个动态工具变化，都可能让工具 schema 发生明显改变，进而影响模型行为和供应商报告的缓存用量。
 
-1. **前缀匹配是从头开始的**：KV-Cache 通过比较当前请求与上一次缓存的前缀序列来决定能复用多少。从第一个 token 开始逐一比较，一旦遇到不匹配就中断，后续全部失效。
+1. **能力变化就是语义变化**：增减工具会改变 agent 能做什么，不只是 token 数变化。
 
-2. **Tools 变化 = 全部缓存失效**：因为 Tools 在最前面，如果工具定义发生任何变化（哪怕只是增减一个 MCP tool），**整个缓存前缀从头开始就不匹配**，所有后续的 System Prompt 和 Messages 缓存全部作废。
+2. **工具 schema 可能占用大量上下文**：MCP 和动态工具通常包含详细 JSON Schema、描述、枚举和嵌套参数。
 
-3. **System 变化 = Messages 缓存失效**：System Prompt 在中间，它的变化只会导致后面的 Messages 缓存失效，但 Tools 部分的缓存仍然有效。
+3. **缓存数据以供应商报告为准**：CX Viewer 展示 Codex/OpenAI 返回的 cache-read token（例如把 `cached_tokens` 归一化为 `cache_read_input_tokens`），不在本地臆造命中率。
 
-4. **Messages 变化 = 只影响末尾**：Messages 在最后，新消息的追加只会让最后一小段缓存失效，前面的 Tools 和 System 缓存不受影响。
+4. **消息追加通常更容易判断**：正常对话多数只是新增用户消息、上一轮 assistant 回复和工具结果；工具和指令变化更少，但诊断价值更高。
 
 ## 实际影响
 
 | 变化类型 | 缓存影响 | 典型场景 |
 |----------|---------|---------|
-| 工具增减 | **全部失效** | MCP server 连接/断开、IDE 插件启停 |
-| System Prompt 变化 | Messages 缓存失效 | CLAUDE.md 修改、system reminder 注入 |
+| 工具增减 | 供应商可能报告更低缓存复用 | MCP server 连接/断开、插件启停 |
+| System Prompt 变化 | 指令和策略发生变化 | `AGENTS.md` 修改、developer instruction 更新 |
 | 新增消息 | 仅末尾增量 | 正常对话流（最常见，也最省钱） |
 
-这也是为什么 [CacheRebuild](CacheRebuild.md) 中 `tools_change` 导致的缓存重建成本往往最高 —— 它从最前面就打断了缓存前缀链。
+这也是为什么 [CacheRebuild](CacheRebuild.md) 中 `tools_change` 会被视为高信号重建原因：即使具体缓存命中由供应商决定，可用 action surface 已经变了。
 
 ## 为什么工具定义要排在思维之前？
 
-从缓存机制的角度，Tools 排在最前面是技术事实。但从认知设计的角度，这个顺序同样合理 —— **工具是手脚，System Prompt 是大脑**。
+从诊断角度看，把 Tools 放在前面很实用：工具定义先说明 agent 有哪些动作能力，然后再去看要求它行动的指令。
 
 一个人在行动之前，需要先感知自己有哪些肢体和工具可以使用。一个婴儿不是先理解世界的规则（System），再去学习如何伸手抓取；而是先感知到自己有手、有脚，然后在与环境的交互中逐渐理解规则。同样，LLM 在接收任务指令（System Prompt）之前，先知道自己能调用哪些工具（读文件、写代码、搜索、执行命令），才能在接收到指令时准确评估"我能做什么"和"我该怎么做"。
 
@@ -74,4 +74,4 @@ MCP（Model Context Protocol）工具与内置工具一样，被放在 Tools 区
 | MCP server 频繁增减 | 每次变动都会全量重建缓存，考虑固定 tool 集合 |
 | Tool Schema 过大 | 精简 description 和 enum，减少前缀 token 占用 |
 
-在 cx-viewer 的 Context 面板中，MCP 工具与内置工具并列显示在 Tools 区域，可以直观看到每个 tool 的 Schema 体积和对缓存前缀的贡献。
+在 CX Viewer 的 Context 面板中，MCP 工具会和内置工具、动态工具一起显示在 Tools 区域，可以直观看到每个 tool 的 Schema 体积以及它对请求结构的贡献。

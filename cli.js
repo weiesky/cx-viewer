@@ -387,13 +387,23 @@ async function runCliMode(extraCodexArgs = [], cwd) {
 }
 
 async function runSdkMode(extraCodexArgs = [], cwd) {
+  let codexPath = resolveNpmCodexPath();
+  if (!codexPath) {
+    codexPath = resolveNativePath();
+  }
+
+  if (!codexPath) {
+    console.error(t('cli.cMode.notFound'));
+    process.exit(1);
+  }
+
   // 检查 SDK 是否可用
   let sdkManager;
   try {
     sdkManager = await import('./lib/sdk-manager.js');
     if (!sdkManager.isSdkAvailable()) throw new Error('query not available');
-  } catch {
-    console.warn('[CX Viewer] Agent SDK not available, falling back to PTY mode (-C)');
+  } catch (err) {
+    console.warn(`[CX Viewer] Codex SDK not available (${err.message}), falling back to PTY mode`);
     return runCliMode(extraCodexArgs, cwd);
   }
 
@@ -411,8 +421,15 @@ async function runSdkMode(extraCodexArgs = [], cwd) {
   process.env.CXV_SDK_MODE = '1';
   process.env.CXV_PROJECT_DIR = workingDir;
 
+  // 初始化日志文件（CXV_WORKSPACE_MODE=1 下 interceptor 跳过了自动初始化）
+  const { initForWorkspace } = await import('./interceptor.js');
+  initForWorkspace(workingDir);
+
   // 启动 HTTP 服务器
   const serverMod = await import('./server.js');
+  await serverMod.startViewer();
+  serverMod.setWorkspaceLaunched(true);
+  serverMod.initPostLaunch();
 
   await new Promise(resolve => {
     const check = () => {
@@ -436,13 +453,17 @@ async function runSdkMode(extraCodexArgs = [], cwd) {
   sdkManager.initSdkSession(workingDir, basename(workingDir), {
     onEntry: (entry) => serverMod.pushSdkEntry(entry),
     onStreamingStatus: (data) => serverMod.setSdkStreamingState(data),
+    onStreamProgress: (data) => serverMod.sendSdkStreamProgress(data),
     broadcastWs: (msg) => serverMod.broadcastWsMessage(msg),
     permissionMode,
+    codexPath,
+    codexArgs: extraCodexArgs,
   });
 
   // 注册 SDK 回调到 server.js（WS 消息路由用）
   serverMod.setSdkResolveApproval(sdkManager.resolveApproval);
   serverMod.setSdkSendUserMessage(sdkManager.sendUserMessage);
+  serverMod.setSdkInterruptTurn(sdkManager.interruptTurn);
 
   // 自动打开浏览器
   const protocol = serverMod.getProtocol();
@@ -459,6 +480,13 @@ async function runSdkMode(extraCodexArgs = [], cwd) {
   const _token = serverMod.getAccessToken();
   for (const _ip of _lanIps) {
     console.log(`  ➜ Network: ${protocol}://${_ip}:${port}?token=${_token}`);
+  }
+
+  const initialPrompt = sdkManager.getInitialPrompt();
+  if (initialPrompt) {
+    sdkManager.sendUserMessage(initialPrompt).catch(err => {
+      console.error('[SDK] initial prompt error:', err.message);
+    });
   }
 
   // 注册退出处理

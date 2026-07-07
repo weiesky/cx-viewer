@@ -7,8 +7,6 @@ Check out the fun part — here's what you can see on mobile:
 
 <img width="1700" height="790" alt="image" src="https://github.com/user-attachments/assets/da3e519f-ff66-4cd2-81d1-f4e131215f6c" />
 
-English | [简体中文](./docs/README.zh.md) | [繁體中文](./docs/README.zh-TW.md) | [한국어](./docs/README.ko.md) | [日本語](./docs/README.ja.md) | [Deutsch](./docs/README.de.md) | [Español](./docs/README.es.md) | [Français](./docs/README.fr.md) | [Italiano](./docs/README.it.md) | [Dansk](./docs/README.da.md) | [Polski](./docs/README.pl.md) | [Русский](./docs/README.ru.md) | [العربية](./docs/README.ar.md) | [Norsk](./docs/README.no.md) | [Português (Brasil)](./docs/README.pt-BR.md) | [ไทย](./docs/README.th.md) | [Türkçe](./docs/README.tr.md) | [Українська](./docs/README.uk.md)
-
 ## Usage
 
 ### Installation
@@ -22,7 +20,7 @@ npm install -g cx-viewer --registry=https://registry.npmjs.org
 `cxv` launches the Web Viewer and then forwards the real Codex CLI surface through unchanged. CXV only adds a few wrapper features of its own:
 
 - `cxv continue` is a convenience alias for `codex resume --last`
-- `cxv --d` is a convenience alias for `codex --dangerously-bypass-approvals-and-sandbox`
+- `cxv -d` / `cxv --d` are convenience aliases for `codex --dangerously-bypass-approvals-and-sandbox`
 - `cxv --ad` is a legacy compatibility flag kept only for CXV-side bypass toggles
 
 Everything else should be treated as standard Codex CLI syntax.
@@ -35,7 +33,8 @@ cxv -c 'model="gpt-5.5"'                    # == codex -c 'model="gpt-5.5"'
 cxv exec "summarize this repo"              # == codex exec "summarize this repo"
 cxv review                                  # == codex review
 cxv --search --model gpt-5.5                # == codex --search --model gpt-5.5
-cxv --d                                     # == codex --dangerously-bypass-approvals-and-sandbox
+cxv -d                                      # == codex --dangerously-bypass-approvals-and-sandbox
+cxv --d                                     # same as cxv -d
 ```
 
 The author's most-used command is:
@@ -188,7 +187,7 @@ Via the CX-Viewer dropdown menu in the top-left corner:
 <img width="1500" height="760" alt="image" src="https://github.com/user-attachments/assets/33295e2b-f2e0-4968-a6f1-6f3d1404454e" />
 
 **Log Compression**
-Regarding logs, the author wants to clarify that the official Anthropic definitions have not been modified, ensuring log integrity. However, since individual log entries from the 1M Opus model can become extremely large in later stages, thanks to certain log optimizations for MainAgent, at least 66% size reduction is achieved without gzip. The parsing method for these compressed logs can be extracted from the current repository.
+Log compression does not change the captured Codex/OpenAI payload semantics. It only optimizes repeated MainAgent context stored by CX-Viewer, which can substantially reduce log size for long sessions without requiring gzip. The parser for these compressed entries is included in this repository.
 
 ### More Useful Features
 
@@ -200,13 +199,13 @@ You can quickly locate your prompts using the sidebar tools.
 
 <img width="1500" height="765" alt="image" src="https://github.com/user-attachments/assets/82b8eb67-82f5-41b1-89d6-341c95a047ed" />
 
-The interesting KV-Cache-Text feature lets you see exactly what Claude sees.
+The KV-Cache-Text feature lets you inspect the context that Codex sends to the model.
 
 ---
 
 <img width="1500" height="765" alt="image" src="https://github.com/user-attachments/assets/54cdfa4e-677c-4aed-a5bb-5fd946600c46" />
 
-You can upload images and describe your needs — Claude's image understanding is incredibly powerful. And as you know, you can paste images directly with Ctrl+V, and your complete content will be displayed in the conversation.
+You can upload images and describe your needs. You can also paste images directly with Ctrl+V, and the complete content will be displayed in the conversation.
 
 ---
 

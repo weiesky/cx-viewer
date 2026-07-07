@@ -27,6 +27,10 @@ function resolveLogDir() {
 // 使用 let 以支持运行时通过 setLogDir() 修改（ES module live binding）
 export let LOG_DIR = resolveLogDir();
 
+export function getCodexConfigDir() {
+  return join(homedir(), '.codex');
+}
+
 /**
  * 运行时修改日志存储根目录。
  * 支持 ~/... 展开。所有通过 `import { LOG_DIR }` 引用的模块会自动看到新值。

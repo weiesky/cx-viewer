@@ -11,7 +11,7 @@ import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, basename } from 'node:path';
 import { LOG_DIR } from './findcx.js';
-import { assembleStreamMessage, cleanupTempFiles, findRecentLog, isOpenAiApiPath, isMainAgentRequest, rotateLogFile } from './lib/interceptor-core.js';
+import { assembleOpenAiResponseMessage, assembleStreamMessage, cleanupTempFiles, findRecentLog, isOpenAiApiPath, isMainAgentRequest, isSubAgentRequest, rotateLogFile } from './lib/interceptor-core.js';
 import { MAX_LOG_SIZE as _MAX_LOG_SIZE, CHECKPOINT_INTERVAL as _CHECKPOINT_INTERVAL } from './lib/constants.js';
 
 
@@ -416,6 +416,7 @@ export function setupInterceptor() {
           isHeartbeat: /\/api\/eval\/sdk-/.test(urlStr),
           isCountTokens: /\/messages\/count_tokens/.test(urlStr),
           mainAgent: isMainAgentRequest(body),
+          subAgent: isSubAgentRequest(body),
           ...(_isTeammate && { teammate: _teammateName, teamName: _teamName })
         };
       }
@@ -595,8 +596,12 @@ export function setupInterceptor() {
                         })
                         .filter(Boolean);
 
-                      // 组装完整的 message 对象（GLM 使用标准格式，但 data: 后无空格）
-                      const assembledMessage = assembleStreamMessage(events);
+                      const hasOpenAiResponsesEvents = events.some(event => event && typeof event === 'object' && typeof event.type === 'string' && event.type.startsWith('response.'));
+
+                      // 组装完整的 message 对象（Codex uses OpenAI Responses events; legacy adapters may still emit Claude-style events）
+                      const assembledMessage = hasOpenAiResponsesEvents
+                        ? assembleOpenAiResponseMessage(events)
+                        : assembleStreamMessage(events);
 
                       // 直接使用组装后的 message 对象作为 response.body
                       // 如果组装失败（例如非标准 SSE），则使用原始流内容
@@ -695,4 +700,3 @@ export function setupInterceptor() {
     return response;
   };
 }
-

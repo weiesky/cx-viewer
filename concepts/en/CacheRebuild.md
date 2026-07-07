@@ -2,17 +2,17 @@
 
 ## Background
 
-Anthropic's prompt caching mechanism concatenates system → tools → messages (up to the cache breakpoint) in order to form the cache key. When the cache key matches the previous request exactly, the API returns `cache_read_input_tokens` (cache hit); when the cache key changes, the API recreates the cache and returns a large number of `cache_creation_input_tokens`, i.e., a cache rebuild.
+Codex/OpenAI usage may report cached input tokens when provider-side cache reuse happens. CX-Viewer compares consecutive MainAgent request bodies to explain why cache reuse may have changed.
 
-Cache rebuilds mean additional token charges (cache creation is priced higher than cache read), so identifying rebuild causes has direct value for cost optimization.
+Cache diagnostics are useful for cost, latency, and context-quality troubleshooting. They are based on normalized viewer entries rather than provider-specific request annotations.
 
 ## Cache Rebuild Reason Categories
 
-cc-viewer compares the bodies of two consecutive MainAgent requests to precisely determine the cause of a cache rebuild:
+CX-Viewer compares the bodies of two consecutive MainAgent requests to identify likely cache/context-change causes:
 
 | reason | Meaning | Detection Method |
 |--------|---------|------------------|
-| `ttl` | Cache expired | More than 5 minutes since the last MainAgent request |
+| `ttl` | Long idle gap | More than 5 minutes since the last MainAgent request |
 | `system_change` | System prompt changed | `JSON.stringify(prev.system) !== JSON.stringify(curr.system)` |
 | `tools_change` | Tool definitions changed | `JSON.stringify(prev.tools) !== JSON.stringify(curr.tools)` |
 | `model_change` | Model switched | `prev.model !== curr.model` |
@@ -29,8 +29,8 @@ cc-viewer compares the bodies of two consecutive MainAgent requests to precisely
 ## Common Scenarios
 
 - **`ttl`**: The user paused for more than 5 minutes before continuing, and the cache naturally expired
-- **`system_change`**: Claude Code updated the system prompt (e.g., loaded new CLAUDE.md, project instructions changed)
+- **`system_change`**: Codex system prompt changed (e.g., loaded new `AGENTS.md`, project instructions changed)
 - **`tools_change`**: MCP server connection/disconnection caused changes to the available tool list
 - **`model_change`**: The user switched models via the `/model` command
-- **`msg_truncated`**: A long conversation triggered context window management, and Claude Code truncated earlier messages
-- **`msg_modified`**: Claude Code edited historical messages (e.g., `/compact` replaced original messages with a compressed summary)
+- **`msg_truncated`**: A long conversation triggered context window management, and Codex truncated earlier messages
+- **`msg_modified`**: Codex edited historical messages (e.g., `/compact` replaced original messages with a compressed summary)

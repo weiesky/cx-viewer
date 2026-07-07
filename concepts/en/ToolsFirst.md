@@ -1,46 +1,46 @@
 # Why Are Tools Listed First?
 
-In cc-viewer's Context panel, **Tools appear before System Prompt and Messages**. This ordering precisely mirrors the **Anthropic API's KV-Cache prefix sequence**.
+In CX Viewer's Context panel, **Tools appear before System Prompt and Messages**. For Codex, this is a diagnostic layout: tool definitions are a large, high-impact part of the request shape, so they are shown first before the instructions and conversation history they constrain.
 
-## KV-Cache Prefix Sequence
+## Request Context Layout
 
-When Anthropic's API constructs the KV-Cache, it concatenates context into a prefix in this **fixed order**:
+Codex traffic can arrive from OpenAI Responses API calls, Codex app-server events, or SDK stream events. CX Viewer normalizes those sources into a consistent context view:
 
 ```
 ┌─────────────────────────────────────────────────┐
-│ 1. Tools (JSON Schema definitions)               │  ← Start of cache prefix
+│ 1. Tools (JSON Schema definitions)               │  ← Capability surface
 │ 2. System Prompt                                 │
-│ 3. Messages (conversation history + current turn)│  ← End of cache prefix
+│ 3. Messages (conversation history + current turn)│
 └─────────────────────────────────────────────────┘
 ```
 
-This means **Tools sit before System Prompt at the very beginning of the cache prefix**.
+This does not claim a provider-specific serialization order. It gives you a stable way to inspect what capabilities were available before reading the prompt and message stack.
 
-## Why Do Tools Have Higher Cache Weight Than System?
+## Why Tools Often Matter Most
 
-In KV-Cache prefix matching, **earlier content is more critical** — any change invalidates everything after it:
+Tool definitions are often the largest static part of an agent request. A small UI toggle can add, remove, or reshape many tool schemas, which changes both model behavior and provider-reported cache usage.
 
-1. **Prefix matching starts from the beginning**: The KV-Cache compares the current request against the cached prefix token-by-token from the start. The moment a mismatch is found, all subsequent content is invalidated.
+1. **Capability changes are semantic changes**: Adding or removing a tool changes what the agent is allowed to do, not just the token count.
 
-2. **Tools change = entire cache invalidated**: Since Tools come first, any change to tool definitions (even adding or removing a single MCP tool) **breaks the prefix from the very start**, invalidating all cached System Prompt and Messages.
+2. **Tool schemas can dominate request size**: MCP and dynamic tools often have detailed JSON Schemas with descriptions, enums, and nested parameters.
 
-3. **System change = Messages cache invalidated**: System Prompt sits in the middle, so its changes only invalidate the Messages portion that follows.
+3. **Cache reporting follows the provider**: CX Viewer displays cache-read tokens reported by Codex/OpenAI (`cached_tokens` normalized to `cache_read_input_tokens`) instead of inventing cache-hit math locally.
 
-4. **Messages change = only the tail affected**: Messages are at the end, so appending new messages only invalidates a small trailing segment — Tools and System cache remain intact.
+4. **Message appends are usually cheaper to inspect**: Normal conversation turns mostly add one new user message and the previous assistant/tool results, while tool and instruction changes tend to be rarer and more important.
 
 ## Practical Impact
 
 | Change Type | Cache Impact | Typical Scenario |
 |-------------|-------------|-----------------|
-| Tool added/removed | **Full invalidation** | MCP server connect/disconnect, IDE plugin toggle |
-| System Prompt change | Messages cache lost | CLAUDE.md edit, system reminder injection |
-| New message appended | Tail increment only | Normal conversation flow (most common, cheapest) |
+| Tool added/removed | Provider may report lower cache reuse | MCP server connect/disconnect, plugin toggle |
+| System Prompt change | Instructions and policy changed | `AGENTS.md` edit, developer instruction update |
+| New message appended | Normal turn growth | User input, assistant reply, tool result |
 
-This is why `tools_change` in [CacheRebuild](CacheRebuild.md) tends to be the most expensive rebuild reason — it breaks the prefix chain at the very front.
+This is why `tools_change` in [CacheRebuild](CacheRebuild.md) is treated as a high-signal rebuild reason: even when exact cache behavior is provider-side, the available action surface changed.
 
 ## Why Are Tool Definitions Placed Before the "Brain"?
 
-From a caching perspective, Tools being first is a technical fact. But from a cognitive design perspective, this ordering is equally logical — **Tools are the hands and feet, System Prompt is the brain**.
+From a diagnostic perspective, putting Tools first is useful because tool definitions describe the agent's available actions before you inspect the instructions that ask the agent to act.
 
 Before taking action, a person needs to perceive what limbs and tools are available. An infant doesn't first understand the rules of the world (System), then learn to reach and grab — they first sense that they have hands and feet, then gradually understand rules through interaction with the environment. Similarly, an LLM needs to know what tools it can call (read files, write code, search, execute commands) before receiving task instructions (System Prompt), so it can accurately assess "what can I do" and "how should I do it" when processing the instructions.
 
@@ -74,4 +74,4 @@ MCP (Model Context Protocol) tools, like built-in tools, are placed at the very 
 | Frequently adding/removing MCP servers | Each change triggers full cache rebuild; consider fixing the tool set |
 | Oversized Tool Schemas | Trim descriptions and enums to reduce prefix token footprint |
 
-In cc-viewer's Context panel, MCP tools are displayed alongside built-in tools in the Tools area, giving you a clear view of each tool's Schema size and contribution to the cache prefix.
+In CX Viewer's Context panel, MCP tools are displayed alongside built-in and dynamic tools in the Tools area, giving you a clear view of each tool's Schema size and contribution to request shape.

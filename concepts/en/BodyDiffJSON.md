@@ -2,7 +2,7 @@
 
 ## Background
 
-Claude Code's MainAgent uses a full-context sending mechanism — each request carries the complete conversation history, system prompt, tool definitions, and more. This means the request body grows increasingly large as the conversation progresses, making it difficult to quickly identify "what was actually added this round" when viewing the raw body.
+Codex MainAgent turns are represented as full request snapshots in CX Viewer. A request can include conversation history, instructions, tool definitions, metadata, and model/runtime options. As the session grows, the normalized body becomes harder to inspect by eye.
 
 Body Diff JSON solves exactly this problem: it automatically compares the bodies of two consecutive MainAgent requests, extracts the incremental differences, and lets you see at a glance what content was actually added in the current request.
 
@@ -29,4 +29,4 @@ If you see changes to `system`, `tools`, `model`, or other fields in the diff, i
 - Body Diff JSON is displayed in the MainAgent request detail panel
 - Click the title to expand/collapse
 - Supports both JSON and Text viewing modes, plus one-click copy
-- In the top-left **CC-Viewer → Global Settings**, you can set "Expand Body Diff JSON by default"
+- In the top-left **CX Viewer -> Global Settings**, you can set "Expand Body Diff JSON by default"

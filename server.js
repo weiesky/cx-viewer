@@ -44,7 +44,8 @@ import { loadPlugins, runWaterfallHook, runParallelHook, getPluginsInfo, getPlug
 import { uploadPlugins, installPluginFromUrl } from './lib/plugin-manager.js';
 import { getUserProfile } from './lib/user-profile.js';
 import { getGitDiffs } from './lib/git-diff.js';
-import { CONTEXT_WINDOW_FILE, readModelContextSize, buildContextWindowEvent, getContextSizeForModel } from './lib/context-watcher.js';
+import { CONTEXT_WINDOW_FILE, buildContextWindowEvent } from './lib/context-watcher.js';
+import { CODEX_CONTEXT_WINDOW_TOKENS, sumUsageContextTokens } from './server/lib/context-rules.js';
 import { watchLogFile, startWatching, getWatchedFiles, sendEventToClients, sendToClients } from './lib/log-watcher.js';
 import { isMainAgentEntry, extractCachedContent } from './lib/kv-cache-analyzer.js';
 import { listLocalLogs, deleteLogFiles, mergeLogFiles } from './lib/log-management.js';
@@ -64,6 +65,108 @@ function writePreferences(prefs) {
   if (!existsSync(prefsDir)) mkdirSync(prefsDir, { recursive: true });
   writeFileSync(prefsFile, JSON.stringify(prefs, null, 2));
 }
+
+function sendJson(res, status, data) {
+  res.writeHead(status, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(data));
+}
+
+function encodeStableId(value) {
+  return Buffer.from(String(value), 'utf8').toString('base64url');
+}
+
+function currentProjectDir() {
+  return process.env.CXV_PROJECT_DIR || process.cwd();
+}
+
+function displayTail(filePath) {
+  const home = homedir();
+  return filePath.startsWith(home) ? `~${filePath.slice(home.length)}` : filePath;
+}
+
+function discoverCodexMdEntries() {
+  const entries = [];
+  const seen = new Set();
+  const add = (filePath, scope) => {
+    try {
+      const real = realpathSync(filePath);
+      if (seen.has(real) || !existsSync(real) || !statSync(real).isFile()) return;
+      seen.add(real);
+      entries.push({
+        id: encodeStableId(real),
+        scope,
+        path: real,
+        tail: displayTail(real),
+      });
+    } catch {}
+  };
+
+  let dir = resolve(currentProjectDir());
+  while (dir && dir !== dirname(dir)) {
+    add(join(dir, 'AGENTS.md'), 'project');
+    dir = dirname(dir);
+  }
+  add(join(homedir(), '.codex', 'AGENTS.md'), 'global');
+  return entries;
+}
+
+function parseSkillDescription(skillDir) {
+  const mdPath = join(skillDir, 'SKILL.md');
+  if (!existsSync(mdPath)) return null;
+  try {
+    const text = readFileSync(mdPath, 'utf8');
+    const frontmatter = /^---\s*\n([\s\S]*?)\n---/.exec(text);
+    if (!frontmatter) return null;
+    const lines = frontmatter[1].split('\n');
+    const idx = lines.findIndex(line => /^description\s*:/.test(line));
+    if (idx < 0) return null;
+    const first = lines[idx].replace(/^description\s*:\s*/, '').trim();
+    if (/^[|>][-+]?$/.test(first)) {
+      const fold = first.startsWith('>');
+      const collected = [];
+      for (let i = idx + 1; i < lines.length; i++) {
+        const line = lines[i];
+        if (line !== '' && !/^\s/.test(line)) break;
+        collected.push(line.replace(/^\s+/, ''));
+      }
+      while (collected.length && collected[collected.length - 1] === '') collected.pop();
+      return fold ? collected.join(' ') : collected.join('\n');
+    }
+    return first.replace(/^["']|["']$/g, '');
+  } catch {
+    return null;
+  }
+}
+
+function scanSkillDir(baseDir, source, enabled) {
+  const out = [];
+  if (!existsSync(baseDir)) return out;
+  try {
+    for (const entry of readdirSync(baseDir, { withFileTypes: true })) {
+      if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
+      const skillDir = join(baseDir, entry.name);
+      out.push({
+        name: entry.name,
+        source,
+        enabled,
+        path: skillDir,
+        description: parseSkillDescription(skillDir),
+      });
+    }
+  } catch {}
+  return out;
+}
+
+function listCodexSkills() {
+  const cwd = currentProjectDir();
+  return [
+    ...scanSkillDir(join(cwd, '.codex', 'skills'), 'project', true),
+    ...scanSkillDir(join(cwd, '.codex', 'skills-skip'), 'project', false),
+    ...scanSkillDir(join(homedir(), '.codex', 'skills'), 'user', true),
+    ...scanSkillDir(join(homedir(), '.codex', 'skills-skip'), 'user', false),
+  ];
+}
+
 function normalizePluginFilename(name) {
   return String(name || '').replace(/.*[/\\]/, '');
 }
@@ -623,6 +726,36 @@ async function handleRequest(req, res) {
     return;
   }
 
+  if (url === '/api/codex-md' && method === 'GET') {
+    const entries = discoverCodexMdEntries();
+    const id = parsedUrl.searchParams.get('id');
+    if (!id) {
+      sendJson(res, 200, { entries: entries.map(({ path, ...rest }) => rest) });
+      return;
+    }
+    const hit = entries.find(entry => entry.id === id);
+    if (!hit) {
+      sendJson(res, 404, { error: 'AGENTS.md entry not found' });
+      return;
+    }
+    try {
+      sendJson(res, 200, { content: readFileSync(hit.path, 'utf8') });
+    } catch (err) {
+      sendJson(res, 500, { error: err.message || 'Failed to read AGENTS.md' });
+    }
+    return;
+  }
+
+  if (url === '/api/skills' && method === 'GET') {
+    sendJson(res, 200, { ok: true, skills: listCodexSkills() });
+    return;
+  }
+
+  if ((url === '/api/skills/toggle' || url === '/api/skills/delete' || url === '/api/skills/import') && method === 'POST') {
+    sendJson(res, 501, { ok: false, error: 'Skill mutation is not implemented in cx-viewer yet' });
+    return;
+  }
+
   // 注册新的日志文件进行 watch（供新进程复用旧服务时调用）
   if (url === '/api/register-log' && method === 'POST') {
     let body = '';
@@ -947,8 +1080,7 @@ async function handleRequest(req, res) {
               if (cached) latestKvCache = cached;
               const usage = entry.response?.body?.usage;
               if (usage) {
-                const contextSize = getContextSizeForModel(entry.body?.model);
-                const cw = buildContextWindowEvent(usage, contextSize);
+                const cw = buildContextWindowEvent(usage);
                 if (cw) latestContextWindow = cw;
               }
             }
@@ -984,12 +1116,10 @@ async function handleRequest(req, res) {
         const cwRaw = readFileSync(CONTEXT_WINDOW_FILE, 'utf-8');
         const cwFile = JSON.parse(cwRaw);
         if (cwFile?.context_window) {
-          // Recalculate with correct context size from model.id
-          const { contextSize } = readModelContextSize();
+          // Recalculate with the fixed Codex context size used by the blood bar.
           const cw = cwFile.context_window;
-          const inputTokens = cw.total_input_tokens || 0;
-          const outputTokens = cw.total_output_tokens || 0;
-          const totalTokens = inputTokens + outputTokens;
+          const totalTokens = sumUsageContextTokens(cw.current_usage) || ((cw.total_input_tokens || 0) + (cw.total_output_tokens || 0));
+          const contextSize = CODEX_CONTEXT_WINDOW_TOKENS;
           const usedPct = contextSize > 0 ? Math.round((totalTokens / contextSize) * 100) : 0;
           const data = { ...cw, context_window_size: contextSize, used_percentage: usedPct, remaining_percentage: 100 - usedPct };
           res.write(`event: context_window\ndata: ${JSON.stringify(data)}\n\n`);
@@ -2816,8 +2946,8 @@ async function handleRequest(req, res) {
         // 安全检查：确认是监听 CXV 端口范围 (7008-7099) 的 node 进程
         const { stdout: lsofOut } = await execAsync(`lsof -iTCP:7008-7099 -sTCP:LISTEN -P -n -p ${pid}`, { timeout: 5000 }).catch(() => ({ stdout: '' }));
         const lsofLines = lsofOut.trim().split('\n').filter(Boolean).slice(1);
-        const isNodeOnCcvPort = lsofLines.some(line => line.trim().split(/\s+/)[0] === 'node');
-        if (!isNodeOnCcvPort) {
+        const isNodeOnCxvPort = lsofLines.some(line => line.trim().split(/\s+/)[0] === 'node');
+        if (!isNodeOnCxvPort) {
           res.writeHead(403, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Not a CXV process' }));
           return;
@@ -3033,7 +3163,6 @@ export async function startViewer() {
           }
           // 工作区模式下延迟到选择工作区后再启动监听
           if (!isWorkspaceMode) {
-            readModelContextSize(); // Cache model→size mapping at startup
             startWatching(_logWatcherOpts(LOG_FILE));
             startStatsWorker();
             startStreamingStatusTimer();
@@ -3273,6 +3402,10 @@ async function setupTerminalWebSocket(httpServer) {
                 console.error('[SDK] sendUserMessage error:', err.message);
               });
             }
+          } else if (msg.type === 'sdk-interrupt') {
+            if (_sdkInterruptTurn) {
+              try { _sdkInterruptTurn(); } catch {}
+            }
           } else if (msg.type === 'image-remove-notify' || msg.type === 'image-upload-notify') {
             // Security: only allow paths within upload directories, reject traversal
             const p = msg.path;
@@ -3433,6 +3566,13 @@ export function setSdkStreamingState(data) {
   }
 }
 
+/** Push live SDK text/thinking blocks without polluting the JSONL request list. */
+export function sendSdkStreamProgress(data) {
+  if (clients.length > 0 && sendEventToClients) {
+    sendEventToClients(clients, 'stream-progress', data);
+  }
+}
+
 /** Broadcast a message to all terminal WS clients (for SDK canUseTool). */
 export function broadcastWsMessage(msg) {
   if (terminalWss) {
@@ -3450,6 +3590,10 @@ export function setSdkResolveApproval(fn) { _sdkResolveApproval = fn; }
 /** Reference to sdk-manager's sendUserMessage (set by cli.js after import). */
 let _sdkSendUserMessage = null;
 export function setSdkSendUserMessage(fn) { _sdkSendUserMessage = fn; }
+
+/** Reference to sdk-manager's interruptTurn (set by cli.js after import). */
+let _sdkInterruptTurn = null;
+export function setSdkInterruptTurn(fn) { _sdkInterruptTurn = fn; }
 
 // Auto-start the viewer after log file init completes
 // 工作区模式下由 cli.js 直接 import server.js 触发启动，跳过 _initPromise 自动启动

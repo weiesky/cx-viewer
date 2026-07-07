@@ -1,6 +1,6 @@
-# Claude Code Tools Overview
+# Codex Tools Overview
 
-Claude Code provides a set of built-in tools to the model through the Anthropic API's tool_use mechanism. Each MainAgent request includes the complete JSON Schema definitions of these tools in the `tools` array, and the model invokes them via `tool_use` content blocks in its responses.
+Codex provides built-in tools to the model and reports tool activity through OpenAI Responses events, app-server item notifications, or SDK item events. CX-Viewer normalizes those sources into `tool_use` and `tool_result` blocks so the UI can display them consistently.
 
 Below is a categorized index of all tools.
 

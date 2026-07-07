@@ -1,4 +1,4 @@
-# CC-Viewer Configuration Reference
+# CX-Viewer Configuration Reference
 
 ## 1. Global Settings Panel (UI)
 
@@ -8,7 +8,7 @@ Open via top-left menu → "Global Settings".
 |---------|------|---------|-------------|
 | Filter Irrelevant Requests | Switch | On | Hide heartbeat, count_tokens, sub-agent and other non-main-agent requests |
 | Expand Body Diff JSON | Switch | Off | Expand Body Diff section by default in request detail panel |
-| Log Directory | Text Input | `~/.claude/cc-viewer` | Root directory for project log read/write. Supports `~/` expansion. Takes effect immediately on Enter or blur |
+| Log Directory | Text Input | `~/.codex/cx-viewer` | Root directory for project log read/write. Supports `~/` expansion. Takes effect immediately on Enter or blur |
 
 ## 2. Display Settings Panel (UI)
 
@@ -17,7 +17,7 @@ Open via top-left menu → "Display Settings".
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
 | Collapse Tool Results | Switch | On | Collapse tool call result blocks in chat view |
-| Expand Thinking | Switch | On | Expand Claude's thinking/reasoning blocks by default |
+| Expand Thinking | Switch | On | Expand Codex reasoning/thinking blocks by default |
 | Show Full Tool Content | Switch | Off | Show full untruncated tool call content |
 | Auto Resume Session | Switch + Options | Off | Automatically choose when session resume prompt appears: `Continue` or `New` |
 
@@ -33,7 +33,7 @@ All UI settings are persisted to `<log_dir>/preferences.json` via the `/api/pref
   "collapseToolResults": true,
   "expandThinking": true,
   "showFullToolContent": false,
-  "logDir": "~/.claude/cc-viewer",
+  "logDir": "~/.codex/cx-viewer",
   "resumeAutoChoice": null,
   "disabledPlugins": [],
   "presetShortcuts": []
@@ -55,75 +55,76 @@ All UI settings are persisted to `<log_dir>/preferences.json` via the `/api/pref
 
 ## 4. Environment Variables
 
-### CC-Viewer Specific
+### CX-Viewer Specific
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `CCV_LOG_DIR` | `~/.claude/cc-viewer` | Log storage root directory. Special values: `tmp`/`temp` use system temp dir |
-| `CCV_CLI_MODE` | unset | `=1` enables CLI mode (PTY terminal) |
-| `CCV_SDK_MODE` | unset | `=1` enables Agent SDK mode (no terminal) |
-| `CCV_WORKSPACE_MODE` | unset | `=1` enables workspace selection mode |
-| `CCV_PROJECT_DIR` | `process.cwd()` | Project working directory for file operations and Git commands |
-| `CCV_PROXY_PORT` | unset | Local MITM proxy port |
-| `CCV_BYPASS_PERMISSIONS` | unset | `=1` skip tool permission approval (with `--dangerously-skip-permissions`) |
-| `CCV_DISABLE_DELTA` | unset | `=1` disable incremental log storage, write full messages every time |
-| `CCV_DEBUG` | unset | `=1` enable HTTP proxy debug logging |
-| `CCV_DEBUG_PLUGINS` | unset | `=1` enable plugin loading debug logging |
+| `CXV_LOG_DIR` | `~/.codex/cx-viewer` | Log storage root directory. Special values: `tmp`/`temp` use system temp dir |
+| `CXV_CLI_MODE` | unset | `=1` enables CLI mode (PTY terminal) |
+| `CXV_SDK_MODE` | unset | `=1` enables Codex SDK mode (no terminal) |
+| `CXV_WORKSPACE_MODE` | unset | `=1` enables workspace selection mode |
+| `CXV_PROJECT_DIR` | `process.cwd()` | Project working directory for file operations and Git commands |
+| `CXV_PROXY_PORT` | unset | Local Codex proxy port |
+| `CXV_BYPASS_PERMISSIONS` | unset | `=1` skip tool permission approval with Codex bypass mode |
+| `CXV_DISABLE_DELTA` | unset | `=1` disable incremental log storage, write full messages every time |
+| `CXV_DEBUG` | unset | `=1` enable debug logging |
+| `CXV_DEBUG_PLUGINS` | unset | `=1` enable plugin loading debug logging |
 
 ### Internal IPC
 
 | Variable | Description |
 |----------|-------------|
-| `CCVIEWER_PORT` | Server port for ask-bridge/perm-bridge communication |
-| `CCV_EDITOR_PORT` | Server port for ccv-editor file editing bridge |
+| `CXVIEWER_PORT` | Server port for ask-bridge/perm-bridge communication |
+| `CXV_EDITOR_PORT` | Server port for cxv-editor file editing bridge |
 
 ### External (Read-only)
 
 | Variable | Description |
 |----------|-------------|
-| `ANTHROPIC_BASE_URL` | Custom Anthropic API address |
+| `OPENAI_BASE_URL` | Custom OpenAI-compatible API base URL |
 | `SHELL` | User's shell (PTY spawn and shell config detection) |
 | `http_proxy` / `HTTPS_PROXY` etc. | HTTP proxy config (via undici EnvHttpProxyAgent) |
 
 ## 5. CLI Arguments
 
 ```
-ccv [options] [claude args...]
+cxv [options] [codex args...]
 ```
 
-### CC-Viewer Options
+### CX-Viewer Options
 
 | Argument | Description |
 |----------|-------------|
-| `-logger` | Install/repair Claude Code hooks |
-| `--uninstall` / `-uninstall` | Remove all CC-Viewer integration |
+| `-logger` | Install/repair Codex logger integration |
+| `--uninstall` / `-uninstall` | Remove all CX-Viewer integration |
 | `--help` / `-h` / `help` | Show help text |
 | `--version` / `-v` | Show version |
 | `-SDK` / `--sdk` | Use Agent SDK mode |
-| `--d` | Shortcut for `--dangerously-skip-permissions` |
-| `--ad` | Shortcut for `--allow-dangerously-skip-permissions` |
-| `run` | Run command through proxy (`ccv run -- claude ...`) |
+| `--d` | Shortcut for `--dangerously-bypass-approvals-and-sandbox` |
+| `--ad` | Legacy compatibility flag for CXV-side bypass toggles |
+| `run` | Run command through the CXV wrapper (`cxv run -- codex ...`) |
 
-### Claude Pass-through (common)
+### Codex Pass-through (common)
 
 | Argument | Description |
 |----------|-------------|
-| `-c` / `--continue` | Continue last session |
-| `-r` / `--resume` | Resume specific session |
-| `-p` / `--print` | Non-interactive output |
+| `continue` | Resume the last session (`codex resume --last`) |
+| `resume [session-id]` | Resume a specific session |
+| `exec [prompt]` | Non-interactive Codex execution |
 | `--model` | Specify model |
-| `--permission-mode` | Permission mode |
-| `--system-prompt` | Custom system prompt |
-| `--max-budget-usd` | Maximum budget |
+| `--search` | Enable live web search mode |
+| `-C` / `--cd` | Set working directory |
+| `--sandbox` | Set sandbox mode |
+| `--ask-for-approval` | Set approval policy |
 
 ## 6. Hook Configuration
 
-CC-Viewer auto-registers hooks in `~/.claude/settings.json` under `hooks.PreToolUse`:
+CX-Viewer's Codex integration primarily uses the local wrapper/proxy path. Legacy hook bridges remain available only for imported workflows that still depend on them.
 
 ### 1. AskUserQuestion Bridge
 - **Matcher**: `"AskUserQuestion"`
 - **Command**: `node <install_dir>/lib/ask-bridge.js`
-- **Purpose**: Forward Claude's questions to Web UI, wait for user answers
+- **Purpose**: Forward tool/user approval prompts to the Web UI when a bridge path is active
 
 ### 2. Permission Approval Bridge
 - **Matcher**: `""` (empty = match all tools)
@@ -132,17 +133,17 @@ CC-Viewer auto-registers hooks in `~/.claude/settings.json` under `hooks.PreTool
 
 ## 7. Shell Integration
 
-CC-Viewer injects a `claude()` function into `~/.zshrc` (or `.bashrc`):
+CX-Viewer can inject a `codex()` wrapper into `~/.zshrc` (or `.bashrc`) in logger mode:
 
 ```bash
-# >>> CC-Viewer Auto-Inject >>>
-claude() { ... }
-# <<< CC-Viewer Auto-Inject <<<
+# >>> CX-Viewer Auto-Inject >>>
+codex() { ... }
+# <<< CX-Viewer Auto-Inject <<<
 ```
 
-All `claude` commands are automatically routed through CC-Viewer proxy for log capture and Web UI features.
+Interactive `codex` commands are routed through CX-Viewer for log capture and Web UI features, while pass-through commands such as `codex --help` and `codex auth` continue to run directly.
 
-Uninstall: `ccv --uninstall` or manually delete content between the markers.
+Uninstall: `cxv --uninstall` or manually delete content between the markers.
 
 ## 8. Proxy Configuration (Proxy Profile)
 
@@ -187,7 +188,7 @@ Plugin enable/disable managed via `disabledPlugins` array in `preferences.json`.
 ## 10. Directory Structure
 
 ```
-~/.claude/cc-viewer/               # Log root directory
+~/.codex/cx-viewer/                # Log root directory
 ├── preferences.json               # User preferences
 ├── workspaces.json                # Workspace registry
 ├── profile.json                   # Proxy configuration
@@ -199,7 +200,7 @@ Plugin enable/disable managed via `disabledPlugins` array in `preferences.json`.
 │   └── images/                    # Persistent uploaded image copies
 └── ...
 
-/tmp/cc-viewer-uploads/            # Temporary upload file directory
+/tmp/cx-viewer-uploads/            # Temporary upload file directory
 ```
 
 ## 11. Server Configuration
@@ -226,7 +227,7 @@ Plugin enable/disable managed via `disabledPlugins` array in `preferences.json`.
 |-----|-------------|
 | `cxv_cacheExpireAt` | Cache countdown expiration time |
 | `cxv_cacheType` | Cache type label |
-| `ccv_sseSlim` | Enable SSE incremental pruning (desktop performance optimization) |
-| `ccv_calibrationModel` | KV-Cache context window calibration model |
-| `ccv_fileExplorerOpen` | File explorer panel toggle |
-| `cc-viewer-terminal-width` | Terminal panel width (pixels) |
+| `cxv_viewMode` | Current responsive view mode override |
+| `cxv_calibrationModel` | Context window calibration model |
+| `cxv_fileExplorerOpen` | File explorer panel toggle |
+| `cx-viewer-terminal-width` | Terminal panel width (pixels) |

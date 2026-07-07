@@ -2,48 +2,41 @@
 
 ## What is Prompt Caching?
 
-When you chat with Claude, each API request sends the full conversation context (system prompt + tool definitions + historical messages). Anthropic's prompt caching mechanism caches previously computed prefix content on the server side. If the prefix of a subsequent request matches, the cached result is reused directly, skipping redundant computation and significantly reducing latency and cost.
+When you work with Codex, the model request can include system instructions, tool definitions, and conversation history. If the upstream OpenAI/Codex service reports cached input tokens, CX-Viewer surfaces those values as cache usage.
 
-In cc-viewer, this mechanism is referred to as "KV-Cache", corresponding to Anthropic's API-level prompt caching — not the key-value cache within the transformer attention layers of the LLM itself.
+In CX-Viewer, "KV-Cache" is a UI shorthand for provider-reported prompt/cache reuse. It is not the key-value cache inside transformer attention layers.
 
 ## How Caching Works
 
-Anthropic's prompt caching concatenates the cache key in a fixed order:
+CX-Viewer does not infer cache hits from request-body annotations. It compares MainAgent bodies for diagnostics and displays cache usage only when response usage fields report cached tokens.
 
 ```
-Tools → System Prompt → Messages (up to cache breakpoint)
+Tools / System Prompt / Messages
 ```
 
-As long as this prefix exactly matches any request within the TTL window, the API returns a cache hit (`cache_read_input_tokens`) rather than recomputing (`cache_creation_input_tokens`).
-
-> **Claude Code does not strongly depend on the `cache_control` attribute. The server will strip some of these attributes accordingly, yet caching still works well. So not seeing `cache_control` does not mean the content is not cached.**
->
-> For special clients like Claude Code, Anthropic's server does not fully rely on the `cache_control` attribute in requests to determine caching behavior. The server automatically applies caching policies to specific fields (such as system prompt and tool definitions), even when the request does not explicitly include `cache_control` markers. Therefore, when you don't see this attribute in the request body, don't be puzzled — the server has already performed the caching operation behind the scenes, it simply hasn't exposed this information to the client. This is a tacit understanding between Claude Code and the Anthropic API.
+For OpenAI Responses usage, cached tokens may appear as `input_tokens_details.cached_tokens`; CX-Viewer normalizes that to `cache_read_input_tokens`.
 
 ## What is "Current KV-Cache Content"?
 
-The "Current KV-Cache Content" displayed in cc-viewer is extracted from the most recent MainAgent request — specifically the content before the cache boundary (cache breakpoint). It includes:
+The "Current KV-Cache Content" displayed in CX-Viewer is extracted from the most recent MainAgent request. It includes:
 
-- **System Prompt**: Claude Code's system instructions, including core agent directives, tool usage specifications, CLAUDE.md project instructions, environment information, etc.
+- **System Prompt**: Codex system instructions, including core agent directives, tool usage specifications, `AGENTS.md` project instructions, environment information, etc.
 - **Tools**: The current list of available tool definitions (such as Read, Write, Bash, Agent, MCP tools, etc.)
-- **Messages**: The portion of conversation history that is cached (typically earlier messages, up to the last `cache_control` marker)
+- **Messages**: The conversation history that was present in the most recent MainAgent request
 
 ## Why View Cache Content?
 
-1. **Understand Context**: See what Claude currently "remembers" to help you judge whether its behavior matches expectations
-2. **Cost Optimization**: Cache hits cost far less than recomputation. Viewing cache content helps you understand why certain requests triggered a cache rebuild
-3. **Debug Conversations**: When Claude's responses don't match expectations, checking cache content confirms whether the system prompt and historical messages are correct
+1. **Understand Context**: See what Codex sent to the model for the current turn
+2. **Cost/Latency Diagnostics**: Cache usage can explain why some turns are cheaper or faster than others
+3. **Debug Conversations**: When Codex responses do not match expectations, checking context confirms whether the system prompt and historical messages are correct
 4. **Context Quality Monitoring**: During debugging, configuration changes, or prompt adjustments, KV-Cache-Text provides a centralized view to quickly confirm whether core context has degraded or been unexpectedly polluted — without manually reviewing raw messages
 
 ## Multi-Level Caching Strategy
 
-The KV-Cache corresponding to Claude Code is not a single cache. The server generates separate caches for Tools and System Prompt, independent from the Messages cache. The benefit of this design is: when the messages stack becomes corrupted (e.g., context truncation, message modification) and needs rebuilding, it won't invalidate the Tools and System Prompt caches along with it, avoiding a full recomputation.
-
-This is a current server-side optimization strategy — because Tool definitions and the System Prompt remain relatively stable during normal use and rarely change. Caching them separately minimizes unnecessary rebuild overhead. So when you observe the cache, you'll notice that apart from Tools rebuilds which require a full cache refresh, disruptions to the System Prompt and Messages still have inheritable caches available.
+Provider-side caching details can vary by model, endpoint, and account. CX-Viewer therefore treats cache metrics as reported facts, not as a locally guaranteed cache model.
 
 ## Cache Lifecycle
 
-- **Creation**: On first request or after cache expiration, the API creates a new cache (`cache_creation_input_tokens`)
-- **Hit**: Subsequent requests with matching prefixes reuse the cache (`cache_read_input_tokens`)
-- **Expiration**: Cache has a 5-minute TTL (time-to-live) and automatically expires after timeout
-- **Rebuild**: When system prompt, tool list, model, or message content changes, the cache key no longer matches, triggering a rebuild at the corresponding level
+- **Hit**: The response reports cached input tokens (`cache_read_input_tokens`)
+- **No hit / unknown**: The response does not report cached input tokens
+- **Context change**: System prompt, tool list, model, or message content changed compared with the previous MainAgent request
