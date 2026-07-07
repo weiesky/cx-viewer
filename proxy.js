@@ -216,9 +216,17 @@ export function startProxy() {
 
       // Use the patched fetch (which logs to cx-viewer)
       try {
-        // Convert incoming headers
+        // Convert incoming headers, stripping hop-by-hop + length/encoding headers.
+        // undici/fetch computes its own content-length for the Buffer body and
+        // manages the connection; forwarding Codex's content-length /
+        // transfer-encoding / connection headers makes undici reject the request
+        // (→ 502). Host is dropped so fetch sets it from the upstream URL.
         const headers = { ...req.headers };
-        delete headers.host; // Let fetch set the host
+        for (const h of ['host', 'connection', 'keep-alive', 'proxy-authenticate',
+          'proxy-authorization', 'te', 'trailer', 'transfer-encoding', 'upgrade',
+          'content-length']) {
+          delete headers[h];
+        }
 
         const buffers = [];
         for await (const chunk of req) {
@@ -287,13 +295,13 @@ export function startProxy() {
           res.end();
         }
       } catch (err) {
-        // Log proxy errors only when debugging
-        if (process.env.CXV_DEBUG) {
-          console.error('[CX-Viewer Proxy] Error:', err);
-        }
-
+        // Surface the real reason: log it and include it in the 502 body so it
+        // shows up directly in Codex's error message (aids diagnosis without
+        // needing CXV_DEBUG). Only the upstream host is revealed, not credentials.
+        const detail = err && err.message ? err.message : String(err);
+        console.error(`[CX-Viewer Proxy] Forward to ${fullUrl} failed: ${detail}`);
         res.statusCode = 502;
-        res.end('Proxy Error');
+        res.end(`Proxy Error: ${detail} (upstream: ${fullUrl})`);
       }
     });
 
