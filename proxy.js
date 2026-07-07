@@ -211,8 +211,17 @@ export function stopProxy() {
 export function startProxy() {
   return ensureProxyInterceptor().then(() => new Promise((resolve, reject) => {
     const server = createServer(async (req, res) => {
-      const { fullUrl, originalBaseUrl, authMode } = resolveUpstream(req.url, req.headers);
-      if (process.env.CXV_DEBUG) console.error(`[CX-Proxy] ${req.method} ${req.url} [${authMode}] → ${fullUrl}`);
+      // Normalize the request target. When a client (or an upstream HTTP proxy
+      // like Clash/mihomo) routes to us in absolute-form —
+      // `POST http://127.0.0.1:PORT/v1/responses` — Node sets req.url to the full
+      // URL. Reduce it to path+query so path routing works. (We also add loopback
+      // to NO_PROXY when spawning Codex so it connects directly, origin-form.)
+      let reqPath = req.url;
+      if (/^https?:\/\//i.test(reqPath)) {
+        try { const u = new URL(reqPath); reqPath = u.pathname + u.search; } catch { }
+      }
+      const { fullUrl, originalBaseUrl, authMode } = resolveUpstream(reqPath, req.headers);
+      if (process.env.CXV_DEBUG) console.error(`[CX-Proxy] ${req.method} ${reqPath} [${authMode}] → ${fullUrl}`);
 
       // Use the patched fetch (which logs to cx-viewer)
       try {
@@ -227,6 +236,10 @@ export function startProxy() {
           'content-length']) {
           delete headers[h];
         }
+        // Force an uncompressed upstream response (like claude-tap). Forwarding
+        // Codex's Accept-Encoding (gzip/br/zstd) risks the client and our
+        // decompression disagreeing, corrupting the SSE stream; identity avoids it.
+        headers['accept-encoding'] = 'identity';
 
         const buffers = [];
         for await (const chunk of req) {

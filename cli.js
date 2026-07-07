@@ -326,6 +326,19 @@ async function runCliMode(extraCodexArgs = [], cwd) {
   // 的模型端点；绝不覆盖 chatgpt_base_url（OAuth 刷新令牌等仍走真实 chatgpt 后端）。
   const { startProxy, stopProxy } = await import('./proxy.js');
   const { readOriginalOpenAiBaseUrl } = await import('./lib/codex-config.js');
+  // Ensure Codex reaches our loopback proxy DIRECTLY. If the user runs an
+  // upstream HTTP proxy (Clash/mihomo etc.) via http_proxy/https_proxy with no
+  // no_proxy exclusion, Codex would tunnel even the 127.0.0.1 request through it,
+  // and we'd receive an absolute-form URL / a broken double-hop. Excluding
+  // loopback in NO_PROXY does not affect our own outbound to chatgpt.com/openai
+  // (those aren't loopback and still go through the user proxy).
+  {
+    const loopback = '127.0.0.1,localhost,::1';
+    const existing = process.env.NO_PROXY || process.env.no_proxy || '';
+    const merged = existing ? `${existing},${loopback}` : loopback;
+    process.env.NO_PROXY = merged;
+    process.env.no_proxy = merged;
+  }
   let _proxyPort = null;
   let configArgs = [];
   try {
