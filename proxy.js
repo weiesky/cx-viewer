@@ -1,21 +1,18 @@
 
-import { createServer, request as httpRequest } from 'node:http';
-import { request as httpsRequest } from 'node:https';
-import { readFileSync, existsSync, appendFileSync } from 'node:fs';
-import { join, basename } from 'node:path';
+import { createServer } from 'node:http';
+import { readFileSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { DEFAULT_API_BASE } from './lib/constants.js';
 import { homedir } from 'node:os';
-import { extractApiErrorMessage, formatProxyRequestError } from './lib/proxy-errors.js';
+import { extractApiErrorMessage } from './lib/proxy-errors.js';
 import { isStaleLocalCodexBaseUrl } from './lib/codex-config.js';
 
 let _interceptorReady = null;
-let _proxyLogFile = null;
 
 async function ensureProxyInterceptor() {
   if (process.env.CXV_TEST === '1') return;
   if (!_interceptorReady) {
     _interceptorReady = import('./interceptor.js').then(mod => {
-      _proxyLogFile = mod.LOG_FILE;
       mod.setupInterceptor();
     }).catch(err => {
       if (process.env.CXV_DEBUG) console.warn('[CX-Proxy] interceptor setup skipped:', err.message);
@@ -92,82 +89,113 @@ function buildUpstreamUrl(reqUrl) {
   return { fullUrl: `${cleanBase}/${cleanReq}`, originalBaseUrl };
 }
 
-// ─── WebSocket frame parser (for logging) ───
-// Minimal parser to extract text messages from WebSocket frames.
-// Only handles unfragmented text frames (opcode 0x01) for simplicity.
+// ─── Auth-aware upstream routing (PTY / -c redirect mode) ───
+// Codex is redirected to this proxy via `-c openai_base_url="http://127.0.0.1:PORT/v1"`,
+// so BOTH ChatGPT-OAuth and API-key sessions arrive here at the SAME path
+// (`/v1/responses`). The path therefore can't tell the modes apart — we route by
+// the `ChatGPT-Account-Id` request header (present only in OAuth mode), falling
+// back to ~/.codex/auth.json. Codex appended its suffix to our injected `/v1`
+// base, so we strip that prefix and re-append the suffix to the REAL upstream
+// base (which may itself carry a path, e.g. a custom gateway).
 
-function parseWsFrames(buf) {
-  const messages = [];
-  let offset = 0;
-  while (offset < buf.length) {
-    if (offset + 2 > buf.length) break;
-    const firstByte = buf[offset];
-    const secondByte = buf[offset + 1];
-    const fin = (firstByte & 0x80) !== 0;
-    const opcode = firstByte & 0x0f;
-    const masked = (secondByte & 0x80) !== 0;
-    let payloadLen = secondByte & 0x7f;
-    let headerLen = 2;
+const INJECTED_BASE_PATH = '/v1';
 
-    if (payloadLen === 126) {
-      if (offset + 4 > buf.length) break;
-      payloadLen = buf.readUInt16BE(offset + 2);
-      headerLen = 4;
-    } else if (payloadLen === 127) {
-      if (offset + 10 > buf.length) break;
-      // Read as BigUInt64BE, but limit to safe integer
-      payloadLen = Number(buf.readBigUInt64BE(offset + 2));
-      headerLen = 10;
-    }
+// The proxy's own listen port, set in startProxy(); used to break self-forward loops.
+let _proxyOwnPort = null;
 
-    if (masked) headerLen += 4;
-    const totalLen = headerLen + payloadLen;
-    if (offset + totalLen > buf.length) break;
+// Test hook: set/reset the remembered own port without starting a server.
+export function _setProxyOwnPortForTests(port) { _proxyOwnPort = port; }
 
-    // Only parse text frames (opcode 1) with FIN bit
-    if (fin && opcode === 1) {
-      let payload = buf.slice(offset + headerLen, offset + headerLen + payloadLen);
-      if (masked) {
-        const maskKey = buf.slice(offset + headerLen - 4, offset + headerLen);
-        payload = Buffer.from(payload);
-        for (let i = 0; i < payload.length; i++) {
-          payload[i] ^= maskKey[i & 3];
-        }
-      }
-      try {
-        messages.push(payload.toString('utf-8'));
-      } catch {}
-    }
-    offset += totalLen;
-  }
-  return messages;
+function _defaultOpenAiBase() {
+  return `${DEFAULT_API_BASE.replace(/\/+$/, '')}/v1`;
+}
+function _defaultChatgptBase() {
+  return 'https://chatgpt.com/backend-api/codex';
 }
 
-// Log a WebSocket session (connect + messages) to the interceptor JSONL file
-function logWsEntry(url, direction, messages, startTime) {
-  if (!_proxyLogFile) return;
+// Lazily-read ChatGPT-OAuth status from ~/.codex/auth.json, cached for the life
+// of the proxy (auth mode is stable within a session; the definitive signal is
+// the per-request ChatGPT-Account-Id header, so this is only a fallback).
+let _authJsonOAuth = null; // null = not yet read
+function _authJsonIsOAuth() {
+  if (_authJsonOAuth !== null) return _authJsonOAuth;
+  _authJsonOAuth = false;
   try {
-    for (const msg of messages) {
-      let parsed = null;
-      try { parsed = JSON.parse(msg); } catch {}
-      const entry = {
-        timestamp: new Date().toISOString(),
-        project: (() => { try { return basename(process.cwd()); } catch { return 'unknown'; } })(),
-        url,
-        method: 'WS',
-        isWebSocket: true,
-        wsDirection: direction, // 'send' (client→upstream) or 'recv' (upstream→client)
-        body: parsed || msg,
-        response: direction === 'recv' ? { status: 200, body: parsed || msg } : null,
-        duration: Date.now() - startTime,
-        isStream: false,
-        mainAgent: false,
-      };
-      appendFileSync(_proxyLogFile, JSON.stringify(entry) + '\n---\n');
+    const authPath = join(homedir(), '.codex', 'auth.json');
+    if (existsSync(authPath)) {
+      const a = JSON.parse(readFileSync(authPath, 'utf-8'));
+      if (a && a.tokens && a.tokens.access_token) _authJsonOAuth = true;
     }
-  } catch (err) {
-    if (process.env.CXV_DEBUG) console.warn('[CX-Viewer Proxy] logWsEntry error:', err.message);
+  } catch { }
+  return _authJsonOAuth;
+}
+
+export function isOAuthRequest(headers = {}) {
+  // Node lowercases incoming header names; the account-id header is definitive.
+  if (headers['chatgpt-account-id']) return true;
+  if (process.env.CXV_TEST === '1') return false; // deterministic routing in tests
+  return _authJsonIsOAuth();
+}
+
+function _isSelfForward(fullUrl) {
+  try {
+    const u = new URL(fullUrl);
+    const host = u.hostname.replace(/^\[|\]$/g, '');
+    const loopback = host === '127.0.0.1' || host === 'localhost' || host === '::1' || host === '::ffff:127.0.0.1';
+    if (!loopback) return false;
+    const port = Number(u.port) || (u.protocol === 'https:' ? 443 : 80);
+    return _proxyOwnPort != null && port === _proxyOwnPort;
+  } catch {
+    return false;
   }
+}
+
+// Strip our injected base path (`/v1`) prefix so we recover the suffix Codex
+// appended (e.g. `/responses`). Tolerant: unmatched paths pass through verbatim.
+// The caller re-adds a leading slash, so returning `/responses` or `?x=1` is fine.
+function _stripInjectedPrefix(reqUrl) {
+  if (reqUrl === INJECTED_BASE_PATH) return '/';
+  if (reqUrl.startsWith(INJECTED_BASE_PATH + '/') || reqUrl.startsWith(INJECTED_BASE_PATH + '?')) {
+    return reqUrl.slice(INJECTED_BASE_PATH.length);
+  }
+  return reqUrl;
+}
+
+export function resolveUpstream(reqUrl, headers = {}) {
+  const isOAuth = isOAuthRequest(headers);
+  const suffix = _stripInjectedPrefix(reqUrl);
+  const cleanSuffix = suffix.startsWith('/') ? suffix : '/' + suffix;
+
+  let cleanBase;
+  let fallbackBase;
+  if (isOAuth) {
+    // ChatGPT-OAuth: model traffic must go to the chatgpt backend, not the
+    // openai host. Strip our injected /v1 prefix and re-append the suffix.
+    cleanBase = (process.env.CXV_ORIGINAL_CHATGPT_BASE_URL || _defaultChatgptBase()).replace(/\/+$/, '');
+    fallbackBase = _defaultChatgptBase().replace(/\/+$/, '');
+  } else if (process.env.CXV_ORIGINAL_BASE_URL) {
+    // CLI PTY redirect mode: real upstream captured in CXV_ORIGINAL_BASE_URL.
+    cleanBase = process.env.CXV_ORIGINAL_BASE_URL.replace(/\/+$/, '');
+    fallbackBase = _defaultOpenAiBase();
+  } else {
+    // Backward-compat (Electron / SDK proxy callers, no redirect env): preserve
+    // the original config/OPENAI_BASE_URL resolution so custom gateways still
+    // route correctly. buildUpstreamUrl uses the raw reqUrl, not the stripped
+    // suffix, matching that path's historical behavior.
+    let { fullUrl } = buildUpstreamUrl(reqUrl);
+    if (_isSelfForward(fullUrl)) {
+      fullUrl = _defaultOpenAiBase().replace(/\/+$/, '') + cleanSuffix;
+    }
+    return { fullUrl, originalBaseUrl: getOriginalBaseUrl(), authMode: 'API Key' };
+  }
+
+  let fullUrl = cleanBase + cleanSuffix;
+  // Never forward to ourselves (would loop): fall back to the public default.
+  if (_isSelfForward(fullUrl)) {
+    fullUrl = fallbackBase + cleanSuffix;
+  }
+
+  return { fullUrl, originalBaseUrl: cleanBase, authMode: isOAuth ? 'OAuth' : 'API Key' };
 }
 
 let _proxyServer = null;
@@ -177,13 +205,14 @@ export function stopProxy() {
     try { _proxyServer.close(); } catch { }
     _proxyServer = null;
   }
+  _proxyOwnPort = null;
 }
 
 export function startProxy() {
   return ensureProxyInterceptor().then(() => new Promise((resolve, reject) => {
     const server = createServer(async (req, res) => {
-      const { fullUrl, originalBaseUrl } = buildUpstreamUrl(req.url);
-      if (process.env.CXV_DEBUG) console.error(`[CX-Proxy] ${req.method} ${req.url} → ${originalBaseUrl}`);
+      const { fullUrl, originalBaseUrl, authMode } = resolveUpstream(req.url, req.headers);
+      if (process.env.CXV_DEBUG) console.error(`[CX-Proxy] ${req.method} ${req.url} [${authMode}] → ${fullUrl}`);
 
       // Use the patched fetch (which logs to cx-viewer)
       try {
@@ -268,112 +297,21 @@ export function startProxy() {
       }
     });
 
-    // ─── WebSocket upgrade handling ───
-    // Codex uses WebSocket for its /responses endpoint.
-    // We proxy the WebSocket connection to the upstream and intercept messages for logging.
-    server.on('upgrade', (clientReq, clientSocket, clientHead) => {
-      const { fullUrl: httpUrl, originalBaseUrl } = buildUpstreamUrl(clientReq.url);
-      const startTime = Date.now();
-
-      if (process.env.CXV_DEBUG) console.error(`[CX-Proxy WS] UPGRADE ${clientReq.url} → ${originalBaseUrl}`);
-
-      // Build upstream URL
-      let upstreamUrl;
+    // ─── WebSocket upgrade handling: REFUSE to force HTTP/SSE fallback ───
+    // Codex's built-in openai provider prefers a Responses-over-WebSocket
+    // transport and only falls back to HTTP/SSE when the WS attempt fails. A
+    // cleartext logging proxy can only observe the HTTP path, so we deliberately
+    // refuse the upgrade with a well-formed non-101 response (not a bare socket
+    // reset, which can read as a transient network error and trigger a retry
+    // loop). Codex then downgrades to HTTP/SSE, which we log normally.
+    server.on('upgrade', (clientReq, clientSocket) => {
+      if (process.env.CXV_DEBUG) console.error(`[CX-Proxy WS] refusing upgrade ${clientReq.url} → forcing HTTP/SSE fallback`);
       try {
-        upstreamUrl = new URL(httpUrl);
-      } catch (err) {
-        if (process.env.CXV_DEBUG) console.error('[CX-Proxy WS] Invalid upstream URL:', httpUrl);
-        clientSocket.destroy();
-        return;
+        clientSocket.write('HTTP/1.1 426 Upgrade Required\r\nConnection: close\r\nContent-Length: 0\r\n\r\n');
+        clientSocket.end();
+      } catch {
+        try { clientSocket.destroy(); } catch { }
       }
-
-      const isHttps = upstreamUrl.protocol === 'https:';
-      const requestFn = isHttps ? httpsRequest : httpRequest;
-
-      // Forward all headers except host
-      const headers = { ...clientReq.headers };
-      headers.host = upstreamUrl.host;
-
-      const proxyReq = requestFn({
-        hostname: upstreamUrl.hostname,
-        port: upstreamUrl.port || (isHttps ? 443 : 80),
-        path: upstreamUrl.pathname + upstreamUrl.search,
-        method: 'GET',
-        headers,
-      });
-
-      proxyReq.on('upgrade', (proxyRes, proxySocket, proxyHead) => {
-        if (process.env.CXV_DEBUG) console.error(`[CX-Proxy WS] Connected to upstream ${upstreamUrl.host}`);
-
-        // Send 101 response back to client
-        let response = `HTTP/1.1 101 ${proxyRes.statusMessage || 'Switching Protocols'}\r\n`;
-        const rawHeaders = proxyRes.rawHeaders;
-        for (let i = 0; i < rawHeaders.length; i += 2) {
-          response += `${rawHeaders[i]}: ${rawHeaders[i + 1]}\r\n`;
-        }
-        response += '\r\n';
-
-        clientSocket.write(response);
-        if (proxyHead.length > 0) clientSocket.write(proxyHead);
-        if (clientHead.length > 0) proxySocket.write(clientHead);
-
-        const wsUrl = httpUrl.replace(/^http/, 'ws');
-
-        // Intercept data for logging (non-blocking, best-effort)
-        clientSocket.on('data', (data) => {
-          try {
-            const msgs = parseWsFrames(data);
-            if (msgs.length > 0) logWsEntry(wsUrl, 'send', msgs, startTime);
-          } catch {}
-          // Forward to upstream (socket.pipe handles this, but we log before pipe)
-        });
-
-        proxySocket.on('data', (data) => {
-          try {
-            const msgs = parseWsFrames(data);
-            if (msgs.length > 0) logWsEntry(wsUrl, 'recv', msgs, startTime);
-          } catch {}
-        });
-
-        // Pipe bidirectionally
-        proxySocket.pipe(clientSocket);
-        clientSocket.pipe(proxySocket);
-
-        // Handle errors and close
-        proxySocket.on('error', (err) => {
-          if (process.env.CXV_DEBUG) console.error('[CX-Proxy WS] Upstream socket error:', err.message);
-          clientSocket.destroy();
-        });
-        clientSocket.on('error', (err) => {
-          if (process.env.CXV_DEBUG) console.error('[CX-Proxy WS] Client socket error:', err.message);
-          proxySocket.destroy();
-        });
-        proxySocket.on('close', () => clientSocket.destroy());
-        clientSocket.on('close', () => proxySocket.destroy());
-      });
-
-      // Handle non-upgrade response (e.g. 401, 403)
-      proxyReq.on('response', (proxyRes) => {
-        if (process.env.CXV_DEBUG) {
-          console.error(`[CX-Proxy WS] Non-upgrade response: ${proxyRes.statusCode}`);
-        }
-        // Forward the HTTP response to the client socket
-        let responseHead = `HTTP/1.1 ${proxyRes.statusCode} ${proxyRes.statusMessage}\r\n`;
-        const rawHeaders = proxyRes.rawHeaders;
-        for (let i = 0; i < rawHeaders.length; i += 2) {
-          responseHead += `${rawHeaders[i]}: ${rawHeaders[i + 1]}\r\n`;
-        }
-        responseHead += '\r\n';
-        clientSocket.write(responseHead);
-        proxyRes.pipe(clientSocket);
-      });
-
-      proxyReq.on('error', (err) => {
-        if (process.env.CXV_DEBUG) console.error('[CX-Proxy WS] Proxy request error:', err.message);
-        clientSocket.destroy();
-      });
-
-      proxyReq.end();
     });
 
     // Store server reference for stopProxy()
@@ -382,6 +320,7 @@ export function startProxy() {
     // Start on random port
     server.listen(0, '127.0.0.1', () => {
       const address = server.address();
+      _proxyOwnPort = address.port;
       resolve(address.port);
     });
 
