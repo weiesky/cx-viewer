@@ -80,6 +80,47 @@ test('proxy forwards to the correct upstream host/path and preserves auth header
     assert.equal(seen.url, '/backend-api/codex/responses');
     assert.equal(seen.headers['chatgpt-account-id'], 'acct-123');
     assert.equal(seen.headers['authorization'], 'Bearer oauth-token');
+    // Accept-Encoding is forced to identity so the SSE stream comes back plain.
+    assert.equal(seen.headers['accept-encoding'], 'identity');
+  } finally {
+    stopProxy();
+    upstream.close();
+    await once(upstream, 'close');
+  }
+});
+
+test('absolute-form request target (via upstream HTTP proxy) is normalized to path', async () => {
+  // A proxy-routed request arrives with an absolute request target, e.g.
+  // `POST http://127.0.0.1:PORT/v1/responses`. The proxy must reduce it to the
+  // path before routing, not concatenate the whole URL onto the upstream base.
+  let seen = null;
+  const upstream = createServer((req, res) => {
+    seen = { url: req.url };
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end('{"ok":true}');
+  });
+  upstream.listen(0, '127.0.0.1');
+  await once(upstream, 'listening');
+  const upstreamPort = upstream.address().port;
+  process.env.CXV_ORIGINAL_CHATGPT_BASE_URL = `http://127.0.0.1:${upstreamPort}/backend-api/codex`;
+  const proxyPort = await startProxy();
+  try {
+    const done = new Promise((resolve) => {
+      const preq = httpRequest({
+        host: '127.0.0.1',
+        port: proxyPort,
+        method: 'POST',
+        // absolute-form request target, as an HTTP proxy would forward
+        path: `http://127.0.0.1:${proxyPort}/v1/responses`,
+        headers: { ...OAUTH_HEADERS, 'content-type': 'application/json' },
+      });
+      preq.on('response', (r) => { r.resume(); r.on('end', () => resolve(r.statusCode)); });
+      preq.on('error', () => resolve('error'));
+      preq.end('{"model":"gpt"}');
+    });
+    const status = await done;
+    assert.equal(status, 200);
+    assert.equal(seen.url, '/backend-api/codex/responses');
   } finally {
     stopProxy();
     upstream.close();
