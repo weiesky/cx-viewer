@@ -11,6 +11,7 @@ const APIKEY_HEADERS = { authorization: 'Bearer sk-test' };
 test.beforeEach(() => {
   process.env.CXV_ORIGINAL_BASE_URL = 'https://api.openai.com/v1';
   process.env.CXV_ORIGINAL_CHATGPT_BASE_URL = 'https://chatgpt.com/backend-api/codex';
+  process.env.CXV_TEST = '1';  // skip auth.json fallback for deterministic routing
   _setProxyOwnPortForTests(null);
 });
 

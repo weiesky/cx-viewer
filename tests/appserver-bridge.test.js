@@ -1429,9 +1429,9 @@ test('app-server bridge records Codex approval server requests and responses', (
     assert.equal(resolved?.response?.body?.pendingMethod, 'item/commandExecution/requestApproval');
     assert.equal(resolved?.response?.body?.pendingName, 'Bash');
 
+    // hook/started and hook/completed are intentionally suppressed from the log
     const hookCompleted = entries.find(entry => entry.body?.event_name === 'hook.completed');
-    assert.equal(hookCompleted?.response?.body?.run?.id, 'hook-1');
-    assert.equal(hookCompleted?.response?.body?.run?.status, 'completed');
+    assert.equal(hookCompleted, undefined);
 
     const rootTurn = entries.find(entry => entry.body?.metadata?.thread_id === 'root-thread');
     assert.equal(rootTurn?.response?.body?.content?.[0]?.text, 'approval handled');

@@ -320,38 +320,49 @@ async function runCliMode(extraCodexArgs = [], cwd) {
     console.error('[CX Viewer] Failed to inject OTel config:', err.message);
   }
 
-  // 启动 HTTP 抓包代理：通过 `-c openai_base_url` 把 Codex 的模型流量（/responses）
-  // 重定向到本地明文代理，捕获真实 HTTP 报文。`-c` 是进程级覆盖，不落盘、无需清理、
-  // 多实例隔离。仅覆盖 openai_base_url —— 它同时决定 API-Key 与 ChatGPT-OAuth 两种模式
-  // 的模型端点；绝不覆盖 chatgpt_base_url（OAuth 刷新令牌等仍走真实 chatgpt 后端）。
-  const { startProxy, stopProxy } = await import('./proxy.js');
-  const { readOriginalOpenAiBaseUrl } = await import('./lib/codex-config.js');
-  // Ensure Codex reaches our loopback proxy DIRECTLY. If the user runs an
-  // upstream HTTP proxy (Clash/mihomo etc.) via http_proxy/https_proxy with no
-  // no_proxy exclusion, Codex would tunnel even the 127.0.0.1 request through it,
-  // and we'd receive an absolute-form URL / a broken double-hop. Excluding
-  // loopback in NO_PROXY does not affect our own outbound to chatgpt.com/openai
-  // (those aren't loopback and still go through the user proxy).
-  {
-    const loopback = '127.0.0.1,localhost,::1';
-    const existing = process.env.NO_PROXY || process.env.no_proxy || '';
-    const merged = existing ? `${existing},${loopback}` : loopback;
-    process.env.NO_PROXY = merged;
-    process.env.no_proxy = merged;
-  }
+  // Start HTTP capture proxy for all auth modes (API-key and ChatGPT/OAuth).
+  // proxy.js detects OAuth via the chatgpt-account-id request header and routes
+  // to chatgpt.com/backend-api/codex; API-key traffic routes to api.openai.com.
   let _proxyPort = null;
   let configArgs = [];
-  try {
-    _proxyPort = await startProxy();
-    // 记录真实上游供代理转发；缺省回退官方端点（务必非空，Codex 会过滤空覆盖值）
-    process.env.CXV_ORIGINAL_BASE_URL = readOriginalOpenAiBaseUrl() || 'https://api.openai.com/v1';
-    if (!process.env.CXV_ORIGINAL_CHATGPT_BASE_URL) {
-      process.env.CXV_ORIGINAL_CHATGPT_BASE_URL = 'https://chatgpt.com/backend-api/codex';
+  {
+    const { readFileSync, existsSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const { homedir } = await import('node:os');
+    const { startProxy, stopProxy } = await import('./proxy.js');
+    const { readOriginalOpenAiBaseUrl } = await import('./lib/codex-config.js');
+
+    let authMode = 'chatgpt';
+    try {
+      const authPath = join(homedir(), '.codex', 'auth.json');
+      if (existsSync(authPath)) {
+        const auth = JSON.parse(readFileSync(authPath, 'utf-8'));
+        authMode = auth.auth_mode || 'chatgpt';
+      }
+    } catch { }
+
+    {
+      const loopback = '127.0.0.1,localhost,::1';
+      const existing = process.env.NO_PROXY || process.env.no_proxy || '';
+      const merged = existing ? `${existing},${loopback}` : loopback;
+      process.env.NO_PROXY = merged;
+      process.env.no_proxy = merged;
     }
-    configArgs = ['-c', `openai_base_url="http://127.0.0.1:${_proxyPort}/v1"`];
-    console.log(`[CX Viewer] HTTP capture proxy started on 127.0.0.1:${_proxyPort}`);
-  } catch (err) {
-    console.warn('[CX Viewer] HTTP capture proxy failed to start, continuing without raw HTTP capture:', err.message);
+    try {
+      _proxyPort = await startProxy();
+      if (authMode === 'chatgpt') {
+        process.env.CXV_ORIGINAL_BASE_URL = 'https://chatgpt.com/backend-api/codex';
+      } else {
+        process.env.CXV_ORIGINAL_BASE_URL = readOriginalOpenAiBaseUrl() || 'https://api.openai.com/v1';
+      }
+      if (!process.env.CXV_ORIGINAL_CHATGPT_BASE_URL) {
+        process.env.CXV_ORIGINAL_CHATGPT_BASE_URL = 'https://chatgpt.com/backend-api/codex';
+      }
+      configArgs = ['-c', `openai_base_url="http://127.0.0.1:${_proxyPort}/v1"`];
+      console.log(`[CX Viewer] HTTP capture proxy started on 127.0.0.1:${_proxyPort} (${authMode} mode)`);
+    } catch (err) {
+      console.warn('[CX Viewer] HTTP capture proxy failed to start:', err.message);
+    }
   }
 
   // 启动 App-Server Bridge（WebSocket 中间代理，获取完整执行日志）

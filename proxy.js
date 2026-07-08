@@ -124,7 +124,7 @@ function _authJsonIsOAuth() {
     const authPath = join(homedir(), '.codex', 'auth.json');
     if (existsSync(authPath)) {
       const a = JSON.parse(readFileSync(authPath, 'utf-8'));
-      if (a && a.tokens && a.tokens.access_token) _authJsonOAuth = true;
+      if (a && a.auth_mode === 'chatgpt') _authJsonOAuth = true;
     }
   } catch { }
   return _authJsonOAuth;
