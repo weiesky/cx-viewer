@@ -316,9 +316,11 @@ export default function FileContentView({
   onClose,
   editorSession,
   scrollToLine,
+  scrollToMatch,
   onUpdateScroll,
   getRestoreScrollSnapshot,
   onConsumeScrollSnapshot,
+  onDirtyChange,
 }) {
   const [content, setContent] = useState(null);
   const [currentContent, setCurrentContent] = useState(null);
@@ -334,7 +336,7 @@ export default function FileContentView({
   // MDX 编辑相关 state
   const [mdxFeatureEnabled] = useState(readMdxFeatureFlag);
   const [extensionDetected, setExtensionDetected] = useState(false);
-  // MDXEditor 运行时解析失败（例如文件含 <system-reminder> 这类自定义 JSX 标签，
+  // MDXEditor 运行时解析失败（例如文件含 <user_instructions> 这类自定义 JSX 标签，
   // mdExtensionDetect 的正则白名单覆盖不到）时置 true，触发降级到旧 marked 渲染。
   // 每次切文件都会在 loadFileContent 里重置——单文件失败不污染其他文件。
   const [mdxParseErrored, setMdxParseErrored] = useState(false);
@@ -362,6 +364,11 @@ export default function FileContentView({
   filePathRef.current = filePath;
 
   const isDirty = content !== null && currentContent !== null && content !== currentContent;
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty, filePath);
+    return () => onDirtyChange?.(false, filePath);
+  }, [isDirty, filePath, onDirtyChange]);
 
   // 「使用 MDX 编辑」= flag 开 + 非移动端 + 无扩展语法 + 未解析失败
   // 移动端直接降级到旧 marked 渲染：屏幕小 + 触屏体验差 + bundle 加载成本高，
@@ -682,17 +689,26 @@ export default function FileContentView({
     };
   }, [loadFileContent]);
 
-  // 滚动到指定行
+  // 滚动到指定行；搜索结果同时选中匹配区间以便在编辑器中高亮。
   useEffect(() => {
     if (scrollToLine && editorViewRef.current && !loading && content !== null) {
       const view = editorViewRef.current;
       const lineNum = Math.min(scrollToLine, view.state.doc.lines);
       const line = view.state.doc.line(lineNum);
-      view.dispatch({
-        effects: EditorView.scrollIntoView(line.from, { y: 'start' }),
-      });
+      if (scrollToMatch && Number.isInteger(scrollToMatch.start) && Number.isInteger(scrollToMatch.end)) {
+        const anchor = Math.min(line.from + scrollToMatch.start, line.to);
+        const head = Math.min(line.from + scrollToMatch.end, line.to);
+        view.dispatch({
+          selection: { anchor, head },
+          effects: EditorView.scrollIntoView(anchor, { y: 'center' }),
+        });
+      } else {
+        view.dispatch({
+          effects: EditorView.scrollIntoView(line.from, { y: 'start' }),
+        });
+      }
     }
-  }, [scrollToLine, loading, content]);
+  }, [scrollToLine, scrollToMatch, loading, content]);
 
   // 旧 marked 预览的 scroll 监听：记百分比（mermaid / 高亮异步渲染会撑高文档，
   // 用百分比比像素鲁棒）。content 变化 → markdown 重渲染 → 重新挂监听。

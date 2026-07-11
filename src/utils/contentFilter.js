@@ -266,7 +266,7 @@ export function isSkillText(text) {
 function stripSystemTags(text) {
   if (!text) return '';
   let out = text
-    .replace(/<system-reminder>[\s\S]*?<\/system-reminder>/gi, '')
+    .replace(/<user_instructions>[\s\S]*?<\/system-reminder>/gi, '')
     .replace(/<local-command-caveat>[\s\S]*?<\/local-command-caveat>/gi, '')
     .replace(/<local-command-stdout>[\s\S]*?<\/local-command-stdout>/gi, '')
     .replace(/<command-name>[\s\S]*?<\/command-name>/gi, '')
@@ -344,7 +344,7 @@ export function isSystemText(text) {
 //   Pass2：系统块（以 chrome 标签起首等被 isSystemText 判真）→ 剥掉已知 chrome 后再判，仍是真实正文则
 //          返回剥离后正文，否则 ''（应隐藏）。
 // 解决「系统标签起首 + 真实正文」字符串被 isSystemText 整条吞掉（数组路径有此回收，字符串路径原先没有）。
-// 注意：用户手打未闭合 <system-reminder>（无配对）仍判系统文本而隐藏——沿用当前行为，本函数不改变它。
+// 注意：用户手打未闭合 <user_instructions>（无配对）仍判系统文本而隐藏——沿用当前行为，本函数不改变它。
 export function extractDisplayText(str) {
   if (typeof str !== 'string' || !str.trim()) return '';
   if (!isSystemText(str)) return str;                  // Pass1：已是用户文本，原样
@@ -473,7 +473,7 @@ export function classifyUserContent(content) {
   let textBlocks = content.filter(b => b.type === 'text' && !isSystemText(b.text));
 
   // 二次提取：从被过滤的系统块中提取嵌入的用户文本
-  // (e.g., /ultraplan 将 skill 指令和用户输入合并在同一 <system-reminder> 块中)
+  // (e.g., /ultraplan 将 skill 指令和用户输入合并在同一 <user_instructions> 块中)
   // stripSystemTags 后再过一次 isSystemText —— 避免对 [Request interrupted ...] 这种纯标记
   // 文本（无可剥离 XML）误回收成用户气泡
   for (const b of content) {

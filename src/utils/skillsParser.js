@@ -63,7 +63,7 @@ export function mergeActiveSkills(fsSkills, historicalSkills) {
   return [...out.values()];
 }
 
-// 从 <system-reminder> 内部文本里抽出 skills 列表。
+// 从 <user_instructions> 内部文本里抽出 skills 列表。
 // 识别 header 句 "skills are available for use with the Skill tool" 后，按行扫描
 // `- <name>: <desc>` 格式；name 内允许冒号（plugin:foo / skill-creator:skill-creator
 // 都按原样保留），按首个 ': '（冒号+空格）切分。description 可跨多行，遇空行 / 下一个 `- `

@@ -8,7 +8,7 @@ import { QRCodeCanvas } from 'qrcode.react';
 import { formatTokenCount, computeTokenStats, computeToolUsageStats, computeSkillUsageStats, computeContextPercent, sumUsageContextTokens } from '../../utils/helpers';
 import { contextSeverityColor } from '../../utils/formatters';
 import { PLAN_AUTO_APPROVE_OPTIONS, autoApproveSelectOptions } from '../../utils/autoApproveOptions';
-import { approvalReviewerSelectOptions } from '../../utils/approvalReviewerOptions';
+import { APPROVALS_REVIEWER_DEFAULT, approvalReviewerSelectOptions } from '../../utils/approvalReviewerOptions';
 import { classifyUserContent, isMainAgent, extractDisplayText } from '../../utils/contentFilter';
 import { parseImOrigin } from '../../utils/imOrigin';
 import { BLUR_MASK_STYLE } from '../../utils/modalMask';
@@ -1684,7 +1684,7 @@ class AppHeader extends React.Component {
               </span>
               <Select
                 size="small"
-                value={approvalsReviewer || 'user'}
+                value={approvalsReviewer || APPROVALS_REVIEWER_DEFAULT}
                 onChange={(value) => onApprovalsReviewerChange && onApprovalsReviewerChange(value)}
                 options={approvalReviewerSelectOptions(t)}
                 style={{ width: 150 }}

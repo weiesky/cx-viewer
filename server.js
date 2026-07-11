@@ -52,7 +52,9 @@ import { listLocalLogs, deleteLogFiles, mergeLogFiles } from './lib/log-manageme
 import { countLogEntries, streamRawEntriesAsync, readPagedEntries } from './lib/log-stream.js';
 import { listSkills, toggleSkill, deleteSkill, importSkillUpload, imSkillRoots, imSkillImportRoot } from './lib/skills-api.js';
 import { readCodexGlobalConfig, updateCodexGlobalConfig } from './lib/codex-config.js';
-import { isSupportedApprovalsReviewer, normalizeApprovalsReviewer, shouldDeferPermissionHookToCodex } from './lib/approval-reviewer.js';
+import { APPROVALS_REVIEWER_DEFAULT, isSupportedApprovalsReviewer, normalizeApprovalsReviewer, shouldDeferPermissionHookToCodex } from './lib/approval-reviewer.js';
+import { searchCode } from './lib/code-search.js';
+import { searchReplace } from './lib/code-replace.js';
 
 
 // 动态获取 getPrefsFile()（LOG_DIR 可能在运行时被 setLogDir 修改）
@@ -82,9 +84,7 @@ export function setCodexApprovalsReviewerUpdater(fn) {
   _codexApprovalsReviewerUpdater = typeof fn === 'function' ? fn : null;
   if (_codexApprovalsReviewerUpdater) {
     const saved = getApprovalsReviewerPreference();
-    if (saved) {
-      _codexApprovalsReviewerUpdater(saved);
-    }
+    _codexApprovalsReviewerUpdater(saved || APPROVALS_REVIEWER_DEFAULT);
   }
 }
 
@@ -214,6 +214,81 @@ function encodeStableId(value) {
 
 function currentProjectDir() {
   return process.env.CXV_PROJECT_DIR || process.cwd();
+}
+
+const SEARCH_ENGINES = new Set(['auto', 'ripgrep', 'node']);
+const SEARCH_REPLACE_SCOPES = new Set(['all', 'file', 'match']);
+
+function normalizeSearchGlobs(value) {
+  return (Array.isArray(value)
+    ? value.map((item) => String(item).trim())
+    : String(value || '').split(',').map((item) => item.trim()))
+    .filter((item) => item && item.length <= 200)
+    .slice(0, 20);
+}
+
+async function handleCodeSearch(req, res) {
+  const parsed = await readJsonBody(req);
+  const query = typeof parsed.query === 'string' ? parsed.query : '';
+  if (!query) {
+    sendJson(res, 200, { results: [], truncated: false, engine: 'none', filesScanned: 0 });
+    return;
+  }
+
+  const abortController = new AbortController();
+  const onClose = () => {
+    if (!res.writableFinished) abortController.abort();
+  };
+  res.on('close', onClose);
+  try {
+    const result = await searchCode({
+      query,
+      root: currentProjectDir(),
+      caseSensitive: !!parsed.caseSensitive,
+      wholeWord: !!parsed.wholeWord,
+      regex: !!parsed.regex,
+      includeGlobs: normalizeSearchGlobs(parsed.includeGlobs),
+      excludeGlobs: normalizeSearchGlobs(parsed.excludeGlobs),
+      engine: SEARCH_ENGINES.has(parsed.engine) ? parsed.engine : 'auto',
+      signal: abortController.signal,
+    });
+    if (res.writableEnded || abortController.signal.aborted) return;
+    sendJson(res, result.error === 'invalid_regex' ? 400 : 200, result);
+  } catch (error) {
+    if (res.writableEnded || abortController.signal.aborted) return;
+    sendJson(res, 500, { error: 'search_failed' });
+  } finally {
+    res.off('close', onClose);
+  }
+}
+
+async function handleCodeSearchReplace(req, res) {
+  const parsed = await readJsonBody(req);
+  const query = typeof parsed.query === 'string' ? parsed.query : '';
+  const scope = SEARCH_REPLACE_SCOPES.has(parsed.scope) ? parsed.scope : null;
+  if (!query || !scope || typeof parsed.replacement !== 'string') {
+    sendJson(res, 400, { error: 'Invalid request' });
+    return;
+  }
+
+  const result = await searchReplace({
+    query,
+    root: currentProjectDir(),
+    caseSensitive: !!parsed.caseSensitive,
+    wholeWord: !!parsed.wholeWord,
+    regex: !!parsed.regex,
+    includeGlobs: normalizeSearchGlobs(parsed.includeGlobs),
+    excludeGlobs: normalizeSearchGlobs(parsed.excludeGlobs),
+    replacement: parsed.replacement,
+    scope,
+    file: typeof parsed.file === 'string' ? parsed.file : undefined,
+    line: Number.isInteger(parsed.line) ? parsed.line : undefined,
+    col: Number.isInteger(parsed.col) ? parsed.col : undefined,
+    expectText: typeof parsed.expectText === 'string' ? parsed.expectText : undefined,
+    skipPaths: Array.isArray(parsed.skipPaths) ? parsed.skipPaths.map(String) : [],
+    dryRun: !!parsed.dryRun,
+  });
+  sendJson(res, result.error === 'invalid_regex' ? 400 : 200, result);
 }
 
 function displayTail(filePath) {
@@ -547,6 +622,24 @@ async function handleRequest(req, res) {
     return;
   }
 
+  if (url === '/api/search' && method === 'POST') {
+    try {
+      await handleCodeSearch(req, res);
+    } catch (error) {
+      if (!res.writableEnded) sendApiError(res, error, 'Search failed');
+    }
+    return;
+  }
+
+  if (url === '/api/search-replace' && method === 'POST') {
+    try {
+      await handleCodeSearchReplace(req, res);
+    } catch (error) {
+      if (!res.writableEnded) sendApiError(res, error, 'Replace failed');
+    }
+    return;
+  }
+
   // OTLP HTTP 接收端点 — 接收 Codex 原生 OTel trace 数据
   if (url === '/v1/traces' && method === 'POST') {
     const buffers = [];
@@ -812,7 +905,7 @@ async function handleRequest(req, res) {
   if (url === '/api/approval-reviewer' && method === 'GET') {
     const saved = getApprovalsReviewerPreference();
     sendJson(res, 200, {
-      approvalsReviewer: _runtimeApprovalsReviewer || saved || 'user',
+      approvalsReviewer: _runtimeApprovalsReviewer || saved || APPROVALS_REVIEWER_DEFAULT,
       explicitlyConfigured: !!saved,
       appliedToRuntime: !!_codexApprovalsReviewerUpdater,
     });

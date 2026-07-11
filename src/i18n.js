@@ -3437,6 +3437,266 @@ const i18nData = {
     "tr": "Dosya Gezgini",
     "uk": "Провідник файлів"
   },
+  "ui.search": {
+    "zh": "搜索", "en": "Search", "zh-TW": "搜尋", "ko": "검색", "ja": "検索",
+    "de": "Suchen", "es": "Buscar", "fr": "Rechercher", "it": "Cerca", "da": "Søg",
+    "pl": "Szukaj", "ru": "Поиск", "ar": "بحث", "no": "Søk", "pt-BR": "Pesquisar",
+    "th": "ค้นหา", "tr": "Ara", "uk": "Пошук"
+  },
+  "ui.search.title": {
+    "zh": "搜索", "en": "Search", "zh-TW": "搜尋", "ko": "검색", "ja": "検索",
+    "de": "Suchen", "es": "Buscar", "fr": "Rechercher", "it": "Cerca", "da": "Søg",
+    "pl": "Szukaj", "ru": "Поиск", "ar": "بحث", "no": "Søk", "pt-BR": "Pesquisar",
+    "th": "ค้นหา", "tr": "Ara", "uk": "Пошук"
+  },
+  "ui.search.close": {
+    "zh": "关闭", "en": "Close", "zh-TW": "關閉", "ko": "닫기", "ja": "閉じる",
+    "de": "Schließen", "es": "Cerrar", "fr": "Fermer", "it": "Chiudi", "da": "Luk",
+    "pl": "Zamknij", "ru": "Закрыть", "ar": "إغلاق", "no": "Lukk", "pt-BR": "Fechar",
+    "th": "ปิด", "tr": "Kapat", "uk": "Закрити"
+  },
+  "ui.search.placeholder": {
+    "zh": "搜索", "en": "Search", "zh-TW": "搜尋", "ko": "검색", "ja": "検索",
+    "de": "Suchen", "es": "Buscar", "fr": "Rechercher", "it": "Cerca", "da": "Søg",
+    "pl": "Szukaj", "ru": "Поиск", "ar": "بحث", "no": "Søk", "pt-BR": "Pesquisar",
+    "th": "ค้นหา", "tr": "Ara", "uk": "Пошук"
+  },
+  "ui.search.caseSensitive": {
+    "zh": "区分大小写", "en": "Match Case", "zh-TW": "區分大小寫", "ko": "대소문자 구분", "ja": "大文字と小文字を区別",
+    "de": "Groß-/Kleinschreibung beachten", "es": "Coincidir mayúsculas/minúsculas", "fr": "Respecter la casse", "it": "Maiuscole/minuscole", "da": "Forskel på store/små bogstaver",
+    "pl": "Uwzględnij wielkość liter", "ru": "Учитывать регистр", "ar": "مطابقة حالة الأحرف", "no": "Skill mellom store/små bokstaver", "pt-BR": "Diferenciar maiúsculas/minúsculas",
+    "th": "ตรงตามตัวพิมพ์ใหญ่-เล็ก", "tr": "Büyük/küçük harf duyarlı", "uk": "Враховувати регістр"
+  },
+  "ui.search.wholeWord": {
+    "zh": "全字匹配", "en": "Match Whole Word", "zh-TW": "全字比對", "ko": "단어 단위로", "ja": "単語単位で検索",
+    "de": "Ganzes Wort", "es": "Palabra completa", "fr": "Mot entier", "it": "Parola intera", "da": "Hele ord",
+    "pl": "Całe słowo", "ru": "Слово целиком", "ar": "الكلمة بأكملها", "no": "Hele ord", "pt-BR": "Palavra inteira",
+    "th": "ทั้งคำ", "tr": "Tam sözcük", "uk": "Слово повністю"
+  },
+  "ui.search.regex": {
+    "zh": "使用正则表达式", "en": "Use Regular Expression", "zh-TW": "使用正規表示式", "ko": "정규식 사용", "ja": "正規表現を使用",
+    "de": "Regulären Ausdruck verwenden", "es": "Usar expresión regular", "fr": "Utiliser une expression régulière", "it": "Usa espressione regolare", "da": "Brug regulært udtryk",
+    "pl": "Użyj wyrażenia regularnego", "ru": "Использовать регулярное выражение", "ar": "استخدام تعبير نمطي", "no": "Bruk regulært uttrykk", "pt-BR": "Usar expressão regular",
+    "th": "ใช้นิพจน์ทั่วไป", "tr": "Düzenli ifade kullan", "uk": "Використовувати регулярний вираз"
+  },
+  "ui.search.filesToInclude": {
+    "zh": "包含的文件", "en": "files to include", "zh-TW": "包含的檔案", "ko": "포함할 파일", "ja": "含めるファイル",
+    "de": "Einzuschließende Dateien", "es": "archivos a incluir", "fr": "fichiers à inclure", "it": "file da includere", "da": "filer der skal medtages",
+    "pl": "pliki do uwzględnienia", "ru": "включаемые файлы", "ar": "الملفات المراد تضمينها", "no": "filer som skal inkluderes", "pt-BR": "arquivos a incluir",
+    "th": "ไฟล์ที่จะรวม", "tr": "dahil edilecek dosyalar", "uk": "файли для включення"
+  },
+  "ui.search.filesToExclude": {
+    "zh": "排除的文件", "en": "files to exclude", "zh-TW": "排除的檔案", "ko": "제외할 파일", "ja": "除外するファイル",
+    "de": "Auszuschließende Dateien", "es": "archivos a excluir", "fr": "fichiers à exclure", "it": "file da escludere", "da": "filer der skal udelades",
+    "pl": "pliki do wykluczenia", "ru": "исключаемые файлы", "ar": "الملفات المراد استبعادها", "no": "filer som skal utelates", "pt-BR": "arquivos a excluir",
+    "th": "ไฟล์ที่จะยกเว้น", "tr": "hariç tutulacak dosyalar", "uk": "файли для виключення"
+  },
+  "ui.search.toggleDetails": {
+    "zh": "切换搜索详情", "en": "Toggle Search Details", "zh-TW": "切換搜尋詳情", "ko": "검색 세부정보 전환", "ja": "検索の詳細を切り替え",
+    "de": "Suchdetails umschalten", "es": "Alternar detalles de búsqueda", "fr": "Afficher/masquer les détails", "it": "Mostra/nascondi dettagli", "da": "Vis/skjul søgedetaljer",
+    "pl": "Przełącz szczegóły wyszukiwania", "ru": "Показать детали поиска", "ar": "تبديل تفاصيل البحث", "no": "Vis/skjul søkedetaljer", "pt-BR": "Alternar detalhes da pesquisa",
+    "th": "สลับรายละเอียดการค้นหา", "tr": "Arama ayrıntılarını aç/kapat", "uk": "Перемкнути деталі пошуку"
+  },
+  "ui.search.noResults": {
+    "zh": "未找到结果", "en": "No results found", "zh-TW": "找不到結果", "ko": "결과 없음", "ja": "結果が見つかりません",
+    "de": "Keine Ergebnisse gefunden", "es": "No se encontraron resultados", "fr": "Aucun résultat", "it": "Nessun risultato", "da": "Ingen resultater fundet",
+    "pl": "Nie znaleziono wyników", "ru": "Ничего не найдено", "ar": "لا توجد نتائج", "no": "Ingen resultater funnet", "pt-BR": "Nenhum resultado encontrado",
+    "th": "ไม่พบผลลัพธ์", "tr": "Sonuç bulunamadı", "uk": "Нічого не знайдено"
+  },
+  "ui.search.searching": {
+    "zh": "搜索中…", "en": "Searching…", "zh-TW": "搜尋中…", "ko": "검색 중…", "ja": "検索中…",
+    "de": "Suche läuft…", "es": "Buscando…", "fr": "Recherche…", "it": "Ricerca…", "da": "Søger…",
+    "pl": "Wyszukiwanie…", "ru": "Поиск…", "ar": "جارٍ البحث…", "no": "Søker…", "pt-BR": "Pesquisando…",
+    "th": "กำลังค้นหา…", "tr": "Aranıyor…", "uk": "Пошук…"
+  },
+  "ui.search.resultSummary": {
+    "zh": "{count} 个结果，{files} 个文件", "en": "{count} results in {files} files", "zh-TW": "{count} 個結果，{files} 個檔案", "ko": "{files}개 파일에서 {count}개 결과", "ja": "{files} ファイル中 {count} 件",
+    "de": "{count} Ergebnisse in {files} Dateien", "es": "{count} resultados en {files} archivos", "fr": "{count} résultats dans {files} fichiers", "it": "{count} risultati in {files} file", "da": "{count} resultater i {files} filer",
+    "pl": "{count} wyników w {files} plikach", "ru": "{count} совпадений в {files} файлах", "ar": "{count} نتيجة في {files} ملف", "no": "{count} resultater i {files} filer", "pt-BR": "{count} resultados em {files} arquivos",
+    "th": "{count} ผลลัพธ์ใน {files} ไฟล์", "tr": "{files} dosyada {count} sonuç", "uk": "{count} результатів у {files} файлах"
+  },
+  "ui.search.invalidRegex": {
+    "zh": "正则表达式无效", "en": "Invalid regular expression", "zh-TW": "正規表示式無效", "ko": "잘못된 정규식", "ja": "正規表現が無効です",
+    "de": "Ungültiger regulärer Ausdruck", "es": "Expresión regular no válida", "fr": "Expression régulière non valide", "it": "Espressione regolare non valida", "da": "Ugyldigt regulært udtryk",
+    "pl": "Nieprawidłowe wyrażenie regularne", "ru": "Недопустимое регулярное выражение", "ar": "تعبير نمطي غير صالح", "no": "Ugyldig regulært uttrykk", "pt-BR": "Expressão regular inválida",
+    "th": "นิพจน์ทั่วไปไม่ถูกต้อง", "tr": "Geçersiz düzenli ifade", "uk": "Недійсний регулярний вираз"
+  },
+  "ui.search.error": {
+    "zh": "搜索失败", "en": "Search failed", "zh-TW": "搜尋失敗", "ko": "검색 실패", "ja": "検索に失敗しました",
+    "de": "Suche fehlgeschlagen", "es": "Error en la búsqueda", "fr": "Échec de la recherche", "it": "Ricerca non riuscita", "da": "Søgning mislykkedes",
+    "pl": "Wyszukiwanie nie powiodło się", "ru": "Ошибка поиска", "ar": "فشل البحث", "no": "Søket mislyktes", "pt-BR": "Falha na pesquisa",
+    "th": "การค้นหาล้มเหลว", "tr": "Arama başarısız", "uk": "Помилка пошуку"
+  },
+  "ui.search.truncated": {
+    "zh": "仅显示前 {count} 个结果", "en": "Showing first {count} results", "zh-TW": "僅顯示前 {count} 個結果", "ko": "처음 {count}개 결과만 표시", "ja": "最初の {count} 件のみ表示",
+    "de": "Zeige erste {count} Ergebnisse", "es": "Mostrando los primeros {count} resultados", "fr": "Affichage des {count} premiers résultats", "it": "Mostrati i primi {count} risultati", "da": "Viser de første {count} resultater",
+    "pl": "Wyświetlanie pierwszych {count} wyników", "ru": "Показаны первые {count} результатов", "ar": "عرض أول {count} نتيجة", "no": "Viser de første {count} resultatene", "pt-BR": "Mostrando os primeiros {count} resultados",
+    "th": "แสดง {count} ผลลัพธ์แรก", "tr": "İlk {count} sonuç gösteriliyor", "uk": "Показано перші {count} результатів"
+  },
+  "ui.search.collapseAll": {
+    "zh": "全部折叠", "en": "Collapse All", "zh-TW": "全部摺疊", "ko": "모두 접기", "ja": "すべて折りたたむ",
+    "de": "Alle einklappen", "es": "Contraer todo", "fr": "Tout réduire", "it": "Comprimi tutto", "da": "Skjul alle",
+    "pl": "Zwiń wszystko", "ru": "Свернуть все", "ar": "طي الكل", "no": "Skjul alle", "pt-BR": "Recolher tudo",
+    "th": "ยุบทั้งหมด", "tr": "Tümünü daralt", "uk": "Згорнути все"
+  },
+  "ui.search.expandAll": {
+    "zh": "全部展开", "en": "Expand All", "zh-TW": "全部展開", "ko": "모두 펼치기", "ja": "すべて展開",
+    "de": "Alle ausklappen", "es": "Expandir todo", "fr": "Tout développer", "it": "Espandi tutto", "da": "Udvid alle",
+    "pl": "Rozwiń wszystko", "ru": "Развернуть все", "ar": "توسيع الكل", "no": "Utvid alle", "pt-BR": "Expandir tudo",
+    "th": "ขยายทั้งหมด", "tr": "Tümünü genişlet", "uk": "Розгорнути все"
+  },
+  "ui.search.viaEngine": {
+    "zh": "使用 {engine}", "en": "via {engine}", "zh-TW": "使用 {engine}", "ko": "{engine} 사용", "ja": "{engine} 使用",
+    "de": "über {engine}", "es": "vía {engine}", "fr": "via {engine}", "it": "tramite {engine}", "da": "via {engine}",
+    "pl": "przez {engine}", "ru": "через {engine}", "ar": "عبر {engine}", "no": "via {engine}", "pt-BR": "via {engine}",
+    "th": "ผ่าน {engine}", "tr": "{engine} ile", "uk": "через {engine}"
+  },
+  "ui.search.toggleReplace": {
+    "zh": "切换替换", "en": "Toggle Replace", "zh-TW": "切換取代", "ko": "바꾸기 전환", "ja": "置換を切り替え",
+    "de": "Ersetzen umschalten", "es": "Alternar reemplazo", "fr": "Afficher/masquer le remplacement", "it": "Mostra/nascondi sostituzione", "da": "Vis/skjul erstat",
+    "pl": "Przełącz zamianę", "ru": "Показать замену", "ar": "تبديل الاستبدال", "no": "Vis/skjul erstatt", "pt-BR": "Alternar substituição",
+    "th": "สลับการแทนที่", "tr": "Değiştirmeyi aç/kapat", "uk": "Перемкнути заміну"
+  },
+  "ui.search.replace": {
+    "zh": "替换", "en": "Replace", "zh-TW": "取代", "ko": "바꾸기", "ja": "置換",
+    "de": "Ersetzen", "es": "Reemplazar", "fr": "Remplacer", "it": "Sostituisci", "da": "Erstat",
+    "pl": "Zamień", "ru": "Заменить", "ar": "استبدال", "no": "Erstatt", "pt-BR": "Substituir",
+    "th": "แทนที่", "tr": "Değiştir", "uk": "Замінити"
+  },
+  "ui.search.replaceAll": {
+    "zh": "全部替换", "en": "Replace All", "zh-TW": "全部取代", "ko": "모두 바꾸기", "ja": "すべて置換",
+    "de": "Alle ersetzen", "es": "Reemplazar todo", "fr": "Tout remplacer", "it": "Sostituisci tutto", "da": "Erstat alle",
+    "pl": "Zamień wszystko", "ru": "Заменить все", "ar": "استبدال الكل", "no": "Erstatt alle", "pt-BR": "Substituir tudo",
+    "th": "แทนที่ทั้งหมด", "tr": "Tümünü değiştir", "uk": "Замінити все"
+  },
+  "ui.search.replaceInFile": {
+    "zh": "替换文件中全部", "en": "Replace All in File", "zh-TW": "取代檔案中全部", "ko": "파일에서 모두 바꾸기", "ja": "ファイル内すべて置換",
+    "de": "Alle in Datei ersetzen", "es": "Reemplazar todo en el archivo", "fr": "Tout remplacer dans le fichier", "it": "Sostituisci tutto nel file", "da": "Erstat alle i filen",
+    "pl": "Zamień wszystko w pliku", "ru": "Заменить всё в файле", "ar": "استبدال الكل في الملف", "no": "Erstatt alle i filen", "pt-BR": "Substituir tudo no arquivo",
+    "th": "แทนที่ทั้งหมดในไฟล์", "tr": "Dosyadaki tümünü değiştir", "uk": "Замінити все у файлі"
+  },
+  "ui.search.replaceMatch": {
+    "zh": "替换", "en": "Replace", "zh-TW": "取代", "ko": "바꾸기", "ja": "置換",
+    "de": "Ersetzen", "es": "Reemplazar", "fr": "Remplacer", "it": "Sostituisci", "da": "Erstat",
+    "pl": "Zamień", "ru": "Заменить", "ar": "استبدال", "no": "Erstatt", "pt-BR": "Substituir",
+    "th": "แทนที่", "tr": "Değiştir", "uk": "Замінити"
+  },
+  "ui.search.replacing": {
+    "zh": "替换中…", "en": "Replacing…", "zh-TW": "取代中…", "ko": "바꾸는 중…", "ja": "置換中…",
+    "de": "Ersetze…", "es": "Reemplazando…", "fr": "Remplacement…", "it": "Sostituzione…", "da": "Erstatter…",
+    "pl": "Zamienianie…", "ru": "Замена…", "ar": "جارٍ الاستبدال…", "no": "Erstatter…", "pt-BR": "Substituindo…",
+    "th": "กำลังแทนที่…", "tr": "Değiştiriliyor…", "uk": "Заміна…"
+  },
+  "ui.search.confirmReplaceTitle": {
+    "zh": "跨文件替换？", "en": "Replace across files?", "zh-TW": "跨檔案取代？", "ko": "여러 파일에서 바꾸시겠습니까?", "ja": "複数ファイルで置換しますか？",
+    "de": "In mehreren Dateien ersetzen?", "es": "¿Reemplazar en varios archivos?", "fr": "Remplacer dans plusieurs fichiers ?", "it": "Sostituire in più file?", "da": "Erstat på tværs af filer?",
+    "pl": "Zamienić w wielu plikach?", "ru": "Заменить в нескольких файлах?", "ar": "الاستبدال عبر الملفات؟", "no": "Erstatte på tvers av filer?", "pt-BR": "Substituir em vários arquivos?",
+    "th": "แทนที่ข้ามไฟล์?", "tr": "Dosyalar arasında değiştirilsin mi?", "uk": "Замінити в кількох файлах?"
+  },
+  "ui.search.confirmReplaceBody": {
+    "zh": "将替换 {files} 个文件中的 {count} 处。此操作会写入磁盘且无法撤销——请用版本控制回滚。",
+    "en": "Replace {count} occurrences in {files} files? This writes to disk and cannot be undone — use version control to revert.",
+    "zh-TW": "將取代 {files} 個檔案中的 {count} 處。此操作會寫入磁碟且無法復原——請用版本控制還原。",
+    "ko": "{files}개 파일의 {count}곳을 바꿉니다. 디스크에 기록되며 되돌릴 수 없습니다 — 버전 관리로 복구하세요.",
+    "ja": "{files} ファイル内の {count} 箇所を置換します。ディスクに書き込まれ、元に戻せません — バージョン管理で復元してください。",
+    "de": "{count} Vorkommen in {files} Dateien ersetzen? Schreibt auf die Festplatte und kann nicht rückgängig gemacht werden — per Versionsverwaltung zurücksetzen.",
+    "es": "¿Reemplazar {count} coincidencias en {files} archivos? Escribe en el disco y no se puede deshacer; usa el control de versiones para revertir.",
+    "fr": "Remplacer {count} occurrences dans {files} fichiers ? Écrit sur le disque et irréversible — utilisez le contrôle de version pour annuler.",
+    "it": "Sostituire {count} occorrenze in {files} file? Scrive su disco e non è annullabile — usa il controllo di versione per ripristinare.",
+    "da": "Erstat {count} forekomster i {files} filer? Skriver til disken og kan ikke fortrydes — brug versionsstyring til at gendanne.",
+    "pl": "Zamienić {count} wystąpień w {files} plikach? Zapisuje na dysk i nie można cofnąć — użyj kontroli wersji.",
+    "ru": "Заменить {count} совпадений в {files} файлах? Запись на диск необратима — используйте систему контроля версий.",
+    "ar": "استبدال {count} مطابقة في {files} ملف؟ يكتب على القرص ولا يمكن التراجع — استخدم التحكم بالإصدارات للاستعادة.",
+    "no": "Erstatt {count} forekomster i {files} filer? Skriver til disk og kan ikke angres — bruk versjonskontroll.",
+    "pt-BR": "Substituir {count} ocorrências em {files} arquivos? Grava no disco e não pode ser desfeito — use controle de versão para reverter.",
+    "th": "แทนที่ {count} รายการใน {files} ไฟล์? เขียนลงดิสก์และเลิกทำไม่ได้ — ใช้ระบบควบคุมเวอร์ชันเพื่อย้อนกลับ",
+    "tr": "{files} dosyada {count} eşleşme değiştirilsin mi? Diske yazar ve geri alınamaz — geri almak için sürüm kontrolü kullanın.",
+    "uk": "Замінити {count} збігів у {files} файлах? Запис на диск незворотний — використайте систему контролю версій."
+  },
+  "ui.search.confirmOk": {
+    "zh": "全部替换", "en": "Replace All", "zh-TW": "全部取代", "ko": "모두 바꾸기", "ja": "すべて置換",
+    "de": "Alle ersetzen", "es": "Reemplazar todo", "fr": "Tout remplacer", "it": "Sostituisci tutto", "da": "Erstat alle",
+    "pl": "Zamień wszystko", "ru": "Заменить все", "ar": "استبدال الكل", "no": "Erstatt alle", "pt-BR": "Substituir tudo",
+    "th": "แทนที่ทั้งหมด", "tr": "Tümünü değiştir", "uk": "Замінити все"
+  },
+  "ui.search.confirmCancel": {
+    "zh": "取消", "en": "Cancel", "zh-TW": "取消", "ko": "취소", "ja": "キャンセル",
+    "de": "Abbrechen", "es": "Cancelar", "fr": "Annuler", "it": "Annulla", "da": "Annuller",
+    "pl": "Anuluj", "ru": "Отмена", "ar": "إلغاء", "no": "Avbryt", "pt-BR": "Cancelar",
+    "th": "ยกเลิก", "tr": "İptal", "uk": "Скасувати"
+  },
+  "ui.search.replacedSummary": {
+    "zh": "已替换 {files} 个文件中的 {count} 处", "en": "Replaced {count} in {files} files", "zh-TW": "已取代 {files} 個檔案中的 {count} 處", "ko": "{files}개 파일에서 {count}곳 바꿈", "ja": "{files} ファイルで {count} 件置換",
+    "de": "{count} in {files} Dateien ersetzt", "es": "Reemplazadas {count} en {files} archivos", "fr": "{count} remplacés dans {files} fichiers", "it": "Sostituite {count} in {files} file", "da": "Erstattede {count} i {files} filer",
+    "pl": "Zamieniono {count} w {files} plikach", "ru": "Заменено {count} в {files} файлах", "ar": "تم استبدال {count} في {files} ملف", "no": "Erstattet {count} i {files} filer", "pt-BR": "Substituídas {count} em {files} arquivos",
+    "th": "แทนที่ {count} ใน {files} ไฟล์", "tr": "{files} dosyada {count} değiştirildi", "uk": "Замінено {count} у {files} файлах"
+  },
+  "ui.search.replaceCapped": {
+    "zh": "仅替换了前 {count} 处——请再次运行以继续", "en": "Only the first {count} matches were replaced — run again to continue", "zh-TW": "僅取代了前 {count} 處——請再次執行以繼續", "ko": "처음 {count}곳만 바꿨습니다 — 계속하려면 다시 실행하세요", "ja": "最初の {count} 件のみ置換 — 続けるには再実行してください",
+    "de": "Nur die ersten {count} Treffer ersetzt — erneut ausführen, um fortzufahren", "es": "Solo se reemplazaron las primeras {count} coincidencias — ejecuta de nuevo para continuar", "fr": "Seules les {count} premières occurrences remplacées — relancez pour continuer", "it": "Sostituite solo le prime {count} occorrenze — esegui di nuovo per continuare", "da": "Kun de første {count} forekomster erstattet — kør igen for at fortsætte",
+    "pl": "Zamieniono tylko pierwsze {count} wystąpień — uruchom ponownie, aby kontynuować", "ru": "Заменены только первые {count} совпадений — запустите снова, чтобы продолжить", "ar": "تم استبدال أول {count} مطابقة فقط — شغّل مرة أخرى للمتابعة", "no": "Bare de første {count} treffene ble erstattet — kjør igjen for å fortsette", "pt-BR": "Apenas as primeiras {count} ocorrências foram substituídas — execute novamente para continuar",
+    "th": "แทนที่เพียง {count} รายการแรก — เรียกใช้อีกครั้งเพื่อดำเนินการต่อ", "tr": "Yalnızca ilk {count} eşleşme değiştirildi — devam etmek için tekrar çalıştırın", "uk": "Замінено лише перші {count} збігів — запустіть знову, щоб продовжити"
+  },
+  "ui.search.nothingToReplace": {
+    "zh": "没有可替换的内容", "en": "Nothing to replace", "zh-TW": "沒有可取代的內容", "ko": "바꿀 항목 없음", "ja": "置換対象がありません",
+    "de": "Nichts zu ersetzen", "es": "Nada que reemplazar", "fr": "Rien à remplacer", "it": "Niente da sostituire", "da": "Intet at erstatte",
+    "pl": "Nic do zamiany", "ru": "Нечего заменять", "ar": "لا شيء لاستبداله", "no": "Ingenting å erstatte", "pt-BR": "Nada a substituir",
+    "th": "ไม่มีสิ่งที่จะแทนที่", "tr": "Değiştirilecek bir şey yok", "uk": "Немає що замінювати"
+  },
+  "ui.search.replaceError": {
+    "zh": "替换失败", "en": "Replace failed", "zh-TW": "取代失敗", "ko": "바꾸기 실패", "ja": "置換に失敗しました",
+    "de": "Ersetzen fehlgeschlagen", "es": "Error al reemplazar", "fr": "Échec du remplacement", "it": "Sostituzione non riuscita", "da": "Erstatning mislykkedes",
+    "pl": "Zamiana nie powiodła się", "ru": "Ошибка замены", "ar": "فشل الاستبدال", "no": "Erstatning mislyktes", "pt-BR": "Falha na substituição",
+    "th": "การแทนที่ล้มเหลว", "tr": "Değiştirme başarısız", "uk": "Помилка заміни"
+  },
+  "ui.search.skipped_dirty": {
+    "zh": "跳过 {count} 个（未保存的修改）", "en": "{count} skipped (unsaved edits)", "zh-TW": "略過 {count} 個（未儲存的修改）", "ko": "{count}개 건너뜀 (저장 안 됨)", "ja": "{count} 件スキップ（未保存の編集）",
+    "de": "{count} übersprungen (ungespeichert)", "es": "{count} omitidos (sin guardar)", "fr": "{count} ignorés (modifs non enregistrées)", "it": "{count} saltati (modifiche non salvate)", "da": "{count} sprunget over (ugemte ændringer)",
+    "pl": "pominięto {count} (niezapisane)", "ru": "пропущено {count} (несохранённые)", "ar": "تم تخطي {count} (تعديلات غير محفوظة)", "no": "{count} hoppet over (ulagrede)", "pt-BR": "{count} ignorados (não salvos)",
+    "th": "ข้าม {count} (ยังไม่บันทึก)", "tr": "{count} atlandı (kaydedilmemiş)", "uk": "пропущено {count} (незбережені)"
+  },
+  "ui.search.skipped_encoding": {
+    "zh": "跳过 {count} 个（非 UTF-8）", "en": "{count} skipped (not UTF-8)", "zh-TW": "略過 {count} 個（非 UTF-8）", "ko": "{count}개 건너뜀 (UTF-8 아님)", "ja": "{count} 件スキップ（UTF-8 以外）",
+    "de": "{count} übersprungen (kein UTF-8)", "es": "{count} omitidos (no UTF-8)", "fr": "{count} ignorés (non UTF-8)", "it": "{count} saltati (non UTF-8)", "da": "{count} sprunget over (ikke UTF-8)",
+    "pl": "pominięto {count} (nie UTF-8)", "ru": "пропущено {count} (не UTF-8)", "ar": "تم تخطي {count} (ليس UTF-8)", "no": "{count} hoppet over (ikke UTF-8)", "pt-BR": "{count} ignorados (não UTF-8)",
+    "th": "ข้าม {count} (ไม่ใช่ UTF-8)", "tr": "{count} atlandı (UTF-8 değil)", "uk": "пропущено {count} (не UTF-8)"
+  },
+  "ui.search.skipped_forbidden": {
+    "zh": "跳过 {count} 个（受保护）", "en": "{count} skipped (protected)", "zh-TW": "略過 {count} 個（受保護）", "ko": "{count}개 건너뜀 (보호됨)", "ja": "{count} 件スキップ（保護対象）",
+    "de": "{count} übersprungen (geschützt)", "es": "{count} omitidos (protegidos)", "fr": "{count} ignorés (protégés)", "it": "{count} saltati (protetti)", "da": "{count} sprunget over (beskyttet)",
+    "pl": "pominięto {count} (chronione)", "ru": "пропущено {count} (защищено)", "ar": "تم تخطي {count} (محمي)", "no": "{count} hoppet over (beskyttet)", "pt-BR": "{count} ignorados (protegidos)",
+    "th": "ข้าม {count} (ได้รับการป้องกัน)", "tr": "{count} atlandı (korumalı)", "uk": "пропущено {count} (захищено)"
+  },
+  "ui.search.skipped_symlink": {
+    "zh": "跳过 {count} 个（符号链接）", "en": "{count} skipped (symlink)", "zh-TW": "略過 {count} 個（符號連結）", "ko": "{count}개 건너뜀 (심볼릭 링크)", "ja": "{count} 件スキップ（シンボリックリンク）",
+    "de": "{count} übersprungen (Symlink)", "es": "{count} omitidos (enlace simbólico)", "fr": "{count} ignorés (lien symbolique)", "it": "{count} saltati (symlink)", "da": "{count} sprunget over (symlink)",
+    "pl": "pominięto {count} (dowiązanie)", "ru": "пропущено {count} (символьная ссылка)", "ar": "تم تخطي {count} (رابط رمزي)", "no": "{count} hoppet over (symlink)", "pt-BR": "{count} ignorados (link simbólico)",
+    "th": "ข้าม {count} (symlink)", "tr": "{count} atlandı (sembolik bağ)", "uk": "пропущено {count} (символьне посилання)"
+  },
+  "ui.search.skipped_changed": {
+    "zh": "跳过 {count} 个（已变更）", "en": "{count} skipped (changed)", "zh-TW": "略過 {count} 個（已變更）", "ko": "{count}개 건너뜀 (변경됨)", "ja": "{count} 件スキップ（変更済み）",
+    "de": "{count} übersprungen (geändert)", "es": "{count} omitidos (modificados)", "fr": "{count} ignorés (modifiés)", "it": "{count} saltati (modificati)", "da": "{count} sprunget over (ændret)",
+    "pl": "pominięto {count} (zmienione)", "ru": "пропущено {count} (изменено)", "ar": "تم تخطي {count} (تغيّر)", "no": "{count} hoppet over (endret)", "pt-BR": "{count} ignorados (alterados)",
+    "th": "ข้าม {count} (เปลี่ยนแปลง)", "tr": "{count} atlandı (değişti)", "uk": "пропущено {count} (змінено)"
+  },
+  "ui.search.skipped_write_failed": {
+    "zh": "跳过 {count} 个（写入失败）", "en": "{count} skipped (write failed)", "zh-TW": "略過 {count} 個（寫入失敗）", "ko": "{count}개 건너뜀 (쓰기 실패)", "ja": "{count} 件スキップ（書き込み失敗）",
+    "de": "{count} übersprungen (Schreibfehler)", "es": "{count} omitidos (error de escritura)", "fr": "{count} ignorés (échec d'écriture)", "it": "{count} saltati (scrittura fallita)", "da": "{count} sprunget over (skrivefejl)",
+    "pl": "pominięto {count} (błąd zapisu)", "ru": "пропущено {count} (ошибка записи)", "ar": "تم تخطي {count} (فشل الكتابة)", "no": "{count} hoppet over (skrivefeil)", "pt-BR": "{count} ignorados (falha na gravação)",
+    "th": "ข้าม {count} (เขียนล้มเหลว)", "tr": "{count} atlandı (yazma hatası)", "uk": "пропущено {count} (помилка запису)"
+  },
+  "ui.search.skipped_binary": {
+    "zh": "跳过 {count} 个（二进制）", "en": "{count} skipped (binary)", "zh-TW": "略過 {count} 個（二進位）", "ko": "{count}개 건너뜀 (바이너리)", "ja": "{count} 件スキップ（バイナリ）",
+    "de": "{count} übersprungen (binär)", "es": "{count} omitidos (binarios)", "fr": "{count} ignorés (binaires)", "it": "{count} saltati (binari)", "da": "{count} sprunget over (binær)",
+    "pl": "pominięto {count} (binarne)", "ru": "пропущено {count} (двоичные)", "ar": "تم تخطي {count} (ثنائي)", "no": "{count} hoppet over (binær)", "pt-BR": "{count} ignorados (binários)",
+    "th": "ข้าม {count} (ไบนารี)", "tr": "{count} atlandı (ikili)", "uk": "пропущено {count} (двійкові)"
+  },
+  "ui.search.skipped_too_large": {
+    "zh": "跳过 {count} 个（过大）", "en": "{count} skipped (too large)", "zh-TW": "略過 {count} 個（過大）", "ko": "{count}개 건너뜀 (너무 큼)", "ja": "{count} 件スキップ（大きすぎ）",
+    "de": "{count} übersprungen (zu groß)", "es": "{count} omitidos (demasiado grandes)", "fr": "{count} ignorés (trop volumineux)", "it": "{count} saltati (troppo grandi)", "da": "{count} sprunget over (for stor)",
+    "pl": "pominięto {count} (za duże)", "ru": "пропущено {count} (слишком большие)", "ar": "تم تخطي {count} (كبير جدًا)", "no": "{count} hoppet over (for stor)", "pt-BR": "{count} ignorados (muito grandes)",
+    "th": "ข้าม {count} (ใหญ่เกินไป)", "tr": "{count} atlandı (çok büyük)", "uk": "пропущено {count} (завеликі)"
+  },
   "ui.fileExplorer.refresh": {
     "zh": "刷新",
     "en": "Refresh",
@@ -11489,24 +11749,24 @@ const i18nData = {
     "uk": "Ім'я експерта, наприклад: Архітектор"
   },
   "ui.ultraplan.customContentPlaceholder": {
-    "zh": "输入你的提示词正文。发送时会自动用 <system-reminder> 包裹。",
-    "en": "Enter your prompt body. It will be auto-wrapped in <system-reminder> tags when sent.",
-    "zh-TW": "輸入你的提示詞正文。發送時會自動用 <system-reminder> 包裹。",
-    "ko": "프롬프트 본문을 입력하세요. 전송 시 <system-reminder> 태그로 자동 래핑됩니다.",
-    "ja": "プロンプト本文を入力してください。送信時に <system-reminder> タグで自動的にラップされます。",
-    "de": "Prompt-Text eingeben. Er wird beim Senden automatisch in <system-reminder>-Tags eingehüllt.",
-    "es": "Introduzca el cuerpo del prompt. Se envolverá automáticamente en etiquetas <system-reminder> al enviar.",
-    "fr": "Saisissez le corps de l'invite. Il sera automatiquement encapsulé dans des balises <system-reminder> lors de l'envoi.",
-    "it": "Inserisci il corpo del prompt. Verrà automaticamente racchiuso in tag <system-reminder> all'invio.",
-    "da": "Indtast prompt-teksten. Den bliver automatisk pakket ind i <system-reminder>-tags ved afsendelse.",
-    "pl": "Wprowadź treść polecenia. Zostanie automatycznie owinięta tagami <system-reminder> przy wysłaniu.",
-    "ru": "Введите текст промпта. При отправке он будет автоматически обёрнут в теги <system-reminder>.",
-    "ar": "أدخل نص الموجّه. سيتم لفه تلقائيًا بعلامات <system-reminder> عند الإرسال.",
-    "no": "Skriv inn prompt-innholdet. Det pakkes automatisk inn i <system-reminder>-tagger ved sending.",
-    "pt-BR": "Digite o corpo do prompt. Será envolvido automaticamente em tags <system-reminder> ao enviar.",
-    "th": "ป้อนเนื้อหาพรอมต์ ระบบจะห่อด้วยแท็ก <system-reminder> อัตโนมัติเมื่อส่ง",
-    "tr": "Komut gövdesini girin. Gönderildiğinde otomatik olarak <system-reminder> etiketleriyle sarılacaktır.",
-    "uk": "Введіть текст запиту. При відправці він буде автоматично обгорнутий тегами <system-reminder>."
+    "zh": "输入你的提示词正文。发送时会自动用 <user_instructions> 包裹。",
+    "en": "Enter your prompt body. It will be auto-wrapped in <user_instructions> tags when sent.",
+    "zh-TW": "輸入你的提示詞正文。發送時會自動用 <user_instructions> 包裹。",
+    "ko": "프롬프트 본문을 입력하세요. 전송 시 <user_instructions> 태그로 자동 래핑됩니다.",
+    "ja": "プロンプト本文を入力してください。送信時に <user_instructions> タグで自動的にラップされます。",
+    "de": "Prompt-Text eingeben. Er wird beim Senden automatisch in <user_instructions>-Tags eingehüllt.",
+    "es": "Introduzca el cuerpo del prompt. Se envolverá automáticamente en etiquetas <user_instructions> al enviar.",
+    "fr": "Saisissez le corps de l'invite. Il sera automatiquement encapsulé dans des balises <user_instructions> lors de l'envoi.",
+    "it": "Inserisci il corpo del prompt. Verrà automaticamente racchiuso in tag <user_instructions> all'invio.",
+    "da": "Indtast prompt-teksten. Den bliver automatisk pakket ind i <user_instructions>-tags ved afsendelse.",
+    "pl": "Wprowadź treść polecenia. Zostanie automatycznie owinięta tagami <user_instructions> przy wysłaniu.",
+    "ru": "Введите текст промпта. При отправке он будет автоматически обёрнут в теги <user_instructions>.",
+    "ar": "أدخل نص الموجّه. سيتم لفه تلقائيًا بعلامات <user_instructions> عند الإرسال.",
+    "no": "Skriv inn prompt-innholdet. Det pakkes automatisk inn i <user_instructions>-tagger ved sending.",
+    "pt-BR": "Digite o corpo do prompt. Será envolvido automaticamente em tags <user_instructions> ao enviar.",
+    "th": "ป้อนเนื้อหาพรอมต์ ระบบจะห่อด้วยแท็ก <user_instructions> อัตโนมัติเมื่อส่ง",
+    "tr": "Komut gövdesini girin. Gönderildiğinde otomatik olarak <user_instructions> etiketleriyle sarılacaktır.",
+    "uk": "Введіть текст запиту. При відправці він буде автоматично обгорнутий тегами <user_instructions>."
   },
   "ui.ultraplan.customSave": {
     "zh": "保存", "en": "Save", "zh-TW": "儲存",
@@ -11565,7 +11825,7 @@ const i18nData = {
   // 新建自定义专家时预填进正文文本框的英文外壳骨架。仅 en(纯结构无本地化),其余语言 t() 回落 en;
   // 发送时 buildCustomTemplate 幂等不重复包壳(见 src/utils/ultraplanTemplates.js)。
   "ui.ultraplan.customContentTemplate": {
-    "en": "<system-reminder>\n[SCOPED INSTRUCTION] The following instructions apply only to the next 1-3 interactions. Once the task is complete, these instructions should gradually decrease in priority and no longer affect subsequent interactions. You should be adept at utilizing tools such as `request_user_input`, `update_plan`, and `multi_agent_v${verson}`, rather than relying solely on plain text processing. Before execution, you must ensure that the `update_plan`, `multi_agent_v${verson}`, `request_user_input` and `parellel` tools are loaded.\n\n</system-reminder>"
+    "en": "<user_instructions>\n[SCOPED INSTRUCTION] The following instructions apply only to the next 1-3 interactions. Once the task is complete, these instructions should gradually decrease in priority and no longer affect subsequent interactions. You should be adept at utilizing tools such as `request_user_input`, `update_plan`, and `multi_agent_v${verson}`, rather than relying solely on plain text processing. Before execution, you must ensure that the `update_plan`, `multi_agent_v${verson}`, `request_user_input` and `parellel` tools are loaded.\n\n</user_instructions>"
   },
   // 自定义专家弹窗左栏(参考文档)折叠把手的 title 文案:折叠态 = 展开提示,展开态 = 折叠提示。
   "ui.ultraplan.collapseDoc": {

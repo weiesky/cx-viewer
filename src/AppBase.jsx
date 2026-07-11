@@ -26,7 +26,7 @@ import { reconstructEntries, createIncrementalReconstructor } from '../server/li
 import { createEntrySlimmer, createIncrementalSlimmer, restoreSlimmedEntry, internEntryBigFields } from './utils/entry-slim.js';
 import { yieldToMain, runChunkedPass, INGEST_BATCH_SIZE } from './utils/ingestPipeline.js';
 import { reinitializeMermaid } from './hooks/useMermaidRender';
-import { APPROVALS_REVIEWER_USER, normalizeApprovalsReviewer } from './utils/approvalReviewerOptions';
+import { APPROVALS_REVIEWER_DEFAULT, normalizeApprovalsReviewer } from './utils/approvalReviewerOptions';
 import styles from './App.module.css';
 
 export { styles };
@@ -105,7 +105,7 @@ class AppBase extends React.Component {
       resumeFileName: '',
       resumeRememberChoice: false,
       resumeAutoChoice: null, // null | "continue" | "new"；出厂默认 'continue' 由 GET /api/preferences 注入（键缺失时），这里的 null 只是 pre-hydrate 占位
-      approvalsReviewer: APPROVALS_REVIEWER_USER,
+      approvalsReviewer: APPROVALS_REVIEWER_DEFAULT,
       logDir: '',
       themeColor: /Windows/i.test(navigator.userAgent) ? 'dark' : 'light',
       displayScale: 100, // 整体显示缩放百分比(100=原始大小),仅 Electron 桌面经 webFrame.setZoomFactor 原生缩放;浏览器交由原生快捷键

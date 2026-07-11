@@ -12,6 +12,7 @@ import { t } from './i18n.js';
 import { INJECT_IMPORT, resolveCliPath, resolveNativePath, resolveNpmCodexPath, buildShellCandidates } from './findcx.js';
 import { normalizeCodexArgs, hasBypassPermissions } from './lib/cli-args.js';
 import { ensureHooks } from './lib/ensure-hooks.js';
+import { APPROVALS_REVIEWER_DEFAULT } from './lib/approval-reviewer.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -392,7 +393,7 @@ async function runCliMode(extraCodexArgs = [], cwd) {
 
   // 启动 PTY 中的 codex TUI
   const { spawnCodex, killPty } = await import('./pty-manager.js');
-  const savedApprovalsReviewer = serverMod.getApprovalsReviewerPreference();
+  const savedApprovalsReviewer = serverMod.getApprovalsReviewerPreference() || APPROVALS_REVIEWER_DEFAULT;
   const reviewerArgs = savedApprovalsReviewer
     ? ['-c', `approvals_reviewer="${savedApprovalsReviewer}"`]
     : [];
@@ -509,7 +510,7 @@ async function runSdkMode(extraCodexArgs = [], cwd) {
   if (hasBypassPermissions(extraCodexArgs)) {
     permissionMode = 'bypassPermissions';
   }
-  const savedApprovalsReviewer = serverMod.getApprovalsReviewerPreference();
+  const savedApprovalsReviewer = serverMod.getApprovalsReviewerPreference() || APPROVALS_REVIEWER_DEFAULT;
   const sdkCodexArgs = savedApprovalsReviewer
     ? [...extraCodexArgs, '-c', `approvals_reviewer="${savedApprovalsReviewer}"`]
     : extraCodexArgs;

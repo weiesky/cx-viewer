@@ -8,7 +8,7 @@ import { isPostClearCheckpoint, getMainAgentSessionKey } from './clearCheckpoint
  * 关键点：
  *  - tool_use / tool_result 用 API 强保证唯一的 id 作主键，永不碰撞。
  *  - text / thinking 用 `length + first32 + last32` 三元组——比单纯 `slice(0, 64)`
- *    抗碰撞强得多（同前缀 `<system-reminder>...` / `<command-name>/...` 不会再误命中），
+ *    抗碰撞强得多（同前缀 `<user_instructions>...` / `<command-name>/...` 不会再误命中），
  *    但仍只触一次字符串切片，比哈希便宜。
  *  - 保持纯函数 / 同步 / 无副作用——`mergeMainAgentSessions` 在流式热路径每条 SSE 都会调用。
  */

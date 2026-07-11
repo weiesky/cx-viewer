@@ -280,12 +280,12 @@ export function computeSkillUsageStats(requests) {
 
 export function isCodexMdReminder(text) {
   if (typeof text !== 'string') return false;
-  return text.includes('<system-reminder>') && text.includes('# codexMd');
+  return text.includes('<user_instructions>') && text.includes('# codexMd');
 }
 
 export function isSkillsReminder(text) {
   if (typeof text !== 'string') return false;
-  return text.includes('<system-reminder>') && text.includes('skills are available');
+  return text.includes('<user_instructions>') && text.includes('skills are available');
 }
 
 export function hasCodexMdReminder(body) {
@@ -342,7 +342,7 @@ export function extractLoadedSkills(requests) {
   }
   if (!last) return [];
 
-  const m = /<system-reminder>([\s\S]*?)<\/system-reminder>/i.exec(last);
+  const m = /<user_instructions>([\s\S]*?)<\/system-reminder>/i.exec(last);
   return _parseLoadedSkills(m ? m[1] : last);
 }
 

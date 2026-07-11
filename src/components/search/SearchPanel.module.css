@@ -1,0 +1,402 @@
+.searchPanel {
+  flex-shrink: 0;
+  background: var(--bg-container);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  user-select: none;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  height: 41px;
+  border-bottom: 1px solid var(--border-primary);
+  flex-shrink: 0;
+}
+
+.headerTitle {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.headerCloseBtn {
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  padding: 0;
+}
+.headerCloseBtn:hover {
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+}
+
+/* ─── controls ─── */
+.controls {
+  padding: 8px 10px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-bottom: 1px solid var(--border-primary);
+  flex-shrink: 0;
+}
+
+.inputRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.searchInput,
+.globInput {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  font-size: 12px;
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.searchInput:focus,
+.globInput:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-bg-light);
+}
+.searchInput::placeholder,
+.globInput::placeholder {
+  color: var(--text-muted);
+}
+
+.detailsBtn {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--text-tertiary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-hover);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.detailsBtn:hover {
+  background: var(--bg-surface);
+  color: var(--text-white);
+  border-color: var(--border-light);
+}
+
+.toggleRow {
+  display: flex;
+  gap: 4px;
+}
+
+.toggleBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 24px;
+  padding: 0 6px;
+  font-size: 12px;
+  font-family: var(--font-mono, monospace);
+  line-height: 1;
+  color: var(--text-tertiary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-hover);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.toggleBtn:hover {
+  background: var(--bg-surface);
+  color: var(--text-white);
+  border-color: var(--border-light);
+}
+.toggleActive {
+  color: var(--color-primary-pale);
+  border-color: var(--color-primary-pale);
+}
+.wholeWordGlyph {
+  text-decoration: underline;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ─── status row ─── */
+.statusRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 12px;
+  min-height: 24px;
+  flex-shrink: 0;
+}
+.statusText {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.statusError {
+  font-size: 11px;
+  color: var(--color-error, #e5484d);
+}
+.collapseAllBtn {
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  padding: 0;
+  flex-shrink: 0;
+}
+.collapseAllBtn:hover {
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+}
+.truncated {
+  padding: 2px 12px 6px;
+  font-size: 10px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* ─── results ─── */
+.resultsContainer {
+  flex: 1;
+  overflow: auto;
+  padding: 2px 0 8px;
+}
+
+.fileGroup {
+  margin-bottom: 2px;
+}
+
+.fileHeader {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px 3px 8px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.fileHeader:hover {
+  background: var(--bg-surface);
+}
+.fileHeader:focus-visible {
+  outline: 1px solid var(--color-primary);
+  outline-offset: -1px;
+}
+.chevron {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 0.12s;
+}
+.fileName {
+  font-weight: 500;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+.fileDir {
+  color: var(--text-muted);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+.matchCount {
+  flex-shrink: 0;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: var(--text-tertiary);
+  background: var(--bg-elevated);
+  border-radius: 8px;
+}
+
+.matchRow {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 2px 10px 2px 26px;
+  cursor: pointer;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  white-space: pre;
+  overflow: hidden;
+}
+.matchRow:hover {
+  background: var(--bg-surface);
+}
+.matchRow:focus-visible {
+  outline: 1px solid var(--color-primary);
+  outline-offset: -1px;
+  background: var(--bg-surface);
+}
+.lineNo {
+  flex-shrink: 0;
+  min-width: 30px;
+  text-align: right;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.lineText {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: pre;
+}
+.matchHighlight {
+  /* Markdown inline-code scheme: a translucent tint of the per-theme code color
+     (opaque --code-inline-bg would vanish against the panel background). */
+  background-color: color-mix(in srgb, var(--code-inline-color) 18%, transparent);
+  outline: 1px solid color-mix(in srgb, var(--code-inline-color) 45%, transparent);
+  color: var(--code-inline-color);
+  border-radius: 2px;
+}
+
+/* ─── replace ─── */
+.searchBlock {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+}
+.replaceToggle {
+  flex-shrink: 0;
+  width: 16px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  padding: 0;
+}
+.replaceToggle:hover {
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+}
+.searchFields {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.replaceAllBtn {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-hover);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.replaceAllBtn:hover:not(:disabled) {
+  background: var(--bg-surface);
+  color: var(--color-primary-pale);
+  border-color: var(--color-primary-pale);
+}
+.replaceAllBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.replaceDel {
+  background-color: rgba(229, 72, 77, 0.16);
+  text-decoration: line-through;
+  text-decoration-color: rgba(229, 72, 77, 0.7);
+  color: inherit;
+  border-radius: 2px;
+}
+.replaceIns {
+  background-color: rgba(70, 167, 88, 0.22);
+  text-decoration: none;
+  color: inherit;
+  border-radius: 2px;
+}
+
+.rowReplaceBtn {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 0;
+  opacity: 0;
+  transition: opacity 0.12s, color 0.12s, background 0.12s;
+}
+.fileHeader:hover .rowReplaceBtn,
+.matchRow:hover .rowReplaceBtn,
+.rowReplaceBtn:focus-visible {
+  opacity: 1;
+}
+.rowReplaceBtn:hover:not(:disabled) {
+  color: var(--color-primary-pale);
+  background: var(--bg-elevated);
+}
+.rowReplaceBtn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.notice {
+  padding: 4px 12px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  border-bottom: 1px solid var(--border-primary);
+  flex-shrink: 0;
+}

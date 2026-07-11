@@ -125,7 +125,7 @@ const MdxEditorPanel = forwardRef(function MdxEditorPanel(
         markdown={initialMarkdown ?? ''}
         onChange={onChange}
         onError={(payload) => {
-          // MDXEditor 在解析到无法识别的 mdast 节点（如自定义 JSX 标签 <system-reminder>）
+          // MDXEditor 在解析到无法识别的 mdast 节点（如自定义 JSX 标签 <user_instructions>）
           // 时会触发；payload 形如 { error: string, source: string }。我们把信号上抛给
           // 父组件，让 FileContentView 自动降级到旧 marked 渲染——避免用户看到红色
           // "Parsing of the following markdown structure failed" 横幅。

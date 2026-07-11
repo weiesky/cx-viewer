@@ -11,7 +11,7 @@
 
 export const ULTRAPLAN_VARIANTS = {
 
-  codeExpert: `<system-reminder>
+  codeExpert: `<user_instructions>
 [SCOPED INSTRUCTION] The following instructions apply only to the next 1-3 interactions. Once the task is complete, these instructions should gradually decrease in priority and no longer affect subsequent interactions. You should be adept at utilizing tools such as \`request_user_input\`, \`update_plan\`, and \`multi_agent_v\${verson}\`, rather than relying solely on plain text processing. Before execution, you must ensure that the \`update_plan\`, \`multi_agent_v\${verson}\`, \`request_user_input\` and \`parellel\` tools are loaded.
 
 Pre-requisite: Use \`request_user_input\` to clarify user intent whenever the request is ambiguous (target element, interaction style, scope of platforms, etc.). Skip only if the intent is unambiguous.
@@ -64,9 +64,9 @@ Workflow:
 - Distill specific, actionable modification suggestions and annotate them with priority levels (P0/P1/P2/P3);
 - Upon completion, adopt P0 items, and selectively adopt P1 items when they are concrete and low-risk; defer P2/P3 to backlog;
 - After execution is complete, close the team (\`multi_agent_v\${verson}.close_agent\`);
-</system-reminder>`,
+</user_instructions>`,
 
-  researchExpert: `<system-reminder>
+  researchExpert: `<user_instructions>
 [SCOPED INSTRUCTION] The following instructions are intended for the next 1–3 interactions. Once the task is complete, these instructions should be gradually deprioritized and no longer influence subsequent interactions. You should be adept at utilizing Codex tools such as \`request_user_input\`, \`update_plan\`, \`tool_search\`, and \`web_search\`, rather than relying solely on plain text processing. Before execution, ensure that \`request_user_input\`, \`update_plan\`, and \`tool_search\` are available; use \`tool_search\` to discover any deferred multi-agent tools before attempting to spawn agents.
 
 Pre-requisite: Use \`request_user_input\` to clarify the research scope, target audience, and deliverable format whenever the user's intent is ambiguous. Skip only if the intent is unambiguous.
@@ -100,26 +100,26 @@ Your final plan must include the following elements:
 - Identification of potential risks and corresponding mitigation strategies;
 - Creative ideation and suggestions for advanced enhancements;
 - If a product demo was generated, place the corresponding demo output in an appropriate location and notify the user.
-</system-reminder>`,
+</user_instructions>`,
 
 };
 
 /**
  * Wrap user-authored custom instruction body with the same scoped-instruction
- * preamble used by the built-in variants. Produces a full <system-reminder>
+ * preamble used by the built-in variants. Produces a full <user_instructions>
  * block ready to be inlined into a Codex prompt.
  */
 export function buildCustomTemplate(content) {
   const body = (content || '').trim();
   if (!body) return '';
   // 用户已自带外壳(预填的样板壳或手写)时不再重复包裹;用 startsWith 而非 includes,
-  // 避免正文里只是「提到」<system-reminder> 字样就误判而漏掉作用域声明。
-  if (body.startsWith('<system-reminder>')) return body;
-  return `<system-reminder>
+  // 避免正文里只是「提到」<user_instructions> 字样就误判而漏掉作用域声明。
+  if (body.startsWith('<user_instructions>')) return body;
+  return `<user_instructions>
 [SCOPED INSTRUCTION] The following instructions apply only to the next 1-3 interactions. Once the task is complete, these instructions should gradually decrease in priority and no longer affect subsequent interactions. You should be adept at utilizing tools such as \`request_user_input\`, \`update_plan\`, and \`multi_agent_v\${verson}\`, rather than relying solely on plain text processing. Before execution, you must ensure that the \`update_plan\`, \`multi_agent_v\${verson}\`, \`request_user_input\` and \`parellel\` tools are loaded.
 
 ${body}
-</system-reminder>`;
+</user_instructions>`;
 }
 
 /**

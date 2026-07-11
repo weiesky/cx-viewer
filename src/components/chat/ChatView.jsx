@@ -3,6 +3,7 @@ import { Empty, Typography, Divider, Spin, Popover, Modal, message } from 'antd'
 import ChatMessage from './ChatMessage';
 import TerminalPanel, { uploadFileAndGetPath } from '../terminal/TerminalPanel';
 import FileExplorer from '../files/FileExplorer';
+import SearchPanel from '../search/SearchPanel';
 import FileContentView from '../files/FileContentView';
 import ImageViewer from '../viewers/ImageViewer';
 import ImageLightbox from '../common/ImageLightbox';
@@ -71,6 +72,10 @@ import styles from './ChatView.module.css';
 const { Text } = Typography;
 
 const QUEUE_THRESHOLD = 20;
+
+const normalizeProjectPath = (path) => (
+  typeof path === 'string' && path.startsWith('./') ? path.slice(2) : path
+);
 
 // 乐观停止兜底超时：到点仍未收到真实停止信号则强制清 stopOptimistic。必须 > AppBase 关闭路径
 // （streaming_status{active:false} 的 SSE + 2s _streamingOffTimer），否则会在 isStreaming 仍为 true
@@ -228,6 +233,8 @@ class ChatView extends React.Component {
       currentFile: null,
       currentGitDiff: null,
       scrollToLine: null,
+      scrollToMatch: null,
+      searchOpen: false,
       fileExplorerExpandedPaths: loadExpandedPaths(props.projectName),
       gitChangesOpen: false,
       hasGit: true,
@@ -2621,6 +2628,13 @@ class ChatView extends React.Component {
   // 给 FileContentView 拿快照的稳定闭包，避免每次 render 创建新引用。
   getFileScrollSnapshot = () => this._fileScrollSnapshot;
 
+  handleFileDirtyChange = (isDirty, path) => {
+    if (isDirty) this._openFileDirty = normalizeProjectPath(path);
+    else if (this._openFileDirty === normalizeProjectPath(path)) this._openFileDirty = null;
+  };
+
+  getOpenFileDirtyPath = () => this._openFileDirty || null;
+
   handleToggleExpandPath = (path) => {
     // capture projectName 到闭包：用户毫秒内切 workspace 时，callback 触发的写盘
     // 应该落到"toggle 发生时"那个项目的 key，不要被切换后的 props 牵走。
@@ -2686,6 +2700,7 @@ class ChatView extends React.Component {
         currentFile: resolved,
         currentGitDiff: null,
         scrollToLine: null,
+        scrollToMatch: null,
         gitChangesOpen: false,
         fileExplorerExpandedPaths: newSet,
       };
@@ -2738,7 +2753,7 @@ class ChatView extends React.Component {
         {showFileExplorerAndGit && (
           <button
             className={this.state.fileExplorerOpen ? styles.navBtnActive : styles.navBtn}
-            onClick={() => { this._setFileExplorerOpen(!this.state.fileExplorerOpen); this.setState({ gitChangesOpen: false }); }}
+            onClick={() => { this._setFileExplorerOpen(!this.state.fileExplorerOpen); this.setState({ gitChangesOpen: false, searchOpen: false }); }}
             title={t('ui.fileExplorer')}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -2752,7 +2767,7 @@ class ChatView extends React.Component {
             onClick={() => this.setState(prev => {
               this._setFileExplorerOpen(false);
               const opening = !prev.gitChangesOpen;
-              const next = { gitChangesOpen: opening };
+              const next = { gitChangesOpen: opening, searchOpen: false };
               // 关闭期间累积的修改信号在打开瞬间消费一次（与 fileExplorer 对称）
               if (opening && this._pendingGitRefresh) {
                 this._pendingGitRefresh = false;
@@ -2764,6 +2779,22 @@ class ChatView extends React.Component {
           >
             <svg width="24" height="24" viewBox="0 0 1024 1024" fill="currentColor">
               <path d="M759.53332137 326.35000897c0-48.26899766-39.4506231-87.33284994-87.87432908-86.6366625-46.95397689 0.69618746-85.08957923 39.14120645-85.39899588 86.09518335-0.23206249 40.68828971 27.53808201 74.87882971 65.13220519 84.47074592 10.82958281 2.78474987 18.41029078 12.37666607 18.64235327 23.51566553 0.38677082 21.11768647-3.40358317 44.40128953-17.24997834 63.81718442-22.20064476 31.17372767-62.42480948 42.46743545-97.93037026 52.44612248-22.43270724 6.26568719-38.75443563 7.89012462-53.14230994 9.28249954-20.42149901 2.01120825-39.76003975 3.94506233-63.89453858 17.79145747-5.10537475 2.93945818-10.13339535 6.18833303-14.85199928 9.74662453-4.09977063 3.09416652-9.90133285 0.15470833-9.90133286-4.95066641V302.60228095c0-9.43720788 5.26008307-18.17822829 13.69168683-22.3553531 28.69839444-14.23316598 48.42370599-43.93716454 48.19164353-78.20505872-0.38677082-48.57841433-41.15241468-87.71962076-89.730829-86.01782918C338.80402918 117.57112321 301.59667683 155.70672553 301.59667683 202.58334827c0 34.03583169 19.64795738 63.50776777 48.1916435 77.66357958 8.43160375 4.17712479 13.69168685 12.76343689 13.69168684 22.12329062v419.02750058c0 9.43720788-5.26008307 18.17822829-13.69168684 22.3553531-28.69839444 14.23316598-48.42370599 43.93716454-48.1916435 78.20505872 0.30941665 48.57841433 41.07506052 87.6422666 89.65347484 86.01782918C437.74000359 906.42887679 474.87000179 868.2159203 474.87000179 821.41665173c0-34.03583169-19.64795738-63.50776777-48.1916435-77.66357958-8.43160375-4.17712479-13.69168685-12.76343689-13.69168684-22.12329062v-14.85199926c0-32.48874844 15.39347842-63.27570528 42.00331048-81.91805854 2.39797906-1.70179159 4.95066642-3.32622901 7.50335379-4.79595812 14.92935344-8.58631209 25.91364457-9.66927037 44.09187287-11.4484161 15.62554091-1.54708326 35.04143581-3.48093734 61.65126786-10.90693699 39.06385228-10.98429114 92.51557887-25.91364457 124.84961898-71.39789238 18.56499911-26.06835292 27.38337367-58.01562219 26.37776956-95.14562041-0.15470833-5.33743724-0.54147915-10.67487447-1.08295828-16.16702004-0.85089578-8.27689543 2.70739569-16.24437421 9.12779121-21.50445729 19.57060322-15.78024923 32.02462345-39.99210223 32.02462345-67.14341343zM351.1033411 202.58334827c0-20.49885317 16.63114503-37.12999821 37.1299982-37.1299982s37.12999821 16.63114503 37.12999821 37.1299982-16.63114503 37.12999821-37.12999821 37.1299982-37.12999821-16.63114503-37.1299982-37.1299982z m74.25999641 618.83330346c0 20.49885317-16.63114503 37.12999821-37.12999821 37.1299982s-37.12999821-16.63114503-37.1299982-37.1299982 16.63114503-37.12999821 37.1299982-37.1299982 37.12999821 16.63114503 37.12999821 37.1299982z m247.53332139-457.93664456c-20.49885317 0-37.12999821-16.63114503-37.1299982-37.1299982s16.63114503-37.12999821 37.1299982-37.12999821 37.12999821 16.63114503 37.1299982 37.12999821-16.63114503 37.12999821-37.1299982 37.1299982z"/>
+            </svg>
+          </button>
+        )}
+        {showFileExplorerAndGit && (
+          <button
+            className={this.state.searchOpen ? styles.navBtnActive : styles.navBtn}
+            onClick={() => this.setState(prev => {
+              if (prev.searchOpen) return { searchOpen: false };
+              this._setFileExplorerOpen(false);
+              return { searchOpen: true, gitChangesOpen: false };
+            })}
+            title={t('ui.search')}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="m21 21-4.3-4.3"/>
             </svg>
           </button>
         )}
@@ -3204,7 +3235,7 @@ class ChatView extends React.Component {
               onClose={() => this._setFileExplorerOpen(false)}
               onFileClick={(path) => {
                 if (tryOpenWithSystem(path, 'file-explorer')) return;
-                this.setState({ currentFile: path, currentGitDiff: null, scrollToLine: null });
+                this.setState({ currentFile: path, currentGitDiff: null, scrollToLine: null, scrollToMatch: null });
               }}
               expandedPaths={this.state.fileExplorerExpandedPaths}
               onToggleExpand={this.handleToggleExpandPath}
@@ -3242,14 +3273,47 @@ class ChatView extends React.Component {
                 this.setState(prev => {
                   const newSet = new Set(prev.fileExplorerExpandedPaths);
                   ancestors.forEach(p => newSet.add(p));
-                  return { currentGitDiff: null, currentFile: resolvedPath, scrollToLine: null, gitChangesOpen: false, fileExplorerExpandedPaths: newSet };
+                  return { currentGitDiff: null, currentFile: resolvedPath, scrollToLine: null, scrollToMatch: null, gitChangesOpen: false, fileExplorerExpandedPaths: newSet };
                 }, () => {
                   saveExpandedPaths(projectName, this.state.fileExplorerExpandedPaths);
                 });
               }}
             />
           )}
-          {(this.state.fileExplorerOpen || this.state.gitChangesOpen) && (
+          {this.state.searchOpen && (
+            <SearchPanel
+              style={{ width: this.state.sidebarWidth }}
+              onClose={() => this.setState({ searchOpen: false })}
+              getDirtyPath={this.getOpenFileDirtyPath}
+              onReplaceApplied={(files) => {
+                this.setState(prev => ({ fileExplorerRefresh: prev.fileExplorerRefresh + 1 }));
+                const current = normalizeProjectPath(this.state.currentFile);
+                if (current && files.some(file => normalizeProjectPath(file) === current)) {
+                  this.setState(prev => ({ fileVersion: (prev.fileVersion || 0) + 1 }));
+                }
+              }}
+              onOpenResult={(path, line, range) => {
+                if (tryOpenWithSystem(path, 'search')) return;
+                if (this.state.editorSessionId) {
+                  fetch(apiUrl('/api/editor-done'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId: this.state.editorSessionId }),
+                  }).catch(() => {});
+                }
+                this.setState({
+                  currentFile: path,
+                  scrollToLine: line || 1,
+                  scrollToMatch: range || null,
+                  currentGitDiff: null,
+                  editorSessionId: null,
+                  editorFilePath: null,
+                  fileVersion: 0,
+                });
+              }}
+            />
+          )}
+          {(this.state.fileExplorerOpen || this.state.gitChangesOpen || this.state.searchOpen) && (
             <div className={styles.vResizer} onMouseDown={this.handleSidebarMouseDown} />
           )}
           <div className={styles.chatSection}>
@@ -3279,6 +3343,7 @@ class ChatView extends React.Component {
                         currentGitDiff: null,
                         currentFile: resolvedPath,
                         scrollToLine: line || 1,
+                        scrollToMatch: null,
                         gitChangesOpen: false,
                         fileExplorerExpandedPaths: newSet,
                       };
@@ -3312,10 +3377,12 @@ class ChatView extends React.Component {
                     key={this.state.fileVersion}
                     filePath={this.state.currentFile}
                     scrollToLine={this.state.scrollToLine}
+                    scrollToMatch={this.state.scrollToMatch}
                     editorSession={!!this.state.editorSessionId}
                     onUpdateScroll={this.handleUpdateFileScroll}
                     getRestoreScrollSnapshot={this.getFileScrollSnapshot}
                     onConsumeScrollSnapshot={this.handleConsumeFileScroll}
+                    onDirtyChange={this.handleFileDirtyChange}
                     onClose={() => {
                       if (this.state.editorSessionId) {
                         fetch(apiUrl('/api/editor-done'), {
@@ -3500,6 +3567,7 @@ class ChatView extends React.Component {
                     currentFile: filePath,
                     currentGitDiff: null,
                     scrollToLine: null,
+                    scrollToMatch: null,
                     fileVersion: (this.state.fileVersion || 0) + 1,
                   });
                 }} onFilePath={(path) => {
