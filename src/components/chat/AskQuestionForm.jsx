@@ -6,7 +6,7 @@ import AskTimeoutCountdown from './AskTimeoutCountdown';
 import styles from './ChatMessage.module.css';
 
 /**
- * Self-contained AskUserQuestion interactive form.
+ * Self-contained request_user_input interactive form.
  * All selection state is local — no parent re-renders during interaction.
  * Only communicates with parent on submit via onSubmit callback.
  */

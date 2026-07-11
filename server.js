@@ -34,8 +34,8 @@ function execWithStdin(cmd, args, input, options) {
     child.stdin.end();
   });
 }
-import { LOG_FILE, _initPromise, _resumeState, resolveResumeChoice, _projectName, _logDir, _cachedApiKey, _cachedAuthHeader, initForWorkspace, resetWorkspace, streamingState, resetStreamingState, _loadProxyProfile, PROFILE_PATH, _defaultConfig } from './interceptor.js';
-import { parseOtlpTraces, writeOtelEntries } from './lib/otel-receiver.js';
+import { LOG_FILE, _initPromise, _resumeState, resolveResumeChoice, _projectName, _logDir, _cachedApiKey, _cachedAuthHeader, initForWorkspace, resetWorkspace, streamingState, resetStreamingState, _loadProxyProfile, PROFILE_PATH, _defaultConfig, appendLogEntry } from './interceptor.js';
+import { parseOtlpTraces } from './lib/otel-receiver.js';
 import { LOG_DIR, setLogDir } from './findcx.js';
 import { t, detectLanguage } from './i18n.js';
 import { DEFAULT_START_PORT, DEFAULT_MAX_PORT, MAX_POST_BODY as _MAX_POST_BODY, MAX_UPLOAD_SIZE, SSE_HEARTBEAT_MS, HOOK_TIMEOUT_MS, EDITOR_SESSION_CLEANUP_MS, UPLOAD_DIR } from './lib/constants.js';
@@ -47,9 +47,12 @@ import { getGitDiffs } from './lib/git-diff.js';
 import { CONTEXT_WINDOW_FILE, buildContextWindowEvent } from './lib/context-watcher.js';
 import { CODEX_CONTEXT_WINDOW_TOKENS, sumUsageContextTokens } from './server/lib/context-rules.js';
 import { watchLogFile, startWatching, getWatchedFiles, sendEventToClients, sendToClients } from './lib/log-watcher.js';
-import { isMainAgentEntry, extractCachedContent } from './lib/kv-cache-analyzer.js';
+import { isMainAgentEntry } from './lib/main-agent-entry.js';
 import { listLocalLogs, deleteLogFiles, mergeLogFiles } from './lib/log-management.js';
 import { countLogEntries, streamRawEntriesAsync, readPagedEntries } from './lib/log-stream.js';
+import { listSkills, toggleSkill, deleteSkill, importSkillUpload, imSkillRoots, imSkillImportRoot } from './lib/skills-api.js';
+import { readCodexGlobalConfig, updateCodexGlobalConfig } from './lib/codex-config.js';
+import { isSupportedApprovalsReviewer, normalizeApprovalsReviewer, shouldDeferPermissionHookToCodex } from './lib/approval-reviewer.js';
 
 
 // 动态获取 getPrefsFile()（LOG_DIR 可能在运行时被 setLogDir 修改）
@@ -66,9 +69,143 @@ function writePreferences(prefs) {
   writeFileSync(prefsFile, JSON.stringify(prefs, null, 2));
 }
 
+let _codexApprovalsReviewerUpdater = null;
+let _runtimeApprovalsReviewer = null;
+let _codexNativeReviewerAvailable = false;
+
+export function getApprovalsReviewerPreference() {
+  const value = readPreferences().approvalsReviewer;
+  return isSupportedApprovalsReviewer(value) ? normalizeApprovalsReviewer(value) : null;
+}
+
+export function setCodexApprovalsReviewerUpdater(fn) {
+  _codexApprovalsReviewerUpdater = typeof fn === 'function' ? fn : null;
+  if (_codexApprovalsReviewerUpdater) {
+    const saved = getApprovalsReviewerPreference();
+    if (saved) {
+      _codexApprovalsReviewerUpdater(saved);
+    }
+  }
+}
+
+export function setActiveCodexApprovalsReviewer(value, nativeAvailable = true) {
+  _runtimeApprovalsReviewer = value == null ? null : normalizeApprovalsReviewer(value);
+  _codexNativeReviewerAvailable = !!nativeAvailable;
+}
+
+function applyRuntimeApprovalsReviewer(value) {
+  const reviewer = normalizeApprovalsReviewer(value);
+  const result = _codexApprovalsReviewerUpdater?.(reviewer);
+  return {
+    approvalsReviewer: reviewer,
+    appliedToRuntime: !!_codexApprovalsReviewerUpdater,
+    appliesOnNextTurn: !!_codexApprovalsReviewerUpdater,
+    ...(result && typeof result === 'object' ? result : {}),
+  };
+}
+
+function broadcastApprovalsReviewer(value) {
+  if (!terminalWss) return;
+  const payload = JSON.stringify({
+    type: 'approval-reviewer-changed',
+    approvalsReviewer: normalizeApprovalsReviewer(value),
+  });
+  terminalWss.clients.forEach((client) => {
+    if (client.readyState === 1) try { client.send(payload); } catch {}
+  });
+}
+
 function sendJson(res, status, data) {
   res.writeHead(status, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify(data));
+}
+
+function sendApiError(res, err, fallback = 'Request failed') {
+  const status = Number.isInteger(err?.status) ? err.status : 500;
+  sendJson(res, status, {
+    ok: false,
+    error: err?.message || fallback,
+    ...(err?.code ? { code: err.code } : {}),
+  });
+}
+
+function readJsonBody(req, maxSize = MAX_POST_BODY) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    let done = false;
+    const fail = (err) => {
+      if (done) return;
+      done = true;
+      reject(err);
+    };
+    req.on('data', chunk => {
+      body += chunk;
+      if (body.length > maxSize) {
+        fail(Object.assign(new Error('Request body too large'), { status: 413 }));
+        req.destroy();
+      }
+    });
+    req.on('end', () => {
+      if (done) return;
+      done = true;
+      try { resolve(body ? JSON.parse(body) : {}); }
+      catch { reject(Object.assign(new Error('Invalid JSON'), { status: 400 })); }
+    });
+    req.on('error', err => fail(err));
+  });
+}
+
+function multipartBoundary(contentType) {
+  const match = /boundary=(?:"([^"]+)"|([^;]+))/i.exec(contentType || '');
+  return match ? (match[1] || match[2] || '').trim() : '';
+}
+
+function readMultipartUpload(req, maxSize = MAX_UPLOAD_SIZE) {
+  const boundary = multipartBoundary(req.headers['content-type'] || '');
+  if (!boundary) throw Object.assign(new Error('Missing boundary'), { status: 400 });
+  const contentLength = parseInt(req.headers['content-length'] || '0', 10);
+  if (contentLength > maxSize) throw Object.assign(new Error('File too large'), { status: 413 });
+
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let totalSize = 0;
+    let done = false;
+    const fail = (err) => {
+      if (done) return;
+      done = true;
+      reject(err);
+    };
+    req.on('data', chunk => {
+      totalSize += chunk.length;
+      if (totalSize > maxSize) {
+        fail(Object.assign(new Error('File too large'), { status: 413 }));
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on('end', () => {
+      if (done) return;
+      done = true;
+      try {
+        const buf = Buffer.concat(chunks);
+        const headerEnd = buf.indexOf('\r\n\r\n');
+        if (headerEnd === -1) throw Object.assign(new Error('Malformed multipart'), { status: 400 });
+        const headerStr = buf.slice(0, headerEnd).toString();
+        const nameMatch = headerStr.match(/filename="([^"]+)"/);
+        if (!nameMatch) throw Object.assign(new Error('No file'), { status: 400 });
+        const filename = nameMatch[1].replace(/[/\\]/g, '_');
+        const bodyStart = headerEnd + 4;
+        const closingBoundary = Buffer.from('\r\n--' + boundary);
+        const bodyEnd = buf.indexOf(closingBoundary, bodyStart);
+        const data = bodyEnd !== -1 ? buf.slice(bodyStart, bodyEnd) : buf.slice(bodyStart);
+        resolve({ filename, data });
+      } catch (err) {
+        reject(err);
+      }
+    });
+    req.on('error', err => fail(err));
+  });
 }
 
 function encodeStableId(value) {
@@ -110,63 +247,6 @@ function discoverCodexMdEntries() {
   return entries;
 }
 
-function parseSkillDescription(skillDir) {
-  const mdPath = join(skillDir, 'SKILL.md');
-  if (!existsSync(mdPath)) return null;
-  try {
-    const text = readFileSync(mdPath, 'utf8');
-    const frontmatter = /^---\s*\n([\s\S]*?)\n---/.exec(text);
-    if (!frontmatter) return null;
-    const lines = frontmatter[1].split('\n');
-    const idx = lines.findIndex(line => /^description\s*:/.test(line));
-    if (idx < 0) return null;
-    const first = lines[idx].replace(/^description\s*:\s*/, '').trim();
-    if (/^[|>][-+]?$/.test(first)) {
-      const fold = first.startsWith('>');
-      const collected = [];
-      for (let i = idx + 1; i < lines.length; i++) {
-        const line = lines[i];
-        if (line !== '' && !/^\s/.test(line)) break;
-        collected.push(line.replace(/^\s+/, ''));
-      }
-      while (collected.length && collected[collected.length - 1] === '') collected.pop();
-      return fold ? collected.join(' ') : collected.join('\n');
-    }
-    return first.replace(/^["']|["']$/g, '');
-  } catch {
-    return null;
-  }
-}
-
-function scanSkillDir(baseDir, source, enabled) {
-  const out = [];
-  if (!existsSync(baseDir)) return out;
-  try {
-    for (const entry of readdirSync(baseDir, { withFileTypes: true })) {
-      if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
-      const skillDir = join(baseDir, entry.name);
-      out.push({
-        name: entry.name,
-        source,
-        enabled,
-        path: skillDir,
-        description: parseSkillDescription(skillDir),
-      });
-    }
-  } catch {}
-  return out;
-}
-
-function listCodexSkills() {
-  const cwd = currentProjectDir();
-  return [
-    ...scanSkillDir(join(cwd, '.codex', 'skills'), 'project', true),
-    ...scanSkillDir(join(cwd, '.codex', 'skills-skip'), 'project', false),
-    ...scanSkillDir(join(homedir(), '.codex', 'skills'), 'user', true),
-    ...scanSkillDir(join(homedir(), '.codex', 'skills-skip'), 'user', false),
-  ];
-}
-
 function normalizePluginFilename(name) {
   return String(name || '').replace(/.*[/\\]/, '');
 }
@@ -182,14 +262,6 @@ function removeDisabledPluginNames(names) {
   return true;
 }
 
-// 启动时一次性读取 ~/.codex/settings.json（不 watch）
-let codexSettings = {};
-try {
-  const settingsPath = join(homedir(), '.codex', 'settings.json');
-  if (existsSync(settingsPath)) {
-    codexSettings = JSON.parse(readFileSync(settingsPath, 'utf-8'));
-  }
-} catch { }
 const isCliMode = process.env.CXV_CLI_MODE === '1';
 const isSdkMode = process.env.CXV_SDK_MODE === '1';
 const isWorkspaceMode = process.env.CXV_WORKSPACE_MODE === '1';
@@ -229,12 +301,12 @@ let _workspaceCodexPath = null;
 let _workspaceIsNpmVersion = false;
 let _workspaceLaunched = false; // 工作区是否已经启动了会话
 
-// Ask hook bridge state (for PreToolUse AskUserQuestion hook)
+// Ask hook bridge state (for request_user_input hook)
 // At most one pending request at a time (Codex Code is single-threaded)
 let pendingAskHook = null; // { questions, res, timer, createdAt }
 
-// Permission hook bridge state (for PreToolUse permission approval)
-let pendingPermHook = null; // { toolName, input, res, timer, createdAt }
+// Permission hook bridge state (for Codex PermissionRequest approval)
+const pendingPermHooks = new Map(); // id -> { toolName, input, res, timer, createdAt }
 
 // Editor session state (for $EDITOR intercept)
 const editorSessions = new Map(); // sessionId → { filePath, done, createdAt }
@@ -484,7 +556,7 @@ async function handleRequest(req, res) {
       const otlpData = JSON.parse(body.toString());
       const entries = parseOtlpTraces(otlpData);
       if (entries.length > 0 && LOG_FILE) {
-        writeOtelEntries(LOG_FILE, entries);
+        for (const entry of entries.flat().filter(Boolean)) appendLogEntry(entry);
       }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end('{}');
@@ -684,6 +756,13 @@ async function handleRequest(req, res) {
     req.on('end', () => {
       try {
         const incoming = JSON.parse(body);
+        if (Object.prototype.hasOwnProperty.call(incoming, 'approvalsReviewer')) {
+          if (!isSupportedApprovalsReviewer(incoming.approvalsReviewer)) {
+            sendJson(res, 400, { error: 'Unsupported approvalsReviewer' });
+            return;
+          }
+          incoming.approvalsReviewer = normalizeApprovalsReviewer(incoming.approvalsReviewer);
+        }
         // 如果修改了日志目录，先切换再保存到新位置（新目录下生成 preferences.json）
         if (incoming.logDir && typeof incoming.logDir === 'string') {
           setLogDir(incoming.logDir);
@@ -691,6 +770,10 @@ async function handleRequest(req, res) {
         let prefs = readPreferences();
         Object.assign(prefs, incoming);
         writePreferences(prefs);
+        const reviewerState = Object.prototype.hasOwnProperty.call(incoming, 'approvalsReviewer')
+          ? applyRuntimeApprovalsReviewer(incoming.approvalsReviewer)
+          : null;
+        if (reviewerState) broadcastApprovalsReviewer(reviewerState.approvalsReviewer);
         // 主题切换时同步到 Codex Code CLI：发 /theme，监听输出验证结果，不对就再发一次
         if (incoming.themeColor && _writeToPty && _onPtyData) {
           const target = incoming.themeColor === 'light' ? 'light' : 'dark';
@@ -717,12 +800,38 @@ async function handleRequest(req, res) {
         }
         prefs.logDir = LOG_DIR;
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(prefs));
+        res.end(JSON.stringify(reviewerState ? { ...prefs, ...reviewerState } : prefs));
       } catch {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Invalid JSON' }));
       }
     });
+    return;
+  }
+
+  if (url === '/api/approval-reviewer' && method === 'GET') {
+    const saved = getApprovalsReviewerPreference();
+    sendJson(res, 200, {
+      approvalsReviewer: _runtimeApprovalsReviewer || saved || 'user',
+      explicitlyConfigured: !!saved,
+      appliedToRuntime: !!_codexApprovalsReviewerUpdater,
+    });
+    return;
+  }
+
+  if (url === '/api/approval-reviewer' && method === 'POST') {
+    readJsonBody(req).then((incoming) => {
+      if (!isSupportedApprovalsReviewer(incoming?.approvalsReviewer)) {
+        sendJson(res, 400, { error: 'Unsupported approvalsReviewer' });
+        return;
+      }
+      const approvalsReviewer = normalizeApprovalsReviewer(incoming.approvalsReviewer);
+      const prefs = { ...readPreferences(), approvalsReviewer };
+      writePreferences(prefs);
+      const runtime = applyRuntimeApprovalsReviewer(approvalsReviewer);
+      broadcastApprovalsReviewer(runtime.approvalsReviewer);
+      sendJson(res, 200, { ok: true, ...runtime });
+    }).catch((err) => sendApiError(res, err, 'Invalid request body'));
     return;
   }
 
@@ -747,12 +856,82 @@ async function handleRequest(req, res) {
   }
 
   if (url === '/api/skills' && method === 'GET') {
-    sendJson(res, 200, { ok: true, skills: listCodexSkills() });
+    try {
+      sendJson(res, 200, { ok: true, skills: listSkills({ cwd: currentProjectDir() }) });
+    } catch (err) {
+      sendApiError(res, err, 'Failed to list skills');
+    }
     return;
   }
 
-  if ((url === '/api/skills/toggle' || url === '/api/skills/delete' || url === '/api/skills/import') && method === 'POST') {
-    sendJson(res, 501, { ok: false, error: 'Skill mutation is not implemented in cx-viewer yet' });
+  if (url === '/api/skills/toggle' && method === 'POST') {
+    try {
+      const body = await readJsonBody(req);
+      const result = toggleSkill(body, { cwd: currentProjectDir() });
+      sendJson(res, 200, result);
+    } catch (err) {
+      sendApiError(res, err, 'Failed to toggle skill');
+    }
+    return;
+  }
+
+  if (url === '/api/skills/delete' && method === 'POST') {
+    try {
+      const body = await readJsonBody(req);
+      const result = deleteSkill(body, { cwd: currentProjectDir() });
+      sendJson(res, 200, result);
+    } catch (err) {
+      sendApiError(res, err, 'Failed to delete skill');
+    }
+    return;
+  }
+
+  if (url === '/api/skills/import' && method === 'POST') {
+    try {
+      const upload = await readMultipartUpload(req);
+      const result = await importSkillUpload({
+        ...upload,
+        targetRoot: join(homedir(), '.codex', 'skills'),
+      });
+      sendJson(res, 200, result);
+    } catch (err) {
+      sendApiError(res, err, 'Failed to import skill');
+    }
+    return;
+  }
+
+  const imSkillsMatch = url.match(/^\/api\/im\/([^/]+)\/skills(?:\/(toggle|delete|import))?$/);
+  if (imSkillsMatch) {
+    const platformId = decodeURIComponent(imSkillsMatch[1]);
+    const action = imSkillsMatch[2] || '';
+    try {
+      if (!action && method === 'GET') {
+        sendJson(res, 200, {
+          ok: true,
+          skills: listSkills({ roots: imSkillRoots(platformId), includeReadonly: false }),
+        });
+        return;
+      }
+      if (action === 'toggle' && method === 'POST') {
+        const body = await readJsonBody(req);
+        sendJson(res, 200, toggleSkill(body, { roots: imSkillRoots(platformId) }));
+        return;
+      }
+      if (action === 'delete' && method === 'POST') {
+        const body = await readJsonBody(req);
+        sendJson(res, 200, deleteSkill(body, { roots: imSkillRoots(platformId) }));
+        return;
+      }
+      if (action === 'import' && method === 'POST') {
+        const upload = await readMultipartUpload(req);
+        const result = await importSkillUpload({ ...upload, targetRoot: imSkillImportRoot(platformId) });
+        sendJson(res, 200, result);
+        return;
+      }
+      sendJson(res, 405, { ok: false, error: 'Method not allowed' });
+    } catch (err) {
+      sendApiError(res, err, 'Failed to manage IM skills');
+    }
     return;
   }
 
@@ -1030,7 +1209,7 @@ async function handleRequest(req, res) {
     });
 
     // 注意：不要在此处 clients.push(res)！
-    // 必须等 load_end + kv_cache + context_window 全部发送完毕后再加入广播列表，
+    // 必须等 load_end + context_window 全部发送完毕后再加入广播列表，
     // 否则 streamRawEntriesAsync 的 setImmediate yield 间隙会让 watcher 的
     // sendToClients 向该客户端推送 live entry，而 load_end 的 setState 会覆盖这些
     // 已处理的 live entry，导致 对话条目"显示→消失→重现"闪烁。
@@ -1056,8 +1235,7 @@ async function handleRequest(req, res) {
     const limitParam = parseInt(parsedUrl.searchParams.get('limit'), 10) || 0;
     const useLimit = !useIncremental && limitParam > 0;
 
-    // KV-Cache / context_window 追踪（扫描全量条目，不受 since 过滤影响）
-    let latestKvCache = null;
+    // context_window 追踪（扫描全量条目，不受 since 过滤影响）
     let latestContextWindow = null;
     let pushedContextWindow = false;
 
@@ -1071,13 +1249,19 @@ async function handleRequest(req, res) {
       since: useIncremental ? sinceParam : undefined,
       limit: useLimit ? limitParam : undefined,
       onScan: (raw) => {
-        // 轻量追踪最新 MainAgent 的 KV-Cache 和 context_window（仅 regex 检测）
-        if (raw.includes('"mainAgent":true') || raw.includes('"mainAgent": true')) {
+        // 轻量追踪最新 MainAgent 的 context_window。
+        // 新 Codex 日志可能缺失 mainAgent:true，只能通过 Codex instructions
+        // 与当前 snake_case 工具名回退识别。
+        if (
+          raw.includes('"mainAgent":true') ||
+          raw.includes('"mainAgent": true') ||
+          raw.includes('You are Codex') ||
+          raw.includes('"shell_command"') ||
+          raw.includes('"tool_search"')
+        ) {
           try {
             const entry = JSON.parse(raw);
             if (isMainAgentEntry(entry)) {
-              const cached = extractCachedContent(entry);
-              if (cached) latestKvCache = cached;
               const usage = entry.response?.body?.usage;
               if (usage) {
                 const cw = buildContextWindowEvent(usage);
@@ -1102,10 +1286,7 @@ async function handleRequest(req, res) {
 
     res.write(`event: load_end\ndata: {}\n\n`);
 
-    // 发送最新 MainAgent 的 KV-Cache 和 context_window
-    if (latestKvCache) {
-      res.write(`event: kv_cache_content\ndata: ${JSON.stringify(latestKvCache)}\n\n`);
-    }
+    // 发送最新 MainAgent 的 context_window
     if (latestContextWindow) {
       res.write(`event: context_window\ndata: ${JSON.stringify(latestContextWindow)}\n\n`);
       pushedContextWindow = true;
@@ -1127,7 +1308,7 @@ async function handleRequest(req, res) {
       } catch { }
     }
 
-    // 历史数据 + KV-Cache + context_window 全部发送完毕后，才将客户端加入广播列表。
+    // 历史数据 + context_window 全部发送完毕后，才将客户端加入广播列表。
     // 这样 watcher 的 sendToClients 不会在 load 阶段向该客户端推送 live entry。
     clients.push(res);
 
@@ -1304,16 +1485,15 @@ async function handleRequest(req, res) {
     return;
   }
 
-  // Codex settings.json（启动时读取，不 watch）
+  // Codex config.toml
   if (url === '/api/codex-settings' && method === 'GET') {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    const fileEnv = codexSettings.env || {};
-    // 与 Codex Code 保持一致：settings.json env 优先，fallback 到 process.env
-    const env = { ...fileEnv };
-    if (!env.CODEX_EXPERIMENTAL_AGENT_TEAMS && process.env.CODEX_EXPERIMENTAL_AGENT_TEAMS) {
-      env.CODEX_EXPERIMENTAL_AGENT_TEAMS = process.env.CODEX_EXPERIMENTAL_AGENT_TEAMS;
-    }
-    res.end(JSON.stringify({ env, model: codexSettings.model || null, showThinkingSummaries: codexSettings.showThinkingSummaries || false, codexAvailable: process.env.CXV_CODEX_MISSING !== '1' }));
+    const cfg = readCodexGlobalConfig();
+    sendJson(res, 200, {
+      model: typeof cfg.model === 'string' ? cfg.model : null,
+      showThinkingSummaries: cfg.show_raw_agent_reasoning === true,
+      codexAvailable: process.env.CXV_CODEX_MISSING !== '1',
+      codexConfigDir: cfg.configDir,
+    });
     return;
   }
 
@@ -1323,17 +1503,16 @@ async function handleRequest(req, res) {
     req.on('end', () => {
       try {
         const incoming = JSON.parse(body);
-        const settingsPath = join(homedir(), '.codex', 'settings.json');
-        let settings = {};
-        try { if (existsSync(settingsPath)) settings = JSON.parse(readFileSync(settingsPath, 'utf-8')); } catch { }
-        Object.assign(settings, incoming);
-        writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
-        Object.assign(codexSettings, incoming);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ ok: true }));
+        const cfg = updateCodexGlobalConfig(incoming);
+        sendJson(res, 200, {
+          ok: true,
+          model: typeof cfg.model === 'string' ? cfg.model : null,
+          showThinkingSummaries: cfg.show_raw_agent_reasoning === true,
+          codexAvailable: process.env.CXV_CODEX_MISSING !== '1',
+          codexConfigDir: cfg.configDir,
+        });
       } catch {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+        sendJson(res, 400, { error: 'Invalid JSON' });
       }
     });
     return;
@@ -2089,7 +2268,7 @@ async function handleRequest(req, res) {
     return;
   }
 
-  // Ask hook bridge: long-poll endpoint for PreToolUse AskUserQuestion hook
+  // Ask hook bridge: long-poll endpoint for request_user_input hook
   if (url === '/api/ask-hook' && method === 'POST') {
     let body = '';
     req.on('data', (chunk) => {
@@ -2186,29 +2365,29 @@ async function handleRequest(req, res) {
     });
     req.on('end', () => {
       try {
-        const { toolName, input } = JSON.parse(body);
+        const { toolName, input, forceManual = false } = JSON.parse(body);
         if (!toolName) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Missing toolName' }));
           return;
         }
 
-        // Cancel any previous pending permission request
-        if (pendingPermHook) {
-          try {
-            if (!pendingPermHook.res.headersSent) {
-              pendingPermHook.res.writeHead(409, { 'Content-Type': 'application/json' });
-              pendingPermHook.res.end(JSON.stringify({ error: 'Superseded' }));
-            }
-          } catch {}
-          clearTimeout(pendingPermHook.timer);
+
+        // In Codex auto-review mode the native reviewer agent owns the decision.
+        // A hook with no decision lets Codex continue its normal approval path.
+        // Publish commands remain a deliberate human-only safety boundary in
+        // every mode and opt out through forceManual.
+        if (!forceManual && _codexNativeReviewerAvailable && shouldDeferPermissionHookToCodex(_runtimeApprovalsReviewer)) {
+          sendJson(res, 200, { deferToCodex: true });
+          return;
         }
 
         const HOOK_TIMEOUT = HOOK_TIMEOUT_MS;
         const id = `perm_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
         const timer = setTimeout(() => {
-          if (pendingPermHook && pendingPermHook.id === id) {
-            pendingPermHook = null;
+          const pending = pendingPermHooks.get(id);
+          if (pending) {
+            pendingPermHooks.delete(id);
             try {
               if (!res.headersSent) {
                 res.writeHead(408, { 'Content-Type': 'application/json' });
@@ -2216,7 +2395,7 @@ async function handleRequest(req, res) {
               }
             } catch {}
             if (terminalWss) {
-              const tmsg = JSON.stringify({ type: 'perm-hook-timeout' });
+              const tmsg = JSON.stringify({ type: 'perm-hook-timeout', id });
               terminalWss.clients.forEach((c) => {
                 if (c.readyState === 1) try { c.send(tmsg); } catch {}
               });
@@ -2224,7 +2403,7 @@ async function handleRequest(req, res) {
           }
         }, HOOK_TIMEOUT);
 
-        pendingPermHook = { id, toolName, input, res, timer, createdAt: Date.now() };
+        pendingPermHooks.set(id, { id, toolName, input, res, timer, createdAt: Date.now() });
 
         // Broadcast to all terminal WS clients
         if (terminalWss) {
@@ -2238,11 +2417,12 @@ async function handleRequest(req, res) {
 
         // Handle perm-bridge.js disconnection
         res.on('close', () => {
-          if (pendingPermHook && pendingPermHook.id === id) {
-            clearTimeout(pendingPermHook.timer);
-            pendingPermHook = null;
+          const pending = pendingPermHooks.get(id);
+          if (pending) {
+            clearTimeout(pending.timer);
+            pendingPermHooks.delete(id);
             if (terminalWss) {
-              const tmsg = JSON.stringify({ type: 'perm-hook-timeout' });
+              const tmsg = JSON.stringify({ type: 'perm-hook-timeout', id });
               terminalWss.clients.forEach((c) => {
                 if (c.readyState === 1) try { c.send(tmsg); } catch {}
               });
@@ -2829,19 +3009,29 @@ async function handleRequest(req, res) {
     return;
   }
 
-  // GET /api/concept?lang=zh&doc=Tool-Bash
+  // GET /api/concept?lang=zh&doc=Tool-shell_command
   if (method === 'GET' && url === '/api/concept') {
     const lang = parsedUrl.searchParams.get('lang') || 'zh';
     const doc = parsedUrl.searchParams.get('doc') || '';
-    // 安全校验：只允许字母、数字、连字符
-    if (!/^[a-zA-Z0-9-]+$/.test(doc) || !/^[a-z]{2}(-[a-zA-Z]{2,})?$/.test(lang)) {
+    // 安全校验：工具名允许下划线；仍禁止路径分隔符和其他特殊字符
+    if (!/^[a-zA-Z0-9_-]+$/.test(doc) || !/^[a-z]{2}(-[a-zA-Z]{2,})?$/.test(lang)) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Invalid parameters' }));
       return;
     }
     let mdPath = join(__dirname, 'concepts', lang, `${doc}.md`);
-    if (!existsSync(mdPath) && lang !== 'zh') {
-      mdPath = join(__dirname, 'concepts', 'zh', `${doc}.md`);
+    if (!existsSync(mdPath)) {
+      const fallbackLangs = (doc === 'Tools' || doc.startsWith('Tool-'))
+        ? (lang === 'zh-TW' ? ['zh', 'en'] : ['en', 'zh'])
+        : ['zh'];
+      for (const fallbackLang of fallbackLangs) {
+        if (fallbackLang === lang) continue;
+        const fallbackPath = join(__dirname, 'concepts', fallbackLang, `${doc}.md`);
+        if (existsSync(fallbackPath)) {
+          mdPath = fallbackPath;
+          break;
+        }
+      }
     }
     if (existsSync(mdPath)) {
       const content = readFileSync(mdPath, 'utf-8');
@@ -3352,10 +3542,10 @@ async function setupTerminalWebSocket(httpServer) {
             if (isSdkMode && _sdkResolveApproval && msg.id) {
               _sdkResolveApproval(msg.id, msg.allowSession ? { decision: msg.decision || 'allow', allowSession: true } : (msg.decision || 'deny'));
               permAnswered = true;
-            } else if (pendingPermHook && msg.id && msg.id === pendingPermHook.id) {
-              const { res: hookRes, timer } = pendingPermHook;
+            } else if (msg.id && pendingPermHooks.has(msg.id)) {
+              const { res: hookRes, timer } = pendingPermHooks.get(msg.id);
               clearTimeout(timer);
-              pendingPermHook = null;
+              pendingPermHooks.delete(msg.id);
               permAnswered = true;
               try {
                 if (!hookRes.headersSent) {
@@ -3552,7 +3742,7 @@ async function _doStop() {
 export function pushSdkEntry(entry) {
   if (entry && LOG_FILE) {
     try {
-      appendFileSync(LOG_FILE, JSON.stringify(entry) + '\n---\n');
+      appendLogEntry(entry);
       notifyStatsWorker(LOG_FILE);
     } catch {}
   }

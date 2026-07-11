@@ -1,4 +1,4 @@
-// AskFlowController — ChatView 的 AskUserQuestion 问答流状态机（从 ChatView.jsx 抽出）。
+// AskFlowController — ChatView 的 request_user_input 问答流状态机（从 ChatView.jsx 抽出）。
 //
 // 设计：依赖注入的纯逻辑类，不是 React hook（ChatView 是 class + 单 contextType，
 // 用不了 hook）。React state 仍留在 ChatView.state，本控制器通过构造时注入的 `host`
@@ -288,7 +288,7 @@ export class AskFlowController {
       return;
     }
 
-    // PTY prompt 类型自检：必须是合法的 AskUserQuestion inquirer prompt
+    // PTY prompt 类型自检：必须是合法的 request_user_input inquirer prompt
     const p = this.host.getState().ptyPrompt;
     const isValidAskPrompt = !!(p && Array.isArray(p.options) && p.options.length > 0
       && !isPlanApprovalPrompt(p)
@@ -381,7 +381,7 @@ export class AskFlowController {
   }
 
   /**
-   * Submit AskUserQuestion answers via hook bridge (structured JSON, no PTY simulation).
+   * Submit request_user_input answers via hook bridge (structured JSON, no PTY simulation).
    */
   _submitViaHookBridge(answers, explicitHeadId, explicitQuestions) {
     const ws = this.host.ws();
@@ -475,7 +475,7 @@ export class AskFlowController {
   };
 
   /**
-   * Cancel a pending AskUserQuestion — Cancel 按钮 / typed-interrupt 触发。
+   * Cancel a pending request_user_input — Cancel 按钮 / typed-interrupt 触发。
    * 乐观写 localAskAnswers + 推 head；发 WS ask-cancel；WS 不可用时缓存到 _pendingCancelIds 待重发。
    */
   handleAskCancel = (askId, reason) => {
@@ -515,7 +515,7 @@ export class AskFlowController {
       wasHookActive: this._askHookActive,
       wasSdkAskId: this._sdkAskId,
     };
-    // 立即更新本地答案映射，解除 Last Response 中"提交中..."卡住状态
+    // 立即更新本地答案映射，让 request_user_input 卡片同帧切到已回答状态。
     if (askId && questions) {
       const localAnswers = {};
       for (const answer of answers) {
@@ -650,7 +650,7 @@ export class AskFlowController {
       return true;
     }
     if (msg.type === 'sdk-ask-pending') {
-      // SDK mode: AskUserQuestion via canUseTool — id 是 SDK toolUseId。与 hook 共用队列。
+      // SDK mode: request_user_input via canUseTool — id 是 SDK toolUseId。与 hook 共用队列。
       if (msg.id == null) {
         console.warn('[ChatView] sdk-ask-pending missing id — server invariant violated, ignoring');
         return true;

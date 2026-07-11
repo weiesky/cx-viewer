@@ -27,13 +27,9 @@ Field reference for CX-Viewer's normalized Codex response body.
 
 | Field | Description |
 |-------|-------------|
-| **input_tokens** | Number of input tokens that did not hit the cache (billed at full price) |
-| **cache_read_input_tokens** | Number of tokens that hit the cache (cache read, billed much lower than normal input) |
 | **output_tokens** | Number of tokens output by the model |
 | **reasoning_output_tokens** | Reasoning tokens when the source reports them |
 | **total_tokens** | Total tokens reported by the source |
-
-OpenAI Responses usage may report cached tokens under `input_tokens_details.cached_tokens`; CX-Viewer normalizes that into `cache_read_input_tokens` and subtracts it from displayed `input_tokens` to avoid double counting.
 
 ## stop_reason Meanings
 

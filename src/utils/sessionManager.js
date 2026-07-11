@@ -1,13 +1,13 @@
 // Wire format 协议详见 docs/WIRE_FORMAT.md（applyInPlaceLastMsgReplace 信号驱动短路是其客户端唯一消费方）
 import { parseImOrigin } from './imOrigin.js';
-import { isSessionBoundary, isPostClearCheckpoint } from './clearCheckpoint.js';
+import { isSessionBoundary, isPostClearCheckpoint, getMainAgentSessionKey } from './clearCheckpoint.js';
 
 export const HOT_SESSION_COUNT = 8;
 
 /**
  * 给一组 messages 赋 `_timestamp` 和 `_generatedTs`。
  *
- * 背景：cx-viewer 通过下一次 API 请求的 body.messages 才能感知到上一次的 assistant 响应。
+ * 背景：cx-viewer 通过下一次 API 请求的 body.input 才能感知到上一次的 assistant 响应。
  * 旧逻辑给所有新增 message 统一赋 `entry.timestamp`，导致 assistant msg 的 _timestamp 是
  * "下一次 request 的 ts"，bubble 显示时间晚一拍。helpers.js:resolveProducerModelInfo 用
  * `idx-1` hack 修了 model icon，但 bubble 时间标签没修。
@@ -22,18 +22,27 @@ export const HOT_SESSION_COUNT = 8;
  * @param {number} prevCount prevMessages.length（缓存）
  * @param {string} currentTs 当前 entry.timestamp
  * @param {string|null} prevMainAgentTs 上一次 mainAgent entry 的 timestamp，无则 null
+ * @param {number} [messageOffset=0] messages[0] 在完整会话中的逻辑位置；
+ *   Codex Responses 的累积 input 增量投影会从历史锚点开始，而非从位置 0 开始。
  * @returns {Array} messages（原数组引用）
  */
-export function assignMessageTimestamps(messages, prevMessages, isNewSession, prevCount, currentTs, prevMainAgentTs) {
+export function assignMessageTimestamps(messages, prevMessages, isNewSession, prevCount, currentTs, prevMainAgentTs, messageOffset = 0) {
   if (!Array.isArray(messages)) return messages;
   for (let i = 0; i < messages.length; i++) {
     const m = messages[i];
     if (!m) continue;
-    if (!isNewSession && i < prevCount && prevMessages[i] && prevMessages[i]._timestamp) {
+    const logicalIndex = messageOffset + i;
+    if (m._codexCurrentResponse === true) {
+      // normalizeConversationEntry appends this entry's completed response
+      // immediately; unlike historical assistant input, its producer is the
+      // current request rather than the previous carrier request.
+      m._timestamp = currentTs;
+      m._generatedTs = currentTs;
+    } else if (!isNewSession && logicalIndex < prevCount && prevMessages[logicalIndex] && prevMessages[logicalIndex]._timestamp) {
       // 历史 message：继承 prev 的 _timestamp 和 _generatedTs（如有）
-      m._timestamp = prevMessages[i]._timestamp;
-      if (prevMessages[i]._generatedTs) {
-        m._generatedTs = prevMessages[i]._generatedTs;
+      m._timestamp = prevMessages[logicalIndex]._timestamp;
+      if (prevMessages[logicalIndex]._generatedTs) {
+        m._generatedTs = prevMessages[logicalIndex]._generatedTs;
       }
     } else if (!m._timestamp) {
       // 新增 message：赋 currentTs；assistant 角色额外赋 _generatedTs
@@ -53,8 +62,9 @@ export function assignMessageTimestamps(messages, prevMessages, isNewSession, pr
  * 解析 bubble 对应的"生产请求 ts" —— 双向映射 msg ↔ request 的 lookup key。
  *
  * 语义对齐：
- *   - assistant msg：体现"哪次 API 调用 *生成* 此 response" → `_generatedTs` (= 上一次 mainAgent ts，
- *     即真正产出该 content 的 request 的 ts)。fallback 到 `_timestamp` 兼容旧 cache / 首条 entry。
+ *   - assistant msg：体现"哪次 API 调用 *生成* 此 response"。当前 entry 已直接附带 response 时
+ *     `_generatedTs` 是当前请求 ts；历史 input 中的 assistant 则继承其原 producer ts。
+ *     fallback 到 `_timestamp` 兼容旧 cache / 首条 entry。
  *   - user / 其他 role：体现"哪次 API 调用 *承载* 此 input" → `_timestamp` (carrier，本就 = 该请求自身 ts)。
  *
  * 用途：
@@ -396,16 +406,19 @@ export async function runPinHydration({ fetchPin, isCurrent, getDerived, effOnly
  *   st.timestamps / st.generatedTimestamps - positional ts accumulators
  *   st.currentSessionId - stable id of the session being accumulated
  *   st.prevUserId / st.prevMainAgentTs - carry-over between entries
- * and stamps `_timestamp` / `_generatedTs` onto entry.body.messages.
+ *   st.prevSessionKey - previous Codex thread/upstream lane key
+ * and stamps `_timestamp` / `_generatedTs` onto entry.body.input.
  *
  * @param {object} st - batch accumulator state
- * @param {object} entry - mainAgent entry with body.messages array
+ * @param {object} entry - mainAgent entry with body.input array
  * @returns {void}
  */
 export function applyBatchEntryTimestamps(st, entry) {
-  const messages = entry.body.messages;
-  const count = entry._messageCount || messages.length;
+  const messages = entry.body.input;
+  const count = entry._conversationMessageCount ?? entry._messageCount ?? messages.length;
+  const messageOffset = entry._conversationWindowStart ?? 0;
   const userId = entry.body.metadata?.user_id || null;
+  const sessionKey = getMainAgentSessionKey(entry);
   const timestamp = entry.timestamp || new Date().toISOString();
 
   const prevCount = st.timestamps.length;
@@ -413,7 +426,14 @@ export function applyBatchEntryTimestamps(st, entry) {
   // filter below), otherwise the first count=1 entry after a delta rebuild would
   // be swallowed and its _timestamp stolen by the next count>4 entry.
   const postClearCheckpoint = isPostClearCheckpoint(entry, prevCount);
-  const isNewSession = isSessionBoundary(entry, { prevCount, count, prevUserId: st.prevUserId, userId });
+  const isNewSession = isSessionBoundary(entry, {
+    prevCount,
+    count,
+    prevUserId: st.prevUserId,
+    userId,
+    prevSessionKey: st.prevSessionKey,
+    sessionKey,
+  });
   // Transient protection: very short entries (<=4 msgs) after a long conversation
   // are usually in-flight requests (request body only, no response yet) and must
   // not reset the accumulated timestamps. Real /clear starts are exempt.
@@ -438,7 +458,7 @@ export function applyBatchEntryTimestamps(st, entry) {
   // Extend the two parallel arrays; new positions take this entry's ts and record
   // the previous mainAgent ts as their "generated at" ts.
   // Note: role-gating happens in the inner loop (not at push time) — in the offline
-  // batch path this entry may be _slimmed (body.messages=[]) with only _messageCount,
+  // batch path this entry may be _slimmed (body.input=[]) with only _messageCount,
   // so messages[j] can be undefined here.
   for (let j = st.timestamps.length; j < count; j++) {
     st.timestamps.push(timestamp);
@@ -448,13 +468,22 @@ export function applyBatchEntryTimestamps(st, entry) {
     for (let j = 0; j < messages.length; j++) {
       const m = messages[j];
       if (!m) continue;
-      m._timestamp = st.timestamps[j];
-      if (m.role === 'assistant' && st.generatedTimestamps[j]) {
-        m._generatedTs = st.generatedTimestamps[j];
+      const logicalIndex = messageOffset + j;
+      if (m._codexCurrentResponse === true) {
+        m._timestamp = timestamp;
+        m._generatedTs = timestamp;
+        st.timestamps[logicalIndex] = timestamp;
+        st.generatedTimestamps[logicalIndex] = timestamp;
+      } else {
+        m._timestamp = st.timestamps[logicalIndex];
+      }
+      if (m.role === 'assistant' && !m._generatedTs && st.generatedTimestamps[logicalIndex]) {
+        m._generatedTs = st.generatedTimestamps[logicalIndex];
       }
     }
   }
   st.prevUserId = userId;
+  st.prevSessionKey = sessionKey || null;
   // Remember this entry's ts as the next entry's prevMainAgentTs.
   st.prevMainAgentTs = timestamp;
 }
@@ -463,8 +492,8 @@ export function applyBatchEntryTimestamps(st, entry) {
  * 解析「仅展示当前会话」锁定下，实际传给 ChatView 的会话切片。
  *
  * 策略：把 mainAgentSessions 切到「以 pin 会话结尾」(`slice(0, idx+1)`)，让 pin 会话从
- * ChatView 视角就是最后一个会话 —— 所有 `si === length-1` 的既有逻辑（Last Response 卡片、
- * Ask/ExitPlanMode 审批 modal、分隔线）原样可用。常见情形（pin == 最新 / 未命中 / 未开）
+ * ChatView 视角就是最后一个会话 —— 所有 `si === length-1` 的既有逻辑（ask/plan
+ * 审批 modal、分隔线）原样可用。常见情形（pin == 最新 / 未命中 / 未开）
  * 直接原样返回，行为与今天逐字节一致。
  *
  * @param {Array} mainAgentSessions
@@ -558,7 +587,7 @@ export function mergeSessionIndices(oldIndex, newIndex) {
  *
  * 修法：直接消费服务端明确信号，不走 sessionMerge 启发式算法。命中时构造新 lastSession，前
  * N-1 条 message 元素引用复用（保留 _timestamp / _generatedTs 等所有 metadata），末位用
- * entry.body.messages[N-1]。返回 `{ applied: true, sessions }` 表示已短路；未命中返回
+ * entry.body.input[N-1]。返回 `{ applied: true, sessions }` 表示已短路；未命中返回
  * `{ applied: false }`，调用方走原 mergeMainAgentSessions 路径。
  *
  * 防回归（避开 1.6.249 拆 Layer 2 的两个坑）：
@@ -569,14 +598,14 @@ export function mergeSessionIndices(oldIndex, newIndex) {
  *   1. 信号未命中（_inPlaceReplaceDetected/_isCheckpoint 非 true）
  *   2. isNewSession（新 session 起点不应原地替换旧 session 末位）
  *   3. prevSessions / lastSession.messages 异常
- *   4. entry.body.messages 缺失
+ *   4. entry.body.input 缺失
  *   5. N < 2（只有 1 条消息时 "前 N-1 条" 退化为空，等价完全替换 → 让原路径处理更安全）
  *   6. messages.length 与 lastSession.messages.length 不等
  *   7. entry.response 缺失（inProgress 状态不应被信号触发；服务端 Plan C 仅在 completed 写信号，
- *      此守卫是 belt+suspenders 防协议变化导致丢失 response 字段污染下游 ChatView Last Response）
+ *      此守卫是 belt+suspenders 防协议变化导致丢失 response 字段污染下游 session state）
  *
  * @param {Array} prevSessions
- * @param {object} entry — mainAgent entry，需含 _inPlaceReplaceDetected / _isCheckpoint / body.messages
+ * @param {object} entry — mainAgent entry，需含 _inPlaceReplaceDetected / _isCheckpoint / body.input
  * @param {string} timestamp — entry 的 timestamp（用于赋新末位 message 的 _timestamp）
  * @param {boolean} isNewSession — 是否新 session 起点（true 时不短路，让原路径处理）
  * @returns {{ applied: boolean, sessions?: Array }}
@@ -602,7 +631,7 @@ export function applyInPlaceLastMsgReplace(prevSessions, entry, timestamp, isNew
           ts: entry && entry.timestamp,
           hasSignal: entry && entry._inPlaceReplaceDetected === true,
           isCheckpoint: entry && entry._isCheckpoint === true,
-          msgLen: entry && entry.body && Array.isArray(entry.body.messages) ? entry.body.messages.length : null,
+          msgLen: entry && entry.body && Array.isArray(entry.body.input) ? entry.body.input.length : null,
           lastSessionLen: Array.isArray(prevSessions) && prevSessions.length > 0 && prevSessions[prevSessions.length - 1] && Array.isArray(prevSessions[prevSessions.length - 1].messages) ? prevSessions[prevSessions.length - 1].messages.length : null,
         });
       }
@@ -622,11 +651,11 @@ export function applyInPlaceLastMsgReplace(prevSessions, entry, timestamp, isNew
   if (!Array.isArray(prevSessions) || prevSessions.length === 0) { _bumpFb('no-prev-sessions'); return { applied: false }; }
   const lastSession = prevSessions[prevSessions.length - 1];
   if (!lastSession || !Array.isArray(lastSession.messages)) { _bumpFb('no-last-session-messages'); return { applied: false }; }
-  const messages = entry.body && Array.isArray(entry.body.messages) ? entry.body.messages : null;
+  const messages = entry.body && Array.isArray(entry.body.input) ? entry.body.input : null;
   if (!messages || messages.length < 2) { _bumpFb('messages-too-short'); return { applied: false }; }
   if (messages.length !== lastSession.messages.length) { _bumpFb('length-mismatch'); return { applied: false }; }
   // entry.response 缺失（inProgress 等异常）→ fallback，避免 newLastSession.response=undefined
-  // 污染下游 ChatView Last Response 渲染。服务端 Plan C 仅在 completed 写信号，正常情况这条守卫
+  // 污染下游 session state。服务端 Plan C 仅在 completed 写信号，正常情况这条守卫
   // 不会命中；保留作为协议变更时的防御层。
   if (!entry.response) { _bumpFb('response-missing'); return { applied: false }; }
 

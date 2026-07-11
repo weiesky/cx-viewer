@@ -5,9 +5,10 @@ import { DISPLAY_SCALE_PRESETS } from '../../utils/displayScaleHelper';
 import { hasNativeZoom, isMac } from '../../env';
 import { MessageOutlined, FileTextOutlined, ImportOutlined, DashboardOutlined, ExportOutlined, DownloadOutlined, SettingOutlined, BarChartOutlined, CodeOutlined, CopyOutlined, ApiOutlined, SwapOutlined, QuestionCircleOutlined, PushpinOutlined, PushpinFilled } from '@ant-design/icons';
 import { QRCodeCanvas } from 'qrcode.react';
-import { formatTokenCount, computeTokenStats, computeCacheRebuildStats, computeToolUsageStats, computeSkillUsageStats, computeContextPercent, sumUsageContextTokens } from '../../utils/helpers';
+import { formatTokenCount, computeTokenStats, computeToolUsageStats, computeSkillUsageStats, computeContextPercent, sumUsageContextTokens } from '../../utils/helpers';
 import { contextSeverityColor } from '../../utils/formatters';
-import { PERM_AUTO_APPROVE_OPTIONS, PLAN_AUTO_APPROVE_OPTIONS, autoApproveSelectOptions } from '../../utils/autoApproveOptions';
+import { PLAN_AUTO_APPROVE_OPTIONS, autoApproveSelectOptions } from '../../utils/autoApproveOptions';
+import { approvalReviewerSelectOptions } from '../../utils/approvalReviewerOptions';
 import { classifyUserContent, isMainAgent, extractDisplayText } from '../../utils/contentFilter';
 import { parseImOrigin } from '../../utils/imOrigin';
 import { BLUR_MASK_STYLE } from '../../utils/modalMask';
@@ -81,7 +82,7 @@ class AppHeader extends React.Component {
 
   constructor(props) {
     super(props);
-    this.state = { countdownText: '', promptModalVisible: false, promptData: [], promptViewMode: 'original', settingsDrawerVisible: false, globalSettingsVisible: false, projectStatsVisible: false, projectStats: null, projectStatsLoading: false, localUrl: '', pluginModalVisible: false, processModalVisible: false, logoDropdownOpen: false, electronMenuOpen: false, electronMenuBar: null, cacheHighlightIdx: null, cacheHighlightFading: false, proxyModalVisible: false, systemTextModalVisible: false, messagingModalVisible: false, messagingInitialTool: null, imRecordVisible: false, imRecordPlatform: null, logDirDraft: null, qrPopoverOpen: false, electronQrOpen: false, electronQrAnchor: null, projectPrefsModalOpen: false, _skillsModal: { open: false, loading: false, skills: [], error: null, toggling: new Set() },
+    this.state = { promptModalVisible: false, promptData: [], promptViewMode: 'original', settingsDrawerVisible: false, globalSettingsVisible: false, projectStatsVisible: false, projectStats: null, projectStatsLoading: false, localUrl: '', pluginModalVisible: false, processModalVisible: false, logoDropdownOpen: false, electronMenuOpen: false, electronMenuBar: null, proxyModalVisible: false, systemTextModalVisible: false, messagingModalVisible: false, messagingInitialTool: null, imRecordVisible: false, imRecordPlatform: null, logDirDraft: null, qrPopoverOpen: false, electronQrOpen: false, electronQrAnchor: null, projectPrefsModalOpen: false, _skillsModal: { open: false, loading: false, skills: [], error: null, toggling: new Set() },
       // 文件系统权威的 skill 列表（/api/skills 返回）；live-tail 下作为 popover chip 和管理弹窗的共享数据源。
       // null=未加载 / false=失败 / [] 或 Array=加载结果。workspace 切换由 componentDidUpdate + seq 控制。
       _fsSkills: null,
@@ -114,8 +115,6 @@ class AppHeader extends React.Component {
       // 顺序=用户钉住先后；驱动行内钉按钮实心态、汉堡右侧快捷方式行、Electron header model 的 pins。
       pinnedKeys: parsePinned(typeof localStorage !== 'undefined' ? localStorage.getItem(PINNED_KEY) : null),
     };
-    this._countdownTimer = null;
-    this._expiredTimer = null;
     this._fsSkillsSeq = 0;
     this._memorySeq = 0;
     this._memoryDetailSeq = 0;
@@ -123,7 +122,6 @@ class AppHeader extends React.Component {
     // 切换/快速重开 popover 时旧回包不会污染新状态（参考 _memorySeq 模式）
     this._codexMdSeq = 0;
     this._codexMdDetailSeq = 0;
-    this.updateCountdown = this.updateCountdown.bind(this);
   }
 
   // ===== Electron 原生 tab bar header 桥接（把部分控件迁移到最顶部 tab bar）=====
@@ -246,10 +244,6 @@ class AppHeader extends React.Component {
       .map(k => descByKey.get(k))
       .filter(Boolean)
       .map(d => ({ key: d.key, name: d.label }));
-    const cd = this.state.countdownText;
-    const countdown = (viewMode === 'raw' && cd)
-      ? { text: `${t('ui.cacheCountdown', { type: this.props.cacheType ? `(${this.props.cacheType})` : '' })} ${cd}` }
-      : null;
     return {
       // menu / iPad 开关的 tooltip 在 tab bar 渲染，但 tab bar 无 i18n，故标题从这里（有 t()）下发本地化文案。
       menu: { title: t('ui.menu') },
@@ -261,7 +255,6 @@ class AppHeader extends React.Component {
       viewMode: { mode: viewMode, label: viewMode === 'raw' ? t('ui.chatMode') : t('ui.rawMode') },
       im,
       pins,
-      countdown,
       qr: showThemeBlock ? { title: t('ui.scanToCoding') } : null,
     };
   }
@@ -350,7 +343,6 @@ class AppHeader extends React.Component {
   };
 
   componentDidMount() {
-    this.startCountdown();
     fetch(apiUrl('/api/local-url')).then(r => r.json()).then(data => {
       if (data.url) this.setState({ localUrl: data.url });
     }).catch(() => {});
@@ -379,9 +371,6 @@ class AppHeader extends React.Component {
 
   componentDidUpdate(prevProps) {
     this._pushHeaderModel();
-    if (prevProps.cacheExpireAt !== this.props.cacheExpireAt) {
-      this.startCountdown();
-    }
     // Workspace 切换：projectName 变了 → 旧的 _fsSkills 属于旧项目，直接作废。
     // 递增 seq 防止正在途中的 reload 回包把脏数据塞回 state。
     if (prevProps.projectName !== this.props.projectName) {
@@ -687,8 +676,6 @@ class AppHeader extends React.Component {
       nextProps.requests !== this.props.requests ||
       nextProps.requestCount !== this.props.requestCount ||
       nextProps.viewMode !== this.props.viewMode ||
-      nextProps.cacheExpireAt !== this.props.cacheExpireAt ||
-      nextProps.cacheType !== this.props.cacheType ||
       nextProps.isLocalLog !== this.props.isLocalLog ||
       nextProps.localLogFile !== this.props.localLogFile ||
       nextProps.projectName !== this.props.projectName ||
@@ -702,11 +689,10 @@ class AppHeader extends React.Component {
       nextProps.contextBarOptimistic !== this.props.contextBarOptimistic ||
       nextProps.contextBarLocked !== this.props.contextBarLocked ||
       nextProps.contextBarSlot !== this.props.contextBarSlot ||
-      nextProps.serverCachedContent !== this.props.serverCachedContent ||
       nextProps.resumeAutoChoice !== this.props.resumeAutoChoice ||
       nextProps.themeColor !== this.props.themeColor ||
       nextProps.displayScale !== this.props.displayScale ||
-      nextProps.autoApproveSeconds !== this.props.autoApproveSeconds ||
+      nextProps.approvalsReviewer !== this.props.approvalsReviewer ||
       nextProps.proxyProfiles !== this.props.proxyProfiles ||
       nextProps.activeProxyId !== this.props.activeProxyId ||
       nextProps.defaultConfig !== this.props.defaultConfig ||
@@ -720,13 +706,6 @@ class AppHeader extends React.Component {
 
   componentWillUnmount() {
     if (this._headerActionDispose) { try { this._headerActionDispose(); } catch {} this._headerActionDispose = null; }
-    if (this._countdownTimer) clearTimeout(this._countdownTimer);
-    if (this._expiredTimer) clearTimeout(this._expiredTimer);
-    if (this._cacheFadeClearTimer) clearTimeout(this._cacheFadeClearTimer);
-    if (this._cacheScrollSettleTimer) clearTimeout(this._cacheScrollSettleTimer);
-    if (this._cacheAutoFadeTimer) clearTimeout(this._cacheAutoFadeTimer);
-    if (this._cacheHighlightDelayTimer) clearTimeout(this._cacheHighlightDelayTimer);
-    this._cacheUnbindScrollFade();
     document.removeEventListener('mousedown', this._onQrOutsidePointer);
     document.removeEventListener('keydown', this._onQrKeyDown);
     // 让任何在途的 reloadFsSkills / loadMemory / loadMemoryDetail 回包 seq 校验失败
@@ -737,52 +716,6 @@ class AppHeader extends React.Component {
     this._memoryDetailSeq++;
     this._codexMdSeq++;
     this._codexMdDetailSeq++;
-  }
-
-  startCountdown() {
-    if (this._countdownTimer) clearTimeout(this._countdownTimer);
-    if (this._expiredTimer) clearTimeout(this._expiredTimer);
-    if (!this.props.cacheExpireAt) {
-      if (this.state.countdownText !== '') this.setState({ countdownText: '' });
-      return;
-    }
-    this.updateCountdown();
-  }
-
-  // 秒级倒计时：改用 setTimeout 对齐下一秒边界，替代原 rAF 60fps 递归。
-  // 旧实现每 16ms 跑一次 Date.now() + math + compare 虽然大多数帧不 setState，
-  // 但仍占大量调度开销（profile 中 ~1934 samples）。新实现每秒至多一次 tick，
-  // 保留 "text 未变不 setState" 守卫避免多余 render。
-  updateCountdown() {
-    const { cacheExpireAt } = this.props;
-    if (!cacheExpireAt) {
-      if (this.state.countdownText !== '') this.setState({ countdownText: '' });
-      return;
-    }
-
-    const now = Date.now();
-    const remaining = Math.max(0, cacheExpireAt - now);
-    if (remaining <= 0) {
-      const expired = t('ui.cacheExpired');
-      if (this.state.countdownText !== expired) this.setState({ countdownText: expired });
-      this._expiredTimer = setTimeout(() => {
-        if (this.state.countdownText !== '') this.setState({ countdownText: '' });
-      }, 5000);
-      return;
-    }
-
-    const totalSec = Math.ceil(remaining / 1000);
-    let text;
-    if (totalSec >= 60) {
-      const m = Math.floor(totalSec / 60);
-      const s = totalSec % 60;
-      text = t('ui.minuteSecond', { m: m, s: String(s).padStart(2, '0') });
-    } else {
-      text = t('ui.second', { s: totalSec });
-    }
-    if (text !== this.state.countdownText) this.setState({ countdownText: text });
-    const delay = 1000 - (now % 1000);
-    this._countdownTimer = setTimeout(this.updateCountdown, delay);
   }
 
   // 命令相关的标签集合，已作为独立 prompt 输出，在 segments 中直接丢弃
@@ -863,7 +796,7 @@ class AppHeader extends React.Component {
     const mainAgentRequests = requests.filter(r => isMainAgent(r));
     for (let ri = 0; ri < mainAgentRequests.length; ri++) {
       const req = mainAgentRequests[ri];
-      const messages = req.body?.messages || [];
+      const messages = req.body?.input || [];
       const timestamp = req.timestamp || '';
       const { userMsgs, fullTexts, slashCmd } = AppHeader.extractUserTexts(messages);
 
@@ -919,15 +852,12 @@ class AppHeader extends React.Component {
 
   renderTokenStats(closeParent) {
     const { requests = [] } = this.props;
-    const { cacheHighlightIdx, cacheHighlightFading } = this.state;
-    // Popover 打开期间 AppHeader 可能因 contextWindow / serverCachedContent 等其他
+    // Popover 打开期间 AppHeader 可能因 contextWindow 等其他
     // prop 变化而重渲，此时 requests 未变但会重跑 3 份 O(N) 聚合 + 大 JSX 构造。
-    // 按 requests 引用 + 2 个高亮 state 做 === memo，典型场景命中率 >80%。
+    // 按 requests 引用做 === memo，典型场景命中率 >80%。
     if (
       this._tokenStatsCache &&
-      this._tokenStatsCacheReq === requests &&
-      this._tokenStatsCacheHl === cacheHighlightIdx &&
-      this._tokenStatsCacheFade === cacheHighlightFading
+      this._tokenStatsCacheReq === requests
     ) {
       return this._tokenStatsCache;
     }
@@ -948,8 +878,6 @@ class AppHeader extends React.Component {
       <div className={styles.tokenStatsColumn}>
         {models.map((model) => {
           const s = byModel[model];
-          const totalInput = s.input + s.cacheCreation + s.cacheRead;
-          const cacheHitRate = totalInput > 0 ? ((s.cacheRead / totalInput) * 100).toFixed(1) : '0.0';
           return (
             <div key={model} className={models.length > 1 ? styles.modelCardSpaced : sharedChrome.modelCard}>
               <div className={sharedChrome.modelName}>
@@ -964,22 +892,18 @@ class AppHeader extends React.Component {
                   </tr>
                   <tr className={sharedChrome.rowBorder}>
                     <td className={sharedChrome.label}></td>
-                    <td className={sharedChrome.td}>{formatTokenCount(totalInput)}</td>
+                    <td className={sharedChrome.td}>{formatTokenCount(s.input)}</td>
                     <td className={sharedChrome.td}>{formatTokenCount(s.output)}</td>
                   </tr>
                   <tr>
                     <td className={sharedChrome.label}>{t('ui.stats.cache')}</td>
-                    <td className={sharedChrome.th}>{t('ui.stats.create')}</td>
-                    <td className={sharedChrome.th}>{t('ui.stats.read')}</td>
+                    <td className={sharedChrome.th}>{t('ui.stats.cacheRead')}</td>
+                    <td className={sharedChrome.th}>{t('ui.stats.cacheWrite')}</td>
                   </tr>
                   <tr className={sharedChrome.rowBorder}>
                     <td className={sharedChrome.label}></td>
-                    <td className={sharedChrome.td}>{formatTokenCount(s.cacheCreation)}</td>
                     <td className={sharedChrome.td}>{formatTokenCount(s.cacheRead)}</td>
-                  </tr>
-                  <tr>
-                    <td className={sharedChrome.label}>{t('ui.hitRate')}</td>
-                    <td colSpan={2} className={sharedChrome.td}>{cacheHitRate}%</td>
+                    <td className={sharedChrome.td}>{formatTokenCount(s.cacheWrite)}</td>
                   </tr>
                 </tbody>
               </table>
@@ -989,7 +913,7 @@ class AppHeader extends React.Component {
       </div>
     );
 
-    const cacheRebuildColumn = this.renderCacheRebuildStats();
+    const agentStatsColumn = this.renderAgentActivityStats();
 
     const toolColumn = toolStats.length > 0 ? (
       <div className={styles.toolStatsColumn}>
@@ -999,7 +923,7 @@ class AppHeader extends React.Component {
             <thead>
               <tr>
                 <td className={`${sharedChrome.th} ${styles.thLeft}`}>{t('ui.stats.tool')}</td>
-                <td className={sharedChrome.th}>{t('ui.cacheRebuild.count')}</td>
+                <td className={sharedChrome.th}>{t('ui.stats.count')}</td>
               </tr>
             </thead>
             <tbody>
@@ -1029,7 +953,7 @@ class AppHeader extends React.Component {
             <thead>
               <tr>
                 <td className={`${sharedChrome.th} ${styles.thLeft}`}>{t('ui.stats.skill')}</td>
-                <td className={sharedChrome.th}>{t('ui.cacheRebuild.count')}</td>
+                <td className={sharedChrome.th}>{t('ui.stats.count')}</td>
               </tr>
             </thead>
             <tbody>
@@ -1054,118 +978,18 @@ class AppHeader extends React.Component {
     const result = (
       <div className={styles.tokenStatsContainer}>
         {tokenColumn}
-        {cacheRebuildColumn}
+        {agentStatsColumn}
         {toolColumn}
         {skillColumn}
       </div>
     );
     this._tokenStatsCache = result;
     this._tokenStatsCacheReq = requests;
-    this._tokenStatsCacheHl = cacheHighlightIdx;
-    this._tokenStatsCacheFade = cacheHighlightFading;
     return result;
   }
 
-  _cacheUnbindScrollFade() {
-    if (this._cacheOnScrollFade && this._cacheScrollEl) {
-      this._cacheScrollEl.removeEventListener('scroll', this._cacheOnScrollFade);
-      this._cacheOnScrollFade = null;
-    }
-  }
-
-  _cacheBindScrollFade() {
-    this._cacheUnbindScrollFade();
-    const el = this._cacheScrollEl;
-    if (!el) return;
-    this._cacheOnScrollFade = () => {
-      clearTimeout(this._cacheAutoFadeTimer);
-      this.setState({ cacheHighlightFading: true });
-      this._cacheFadeClearTimer = setTimeout(() => {
-        this.setState({ cacheHighlightIdx: null, cacheHighlightFading: false });
-      }, 3000);
-      this._cacheUnbindScrollFade();
-    };
-    el.addEventListener('scroll', this._cacheOnScrollFade, { passive: true });
-  }
-
-  scrollToCacheMsg(idx) {
-    // In raw mode, also navigate to the request in DetailPanel
-    if (this.props.viewMode === 'raw' && this.props.onNavigateCacheMsg) {
-      this.props.onNavigateCacheMsg(idx);
-    }
-    // Auto-expand messages section if collapsed
-    if ((this.state._cacheSectionCollapsed || {}).messages) {
-      this.setState(prev => ({
-        _cacheSectionCollapsed: { ...(prev._cacheSectionCollapsed || {}), messages: false },
-      }), () => this.scrollToCacheMsg(idx));
-      return;
-    }
-    const el = this._cacheScrollEl;
-    if (!el) return;
-    const target = el.querySelector(`[data-msg-idx="${idx}"]`);
-    if (!target) return;
-    clearTimeout(this._cacheScrollSettleTimer);
-    clearTimeout(this._cacheFadeClearTimer);
-    clearTimeout(this._cacheAutoFadeTimer);
-    clearTimeout(this._cacheHighlightDelayTimer);
-    this._cacheUnbindScrollFade();
-    if (this._cacheScrollEndHandler) {
-      el.removeEventListener('scrollend', this._cacheScrollEndHandler);
-    }
-    this.setState({ cacheHighlightIdx: null, cacheHighlightFading: false });
-
-    let scrollDone = false, minPassed = false;
-    const showHighlight = () => {
-      if (!scrollDone || !minPassed) return;
-      this.setState({ cacheHighlightIdx: idx, cacheHighlightFading: false });
-      this._cacheScrollSettleTimer = setTimeout(() => this._cacheBindScrollFade(), 200);
-      this._cacheAutoFadeTimer = setTimeout(() => {
-        if (this.state.cacheHighlightIdx === idx && !this.state.cacheHighlightFading) {
-          this.setState({ cacheHighlightFading: true });
-          this._cacheFadeClearTimer = setTimeout(() => {
-            this.setState({ cacheHighlightIdx: null, cacheHighlightFading: false });
-          }, 3000);
-          this._cacheUnbindScrollFade();
-        }
-      }, 3000);
-    };
-
-    // Detect actual scroll completion
-    this._cacheScrollEndHandler = () => {
-      el.removeEventListener('scrollend', this._cacheScrollEndHandler);
-      scrollDone = true;
-      showHighlight();
-    };
-    el.addEventListener('scrollend', this._cacheScrollEndHandler, { once: true });
-    // Fallback if scrollend doesn't fire (element already in view)
-    this._cacheScrollSettleTimer = setTimeout(() => {
-      el.removeEventListener('scrollend', this._cacheScrollEndHandler);
-      scrollDone = true;
-      showHighlight();
-    }, 800);
-    // Minimum 500ms delay
-    this._cacheHighlightDelayTimer = setTimeout(() => {
-      minPassed = true;
-      showHighlight();
-    }, 500);
-
-    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-
-  renderCacheRebuildStats() {
+  renderAgentActivityStats() {
     const { requests = [] } = this.props;
-    const stats = computeCacheRebuildStats(requests);
-    const reasonKeys = ['ttl', 'system_change', 'tools_change', 'model_change', 'msg_truncated', 'msg_modified', 'key_change'];
-    const i18nMap = {
-      ttl: 'cacheLoss.ttl', system_change: 'cacheLoss.systemChange', tools_change: 'cacheLoss.toolsChange',
-      model_change: 'cacheLoss.modelChange', msg_truncated: 'cacheLoss.msgTruncated', msg_modified: 'cacheLoss.msgModified', key_change: 'cacheLoss.keyChange',
-    };
-    const activeReasons = reasonKeys.filter(k => stats[k].count > 0);
-
-    const totalCount = activeReasons.reduce((sum, k) => sum + stats[k].count, 0);
-    const totalCache = activeReasons.reduce((sum, k) => sum + stats[k].cacheCreate, 0);
-
-    // SubAgent 统计
     resolveTeammateNames(requests);
     const subAgentCounts = {};
     const teammateCounts = {};
@@ -1182,43 +1006,12 @@ class AppHeader extends React.Component {
     const subAgentEntries = Object.entries(subAgentCounts).sort((a, b) => b[1] - a[1]);
     const teammateEntries = Object.entries(teammateCounts).sort((a, b) => b[1] - a[1]);
 
-    const hasCacheStats = activeReasons.length > 0;
     const hasSubAgentStats = subAgentEntries.length > 0;
     const hasTeammateStats = teammateEntries.length > 0;
-    if (!hasCacheStats && !hasSubAgentStats && !hasTeammateStats) return null;
+    if (!hasSubAgentStats && !hasTeammateStats) return null;
 
     return (
       <div className={styles.toolStatsColumn}>
-        {hasCacheStats && (
-          <div className={(hasSubAgentStats || hasTeammateStats) ? styles.modelCardSpaced : sharedChrome.modelCard}>
-            <div className={sharedChrome.modelName}>{t('ui.stats.mainAgent')}<ConceptHelp doc="MainAgent" /> {t('ui.cacheRebuildStats')}<ConceptHelp doc="CacheRebuild" /></div>
-            <table className={sharedChrome.statsTable}>
-            <thead>
-              <tr>
-                <td className={`${sharedChrome.th} ${styles.thLeft}`}>{t('ui.cacheRebuild.reason')}</td>
-                <td className={sharedChrome.th}>{t('ui.cacheRebuild.count')}</td>
-                <td className={sharedChrome.th}>{t('ui.cacheRebuild.cacheCreate')}</td>
-              </tr>
-            </thead>
-            <tbody>
-              {activeReasons.map(k => (
-                <tr key={k} className={sharedChrome.rowBorder}>
-                  <td className={sharedChrome.label}>{t(`ui.${i18nMap[k]}`)}</td>
-                  <td className={sharedChrome.td}>{stats[k].count}</td>
-                  <td className={sharedChrome.td}>{formatTokenCount(stats[k].cacheCreate)}</td>
-                </tr>
-              ))}
-              {activeReasons.length > 1 && (
-                <tr className={sharedChrome.rebuildTotalRow}>
-                  <td className={sharedChrome.label}>{t('ui.stats.total')}</td>
-                  <td className={sharedChrome.td}>{totalCount}</td>
-                  <td className={sharedChrome.td}>{formatTokenCount(totalCache)}</td>
-                </tr>
-              )}
-            </tbody>
-            </table>
-          </div>
-        )}
         {hasSubAgentStats && (
           <div className={hasTeammateStats ? styles.modelCardSpaced : sharedChrome.modelCard}>
             <div className={sharedChrome.modelName}>{t('ui.subAgentStats')}</div>
@@ -1226,7 +1019,7 @@ class AppHeader extends React.Component {
             <thead>
               <tr>
                 <td className={`${sharedChrome.th} ${styles.thLeft}`}>{t('ui.stats.subAgent')}</td>
-                <td className={sharedChrome.th}>{t('ui.cacheRebuild.count')}</td>
+                <td className={sharedChrome.th}>{t('ui.stats.count')}</td>
               </tr>
             </thead>
             <tbody>
@@ -1253,7 +1046,7 @@ class AppHeader extends React.Component {
             <thead>
               <tr>
                 <td className={`${sharedChrome.th} ${styles.thLeft}`}>{t('ui.teammateStats.name')}</td>
-                <td className={sharedChrome.th}>{t('ui.cacheRebuild.count')}</td>
+                <td className={sharedChrome.th}>{t('ui.stats.count')}</td>
               </tr>
             </thead>
             <tbody>
@@ -1367,11 +1160,11 @@ class AppHeader extends React.Component {
       for (const fStats of Object.values(projectStats.files)) {
         if (!fStats.models) continue;
         for (const [model, data] of Object.entries(fStats.models)) {
-          if (!modelTokens[model]) modelTokens[model] = { input: 0, output: 0, cacheRead: 0, cacheCreation: 0, count: 0 };
+          if (!modelTokens[model]) modelTokens[model] = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, count: 0 };
           modelTokens[model].input += data.input_tokens || 0;
           modelTokens[model].output += data.output_tokens || 0;
-          modelTokens[model].cacheRead += data.cache_read_input_tokens || 0;
-          modelTokens[model].cacheCreation += data.cache_creation_input_tokens || 0;
+          modelTokens[model].cacheRead += data.cache_read_tokens || 0;
+          modelTokens[model].cacheWrite += data.cache_write_tokens || 0;
           modelTokens[model].count += data.count || 0;
         }
       }
@@ -1407,14 +1200,20 @@ class AppHeader extends React.Component {
             <div className={styles.projectStatValue}>{formatTokenCount(summary?.output_tokens)}</div>
             <div className={styles.projectStatLabel}>{t('ui.projectStats.outputTokens')}</div>
           </div>
+          <div className={styles.projectStatCard}>
+            <div className={styles.projectStatValue}>{formatTokenCount(summary?.cache_read_tokens)}</div>
+            <div className={styles.projectStatLabel}>{t('ui.stats.cacheRead')}</div>
+          </div>
+          <div className={styles.projectStatCard}>
+            <div className={styles.projectStatValue}>{formatTokenCount(summary?.cache_write_tokens)}</div>
+            <div className={styles.projectStatLabel}>{t('ui.stats.cacheWrite')}</div>
+          </div>
         </div>
 
         {modelTokenEntries.length > 0 && (
           <div className={styles.projectStatsSection}>
             <div className={styles.projectStatsSectionTitle}>{t('ui.projectStats.modelUsage')}</div>
             {modelTokenEntries.map(([model, data]) => {
-              const totalInput = data.input + data.cacheRead + data.cacheCreation;
-              const cacheHitRate = totalInput > 0 ? ((data.cacheRead / totalInput) * 100).toFixed(1) : '0.0';
               return (
                 <div key={model} className={styles.projectStatsModelCard}>
                   <div className={styles.projectStatsModelHeader}>
@@ -1430,22 +1229,18 @@ class AppHeader extends React.Component {
                       </tr>
                       <tr className={sharedChrome.rowBorder}>
                         <td className={sharedChrome.label}></td>
-                        <td className={sharedChrome.td}>{formatTokenCount(totalInput)}</td>
+                        <td className={sharedChrome.td}>{formatTokenCount(data.input)}</td>
                         <td className={sharedChrome.td}>{formatTokenCount(data.output)}</td>
                       </tr>
                       <tr>
                         <td className={sharedChrome.label}>{t('ui.stats.cache')}</td>
-                        <td className={sharedChrome.th}>{t('ui.stats.create')}</td>
-                        <td className={sharedChrome.th}>{t('ui.stats.read')}</td>
+                        <td className={sharedChrome.th}>{t('ui.stats.cacheRead')}</td>
+                        <td className={sharedChrome.th}>{t('ui.stats.cacheWrite')}</td>
                       </tr>
                       <tr className={sharedChrome.rowBorder}>
                         <td className={sharedChrome.label}></td>
-                        <td className={sharedChrome.td}>{formatTokenCount(data.cacheCreation)}</td>
                         <td className={sharedChrome.td}>{formatTokenCount(data.cacheRead)}</td>
-                      </tr>
-                      <tr>
-                        <td className={sharedChrome.label}>{t('ui.hitRate')}</td>
-                        <td colSpan={2} className={sharedChrome.td}>{cacheHitRate}%</td>
+                        <td className={sharedChrome.td}>{formatTokenCount(data.cacheWrite)}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -1467,11 +1262,11 @@ class AppHeader extends React.Component {
     const slot = this.props.contextBarSlot;
     if (!slot) return null;
 
-    const { requests = [], isLocalLog, localLogFile, projectName, contextWindow, contextBarOptimistic, contextBarLocked, serverCachedContent } = this.props;
+    const { requests = [], isLocalLog, localLogFile, projectName, contextWindow, contextBarOptimistic, contextBarLocked } = this.props;
 
     // 计算上下文使用率:原始占用比(used / 窗口全量),与 Codex /context 口径一致。
-    // 分子 sumUsageContextTokens = input + cache_creation(嵌套容错) + cache_read + output
-    // ——含末轮 output 是因为它已进入下一轮上下文;百分比与 popover 显示的 token 数同源。
+    // 分子 sumUsageContextTokens = input + output；含末轮 output 是因为它已进入下一轮上下文。
+    // 百分比与 popover 显示的 token 数同源。
     // 反向找最后一条带 usage 的 MainAgent 一次，contextPercent 与 contextTokens 共用。
     let lastTotalTokens = 0;
     if (!isLocalLog && requests.length > 0) {
@@ -1513,7 +1308,6 @@ class AppHeader extends React.Component {
         cachePopoverOpen={this.state._cachePopoverOpen}
         onOpenChange={this.handleCachePopoverOpenChange}
         requests={requests}
-        serverCachedContent={serverCachedContent}
         contextPercent={contextPercent}
         contextTokens={contextTokens}
         ctxColor={ctxColor}
@@ -1534,8 +1328,7 @@ class AppHeader extends React.Component {
   }
 
   render() {
-    const { requestCount, requests = [], viewMode, cacheType, onToggleViewMode, onImportLocalLogs, onLangChange, isLocalLog, localLogFile, projectName, filterIrrelevant, onFilterIrrelevantChange, logDir, onLogDirChange, cliMode, terminalVisible, onToggleTerminal, onReturnToWorkspaces, contextWindow, contextBarOptimistic, serverCachedContent, resumeAutoChoice, onResumeAutoChoiceToggle, onResumeAutoChoiceChange, themeColor, onThemeColorChange, displayScale, onDisplayScaleChange, autoApproveSeconds, onAutoApproveChange } = this.props;
-    const { countdownText } = this.state;
+    const { requestCount, requests = [], viewMode, onToggleViewMode, onImportLocalLogs, onLangChange, isLocalLog, localLogFile, projectName, filterIrrelevant, onFilterIrrelevantChange, logDir, onLogDirChange, cliMode, terminalVisible, onToggleTerminal, onReturnToWorkspaces, contextWindow, contextBarOptimistic, resumeAutoChoice, onResumeAutoChoiceToggle, onResumeAutoChoiceChange, themeColor, onThemeColorChange, displayScale, onDisplayScaleChange, approvalsReviewer, onApprovalsReviewerChange } = this.props;
     // 这 4 个偏好的唯一真相源是 SettingsContext（P0③）。AppHeader 已绑 SettingsContext，
     // 直接派生消费 + 调 updatePreferences，不再经 App 的 prop drilling。默认值与 AppBase._prefValues() 一致。
     const _prefs = (this.context && this.context.preferences) || {};
@@ -1707,12 +1500,6 @@ class AppHeader extends React.Component {
               </button>
             );
           })()}
-          {countdownText && viewMode === 'raw' && (
-            <Tag className={styles.headerCountdownTag} style={{ color: countdownText === t('ui.cacheExpired') ? 'var(--color-error-light)' : 'var(--text-secondary)' }}>
-              {t('ui.cacheCountdown', { type: cacheType ? `(${cacheType})` : '' })}
-              <strong className={styles.countdownStrong}>{countdownText}</strong>
-            </Tag>
-          )}
           {!isElectronTab && viewMode === 'chat' && cliMode && !isLocalLog && this.state.localUrl && (
             <>
 <Popover
@@ -1890,17 +1677,17 @@ class AppHeader extends React.Component {
             <div className={styles.settingsGroupTitle}>{t('ui.chatDisplay')}</div>
             <div className={styles.settingsItem}>
               <span className={styles.settingsLabel}>
-                {t('ui.permission.autoApprove.setting')}
-                <Tooltip title={t('ui.permission.autoApprove.help')}>
+                {t('ui.permission.reviewer.setting')}
+                <Tooltip title={t('ui.permission.reviewer.help')}>
                   <QuestionCircleOutlined className={styles.settingsHelpIcon} />
                 </Tooltip>
               </span>
               <Select
                 size="small"
-                value={autoApproveSeconds || 0}
-                onChange={(value) => onAutoApproveChange && onAutoApproveChange(value)}
-                options={autoApproveSelectOptions(PERM_AUTO_APPROVE_OPTIONS, t)}
-                style={{ width: 100 }}
+                value={approvalsReviewer || 'user'}
+                onChange={(value) => onApprovalsReviewerChange && onApprovalsReviewerChange(value)}
+                options={approvalReviewerSelectOptions(t)}
+                style={{ width: 150 }}
               />
             </div>
             {this.props.approvalPrefs && this.props.onApprovalPrefsChange && (

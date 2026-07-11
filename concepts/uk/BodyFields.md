@@ -1,42 +1,39 @@
-# Опис полів Request Body
+# Request Body Fields
 
-Опис полів верхнього рівня request body Claude API `/v1/messages`.
+Field descriptions for CX-Viewer's normalized Codex request body. The original source may be OpenAI Responses API traffic, Codex app-server notifications, or Codex SDK events; CX-Viewer maps them into one stable viewer shape.
 
-## Список полів
+## Field List
 
-| Поле | Тип | Опис |
-|------|------|------|
-| **model** | string | Назва використовуваної моделі, наприклад `claude-opus-4-6`, `claude-sonnet-4-6` |
-| **messages** | array | Історія повідомлень розмови. Кожне повідомлення містить `role` (user/assistant) та `content` (масив блоків: текст, зображення, tool_use, tool_result тощо) |
-| **system** | array | System prompt. Містить основні інструкції Codex, вказівки щодо використання інструментів, інформацію про середовище, вміст CLAUDE.md тощо. Блоки з `cache_control` кешуються через prompt caching |
-| **tools** | array | Список визначень доступних інструментів. Кожен інструмент містить `name`, `description` та `input_schema` (JSON Schema). MainAgent зазвичай має 20+ інструментів, SubAgent має лише кілька |
-| **metadata** | object | Метадані запиту, зазвичай містить `user_id` для ідентифікації користувача |
-| **max_tokens** | number | Максимальна кількість токенів в одній відповіді моделі, наприклад `16000`, `64000` |
-| **thinking** | object | Конфігурація розширеного мислення. `type: "enabled"` вмикає режим мислення, `budget_tokens` контролює верхню межу токенів мислення |
-| **context_management** | object | Конфігурація управління контекстом. `truncation: "auto"` дозволяє Codex автоматично скорочувати занадто довгу історію повідомлень |
-| **output_config** | object | Конфігурація виводу, наприклад налаштування `format` |
-| **stream** | boolean | Чи увімкнено потокову відповідь. Codex завжди використовує `true` |
+| Field | Type | Description |
+|-------|------|-------------|
+| **model** | string | The model name selected by Codex, e.g. a `gpt-*` model |
+| **input** | string/array | OpenAI Responses API input. Codex usually uses the array form for user input, assistant history, tool results, and other context items |
+| **instructions** | string/array | OpenAI Responses API instructions. This can include Codex core directives, tool usage guidelines, environment information, and `AGENTS.md` project instructions |
+| **tools** | array | Available tool definitions or compact tool descriptors. MainAgent usually has a broader tool set than SubAgent |
+| **metadata** | object | Request metadata such as `thread_id`, `turn_id`, `cwd`, SDK/app-server source, and subAgent parent-thread information |
+| **max_tokens** | number | Maximum number of tokens for a single model response, e.g. `16000`, `64000` |
+| **reasoning_effort** | string | Reasoning effort when reported by Codex |
+| **reasoning_summary** | string | Reasoning summary mode when reported by Codex |
+| **approval_policy** | string | Codex approval policy for the turn |
+| **sandbox_policy** | object/string | Sandbox policy for the turn when available |
+| **stream** | boolean | Whether the OpenAI Responses API request used streaming; app-server/SDK entries are normalized as streamed turns |
 
-## Структура messages
+## input Structure
 
-`content` кожного повідомлення — це масив блоків, типові типи:
+When `input` is an array, each input item usually contains `role` and `content`. `content` can be an array of blocks. Common types include:
 
-- **text**: Звичайний текстовий вміст
-- **tool_use**: Модель викликає інструмент (містить `name`, `input`)
-- **tool_result**: Результат виконання інструменту (містить `tool_use_id`, `content`)
-- **image**: Вміст зображення (base64 або URL)
-- **thinking**: Процес мислення моделі (режим розширеного мислення)
+- **text**: Plain text content
+- **tool_use**: Model tool invocation (contains `name`, `input`)
+- **tool_result**: Tool execution result (contains `tool_use_id`, `content`)
+- **image/input_image/local_image**: Image content or an attached local image reference
+- **thinking**: Model's thinking process (extended thinking mode)
 
-## Структура system
+## instructions Structure
 
-Масив system prompt зазвичай містить:
+`instructions` typically contains:
 
-1. **Основні інструкції агента** ("You are Codex...")
-2. **Правила використання інструментів**
-3. **Вміст CLAUDE.md** (інструкції на рівні проекту)
-4. **Нагадування про навички** (skills reminder)
-5. **Інформація про середовище** (OS, shell, статус git тощо) — фактично Codex дуже залежить від git. Якщо проект має git-репозиторій, Codex може демонструвати краще розуміння проекту, включаючи отримання віддалених змін та історії комітів для аналізу
-
-Блоки, позначені `cache_control: { type: "ephemeral" }`, кешуються Anthropic API на 5 хвилин. При влученні в кеш вони тарифікуються як `cache_read_input_tokens` (значно дешевше за `input_tokens`).
-
-> **Зверніть увагу**: Для спеціалізованих клієнтів, таких як Codex, сервер Anthropic фактично не повністю покладається на атрибут `cache_control` у запиті для визначення поведінки кешування. Сервер автоматично застосовує стратегії кешування для певних полів (таких як system prompt та визначення tools), навіть якщо запит явно не містить позначки `cache_control`. Тому не дивуйтесь, коли не бачите цей атрибут у request body — сервер уже виконав операцію кешування за лаштунками, просто не розкриває цю інформацію клієнту. Це негласна домовленість між Codex та Anthropic API.
+1. **Core agent instructions** ("You are Codex...")
+2. **Tool usage guidelines**
+3. **AGENTS.md contents** (project-level instructions)
+4. **Skills reminders** (skills reminder)
+5. **Environment information** (OS, shell, git status, etc.) — In fact, Codex relies heavily on git. If a project has a git repository, Codex demonstrates a better understanding of the project, including the ability to pull remote changes and commit history to assist with analysis

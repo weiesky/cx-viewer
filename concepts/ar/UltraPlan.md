@@ -1,55 +1,55 @@
-# UltraPlan — آلة الأمنيات المطلقة
+# UltraPlan — The Ultimate Wishing Machine
 
-## ما هو UltraPlan
+## What is UltraPlan
 
-UltraPlan هو **التنفيذ المحلي** من cc-viewer لأمر `/ultraplan` الأصلي في Claude Code. يتيح لك استخدام الإمكانيات الكاملة لـ `/ultraplan` في بيئتك المحلية **دون الحاجة إلى تشغيل خدمة Claude الرسمية عن بُعد**، موجهاً Claude Code لإنجاز مهام التخطيط والتنفيذ المعقدة باستخدام **التعاون متعدد الوكلاء**.
+UltraPlan is CX Viewer's **localized planning workflow** for Codex. It guides Codex through complex planning and implementation tasks using **multi-agent collaboration**.
 
-مقارنة بوضع Plan العادي أو Agent Team، يستطيع UltraPlan:
-- تقييم تعقيد المهمة تلقائياً واختيار استراتيجية التخطيط المثلى
-- نشر عدة وكلاء متوازيين لاستكشاف قاعدة الشفرة من أبعاد مختلفة
-- دمج البحث الخارجي (webSearch) للحصول على أفضل الممارسات في المجال
-- تجميع فريق Code Review تلقائياً بعد تنفيذ الخطة لمراجعة الشفرة
-- تشكيل حلقة مغلقة كاملة **خطة → تنفيذ → مراجعة → إصلاح**
-
----
-
-## ملاحظات مهمة
-
-### 1. UltraPlan ليس كلي القدرة
-UltraPlan هو آلة أمنيات أكثر قوة، لكن هذا لا يعني أن كل أمنية يمكن تحقيقها. إنه أقوى من Plan و Agent Team، لكنه لا يستطيع مباشرة "جعلك تربح المال". خذ بعين الاعتبار حجم المهام المعقول — قسم الأهداف الكبيرة إلى مهام متوسطة قابلة للتنفيذ بدلاً من محاولة إنجاز كل شيء دفعة واحدة.
-
-### 2. الأكثر فعالية حالياً لمشاريع البرمجة
-قوالب UltraPlan وسير العمل الخاص به محسنة بعمق لمشاريع البرمجة. يمكن تجربة سيناريوهات أخرى (التوثيق، تحليل البيانات، إلخ.)، لكن قد ترغب في انتظار تكييفات الإصدارات المستقبلية.
-
-### 3. وقت التنفيذ ومتطلبات نافذة السياق
-- يستغرق تشغيل UltraPlan الناجح عادةً **30 دقيقة أو أكثر**
-- يتطلب أن يمتلك MainAgent نافذة سياق كبيرة (يُوصى بنموذج Opus بسياق 1M)
-- إذا كان لديك نموذج 200K فقط، **تأكد من تنفيذ `/clear` للسياق قبل التشغيل**
-- يعمل أمر `/compact` في Claude Code بشكل سيئ عندما تكون نافذة السياق غير كافية — تجنب نفاد المساحة
-- الحفاظ على مساحة سياق كافية هو شرط أساسي حاسم لنجاح تنفيذ UltraPlan
-
-إذا كانت لديك أي أسئلة أو اقتراحات حول UltraPlan المحلي، لا تتردد في فتح [Issues على GitHub](https://github.com/anthropics/claude-code/issues) للمناقشة والتعاون.
+Compared to regular Plan mode or Agent Team, UltraPlan can:
+- Automatically assess task complexity and select the optimal planning strategy
+- Deploy multiple parallel agents to explore the codebase from different dimensions
+- Incorporate external research (`web_search`) for industry best practices
+- Automatically assemble a Code Review Team after plan execution for code review
+- Form a complete **Plan → Execute → Review → Fix** closed loop
 
 ---
 
-## كيف يعمل
+## Important Notes
 
-يقدم UltraPlan وضعين للتشغيل:
+### 1. UltraPlan Is Not Omnipotent
+UltraPlan is a more powerful wishing machine, but that doesn't mean every wish can be fulfilled. It's more powerful than Plan and Agent Team, but it can't directly "make you money." Consider reasonable task granularity — break large goals into executable medium-sized tasks rather than trying to accomplish everything in one shot.
 
-### الوضع التلقائي
-يحلل تعقيد المهمة تلقائياً (درجة 4-12) ويوجه إلى استراتيجيات مختلفة:
+### 2. Currently Most Effective for Programming Projects
+UltraPlan's templates and workflows are deeply optimized for programming projects. Other scenarios (documentation, data analysis, etc.) can be attempted, but you may want to wait for future version adaptations.
 
-| المسار | الدرجة | الاستراتيجية |
-|--------|--------|--------------|
-| المسار A | 4-6 | تخطيط خفيف مع استكشاف مباشر للشفرة |
-| المسار B | 7-9 | تخطيط مع رسوم بيانية هيكلية (Mermaid / ASCII) |
-| المسار C | 10-12 | استكشاف متعدد الوكلاء + حلقة مراجعة مغلقة |
+### 3. Execution Time and Context Window Requirements
+- A successful UltraPlan run typically takes **30 minutes or more**
+- Requires MainAgent to have a large enough context window for multi-agent findings and review output
+- If your active model has a smaller context window, **make sure to `/clear` context before running**
+- Compaction is less reliable when the context window is already nearly full — avoid running out of space
+- Maintaining sufficient context space is a critical prerequisite for successful UltraPlan execution
 
-### الوضع الإجباري
-ينشط مباشرة سير العمل الكامل متعدد الوكلاء للمسار C:
-1. نشر ما يصل إلى 5 وكلاء متوازيين لاستكشاف قاعدة الشفرة بشكل متزامن (البنية، تحديد الملفات، تقييم المخاطر، إلخ.)
-2. نشر وكيل بحثي اختيارياً للتحقيق في حلول المجال عبر webSearch
-3. تجميع جميع نتائج الوكلاء في خطة تنفيذ مفصلة
-4. نشر وكيل مراجعة لفحص الخطة بدقة من عدة وجهات نظر
-5. تنفيذ الخطة بعد الموافقة
-6. تجميع فريق Code Review تلقائياً للتحقق من جودة الشفرة بعد التنفيذ
+If you have any questions or suggestions about the localized UltraPlan workflow, open an issue in the CX Viewer project to discuss and collaborate.
+
+---
+
+## How It Works
+
+UltraPlan offers two operating modes:
+
+### Auto Mode
+Automatically analyzes task complexity (score 4-12) and routes to different strategies:
+
+| Route | Score | Strategy |
+|-------|-------|----------|
+| Route A | 4-6 | Lightweight planning with direct code exploration |
+| Route B | 7-9 | Planning with structural diagrams (Mermaid / ASCII) |
+| Route C | 10-12 | Multi-agent exploration + review closed loop |
+
+### Forced Mode
+Directly activates the full Route C multi-agent workflow:
+1. Deploy up to 5 parallel agents to explore the codebase simultaneously (architecture, file identification, risk assessment, etc.)
+2. Optionally deploy a research agent to investigate industry solutions via `web_search`
+3. Synthesize all agent findings into a detailed implementation plan
+4. Deploy a review agent to scrutinize the plan from multiple perspectives
+5. Execute the plan once approved
+6. Automatically assemble a Code Review Team to validate code quality after implementation

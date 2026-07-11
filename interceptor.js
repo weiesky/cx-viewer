@@ -10,9 +10,11 @@ import { appendFileSync, mkdirSync, readFileSync, statSync, renameSync, unlinkSy
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, basename } from 'node:path';
+import { createHash } from 'node:crypto';
 import { LOG_DIR } from './findcx.js';
-import { assembleOpenAiResponseMessage, assembleStreamMessage, cleanupTempFiles, findRecentLog, isOpenAiApiPath, isMainAgentRequest, isSubAgentRequest, rotateLogFile } from './lib/interceptor-core.js';
+import { assembleOpenAiResponseMessage, assembleStreamMessage, cleanupTempFiles, classifyAgentRequest, findRecentLog, isOpenAiApiPath, parseRequestBodyForLog, rotateLogFile } from './lib/interceptor-core.js';
 import { MAX_LOG_SIZE as _MAX_LOG_SIZE, CHECKPOINT_INTERVAL as _CHECKPOINT_INTERVAL } from './lib/constants.js';
+import { getMainAgentSessionKey } from './src/utils/clearCheckpoint.js';
 
 
 
@@ -120,17 +122,51 @@ function resolveResumeChoice(choice) {
 }
 
 // Delta storage: 增量存储开关和状态（默认开启，设置 CXV_DISABLE_DELTA=1 关闭）
-// 注意：delta 计算依赖 mainAgent 请求串行（Codex CLI 保证），不做并发互斥
+// 注意：delta 计算按 Codex thread/upstream lane 分桶。ChatGPT OAuth 与 API-key
+// Responses traffic 可能写进同一个日志文件，但不能共享上一条 mainAgent 的 input 长度。
 const _deltaStorageEnabled = process.env.CXV_DISABLE_DELTA !== '1';
-let _lastMessagesCount = 0;     // 上一次 mainAgent 写入的完整 messages 数量
-let _mainAgentDeltaCount = 0;   // mainAgent 请求计数器（用于触发定期 checkpoint）
+const _deltaStateByConversation = new Map(); // conversationId → { lastInputCount, deltaCount }
 const CHECKPOINT_INTERVAL = _CHECKPOINT_INTERVAL;
 
-/** Delta storage: completed 写入成功后更新状态 */
-function _commitDeltaState(originalLength) {
-  if (_deltaStorageEnabled && originalLength > 0) {
-    _lastMessagesCount = originalLength;
+function _getDeltaConversationId(entry) {
+  const key = getMainAgentSessionKey(entry);
+  return key ? `mainAgent:${key}` : 'mainAgent';
+}
+
+function _getDeltaState(conversationId) {
+  let state = _deltaStateByConversation.get(conversationId);
+  if (!state) {
+    state = { lastInputCount: 0, lastInputFingerprints: [], deltaCount: 0 };
+    _deltaStateByConversation.set(conversationId, state);
   }
+  return state;
+}
+
+/** Delta storage: completed 写入成功后更新状态 */
+function _commitDeltaState(conversationId, originalLength, inputFingerprints = []) {
+  if (_deltaStorageEnabled && originalLength > 0) {
+    const state = _getDeltaState(conversationId || 'mainAgent');
+    state.lastInputCount = originalLength;
+    state.lastInputFingerprints = inputFingerprints;
+  }
+}
+
+function _fingerprintInputItems(input) {
+  return input.map((item) => {
+    try {
+      return createHash('sha256').update(JSON.stringify(item)).digest('base64url');
+    } catch {
+      return '';
+    }
+  });
+}
+
+function _isFingerprintPrefix(previous, current) {
+  if (!Array.isArray(previous) || previous.length > current.length) return false;
+  for (let i = 0; i < previous.length; i++) {
+    if (!previous[i] || previous[i] !== current[i]) return false;
+  }
+  return true;
 }
 
 // Teammate 子进程检测：--parent-session-id（旧模式）或 --agent-name（原生 team 模式）
@@ -235,21 +271,56 @@ export function resetWorkspace() {
 
 const MAX_LOG_SIZE = _MAX_LOG_SIZE;
 
-function checkAndRotateLogFile() {
+function generateRotationLogFilePath() {
+  const now = new Date();
+  const ts = now.getFullYear().toString()
+    + String(now.getMonth() + 1).padStart(2, '0')
+    + String(now.getDate()).padStart(2, '0')
+    + '_'
+    + String(now.getHours()).padStart(2, '0')
+    + String(now.getMinutes()).padStart(2, '0')
+    + String(now.getSeconds()).padStart(2, '0');
+  const dir = LOG_FILE ? dirname(LOG_FILE) : _logDir;
+  const projectName = _projectName || basename(process.cwd()).replace(/[^a-zA-Z0-9_\-\.]/g, '_');
+  let candidate = join(dir, `${projectName}_${ts}.jsonl`);
+  let part = 1;
+  while (candidate === LOG_FILE || existsSync(candidate)) {
+    candidate = join(dir, `${projectName}_${ts}_part${String(part++).padStart(2, '0')}.jsonl`);
+  }
+  return candidate;
+}
+
+export function checkAndRotateLogFile(nextWriteBytes = 0) {
   // Teammate 不做日志轮转，由 leader 负责
-  if (_isTeammate) return;
+  if (_isTeammate || !LOG_FILE) return false;
   try {
-    if (!existsSync(LOG_FILE) || statSync(LOG_FILE).size < MAX_LOG_SIZE) return;
-  } catch { return; }
-  const { filePath } = generateNewLogFilePath();
-  const result = rotateLogFile(LOG_FILE, filePath, MAX_LOG_SIZE);
+    if (!existsSync(LOG_FILE)) return false;
+  } catch { return false; }
+  const filePath = generateRotationLogFilePath();
+  const result = rotateLogFile(LOG_FILE, filePath, MAX_LOG_SIZE, nextWriteBytes);
   if (result.rotated) {
     LOG_FILE = result.newFile;
     // 重置 delta 状态，强制下一条 mainAgent 请求写完整 checkpoint
     if (_deltaStorageEnabled) {
-      _lastMessagesCount = 0;
-      _mainAgentDeltaCount = 0;
+      _deltaStateByConversation.clear();
     }
+    return true;
+  }
+  return false;
+}
+
+/** Serialize and append one complete JSONL record through the shared rotator. */
+export function appendLogEntry(entry) {
+  if (!entry || !LOG_FILE) return { written: false, logFile: LOG_FILE };
+  try {
+    const line = JSON.stringify(entry) + '\n---\n';
+    const bytes = Buffer.byteLength(line);
+    checkAndRotateLogFile(bytes);
+    appendFileSync(LOG_FILE, line);
+    return { written: true, logFile: LOG_FILE, bytes };
+  } catch (err) {
+    if (process.env.CXV_DEBUG) console.warn('[CX-Viewer] Log write error:', err.message);
+    return { written: false, logFile: LOG_FILE, error: err };
   }
 }
 
@@ -342,16 +413,6 @@ export function setupInterceptor() {
           delete options.headers['x-cx-viewer-trace'];
         }
 
-        const timestamp = new Date().toISOString();
-        let body = null;
-        if (options?.body) {
-          try {
-            body = JSON.parse(options.body);
-          } catch {
-            body = String(options.body).slice(0, 500);
-          }
-        }
-
         // 转换 headers 为普通对象（支持 Request 对象、options.headers、Headers 实例）
         let headers = {};
         const rawHeaders = options?.headers || (url instanceof Request ? url.headers : null);
@@ -362,6 +423,9 @@ export function setupInterceptor() {
             headers = { ...rawHeaders };
           }
         }
+
+        const timestamp = new Date().toISOString();
+        const body = options?.body ? parseRequestBodyForLog(options.body, headers) : null;
 
         // 缓存 API Key / Authorization 供翻译接口使用（缓存原始值）
         if (headers['x-api-key'] && !_cachedApiKey) {
@@ -405,6 +469,8 @@ export function setupInterceptor() {
           }
         }
 
+        const agentClass = classifyAgentRequest(urlStr, body);
+
         requestEntry = {
           timestamp,
           project: (() => { try { return basename(process.cwd()); } catch { return 'unknown'; } })(),
@@ -417,8 +483,9 @@ export function setupInterceptor() {
           isStream: body?.stream === true,
           isHeartbeat: /\/api\/eval\/sdk-/.test(urlStr),
           isCountTokens: /\/messages\/count_tokens/.test(urlStr),
-          mainAgent: isMainAgentRequest(body),
-          subAgent: isSubAgentRequest(body),
+          mainAgent: agentClass.mainAgent,
+          subAgent: agentClass.subAgent,
+          ...(agentClass.subAgentName ? { subAgentName: agentClass.subAgentName } : {}),
           ...(_isTeammate && { teammate: _teammateName, teamName: _teamName })
         };
       }
@@ -426,9 +493,9 @@ export function setupInterceptor() {
       if (process.env.CXV_DEBUG) console.warn('[CX-Viewer] Request interception error:', err.message);
     }
 
-    // 用户新指令边界：检查日志文件大小，超过 250MB 则切换新文件
+    // MainAgent 元数据缓存；日志轮转由每次 appendLogEntry 统一处理，
+    // app-server / SDK / OTel 等非 HTTP 写入也走同一入口。
     if (requestEntry?.mainAgent) {
-      checkAndRotateLogFile();
       // 仅 mainAgent 请求时缓存模型名，避免 SubAgent 覆盖
       if (requestEntry.body?.model && typeof requestEntry.body.model === 'string') {
         _cachedModel = requestEntry.body.model;
@@ -439,33 +506,38 @@ export function setupInterceptor() {
       }
     }
 
-    // Delta storage：仅 mainAgent 且开关启用时，将 body.messages 转为增量格式
-    let _deltaOriginalMessagesLength = 0; // 缓存本次请求的原始 messages 长度，用于 completed 后更新状态
-    if (_deltaStorageEnabled && requestEntry?.mainAgent && Array.isArray(requestEntry.body?.messages)) {
-      const messages = requestEntry.body.messages;
-      _deltaOriginalMessagesLength = messages.length;
-      _mainAgentDeltaCount++;
+    // Delta storage：仅 mainAgent 且开关启用时，将 body.input 转为增量格式
+    let _deltaOriginalMessagesLength = 0; // 缓存本次请求的原始 input 长度，用于 completed 后更新状态
+    let _deltaOriginalInputFingerprints = [];
+    let _deltaConversationId = 'mainAgent';
+    if (_deltaStorageEnabled && requestEntry?.mainAgent && Array.isArray(requestEntry.body?.input)) {
+      const input = requestEntry.body.input;
+      _deltaConversationId = _getDeltaConversationId(requestEntry);
+      const deltaState = _getDeltaState(_deltaConversationId);
+      _deltaOriginalMessagesLength = input.length;
+      _deltaOriginalInputFingerprints = _fingerprintInputItems(input);
+      deltaState.deltaCount++;
 
       // 判断是否需要写 checkpoint
       const needsCheckpoint =
-        _lastMessagesCount === 0 ||                           // 进程重启 / 首次请求
-        messages.length < _lastMessagesCount ||               // messages 缩短（/clear、context 压缩）
-        (_mainAgentDeltaCount % CHECKPOINT_INTERVAL === 0);   // 定期 checkpoint
+        deltaState.lastInputCount === 0 ||                              // 进程重启 / 首次请求
+        !_isFingerprintPrefix(deltaState.lastInputFingerprints, _deltaOriginalInputFingerprints) || // compact / rewrite / lane mismatch
+        (deltaState.deltaCount % CHECKPOINT_INTERVAL === 0);            // 定期 checkpoint
 
       if (needsCheckpoint) {
-        // checkpoint：保持完整 messages，标记 _isCheckpoint
+        // checkpoint：保持完整 input，标记 _isCheckpoint
         requestEntry._deltaFormat = 1;
-        requestEntry._totalMessageCount = messages.length;
-        requestEntry._conversationId = 'mainAgent';
+        requestEntry._totalMessageCount = input.length;
+        requestEntry._conversationId = _deltaConversationId;
         requestEntry._isCheckpoint = true;
       } else {
-        // delta：只保留新增的 messages
-        const delta = messages.slice(_lastMessagesCount);
+        // delta：只保留新增的 input items
+        const delta = input.slice(deltaState.lastInputCount);
         requestEntry._deltaFormat = 1;
-        requestEntry._totalMessageCount = messages.length;
-        requestEntry._conversationId = 'mainAgent';
+        requestEntry._totalMessageCount = input.length;
+        requestEntry._conversationId = _deltaConversationId;
         requestEntry._isCheckpoint = false;
-        requestEntry.body.messages = delta;
+        requestEntry.body.input = delta;
       }
     }
 
@@ -478,11 +550,7 @@ export function setupInterceptor() {
 
     // 在发起请求前先写入一条未完成的条目，让前端可以检测在途请求
     if (requestEntry) {
-      try {
-        appendFileSync(LOG_FILE, JSON.stringify(requestEntry) + '\n---\n');
-      } catch (err) {
-        if (process.env.CXV_DEBUG) console.warn('[CX-Viewer] Log write error:', err.message);
-      }
+      appendLogEntry(requestEntry);
     }
 
     // 流式请求状态追踪（仅对 Codex API 流式请求）
@@ -501,8 +569,8 @@ export function setupInterceptor() {
     if (_activeProfile && _activeProfile.baseURL && requestEntry) {
       try {
         // 1. URL 重写: 用 baseURL 替换 origin，智能处理路径重叠
-        //    baseURL="https://proxy.com/v1" + pathname="/v1/messages" → "https://proxy.com/v1/messages"（去重 /v1）
-        //    baseURL="https://proxy.com"    + pathname="/v1/messages" → "https://proxy.com/v1/messages"（无重叠）
+        //    baseURL="https://proxy.com/v1" + pathname="/v1/responses" → "https://proxy.com/v1/responses"（去重 /v1）
+        //    baseURL="https://proxy.com"    + pathname="/v1/responses" → "https://proxy.com/v1/responses"（无重叠）
         if (typeof _fetchUrl === 'string') {
           const _origUrl = new URL(_fetchUrl);
           const _baseUrl = new URL(_activeProfile.baseURL);
@@ -613,8 +681,8 @@ export function setupInterceptor() {
                       // 移除在途请求标记，保持原始报文
                       delete requestEntry.inProgress;
                       delete requestEntry.requestId;
-                      appendFileSync(LOG_FILE, JSON.stringify(requestEntry) + '\n---\n');
-                      _commitDeltaState(_deltaOriginalMessagesLength);
+                      appendLogEntry(requestEntry);
+                      _commitDeltaState(_deltaConversationId, _deltaOriginalMessagesLength, _deltaOriginalInputFingerprints);
                       // Release memory: clear large objects after disk write
                       streamedContent = '';
                       requestEntry.response = null;
@@ -623,8 +691,8 @@ export function setupInterceptor() {
                       requestEntry.response.body = streamedContent.slice(0, 1000);
                       delete requestEntry.inProgress;
                       delete requestEntry.requestId;
-                      appendFileSync(LOG_FILE, JSON.stringify(requestEntry) + '\n---\n');
-                      _commitDeltaState(_deltaOriginalMessagesLength);
+                      appendLogEntry(requestEntry);
+                      _commitDeltaState(_deltaConversationId, _deltaOriginalMessagesLength, _deltaOriginalInputFingerprints);
                       streamedContent = '';
                       requestEntry.response = null;
                       resetStreamingState();
@@ -660,8 +728,8 @@ export function setupInterceptor() {
           };
           delete requestEntry.inProgress;
           delete requestEntry.requestId;
-          appendFileSync(LOG_FILE, JSON.stringify(requestEntry) + '\n---\n');
-          _commitDeltaState(_deltaOriginalMessagesLength);
+          appendLogEntry(requestEntry);
+          _commitDeltaState(_deltaConversationId, _deltaOriginalMessagesLength, _deltaOriginalInputFingerprints);
           resetStreamingState();
         }
       } else {
@@ -688,13 +756,13 @@ export function setupInterceptor() {
           delete requestEntry.inProgress;
           delete requestEntry.requestId;
 
-          appendFileSync(LOG_FILE, JSON.stringify(requestEntry) + '\n---\n');
-          _commitDeltaState(_deltaOriginalMessagesLength);
+          appendLogEntry(requestEntry);
+          _commitDeltaState(_deltaConversationId, _deltaOriginalMessagesLength, _deltaOriginalInputFingerprints);
         } catch (err) {
           delete requestEntry.inProgress;
           delete requestEntry.requestId;
-          appendFileSync(LOG_FILE, JSON.stringify(requestEntry) + '\n---\n');
-          _commitDeltaState(_deltaOriginalMessagesLength);
+          appendLogEntry(requestEntry);
+          _commitDeltaState(_deltaConversationId, _deltaOriginalMessagesLength, _deltaOriginalInputFingerprints);
         }
       }
     }

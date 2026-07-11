@@ -44,7 +44,7 @@ const _tr = (key, params, fallback) => {
  * portal switch — Portals do not unmount their child tree, so any in-flight feedback
  * textarea content survives ESC dismiss → reopen.
  *
- * Permission and SDK ExitPlanMode panels deliberately stay inline-only and are NOT
+ * Permission and SDK plan approval panels deliberately stay inline-only and are NOT
  * routed through this modal.
  */
 export default function ApprovalModal({

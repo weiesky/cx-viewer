@@ -2,7 +2,7 @@
 
 ## Bakgrunn
 
-MainAgent i Claude Code bruker en mekanisme for sending av full kontekst — hver forespørsel inneholder komplett samtalehistorikk, system prompt, verktøydefinisjoner osv. Dette betyr at forespørselskroppen blir stadig større etter hvert som samtalen skrider frem, og det er vanskelig å raskt finne ut "hva som faktisk er nytt i denne runden" ved å se på rå Body direkte.
+MainAgent i Codex bruker en mekanisme for sending av full kontekst — hver forespørsel inneholder komplett samtalehistorikk, system prompt, verktøydefinisjoner osv. Dette betyr at forespørselskroppen blir stadig større etter hvert som samtalen skrider frem, og det er vanskelig å raskt finne ut "hva som faktisk er nytt i denne runden" ved å se på rå Body direkte.
 
 Body Diff JSON er laget for å løse dette problemet: den sammenligner automatisk to påfølgende MainAgent-forespørsler og trekker ut den inkrementelle delen, slik at du med ett blikk kan se hva som faktisk er nytt i denne forespørselen.
 
@@ -22,7 +22,7 @@ Body Diff JSON er laget for å løse dette problemet: den sammenligner automatis
 I en normal samtalerunde inneholder Body Diff JSON vanligvis:
 - `messages`: 1–2 nye meldinger (brukerens inndata + assistentens svar fra forrige runde)
 
-Hvis du ser endringer i felt som `system`, `tools` eller `model` i diffen, betyr det at en konfigurasjonsendring har skjedd i denne runden, noe som ofte er årsaken til cache-gjenoppbygging.
+Hvis du ser endringer i felt som `system`, `tools` eller `model` i diffen, betyr det at en konfigurasjonsendring har skjedd i denne runden.
 
 ## Bruk
 

@@ -8,7 +8,41 @@ import {
   _parseAppServerClientMessageForTests,
   _parseAppServerServerMessageForTests,
   _resetAppServerBridgeForTests,
+  _injectApprovalsReviewerForTests,
+  _writeAppServerEntryForTests,
 } from '../lib/appserver-bridge.js';
+
+test('app-server bridge delegates log writes to the shared rotating writer', () => {
+  const seen = [];
+  _resetAppServerBridgeForTests({
+    logFile: '/tmp/cxv-shared-writer-test.jsonl',
+    writeLogEntry: (entry) => seen.push(entry),
+  });
+  const entry = { timestamp: '2026-07-10T00:00:00.000Z', mainAgent: true };
+  _writeAppServerEntryForTests(entry);
+  assert.deepEqual(seen, [entry]);
+  _resetAppServerBridgeForTests();
+});
+
+test('app-server bridge injects Codex approval reviewer into stable lifecycle requests', () => {
+  for (const method of ['thread/start', 'thread/resume', 'thread/fork', 'turn/start']) {
+    const original = { id: 1, method, params: { cwd: '/tmp/project', approvalsReviewer: 'user' } };
+    const injected = _injectApprovalsReviewerForTests(original, 'auto_review');
+    assert.equal(injected.params.approvalsReviewer, 'auto_review', method);
+    assert.equal(injected.params.cwd, '/tmp/project', method);
+    assert.equal(original.params.approvalsReviewer, 'user', `${method} input remains immutable`);
+  }
+});
+
+test('app-server bridge leaves unrelated requests untouched', () => {
+  const original = { id: 1, method: 'turn/steer', params: { input: [] } };
+  assert.equal(_injectApprovalsReviewerForTests(original, 'auto_review'), original);
+});
+
+test('app-server bridge does not override a native reviewer before an explicit CX Viewer selection', () => {
+  const original = { id: 1, method: 'turn/start', params: { approvalsReviewer: 'auto_review', input: [] } };
+  assert.equal(_injectApprovalsReviewerForTests(original), original);
+});
 
 function readEntries(logFile) {
   const raw = readFileSync(logFile, 'utf8');
@@ -81,7 +115,7 @@ test('app-server bridge marks root and spawned subagent turns correctly', () => 
       tokenUsage: {
         last: {
           inputTokens: 12,
-          cachedInputTokens: 4,
+          cachedInputTokens: 9,
           outputTokens: 6,
           reasoningOutputTokens: 2,
           totalTokens: 18,
@@ -141,7 +175,7 @@ test('app-server bridge marks root and spawned subagent turns correctly', () => 
       tokenUsage: {
         last: {
           input_tokens: 13,
-          cached_input_tokens: 5,
+          cached_input_tokens: 10,
           output_tokens: 7,
           reasoning_output_tokens: 3,
           total_tokens: 20,
@@ -166,8 +200,14 @@ test('app-server bridge marks root and spawned subagent turns correctly', () => 
     assert.equal(root?.mainAgent, true);
     assert.equal(root?.subAgent, false);
     assert.equal(root?.response?.body?.content?.[0]?.text, 'root answer');
-    assert.equal(root?.response?.body?.usage?.cache_read_input_tokens, 4);
-    assert.equal(root?.body?.messages?.[0]?.content, 'root prompt');
+    assert.deepEqual(root?.response?.body?.usage, {
+      input_tokens: 12,
+      output_tokens: 6,
+      reasoning_output_tokens: 2,
+      total_tokens: 18,
+      input_tokens_details: { cached_tokens: 9, cache_write_tokens: 0 },
+    });
+    assert.equal(root?.body?.input?.[0]?.content, 'root prompt');
 
     const sub = mainEntries.find(entry => entry.body?.metadata?.thread_id === 'sub-thread');
     assert.equal(sub?.mainAgent, false);
@@ -176,11 +216,15 @@ test('app-server bridge marks root and spawned subagent turns correctly', () => 
     assert.equal(sub?.teamName, 'root-thread');
     assert.equal(sub?._parentThreadId, 'root-thread');
     assert.equal(sub?.response?.body?.content?.[0]?.text, 'sub answer');
-    assert.equal(sub?.response?.body?.usage?.input_tokens, 13);
-    assert.equal(sub?.response?.body?.usage?.cache_read_input_tokens, 5);
-    assert.equal(sub?.response?.body?.usage?.total_tokens, 20);
-    assert.equal(sub?.body?.system, 'You are Codex subagent (researcher), a general-purpose agent.');
-    assert.equal(sub?.body?.messages?.[0]?.content, 'sub prompt');
+    assert.deepEqual(sub?.response?.body?.usage, {
+      input_tokens: 13,
+      output_tokens: 7,
+      reasoning_output_tokens: 3,
+      total_tokens: 20,
+      input_tokens_details: { cached_tokens: 10, cache_write_tokens: 0 },
+    });
+    assert.equal(sub?.body?.instructions, 'You are Codex subagent (researcher), a general-purpose agent.');
+    assert.equal(sub?.body?.input?.[0]?.content, 'sub prompt');
   } finally {
     _resetAppServerBridgeForTests();
     rmSync(tmp, { recursive: true, force: true });
@@ -392,8 +436,8 @@ test('app-server bridge hydrates completed thread turns from JSON-RPC responses'
     assert.equal(root?._codexHistorySource, true);
     assert.equal(root?.isStream, false);
     assert.equal(root?.mainAgent, true);
-    assert.equal(root?.body?.messages?.[0]?.content, 'inspect history');
-    const rootPlan = root?.response?.body?.content?.find(block => block.type === 'tool_use' && block.name === 'ExitPlanMode');
+    assert.equal(root?.body?.input?.[0]?.content, 'inspect history');
+    const rootPlan = root?.response?.body?.content?.find(block => block.type === 'tool_use' && block.name === 'update_plan');
     assert.equal(rootPlan?.input?.nonInteractive, true);
     assert.equal(rootPlan?.input?.plan, '- Read bridge\n- Add test');
     const rootText = root?.response?.body?.content?.find(block => block.type === 'text');
@@ -530,7 +574,7 @@ test('app-server bridge records tool-like items with root and subagent identity'
     });
 
     const entries = readEntries(logFile);
-    const rootTool = entries.find(entry => entry.body?.tool_name === 'Bash');
+    const rootTool = entries.find(entry => entry.body?.tool_name === 'shell_command');
     assert.equal(rootTool?.method, 'TOOL');
     assert.equal(rootTool?.mainAgent, false);
     assert.equal(rootTool?.subAgent, false);
@@ -539,8 +583,8 @@ test('app-server bridge records tool-like items with root and subagent identity'
 
     const rootTurn = entries.find(entry => entry.body?.metadata?.thread_id === 'root-thread');
     assert.equal(rootTurn?.mainAgent, true);
-    assert.equal(rootTurn?.body?.messages?.[1]?.content?.[0]?.name, 'Bash');
-    assert.equal(rootTurn?.body?.messages?.[2]?.content?.[0]?.type, 'tool_result');
+    assert.equal(rootTurn?.body?.input?.[1]?.content?.[0]?.name, 'shell_command');
+    assert.equal(rootTurn?.body?.input?.[2]?.content?.[0]?.type, 'tool_result');
     assert.equal(rootTurn?.response?.body?.content?.[0]?.text, 'root command done');
 
     const subTool = entries.find(entry => entry.body?.tool_name === 'docs.search');
@@ -554,8 +598,8 @@ test('app-server bridge records tool-like items with root and subagent identity'
     const subTurn = entries.find(entry => entry.body?.metadata?.thread_id === 'sub-thread');
     assert.equal(subTurn?.mainAgent, false);
     assert.equal(subTurn?.subAgent, true);
-    assert.equal(subTurn?.body?.messages?.[1]?.content?.[0]?.name, 'docs.search');
-    assert.equal(subTurn?.body?.messages?.[2]?.content?.[0]?.type, 'tool_result');
+    assert.equal(subTurn?.body?.input?.[1]?.content?.[0]?.name, 'docs.search');
+    assert.equal(subTurn?.body?.input?.[2]?.content?.[0]?.type, 'tool_result');
     assert.equal(subTurn?.response?.body?.content?.[0]?.text, 'sub mcp done');
   } finally {
     _resetAppServerBridgeForTests();
@@ -722,10 +766,10 @@ test('app-server bridge folds v2 streaming deltas into completed tool entries', 
 
     const entries = readEntries(logFile);
 
-    const command = entries.find(entry => entry.body?.tool_name === 'Bash' && entry.body?.tool_input?.command === 'printf lines');
+    const command = entries.find(entry => entry.body?.tool_name === 'shell_command' && entry.body?.tool_input?.command === 'printf lines');
     assert.equal(command?.response?.body?.output?.output, 'line one\nline two\n');
 
-    const ptyCommand = entries.find(entry => entry.body?.tool_name === 'Bash' && entry.body?.tool_input?.command === 'pty command');
+    const ptyCommand = entries.find(entry => entry.body?.tool_name === 'shell_command' && entry.body?.tool_input?.command === 'pty command');
     assert.equal(ptyCommand?.response?.body?.output?.output, 'pty output\n');
 
     const patch = entries.find(entry => entry.body?.tool_name === 'apply_patch');
@@ -740,7 +784,7 @@ test('app-server bridge folds v2 streaming deltas into completed tool entries', 
     const rootTurn = entries.find(entry => entry.body?.metadata?.thread_id === 'root-thread');
     assert.equal(rootTurn?.mainAgent, true);
     assert.equal(rootTurn?.response?.body?.content?.find(block => block.type === 'text')?.text, 'done');
-    const planTool = rootTurn?.response?.body?.content?.find(block => block.type === 'tool_use' && block.name === 'ExitPlanMode');
+    const planTool = rootTurn?.response?.body?.content?.find(block => block.type === 'tool_use' && block.name === 'update_plan');
     assert.equal(planTool?.input?.codexTurnPlan, true);
     assert.match(planTool?.input?.plan, /Implementation plan/);
     assert.deepEqual(rootTurn?.response?.body?.turn_plan, {
@@ -860,7 +904,7 @@ test('app-server bridge accepts Codex canonical snake_case item payloads', () =>
     });
 
     const entries = readEntries(logFile);
-    const command = entries.find(entry => entry.body?.tool_name === 'Bash' && entry.body?.tool_input?.command === 'printf hi');
+    const command = entries.find(entry => entry.body?.tool_name === 'shell_command' && entry.body?.tool_input?.command === 'printf hi');
     assert.equal(command?.response?.body?.output?.output, 'hi\n');
     assert.equal(command?.response?.body?.output?.exitCode, 0);
 
@@ -946,16 +990,16 @@ test('app-server bridge uses item/updated snapshots to complete sparse Codex ite
     });
 
     const entries = readEntries(logFile);
-    const command = entries.find(entry => entry.body?.tool_name === 'Bash' && entry.body?.tool_input?.command === 'printf updated');
+    const command = entries.find(entry => entry.body?.tool_name === 'shell_command' && entry.body?.tool_input?.command === 'printf updated');
     assert.equal(command?.response?.body?.output?.output, 'updated\n');
     assert.equal(command?.response?.body?.output?.exitCode, 0);
 
     const rootTurn = entries.find(entry => entry.body?.metadata?.thread_id === 'root-thread');
     assert.equal(rootTurn?.response?.body?.content?.find(block => block.type === 'text')?.text, 'answer from updated-only message');
-    assert.equal(rootTurn?.body?.messages?.some(msg =>
+    assert.equal(rootTurn?.body?.input?.some(msg =>
       msg.role === 'assistant'
       && Array.isArray(msg.content)
-      && msg.content.some(block => block.type === 'tool_use' && block.name === 'Bash' && block.id === 'cmd-updated')
+      && msg.content.some(block => block.type === 'tool_use' && block.name === 'shell_command' && block.id === 'cmd-updated')
     ), true);
   } finally {
     _resetAppServerBridgeForTests();
@@ -1006,7 +1050,7 @@ test('app-server bridge emits plan-only turns from v2 turn plan updates', () => 
     const entries = readEntries(logFile);
     const rootTurn = entries.find(entry => entry.body?.metadata?.thread_id === 'root-thread');
     assert.equal(rootTurn?.mainAgent, true);
-    const planTool = rootTurn?.response?.body?.content?.find(block => block.type === 'tool_use' && block.name === 'ExitPlanMode');
+    const planTool = rootTurn?.response?.body?.content?.find(block => block.type === 'tool_use' && block.name === 'update_plan');
     assert.equal(planTool?.input?.codexTurnPlan, true);
     assert.equal(planTool?.input?.nonInteractive, true);
     assert.match(planTool?.input?.plan, /Inspect code/);
@@ -1020,7 +1064,71 @@ test('app-server bridge emits plan-only turns from v2 turn plan updates', () => 
   }
 });
 
-test('app-server bridge maps Codex request_user_input to AskUserQuestion transcript', () => {
+test('app-server bridge does not duplicate server userMessage mirror of turn/start input', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'cxv-appserver-user-dedupe-'));
+  const logFile = join(tmp, 'bridge-user-dedupe.jsonl');
+
+  try {
+    _resetAppServerBridgeForTests({
+      logFile,
+      cwd: tmp,
+      project: 'bridge-project',
+      model: 'gpt-test',
+    });
+
+    client('thread/start', { cwd: tmp, developerInstructions: 'You are Codex' });
+    server('thread/started', { thread: { id: 'root-thread', cwd: tmp } });
+    client('turn/start', {
+      threadId: 'root-thread',
+      model: 'gpt-test',
+      cwd: tmp,
+      input: [{ type: 'text', text: 'hi', text_elements: [] }],
+      clientUserMessageId: null,
+    });
+    server('turn/started', {
+      threadId: 'root-thread',
+      turn: { id: 'turn-hi', status: 'inProgress' },
+    });
+    server('item/completed', {
+      threadId: 'root-thread',
+      item: {
+        id: 'server-user-hi',
+        type: 'userMessage',
+        clientId: null,
+        content: [{ type: 'text', text: 'hi', text_elements: [] }],
+      },
+    });
+    server('item/completed', {
+      threadId: 'root-thread',
+      item: {
+        id: 'answer',
+        type: 'agentMessage',
+        text: 'hello',
+      },
+    });
+    server('turn/completed', {
+      threadId: 'root-thread',
+      turn: {
+        id: 'turn-hi',
+        threadId: 'root-thread',
+        status: 'completed',
+        durationMs: 10,
+      },
+    });
+
+    const entries = readEntries(logFile);
+    const rootTurn = entries.find(entry => entry.body?.metadata?.thread_id === 'root-thread');
+    assert.deepEqual(rootTurn?.body?.input?.map(msg => ({ role: msg.role, content: msg.content })), [
+      { role: 'user', content: 'hi' },
+      { role: 'assistant', content: [{ type: 'text', text: 'hello' }] },
+    ]);
+  } finally {
+    _resetAppServerBridgeForTests();
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('app-server bridge keeps Codex request_user_input transcript name', () => {
   const tmp = mkdtempSync(join(tmpdir(), 'cxv-appserver-ask-'));
   const logFile = join(tmp, 'bridge-ask.jsonl');
 
@@ -1086,18 +1194,18 @@ test('app-server bridge maps Codex request_user_input to AskUserQuestion transcr
 
     const entries = readEntries(logFile);
     const rootTurn = entries.find(entry => entry.body?.metadata?.thread_id === 'root-thread');
-    const askMessage = rootTurn?.body?.messages?.find(msg =>
+    const askMessage = rootTurn?.body?.input?.find(msg =>
       msg.role === 'assistant'
       && Array.isArray(msg.content)
-      && msg.content.some(block => block.type === 'tool_use' && block.name === 'AskUserQuestion')
+      && msg.content.some(block => block.type === 'tool_use' && block.name === 'request_user_input')
     );
-    const askTool = askMessage?.content?.find(block => block.type === 'tool_use' && block.name === 'AskUserQuestion');
+    const askTool = askMessage?.content?.find(block => block.type === 'tool_use' && block.name === 'request_user_input');
     assert.equal(askTool?.id, 'ask-item-1');
     assert.equal(askTool?.input?.codexRequestUserInput, true);
     assert.equal(askTool?.input?.questions?.[0]?.question, 'Proceed?');
     assert.equal(askTool?.input?.questions?.[0]?.options?.[0]?.label, 'Yes');
 
-    const askResultMessage = rootTurn?.body?.messages?.find(msg =>
+    const askResultMessage = rootTurn?.body?.input?.find(msg =>
       msg.role === 'user'
       && Array.isArray(msg.content)
       && msg.content.some(block => block.type === 'tool_result' && block.tool_use_id === 'ask-item-1')
@@ -1111,7 +1219,7 @@ test('app-server bridge maps Codex request_user_input to AskUserQuestion transcr
   }
 });
 
-test('app-server bridge maps MCP elicitation requests to AskUserQuestion transcript', () => {
+test('app-server bridge maps MCP elicitation requests to request_user_input transcript', () => {
   const tmp = mkdtempSync(join(tmpdir(), 'cxv-appserver-mcp-ask-'));
   const logFile = join(tmp, 'bridge-mcp-ask.jsonl');
 
@@ -1205,12 +1313,12 @@ test('app-server bridge maps MCP elicitation requests to AskUserQuestion transcr
     assert.equal(responseEntry?.response?.body?.action, 'accept');
 
     const rootTurn = entries.find(entry => entry.body?.metadata?.thread_id === 'root-thread');
-    const askMessage = rootTurn?.body?.messages?.find(msg =>
+    const askMessage = rootTurn?.body?.input?.find(msg =>
       msg.role === 'assistant'
       && Array.isArray(msg.content)
-      && msg.content.some(block => block.type === 'tool_use' && block.name === 'AskUserQuestion')
+      && msg.content.some(block => block.type === 'tool_use' && block.name === 'request_user_input')
     );
-    const askTool = askMessage?.content?.find(block => block.type === 'tool_use' && block.name === 'AskUserQuestion');
+    const askTool = askMessage?.content?.find(block => block.type === 'tool_use' && block.name === 'request_user_input');
     assert.equal(askTool?.id, 'mcp-elicitation-mcp-ask-jsonrpc-1');
     assert.equal(askTool?.input?.codexMcpElicitation, true);
     assert.equal(askTool?.input?.questions?.[0]?.header, 'deploy MCP');
@@ -1218,7 +1326,7 @@ test('app-server bridge maps MCP elicitation requests to AskUserQuestion transcr
     assert.equal(askTool?.input?.questions?.[1]?.multiSelect, true);
     assert.equal(askTool?.input?.questions?.[1]?.options?.[1]?.label, 'Metrics');
 
-    const askResultMessage = rootTurn?.body?.messages?.find(msg =>
+    const askResultMessage = rootTurn?.body?.input?.find(msg =>
       msg.role === 'user'
       && Array.isArray(msg.content)
       && msg.content.some(block => block.type === 'tool_result' && block.tool_use_id === 'mcp-elicitation-mcp-ask-jsonrpc-1')
@@ -1293,12 +1401,12 @@ test('app-server bridge records turn/steer input inside the active Codex turn', 
     const entries = readEntries(logFile);
     const rootTurn = entries.find(entry => entry.body?.metadata?.thread_id === 'root-thread');
     assert.equal(rootTurn?.body?.metadata?.turn_id, 'turn-steer');
-    assert.equal(rootTurn?.body?.messages?.[0]?.role, 'user');
-    assert.equal(rootTurn?.body?.messages?.[0]?.content, 'initial prompt');
-    assert.equal(rootTurn?.body?.messages?.[1]?.role, 'assistant');
-    assert.equal(rootTurn?.body?.messages?.[1]?.content?.[0]?.text, 'partial before steer');
-    assert.equal(rootTurn?.body?.messages?.[2]?.role, 'user');
-    assert.equal(rootTurn?.body?.messages?.[2]?.content, 'extra steer context');
+    assert.equal(rootTurn?.body?.input?.[0]?.role, 'user');
+    assert.equal(rootTurn?.body?.input?.[0]?.content, 'initial prompt');
+    assert.equal(rootTurn?.body?.input?.[1]?.role, 'assistant');
+    assert.equal(rootTurn?.body?.input?.[1]?.content?.[0]?.text, 'partial before steer');
+    assert.equal(rootTurn?.body?.input?.[2]?.role, 'user');
+    assert.equal(rootTurn?.body?.input?.[2]?.content, 'extra steer context');
     assert.equal(rootTurn?.response?.body?.content?.[0]?.text, 'final after steer');
   } finally {
     _resetAppServerBridgeForTests();
@@ -1412,7 +1520,7 @@ test('app-server bridge records Codex approval server requests and responses', (
     assert.equal(approvalRequest?.body?.server_request_method, 'item/commandExecution/requestApproval');
     assert.equal(approvalRequest?.body?.server_request_id, 'approval-jsonrpc-1');
     assert.equal(approvalRequest?.body?.server_request_kind, 'approval');
-    assert.equal(approvalRequest?.body?.tool_name, 'Bash');
+    assert.equal(approvalRequest?.body?.tool_name, 'shell_command');
     assert.equal(approvalRequest?.body?.tool_input?.command, 'npm test');
     assert.equal(approvalRequest?.body?._threadId, 'root-thread');
     assert.equal(approvalRequest?.body?._turnId, 'turn-approval');
@@ -1421,13 +1529,13 @@ test('app-server bridge records Codex approval server requests and responses', (
     const approvalResponse = entries.find(entry => entry.method === 'SERVER_RESPONSE');
     assert.equal(approvalResponse?.body?.server_request_method, 'item/commandExecution/requestApproval');
     assert.equal(approvalResponse?.body?.server_request_id, 'approval-jsonrpc-1');
-    assert.equal(approvalResponse?.body?.tool_name, 'Bash');
+    assert.equal(approvalResponse?.body?.tool_name, 'shell_command');
     assert.deepEqual(approvalResponse?.response?.body, { decision: 'approved' });
 
     const resolved = entries.find(entry => entry.body?.event_name === 'serverRequest.resolved');
     assert.equal(resolved?.response?.body?.requestId, 'approval-jsonrpc-1');
     assert.equal(resolved?.response?.body?.pendingMethod, 'item/commandExecution/requestApproval');
-    assert.equal(resolved?.response?.body?.pendingName, 'Bash');
+    assert.equal(resolved?.response?.body?.pendingName, 'shell_command');
 
     // hook/started and hook/completed are intentionally suppressed from the log
     const hookCompleted = entries.find(entry => entry.body?.event_name === 'hook.completed');

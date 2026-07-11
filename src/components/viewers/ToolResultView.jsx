@@ -21,50 +21,22 @@ const EXT_LANG = {
 };
 
 // Tools whose results are typically code/file content
-const CODE_TOOLS = ['Read', 'Grep', 'Glob', 'Bash', 'Write', 'Edit'];
+const CODE_TOOLS = ['shell_command', 'apply_patch', 'read_mcp_resource'];
 
 function detectLang(toolName, toolInput, resultText) {
   if (!toolInput) return null;
 
-  // 1. Try file_path extension (works for Read, Write, Edit)
+  // 1. Try file_path extension when the tool input includes one.
   const filePath = toolInput.file_path || '';
   if (filePath) {
     const ext = filePath.split('.').pop().toLowerCase();
     if (EXT_LANG[ext]) return EXT_LANG[ext];
   }
 
-  // 2. Bash → shell output
-  if (toolName === 'Bash') return 'shell-output';
+  // 2. shell_command → shell output
+  if (toolName === 'shell_command') return 'shell-output';
 
-  // 3. Glob → result is always a file path list
-  if (toolName === 'Glob') return 'file-list';
-
-  // 4. Grep → try glob field, then check result format
-  if (toolName === 'Grep') {
-    const glob = toolInput.glob || '';
-    if (glob) {
-      // Handle compound globs like "*.{js,jsx}" → try each part
-      const parts = glob.replace(/[{}*]/g, ',').split(',').filter(Boolean);
-      for (const p of parts) {
-        const ext = p.replace(/^\./, '').toLowerCase();
-        if (EXT_LANG[ext]) return EXT_LANG[ext];
-      }
-    }
-    // Grep output_mode=files_with_matches → file list
-    if (toolInput.output_mode === 'files_with_matches' || !toolInput.output_mode) {
-      return 'file-list';
-    }
-    // Grep content mode with file:line: prefix → try detect from file extensions in result
-    if (toolInput.output_mode === 'content' && resultText) {
-      const match = resultText.match(/^[\w/.~-]+\.([\w]+):\d+/m);
-      if (match && EXT_LANG[match[1].toLowerCase()]) {
-        return EXT_LANG[match[1].toLowerCase()];
-      }
-    }
-    return 'shell-output';
-  }
-
-  // 5. path field is a directory (no useful extension) — try content-based detection
+  // 3. path field is a directory (no useful extension) — try content-based detection
   if (resultText) {
     return detectLangFromContent(resultText);
   }
@@ -258,8 +230,8 @@ function highlight(text, lang) {
     rules = RULES[resolvedLang] || FALLBACK_RULES;
   }
 
-  // Strip Read tool line number prefixes (e.g. "     1→" or "   123→")
-  // before highlighting to avoid number pollution
+  // Strip line-number prefixes (e.g. "     1→" or "   123→") before
+  // highlighting to avoid number pollution.
   const lineNumRe = /^(\s*\d+→)/gm;
   const lineNums = [];
   let stripped = text.replace(lineNumRe, (match) => {
@@ -340,7 +312,7 @@ function ToolResultView({ toolName, toolInput, resultText, images, workflow, def
     }
   }
 
-  // 文本为空但有图(例如 Read 图片文件)时,仅渲染图块,避免空 pre 占位
+  // 文本为空但有图时,仅渲染图块,避免空 pre 占位
   const hasText = typeof resultText === 'string' && resultText.length > 0;
   if (!hasText && hasImages) {
     return (

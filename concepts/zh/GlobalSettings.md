@@ -119,17 +119,17 @@ cxv [选项] [codex 参数...]
 
 ## 六、Hook 配置
 
-CX-Viewer 的 Codex 集成主要走本地 wrapper/proxy 路径。旧 hook bridge 仅用于兼容仍依赖它们的导入工作流。
+CX-Viewer 的 Codex 集成主要走本地 wrapper/proxy 路径。Hook bridge 只使用当前 Codex 工具名。
 
-### 1. AskUserQuestion 桥接
-- **匹配器**: `"AskUserQuestion"`
+### 1. request_user_input 桥接
+- **匹配器**: `"request_user_input"`
 - **命令**: `node <安装目录>/lib/ask-bridge.js`
 - **作用**: 在 bridge 路径启用时，将工具/用户审批转发到 Web UI
 
 ### 2. 权限审批桥接
 - **匹配器**: `""` (空 = 匹配所有工具)
 - **命令**: `node <安装目录>/lib/perm-bridge.js`
-- **作用**: 仅 `Bash`/`Edit`/`Write`/`NotebookEdit` 需要 Web UI 审批，其余自动放行
+- **作用**: `shell_command`、`apply_patch`、`web_search`、`image_generation` 等会变更文件或访问外部资源的工具需要 Web UI 审批，其余自动放行
 
 ## 七、Shell 集成
 
@@ -225,8 +225,6 @@ codex() { ... }
 
 | 键 | 说明 |
 |-----|------|
-| `cxv_cacheExpireAt` | 缓存倒计时到期时间 |
-| `cxv_cacheType` | 缓存类型标签 |
 | `cxv_viewMode` | 当前响应式视图模式覆盖 |
 | `cxv_fileExplorerOpen` | 文件浏览器面板开关 |
 | `cx-viewer-terminal-width` | 终端面板宽度（像素） |

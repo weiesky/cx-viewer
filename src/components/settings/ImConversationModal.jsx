@@ -5,6 +5,7 @@ import ChatMessage from '../chat/ChatMessage';
 import { cachedBuildToolResultMap } from '../../utils/toolResultBuilder';
 import { classifyUserContent, isSystemText, isMainAgent, extractDisplayText } from '../../utils/contentFilter';
 import { mergeMainAgentSessions } from '../../utils/sessionMerge';
+import { normalizeConversationEntry, shouldExcludeFromConversation } from '../../utils/conversationEntryNormalize';
 import { reconstructEntries } from '../../../server/lib/delta-reconstructor.js';
 import { apiUrl } from '../../utils/apiUrl';
 import { IM_PLATFORMS } from './imPlatforms';
@@ -17,8 +18,10 @@ import styles from './ImConversationModal.module.css';
 function buildSessionsFromEntries(entries) {
   let sessions = [];
   for (const entry of entries) {
-    if (isMainAgent(entry) && entry.body && Array.isArray(entry.body.messages) && !entry._slimmed) {
-      sessions = mergeMainAgentSessions(sessions, entry);
+    if (shouldExcludeFromConversation(entry)) continue;
+    const conversationEntry = normalizeConversationEntry(entry);
+    if (isMainAgent(conversationEntry) && conversationEntry.body && Array.isArray(conversationEntry.body.input) && !conversationEntry._slimmed) {
+      sessions = mergeMainAgentSessions(sessions, conversationEntry);
     }
   }
   return sessions;

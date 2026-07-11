@@ -1,4 +1,4 @@
-/* Global approval modal — wraps inline AskUserQuestion / ExitPlanMode / permission
+/* Global approval modal — wraps inline request_user_input / plan approval / permission
  * panels (via Portal) so they're impossible to miss. Sits above UltraPlanModal but
  * below the inline ToolApprovalPanel (which uses 99999 for its own fixed-position
  * variant — modal-internal panels render in `panel` mode so this z-index suffices).

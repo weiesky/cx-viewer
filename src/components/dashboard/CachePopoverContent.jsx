@@ -1,7 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { Popover, Button, Alert, Modal, Tooltip, Dropdown, Space, message } from 'antd';
 import { ReloadOutlined, PlusOutlined, FolderOpenOutlined, FileZipOutlined, FileMarkdownOutlined, SettingOutlined } from '@ant-design/icons';
-import { extractCachedContent, parseCachedTools, extractLoadedSkills } from '../../utils/helpers';
+import { parseToolXmlList, extractLoadedSkills } from '../../utils/helpers';
+import { extractLoadedTools } from '../../utils/requestTools';
 import { contextSeverityColor } from '../../utils/formatters';
 import { BUILTIN_SKILL_NAMES, mergeActiveSkills } from '../../utils/skillsParser';
 import { t } from '../../i18n';
@@ -31,10 +32,9 @@ const SUPPORTS_DIRECTORY_UPLOAD = typeof document !== 'undefined'
 //     以保留 commit 0914cc5 的"hover 才解析 200 条 system-reminder"性能修复；
 // (b) 提供 fsSkills / memory 数据 props（父级 fetch + state 三态契约 null/false/数据）；
 // (c) 透传 onOpenMemoryDetail（父级 mount 一份 MemoryDetailModal 处理）和 onOpenSkillsModal；
-// 解析缓存（lastToolsRef/lastParsedTools/lastSkillsRef/lastChosenForSkills）通过 useRef 保留在组件实例内，与 AppHeader 旧版同语义。
+// 解析结果（lastToolsRef/lastParsedTools/lastSkillsRef/lastChosenForSkills）通过 useRef 保留在组件实例内，与 AppHeader 旧版同语义。
 export default function CachePopoverContent({
   requests = [],
-  serverCachedContent,
   contextPercent = 0,
   contextTokens = 0,
   fsSkills,
@@ -123,15 +123,17 @@ export default function CachePopoverContent({
   const lastSkillsRef = useRef(null);
   const lastChosenForSkills = useRef(null);
 
-  const cached = serverCachedContent || extractCachedContent(requests);
+  const loadedTools = useMemo(() => extractLoadedTools(requests), [requests]);
 
-  // tools 数组引用未变时复用上次解析结果
-  const toolsArr = Array.isArray(cached?.tools) ? cached.tools : null;
+  // 血条弹层展示的是当前 MainAgent 请求已载入工具，直接读最新 body.tools。
+  const toolsArr = loadedTools.length > 0
+    ? loadedTools
+    : null;
   let parsed;
   if (toolsArr === lastToolsRef.current && lastParsedTools.current) {
     parsed = lastParsedTools.current;
   } else {
-    parsed = parseCachedTools(toolsArr);
+    parsed = parseToolXmlList(toolsArr);
     lastToolsRef.current = toolsArr;
     lastParsedTools.current = parsed;
   }

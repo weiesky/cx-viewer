@@ -689,7 +689,7 @@
   padding: 1px 0;
 }
 
-/* === AskUserQuestion 问卷卡片 === */
+/* === request_user_input 问卷卡片 === */
 
 .askQuestionBox {
   background: var(--color-green-dark-bg);
@@ -1129,7 +1129,7 @@
   background: var(--color-gray-bg-medium);
 }
 
-/* === AskUserQuestion 交互模式 === */
+/* === request_user_input 交互模式 === */
 
 .askQuestionInteractive {
   position: relative;
@@ -1413,7 +1413,7 @@
   color: var(--text-gray);
 }
 
-/* === AskUserQuestion 移动端适配 === */
+/* === request_user_input 移动端适配 === */
 @media (max-width: 768px) {
   .askQuestionBox {
     padding: 12px 16px;
@@ -1514,7 +1514,7 @@
 /* ─── Web search group container (server_tool_use + web_search_tool_result + synthesis text) ───
    职责切分：本区块负责"group 外壳"——左色条容器 / header / synthesis 分区 / citation hint / 流式占位。
    单条搜索结果的卡片样式（.card / .title / .urlDomain / .pageAge / .showMoreBtn）位于
-   WebSearchResultsView.module.css，由 WebSearchResultsView 组件单独负责。 */
+   WebResultsView.module.css，由 WebResultsView 组件单独负责。 */
 .webSearchGroup {
   border-left: 3px solid var(--color-primary-pale);
   padding: 4px 0 4px 12px;

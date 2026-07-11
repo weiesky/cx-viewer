@@ -2,7 +2,7 @@
 
 ## Nasıl çalışır
 
-CC Viewer bir HTTP sunucusu başlatır ve bir **LAN adresi** oluşturur (ör: `http://192.168.1.100:7008`). QR kodu tarayarak aynı WiFi ağı üzerinden telefonunuzdan Claude Code'a erişebilirsiniz.
+CC Viewer bir HTTP sunucusu başlatır ve bir **LAN adresi** oluşturur (ör: `http://192.168.1.100:7008`). QR kodu tarayarak aynı WiFi ağı üzerinden telefonunuzdan Codex'a erişebilirsiniz.
 
 ## Neden bağlanamıyorum?
 

@@ -1,8 +1,8 @@
 /**
- * Read tool_result content intern pool.
+ * tool_result content intern pool.
  *
  * 1.6.237 后实测：同一 .jsx 文件被 87 个 SubAgent / 父 user message 各持一份完整副本（30MB+ 重复）。
- * 对 Read 工具的 resultText 做 content-addressed dedup，让相同内容共享同一字符串引用。
+ * 对 tool_result 的 resultText 做 content-addressed dedup，让相同内容共享同一字符串引用。
  * hash 仅用 length + 前 64 / 后 64 字符避免大字符串 O(n) hash；当 length > 512
  * 再加采中段 64 字符（共三段 192 字节），令仅中段不同的长串也能区分；碰撞概率极低。
  *
@@ -22,7 +22,7 @@ const _readResultPool = new Map();
 let _poolEvictions = 0;
 
 // v5: sig 增加 mid-slice（当 length > 512）。对齐 entry-slim.js _systemSig 的边界增强模式。
-// B 项把 raw payload tool_result block.content 也接入此 pool（含 Bash tab-padded / log 类
+// B 项把 raw payload tool_result block.content 也接入此 pool（含 shell/log 类
 // 长度+前后缀重合的结构化输出），暴露面变大。length+first 64+last 64 在该场景对碰撞抗性
 // 不足，加 mid-64 后要求"长度+三段共 192 字节"全匹配才视为同串。
 function _readResultSig(s) {
@@ -34,7 +34,7 @@ function _readResultSig(s) {
 }
 
 /**
- * 把 Read 工具的 resultText 替换为 pool 中的共享引用（命中时）或注册新值。
+ * 把 tool_result 的 resultText 替换为 pool 中的共享引用（命中时）或注册新值。
  * 短字符串（< 256）跳过 dedup（不值得 sig 开销）。
  *
  * @param {string} s - resultText 原文
@@ -53,7 +53,7 @@ export function internReadResult(s) {
   return s;
 }
 
-/** 测试辅助：清空 Read intern pool 和 eviction counter。 */
+/** 测试辅助：清空 tool_result intern pool 和 eviction counter。 */
 export function _resetReadPoolForTest() {
   _readResultPool.clear();
   _poolEvictions = 0;
@@ -70,7 +70,7 @@ export function _getReadPoolEvictionsForTest() {
 }
 
 /**
- * 通用版：Read 之外的所有 tool_result（Bash/Grep/Glob/MCP/...）也走同一 pool。
+ * 通用版：所有 tool_result（shell/MCP/deferred tools/...）都走同一 pool。
  * 算法与 internReadResult 完全相同（同 _readResultSig + 同 _readResultPool），
  * 名字区分只是语义上的扩展，便于 toolResultBuilder.js 默认全 intern。
  *

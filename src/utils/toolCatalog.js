@@ -1,8 +1,8 @@
 /**
  * Single source of truth for the built-in tool catalog.
  *
- * `TOOL_CATALOG` is an ordered, function-grouped list of built-in or
- * compatibility tool docs. It drives:
+ * `TOOL_CATALOG` is an ordered, function-grouped list of the currently loaded
+ * Codex request-body tools. It drives:
  *   - the "all tools" catalog modal (src/components/common/ToolsHelp.jsx)
  *   - the Tool-* whitelist in ConceptHelp (src/components/common/ConceptHelp.jsx)
  *
@@ -12,15 +12,14 @@
  * Category `key` maps to i18n `ui.toolCatalog.cat.<key>` in src/i18n.js.
  */
 export const TOOL_CATALOG = [
-  { key: 'agent',    tools: ['Agent', 'Task', 'SendMessage'] },
-  { key: 'file',     tools: ['FileChange', 'Read', 'Edit', 'Write', 'NotebookEdit', 'ImageView'] },
-  { key: 'search',   tools: ['Glob', 'Grep'] },
-  { key: 'terminal', tools: ['Bash'] },
-  { key: 'web',      tools: ['WebFetch', 'WebSearch'] },
-  { key: 'integration', tools: ['MCPToolCall', 'DynamicToolCall'] },
-  { key: 'planning', tools: ['EnterPlanMode', 'ExitPlanMode', 'AskUserQuestion', 'Skill'] },
-  { key: 'worktree', tools: ['EnterWorktree'] },
-  { key: 'ide',      tools: ['getDiagnostics', 'executeCode'] },
+  { key: 'terminal', tools: ['shell_command'] },
+  { key: 'file', tools: ['apply_patch', 'view_image'] },
+  { key: 'planning', tools: ['update_plan', 'request_user_input', 'get_goal', 'create_goal', 'update_goal'] },
+  {
+    key: 'integration',
+    tools: ['tool_search', 'list_mcp_resources', 'list_mcp_resource_templates', 'read_mcp_resource'],
+  },
+  { key: 'web', tools: ['web_search', 'image_generation'] },
 ];
 
 // Flat list of all tool names — order follows TOOL_CATALOG.

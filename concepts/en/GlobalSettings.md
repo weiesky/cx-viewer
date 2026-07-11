@@ -119,17 +119,17 @@ cxv [options] [codex args...]
 
 ## 6. Hook Configuration
 
-CX-Viewer's Codex integration primarily uses the local wrapper/proxy path. Legacy hook bridges remain available only for imported workflows that still depend on them.
+CX-Viewer's Codex integration primarily uses the local wrapper/proxy path. Hook bridges use current Codex tool names only.
 
-### 1. AskUserQuestion Bridge
-- **Matcher**: `"AskUserQuestion"`
+### 1. request_user_input Bridge
+- **Matcher**: `"request_user_input"`
 - **Command**: `node <install_dir>/lib/ask-bridge.js`
 - **Purpose**: Forward tool/user approval prompts to the Web UI when a bridge path is active
 
 ### 2. Permission Approval Bridge
 - **Matcher**: `""` (empty = match all tools)
 - **Command**: `node <install_dir>/lib/perm-bridge.js`
-- **Purpose**: Only `Bash`/`Edit`/`Write`/`NotebookEdit` require Web UI approval; others pass through
+- **Purpose**: Mutating or external tools such as `shell_command`, `apply_patch`, `web_search`, and `image_generation` require Web UI approval; others pass through
 
 ## 7. Shell Integration
 
@@ -225,8 +225,6 @@ Plugin enable/disable managed via `disabledPlugins` array in `preferences.json`.
 
 | Key | Description |
 |-----|-------------|
-| `cxv_cacheExpireAt` | Cache countdown expiration time |
-| `cxv_cacheType` | Cache type label |
 | `cxv_viewMode` | Current responsive view mode override |
 | `cxv_fileExplorerOpen` | File explorer panel toggle |
 | `cx-viewer-terminal-width` | Terminal panel width (pixels) |

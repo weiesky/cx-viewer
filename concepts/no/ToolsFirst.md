@@ -1,77 +1,71 @@
-# Hvorfor vises Tools først?
+# Why Are Tools Listed First?
 
-I cc-viewers kontekstpanel vises **Tools før System Prompt og Messages**. Denne rekkefølgen gjenspeiler nøyaktig **Anthropic API-ens KV-Cache-prefiks-sekvens**.
+In CX Viewer's Context panel, **Tools appear before Instructions and Input**. For Codex, this is a diagnostic layout: tool definitions are a large, high-impact part of the request shape, so they are shown first before the instructions and conversation context they constrain.
 
-## KV-Cache-prefiks-sekvens
+## Request Context Layout
 
-Når Anthropic's API bygger opp KV-Cache, setter den sammen konteksten til et prefiks i denne **faste rekkefølgen**:
+Codex traffic can arrive from OpenAI Responses API calls, Codex app-server events, or SDK stream events. CX Viewer normalizes those sources into a consistent context view:
 
 ```
 ┌─────────────────────────────────────────────────┐
-│ 1. Tools (JSON Schema definitions)               │  ← Start of cache prefix
-│ 2. System Prompt                                 │
-│ 3. Messages (conversation history + current turn)│  ← End of cache prefix
+│ 1. Tools (JSON Schema definitions)               │  ← Capability surface
+│ 2. Instructions                                  │
+│ 3. Input (conversation history + current turn)   │
 └─────────────────────────────────────────────────┘
 ```
 
-Dette betyr at **Tools befinner seg før System Prompt helt i begynnelsen av cache-prefikset**.
+This does not claim a provider-specific serialization order. It gives you a stable way to inspect what capabilities were available before reading instructions and input history.
 
-## Hvorfor har Tools høyere cache-vekt enn System?
+## Why Tools Often Matter Most
 
-Ved KV-Cache-prefiksmatchning er **tidlig innhold mer kritisk** — enhver endring ugyldiggjør alt som kommer etter:
+Tool definitions are often the largest static part of an agent request. A small UI toggle can add, remove, or reshape many tool schemas, which changes model behavior and request size.
 
-1. **Prefiksmatchning starter fra begynnelsen**: KV-Cache sammenligner den gjeldende forespørselen med det bufrede prefikset token for token fra starten. I det øyeblikket et avvik oppdages, ugyldiggjøres alt etterfølgende innhold.
+1. **Capability changes are semantic changes**: Adding or removing a tool changes what the agent is allowed to do, not just the token count.
 
-2. **Tools endres = hele cachen ugyldiggjøres**: Siden Tools kommer først, vil enhver endring i verktøydefinisjoner (selv å legge til eller fjerne ett enkelt MCP-tool) **bryte prefikset helt fra starten**, og ugyldiggjøre all bufret System Prompt og Messages.
+2. **Tool schemas can dominate request size**: MCP and dynamic tools often have detailed JSON Schemas with descriptions, enums, and nested parameters.
 
-3. **System endres = Messages-cache ugyldiggjøres**: System Prompt befinner seg i midten, så dens endringer ugyldiggjør bare den etterfølgende Messages-delen.
+4. **Input appends are usually cheaper to inspect**: Normal conversation turns mostly add new user input and the previous assistant/tool results, while tool and instruction changes tend to be rarer and more important.
 
-4. **Messages endres = bare halen påvirkes**: Messages er på slutten, så å legge til nye meldinger ugyldiggjør bare et lite avsluttende segment — cache for Tools og System forblir intakt.
+## Practical Impact
 
-## Praktisk betydning
+| Change Type | Cache Impact | Typical Scenario |
+|-------------|-------------|-----------------|
+| Tool added/removed | Request shape changes | MCP server connect/disconnect, plugin toggle |
+| Instructions change | Instructions and policy changed | `AGENTS.md` edit, developer instruction update |
+| New input appended | Normal turn growth | User input, assistant reply, tool result |
 
-| Endringstype | Cache-påvirkning | Typisk scenario |
-|--------------|-----------------|-----------------|
-| Tool lagt til/fjernet | **Full ugyldiggjøring** | MCP server tilkobling/frakobling, IDE-plugin av/på |
-| System Prompt-endring | Messages-cache tapt | CLAUDE.md-redigering, system reminder-injeksjon |
-| Ny melding lagt til | Bare hale-inkrement | Normal samtaleflyt (vanligst, billigst) |
+## Why Are Tool Definitions Placed Before the "Brain"?
 
-Dette er grunnen til at `tools_change` i [CacheRebuild](CacheRebuild.md) typisk er den dyreste gjenoppbyggingsårsaken — den bryter prefikskjeden helt fremst.
+From a diagnostic perspective, putting Tools first is useful because tool definitions describe the agent's available actions before you inspect the instructions that ask the agent to act.
 
-## Hvorfor plasseres verktøydefinisjoner før "hjernen"?
+Before taking action, a person needs to perceive what limbs and tools are available. An infant doesn't first understand the rules of the world (Instructions), then learn to reach and grab — they first sense that they have hands and feet, then gradually understand rules through interaction with the environment. Similarly, an LLM needs to know what tools it can call (read files, write code, search, execute commands) before receiving task instructions, so it can accurately assess "what can I do" and "how should I do it" when processing the instructions.
 
-Fra et caching-perspektiv er det et teknisk faktum at Tools kommer først. Men fra et kognitivt designperspektiv er denne rekkefølgen like logisk — **Tools er hender og føtter, System Prompt er hjernen**.
+If reversed — first telling the model "your task is to refactor this module", then telling it "you have shell_command, apply_patch, and tool_search" — the model would lack critical capability boundary information when understanding the task, potentially producing unrealistic plans or overlooking available approaches.
 
-Før man handler, må man oppfatte hvilke lemmer og verktøy man har tilgjengelig. Et spedbarn forstår ikke først reglene i verden (System) for så å lære å gripe — det oppfatter først at det har hender og føtter, og forstår gradvis reglene gjennom samspill med omgivelsene. På samme måte må en LLM vite hvilke verktøy den kan kalle (lese filer, skrive kode, søke, utføre kommandoer) før den mottar oppgaveinstruksjoner (System Prompt), slik at den nøyaktig kan vurdere "hva kan jeg gjøre" og "hvordan bør jeg gjøre det" ved behandling av instruksjonene.
+**Know what cards you hold before deciding how to play.** This is the cognitive logic behind Tools preceding Instructions.
 
-Hvis det var omvendt — først fortelle modellen "oppgaven din er å refaktorere denne modulen", deretter "du har Read, Edit, Bash-verktøy" — ville modellen mangle kritisk informasjon om sine kapabilitetsgrenser ved forståelse av oppgaven, noe som potensielt kunne føre til urealistiske planer eller overseing av tilgjengelige tilnærminger.
+## Why Are MCP Tools Also in This Position?
 
-**Kjenn kortene dine før du bestemmer deg for hvordan du spiller.** Dette er den kognitive logikken bak at Tools plasseres før System.
+MCP (Model Context Protocol) tools, like built-in tools, are placed at the very front of the Tools area. Understanding MCP's position in the context helps evaluate its real benefits and costs.
 
-## Hvorfor er MCP-verktøy også på denne posisjonen?
+### MCP Advantages
 
-MCP-verktøy (Model Context Protocol) plasseres, som innebygde verktøy, helt i starten av Tools-området. Å forstå MCPs posisjon i konteksten hjelper med å vurdere de reelle fordelene og kostnadene.
+- **Capability extension**: MCP lets models access external services (database queries, API calls, IDE operations, browser control, etc.), breaking beyond built-in tool boundaries
+- **Open ecosystem**: Anyone can implement an MCP server; the model gains new capabilities without retraining
+- **On-demand loading**: MCP servers can be selectively connected/disconnected based on task scenario, flexibly composing tool sets
 
-### MCP-fordeler
+### MCP Costs
+- **Prefix bloat**: MCP tool Schemas are typically larger than built-in tools (containing detailed parameter descriptions, enums, etc.). Many MCP tools significantly increase the Tools area's token count, squeezing the context space available for Input
+- **Latency overhead**: MCP tool calls require cross-process communication (JSON-RPC over stdio/SSE), an order of magnitude slower than built-in function calls
+- **Stability risk**: MCP servers are external processes that may crash, timeout, or return unexpected formats, requiring additional error handling
 
-- **Kapabilitetsutvidelse**: MCP lar modeller tilgå eksterne tjenester (databasespørringer, API-kall, IDE-operasjoner, nettleserstyring osv.), og overskrider grensene for innebygde verktøy
-- **Åpent økosystem**: Hvem som helst kan implementere en MCP-server; modellen oppnår nye kapabiliteter uten re-trening
-- **On-demand-lasting**: MCP-servere kan selektivt kobles til/fra etter oppgavescenario, med fleksibel sammensetning av verktøysett
+### Practical Recommendations
 
-### MCP-kostnader
+| Scenario | Recommendation |
+|----------|---------------|
+| Long conversations, high-frequency interaction | Minimize MCP tool count to keep requests smaller and easier to inspect |
+| Short tasks, one-off operations | Use MCP tools freely; overhead is usually limited |
+| Frequently adding/removing MCP servers | Each change reshapes the request; consider fixing the tool set |
+| Oversized Tool Schemas | Trim descriptions and enums to reduce prefix token footprint |
 
-- **Cache-dreper**: Hvert MCP-verktøys JSON Schema-definisjon sammenkjedes i starten av KV-Cache-prefikset. Tillegg eller fjerning av ett MCP-verktøy = **hele cachen invalidert fra starten**. Hyppig tilkobling/frakobling av MCP-servere reduserer cache-treffraten drastisk
-- **Prefiks-oppblåsing**: MCP-verktøyers Schemas er typisk større enn innebygde verktøy (detaljerte parameterbeskrivelser, enum-verdier osv.). Mange MCP-verktøy øker token-antallet i Tools-området betydelig og innsnevrer kontekstrommet for Messages
-- **Latens-overhead**: MCP-verktøykall krever inter-prosesskommunikasjon (JSON-RPC over stdio/SSE), en størrelsesorden tregere enn innebygde funksjonskall
-- **Stabilitetsrisiko**: MCP-servere er eksterne prosesser som kan krasje, time ut eller returnere uventede formater, og krever ekstra feilhåndtering
-
-### Praktiske anbefalinger
-
-| Scenario | Anbefaling |
-|----------|-----------|
-| Lange samtaler, hyppig interaksjon | Minimér antallet MCP-verktøy for å beskytte cache-prefiks-stabiliteten |
-| Korte oppgaver, engangsoperasjoner | Bruk MCP-verktøy fritt; cache-påvirkningen er begrenset |
-| Hyppig tillegg/fjerning av MCP-servere | Hver endring utløser full cache-gjenoppbygging; vurder å fastlåse verktøysettet |
-| Overdimensjonerte Tool Schemas | Beskjær beskrivelser og enums for å redusere prefiks-tokenforbruk |
-
-I cc-viewers Context-panel vises MCP-verktøy sammen med innebygde verktøy i Tools-området, noe som gir et klart overblikk over hvert verktøys Schema-størrelse og bidrag til cache-prefikset.
+In CX Viewer's Context panel, MCP tools are displayed alongside built-in and dynamic tools in the Tools area, giving you a clear view of each tool's Schema size and contribution to request shape.

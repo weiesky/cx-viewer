@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { formatTokenCount, computeTokenStats, computeCacheRebuildStats, computeToolUsageStats, computeSkillUsageStats } from '../../utils/helpers';
+import { formatTokenCount, computeTokenStats, computeToolUsageStats, computeSkillUsageStats } from '../../utils/helpers';
 import { classifyRequest } from '../../utils/requestType';
 import ConceptHelp from '../common/ConceptHelp';
 import ToolsHelp from '../common/ToolsHelp';
@@ -7,24 +7,12 @@ import { t } from '../../i18n';
 import headerStyles from '../common/sharedChrome.module.css';
 import styles from './MobileStats.module.css';
 
-const REASON_KEYS = ['ttl', 'system_change', 'tools_change', 'model_change', 'msg_truncated', 'msg_modified', 'key_change'];
-const I18N_MAP = {
-  ttl: 'cacheLoss.ttl', system_change: 'cacheLoss.systemChange', tools_change: 'cacheLoss.toolsChange',
-  model_change: 'cacheLoss.modelChange', msg_truncated: 'cacheLoss.msgTruncated', msg_modified: 'cacheLoss.msgModified', key_change: 'cacheLoss.keyChange',
-};
-
 export default function MobileStats({ requests = [], visible, onClose }) {
-  const { byModel, models, toolStats, skillStats, cacheStats, activeReasons, totalCount, totalCache, hasCacheStats, subAgentEntries, hasSubAgentStats, teammateEntries, hasTeammateStats, isEmpty } = useMemo(() => {
+  const { byModel, models, toolStats, skillStats, subAgentEntries, hasSubAgentStats, teammateEntries, hasTeammateStats, isEmpty } = useMemo(() => {
     const byModel = computeTokenStats(requests);
     const models = Object.keys(byModel);
     const toolStats = computeToolUsageStats(requests);
     const skillStats = computeSkillUsageStats(requests);
-    const cacheStats = computeCacheRebuildStats(requests);
-
-    const activeReasons = REASON_KEYS.filter(k => cacheStats[k].count > 0);
-    const totalCount = activeReasons.reduce((sum, k) => sum + cacheStats[k].count, 0);
-    const totalCache = activeReasons.reduce((sum, k) => sum + cacheStats[k].cacheCreate, 0);
-    const hasCacheStats = activeReasons.length > 0;
 
     const subAgentCounts = {};
     const teammateCounts = {};
@@ -43,9 +31,9 @@ export default function MobileStats({ requests = [], visible, onClose }) {
     const teammateEntries = Object.entries(teammateCounts).sort((a, b) => b[1] - a[1]);
     const hasTeammateStats = teammateEntries.length > 0;
 
-    const isEmpty = models.length === 0 && toolStats.length === 0 && !hasCacheStats && !hasSubAgentStats && !hasTeammateStats && skillStats.length === 0;
+    const isEmpty = models.length === 0 && toolStats.length === 0 && !hasSubAgentStats && !hasTeammateStats && skillStats.length === 0;
 
-    return { byModel, models, toolStats, skillStats, cacheStats, activeReasons, totalCount, totalCache, hasCacheStats, subAgentEntries, hasSubAgentStats, teammateEntries, hasTeammateStats, isEmpty };
+    return { byModel, models, toolStats, skillStats, subAgentEntries, hasSubAgentStats, teammateEntries, hasTeammateStats, isEmpty };
   }, [requests]);
 
   if (!visible) return null;
@@ -74,7 +62,7 @@ export default function MobileStats({ requests = [], visible, onClose }) {
                   <thead>
                     <tr>
                       <td className={`${headerStyles.th} ${styles.thLeft}`}>{t('ui.stats.skill')}</td>
-                      <td className={headerStyles.th}>{t('ui.cacheRebuild.count')}</td>
+                      <td className={headerStyles.th}>{t('ui.stats.count')}</td>
                     </tr>
                   </thead>
                   <tbody>
@@ -103,7 +91,7 @@ export default function MobileStats({ requests = [], visible, onClose }) {
                   <thead>
                     <tr>
                       <td className={`${headerStyles.th} ${styles.thLeft}`}>{t('ui.stats.subAgent')}</td>
-                      <td className={headerStyles.th}>{t('ui.cacheRebuild.count')}</td>
+                      <td className={headerStyles.th}>{t('ui.stats.count')}</td>
                     </tr>
                   </thead>
                   <tbody>
@@ -132,7 +120,7 @@ export default function MobileStats({ requests = [], visible, onClose }) {
                   <thead>
                     <tr>
                       <td className={`${headerStyles.th} ${styles.thLeft}`}>{t('ui.teammateStats.name')}</td>
-                      <td className={headerStyles.th}>{t('ui.cacheRebuild.count')}</td>
+                      <td className={headerStyles.th}>{t('ui.stats.count')}</td>
                     </tr>
                   </thead>
                   <tbody>
@@ -161,7 +149,7 @@ export default function MobileStats({ requests = [], visible, onClose }) {
                   <thead>
                     <tr>
                       <td className={`${headerStyles.th} ${styles.thLeft}`}>{t('ui.stats.tool')}</td>
-                      <td className={headerStyles.th}>{t('ui.cacheRebuild.count')}</td>
+                      <td className={headerStyles.th}>{t('ui.stats.count')}</td>
                     </tr>
                   </thead>
                   <tbody>
@@ -182,48 +170,9 @@ export default function MobileStats({ requests = [], visible, onClose }) {
               </div>
             )}
 
-            {/* 4. MainAgent Cache Rebuild Stats */}
-            {hasCacheStats && (
-              <div className={headerStyles.modelCard}>
-                <div className={headerStyles.modelName}>{t('ui.stats.mainAgent')}<ConceptHelp doc="MainAgent" /> {t('ui.cacheRebuildStats')}<ConceptHelp doc="CacheRebuild" /></div>
-                <table className={`${headerStyles.statsTable} ${styles.fixedTable}`}>
-                  <colgroup>
-                    <col className={styles.colWide} />
-                    <col className={styles.colNarrow} />
-                    <col className={styles.colNarrow} />
-                  </colgroup>
-                  <thead>
-                    <tr>
-                      <td className={`${headerStyles.th} ${styles.thLeft}`}>{t('ui.cacheRebuild.reason')}</td>
-                      <td className={headerStyles.th}>{t('ui.cacheRebuild.count')}</td>
-                      <td className={headerStyles.th}>{t('ui.cacheRebuild.cacheCreate')}</td>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {activeReasons.map(k => (
-                      <tr key={k} className={headerStyles.rowBorder}>
-                        <td className={`${headerStyles.label} ${styles.ellipsisCell}`} title={t(`ui.${I18N_MAP[k]}`)}>{t(`ui.${I18N_MAP[k]}`)}</td>
-                        <td className={headerStyles.td}>{cacheStats[k].count}</td>
-                        <td className={headerStyles.td}>{formatTokenCount(cacheStats[k].cacheCreate)}</td>
-                      </tr>
-                    ))}
-                    {activeReasons.length > 1 && (
-                      <tr className={headerStyles.rebuildTotalRow}>
-                        <td className={headerStyles.label}>{t('ui.stats.total')}</td>
-                        <td className={headerStyles.td}>{totalCount}</td>
-                        <td className={headerStyles.td}>{formatTokenCount(totalCache)}</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {/* 5. Token/Cache Stats per Model */}
+            {/* 4. Token Stats per Model */}
             {models.map((model) => {
               const s = byModel[model];
-              const totalInput = s.input + s.cacheCreation + s.cacheRead;
-              const cacheHitRate = totalInput > 0 ? ((s.cacheRead / totalInput) * 100).toFixed(1) : '0.0';
               return (
                 <div key={model} className={headerStyles.modelCard}>
                   <div className={headerStyles.modelName}>{model}</div>
@@ -236,22 +185,18 @@ export default function MobileStats({ requests = [], visible, onClose }) {
                       </tr>
                       <tr className={headerStyles.rowBorder}>
                         <td className={headerStyles.label}></td>
-                        <td className={headerStyles.td}>{formatTokenCount(totalInput)}</td>
+                        <td className={headerStyles.td}>{formatTokenCount(s.input)}</td>
                         <td className={headerStyles.td}>{formatTokenCount(s.output)}</td>
                       </tr>
                       <tr>
                         <td className={headerStyles.label}>{t('ui.stats.cache')}</td>
-                        <td className={headerStyles.th}>{t('ui.stats.create')}</td>
-                        <td className={headerStyles.th}>{t('ui.stats.read')}</td>
+                        <td className={headerStyles.th}>{t('ui.stats.cacheRead')}</td>
+                        <td className={headerStyles.th}>{t('ui.stats.cacheWrite')}</td>
                       </tr>
                       <tr className={headerStyles.rowBorder}>
                         <td className={headerStyles.label}></td>
-                        <td className={headerStyles.td}>{formatTokenCount(s.cacheCreation)}</td>
                         <td className={headerStyles.td}>{formatTokenCount(s.cacheRead)}</td>
-                      </tr>
-                      <tr>
-                        <td className={headerStyles.label}>{t('ui.hitRate')}</td>
-                        <td colSpan={2} className={headerStyles.td}>{cacheHitRate}%</td>
+                        <td className={headerStyles.td}>{formatTokenCount(s.cacheWrite)}</td>
                       </tr>
                     </tbody>
                   </table>

@@ -1,55 +1,55 @@
-# UltraPlan — Nihai Dilek Makinesi
+# UltraPlan — The Ultimate Wishing Machine
 
-## UltraPlan Nedir
+## What is UltraPlan
 
-UltraPlan, cc-viewer'in Claude Code'un yerel `/ultraplan` komutunun **yerelleştirilmiş uygulamasıdır**. `/ultraplan`'ın tüm yeteneklerini **Claude'un resmi uzak hizmetini başlatmaya gerek kalmadan** yerel ortamınızda kullanmanızı sağlar ve Claude Code'u **çoklu ajan işbirliği** kullanarak karmaşık planlama ve uygulama görevlerini yerine getirmeye yönlendirir.
+UltraPlan is CX Viewer's **localized planning workflow** for Codex. It guides Codex through complex planning and implementation tasks using **multi-agent collaboration**.
 
-Normal Plan modu veya Agent Team ile karşılaştırıldığında, UltraPlan şunları yapabilir:
-- Görev karmaşıklığını otomatik olarak değerlendirip optimal planlama stratejisini seçmek
-- Kod tabanını farklı boyutlardan keşfetmek için birden fazla paralel ajan dağıtmak
-- Sektördeki en iyi uygulamalar için harici araştırma (webSearch) dahil etmek
-- Plan yürütmesinden sonra kod incelemesi için otomatik olarak bir Code Review Ekibi oluşturmak
-- Tam bir **Planla → Yürüt → İncele → Düzelt** kapalı döngüsü oluşturmak
-
----
-
-## Önemli Notlar
-
-### 1. UltraPlan Her Şeye Kadir Değildir
-UltraPlan daha güçlü bir dilek makinesidir, ancak bu her dileğin gerçekleştirilebileceği anlamına gelmez. Plan ve Agent Team'den daha güçlüdür, ancak doğrudan "size para kazandıramaz". Makul görev ayrıntı düzeyini göz önünde bulundurun — her şeyi tek seferde başarmaya çalışmak yerine büyük hedefleri yürütülebilir orta ölçekli görevlere bölün.
-
-### 2. Şu Anda Programlama Projeleri İçin En Etkili
-UltraPlan'ın şablonları ve iş akışları, programlama projeleri için derinlemesine optimize edilmiştir. Diğer senaryolar (dokümantasyon, veri analizi vb.) denenebilir, ancak gelecek sürüm uyarlamalarını beklemek isteyebilirsiniz.
-
-### 3. Yürütme Süresi ve Bağlam Penceresi Gereksinimleri
-- Başarılı bir UltraPlan çalıştırması genellikle **30 dakika veya daha fazla** sürer
-- MainAgent'in büyük bir bağlam penceresine sahip olmasını gerektirir (1M bağlamlı Opus modeli önerilir)
-- Yalnızca 200K modeliniz varsa, **çalıştırmadan önce bağlamı `/clear` ile temizlediğinizden emin olun**
-- Claude Code'un `/compact` komutu bağlam penceresi yetersiz olduğunda kötü performans gösterir — alanın tükenmesinden kaçının
-- Yeterli bağlam alanını korumak, başarılı UltraPlan yürütmesi için kritik bir ön koşuldur
-
-Yerelleştirilmiş UltraPlan hakkında sorularınız veya önerileriniz varsa, tartışmak ve işbirliği yapmak için [GitHub'da Issues](https://github.com/anthropics/claude-code/issues) açmaktan çekinmeyin.
+Compared to regular Plan mode or Agent Team, UltraPlan can:
+- Automatically assess task complexity and select the optimal planning strategy
+- Deploy multiple parallel agents to explore the codebase from different dimensions
+- Incorporate external research (`web_search`) for industry best practices
+- Automatically assemble a Code Review Team after plan execution for code review
+- Form a complete **Plan → Execute → Review → Fix** closed loop
 
 ---
 
-## Nasıl Çalışır
+## Important Notes
 
-UltraPlan iki çalışma modu sunar:
+### 1. UltraPlan Is Not Omnipotent
+UltraPlan is a more powerful wishing machine, but that doesn't mean every wish can be fulfilled. It's more powerful than Plan and Agent Team, but it can't directly "make you money." Consider reasonable task granularity — break large goals into executable medium-sized tasks rather than trying to accomplish everything in one shot.
 
-### Otomatik Mod
-Görev karmaşıklığını (puan 4-12) otomatik olarak analiz eder ve farklı stratejilere yönlendirir:
+### 2. Currently Most Effective for Programming Projects
+UltraPlan's templates and workflows are deeply optimized for programming projects. Other scenarios (documentation, data analysis, etc.) can be attempted, but you may want to wait for future version adaptations.
 
-| Rota | Puan | Strateji |
-|------|------|----------|
-| Rota A | 4-6 | Doğrudan kod keşfi ile hafif planlama |
-| Rota B | 7-9 | Yapısal diyagramlarla planlama (Mermaid / ASCII) |
-| Rota C | 10-12 | Çoklu ajan keşfi + inceleme kapalı döngüsü |
+### 3. Execution Time and Context Window Requirements
+- A successful UltraPlan run typically takes **30 minutes or more**
+- Requires MainAgent to have a large enough context window for multi-agent findings and review output
+- If your active model has a smaller context window, **make sure to `/clear` context before running**
+- Compaction is less reliable when the context window is already nearly full — avoid running out of space
+- Maintaining sufficient context space is a critical prerequisite for successful UltraPlan execution
 
-### Zorunlu Mod
-Rota C'nin tam çoklu ajan iş akışını doğrudan etkinleştirir:
-1. Kod tabanını eş zamanlı olarak keşfetmek için 5'e kadar paralel ajan dağıtma (mimari, dosya tanımlama, risk değerlendirmesi vb.)
-2. İsteğe bağlı olarak webSearch aracılığıyla sektör çözümlerini araştırmak için bir araştırma ajanı dağıtma
-3. Tüm ajan bulgularını ayrıntılı bir uygulama planında sentezleme
-4. Planı birden fazla perspektiften incelemek için bir inceleme ajanı dağıtma
-5. Onaylandıktan sonra planı yürütme
-6. Uygulamadan sonra kod kalitesini doğrulamak için otomatik olarak bir Code Review Ekibi oluşturma
+If you have any questions or suggestions about the localized UltraPlan workflow, open an issue in the CX Viewer project to discuss and collaborate.
+
+---
+
+## How It Works
+
+UltraPlan offers two operating modes:
+
+### Auto Mode
+Automatically analyzes task complexity (score 4-12) and routes to different strategies:
+
+| Route | Score | Strategy |
+|-------|-------|----------|
+| Route A | 4-6 | Lightweight planning with direct code exploration |
+| Route B | 7-9 | Planning with structural diagrams (Mermaid / ASCII) |
+| Route C | 10-12 | Multi-agent exploration + review closed loop |
+
+### Forced Mode
+Directly activates the full Route C multi-agent workflow:
+1. Deploy up to 5 parallel agents to explore the codebase simultaneously (architecture, file identification, risk assessment, etc.)
+2. Optionally deploy a research agent to investigate industry solutions via `web_search`
+3. Synthesize all agent findings into a detailed implementation plan
+4. Deploy a review agent to scrutinize the plan from multiple perspectives
+5. Execute the plan once approved
+6. Automatically assemble a Code Review Team to validate code quality after implementation

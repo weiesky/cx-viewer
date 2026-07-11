@@ -37,7 +37,7 @@ export async function handleSkillToggle(host, skill) {
     const r = await fetch(apiUrl('/api/skills/toggle'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source: skill.source, name: skill.name, enable }),
+      body: JSON.stringify({ source: skill.source, name: skill.name, path: skill.path, enabled: skill.enabled, enable }),
     });
     const data = await r.json();
     if (!r.ok) {
@@ -84,7 +84,7 @@ export async function handleSkillDelete(host, skill) {
     const r = await fetch(apiUrl('/api/skills/delete'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source: skill.source, name: skill.name, enabled: skill.enabled }),
+      body: JSON.stringify({ source: skill.source, name: skill.name, path: skill.path, enabled: skill.enabled }),
     });
     const data = await r.json().catch(() => ({}));
     if (!r.ok) {

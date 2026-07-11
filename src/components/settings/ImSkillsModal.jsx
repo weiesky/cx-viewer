@@ -54,7 +54,7 @@ export default function ImSkillsModal({ open, platform, reloadKey, onClose }) {
     setSkills((prev) => prev.map((s) => (same(s) ? { ...s, enabled: enable } : s))); // 乐观
     try {
       const r = await fetch(apiUrl(`/api/im/${encodeURIComponent(platform)}/skills/toggle`), {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: skill.name, enable }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ source: skill.source, name: skill.name, path: skill.path, enabled: skill.enabled, enable }),
       });
       if (!r.ok) { const j = await r.json().catch(() => ({})); throw Object.assign(new Error(j.error || `http:${r.status}`), { code: j.code }); }
       message.success(_tr('ui.im.skillsRestartHint', null, 'Updated — takes effect after you restart this IM'));
@@ -75,7 +75,7 @@ export default function ImSkillsModal({ open, platform, reloadKey, onClose }) {
     setToggling((prev) => new Set(prev).add(key));
     try {
       const r = await fetch(apiUrl(`/api/im/${encodeURIComponent(platform)}/skills/delete`), {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: skill.name, enabled: skill.enabled }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ source: skill.source, name: skill.name, path: skill.path, enabled: skill.enabled }),
       });
       if (!r.ok) { const j = await r.json().catch(() => ({})); throw Object.assign(new Error(j.error || `http:${r.status}`), { code: j.code }); }
       setSkills((prev) => prev.filter((s) => skillKey(s) !== key)); // 乐观移除

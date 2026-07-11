@@ -1,6 +1,6 @@
 import { isSkillText, isMainAgent } from './contentFilter.js';
-import { restoreSlimmedEntry } from './entry-slim.js';
-import { formatToolAsXml } from './toolsXmlFormatter.js';
+import { getInstructionsText, getResponseInputItems, getResponseInstructions, getResponseTools, textFromContent } from '../../lib/openai-body.js';
+import { getInputCacheUsage } from '../../lib/token-usage.js';
 import modelCodexUrl from '../img/model-codex.svg';
 import modelOpenaiUrl from '../img/model-openai.svg';
 import modelGeminiUrl from '../img/model-gemini.svg';
@@ -17,7 +17,6 @@ import modelCodexAnimatedSvg from '../img/codex/writing.svg?raw';
 export {
   CODEX_CONTEXT_WINDOW_TOKENS,
   getModelMaxTokens,
-  sumCacheCreationTokens,
   sumUsageInputTokens,
   sumUsageContextTokens,
 } from '../../server/lib/context-rules.js';
@@ -57,7 +56,7 @@ export function computeContextPercent({ contextWindow, lastTotalTokens = 0 }) {
  * user message 的 _timestamp 与生产者 req 一致，producer idx = idx。
  *
  * mid-session 启动边界：cx-viewer 在 mid-conversation 才启动时，第一个 entry
- * 的 body.messages 已包含历史 [user, assistant, user, ...]，那条 assistant
+ * 的 body.input 已包含历史 [user, assistant, user, ...]，那条 assistant
  * 的 _timestamp = T0、idx=0、producerIdx=-1。其真实 producer 不在 server 视野内，
  * 退而求其次用当前 entry 的 model（modelNameByReqIdx[0]）作为最佳估计 ——
  * 同一段对话通常 model 一致，比显示中性 'MainAgent' 更接近用户预期。
@@ -78,99 +77,6 @@ export function resolveProducerModelInfo(ts, role, tsToIndex, modelNameByReqIdx)
   return name ? getModelInfo(name) : null;
 }
 
-/**
- * Incrementally append cache loss entries to an existing map.
- * Scans from startIndex to end; uses prevMainAgent as comparison baseline.
- * Returns the last mainAgent entry encountered (for next incremental call).
- */
-export function appendCacheLossMap(map, requests, startIndex, prevMainAgent) {
-  for (let i = startIndex; i < requests.length; i++) {
-    const req = requests[i];
-    if (!isMainAgent(req)) continue;
-
-    if (prevMainAgent) {
-      const usage = req.response?.body?.usage;
-      if (usage) {
-        const cacheCreate = usage.cache_creation_input_tokens || 0;
-        const cacheRead = usage.cache_read_input_tokens || 0;
-        if (cacheCreate > 0 && cacheCreate > cacheRead) {
-          const prev = prevMainAgent._slimmed
-            ? restoreSlimmedEntry(prevMainAgent, requests)
-            : prevMainAgent;
-          const loss = _computeCacheLoss(prev, req);
-          if (loss) map.set(i, loss);
-        }
-      }
-    }
-    prevMainAgent = req;
-  }
-  return prevMainAgent;
-}
-
-/**
- * Pre-compute cache loss analysis for all requests in a single forward pass.
- * Returns Map<index, { reason, reasons }> — O(n) total instead of O(n²).
- */
-export function buildCacheLossMap(requests) {
-  const map = new Map();
-  appendCacheLossMap(map, requests, 0, null);
-  return map;
-}
-
-// WeakMap cache for stringified system/tools — avoids mutating request objects
-const _jsonCache = new WeakMap();
-function _getCachedJson(entry, key) {
-  let cache = _jsonCache.get(entry);
-  if (!cache) { cache = {}; _jsonCache.set(entry, cache); }
-  if (cache[key] === undefined) {
-    const body = stripPrivateKeys(entry.body);
-    cache[key] = JSON.stringify(body?.[key]);
-  }
-  return cache[key];
-}
-
-/** Internal: compare two adjacent MainAgent entries for cache loss reason. */
-function _computeCacheLoss(prevMainAgent, req) {
-  const gap = req.timestamp - prevMainAgent.timestamp;
-  if (gap > 5 * 60 * 1000) return { reason: 'ttl', reasons: ['ttl'] };
-
-  const prev = stripPrivateKeys(prevMainAgent.body);
-  const curr = stripPrivateKeys(req.body);
-  if (!prev || !curr) return { reason: 'key_change', reasons: ['key_change'] };
-
-  const reasons = [];
-
-  if (prev.model !== curr.model) reasons.push('model_change');
-
-  // Use WeakMap cache to avoid re-serialization without mutating entry objects
-  const prevSystem = _getCachedJson(prevMainAgent, 'system');
-  const currSystem = _getCachedJson(req, 'system');
-  if (prevSystem !== currSystem) reasons.push('system_change');
-
-  const prevTools = _getCachedJson(prevMainAgent, 'tools');
-  const currTools = _getCachedJson(req, 'tools');
-  if (prevTools !== currTools) reasons.push('tools_change');
-
-  const prevMsgs = prev.messages || [];
-  const currMsgs = curr.messages || [];
-  if (currMsgs.length < prevMsgs.length) {
-    reasons.push('msg_truncated');
-  } else {
-    const prefixLen = Math.min(prevMsgs.length, currMsgs.length);
-    let prefixMatch = true;
-    for (let j = 0; j < prefixLen; j++) {
-      if (JSON.stringify(prevMsgs[j]) !== JSON.stringify(currMsgs[j])) {
-        prefixMatch = false;
-        break;
-      }
-    }
-    if (!prefixMatch) reasons.push('msg_modified');
-  }
-
-  if (reasons.length === 0) reasons.push('key_change');
-  return { reason: reasons[0], reasons };
-}
-
 export function escapeHtml(str) {
   if (!str) return '';
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -179,20 +85,6 @@ export function escapeHtml(str) {
 export function truncateText(text, maxLen) {
   if (!text) return '';
   return text.length > maxLen ? text.substring(0, maxLen) + '...' : text;
-}
-
-// 文件内私有,仅供 L755 自调用使用。公共定义在 src/utils/toolResultCore.js,
-// 跨模块请 import 那里的版本(本文件因 SVG/i18n 依赖链不能被 node --test 直接加载)。
-function extractToolResultText(toolResult) {
-  if (!toolResult.content) return String(toolResult.content ?? '');
-  if (typeof toolResult.content === 'string') return toolResult.content;
-  if (Array.isArray(toolResult.content)) {
-    return toolResult.content
-      .filter(b => b.type === 'text')
-      .map(b => b.text)
-      .join('\n');
-  }
-  return JSON.stringify(toolResult.content);
 }
 
 // 模型配置：匹配规则、显示名、品牌色、SVG logo。
@@ -338,39 +230,16 @@ export function computeTokenStats(requests) {
     if (!usage) continue;
     const model = req.body?.model || 'unknown';
     if (!byModel[model]) {
-      byModel[model] = { input: 0, output: 0, cacheCreation: 0, cacheRead: 0 };
+      byModel[model] = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
     }
     const s = byModel[model];
     s.input += (usage.input_tokens || 0);
     s.output += (usage.output_tokens || 0);
-    s.cacheCreation += (usage.cache_creation_input_tokens || 0);
-    s.cacheRead += (usage.cache_read_input_tokens || 0);
+    const cache = getInputCacheUsage(usage);
+    s.cacheRead += cache.read;
+    s.cacheWrite += cache.write;
   }
   return byModel;
-}
-
-export function computeCacheRebuildStats(requests) {
-  const stats = {
-    ttl: { count: 0, cacheCreate: 0 },
-    system_change: { count: 0, cacheCreate: 0 },
-    tools_change: { count: 0, cacheCreate: 0 },
-    model_change: { count: 0, cacheCreate: 0 },
-    msg_truncated: { count: 0, cacheCreate: 0 },
-    msg_modified: { count: 0, cacheCreate: 0 },
-    key_change: { count: 0, cacheCreate: 0 },
-  };
-  const lossMap = buildCacheLossMap(requests);
-  for (const [i, result] of lossMap) {
-    const cacheCreate = requests[i].response?.body?.usage?.cache_creation_input_tokens || 0;
-    const reasons = result.reasons || [result.reason];
-    for (const r of reasons) {
-      if (stats[r]) {
-        stats[r].count++;
-        stats[r].cacheCreate += cacheCreate;
-      }
-    }
-  }
-  return stats;
 }
 
 export function computeToolUsageStats(requests) {
@@ -391,9 +260,9 @@ export function computeToolUsageStats(requests) {
 export function computeSkillUsageStats(requests) {
   const skillCounts = {};
   for (const req of requests) {
-    const messages = req.body?.messages;
-    if (!Array.isArray(messages)) continue;
-    for (const msg of messages) {
+    const input = getResponseInputItems(req.body);
+    if (!Array.isArray(input)) continue;
+    for (const msg of input) {
       if (msg.role !== 'user') continue;
       const content = msg.content;
       if (!Array.isArray(content)) continue;
@@ -420,43 +289,21 @@ export function isSkillsReminder(text) {
 }
 
 export function hasCodexMdReminder(body) {
-  const messages = body?.messages;
-  if (!Array.isArray(messages)) return false;
-  for (const msg of messages) {
-    const content = msg?.content;
-    if (typeof content === 'string') {
-      if (isCodexMdReminder(content)) return true;
-    } else if (Array.isArray(content)) {
-      for (const block of content) {
-        if (block.type === 'text' && isCodexMdReminder(block.text)) {
-          return true;
-        }
-      }
-    }
+  const input = getResponseInputItems(body);
+  if (!Array.isArray(input)) return false;
+  for (const msg of input) {
+    if (isCodexMdReminder(textFromContent(msg?.content))) return true;
   }
   return false;
 }
 
 export function hasSkillsReminder(body) {
-  // 与 extractLoadedSkills 的扫描范围对齐：system[] + messages[]
-  if (Array.isArray(body?.system)) {
-    for (const blk of body.system) {
-      if (blk?.type === 'text' && isSkillsReminder(blk.text)) return true;
-    }
-  }
-  const messages = body?.messages;
-  if (!Array.isArray(messages)) return false;
-  for (const msg of messages) {
-    const content = msg?.content;
-    if (typeof content === 'string') {
-      if (isSkillsReminder(content)) return true;
-    } else if (Array.isArray(content)) {
-      for (const block of content) {
-        if (block.type === 'text' && isSkillsReminder(block.text)) {
-          return true;
-        }
-      }
-    }
+  // 与 extractLoadedSkills 的扫描范围对齐：instructions[] + input[]
+  if (isSkillsReminder(getInstructionsText(body))) return true;
+  const input = getResponseInputItems(body);
+  if (!Array.isArray(input)) return false;
+  for (const msg of input) {
+    if (isSkillsReminder(textFromContent(msg?.content))) return true;
   }
   return false;
 }
@@ -469,7 +316,7 @@ import { parseLoadedSkills as _parseLoadedSkills } from './skillsParser.js';
 
 // 从 requests 中挑出当前生效的 skills 列表。
 // 策略：最新 MainAgent；单请求直取。不依赖 response.usage（skills 只来自 body）。
-// 只扫 body.system[] 与 body.messages[*].content[*] 中 type==='text' 的块。
+// 只扫 body.instructions[] 与 body.input[*].content[*] 中 type==='text' 的块。
 export function extractLoadedSkills(requests) {
   if (!Array.isArray(requests) || requests.length === 0) return [];
   let chosen = null;
@@ -484,21 +331,13 @@ export function extractLoadedSkills(requests) {
   const body = chosen.body;
 
   let last = null;
-  if (Array.isArray(body.system)) {
-    for (const blk of body.system) {
-      if (blk?.type === 'text' && isSkillsReminder(blk.text)) last = blk.text;
-    }
-  }
-  if (Array.isArray(body.messages)) {
-    for (const msg of body.messages) {
-      const c = msg?.content;
-      if (typeof c === 'string') {
-        if (isSkillsReminder(c)) last = c;
-      } else if (Array.isArray(c)) {
-        for (const blk of c) {
-          if (blk?.type === 'text' && isSkillsReminder(blk.text)) last = blk.text;
-        }
-      }
+  const instructionsText = getInstructionsText(body);
+  if (isSkillsReminder(instructionsText)) last = instructionsText;
+  const input = getResponseInputItems(body);
+  if (Array.isArray(input)) {
+    for (const msg of input) {
+      const text = textFromContent(msg?.content);
+      if (isSkillsReminder(text)) last = text;
     }
   }
   if (!last) return [];
@@ -530,7 +369,7 @@ export function isRelevantRequest(request) {
     /\/messages\/count_tokens/.test(url) ||
     request.inProgress === true ||  // 过滤在途请求
     (request.response && request.response.status === 0) ||  // 兼容历史日志：过滤状态为0的请求
-    (request.body?.max_tokens === 1 && !request.body?.system && (!request.body?.tools || request.body.tools.length === 0))  // 配额检查请求（单消息 "quota"，max_tokens=1）
+    (request.body?.max_tokens === 1 && !getResponseInstructions(request.body) && getResponseTools(request.body).length === 0)  // 配额检查请求（单 input "quota"，max_tokens=1）
   );
 }
 
@@ -567,130 +406,9 @@ export function findPrevMainAgentTimestamp(requests, startIndex) {
 }
 
 /**
- * 从请求列表中提取最新 MainAgent 请求的 KV-cache 缓存内容
- * cache_control 是缓存断点标记，表示从开始到该标记位置的所有内容都被缓存
- * @param {Array} requests - 请求列表
- * @returns {Object|null} - { system: string[], messages: string[], tools: string[], cacheCreateTokens: number, cacheReadTokens: number }
- */
-export function extractCachedContent(requests) {
-  if (!Array.isArray(requests) || requests.length === 0) return null;
-
-  // 单请求（DetailPanel 场景）：直接使用，不做类型过滤
-  // 多请求（AppHeader fallback）：逆序找最新 MainAgent，避免 teammate/subAgent 劫持
-  let chosen = null;
-  if (requests.length === 1) {
-    chosen = requests[0];
-  } else {
-    let latestMA = null;
-    let latestMAWithUsage = null;
-    for (let i = requests.length - 1; i >= 0; i--) {
-      if (isMainAgent(requests[i])) {
-        if (!latestMA) latestMA = requests[i];
-        if (requests[i].response?.body?.usage) {
-          latestMAWithUsage = requests[i];
-          break;
-        }
-      }
-    }
-    chosen = latestMAWithUsage || latestMA;
-  }
-
-  if (!chosen || !chosen.body) return null;
-
-  const body = chosen.body;
-  const usage = chosen.response?.body?.usage;
-
-  const result = {
-    system: [],
-    messages: [],
-    tools: [],
-    cacheCreateTokens: usage?.cache_creation_input_tokens || 0,
-    cacheReadTokens: usage?.cache_read_input_tokens || 0,
-  };
-
-  // 提取 system：找到最后一个带 cache_control 的位置，提取从开始到该位置的所有内容
-  if (Array.isArray(body.system)) {
-    let lastCacheIndex = -1;
-    for (let i = body.system.length - 1; i >= 0; i--) {
-      if (body.system[i].cache_control) {
-        lastCacheIndex = i;
-        break;
-      }
-    }
-    if (lastCacheIndex >= 0) {
-      for (let i = 0; i <= lastCacheIndex; i++) {
-        const block = body.system[i];
-        if (block.type === 'text' && block.text) {
-          result.system.push(block.text);
-        }
-      }
-    }
-  }
-
-  // 提取 messages：找到最后一个带 cache_control 的消息，提取从开始到该位置的所有消息内容
-  // 如果没有 cache_control 标记但有 cache_read（delta 重建/slim 还原后标记丢失），提取全部 messages
-  if (Array.isArray(body.messages)) {
-    let lastCacheIndex = -1;
-    for (let i = body.messages.length - 1; i >= 0; i--) {
-      const content = body.messages[i].content;
-      if (Array.isArray(content)) {
-        for (const block of content) {
-          if (block.cache_control) {
-            lastCacheIndex = i;
-            break;
-          }
-        }
-        if (lastCacheIndex >= 0) break;
-      }
-    }
-    // Fallback: delta 重建 + slim 还原后 cache_control 标记可能丢失，
-    // 但 cache_read > 0 说明 messages 确实被缓存了，提取全部
-    if (lastCacheIndex < 0 && result.cacheReadTokens > 0 && body.messages.length > 0) {
-      lastCacheIndex = body.messages.length - 1;
-    }
-    if (lastCacheIndex >= 0) {
-      for (let i = 0; i <= lastCacheIndex; i++) {
-        const msg = body.messages[i];
-        const content = msg.content;
-        if (typeof content === 'string') {
-          result.messages.push(`[${msg.role}] ${content}`);
-        } else if (Array.isArray(content)) {
-          for (const block of content) {
-            if (block.type === 'text' && block.text) {
-              result.messages.push(`[${msg.role}] ${block.text}`);
-            } else if (block.type === 'tool_use') {
-              const inputStr = block.input ? JSON.stringify(block.input) : '';
-              const preview = inputStr.length > 200 ? inputStr.substring(0, 200) + '...' : inputStr;
-              result.messages.push(`[${msg.role}] ${block.name}(${preview})`);
-            } else if (block.type === 'tool_result') {
-              const toolText = extractToolResultText(block);
-              if (toolText) {
-                result.messages.push(`[tool_result: ${block.tool_use_id}] ${toolText}`);
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  // 提取 tools：API 缓存顺序为 tools → system → messages，
-  // tools 作为 cache 前缀的一部分隐式被缓存（不需要自身有 cache_control 标记）。
-  // 只要 system 有缓存内容（说明 cache 前缀存在），tools 就应被展示。
-  // Keep in sync with server/lib/kv-cache-analyzer.js extractCachedContent
-  if (Array.isArray(body.tools) && body.tools.length > 0 && result.system.length > 0) {
-    for (const tool of body.tools) {
-      result.tools.push(formatToolAsXml(tool));
-    }
-  }
-
-  return result;
-}
-
-/**
- * 把 extractCachedContent 产出的 tools XML 字符串数组拆分为内置工具和 MCP 工具两组。
+ * 把工具 XML 字符串数组拆分为内置工具和 MCP 工具两组。
  *
- * 输入形如 formatToolAsXml 的输出：每个字符串是完整的 <tool>...</tool> 块。
+ * 输入形如工具 XML formatter 的输出：每个字符串是完整的 <tool>...</tool> 块。
  * 解析时只取出工具级别（最顶层）的 <name> 与 <description>——即字符串中第一次出现的那对。
  *
  * MCP 识别：name 匹配 /^mcp__(.+?)__(.+)$/，非贪心以支持 server 名含下划线
@@ -704,7 +422,7 @@ export function extractCachedContent(requests) {
  * @param {string[]} tools
  * @returns {{ builtin: Array<{name:string, description:string}>, mcpByServer: Map<string, Array<{name:string, fullName:string, description:string}>> }}
  */
-export function parseCachedTools(tools) {
+export function parseToolXmlList(tools) {
   const builtin = [];
   const mcpByServer = new Map();
   if (!Array.isArray(tools)) return { builtin, mcpByServer };

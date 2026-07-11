@@ -7,7 +7,7 @@ import { formatTeammateLabel } from './requestType';
  * Background: on a cold load the first build can run before identity data is
  * complete — the producer turn may be in-flight (excluded from the filtered
  * requests array) or split into the live tail, and the teammate-name registry
- * may not have scanned the lead's Agent tool_use yet. The resulting fallbacks
+ * may not have scanned the lead's spawn_agent tool_use yet. The resulting fallbacks
  * ("MainAgent" model identity, "Teammate: X" labels) get baked into cached
  * elements / scan entries and were previously frozen until a new MainAgent
  * turn replaced the session object. These helpers heal them on the next

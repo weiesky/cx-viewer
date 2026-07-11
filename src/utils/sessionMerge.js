@@ -1,5 +1,5 @@
 // Wire format 协议详见 docs/WIRE_FORMAT.md（服务端 entry 形态 / 关键字段 / 已知特殊窗口）
-import { isPostClearCheckpoint } from './clearCheckpoint.js';
+import { isPostClearCheckpoint, getMainAgentSessionKey } from './clearCheckpoint.js';
 
 /**
  * 计算消息的轻量内容指纹，用于「反向锚点」对齐：以 `newMessages[0]` 的 fp 为锚，
@@ -21,18 +21,31 @@ export function messageFingerprint(msg) {
     const c = msg.content;
     if (typeof c === 'string') return `${msg.role}|s|${c.length}|${c.slice(0, 32)}|${c.slice(-32)}`;
     if (!Array.isArray(c) || c.length === 0) return `${msg.role}|empty`;
-    const b = c[0];
-    if (b.type === 'tool_use') return `${msg.role}|tu|${b.id || b.name || ''}`;
-    if (b.type === 'tool_result') return `${msg.role}|tr|${b.tool_use_id || ''}`;
-    if (b.type === 'text') {
-      const t = b.text || '';
-      return `${msg.role}|t|${t.length}|${t.slice(0, 32)}|${t.slice(-32)}`;
-    }
-    if (b.type === 'thinking') {
-      const t = b.thinking || '';
-      return `${msg.role}|th|${t.length}|${t.slice(0, 32)}|${t.slice(-32)}`;
-    }
-    return `${msg.role}|${b.type || 'unknown'}`;
+    const blocks = c.map((b) => {
+      if (!b || typeof b !== 'object') return 'unknown';
+      if (b.type === 'tool_use') return `tu:${b.id || ''}:${b.name || ''}:${valueFingerprint(b.input)}`;
+      if (b.type === 'tool_result') return `tr:${b.tool_use_id || ''}:${b.is_error ? 1 : 0}:${valueFingerprint(b.content)}`;
+      if (b.type === 'text') {
+        const t = b.text || '';
+        return `t:${t.length}:${t.slice(0, 32)}:${t.slice(-32)}`;
+      }
+      if (b.type === 'thinking') {
+        const t = b.thinking || '';
+        return `th:${t.length}:${t.slice(0, 32)}:${t.slice(-32)}`;
+      }
+      return `${b.type || 'unknown'}:${valueFingerprint(b)}`;
+    });
+    return `${msg.role}|${blocks.join(';')}`;
+  } catch {
+    return '';
+  }
+}
+
+function valueFingerprint(value) {
+  try {
+    const text = typeof value === 'string' ? value : JSON.stringify(value);
+    if (!text) return '';
+    return `${text.length}:${text.slice(0, 32)}:${text.slice(-32)}`;
   } catch {
     return '';
   }
@@ -103,9 +116,9 @@ function findReverseAnchor(newMsgs, curMsgs, newFps, sharedCurFpsCache) {
  * 重建层标记的脏条目不得进入 mainAgentSessions 合并——
  *  - `_staleReorder`：完成序倒置的乱序条目（内容已被更新条目取代）；
  *  - `_reconstructBroken`：重建结果与 _totalMessageCount 不符且无法修复（拼接会翻倍/错位）；
- *  - 批量路径额外跳过 `inProgress`：孤立占位条目的 body.messages 是裸 delta 切片
+ *  - 批量路径额外跳过 `inProgress`：孤立占位条目的 body.input 是裸 delta 切片
  *    （批量 reconstructEntries 不为 inProgress 重建全量），merge 会触发 rebuild 截断。
- *    SSE 实时路径不拦 inProgress——watcher 增量重建器已为其拼出全量 messages，
+ *    SSE 实时路径不拦 inProgress——watcher 增量重建器已为其拼出全量 input，
  *    无 live-port 配置下"提问气泡请求时即显示"依赖这一行为。
  * AppBase 的 SSE 与批量两个 merge 入口、以及单测共用此谓词，防三处逻辑漂移。
  *
@@ -140,17 +153,19 @@ export function isMergeBlockedEntry(entry, options = {}) {
  * @returns {Array}
  */
 export function mergeMainAgentSessions(prevSessions, entry, options = {}) {
-  const newMessages = entry.body.messages;
+  const newMessages = entry.body.input;
   const newResponse = entry.response;
   const userId = entry.body.metadata?.user_id || null;
+  const sessionKey = getMainAgentSessionKey(entry);
 
   const entryTimestamp = entry.timestamp || null;
 
   if (prevSessions.length === 0) {
-    return [{ userId, messages: newMessages, response: newResponse, entryTimestamp }];
+    return [{ userId, sessionKey, messages: newMessages, response: newResponse, entryTimestamp }];
   }
 
   const lastSession = prevSessions[prevSessions.length - 1];
+  const differentSessionKey = !!(sessionKey && lastSession.sessionKey && sessionKey !== lastSession.sessionKey);
 
   const prevMsgCount = lastSession.messages ? lastSession.messages.length : 0;
   const isNewConversation = prevMsgCount > 0 && newMessages.length < prevMsgCount * 0.5 && (prevMsgCount - newMessages.length) > 4;
@@ -163,7 +178,14 @@ export function mergeMainAgentSessions(prevSessions, entry, options = {}) {
     for (let i = 0; i < newMessages.length; i++) {
       if (!newMessages[i]._timestamp) newMessages[i]._timestamp = entryTimestamp;
     }
-    return [...prevSessions, { userId, messages: newMessages, response: newResponse, entryTimestamp }];
+    return [...prevSessions, { userId, sessionKey, messages: newMessages, response: newResponse, entryTimestamp }];
+  }
+
+  if (differentSessionKey) {
+    for (let i = 0; i < newMessages.length; i++) {
+      if (!newMessages[i]._timestamp) newMessages[i]._timestamp = entryTimestamp;
+    }
+    return [...prevSessions, { userId, sessionKey, messages: newMessages, response: newResponse, entryTimestamp }];
   }
 
   if (!options.skipTransientFilter && isNewConversation && newMessages.length <= 4 && prevMsgCount > 4) {
@@ -174,6 +196,21 @@ export function mergeMainAgentSessions(prevSessions, entry, options = {}) {
     const curLen = prevMsgCount;
     const newLen = newMessages.length;
     if (!lastSession.messages) lastSession.messages = [];
+
+    // Stateful Codex projection detected an equal-length streaming update of
+    // the final assistant message (commonly partial → finalized tool args).
+    // Batch reload does not run AppBase's live in-place helper, so consume the
+    // signal here as well instead of treating the changed fingerprint as a new
+    // Plan-style window and appending a duplicate transcript.
+    if (entry._inPlaceReplaceDetected === true && newLen === curLen && newLen >= 2) {
+      const replacement = newMessages[newLen - 1];
+      if (!replacement._timestamp) replacement._timestamp = entryTimestamp;
+      lastSession.messages = [...lastSession.messages.slice(0, -1), replacement];
+      lastSession.response = newResponse;
+      lastSession.entryTimestamp = entryTimestamp;
+      if (sessionKey && !lastSession.sessionKey) lastSession.sessionKey = sessionKey;
+      return [...prevSessions];
+    }
 
     // fp 缓存：预算 newMessages 的 fp 数组一次，传给 findReverseAnchor 避免多块连续校验
     // 时反复调用 messageFingerprint（流式 5000+ 次/秒 SSE 路径节省 25-100ms 累计延迟）。
@@ -245,8 +282,9 @@ export function mergeMainAgentSessions(prevSessions, entry, options = {}) {
 
     lastSession.response = newResponse;
     lastSession.entryTimestamp = entryTimestamp;
+    if (sessionKey && !lastSession.sessionKey) lastSession.sessionKey = sessionKey;
     return [...prevSessions];
   } else {
-    return [...prevSessions, { userId, messages: newMessages, response: newResponse, entryTimestamp }];
+    return [...prevSessions, { userId, sessionKey, messages: newMessages, response: newResponse, entryTimestamp }];
   }
 }

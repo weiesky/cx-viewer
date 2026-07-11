@@ -2,7 +2,7 @@
 // Management, Export user prompts, Plugin Management, CXV Process Manager,
 // Messaging Integration, Hot-Switch Proxy).
 //
-// Values mirror the AskUserQuestion / plan approval overlay (`.backdrop` in
+// Values mirror the request_user_input / plan approval overlay (`.backdrop` in
 // src/components/approval/ApprovalModal.module.css) — KEEP IN SYNC, guarded by
 // test/modal-mask.test.js. Applied per Modal instance via the antd semantic
 // `styles={{ mask }}` API: inline style, so it cannot leak to other modals —

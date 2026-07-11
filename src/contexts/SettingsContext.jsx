@@ -18,6 +18,7 @@ export const SettingsContext = createContext({
   _codexSettingsReady: Promise.resolve({}),
   updatePreferences: () => Promise.resolve(null),
   updateCodexSettings: () => Promise.resolve(null),
+  mergeLocalPreferences: () => {},
 });
 
 export function SettingsProvider({ children }) {
@@ -42,6 +43,10 @@ export function SettingsProvider({ children }) {
       .catch(() => ({}));
     const codexReady = fetch(apiUrl('/api/codex-settings'))
       .then(res => res.ok ? res.json() : {})
+      .then(data => {
+        if (typeof data?.codexConfigDir === 'string') setCodexConfigDir(data.codexConfigDir);
+        return data;
+      })
       .catch(() => ({}));
     return { prefsReady, codexReady };
   });
@@ -110,7 +115,10 @@ export function SettingsProvider({ children }) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(patch),
-    }).then(r => r.ok ? r.json() : null).catch(() => null);
+    }).then(r => r.ok ? r.json() : null).then(data => {
+      if (typeof data?.codexConfigDir === 'string') setCodexConfigDir(data.codexConfigDir);
+      return data;
+    }).catch(() => null);
   }, []);
 
   const value = useMemo(() => ({

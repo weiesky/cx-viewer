@@ -5,9 +5,9 @@ import { SearchOutlined } from '@ant-design/icons';
 import { escapeHtml, truncateText, getSvgAvatar } from '../../utils/helpers';
 import { formatHms, formatMonthDayTime } from '../../utils/formatters';
 import { compactResultPreview } from '../../utils/toolResultCore.js';
-import { extractWebSearchGroups } from '../../utils/webSearchGrouping';
+import { extractWebResultGroups } from '../../utils/webResultGrouping';
 import { mergeThinkingBlocks } from '../../utils/thinkingMerge';
-import WebSearchResultsView from '../viewers/WebSearchResultsView';
+import WebResultsView from '../viewers/WebResultsView';
 import MarkdownBlock from '../viewers/MarkdownBlock';
 import { IM_SOURCE_ICONS } from '../settings/imPlatforms';
 import { parseImOrigin } from '../../utils/imOrigin';
@@ -25,9 +25,9 @@ import { t } from '../../i18n';
 import { tc } from '../../utils/tCodex';
 import { getSlashCommandLabel, getSlashCommandTooltip } from '../../utils/slashCommandLabels';
 import { isPlanApprovalPrompt } from '../../utils/promptClassifier';
-import DiffView from './DiffView';
 import ToolResultView from '../viewers/ToolResultView';
 import { getPlanApprovalForToolUse, isNonInteractivePlanTool } from './interactionOwnership';
+import { isAskToolName, isPlanToolName } from '../../utils/toolNameAliases.js';
 
 import ImageLightbox from '../common/ImageLightbox';
 import defaultAvatarUrl from '../../img/default-avatar.svg';
@@ -105,18 +105,7 @@ const ModelAvatar = React.memo(function ModelAvatar({ modelInfo, streaming }) {
   return <img src={defaultModelAvatarUrl} className={styles.avatarImg} alt={modelInfo?.name || 'Agent'} />;
 });
 
-// 上下文 token 总量格式化：始终带 K 单位（与全站 formatTokenCount 行为不同：后者 0/<1000 不带 K）。
-// 用户需求：在 assistant 时间戳旁显示一个稳定的 "X.XK" 标记。
-function formatCacheK(n) {
-  if (n == null) return '';
-  if (!Number.isFinite(n)) return '';
-  if (n === 0) return '0K';
-  if (n >= 1000000) return (n / 1000).toFixed(0) + 'K';
-  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
-  return (n / 1000).toFixed(2) + 'K';
-}
-
-const AssistantLabel = React.memo(function AssistantLabel({ name, extra, timeStr, requestIndex, onViewRequest, cacheTotalTokens, showFullToolContent }) {
+const AssistantLabel = React.memo(function AssistantLabel({ name, extra, timeStr, requestIndex, onViewRequest, showFullToolContent }) {
   const useIcon = !showFullToolContent;
   const viewBtn = (requestIndex != null && onViewRequest) ? (
     useIcon ? (
@@ -133,21 +122,11 @@ const AssistantLabel = React.memo(function AssistantLabel({ name, extra, timeStr
       </span>
     )
   ) : null;
-  const showCache = showFullToolContent && cacheTotalTokens != null;
-  const cacheStr = showCache ? formatCacheK(cacheTotalTokens) : '';
   return (
     <div className={styles.labelRow}>
       <Text type="secondary" className={styles.labelText}>{name}{extra || ''}</Text>
       <span className={styles.labelRight}>
         {viewBtn}
-        {showCache && (
-          <Text
-            className={styles.cacheContextText}
-            title={t('ui.cacheContextTooltip', { value: cacheStr })}
-          >
-            {`[${cacheStr}]`}
-          </Text>
-        )}
         {timeStr && <Text className={styles.timeText}>{timeStr}</Text>}
       </span>
     </div>
@@ -185,7 +164,7 @@ class ChatMessage extends React.Component {
       p.pendingAsk !== n.pendingAsk ||
       p.activePlanPrompt !== n.activePlanPrompt || p.activeDangerousPrompt !== n.activeDangerousPrompt ||
       p.activePtyPlanId !== n.activePtyPlanId ||
-      p.requestIndex !== n.requestIndex || p.cacheTotalTokens !== n.cacheTotalTokens || p.label !== n.label || p.isTeammate !== n.isTeammate ||
+      p.requestIndex !== n.requestIndex || p.label !== n.label || p.isTeammate !== n.isTeammate ||
       p.animateAvatar !== n.animateAvatar ||
       p.isHistoryLog !== n.isHistoryLog ||
       p.userProfile !== n.userProfile || p.modelInfo !== n.modelInfo || p.imSenderMap !== n.imSenderMap || p.imAgent !== n.imAgent ||
@@ -216,7 +195,7 @@ class ChatMessage extends React.Component {
 
   formatTime(ts) {
     // displayTs 优先于 ts：assistant message 用 _generatedTs（消息生成时刻）而非 _timestamp
-    // （后者是"被下一次 request 携带进 body.messages"时的 ts，晚一拍）。其他 role 不传 displayTs，
+    // （后者是"被下一次 request 携带进 body.input"时的 ts，晚一拍）。其他 role 不传 displayTs，
     // fallback 到 ts，行为不变。
     const effectiveTs = this.props.displayTs ?? ts;
     if (!effectiveTs) return null;
@@ -378,61 +357,20 @@ class ChatMessage extends React.Component {
       }
     }
 
-    // Edit → diff 视图
-    if (tu.name === 'Edit' && tu.input && tu.input.old_string != null && tu.input.new_string != null) {
-      return this._renderTool_Edit(tu);
-    }
-
     const inp = (tu.input && typeof tu.input === 'object') ? tu.input : {};
 
-    if (tu.name === 'Bash') return this._renderTool_Bash(tu, inp);
+    if (tu.name === 'shell_command') return this._renderTool_ShellCommand(tu, inp);
+    if (tu.name === 'apply_patch') return this._renderTool_ApplyPatch(tu, inp);
+    if (tu.name === 'view_image') return this._renderTool_ViewImage(tu, inp);
 
-    if (tu.name === 'Read' || tu.name === 'Write' || tu.name === 'Glob' || tu.name === 'Grep') {
-      return this._renderTool_SimpleOps(tu, inp);
-    }
+    if (isAskToolName(tu.name)) return this._renderTool_AskQuestion(tu, inp);
 
-    if (tu.name === 'Task') return this._renderTool_Task(tu, inp);
-
-    if (tu.name === 'AskUserQuestion') return this._renderTool_AskQuestion(tu, inp);
-
-    if (tu.name === 'EnterPlanMode') return this._renderTool_EnterPlanMode(tu);
-
-    if (tu.name === 'ExitPlanMode') return this._renderTool_ExitPlanMode(tu, inp);
-
-    if (tu.name === 'SendMessage' && inp.message != null) {
-      const node = this._renderTool_SendMessage(tu, inp);
-      if (node) return node;
-    }
+    if (isPlanToolName(tu.name)) return this._renderTool_UpdatePlan(tu, inp);
 
     return this._renderTool_Default(tu, inp);
   }
 
-  _renderTool_Edit(tu) {
-    const editSnapshotMap = this.props.editSnapshotMap || {};
-    const filePath = tu.input.file_path || '';
-    let startLine = 1;
-    const snapshot = editSnapshotMap[tu.id];
-    if (snapshot && tu.input.old_string) {
-      const idx = snapshot.plainText.indexOf(tu.input.old_string);
-      if (idx >= 0) {
-        const before = snapshot.plainText.substring(0, idx);
-        const lineOffset = before.split('\n').length - 1;
-        startLine = snapshot.lineNums[lineOffset] ?? (lineOffset + 1);
-      }
-    }
-    return (
-      <DiffView
-        key={tu.id}
-        file_path={filePath}
-        old_string={tu.input.old_string}
-        new_string={tu.input.new_string}
-        startLine={startLine}
-        onOpenFile={this.props.onOpenFile}
-      />
-    );
-  }
-
-  _renderTool_Bash(tu, inp) {
+  _renderTool_ShellCommand(tu, inp) {
     const cmd = inp.command || '';
     const desc = inp.description || '';
     const lineCount = cmd.split('\n').length;
@@ -441,14 +379,14 @@ class ChatMessage extends React.Component {
       return (
         <div key={tu.id} className={styles.toolBox}>
           <Text strong className={styles.toolLabel}>
-            Bash{desc ? <span className={styles.descSpan}> — {desc}</span> : ''}
+            shell_command{desc ? <span className={styles.descSpan}> — {desc}</span> : ''}
           </Text>
           <Collapse
             ghost
             size="small"
             items={[{
               key: '1',
-              label: <Text type="secondary" className={styles.bashCollapseLabel}>{t('ui.bashCommand')} ({lineCount} {t('ui.lines')})</Text>,
+              label: <Text type="secondary" className={styles.bashCollapseLabel}>{t('ui.shellCommand')} ({lineCount} {t('ui.lines')})</Text>,
               children: this._toolCodePre(cmd),
             }]}
             className={styles.collapseMargin}
@@ -458,82 +396,25 @@ class ChatMessage extends React.Component {
     }
     return this._toolBox(
       tu,
-      <>Bash{desc ? <span className={styles.descSpan}> — {desc}</span> : ''}</>,
+      <>shell_command{desc ? <span className={styles.descSpan}> — {desc}</span> : ''}</>,
       this._toolCodePre(cmd)
     );
   }
 
-  _renderTool_SimpleOps(tu, inp) {
-    // Read: show file path + range
-    if (tu.name === 'Read') {
-      const fp = inp.file_path || '';
-      const parts = [];
-      if (inp.offset) parts.push(`offset: ${inp.offset}`);
-      if (inp.limit) parts.push(`limit: ${inp.limit}`);
-      const range = parts.length ? ` (${parts.join(', ')})` : '';
-      return this._toolBox(
-        tu,
-        <>Read: {this._toolPathTag(fp)}<span className={styles.secondarySpan}>{range}</span></>,
-        null
-      );
-    }
-    // Write: 整文件按 git diff 新增行渲染（old_string='' → 全部 add 行绿底），
-    // 复用 Edit 的 DiffView（行号/+前缀/+N 统计/折叠/路径点击全套）。
-    if (tu.name === 'Write' && inp.content != null) {
-      return (
-        <DiffView
-          key={tu.id}
-          label="Write:"
-          file_path={inp.file_path || ''}
-          old_string=""
-          new_string={inp.content}
-          startLine={1}
-          onOpenFile={this.props.onOpenFile}
-        />
-      );
-    }
-    // Write 流式半截参数（content 还没到）：白底回退
-    if (tu.name === 'Write') {
-      const fp = inp.file_path || '';
-      const content = inp.content || '';
-      const lines = content.split('\n');
-      return this._toolBox(
-        tu,
-        <>Write: {this._toolPathTag(fp)} <span className={styles.secondarySpan}>({lines.length} lines)</span></>,
-        this._toolCodePre(content)
-      );
-    }
-    // Glob: show pattern + path
-    if (tu.name === 'Glob') {
-      const pattern = inp.pattern || '';
-      const path = inp.path || '';
-      return this._toolBox(
-        tu,
-        <>Glob: <span className={styles.patternSpan}>{pattern}</span>{path ? <span className={styles.secondarySpan}> in {path}</span> : ''}</>,
-        null
-      );
-    }
-    // Grep: show pattern + path + options
-    const pattern = inp.pattern || '';
-    const path = inp.path || '';
-    const opts = [];
-    if (inp.glob) opts.push(`glob: ${inp.glob}`);
-    if (inp.output_mode) opts.push(`mode: ${inp.output_mode}`);
-    if (inp.head_limit) opts.push(`limit: ${inp.head_limit}`);
-    const optsStr = opts.length ? ` (${opts.join(', ')})` : '';
+  _renderTool_ApplyPatch(tu, inp) {
+    const text = inp.patch || inp.description || JSON.stringify(inp, null, 2);
     return this._toolBox(
       tu,
-      <>Grep: <span className={styles.patternSpan}>/{pattern}/</span>{path ? <span className={styles.secondarySpan}> in {path}</span> : ''}<span className={styles.secondarySpan}>{optsStr}</span></>,
-      null
+      <>apply_patch</>,
+      this._toolCodePre(text)
     );
   }
 
-  _renderTool_Task(tu, inp) {
-    const st = inp.subagent_type || '';
-    const desc = inp.description || '';
+  _renderTool_ViewImage(tu, inp) {
+    const path = inp.path || inp.file_path || '';
     return this._toolBox(
       tu,
-      <>Task({st}{desc ? ': ' + desc : ''})</>,
+      <>view_image{path ? <>: {this._toolPathTag(path)}</> : null}</>,
       null
     );
   }
@@ -655,15 +536,7 @@ class ChatMessage extends React.Component {
       );
     }
 
-  _renderTool_EnterPlanMode(tu) {
-    return (
-      <div key={tu.id} className={styles.planModeBox}>
-        <span className={styles.planModeLabel}>{t('ui.enterPlanMode')}</span>
-      </div>
-    );
-  }
-
-  _renderTool_ExitPlanMode(tu, inp) {
+  _renderTool_UpdatePlan(tu, inp) {
       const prompts = inp.allowedPrompts || [];
       const { planApprovalMap } = this.props;
       const approval = getPlanApprovalForToolUse(tu, planApprovalMap);
@@ -672,11 +545,10 @@ class ChatMessage extends React.Component {
       const isInteractive = isPending && this.props.cliMode && tu.id === this.props.lastPendingPlanId;
 
       // pending 状态下提取 plan 内容（优先级从高到低）：
-      // 1. tool_use.input.plan（Codex 2.x ExitPlanModeV2Tool 的 normalizeToolInput 注入）
+      // 1. tool_use.input.plan（Codex plan/update_plan inputs may carry the full plan）
       // 2. tool_use.input.planFilePath → 异步 fetch 缓存（multi-agent-room 等场景关键）
-      // 3. 跨消息追踪的 latestPlanContent（Write 到 .codex/plans/ 的内容）
-      // 4. 同一 response 中 Write 工具的内容
-      // 5. ExitPlanMode 之前的 text blocks
+      // 3. 跨消息追踪的 latestPlanContent
+      // 4. text blocks before the plan tool
       let planTextContent = null;
       if (isPending) {
         if (typeof inp.plan === 'string' && inp.plan.trim()) {
@@ -687,16 +559,6 @@ class ChatMessage extends React.Component {
           planTextContent = this.props.planFileContents[inp.planFilePath];
         }
         if (!planTextContent) planTextContent = this.props.latestPlanContent || null;
-        if (!planTextContent && Array.isArray(this.props.content)) {
-          for (const b of this.props.content) {
-            if (b === tu) break;
-            if (b.type === 'tool_use' && b.name === 'Write'
-              && b.input?.file_path && /\.codex\/plans\//i.test(b.input.file_path)
-              && b.input.content) {
-              planTextContent = b.input.content;
-            }
-          }
-        }
         if (!planTextContent && Array.isArray(this.props.content)) {
           const texts = [];
           for (const b of this.props.content) {
@@ -863,7 +725,7 @@ class ChatMessage extends React.Component {
       // textarea state) into the modal slot WITHOUT unmounting — local state survives.
       // Inline rendering resumes when modal is dismissed or the prompt resolves.
       // Only interactive cards qualify (resolved/historical cards never portal).
-      // ptyPlanCardId 用 tu.id（ExitPlanMode tool_use id）作权威源，与 ChatView pendingPtyPlan.id（=lastPendingPlanId）同源。
+      // ptyPlanCardId uses tu.id as the source of truth, matching ChatView pendingPtyPlan.id.
       const ptyPlanCardId = isInteractive ? String(tu.id) : '';
       return (
         <ApprovalPortalContext.Consumer key={tu.id}>
@@ -878,35 +740,6 @@ class ChatMessage extends React.Component {
       );
     }
 
-  // SendMessage → render message content directly (no tool shell)。
-  // 返回 null = msg 既非 lifecycle 对象也非字符串,由 renderToolCall 落到 Default。
-  _renderTool_SendMessage(tu, inp) {
-      const to = inp.to || '';
-      const msg = inp.message;
-      // JSON lifecycle signal → compact status bubble
-      if (typeof msg === 'object' && msg.type) {
-        const statusKey = `ui.teammate.${msg.type}`;
-        const statusText = t(statusKey, { name: to });
-        const display = statusText === statusKey ? `${to}: ${msg.type}` : statusText;
-        return (
-          <div key={tu.id} className={styles.teammateStatusRow}>
-            <span className={styles.teammateStatusBubble}>{display}</span>
-          </div>
-        );
-      }
-      // String message → direct markdown rendering with small header
-      if (typeof msg === 'string') {
-        const header = inp.summary ? `→ ${to} — ${inp.summary}` : `→ ${to}`;
-        return (
-          <div key={tu.id} className={styles.sendMessageBlock}>
-            <div className={styles.sendMessageHeader}>{header}</div>
-            <MarkdownBlock text={msg} />
-          </div>
-        );
-      }
-      return null;
-  }
-
   // Default: structured key-value display
   _renderTool_Default(tu, inp) {
     let toolLabel = tu.name;
@@ -917,7 +750,7 @@ class ChatMessage extends React.Component {
     const items = keys.map(k => {
       const v = inp[k];
       const vs = typeof v === 'string' ? v : JSON.stringify(v);
-      const display = (tu.name === 'Agent' || tu.name === 'TaskCreate' || tu.name === 'TaskUpdate' || tu.name === 'SendMessage' || vs.length <= 200) ? vs : vs.substring(0, 200) + '...';
+      const display = vs.length <= 200 ? vs : vs.substring(0, 200) + '...';
       return (
         <div key={k} className={styles.kvItem}>
           <span className={styles.kvKey}>{k}: </span>
@@ -1129,7 +962,7 @@ class ChatMessage extends React.Component {
 
   // 紧凑模式工具按钮的 Popover 渲染。两处 caller(_renderAssistantContentLegacy 与
   // _renderAssistantContentInOrder)使用完全相同的逻辑,抽出统一维护;tr 为 toolResultMap[tu.id],
-  // 可能 undefined(末轮未返回 / WebSearch / 历史未到位),compactResultPreview 内部短路返回 null。
+    // 可能 undefined(末轮未返回 / web_search / 历史未到位),compactResultPreview 内部短路返回 null。
   _renderSimplifiedToolPill(tu, tr) {
     // 用函数式 content 让 AntD 在 hover 触发前不构造预览(大 base64 图场景下显著省 CPU);
     // destroyTooltipOnHide 配合 hover 关闭后释放 DOM,避免 detached node 持有图片字节。
@@ -1185,9 +1018,9 @@ class ChatMessage extends React.Component {
   }
 
   renderAssistantContent(content, toolResultMap = {}, opts = {}) {
-    const enableWebSearchGrouping = opts.enableWebSearchGrouping ?? true;
-    if (enableWebSearchGrouping && Array.isArray(content)) {
-      const { groups, consumedIndices } = extractWebSearchGroups(content);
+    const enableWebResultGrouping = opts.enableWebResultGrouping ?? true;
+    if (enableWebResultGrouping && Array.isArray(content)) {
+      const { groups, consumedIndices } = extractWebResultGroups(content);
       if (groups.length > 0) {
         return this._renderAssistantContentInOrder(content, toolResultMap, groups, consumedIndices);
       }
@@ -1247,14 +1080,14 @@ class ChatMessage extends React.Component {
   }
 
   // legacy 与 in-order 两渲染器共用：tool_use 的尾随 tool_result 块。返回 node 或 null
-  // (null = 该 tr 不渲染:已批准 ExitPlanMode 跳过 / 简化模式非权限拒绝)。所有 key 基于 tu.id。
+  // (null = 该 tr 不渲染:已批准 plan 跳过 / 简化模式非权限拒绝)。所有 key 基于 tu.id。
   _renderToolResultTrailing(tu, tr) {
     if (!tr) return null;
     const simplify = !this.props.showFullToolContent;
-    // 已批准的 ExitPlanMode 计划内容已在 renderToolCall 中渲染，隐藏重复的 tool_result
+    // 已批准的计划内容已在 renderToolCall 中渲染，隐藏重复的 tool_result
     const planApprovalMap = this.props.planApprovalMap || {};
     const approval = planApprovalMap[tu.id];
-    if (tu.name === 'ExitPlanMode' && approval && approval.status === 'approved' && approval.planContent) {
+    if (isPlanToolName(tu.name) && approval && approval.status === 'approved' && approval.planContent) {
       return null;
     }
     const deniedNode = (
@@ -1318,7 +1151,7 @@ class ChatMessage extends React.Component {
     const simplify = !this.props.showFullToolContent;
     let simplifiedLabelAdded = false;
     toolUseBlocks.forEach((tu, tuIdx) => {
-      const isFullDisplayTool = tu.name === 'Edit' || tu.name === 'Write' || tu.name === 'EnterPlanMode' || tu.name === 'ExitPlanMode' || tu.name === 'AskUserQuestion' || tu.name === 'Agent' || tu.name === 'TaskCreate' || tu.name === 'SendMessage' || tu.name === 'Workflow';
+      const isFullDisplayTool = tu.name === 'apply_patch' || isPlanToolName(tu.name) || isAskToolName(tu.name) || tu.name === 'Workflow';
       const tr = toolResultMap[tu.id];
       if (simplify && !isFullDisplayTool) {
         // 简化模式：首个标签前加 "使用工具: " 标签
@@ -1328,7 +1161,7 @@ class ChatMessage extends React.Component {
             <span key={`stag-label-${tuIdx}`} className={styles.simplifiedToolLabel}>{t('ui.toolsUsed')}</span>
           );
         }
-        // 简化模式：非 Edit/Write 工具只显示标签，hover/click 显示完整内容
+        // 简化模式：非完整展示工具只显示标签，hover/click 显示完整内容
         innerContent.push(this._renderSimplifiedToolPill(tu, tr));
       } else {
         simplifiedLabelAdded = false; // 遇到完整展示工具后重置，下一组简化标签前重新显示 label
@@ -1399,7 +1232,7 @@ class ChatMessage extends React.Component {
 
       if (groupStartMap.has(i)) {
         const g = groupStartMap.get(i);
-        innerContent.push(this._renderWebSearchGroup(g, content, lastTextGlobalIdx, showTC, `wsg-${i}`));
+        innerContent.push(this._renderWebResultGroup(g, content, lastTextGlobalIdx, showTC, `wsg-${i}`));
         continue;
       }
 
@@ -1418,7 +1251,7 @@ class ChatMessage extends React.Component {
       if (block.type === 'tool_use') {
         const tu = block;
         const tuIdxInList = toolUseGlobalIndices.indexOf(i);
-        const isFullDisplayTool = tu.name === 'Edit' || tu.name === 'Write' || tu.name === 'EnterPlanMode' || tu.name === 'ExitPlanMode' || tu.name === 'AskUserQuestion' || tu.name === 'Agent' || tu.name === 'TaskCreate' || tu.name === 'SendMessage' || tu.name === 'Workflow';
+        const isFullDisplayTool = tu.name === 'apply_patch' || isPlanToolName(tu.name) || isAskToolName(tu.name) || tu.name === 'Workflow';
         const tr = toolResultMap[tu.id];
         if (simplify && !isFullDisplayTool) {
           if (!simplifiedLabelAdded) {
@@ -1449,7 +1282,7 @@ class ChatMessage extends React.Component {
     return innerContent;
   }
 
-  _renderWebSearchGroup(group, content, lastTextGlobalIdx, showTC, keyPrefix) {
+  _renderWebResultGroup(group, content, lastTextGlobalIdx, showTC, keyPrefix) {
     const { serverToolUse, webSearchResult, synthesisTextIndices } = group;
     const query = serverToolUse?.input?.query || '';
     const results = (webSearchResult && Array.isArray(webSearchResult.content))
@@ -1499,7 +1332,7 @@ class ChatMessage extends React.Component {
           )}
         </div>
         {webSearchResult ? (
-          <WebSearchResultsView results={results} />
+          <WebResultsView results={results} />
         ) : serverToolUse ? (
           <div className={styles.webSearchPlaceholder}>{t('ui.webSearchSearching')}</div>
         ) : null}
@@ -1518,7 +1351,7 @@ class ChatMessage extends React.Component {
   }
 
   renderAssistantMessage() {
-    const { content, toolResultMap = {}, modelInfo, timestamp, requestIndex, onViewRequest, showTrailingCursor, cacheTotalTokens, showFullToolContent, imAgent, isTeammate, label } = this.props;
+    const { content, toolResultMap = {}, modelInfo, timestamp, requestIndex, onViewRequest, showTrailingCursor, showFullToolContent, imAgent, isTeammate, label } = this.props;
     const innerContent = this.renderAssistantContent(content, toolResultMap);
 
     if (innerContent.length === 0) return null;
@@ -1541,7 +1374,6 @@ class ChatMessage extends React.Component {
             timeStr={this.formatTime(timestamp)}
             requestIndex={requestIndex}
             onViewRequest={onViewRequest}
-            cacheTotalTokens={cacheTotalTokens}
             showFullToolContent={showFullToolContent}
           />
           {this.renderHighlightBubble(styles.bubbleAssistant, innerContent)}
@@ -1561,25 +1393,14 @@ class ChatMessage extends React.Component {
   }
 
   renderSubAgentChatMessage() {
-    const { content, toolResultMap = {}, label, cacheTotalTokens, showFullToolContent } = this.props;
+    const { content, toolResultMap = {}, label } = this.props;
     const innerContent = this.renderAssistantContent(content, toolResultMap);
 
     if (innerContent.length === 0) return null;
-    const showCache = showFullToolContent && cacheTotalTokens != null;
-    const cacheStr = showCache ? formatCacheK(cacheTotalTokens) : '';
-
     return (
       <div className={styles.messageRowEnd}>
         <div className={styles.contentColLimited}>
           <div className={styles.labelRowEnd}>
-            {showCache && (
-              <Text
-                className={styles.cacheContextText}
-                title={t('ui.cacheContextTooltip', { value: cacheStr })}
-              >
-                {`[${cacheStr}]`}
-              </Text>
-            )}
             {this.formatTime(this.props.timestamp) && <Text className={styles.timeText}>{this.formatTime(this.props.timestamp)}</Text>}
             {this.renderViewRequestBtn()}
             <Text type="secondary" className={styles.labelTextRight}>{label || 'SubAgent'}</Text>

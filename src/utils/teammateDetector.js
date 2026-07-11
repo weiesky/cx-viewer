@@ -1,31 +1,25 @@
 /**
  * Native Teammate 检测器
  *
- * 识别 Codex 同进程内通过 Agent 工具启动的 native teammate。
+ * 识别 Codex 同进程内通过当前 collab 工具启动的 native teammate。
  * 与外部进程 teammate（通过 --agent-name 参数启动）不同，native teammate
- * 的 API 请求没有 req.teammate 字段，需要通过 system prompt 特征检测。
+ * 的 API 请求没有 req.teammate 字段，需要通过 instructions 特征检测。
  *
- * 特征：system prompt 中包含 "You are a Codex agent" 标记
- * （主 agent 的 system prompt 是 "You are Codex"）
+ * 特征：instructions 中包含 "You are a Codex agent" 标记
+ * （主 agent 的 instructions 是 "You are Codex"）
  *
  * 版本兼容：
- * - Codex v2.1.81+: system block[1] includes "You are a Codex agent".
+ * - Codex v2.1.81+: instructions includes "You are a Codex agent".
  * - 未来版本如果特征变化，在此文件中添加新的检测规则即可
  */
 
-// 内联 getSystemText 避免与 contentFilter 循环依赖
-function getSystemText(body) {
-  const system = body?.system;
-  if (typeof system === 'string') return system;
-  if (Array.isArray(system)) return system.map(s => (s && s.text) || '').join('');
-  return '';
-}
+import { getInputItemText, getInstructionsText, getResponseInputItems, getResponseInstructions } from '../../lib/openai-body.js';
 
-// Native teammate 特征：system prompt 包含 "You are a Codex agent"
+// Native teammate 特征：instructions 包含 "You are a Codex agent"
 // 注意区分 "You are Codex"（主 agent）
 // 但 "You are a Codex agent" 对所有 SDK agent（含普通 subagent）都匹配，
-// 单这一条判据会把 Agent tool 启动的普通 subagent 误判为 teammate。
-// 真正区分：teammate 之间通过 SendMessage tool 通信，subagent 不会被授予该工具。
+// 单这一条判据会把普通 subagent 误判为 teammate。
+// 真正区分：teammate 之间通过 send_input 通信，subagent 不会被授予该工具。
 const NATIVE_TEAMMATE_RE = /You are a Codex agent/i;
 
 // WeakMap cache 避免重复检测
@@ -47,52 +41,43 @@ export function isNativeTeammate(req) {
     return false;
   }
 
-  const sysText = getSystemText(req.body || {});
-  if (!NATIVE_TEAMMATE_RE.test(sysText)) {
+  const instructionsText = getInstructionsText(req.body || {});
+  if (!NATIVE_TEAMMATE_RE.test(instructionsText)) {
     _cache.set(req, false);
     return false;
   }
 
-  // SendMessage tool 是 teammate 间通信必需工具，普通 subagent 不会被授予。
-  // 命中正则但没 SendMessage → 是通过 Agent tool 启动的 subagent，不是 teammate。
+  // send_input 是 teammate 间通信必需工具，普通 subagent 不会被授予。
+  // 命中正则但没 send_input → 是普通 subagent，不是 teammate。
   const tools = req.body?.tools;
-  const hasSendMessage = Array.isArray(tools) && tools.some(t => t && t.name === 'SendMessage');
-  const result = hasSendMessage;
+  const hasSendInput = Array.isArray(tools) && tools.some(t => t && t.name === 'send_input');
+  const result = hasSendInput;
   _cache.set(req, result);
   return result;
 }
 
 /**
  * 从 native teammate 请求中提取名字
- * 优先从首条 user message 中匹配 "You are XXX" 模式
+ * 优先从首条 user input item 中匹配 "You are XXX" 模式
  * @param {object} req - 请求对象
  * @returns {string|null}
  */
 export function extractNativeTeammateName(req) {
   if (!req?.body) return null;
 
-  const msgs = req.body.messages || [];
-  if (msgs.length === 0) return null;
+  const input = getResponseInputItems(req.body);
+  if (input.length === 0) return null;
 
-  // 搜索所有 user 消息（上下文压缩后 hook 可能不在 msg[0] 中）
-  for (const m of msgs) {
+  // 搜索所有 user input items（上下文压缩后 hook 可能不在 input[0] 中）
+  for (const m of input) {
     if (m.role !== 'user') continue;
-    const content = m.content;
-    let text = '';
-    if (typeof content === 'string') {
-      text = content;
-    } else if (Array.isArray(content)) {
-      text = content
-        .filter(c => c && c.type === 'text')
-        .map(c => c.text || '')
-        .join(' ');
-    }
+    const text = getInputItemText(m);
     if (!text) continue;
 
     // 匹配名字模式（按优先级尝试）
     const nameMatch =
-      // OMC hook: "Agent oh-my-codexcode:code-reviewer started"
-      text.match(/Agent\s+(?:oh-my-codexcode:)?(\S+)\s+started/i)
+      // OMC hook: "agent oh-my-codexcode:code-reviewer started"
+      text.match(/agent\s+(?:oh-my-codexcode:)?(\S+)\s+started/i)
       // 任务提示: "You are CRer2, ..."
       || text.match(/You are (\w+)[,.]/)
       // 显式名字: "name: CRer2"
@@ -104,15 +89,15 @@ export function extractNativeTeammateName(req) {
 }
 
 /**
- * 从 legacy billing/header system block 中提取版本号。
- * Kept for imported cc-viewer logs; Codex-native entries should rely on explicit metadata.
+ * 从 instructions block 中提取版本号。
+ * Codex-native entries should prefer explicit metadata when available.
  * @param {object} req - 请求对象
  * @returns {string|null} 版本号如 "2.1.90" 或 null
  */
 export function extractCcVersion(req) {
-  const system = req?.body?.system;
-  if (!Array.isArray(system)) return null;
-  for (const block of system) {
+  const instructions = getResponseInstructions(req?.body);
+  if (!Array.isArray(instructions)) return null;
+  for (const block of instructions) {
     if (!block?.text) continue;
     const m = block.text.match(/cc_version=([\d.]+[a-fA-F0-9]*)/);
     if (m) return m[1];

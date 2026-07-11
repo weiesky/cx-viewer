@@ -2,7 +2,7 @@
 
 ## Kontekst
 
-MainAgent w Claude Code stosuje mechanizm wysyłania pełnego kontekstu — każde żądanie zawiera kompletną historię rozmowy, system prompt, definicje narzędzi itp. Oznacza to, że w miarę postępu rozmowy treść żądania staje się coraz większa, a bezpośrednie przeglądanie surowego Body utrudnia szybkie zlokalizowanie „co dokładnie zostało dodane w tej turze".
+MainAgent w Codex stosuje mechanizm wysyłania pełnego kontekstu — każde żądanie zawiera kompletną historię rozmowy, system prompt, definicje narzędzi itp. Oznacza to, że w miarę postępu rozmowy treść żądania staje się coraz większa, a bezpośrednie przeglądanie surowego Body utrudnia szybkie zlokalizowanie „co dokładnie zostało dodane w tej turze".
 
 Body Diff JSON rozwiązuje właśnie ten problem: automatycznie porównuje treści dwóch kolejnych żądań MainAgent, wyodrębnia przyrostowe zmiany i pozwala od razu zobaczyć, co faktycznie zostało dodane w bieżącym żądaniu.
 
@@ -22,7 +22,7 @@ Body Diff JSON rozwiązuje właśnie ten problem: automatycznie porównuje treś
 W normalnej turze rozmowy Body Diff JSON zazwyczaj zawiera tylko:
 - `messages`: 1–2 nowe wiadomości (dane wejściowe użytkownika + odpowiedź asystenta z poprzedniej tury)
 
-Jeśli w diff pojawiają się zmiany pól `system`, `tools`, `model` itp., oznacza to zmianę konfiguracji w bieżącej turze, co często jest również przyczyną przebudowy cache.
+Jeśli w diff pojawiają się zmiany pól `system`, `tools`, `model` itp., oznacza to zmianę konfiguracji w bieżącej turze.
 
 ## Sposób użycia
 

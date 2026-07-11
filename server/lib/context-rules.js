@@ -49,34 +49,13 @@ export function getModelMaxTokens(modelName) {
 }
 
 /**
- * cache_creation 兼容求和:flat 字段(cache_creation_input_tokens)存在(非 null/undefined,
- * 0 也算存在)直接用;缺失时回落到新版嵌套对象 usage.cache_creation 的各 TTL 分桶求和
- * (ephemeral_5m_input_tokens + ephemeral_1h_input_tokens,未来新增分桶自动计入)。
- * @param {object|null|undefined} usage API usage 对象
- * @returns {number}
- */
-export function sumCacheCreationTokens(usage) {
-  if (!usage) return 0;
-  if (usage.cache_creation_input_tokens != null) return usage.cache_creation_input_tokens || 0;
-  const nested = usage.cache_creation;
-  if (nested && typeof nested === 'object') {
-    let sum = 0;
-    for (const v of Object.values(nested)) {
-      if (typeof v === 'number' && Number.isFinite(v)) sum += v;
-    }
-    return sum;
-  }
-  return 0;
-}
-
-/**
  * 输入侧上下文用量(不含 output_tokens)。
  * @param {object|null|undefined} usage
  * @returns {number}
  */
 export function sumUsageInputTokens(usage) {
   if (!usage) return 0;
-  return (usage.input_tokens || 0) + sumCacheCreationTokens(usage) + (usage.cache_read_input_tokens || 0);
+  return usage.input_tokens || 0;
 }
 
 /**

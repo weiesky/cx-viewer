@@ -11,33 +11,11 @@ import styles from './ConceptHelp.module.css';
 // test/tool-catalog-concepts.test.js); the rest are non-tool concept docs.
 const OTHER_DOCS = [
   'SubAgent-Search',
-  'MainAgent', 'Teammate', 'BodyFields', 'ResponseFields', 'Tools', 'ToolsFirst', 'CacheRebuild', 'BodyDiffJSON', 'TranslateContextPollution', 'KVCacheContent', 'ProxySwitch', 'GlobalSettings', 'QRCode', 'UltraPlan', 'CustomUltraplanExpert',
+  'MainAgent', 'Teammate', 'BodyFields', 'ResponseFields', 'Tools', 'ToolsFirst', 'BodyDiffJSON', 'TranslateContextPollution', 'ProxySwitch', 'GlobalSettings', 'QRCode', 'UltraPlan', 'CustomUltraplanExpert',
 ];
 const KNOWN_DOCS = new Set([...ALL_TOOL_NAMES.map((n) => `Tool-${n}`), ...OTHER_DOCS]);
-const DOC_ALIASES = {
-  'Tool-apply_patch': 'Tool-FileChange',
-  'Tool-fileChange': 'Tool-FileChange',
-  'Tool-file_change': 'Tool-FileChange',
-  'Tool-commandExecution': 'Tool-Bash',
-  'Tool-command_execution': 'Tool-Bash',
-  'Tool-mcpToolCall': 'Tool-MCPToolCall',
-  'Tool-mcp_tool_call': 'Tool-MCPToolCall',
-  'Tool-dynamicToolCall': 'Tool-DynamicToolCall',
-  'Tool-web_search': 'Tool-WebSearch',
-  'Tool-webSearch': 'Tool-WebSearch',
-  'Tool-view_image': 'Tool-ImageView',
-  'Tool-imageView': 'Tool-ImageView',
-  'Tool-dynamic_tool': 'Tool-DynamicToolCall',
-  'Tool-collabAgentToolCall': 'Tool-Agent',
-  'Tool-collabToolCall': 'Tool-Agent',
-  'Tool-subAgentActivity': 'Tool-Agent',
-  'Tool-requestUserInput': 'Tool-AskUserQuestion',
-  'Tool-request_user_input': 'Tool-AskUserQuestion',
-  'Tool-plan': 'Tool-ExitPlanMode',
-};
 
 export default function ConceptHelp({ doc, zIndex, children }) {
-  doc = DOC_ALIASES[doc] || doc;
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [html, setHtml] = useState('');

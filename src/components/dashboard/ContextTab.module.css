@@ -109,7 +109,7 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 4px 9px 4px 23px;
+  padding: 4px 9px 4px 14px;
   font-size: 12px;
   color: var(--text-tertiary);
   cursor: pointer;
@@ -168,6 +168,42 @@
   flex-shrink: 0;
   margin-left: 4px;
   font-family: var(--font-mono);
+}
+
+.itemNested {
+  padding-left: 36px;
+}
+
+.itemLead {
+  width: 12px;
+  min-width: 12px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 6px;
+}
+
+.itemGroupArrow {
+  color: var(--text-tertiary);
+  font-size: 9px;
+}
+
+.itemLeafMarker {
+  color: var(--text-disabled);
+  font-size: 9px;
+  line-height: 1;
+}
+
+.itemChildCount {
+  flex-shrink: 0;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 16px;
 }
 
 /* ── 右侧内容区 ── */
@@ -235,6 +271,12 @@
   background: var(--color-purple-bg);
   color: var(--color-code-purple);
   border: 1px solid var(--color-purple-border);
+}
+
+.role_input {
+  background: var(--bg-elevated);
+  color: var(--text-tertiary);
+  border: 1px solid var(--border-primary);
 }
 
 .roleLabel {

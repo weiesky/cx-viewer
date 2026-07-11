@@ -17,7 +17,7 @@
 | 配置项 | 类型 | 默认值 | 说明 |
 |--------|------|--------|------|
 | 折叠工具结果 | 开关 | 开 | 聊天视图中折叠工具调用结果块 |
-| 展开思考过程 | 开关 | 开 | 默认展开 Claude 的思考/推理过程块 |
+| 展开思考过程 | 开关 | 开 | 默认展开 Codex 的 reasoning/thinking 块 |
 | 完整展示所有内容 | 开关 | 关 | 显示完整的工具调用内容，不截断 |
 | 自动恢复会话 | 开关 + 选项 | 关 | 遇到会话恢复提示时自动选择：`继续` 或 `新建` |
 
@@ -75,20 +75,20 @@
 | 变量名 | 说明 |
 |--------|------|
 | `CXVIEWER_PORT` | 服务端口，供 ask-bridge/perm-bridge 通信 |
-| `CXV_EDITOR_PORT` | 服务端口，供 ccv-editor 文件编辑桥接 |
+| `CXV_EDITOR_PORT` | 服务端口，供 cxv-editor 文件编辑桥接 |
 
 ### 外部变量（读取）
 
 | 变量名 | 说明 |
 |--------|------|
-| `OPENAI_BASE_URL` | 自定义 Anthropic API 地址 |
+| `OPENAI_BASE_URL` | 自定义 OpenAI 兼容 API 地址 |
 | `SHELL` | 用户 Shell（PTY 启动和 Shell 配置检测） |
 | `http_proxy` / `HTTPS_PROXY` 等 | HTTP 代理配置（通过 undici EnvHttpProxyAgent） |
 
 ## 五、CLI 命令参数
 
 ```
-ccv [选项] [claude 参数...]
+cxv [选项] [codex 参数...]
 ```
 
 ### CX-Viewer 专有选项
@@ -100,49 +100,50 @@ ccv [选项] [claude 参数...]
 | `--help` / `-h` / `help` | 显示帮助信息 |
 | `--version` / `-v` | 显示版本号 |
 | `-SDK` / `--sdk` | 使用 Agent SDK 模式 |
-| `--d` | `--dangerously-skip-permissions` 简写 |
-| `--ad` | `--allow-dangerously-skip-permissions` 简写 |
-| `run` | 通过代理运行命令（`ccv run -- claude ...`） |
+| `--d` | `--dangerously-bypass-approvals-and-sandbox` 简写 |
+| `--ad` | 兼容旧配置的 CXV 侧 bypass 开关 |
+| `run` | 通过 CXV 包装运行命令（`cxv run -- codex ...`） |
 
-### Claude 透传参数（常用）
+### Codex 透传参数（常用）
 
 | 参数 | 说明 |
 |------|------|
-| `-c` / `--continue` | 继续上一次会话 |
-| `-r` / `--resume` | 恢复指定会话 |
-| `-p` / `--print` | 非交互式输出 |
+| `continue` | 恢复上一次会话（`codex resume --last`） |
+| `resume [session-id]` | 恢复指定会话 |
+| `exec [prompt]` | 非交互式 Codex 执行 |
 | `--model` | 指定模型 |
-| `--permission-mode` | 权限模式 |
-| `--system-prompt` | 自定义系统提示词 |
-| `--max-budget-usd` | 最大预算 |
+| `--search` | 启用实时搜索模式 |
+| `-C` / `--cd` | 指定工作目录 |
+| `--sandbox` | 指定沙箱模式 |
+| `--ask-for-approval` | 指定审批策略 |
 
 ## 六、Hook 配置
 
-CX-Viewer 自动注册到 `~/.claude/settings.json` 的 `hooks.PreToolUse` 中：
+CX-Viewer 的 Codex 集成主要走本地 wrapper/proxy 路径。Hook bridge 只使用当前 Codex 工具名。
 
-### 1. AskUserQuestion 桥接
-- **匹配器**: `"AskUserQuestion"`
+### 1. request_user_input 桥接
+- **匹配器**: `"request_user_input"`
 - **命令**: `node <安装目录>/lib/ask-bridge.js`
-- **作用**: 将 Claude 的问题转发到 Web UI，等待用户回答
+- **作用**: 在 bridge 路径启用时，将工具/用户审批转发到 Web UI
 
 ### 2. 权限审批桥接
 - **匹配器**: `""` (空 = 匹配所有工具)
 - **命令**: `node <安装目录>/lib/perm-bridge.js`
-- **作用**: 仅 `Bash`/`Edit`/`Write`/`NotebookEdit` 需要 Web UI 审批，其余自动放行
+- **作用**: `shell_command`、`apply_patch`、`web_search`、`image_generation` 等会变更文件或访问外部资源的工具需要 Web UI 审批，其余自动放行
 
 ## 七、Shell 集成
 
-CX-Viewer 在 `~/.zshrc`（或 `.bashrc`）中注入 `claude()` 函数：
+CX-Viewer 在 logger 模式下可向 `~/.zshrc`（或 `.bashrc`）注入 `codex()` 包装函数：
 
 ```bash
 # >>> CX-Viewer Auto-Inject >>>
-claude() { ... }
+codex() { ... }
 # <<< CX-Viewer Auto-Inject <<<
 ```
 
-所有 `claude` 命令自动通过 CX-Viewer 代理，实现日志捕获和 Web UI 功能。
+交互式 `codex` 命令会通过 CX-Viewer 实现日志捕获和 Web UI 功能；`codex --help`、`codex auth` 等 passthrough 命令仍直接执行。
 
-卸载：`ccv --uninstall` 或手动删除标记之间的内容。
+卸载：`cxv --uninstall` 或手动删除标记之间的内容。
 
 ## 八、代理配置（Proxy Profile）
 
@@ -224,8 +225,6 @@ claude() { ... }
 
 | 键 | 说明 |
 |-----|------|
-| `cxv_cacheExpireAt` | 缓存倒计时到期时间 |
-| `cxv_cacheType` | 缓存类型标签 |
-| `ccv_sseSlim` | 启用 SSE 增量裁剪（桌面端性能优化） |
-| `ccv_fileExplorerOpen` | 文件浏览器面板开关 |
+| `cxv_viewMode` | 当前响应式视图模式覆盖 |
+| `cxv_fileExplorerOpen` | 文件浏览器面板开关 |
 | `cx-viewer-terminal-width` | 终端面板宽度（像素） |

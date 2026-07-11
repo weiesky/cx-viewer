@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { DEFAULT_API_BASE } from './lib/constants.js';
 import { homedir } from 'node:os';
 import { extractApiErrorMessage } from './lib/proxy-errors.js';
-import { isStaleLocalCodexBaseUrl } from './lib/codex-config.js';
+import { readOriginalOpenAiBaseUrl } from './lib/codex-config.js';
 
 let _interceptorReady = null;
 
@@ -21,64 +21,22 @@ async function ensureProxyInterceptor() {
   await _interceptorReady;
 }
 
-function getBaseUrlFromSettings(settingsPath) {
-  try {
-    if (existsSync(settingsPath)) {
-      const settings = JSON.parse(readFileSync(settingsPath, 'utf-8'));
-      if (settings.env && settings.env.OPENAI_BASE_URL) {
-        return settings.env.OPENAI_BASE_URL;
-      }
-    }
-  } catch (e) {
-    // ignore
-  }
-  return null;
-}
-
-function getCodexConfigBaseUrl(configPath) {
-  try {
-    if (existsSync(configPath)) {
-      const content = readFileSync(configPath, 'utf-8');
-      const match = content.match(/^openai_base_url\s*=\s*"([^"]*)"/m);
-      if (match && match[1]) return match[1];
-    }
-  } catch {}
-  return null;
-}
-
 function getOriginalBaseUrl() {
   // 1. CXV_ORIGINAL_BASE_URL: explicitly set by pty-manager/cli when overriding Codex config
   if (process.env.CXV_ORIGINAL_BASE_URL) {
     return process.env.CXV_ORIGINAL_BASE_URL;
   }
 
-  let cwd;
-  try { cwd = process.cwd(); } catch { cwd = null; }
+  // 2. Codex config.toml (user/system only — skip project-level which may contain our proxy URL)
+  const codexUrl = readOriginalOpenAiBaseUrl();
+  if (codexUrl) return codexUrl;
 
-  // 2. Codex config.toml (user-level only — skip project-level which may contain our proxy URL)
-  const codexUserConfig = join(homedir(), '.codex', 'config.toml');
-  const codexUrl = getCodexConfigBaseUrl(codexUserConfig);
-  if (codexUrl && !isStaleLocalCodexBaseUrl(codexUrl)) return codexUrl;
-
-  // 3. Codex settings.json
-  const configPaths = [];
-  if (cwd) {
-    configPaths.push(join(cwd, '.codex', 'settings.local.json'));
-    configPaths.push(join(cwd, '.codex', 'settings.json'));
-  }
-  configPaths.push(join(homedir(), '.codex', 'settings.json'));
-
-  for (const configPath of configPaths) {
-    const url = getBaseUrlFromSettings(configPath);
-    if (url) return url;
-  }
-
-  // 4. Check env var
+  // 3. Check env var
   if (process.env.OPENAI_BASE_URL) {
     return process.env.OPENAI_BASE_URL;
   }
 
-  // 5. Default
+  // 4. Default
   return DEFAULT_API_BASE;
 }
 

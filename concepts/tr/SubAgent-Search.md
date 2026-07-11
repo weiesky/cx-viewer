@@ -1,20 +1,20 @@
 # SubAgent: Search
 
-## Tanım
+## Definition
 
-Search, kod tabanında arama yapmak üzere Claude Code'un ana agent'ı tarafından oluşturulan bir sub-agent türüdür. Glob, Grep ve Read gibi araçları kullanarak hedefli dosya ve içerik aramaları gerçekleştirir, ardından sonuçları üst agent'a döndürür.
+Search is a sub-agent type spawned by Codex's main agent to perform codebase searches. It discovers available search and reading capabilities through `tool_search`, then returns the results to the parent agent.
 
-## Davranış
+## Behavior
 
-- Ana agent'ın kod tabanını araması veya keşfetmesi gerektiğinde otomatik olarak oluşturulur
-- Salt okunur erişimle izole bir bağlamda çalışır
-- Dosya deseni eşleştirme için Glob, içerik arama için Grep ve dosya inceleme için Read kullanır
-- Arama sonuçlarını daha fazla işlenmek üzere üst agent'a döndürür
+- Spawned automatically when the main agent needs to search or explore the codebase
+- Runs in an isolated context with read-only access
+- Uses current Codex/deferred tools for file pattern matching, content search, and file inspection
+- Returns search results to the parent agent for further processing
 
-## Ne Zaman Görünür
+## When It Appears
 
-Search sub-agent'ları genellikle şu durumlarda görünür:
+Search sub-agents typically appear when:
 
-1. Ana agent'ın belirli dosyaları, fonksiyonları veya kod desenlerini bulması gerektiğinde
-2. Kullanıcı tarafından geniş kapsamlı bir kod tabanı keşfi talep edildiğinde
-3. Agent bağımlılıkları, referansları veya kullanım desenlerini araştırdığında
+1. The main agent needs to find specific files, functions, or code patterns
+2. A broad codebase exploration is requested by the user
+3. The agent is investigating dependencies, references, or usage patterns

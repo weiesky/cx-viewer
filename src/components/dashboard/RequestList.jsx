@@ -1,7 +1,8 @@
 import React from 'react';
-import { List, Tag, Empty, Tooltip } from 'antd';
+import { List, Tag, Empty } from 'antd';
 import { t } from '../../i18n';
 import { formatTokenCount, getModelShort } from '../../utils/helpers';
+import { getInputCacheUsage } from '../../utils/tokenUsage';
 import { classifyRequest, formatRequestTag } from '../../utils/requestType';
 import styles from './RequestList.module.css';
 
@@ -19,8 +20,7 @@ class RequestList extends React.Component {
     return (
       nextProps.requests !== this.props.requests ||
       nextProps.selectedIndex !== this.props.selectedIndex ||
-      nextProps.scrollCenter !== this.props.scrollCenter ||
-      nextProps.cacheLossMap !== this.props.cacheLossMap
+      nextProps.scrollCenter !== this.props.scrollCenter
     );
   }
 
@@ -81,10 +81,9 @@ class RequestList extends React.Component {
             const nextReq = index + 1 < requests.length ? requests[index + 1] : null;
             const { type: reqType, subType } = classifyRequest(req, nextReq);
             const usage = req.response?.body?.usage;
-            const inputTokens = usage ? (usage.input_tokens || 0) + (usage.cache_read_input_tokens || 0) + (usage.cache_creation_input_tokens || 0) : null;
+            const inputTokens = usage ? (usage.input_tokens || 0) : null;
             const outputTokens = usage?.output_tokens || null;
-            const cacheRead = usage?.cache_read_input_tokens || 0;
-            const cacheCreate = usage?.cache_creation_input_tokens || 0;
+            const cacheUsage = getInputCacheUsage(usage);
 
             // 热切换开启时 proxyUrl 是 interceptor 改写后的真实去向（如 foxcode），
             // req.url 仍是 pre-rewrite 值（原 origin 或 cxv proxy 端口），UI 优先展示去向。
@@ -108,7 +107,7 @@ class RequestList extends React.Component {
                       ? <Tag className={`${styles.tagNoMargin} ${styles.tagMainAgent}`}>MainAgent</Tag>
                       : reqType === 'Plan'
                         ? <Tag className={`${styles.tagNoMargin} ${styles.tagPlan}`}>{formatRequestTag(reqType, subType)}</Tag>
-                        : reqType === 'Count' || reqType === 'Preflight'
+                        : reqType === 'Count' || reqType === 'Preflight' || reqType === 'Metadata' || reqType === 'Responses'
                           ? <Tag className={`${styles.tagNoMargin} ${styles.tagMuted}`}>{formatRequestTag(reqType, subType)}</Tag>
                           : reqType === 'Synthetic'
                             ? <Tag className={`${styles.tagNoMargin} ${styles.tagMuted}`}>{formatRequestTag(reqType, subType)}</Tag>
@@ -129,33 +128,8 @@ class RequestList extends React.Component {
                   {usage && (
                     <div className={styles.usageBox}>
                       <div>token: output:{formatTokenCount(outputTokens) || 0}, input: {formatTokenCount(inputTokens) || 0}</div>
-                      {(cacheRead > 0 || cacheCreate > 0) && (
-                        <div>{(() => {
-                          const loss = this.props.cacheLossMap?.get(index);
-                          const reasonI18nMap = {
-                            ttl: 'ui.cacheLoss.ttl',
-                            system_change: 'ui.cacheLoss.systemChange',
-                            tools_change: 'ui.cacheLoss.toolsChange',
-                            model_change: 'ui.cacheLoss.modelChange',
-                            msg_truncated: 'ui.cacheLoss.msgTruncated',
-                            msg_modified: 'ui.cacheLoss.msgModified',
-                            key_change: 'ui.cacheLoss.keyChange',
-                          };
-                          let dot;
-                          if (loss) {
-                            const allReasons = loss.reasons || [loss.reason];
-                            // 用 antd Tooltip 而非原生 title:原生 title 在移动端 (iOS/Android)
-                            // 完全无法触发,会让用户看不到 cache-loss reason。Tooltip 富内容仅在
-                            // 悬停/点击时渲染,数百个 dot 也只有可见的几个会创建 wrapper。
-                            const tooltipText = allReasons.map(r => t(reasonI18nMap[r] || reasonI18nMap.key_change)).join('\n');
-                            // tools 变化在时间线上单独着色，便于一眼定位"tools 在哪一步变了"
-                            const toolsCls = allReasons.includes('tools_change') ? ` ${styles.cacheDotTools}` : '';
-                            dot = <Tooltip title={<span className={styles.tooltipPreLine}>{tooltipText}</span>}><span className={`${styles.cacheDot} ${styles.cacheDotLoss}${toolsCls}`} /></Tooltip>;
-                          } else {
-                            dot = <span className={`${styles.cacheDot} ${styles.cacheDotNormal}`} />;
-                          }
-                          return <>cache{dot}: {cacheRead > 0 ? `read:${formatTokenCount(cacheRead)}` : ''}{cacheRead > 0 && cacheCreate > 0 ? ', ' : ''}{cacheCreate > 0 ? `create:${formatTokenCount(cacheCreate)}` : ''}</>;
-                        })()}</div>
+                      {cacheUsage.hasCacheDetails && (
+                        <div>cache: read:{formatTokenCount(cacheUsage.read)}, write:{formatTokenCount(cacheUsage.write)}</div>
                       )}
                     </div>
                   )}

@@ -1,77 +1,71 @@
-# Чому Tools відображаються першими?
+# Why Are Tools Listed First?
 
-На панелі Context у cc-viewer **Tools з'являються перед System Prompt та Messages**. Такий порядок точно відображає **послідовність префікса KV-Cache в Anthropic API**.
+In CX Viewer's Context panel, **Tools appear before Instructions and Input**. For Codex, this is a diagnostic layout: tool definitions are a large, high-impact part of the request shape, so they are shown first before the instructions and conversation context they constrain.
 
-## Послідовність префікса KV-Cache
+## Request Context Layout
 
-Коли Anthropic API будує KV-Cache, він об'єднує контекст у префікс у такому **фіксованому порядку**:
+Codex traffic can arrive from OpenAI Responses API calls, Codex app-server events, or SDK stream events. CX Viewer normalizes those sources into a consistent context view:
 
 ```
 ┌─────────────────────────────────────────────────┐
-│ 1. Tools (JSON Schema definitions)               │  ← Start of cache prefix
-│ 2. System Prompt                                 │
-│ 3. Messages (conversation history + current turn)│  ← End of cache prefix
+│ 1. Tools (JSON Schema definitions)               │  ← Capability surface
+│ 2. Instructions                                  │
+│ 3. Input (conversation history + current turn)   │
 └─────────────────────────────────────────────────┘
 ```
 
-Це означає, що **Tools розміщені перед System Prompt на самому початку префікса кешу**.
+This does not claim a provider-specific serialization order. It gives you a stable way to inspect what capabilities were available before reading instructions and input history.
 
-## Чому Tools мають більшу вагу в кеші, ніж System?
+## Why Tools Often Matter Most
 
-При зіставленні префіксів KV-Cache **більш раннє розташування контенту є більш критичним** — будь-яка зміна скасовує все, що йде після:
+Tool definitions are often the largest static part of an agent request. A small UI toggle can add, remove, or reshape many tool schemas, which changes model behavior and request size.
 
-1. **Зіставлення префіксів починається з початку**: KV-Cache порівнює поточний запит із кешованим префіксом token за token від початку. Щойно виявляється розбіжність, весь наступний контент стає недійсним.
+1. **Capability changes are semantic changes**: Adding or removing a tool changes what the agent is allowed to do, not just the token count.
 
-2. **Зміна Tools = весь кеш скасовано**: Оскільки Tools стоять першими, будь-яка зміна у визначеннях інструментів (навіть додавання або видалення одного MCP tool) **ламає префікс з самого початку**, роблячи недійсними весь кешований System Prompt та Messages.
+2. **Tool schemas can dominate request size**: MCP and dynamic tools often have detailed JSON Schemas with descriptions, enums, and nested parameters.
 
-3. **Зміна System = кеш Messages скасовано**: System Prompt розташований посередині, тому його зміни скасовують лише наступну частину Messages.
+4. **Input appends are usually cheaper to inspect**: Normal conversation turns mostly add new user input and the previous assistant/tool results, while tool and instruction changes tend to be rarer and more important.
 
-4. **Зміна Messages = впливає тільки на хвіст**: Messages знаходяться в кінці, тому додавання нових повідомлень скасовує лише невеликий кінцевий сегмент — кеш Tools та System залишається незайманим.
+## Practical Impact
 
-## Практичний вплив
+| Change Type | Cache Impact | Typical Scenario |
+|-------------|-------------|-----------------|
+| Tool added/removed | Request shape changes | MCP server connect/disconnect, plugin toggle |
+| Instructions change | Instructions and policy changed | `AGENTS.md` edit, developer instruction update |
+| New input appended | Normal turn growth | User input, assistant reply, tool result |
 
-| Тип зміни | Вплив на кеш | Типовий сценарій |
-|-----------|-------------|-----------------|
-| Tool додано/видалено | **Повне скасування** | Підключення/відключення MCP server, увімкнення/вимкнення плагіна IDE |
-| Зміна System Prompt | Втрата кешу Messages | Редагування CLAUDE.md, ін'єкція system reminder |
-| Додано нове повідомлення | Лише хвостове збільшення | Звичайний хід розмови (найпоширеніший, найдешевший) |
+## Why Are Tool Definitions Placed Before the "Brain"?
 
-Саме тому `tools_change` у [CacheRebuild](CacheRebuild.md) зазвичай є найдорожчою причиною перебудови — вона ламає ланцюг префіксів з самого початку.
+From a diagnostic perspective, putting Tools first is useful because tool definitions describe the agent's available actions before you inspect the instructions that ask the agent to act.
 
-## Чому визначення інструментів розміщуються перед "мозком"?
+Before taking action, a person needs to perceive what limbs and tools are available. An infant doesn't first understand the rules of the world (Instructions), then learn to reach and grab — they first sense that they have hands and feet, then gradually understand rules through interaction with the environment. Similarly, an LLM needs to know what tools it can call (read files, write code, search, execute commands) before receiving task instructions, so it can accurately assess "what can I do" and "how should I do it" when processing the instructions.
 
-З точки зору кешування, розміщення Tools на першому місці — це технічний факт. Але з точки зору когнітивного дизайну цей порядок також логічний — **Tools — це руки і ноги, System Prompt — це мозок**.
+If reversed — first telling the model "your task is to refactor this module", then telling it "you have shell_command, apply_patch, and tool_search" — the model would lack critical capability boundary information when understanding the task, potentially producing unrealistic plans or overlooking available approaches.
 
-Перед тим як діяти, людина повинна усвідомити, які кінцівки та інструменти їй доступні. Немовля не спочатку розуміє правила світу (System), а потім вчиться хапати — воно спочатку відчуває, що має руки і ноги, а потім поступово розуміє правила через взаємодію з навколишнім середовищем. Аналогічно, LLM повинна знати, які інструменти може викликати (читання файлів, написання коду, пошук, виконання команд) до отримання інструкцій завдання (System Prompt), щоб точно оцінити "що я можу зробити" і "як мені це зробити" при обробці інструкцій.
+**Know what cards you hold before deciding how to play.** This is the cognitive logic behind Tools preceding Instructions.
 
-Якби порядок був зворотним — спочатку сказати моделі "твоє завдання — рефакторити цей модуль", потім "у тебе є інструменти Read, Edit, Bash" — моделі бракувало б критичної інформації про межі своїх можливостей при розумінні завдання, що могло б призвести до нереалістичних планів або пропуску доступних підходів.
+## Why Are MCP Tools Also in This Position?
 
-**Дізнайся, які карти на руках, перш ніж вирішувати, як грати.** Це когнітивна логіка розміщення Tools перед System.
+MCP (Model Context Protocol) tools, like built-in tools, are placed at the very front of the Tools area. Understanding MCP's position in the context helps evaluate its real benefits and costs.
 
-## Чому інструменти MCP теж знаходяться на цій позиції?
+### MCP Advantages
 
-Інструменти MCP (Model Context Protocol), як і вбудовані інструменти, розміщуються на самому початку області Tools. Розуміння позиції MCP в контексті допомагає оцінити його реальні переваги та витрати.
+- **Capability extension**: MCP lets models access external services (database queries, API calls, IDE operations, browser control, etc.), breaking beyond built-in tool boundaries
+- **Open ecosystem**: Anyone can implement an MCP server; the model gains new capabilities without retraining
+- **On-demand loading**: MCP servers can be selectively connected/disconnected based on task scenario, flexibly composing tool sets
 
-### Переваги MCP
+### MCP Costs
+- **Prefix bloat**: MCP tool Schemas are typically larger than built-in tools (containing detailed parameter descriptions, enums, etc.). Many MCP tools significantly increase the Tools area's token count, squeezing the context space available for Input
+- **Latency overhead**: MCP tool calls require cross-process communication (JSON-RPC over stdio/SSE), an order of magnitude slower than built-in function calls
+- **Stability risk**: MCP servers are external processes that may crash, timeout, or return unexpected formats, requiring additional error handling
 
-- **Розширення можливостей**: MCP дозволяє моделям звертатися до зовнішніх сервісів (запити до баз даних, API-виклики, операції IDE, керування браузером тощо), виходячи за межі вбудованих інструментів
-- **Відкрита екосистема**: Будь-хто може реалізувати MCP-сервер; модель отримує нові можливості без перенавчання
-- **Завантаження на вимогу**: MCP-сервери можна підключати/відключати вибірково залежно від завдання, гнучко складаючи набори інструментів
+### Practical Recommendations
 
-### Витрати MCP
+| Scenario | Recommendation |
+|----------|---------------|
+| Long conversations, high-frequency interaction | Minimize MCP tool count to keep requests smaller and easier to inspect |
+| Short tasks, one-off operations | Use MCP tools freely; overhead is usually limited |
+| Frequently adding/removing MCP servers | Each change reshapes the request; consider fixing the tool set |
+| Oversized Tool Schemas | Trim descriptions and enums to reduce prefix token footprint |
 
-- **Вбивця кешу**: JSON Schema кожного MCP-інструменту конкатенується на самий початок префіксу KV-Cache. Додавання або видалення одного MCP-інструменту = **весь кеш інвалідується з самого початку**. Часте підключення/відключення MCP-серверів різко знижує відсоток влучань у кеш
-- **Роздування префіксу**: Schemas MCP-інструментів зазвичай більші за вбудовані (детальні описи параметрів, перерахування тощо). Велика кількість MCP-інструментів значно збільшує кількість токенів в області Tools, скорочуючи простір контексту для Messages
-- **Накладні витрати на затримку**: Виклики MCP-інструментів потребують міжпроцесної комунікації (JSON-RPC через stdio/SSE), на порядок повільніше за виклики вбудованих функцій
-- **Ризик стабільності**: MCP-сервери — це зовнішні процеси, які можуть аварійно завершитись, спричинити таймаут або повернути неочікуваний формат, потребуючи додаткової обробки помилок
-
-### Практичні рекомендації
-
-| Сценарій | Рекомендація |
-|----------|-------------|
-| Довгі розмови, часта взаємодія | Мінімізувати кількість MCP-інструментів для захисту стабільності префіксу кешу |
-| Короткі завдання, разові операції | Вільно використовувати MCP-інструменти; вплив на кеш обмежений |
-| Часте додавання/видалення MCP-серверів | Кожна зміна викликає повну перебудову кешу; розглянути фіксацію набору інструментів |
-| Занадто великі Tool Schemas | Скоротити описи та enum для зменшення витрат токенів префіксу |
-
-У панелі Context cc-viewer інструменти MCP відображаються поряд із вбудованими інструментами в області Tools, даючи наочне уявлення про розмір Schema кожного інструменту та його внесок у префікс кешу.
+In CX Viewer's Context panel, MCP tools are displayed alongside built-in and dynamic tools in the Tools area, giving you a clear view of each tool's Schema size and contribution to request shape.

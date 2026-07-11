@@ -15,7 +15,7 @@
 const NOOP = () => {};
 const DEFAULT_THRESHOLD_ENTER = 10;
 const DEFAULT_THRESHOLD_LEAVE = 50;
-// Virtuoso 路径下 footer 子树（lastResponse / spinner / streamingLiveItem 三段）高度抖动会让
+// Virtuoso 路径下 footer 子树（spinner / streamingLiveItem）高度抖动会让
 // Virtuoso 内部的 atBottom 误判翻转。匹配 Virtuoso atBottomThreshold:60，notifyAtBottom 用此值
 // 兜底：仅当真实 DOM 距离 > 60px 才信任 atBottom=false 翻 sticky。
 const DEFAULT_AT_BOTTOM_PX = 60;
@@ -618,7 +618,7 @@ export class StickyBottomController {
   //
   // 这个方法整合两层职责（按下到上）：
   //   ── (A) Virtuoso 真值修正层 ──
-  //         Virtuoso footer 子树（lastResponse / spinner / streamingLiveItem 三段）高度抖动
+  //         Virtuoso footer 子树（spinner / streamingLiveItem）高度抖动
   //         会让内部 atBottom 误判翻转。用真实 DOM 距离 ≤/> _atBottomPx 兜底，过滤掉抖动。
   //   ── (B) 状态翻转决策层 ──
   //         走 _setSticky 享受 16ms 决策去重（合并同 tick 内 RO + Virtuoso 双发）。

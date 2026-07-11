@@ -2,7 +2,7 @@
 
 ## Contexte
 
-Le MainAgent de Claude Code utilise un mécanisme d'envoi de contexte complet — chaque requête inclut l'historique complet de la conversation, le system prompt, les définitions d'outils, etc. Cela signifie qu'au fur et à mesure que la conversation progresse, le corps de la requête devient de plus en plus volumineux, et il est difficile d'identifier rapidement « ce qui a été ajouté dans ce tour » en regardant le Body brut.
+Le MainAgent de Codex utilise un mécanisme d'envoi de contexte complet — chaque requête inclut l'historique complet de la conversation, le system prompt, les définitions d'outils, etc. Cela signifie qu'au fur et à mesure que la conversation progresse, le corps de la requête devient de plus en plus volumineux, et il est difficile d'identifier rapidement « ce qui a été ajouté dans ce tour » en regardant le Body brut.
 
 Body Diff JSON résout exactement ce problème : il compare automatiquement les corps de deux requêtes MainAgent consécutives, extrait la partie incrémentale et vous permet de voir d'un coup d'œil le contenu réellement nouveau dans cette requête.
 
@@ -22,7 +22,7 @@ Body Diff JSON résout exactement ce problème : il compare automatiquement les 
 Dans un tour de conversation normal, le Body Diff JSON ne contient généralement que :
 - `messages` : 1~2 nouveaux messages (l'entrée de l'utilisateur + la réponse de l'assistant du tour précédent)
 
-Si vous voyez des changements dans `system`, `tools`, `model` ou d'autres champs dans le diff, cela signifie qu'un changement de configuration a eu lieu dans ce tour, ce qui est souvent aussi la cause de la reconstruction du cache.
+Si vous voyez des changements dans `system`, `tools`, `model` ou d'autres champs dans le diff, cela signifie qu'un changement de configuration a eu lieu dans ce tour.
 
 ## Utilisation
 

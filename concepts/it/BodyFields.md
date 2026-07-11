@@ -1,42 +1,39 @@
-# Descrizione dei campi del Request Body
+# Request Body Fields
 
-Descrizione dei campi di primo livello del corpo della richiesta dell'API Claude `/v1/messages`.
+Field descriptions for CX-Viewer's normalized Codex request body. The original source may be OpenAI Responses API traffic, Codex app-server notifications, or Codex SDK events; CX-Viewer maps them into one stable viewer shape.
 
-## Elenco dei campi
+## Field List
 
-| Campo | Tipo | Descrizione |
+| Field | Type | Description |
 |-------|------|-------------|
-| **model** | string | Nome del modello utilizzato, ad es. `claude-opus-4-6`, `claude-sonnet-4-6` |
-| **messages** | array | Cronologia dei messaggi della conversazione. Ogni messaggio contiene `role` (user/assistant) e `content` (un array di blocchi: testo, immagini, tool_use, tool_result ecc.) |
-| **system** | array | System prompt. Contiene le istruzioni principali di Codex, le istruzioni per l'uso degli strumenti, le informazioni sull'ambiente, i contenuti di CLAUDE.md ecc. I blocchi con `cache_control` vengono memorizzati nella cache tramite prompt caching |
-| **tools** | array | Elenco delle definizioni degli strumenti disponibili. Ogni strumento contiene `name`, `description` e `input_schema` (JSON Schema). Il MainAgent ha tipicamente 20+ strumenti, i SubAgent ne hanno solo pochi |
-| **metadata** | object | Metadati della richiesta, tipicamente contiene `user_id` per identificare l'utente |
-| **max_tokens** | number | Numero massimo di token per singola risposta del modello, ad es. `16000`, `64000` |
-| **thinking** | object | Configurazione del pensiero esteso. `type: "enabled"` attiva la modalità di pensiero, `budget_tokens` controlla il limite di token per il pensiero |
-| **context_management** | object | Configurazione della gestione del contesto. `truncation: "auto"` consente a Codex di troncare automaticamente cronologie di messaggi troppo lunghe |
-| **output_config** | object | Configurazione dell'output, ad es. impostazioni di `format` |
-| **stream** | boolean | Se le risposte in streaming sono abilitate. Codex utilizza sempre `true` |
+| **model** | string | The model name selected by Codex, e.g. a `gpt-*` model |
+| **input** | string/array | OpenAI Responses API input. Codex usually uses the array form for user input, assistant history, tool results, and other context items |
+| **instructions** | string/array | OpenAI Responses API instructions. This can include Codex core directives, tool usage guidelines, environment information, and `AGENTS.md` project instructions |
+| **tools** | array | Available tool definitions or compact tool descriptors. MainAgent usually has a broader tool set than SubAgent |
+| **metadata** | object | Request metadata such as `thread_id`, `turn_id`, `cwd`, SDK/app-server source, and subAgent parent-thread information |
+| **max_tokens** | number | Maximum number of tokens for a single model response, e.g. `16000`, `64000` |
+| **reasoning_effort** | string | Reasoning effort when reported by Codex |
+| **reasoning_summary** | string | Reasoning summary mode when reported by Codex |
+| **approval_policy** | string | Codex approval policy for the turn |
+| **sandbox_policy** | object/string | Sandbox policy for the turn when available |
+| **stream** | boolean | Whether the OpenAI Responses API request used streaming; app-server/SDK entries are normalized as streamed turns |
 
-## Struttura di messages
+## input Structure
 
-Il `content` di ogni messaggio è un array di blocchi con i seguenti tipi comuni:
+When `input` is an array, each input item usually contains `role` and `content`. `content` can be an array of blocks. Common types include:
 
-- **text**: Contenuto testuale normale
-- **tool_use**: Il modello invoca uno strumento (contiene `name`, `input`)
-- **tool_result**: Risultato dell'esecuzione dello strumento (contiene `tool_use_id`, `content`)
-- **image**: Contenuto immagine (base64 o URL)
-- **thinking**: Processo di pensiero del modello (modalità di pensiero esteso)
+- **text**: Plain text content
+- **tool_use**: Model tool invocation (contains `name`, `input`)
+- **tool_result**: Tool execution result (contains `tool_use_id`, `content`)
+- **image/input_image/local_image**: Image content or an attached local image reference
+- **thinking**: Model's thinking process (extended thinking mode)
 
-## Struttura di system
+## instructions Structure
 
-L'array del system prompt contiene tipicamente:
+`instructions` typically contains:
 
-1. **Istruzioni principali dell'agent** ("You are Codex...")
-2. **Specifiche per l'uso degli strumenti**
-3. **Contenuti di CLAUDE.md** (istruzioni a livello di progetto)
-4. **Promemoria delle skill** (skills reminder)
-5. **Informazioni sull'ambiente** (OS, shell, stato di git ecc.) — Di fatto, Codex dipende fortemente da git. Se nel progetto esiste un repository git, Codex riesce a dimostrare una migliore comprensione del progetto, inclusa la possibilità di recuperare modifiche remote e cronologie di commit per supportare l'analisi
-
-I blocchi contrassegnati con `cache_control: { type: "ephemeral" }` vengono memorizzati nella cache dall'API Anthropic per 5 minuti. Quando la cache viene utilizzata, la fatturazione avviene tramite `cache_read_input_tokens` (molto inferiore rispetto a `input_tokens`).
-
-> **Nota**: Per client speciali come Codex, il server Anthropic in realtà non si basa completamente sull'attributo `cache_control` nella richiesta per determinare il comportamento della cache. Il server esegue automaticamente strategie di caching per campi specifici (come il system prompt e le definizioni degli strumenti), anche quando la richiesta non contiene esplicitamente il marcatore `cache_control`. Pertanto, quando non vedete questo attributo nel corpo della richiesta, non c'è motivo di preoccuparsi: il server ha già eseguito le operazioni di caching dietro le quinte, senza esporre queste informazioni al client. Questa è una sorta di intesa tacita tra Codex e l'API Anthropic.
+1. **Core agent instructions** ("You are Codex...")
+2. **Tool usage guidelines**
+3. **AGENTS.md contents** (project-level instructions)
+4. **Skills reminders** (skills reminder)
+5. **Environment information** (OS, shell, git status, etc.) — In fact, Codex relies heavily on git. If a project has a git repository, Codex demonstrates a better understanding of the project, including the ability to pull remote changes and commit history to assist with analysis

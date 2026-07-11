@@ -14,6 +14,8 @@
   color: var(--text-disabled);
   padding: 0 7px;
   height: 15px;
+  max-width: 112px;
+  flex-shrink: 0;
   font-size: 11px;
   line-height: 1;
   overflow: hidden;
@@ -40,10 +42,16 @@
   z-index: 1;
   display: inline-flex;
   align-items: center;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .usageText {
   font-variant-numeric: tabular-nums;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 等待数据的静默态:中性灰描边。 */

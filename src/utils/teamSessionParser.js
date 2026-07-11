@@ -1,11 +1,11 @@
 /**
- * Parse team lifecycle (TeamCreate → TeamDelete) from requests.
+ * Parse team lifecycle (spawn_agent → close_agent) from requests.
  * Pure function, no React/state dependencies.
  *
  * endReason 取值（详见 END_REASON 常量）：
- *   'deleteConfirmed' — TeamDelete 返回 success（强证据，终态 ✓）
- *   'successorCreate' — 新 TeamCreate 顶掉旧的（强证据，lead 已转移，等同 ✓）
- *   'shutdownRequest' — 没看到 TeamDelete，但有 shutdown_request（弱证据，待 runtime 收敛）
+ *   'deleteConfirmed' — close_agent 返回 success（强证据，终态 ✓）
+ *   'successorCreate' — 新 multi-agent 会话顶掉旧的（强证据，lead 已转移，等同 ✓）
+ *   'shutdownRequest' — 没看到 close_agent，但有 shutdown_request（弱证据，待 runtime 收敛）
  *   'logTail'         — 纯 log 末尾兜底（弱证据，待 runtime 收敛）
  *
  * _hasInferredEnd 派生含义：**只要 endReason 存在且不是 deleteConfirmed 就为 true**
@@ -35,12 +35,12 @@ export function extractTeamSessions(requests) {
   const teams = [];
   let currentTeamIdx = -1; // 当前唯一打开的 team 在 teams[] 中的 index
 
-  // 查找 tool_use 对应的 tool_result（在后续 request 的 messages 中）
+  // 查找 tool_use 对应的 tool_result（在后续 request 的 input 中）
   // 搜索窗口扩大到 10 以应对空行/非主agent请求插入导致的距离增大
   function findToolResult(toolUseId, fromRequestIdx) {
     for (let j = fromRequestIdx + 1; j < requests.length && j <= fromRequestIdx + 10; j++) {
       const entry = requests[j]?._slimmed ? restoreSlimmedEntry(requests[j], requests) : requests[j];
-      const msgs = entry?.body?.messages;
+      const msgs = entry?.body?.input;
       if (!Array.isArray(msgs)) continue;
       for (const msg of msgs) {
         const blocks = msg.role === 'user' && Array.isArray(msg.content) ? msg.content : [];
@@ -73,38 +73,50 @@ export function extractTeamSessions(requests) {
       if (block.type !== 'tool_use') continue;
       const name = block.name;
       const input = typeof block.input === 'string' ? (() => { try { return JSON.parse(block.input); } catch { return {}; } })() : (block.input || {});
-      if (name === 'TeamCreate') {
-        // 检查 TeamCreate 是否成功（tool_result 中不能有错误标记）
+      if (name === 'spawn_agent') {
+        // 检查 spawn_agent 是否成功（tool_result 中不能有错误标记）
         const createResult = findToolResult(block.id, i);
         if (createResult && (createResult.includes('"error":') || createResult.includes('"error" :') || createResult.includes('Already leading team'))) continue;
-        const teamName = input.team_name || input.teamName || 'unknown';
         const ts = req.timestamp || req.response?.timestamp;
-        // 新 TeamCreate 出现时，自动关闭前一个未关闭的 team（避免孤立）
-        if (currentTeamIdx >= 0 && !teams[currentTeamIdx].endTime) {
-          teams[currentTeamIdx].endTime = ts;
-          teams[currentTeamIdx].endRequestIndex = Math.max(teams[currentTeamIdx].requestIndex, i - 1);
-          teams[currentTeamIdx].endReason = END_REASON.SUCCESSOR_CREATE;
-          teams[currentTeamIdx]._hasInferredEnd = true;
+        const teamName = input.team_name || input.teamName || input.team || 'multi-agent';
+        const agentName = input.name || input.agentName || input.target || input.newThreadId || input.agent_type || '';
+        if (currentTeamIdx < 0 || teams[currentTeamIdx].endTime) {
+          const teammates = new Set(agentName ? [agentName] : []);
+          const team = {
+            name: teamName,
+            startTime: ts,
+            endTime: null,
+            requestIndex: i,
+            endRequestIndex: null,
+            taskCount: 0,
+            teammateCount: teammates.size,
+            _teammates: teammates,
+          };
+          teams.push(team);
+          currentTeamIdx = teams.length - 1;
+        } else {
+          const team = teams[currentTeamIdx];
+          if (agentName && !team._teammates.has(agentName)) {
+            team._teammates.add(agentName);
+            team.teammateCount++;
+          }
         }
-        const team = { name: teamName, startTime: ts, endTime: null, requestIndex: i, endRequestIndex: null, taskCount: 0, teammateCount: 0, _teammates: new Set() };
-        teams.push(team);
-        currentTeamIdx = teams.length - 1;
-      } else if (name === 'TeamDelete') {
+      } else if (name === 'close_agent') {
         const resultText = findToolResult(block.id, i);
-        if (!isDeleteSuccessful(resultText)) continue; // 失败的 TeamDelete 不关闭 team
+        if (!isDeleteSuccessful(resultText)) continue; // 失败的 close_agent 不关闭 team
         const ts = req.timestamp || req.response?.timestamp;
         if (currentTeamIdx < 0) {
-          // Cross-file: TeamCreate 在上一个 JSONL 中，从 tool_result 反向推断 team
+          // Cross-file: spawn_agent 在上一个 JSONL 中，从 tool_result 反向推断 team
           let teamName = 'unknown';
           try { const parsed = JSON.parse(resultText); teamName = parsed.team_name || teamName; } catch {}
-          // 回溯寻找最早的关联 Agent 调用作为 startTime
+          // 回溯寻找最早的关联 spawn_agent 调用作为 startTime
           let startIdx = 0;
           let startTs = requests[0]?.timestamp || requests[0]?.response?.timestamp;
           for (let k = 0; k < i; k++) {
             const kResp = requests[k]?.response?.body?.content;
             if (!Array.isArray(kResp)) continue;
             for (const kb of kResp) {
-              if (kb.type === 'tool_use' && kb.name === 'Agent') {
+              if (kb.type === 'tool_use' && kb.name === 'spawn_agent') {
                 const kInp = typeof kb.input === 'string' ? (() => { try { return JSON.parse(kb.input); } catch { return {}; } })() : (kb.input || {});
                 if ((kInp.team_name || kInp.teamName) === teamName) {
                   startIdx = k;
@@ -122,11 +134,11 @@ export function extractTeamSessions(requests) {
             if (!Array.isArray(kResp)) continue;
             for (const kb of kResp) {
               if (kb.type !== 'tool_use') continue;
-              if (kb.name === 'Agent') {
+              if (kb.name === 'spawn_agent') {
                 const kInp = typeof kb.input === 'string' ? (() => { try { return JSON.parse(kb.input); } catch { return {}; } })() : (kb.input || {});
-                const an = kInp.name || '';
-                if (!team._teammates.has(an)) { team._teammates.add(an); team.teammateCount++; }
-              } else if (kb.name === 'TaskCreate' || kb.name === 'TaskUpdate') {
+                const an = kInp.name || kInp.agentName || kInp.target || kInp.newThreadId || kInp.agent_type || '';
+                if (an && !team._teammates.has(an)) { team._teammates.add(an); team.teammateCount++; }
+              } else if (kb.name === 'send_input' || kb.name === 'resume_agent' || kb.name === 'wait_agent') {
                 team.taskCount++;
               }
             }
@@ -138,31 +150,15 @@ export function extractTeamSessions(requests) {
         teams[currentTeamIdx].endRequestIndex = i;
         teams[currentTeamIdx].endReason = END_REASON.DELETE_CONFIRMED;
         currentTeamIdx = -1; // 清理：team 已关闭
-      } else if (name === 'SendMessage') {
+      } else if (name === 'send_input') {
         // 跟踪 shutdown_request 作为备用结束信号
         if (currentTeamIdx >= 0 && input.message?.type === 'shutdown_request') {
           const shutdownTs = req.timestamp || req.response?.timestamp;
           teams[currentTeamIdx]._lastShutdownTime = shutdownTs;
           teams[currentTeamIdx]._lastShutdownRequestIdx = i;
         }
-      } else if (name === 'TaskCreate' || name === 'TaskUpdate') {
+      } else if (name === 'send_input' || name === 'resume_agent' || name === 'wait_agent') {
         if (currentTeamIdx >= 0) teams[currentTeamIdx].taskCount++;
-      } else if (name === 'Agent') {
-        const teamName = input.team_name || input.teamName;
-        const agentName = input.name || '';
-        let targetIdx = -1;
-        if (teamName) {
-          // 按 team_name 精确匹配（使用反向搜索，优先匹配最近的同名 team）
-          for (let ti = teams.length - 1; ti >= 0; ti--) {
-            if (teams[ti].name === teamName && !teams[ti].endTime) { targetIdx = ti; break; }
-          }
-        }
-        // fallback：如果没有 team_name 但有唯一打开的 team
-        if (targetIdx < 0 && currentTeamIdx >= 0) targetIdx = currentTeamIdx;
-        if (targetIdx >= 0) {
-          const t = teams[targetIdx];
-          if (!t._teammates.has(agentName)) { t._teammates.add(agentName); t.teammateCount++; }
-        }
       }
     }
   }

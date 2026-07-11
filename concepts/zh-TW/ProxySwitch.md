@@ -1,32 +1,32 @@
-# Hot-Switch Proxy
+# 代理热切换
 
-## Overview
+## 功能说明
 
-Hot-Switch Proxy lets you dynamically redirect API requests to a different endpoint without restarting Codex. This is useful when using third-party API proxy services.
+代理热切换允许你在不重启 Codex 的情况下，动态切换 API 请求的目标地址和认证信息。适用于使用第三方 API 代理服务的场景。
 
-> ⚠️ Do not use this feature if you are a Claude Max subscriber.
+> 仅在你有权使用的 endpoint 和 API Key 上开启该功能。启用 profile 后，请求认证会被替换，prompt、文件片段和工具上下文可能会经过配置的服务。
 
-## Fields
+## 字段说明
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| **Name** | ✅ | Display name for this proxy, used to identify it |
-| **Base URL** | ✅ | Base URL of the API service (e.g. `https://api.example.com`). The original request origin will be replaced |
-| **API Key** | ✅ | API key for the proxy service, replaces the original authentication |
-| **Models** | ❌ | Comma-separated list of models supported by this proxy (e.g. `model-a, model-b`) |
-| **Active Model** | ❌ | Select the active model from the list. The `model` field in requests will be replaced |
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| **名称** | ✅ | 代理的显示名称，方便区分不同代理 |
+| **地址 (Base URL)** | ✅ | API 服务的基础地址（如 `https://api.example.com`），原始请求的 origin 会被替换为此地址 |
+| **API Key** | ✅ | 代理服务的 API 密钥，会替换原始请求中的认证信息 |
+| **模型** | ❌ | 代理支持的模型列表，用逗号分隔（如 `model-a, model-b`） |
+| **当前模型** | ❌ | 从模型列表中选择当前使用的模型，请求中的 `model` 字段会被替换 |
 
-## How It Works
+## 工作原理
 
-When a proxy is active, `interceptor.js` performs the following before each API request:
+切换代理后，`interceptor.js` 会在每次 API 请求发出前执行以下操作：
 
-1. **URL Rewrite** — Replaces the request origin with the proxy's Base URL
-2. **Auth Replace** — Replaces `x-api-key` or `Authorization` header with the proxy's API Key
-3. **Model Replace** — If an active model is set, replaces the `model` field in the request body
+1. **URL 重写** — 将请求的 origin 替换为代理的 Base URL
+2. **认证替换** — 将请求头中的 `x-api-key` 或 `Authorization` 替换为代理的 API Key
+3. **模型替换** — 如果指定了当前模型，将请求体中的 `model` 字段替换
 
-## Config File
+## 配置文件
 
-Configuration is stored at `~/.codex/cx-viewer/profile.json`. Click the folder icon in the title to open the directory:
+配置存储在 `~/.codex/cx-viewer/profile.json`，你可以点击标题旁的文件夹图标直接打开目录编辑：
 
 ```json
 {
@@ -45,6 +45,6 @@ Configuration is stored at `~/.codex/cx-viewer/profile.json`. Click the folder i
 }
 ```
 
-- `active` — ID of the current profile. Set to `"max"` for direct connection (no proxy)
-- `profiles` — Profile list. `id: "max"` is built-in and cannot be deleted
-- Changes take effect within ~1.5 seconds (monitored via `fs.watchFile`), no restart needed
+- `active` — 当前使用的 profile ID，设为 `"max"` 表示直连（不走代理）
+- `profiles` — profile 列表，`id: "max"` 为内置直连模式，不可删除
+- 修改文件后约 1.5 秒自动生效（通过 `fs.watchFile` 监听），无需重启

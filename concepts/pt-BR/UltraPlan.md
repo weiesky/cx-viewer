@@ -1,55 +1,55 @@
-# UltraPlan — A Máquina de Desejos Definitiva
+# UltraPlan — The Ultimate Wishing Machine
 
-## O que é UltraPlan
+## What is UltraPlan
 
-UltraPlan é a **implementação localizada** do cc-viewer para o comando nativo `/ultraplan` do Claude Code. Ele permite que você use todas as capacidades do `/ultraplan` em seu ambiente local **sem precisar iniciar o serviço remoto oficial do Claude**, guiando o Claude Code para realizar tarefas complexas de planejamento e implementação usando **colaboração multiagente**.
+UltraPlan is CX Viewer's **localized planning workflow** for Codex. It guides Codex through complex planning and implementation tasks using **multi-agent collaboration**.
 
-Comparado ao modo Plan regular ou Agent Team, o UltraPlan pode:
-- Avaliar automaticamente a complexidade da tarefa e selecionar a estratégia de planejamento ideal
-- Implantar múltiplos agentes paralelos para explorar a base de código a partir de diferentes dimensões
-- Incorporar pesquisa externa (webSearch) para melhores práticas do setor
-- Montar automaticamente uma Equipe de Code Review após a execução do plano para revisão de código
-- Formar um ciclo fechado completo **Planejar → Executar → Revisar → Corrigir**
-
----
-
-## Notas importantes
-
-### 1. UltraPlan não é onipotente
-O UltraPlan é uma máquina de desejos mais poderosa, mas isso não significa que todo desejo pode ser realizado. Ele é mais poderoso que o Plan e o Agent Team, mas não pode diretamente "fazer você ganhar dinheiro". Considere uma granularidade de tarefas razoável — divida grandes objetivos em tarefas de tamanho médio executáveis em vez de tentar realizar tudo de uma vez.
-
-### 2. Atualmente mais eficaz para projetos de programação
-Os modelos e fluxos de trabalho do UltraPlan são profundamente otimizados para projetos de programação. Outros cenários (documentação, análise de dados, etc.) podem ser tentados, mas você pode querer aguardar adaptações em versões futuras.
-
-### 3. Tempo de execução e requisitos de janela de contexto
-- Uma execução bem-sucedida do UltraPlan normalmente leva **30 minutos ou mais**
-- Requer que o MainAgent tenha uma janela de contexto grande (modelo Opus com contexto 1M recomendado)
-- Se você tem apenas um modelo de 200K, **certifique-se de executar `/clear` no contexto antes de rodar**
-- O `/compact` do Claude Code tem desempenho ruim quando a janela de contexto é insuficiente — evite ficar sem espaço
-- Manter espaço de contexto suficiente é um pré-requisito crítico para a execução bem-sucedida do UltraPlan
-
-Se você tiver dúvidas ou sugestões sobre o UltraPlan localizado, fique à vontade para abrir [Issues no GitHub](https://github.com/anthropics/claude-code/issues) para discutir e colaborar.
+Compared to regular Plan mode or Agent Team, UltraPlan can:
+- Automatically assess task complexity and select the optimal planning strategy
+- Deploy multiple parallel agents to explore the codebase from different dimensions
+- Incorporate external research (`web_search`) for industry best practices
+- Automatically assemble a Code Review Team after plan execution for code review
+- Form a complete **Plan → Execute → Review → Fix** closed loop
 
 ---
 
-## Como funciona
+## Important Notes
 
-O UltraPlan oferece dois modos de operação:
+### 1. UltraPlan Is Not Omnipotent
+UltraPlan is a more powerful wishing machine, but that doesn't mean every wish can be fulfilled. It's more powerful than Plan and Agent Team, but it can't directly "make you money." Consider reasonable task granularity — break large goals into executable medium-sized tasks rather than trying to accomplish everything in one shot.
 
-### Modo Automático
-Analisa automaticamente a complexidade da tarefa (pontuação 4-12) e direciona para diferentes estratégias:
+### 2. Currently Most Effective for Programming Projects
+UltraPlan's templates and workflows are deeply optimized for programming projects. Other scenarios (documentation, data analysis, etc.) can be attempted, but you may want to wait for future version adaptations.
 
-| Rota | Pontuação | Estratégia |
-|------|-----------|------------|
-| Rota A | 4-6 | Planejamento leve com exploração direta de código |
-| Rota B | 7-9 | Planejamento com diagramas estruturais (Mermaid / ASCII) |
-| Rota C | 10-12 | Exploração multiagente + ciclo fechado de revisão |
+### 3. Execution Time and Context Window Requirements
+- A successful UltraPlan run typically takes **30 minutes or more**
+- Requires MainAgent to have a large enough context window for multi-agent findings and review output
+- If your active model has a smaller context window, **make sure to `/clear` context before running**
+- Compaction is less reliable when the context window is already nearly full — avoid running out of space
+- Maintaining sufficient context space is a critical prerequisite for successful UltraPlan execution
 
-### Modo Forçado
-Ativa diretamente o fluxo de trabalho multiagente completo da Rota C:
-1. Implantar até 5 agentes paralelos para explorar a base de código simultaneamente (arquitetura, identificação de arquivos, avaliação de riscos, etc.)
-2. Opcionalmente implantar um agente de pesquisa para investigar soluções do setor via webSearch
-3. Sintetizar todas as descobertas dos agentes em um plano de implementação detalhado
-4. Implantar um agente de revisão para examinar o plano de múltiplas perspectivas
-5. Executar o plano após aprovação
-6. Montar automaticamente uma Equipe de Code Review para validar a qualidade do código após a implementação
+If you have any questions or suggestions about the localized UltraPlan workflow, open an issue in the CX Viewer project to discuss and collaborate.
+
+---
+
+## How It Works
+
+UltraPlan offers two operating modes:
+
+### Auto Mode
+Automatically analyzes task complexity (score 4-12) and routes to different strategies:
+
+| Route | Score | Strategy |
+|-------|-------|----------|
+| Route A | 4-6 | Lightweight planning with direct code exploration |
+| Route B | 7-9 | Planning with structural diagrams (Mermaid / ASCII) |
+| Route C | 10-12 | Multi-agent exploration + review closed loop |
+
+### Forced Mode
+Directly activates the full Route C multi-agent workflow:
+1. Deploy up to 5 parallel agents to explore the codebase simultaneously (architecture, file identification, risk assessment, etc.)
+2. Optionally deploy a research agent to investigate industry solutions via `web_search`
+3. Synthesize all agent findings into a detailed implementation plan
+4. Deploy a review agent to scrutinize the plan from multiple perspectives
+5. Execute the plan once approved
+6. Automatically assemble a Code Review Team to validate code quality after implementation

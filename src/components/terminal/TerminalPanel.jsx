@@ -12,7 +12,6 @@ import { WebLinksAddon } from '@xterm/addon-web-links';
 import { Unicode11Addon } from '@xterm/addon-unicode11';
 import '@xterm/xterm/css/xterm.css';
 import { t } from '../../i18n';
-import { tc, getCodexConfigDir } from '../../utils/tCodex';
 import { TerminalWsContext } from './TerminalWsContext';
 import { apiUrl } from '../../utils/apiUrl';
 import { isMobile, isIOS, isAndroid, isPad, isWindows, isMac } from '../../env';
@@ -154,16 +153,6 @@ function ScratchTerminalIcon() {
   );
 }
 
-function RefreshIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="23 4 23 10 17 10" />
-      <polyline points="1 20 1 14 7 14" />
-      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-    </svg>
-  );
-}
-
 // 虚拟按键定义：label 显示文字，seq 为发送到终端的转义序列
 const VIRTUAL_KEYS = [
   { label: '↑', seq: '\x1b[A' },
@@ -231,8 +220,6 @@ class TerminalPanel extends React.Component {
     this.resizeObserver = null;
     this.state = {
       terminalFocused: false,
-      agentTeamEnabled: false,
-      agentTeamEnabling: false, // AgentTeam 启用请求在途（快捷菜单 loading + hover-intent holdOpen 依赖）
       quickSettingsOpen: false,
       quickSettingsExpanded: null, // null | 'agentteam' | 'perm' | 'plan' —— 同时只展开一个子菜单
 
@@ -439,18 +426,16 @@ class TerminalPanel extends React.Component {
     }
     this.setupResizeObserver();
     // 定时强制刷新,按渲染器分流:
-    // - Android(WebGL):纹理脏真实存在,保留 60s L2(clearTextureAtlas + refresh + fit;
-    //   phone 上 canFit=false 自动退化为 atlas+refresh,轻量)。L3(dispose+reload
-    //   WebglAddon)留给用户手动判定"画面真的坏了"时升级,避免长期 GPU 抖动。
+    // - Android(WebGL):纹理脏真实存在,保留 60s 轻量维护(clearTextureAtlas + refresh;
+    //   可动态 fit 的端再 fit + sendResize)。phone 上 canFit=false 自动退化为 atlas+refresh。
     // - mac(WebGL)/Windows·Linux·iPad(DOM):120s 轻量分支——atlas 清理(mac WebGL 防
     //   sleep-wake/GPU 切换的纹理脏累积,DOM 渲染器下为 no-op)+ 全行 refresh 被动自愈;
-    //   不走 _executeRefresh(其尾部 sendResize 会复活每分钟 PTY resize 抖动),也不并入
-    //   60s L2(定时 fit 重算 scrollTop 是 PC 滚动跳动来源)。iPhone 维持无定时器(内存/
-    //   电量预算)。tab 隐藏时跳过(无渲染需求)。
+    //   不做 fit/sendResize,避免定时 resize 抖动。iPhone 维持无定时器(内存/电量预算)。
+    //   tab 隐藏时跳过(无渲染需求)。
     if (isAndroid) {
       this._autoRefreshInterval = setInterval(() => {
         if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
-        this._executeRefresh(2);
+        this._refreshAndroidTerminalRendering();
       }, 60000);
     } else if (!isMobile || isPad) {
       this._autoRefreshInterval = setInterval(() => {
@@ -459,12 +444,6 @@ class TerminalPanel extends React.Component {
         try { this.terminal.clearTextureAtlas?.(); } catch {}
         this.terminal.refresh(0, this.terminal.rows - 1);
       }, 120000);
-    }
-    // codex-settings 由 SettingsContext 集中提供;通过 props 派生 agentTeamEnabled,
-    // mount 时若已 ready 同步 setState,否则等 componentDidUpdate 接力。
-    if (this.props.codexSettings) {
-      const enabled = this.props.codexSettings?.env?.CODEX_CODE_EXPERIMENTAL_AGENT_TEAMS === '1';
-      this.setState({ agentTeamEnabled: enabled });
     }
     // 加载预置 (props.preferences 已 ready 时立即,否则 componentDidUpdate 接力)
     this._loadPresetShortcuts();
@@ -484,14 +463,7 @@ class TerminalPanel extends React.Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
-    // SettingsContext 异步 fetch 完成后,props.codexSettings / props.preferences 才到达;
-    // 同步派生的 agentTeamEnabled 与 _loadPresetShortcuts 都在这里接力。
-    if (prevProps.codexSettings !== this.props.codexSettings) {
-      const enabled = this.props.codexSettings?.env?.CODEX_CODE_EXPERIMENTAL_AGENT_TEAMS === '1';
-      if (enabled !== this.state.agentTeamEnabled) {
-        this.setState({ agentTeamEnabled: enabled });
-      }
-    }
+    // SettingsContext 异步 fetch 完成后,props.preferences 才到达;这里接力加载 AgentTeam 预置。
     if (prevProps.preferences !== this.props.preferences) {
       this._loadPresetShortcuts();
     }
@@ -1019,54 +991,25 @@ class TerminalPanel extends React.Component {
     }
   }
 
-  // 强制重绘终端,走 xterm 官方 escape hatch,**不**通过改 DOM 高度骗 fit() 重建渲染层
-  // (旧 hack 会让 viewport scrollTop 在 shrink/restore 之间错位 ≈shrink 像素)。
-  // 三档分别对应不同严重度的 xterm 渲染 issue:
-  //   L1: clearTextureAtlas + refresh —— 纹理脏 / sleep-wake 后小花屏(DOM 下 atlas 为 no-op,refresh 仍是全行重绘)
-  //   L2: L1 + fitAddon.fit() —— 维度漂移叠加纹理脏
-  //   L3: dispose+reload WebglAddon (onContextLoss 同款配方) + fit + 纹理重画 —— 整片白屏 / WebGL 失同步
-  //       注:仅 WebGL 平台(Android / macOS Chromium)有 WebGL,_rebuildWebglAddon 在 DOM 平台早退,
-  //       故 DOM 下 L3 实效 = L2。
-  // 两条调用路径:handleForceRefresh(用户点击,连击窗口推进级别),自动定时器
-  // (Android 60s 走 L2 预防性维护;mac/PC/iPad 120s 仅轻量 atlas 清理+全行重绘,不经此函数)。
-  _executeRefresh = (level) => {
+  // Android 定时渲染维护：走 xterm 官方 escape hatch，不通过改 DOM 高度骗 fit() 重建渲染层。
+  _refreshAndroidTerminalRendering = () => {
     const term = this.terminal;
     if (!term) return;
 
-    const fullRedraw = () => {
-      try { term.clearTextureAtlas?.(); } catch {}
-      try { term.refresh(0, term.rows - 1); } catch {}
-    };
+    try { term.clearTextureAtlas?.(); } catch {}
+    try { term.refresh(0, term.rows - 1); } catch {}
     // 仅动态 fit 路径才允许 fit();移动端非 iPad 由 _mobileFixedResize 维护固定 60 列,
     // 调 fit() 会把固定列覆盖成按容器算的动态列,破坏移动端契约。
     const canFit = !isMobile || isPad;
-
-    if (level === 1) {
-      fullRedraw();
-    } else if (level === 2) {
-      fullRedraw();
-      if (canFit) this._fitPreservingScroll();
-    } else {
-      this._rebuildWebglAddon();
-      if (canFit) this._fitPreservingScroll();
-      fullRedraw();
+    if (canFit) {
+      this._fitPreservingScroll();
+      this.sendResize();
     }
-    if (canFit) this.sendResize();
-  };
-
-  // 用户点击入口:抖动级别按连击窗口推进(3s 内 L1→L2→L3,超时回 L1)。
-  // 越高级动作越重,默认从轻到重渐次试,只有用户不满意再点才会升级。
-  handleForceRefresh = () => {
-    const now = Date.now();
-    const within = (now - (this._lastRefreshAt || 0)) < 3000;
-    this._refreshLevel = within ? Math.min(3, (this._refreshLevel || 1) + 1) : 1;
-    this._lastRefreshAt = now;
-    this._executeRefresh(this._refreshLevel);
   };
 
   // 调 fitAddon.fit() 并尽量保持用户的 scrollTop —— fit() 会重排 viewport,scrollHeight 变后
   // scrollTop 默认会被重置。贴底时直接贴底,其他情况按 prev/new scrollHeight 比例换算。
-  // ResizeObserver 路径和 60s 自动刷新 / 手动 L2/L3 都走它,行为统一。
+  // ResizeObserver 路径和 Android 60s 自动维护都走它,行为统一。
   _fitPreservingScroll = () => {
     if (!this.fitAddon || !this.containerRef.current) return;
     // 0/极小尺寸守卫（同 ScratchTerminal）：容器可见但高度≈0 时 FitAddon 会算出 2×1
@@ -1185,20 +1128,6 @@ class TerminalPanel extends React.Component {
       this._webglLongtaskObserver = null;
     }
   }
-
-  // L3 兜底:dispose 当前 WebglAddon 再 load 一个新的(xterm 官方 README 同款 onContextLoss
-  // 配方)。保留 cols/rows/scrollback,不动 DOM 高度,不影响其他 addon。
-  _rebuildWebglAddon = () => {
-    if (!this.terminal) return;
-    if (!WEBGL_RENDERER) return; // 仅 WebGL 平台（Android / macOS Chromium），其余始终走 DOM 渲染器
-    // 抢在 onContextLoss recovery 之前清 timer,否则 1s 后醒来会把刚 rebuild 的 addon 再 load 一次
-    if (this._webglRecoveryTimer) {
-      clearTimeout(this._webglRecoveryTimer);
-      this._webglRecoveryTimer = null;
-    }
-    this._disposeWebgl();
-    this._loadWebglAddon(false);
-  };
 
   /**
    * 移动端固定 60 列：通过调整 fontSize 使 60 列恰好撑满屏幕宽度，
@@ -1532,12 +1461,10 @@ class TerminalPanel extends React.Component {
 
   // 级联子菜单 hover-intent 共享实现见 utils/quickMenuHoverIntent。
   // iPad 无 hover 不参与（tap 的 synthetic mouseEnter 会与 click 切换互抵），由点击行切换兜底；
-  // AgentTeam 启用请求进行中不收起，保住子菜单内 loading 按钮的进度反馈。
   _qmHover = createQuickMenuHoverIntent({
     getExpanded: () => this.state.quickSettingsExpanded,
     setExpanded: (k) => this.setState({ quickSettingsExpanded: k }),
     skip: () => isPad,
-    holdOpen: (key) => key === 'agentteam' && this.state.agentTeamEnabling,
   });
 
   handlePresetSend = (description) => {
@@ -1622,19 +1549,6 @@ class TerminalPanel extends React.Component {
 
   handleUltraplanRemoveFile = (...a) => this._ultraplan.handleRemoveFile(...a);
 
-  handleEnableAgentTeam = () => {
-    if (this.state.agentTeamEnabling) return;
-    this.setState({ agentTeamEnabling: true });
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      // 用当前真实的配置目录拼 prompt，避免 CODEX_CONFIG_DIR 用户让 Codex 去改错文件
-      const settingsPath = `${getCodexConfigDir()}/settings.json`;
-      const prompt = `Add "CODEX_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" to the env object in ${settingsPath}. If the env key does not exist, create it. Preserve all existing content. Only modify this one field. If ${settingsPath} does not exist, instead add the line: export CODEX_CODE_EXPERIMENTAL_AGENT_TEAMS=1 to the user's shell profile (~/.zshrc or ~/.bashrc).`;
-      this.ws.send(JSON.stringify({ type: 'input', data: prompt + '\r' }));
-      message.success('需要重启 Codex 才能生效');
-    }
-    if ((!isMobile || isPad) && this.terminal) this.terminal.focus();
-  };
-
   render() {
     const { pendingImages, onRemovePendingImage } = this.props;
     return (
@@ -1646,18 +1560,6 @@ class TerminalPanel extends React.Component {
           className={`${styles.terminalContainer}${this.state.terminalFocused ? ` ${styles.terminalContainerFocused}` : ''}`}
         >
           <div ref={this.containerRef} className={styles.terminalHost} />
-          {(!isMobile || isPad) && (
-            <button
-              type="button"
-              className={styles.terminalRefreshBtn}
-              title={t('ui.terminal.refreshTip')}
-              aria-label={t('ui.terminal.refresh')}
-              onClick={this.handleForceRefresh}
-            >
-              <RefreshIcon />
-              <span>{t('ui.terminal.refresh')}</span>
-            </button>
-          )}
         </div>
         {pendingImages?.length > 0 && (
           <div className={styles.pendingFileStrip}>
@@ -1713,19 +1615,16 @@ class TerminalPanel extends React.Component {
               content={
                 <div className={styles.presetMenu}>
                   <QuickAutoApproveRows
-                    autoApproveSeconds={this.props.autoApproveSeconds}
+                    approvalsReviewer={this.props.approvalsReviewer}
                     planAutoApproveSeconds={this.props.planAutoApproveSeconds}
-                    onAutoApproveChange={this.props.onAutoApproveChange}
+                    onApprovalsReviewerChange={this.props.onApprovalsReviewerChange}
                     onPlanAutoApproveChange={this.props.onPlanAutoApproveChange}
                     expandedKey={this.state.quickSettingsExpanded}
                     onToggle={(k) => this.setState({ quickSettingsExpanded: k })}
                     onHoverEnter={this._qmHover.enter}
                     onHoverLeave={this._qmHover.leave}
                   />
-                  {/* AgentTeam 快捷指令（自工具栏独立按钮迁入，置于菜单底部）：已启用展示
-                      指令列表，未启用展示启用引导；启用成功后子菜单原地刷新为列表。
-                      启用引导是终端版独有（依赖 this.ws / this.terminal），ChatInputBar
-                      的同款菜单有意不做该分支 */}
+                  {/* AgentTeam 快捷指令（自工具栏独立按钮迁入，置于菜单底部）。 */}
                   <div
                     className={`${chrome.quickMenuGroup} ${this.state.quickSettingsExpanded === 'agentteam' ? chrome.quickMenuGroupOpen : ''}`}
                     onMouseEnter={() => this._qmHover.enter('agentteam')}
@@ -1741,31 +1640,22 @@ class TerminalPanel extends React.Component {
                     </button>
                     <div className={chrome.quickMenuSubWrap}>
                       <div className={chrome.quickMenuSub}>
-                        {this.state.agentTeamEnabled ? (
-                          <>
-                            <button className={`${styles.presetMenuItem} ${styles.presetMenuItemMuted}`} onClick={() => this.setState({ quickSettingsOpen: false, quickSettingsExpanded: null, presetModalVisible: true })}>
-                              {t('ui.terminal.customShortcuts')}
-                            </button>
-                            {this.state.presetItems.length === 0 ? (
-                              <div className={styles.popoverEmptyHint}>—</div>
-                            ) : (
-                              this.state.presetItems.map(item => {
-                                const isBuiltinRaw = item.builtinId && !item.modified;
-                                const name = isBuiltinRaw ? t(item.teamName) : item.teamName;
-                                const desc = isBuiltinRaw ? t(item.description) : item.description;
-                                return (
-                                  <button key={item.id} className={styles.presetMenuItem} onClick={() => this.handlePresetSend(desc)} title={desc}>
-                                    {name || desc}
-                                  </button>
-                                );
-                              })
-                            )}
-                          </>
+                        <button className={`${styles.presetMenuItem} ${styles.presetMenuItemMuted}`} onClick={() => this.setState({ quickSettingsOpen: false, quickSettingsExpanded: null, presetModalVisible: true })}>
+                          {t('ui.terminal.customShortcuts')}
+                        </button>
+                        {this.state.presetItems.length === 0 ? (
+                          <div className={styles.popoverEmptyHint}>—</div>
                         ) : (
-                          <div className={chrome.quickMenuSubTipBox}>
-                            <div className={styles.agentTeamDisabledTip}>{tc('ui.terminal.agentTeamDisabledTip')}</div>
-                            <Button type="primary" size="small" loading={this.state.agentTeamEnabling} disabled={this.state.agentTeamEnabling} onClick={this.handleEnableAgentTeam}>{this.state.agentTeamEnabling ? t('ui.terminal.agentTeamEnabling') : t('ui.terminal.agentTeamEnable')}</Button>
-                          </div>
+                          this.state.presetItems.map(item => {
+                            const isBuiltinRaw = item.builtinId && !item.modified;
+                            const name = isBuiltinRaw ? t(item.teamName) : item.teamName;
+                            const desc = isBuiltinRaw ? t(item.description) : item.description;
+                            return (
+                              <button key={item.id} className={styles.presetMenuItem} onClick={() => this.handlePresetSend(desc)} title={desc}>
+                                {name || desc}
+                              </button>
+                            );
+                          })
                         )}
                       </div>
                     </div>
@@ -1780,8 +1670,7 @@ class TerminalPanel extends React.Component {
                 <span className={styles.quickSettingsIcon}><span className={styles.quickSettingsGlyph} style={SPARKLE_MASK_STYLE} aria-hidden="true" /></span>
               </button>
             </Popover>
-            {this.state.agentTeamEnabled ? (
-              <Popover
+            <Popover
                 trigger="click"
                 placement="top"
                 open={this.state.ultraplanOpen}
@@ -1825,25 +1714,7 @@ class TerminalPanel extends React.Component {
                   <span className={styles.ultraToggleIcon} style={ULTRAPLAN_MASK_STYLE} aria-hidden="true" />
                   <span className={styles.ultraToggleLabel}>UltraPlan</span>
                 </button>
-              </Popover>
-            ) : (
-              <Popover
-                trigger="click"
-                placement="top"
-                overlayInnerStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-hover)', borderRadius: 8, padding: '12px 16px', maxWidth: 360 }}
-                content={
-                  <div>
-                    <div className={styles.agentTeamDisabledTip}>{t('ui.ultraplan.agentTeamRequired')}</div>
-                    <Button type="primary" size="small" loading={this.state.agentTeamEnabling} disabled={this.state.agentTeamEnabling} onClick={this.handleEnableAgentTeam}>{this.state.agentTeamEnabling ? t('ui.terminal.agentTeamEnabling') : t('ui.terminal.agentTeamEnable')}</Button>
-                  </div>
-                }
-              >
-                <button className={`${styles.toolbarBtn} ${styles.toolbarBtnDisabled}`} title={t('ui.ultraplan')}>
-                  <span className={styles.ultraToggleIcon} style={ULTRAPLAN_MASK_STYLE} aria-hidden="true" />
-                  <span className={styles.ultraToggleLabel}>UltraPlan</span>
-                </button>
-              </Popover>
-            )}
+            </Popover>
             <button className={styles.toolbarBtn} onClick={() => this.fileInputRef.current?.click()} title={t('ui.terminal.upload')}>
               <UploadIcon />
             </button>
@@ -1995,8 +1866,8 @@ class TerminalPanel extends React.Component {
               <UploadIcon />
             </button>
             */}
-            {this.state.agentTeamEnabled ? (
-              this.state.presetItems.length > 0 && <>
+            {this.state.presetItems.length > 0 && (
+              <>
                 <span className={styles.vkSeparator} />
                 {this.state.presetItems.map(item => {
                   const isBuiltinRaw = item.builtinId && !item.modified;
@@ -2015,18 +1886,6 @@ class TerminalPanel extends React.Component {
                     </button>
                   );
                 })}
-              </>
-            ) : (
-              <>
-                <span className={styles.vkSeparator} />
-                <button
-                  className={`${styles.virtualKey} ${styles.vkAction} ${styles.vkDisabled}`}
-                  onTouchStart={this._vkTouchStart}
-                  onTouchMove={this._vkTouchMove}
-                  onTouchEnd={(e) => this._vkTouchEnd(() => this.handleEnableAgentTeam(), e)}
-                >
-                  <AgentTeamIcon /><span className={styles.vkTeamLabel}>{t('ui.terminal.agentTeam')}</span>
-                </button>
               </>
             )}
           </div>

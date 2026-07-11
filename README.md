@@ -109,7 +109,7 @@ The most useful inherited Codex commands in CXV are:
 
 ### Configuration Override
 
-If you need to use a custom API endpoint (e.g., a corporate proxy), simply configure it in `~/.codex/settings.json` or set the `OPENAI_BASE_URL` environment variable. `cxv` will automatically detect and correctly forward requests.
+If you need to use a custom API endpoint (e.g., a corporate proxy), configure `openai_base_url` in `~/.codex/config.toml` or set the `OPENAI_BASE_URL` environment variable. `cxv` will automatically detect and correctly forward requests.
 
 ### Silent Mode
 
@@ -148,9 +148,9 @@ Fulfill your imagination of mobile programming. There's also a plugin mechanism 
 
 
 - Captures all API requests from Codex in real time, ensuring raw text — not redacted logs (this is important!!!)
-- Automatically identifies and labels Main Agent and Sub Agent requests (subtypes: Plan, Search, Bash)
+- Automatically identifies and labels Main Agent and Sub Agent requests (subtypes: Plan, Search, Shell)
 - MainAgent requests support Body Diff JSON, showing collapsed differences from the previous MainAgent request (only changed/new fields)
-- Each request displays inline Token usage statistics (input/output tokens, cache creation/read, hit rate)
+- Each request displays inline token usage statistics (input/output tokens)
 - Compatible with Codex Router (CCR) and other proxy scenarios — falls back to API path pattern matching
 
 ### Conversation Mode
@@ -163,7 +163,7 @@ Click the "Conversation Mode" button in the top-right corner to parse the Main A
 - Agent Team display is not yet supported
 - User messages are right-aligned (blue bubbles), Main Agent replies are left-aligned (dark bubbles)
 - `thinking` blocks are collapsed by default, rendered as Markdown — click to expand and view the thinking process; one-click translation is supported (feature is still unstable)
-- User selection messages (AskUserQuestion) are displayed in Q&A format
+- User selection messages (`request_user_input`) are displayed in Q&A format
 - Bidirectional mode sync: switching to conversation mode auto-scrolls to the conversation corresponding to the selected request; switching back to raw mode auto-scrolls to the selected request
 - Settings panel: toggle default collapse state for tool results and thinking blocks
 - Mobile conversation browsing: in mobile CLI mode, tap the "Conversation Browse" button in the top bar to slide out a read-only conversation view for browsing the complete conversation history on mobile
@@ -174,12 +174,11 @@ The "Data Statistics" floating panel in the header area:
 
 <img width="1500" height="765" alt="image" src="https://github.com/user-attachments/assets/a3d2db47-eac3-463a-9b44-3fa64994bf3b" />
 
-- Displays cache creation/read counts and cache hit rate
-- Cache rebuild statistics: grouped by reason (TTL, system/tools/model changes, message truncation/modification, key changes) showing counts and cache_creation tokens
+- Displays input/output token usage by model
 - Tool usage statistics: displays call frequency for each tool sorted by number of calls
 - Skill usage statistics: displays call frequency for each skill sorted by number of calls
 - Supports teammate statistics
-- Concept help (?) icon: click to view built-in documentation for MainAgent, CacheRebuild, and each tool
+- Concept help (?) icon: click to view built-in documentation for MainAgent and each tool
 
 ### Log Management
 
@@ -196,12 +195,6 @@ Log compression does not change the captured Codex/OpenAI payload semantics. It 
 You can quickly locate your prompts using the sidebar tools.
 
 --- 
-
-<img width="1500" height="765" alt="image" src="https://github.com/user-attachments/assets/82b8eb67-82f5-41b1-89d6-341c95a047ed" />
-
-The KV-Cache-Text feature lets you inspect the context that Codex sends to the model.
-
----
 
 <img width="1500" height="765" alt="image" src="https://github.com/user-attachments/assets/54cdfa4e-677c-4aed-a5bb-5fd946600c46" />
 
@@ -225,13 +218,50 @@ More features waiting to be discovered... For example: the system supports Agent
 
 CX-Viewer automatically checks for updates on startup (at most once every 4 hours). Within the same major version (e.g., 1.x.x -> 1.y.z), updates are applied automatically and take effect on the next restart. Cross-major-version updates only show a notification.
 
-Auto-update follows Codex's global configuration in `~/.codex/settings.json`. If Codex has auto-updates disabled (`autoUpdates: false`), CX-Viewer will also skip auto-updates.
+Auto-update follows Codex's global configuration in `~/.codex/config.toml`. Set `auto_update = false` there, or set `CODEX_DISABLE_NONESSENTIAL_TRAFFIC=1`, to skip CX-Viewer update checks.
 
 ### Multi-language Support
 
 CX-Viewer supports 18 languages, automatically switching based on system locale:
 
 简体中文 | English | 繁體中文 | 한국어 | Deutsch | Español | Français | Italiano | Dansk | 日本語 | Polski | Русский | العربية | Norsk | Português (Brasil) | ไทย | Türkçe | Українська
+
+## NPM Release Preparation
+
+The npm package name is `cx-viewer`. The project is configured to publish to the public npm registry through `publishConfig.registry`.
+
+Before publishing, verify the registry state and local account:
+
+```bash
+npm view cx-viewer version --registry=https://registry.npmjs.org
+npm whoami --registry=https://registry.npmjs.org
+```
+
+Run the local release checks before changing the version:
+
+```bash
+npm run release:check
+```
+
+This command runs tests, builds the frontend, and previews the package contents with `npm pack --dry-run`. It does not publish anything. The dry-run wrapper uses a temporary npm cache so the check is not blocked by stale root-owned files in `~/.npm`. Review the dry-run file list before release; `prepublishOnly` also runs `npm run build` during the real publish step, and the `files` whitelist in `package.json` controls what gets included.
+
+For an actual release, bump the package version first, commit the release, push to GitHub, then publish manually:
+
+```bash
+# Choose patch, minor, or major based on the release scope.
+npm version patch --no-git-tag-version
+
+git status --short
+git add package.json README.md scripts/npm-pack-dry-run.mjs
+git commit -m "chore: prepare cx-viewer release"
+VERSION=$(node -p "require('./package.json').version")
+git tag "v${VERSION}"
+git push origin main --tags
+
+npm publish --registry=https://registry.npmjs.org
+```
+
+Do not publish without a version bump; npm will reject republishing an existing version such as `1.0.3`.
 
 ## License
 

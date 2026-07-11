@@ -7,22 +7,24 @@ import React from 'react';
  *
  * 背景：FULL HIT 路径直接返回 `sc.items` 时 React reconciler 看到完全相同的 element 引用就跳过
  * diff，ChatMessage SCU 根本不会被调用，元素创建时冻结的旧 map（planApprovalMap / askAnswerMap）
- * 永不刷新——导致 ExitPlanMode 审批后卡片不切「已批准」、AskUserQuestion 答完后仍显示 pending。
+ * 永不刷新——导致 plan 审批后卡片不切「已批准」、request_user_input 答完后仍显示 pending。
  * 本函数合并自原 refreshPlanApprovalCache / refreshAskAnswerCache 两个孪生模块。
  *
  * @param {Array} items - 缓存的 ChatMessage React element 数组
  * @param {object} prevMap - 上一轮存入 cache 时的 map 引用
  * @param {object} nextMap - 本轮派生的 map 引用
- * @param {string} toolName - 触发刷新的 tool_use 名（'ExitPlanMode' / 'AskUserQuestion'）
+ * @param {string|string[]} toolName - 触发刷新的 tool_use 名或兼容别名
  * @param {string} propName - 要刷新的 prop 名（'planApprovalMap' / 'askAnswerMap'）
  * @returns {Array} 引用全等时为 items；否则为新数组（仅命中者被 cloneElement）
  */
 export function refreshCachedItemProp(items, prevMap, nextMap, toolName, propName) {
   if (prevMap === nextMap) return items;
+  const names = Array.isArray(toolName) ? new Set(toolName) : null;
+  const matchesName = (name) => names ? names.has(name) : name === toolName;
   let dirty = false;
   const out = items.map(m => {
     if (!m || !m.props || m.props.role !== 'assistant' || !Array.isArray(m.props.content)) return m;
-    if (!m.props.content.some(b => b.type === 'tool_use' && b.name === toolName)) return m;
+    if (!m.props.content.some(b => b.type === 'tool_use' && matchesName(b.name))) return m;
     dirty = true;
     return React.cloneElement(m, { [propName]: nextMap });
   });

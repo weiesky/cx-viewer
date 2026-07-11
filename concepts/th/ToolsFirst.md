@@ -1,77 +1,71 @@
-# ทำไม Tools ถึงแสดงก่อน?
+# Why Are Tools Listed First?
 
-ในแผง Context ของ cc-viewer **Tools จะปรากฏก่อน System Prompt และ Messages** ลำดับนี้สะท้อนให้เห็นถึง **ลำดับ prefix ของ KV-Cache ใน Anthropic API** อย่างแม่นยำ
+In CX Viewer's Context panel, **Tools appear before Instructions and Input**. For Codex, this is a diagnostic layout: tool definitions are a large, high-impact part of the request shape, so they are shown first before the instructions and conversation context they constrain.
 
-## ลำดับ prefix ของ KV-Cache
+## Request Context Layout
 
-เมื่อ Anthropic API สร้าง KV-Cache จะเชื่อมต่อบริบทเป็น prefix ตาม **ลำดับที่ตายตัว** นี้:
+Codex traffic can arrive from OpenAI Responses API calls, Codex app-server events, or SDK stream events. CX Viewer normalizes those sources into a consistent context view:
 
 ```
 ┌─────────────────────────────────────────────────┐
-│ 1. Tools (JSON Schema definitions)               │  ← Start of cache prefix
-│ 2. System Prompt                                 │
-│ 3. Messages (conversation history + current turn)│  ← End of cache prefix
+│ 1. Tools (JSON Schema definitions)               │  ← Capability surface
+│ 2. Instructions                                  │
+│ 3. Input (conversation history + current turn)   │
 └─────────────────────────────────────────────────┘
 ```
 
-หมายความว่า **Tools อยู่ก่อน System Prompt ที่จุดเริ่มต้นของ cache prefix**
+This does not claim a provider-specific serialization order. It gives you a stable way to inspect what capabilities were available before reading instructions and input history.
 
-## ทำไม Tools จึงมีน้ำหนักใน cache มากกว่า System?
+## Why Tools Often Matter Most
 
-ในการจับคู่ prefix ของ KV-Cache **เนื้อหาที่อยู่ก่อนหน้ามีความสำคัญมากกว่า** — การเปลี่ยนแปลงใดๆ จะทำให้ทุกอย่างที่ตามมาเป็นโมฆะ:
+Tool definitions are often the largest static part of an agent request. A small UI toggle can add, remove, or reshape many tool schemas, which changes model behavior and request size.
 
-1. **การจับคู่ prefix เริ่มต้นจากจุดเริ่มต้น**: KV-Cache เปรียบเทียบคำขอปัจจุบันกับ prefix ที่แคชไว้ทีละ token จากจุดเริ่มต้น เมื่อพบความไม่ตรงกัน เนื้อหาทั้งหมดที่ตามมาจะถูกทำให้เป็นโมฆะ
+1. **Capability changes are semantic changes**: Adding or removing a tool changes what the agent is allowed to do, not just the token count.
 
-2. **Tools เปลี่ยน = cache ทั้งหมดเป็นโมฆะ**: เนื่องจาก Tools อยู่ก่อน การเปลี่ยนแปลงใดๆ ในนิยามของเครื่องมือ (แม้แต่การเพิ่มหรือลบ MCP tool เพียงอันเดียว) จะ **ทำลาย prefix จากจุดเริ่มต้น** ทำให้ System Prompt และ Messages ที่แคชไว้ทั้งหมดเป็นโมฆะ
+2. **Tool schemas can dominate request size**: MCP and dynamic tools often have detailed JSON Schemas with descriptions, enums, and nested parameters.
 
-3. **System เปลี่ยน = cache ของ Messages เป็นโมฆะ**: System Prompt อยู่ตรงกลาง ดังนั้นการเปลี่ยนแปลงจึงทำให้เฉพาะส่วน Messages ที่ตามมาเป็นโมฆะ
+4. **Input appends are usually cheaper to inspect**: Normal conversation turns mostly add new user input and the previous assistant/tool results, while tool and instruction changes tend to be rarer and more important.
 
-4. **Messages เปลี่ยน = ส่งผลเฉพาะส่วนท้าย**: Messages อยู่ท้ายสุด ดังนั้นการเพิ่มข้อความใหม่จะทำให้เฉพาะส่วนท้ายเล็กๆ เป็นโมฆะ — cache ของ Tools และ System ยังคงสมบูรณ์
+## Practical Impact
 
-## ผลกระทบในทางปฏิบัติ
+| Change Type | Cache Impact | Typical Scenario |
+|-------------|-------------|-----------------|
+| Tool added/removed | Request shape changes | MCP server connect/disconnect, plugin toggle |
+| Instructions change | Instructions and policy changed | `AGENTS.md` edit, developer instruction update |
+| New input appended | Normal turn growth | User input, assistant reply, tool result |
 
-| ประเภทการเปลี่ยนแปลง | ผลกระทบต่อ cache | สถานการณ์ทั่วไป |
-|----------------------|-----------------|-----------------|
-| เพิ่ม/ลบ Tool | **เป็นโมฆะทั้งหมด** | เชื่อมต่อ/ตัดการเชื่อมต่อ MCP server, เปิด/ปิด IDE plugin |
-| เปลี่ยน System Prompt | สูญเสีย cache ของ Messages | แก้ไข CLAUDE.md, การฉีด system reminder |
-| เพิ่มข้อความใหม่ | เพิ่มเฉพาะส่วนท้ายเท่านั้น | การสนทนาปกติ (พบบ่อยที่สุด, ถูกที่สุด) |
+## Why Are Tool Definitions Placed Before the "Brain"?
 
-นี่คือเหตุผลที่ `tools_change` ใน [CacheRebuild](CacheRebuild.md) มักเป็นเหตุผลของการสร้างใหม่ที่แพงที่สุด — มันทำลายห่วงโซ่ prefix ตั้งแต่ด้านหน้าสุด
+From a diagnostic perspective, putting Tools first is useful because tool definitions describe the agent's available actions before you inspect the instructions that ask the agent to act.
 
-## ทำไมคำจำกัดความเครื่องมือถึงอยู่ก่อน "สมอง"?
+Before taking action, a person needs to perceive what limbs and tools are available. An infant doesn't first understand the rules of the world (Instructions), then learn to reach and grab — they first sense that they have hands and feet, then gradually understand rules through interaction with the environment. Similarly, an LLM needs to know what tools it can call (read files, write code, search, execute commands) before receiving task instructions, so it can accurately assess "what can I do" and "how should I do it" when processing the instructions.
 
-จากมุมมองของแคช การที่ Tools อยู่ก่อนเป็นข้อเท็จจริงทางเทคนิค แต่จากมุมมองของการออกแบบเชิงปัญญา ลำดับนี้ก็มีเหตุผลเท่าเทียมกัน — **Tools คือมือและเท้า, System Prompt คือสมอง**
+If reversed — first telling the model "your task is to refactor this module", then telling it "you have shell_command, apply_patch, and tool_search" — the model would lack critical capability boundary information when understanding the task, potentially producing unrealistic plans or overlooking available approaches.
 
-ก่อนลงมือทำ คนเราต้องรับรู้ก่อนว่ามีแขนขาและเครื่องมืออะไรใช้ได้บ้าง ทารกไม่ได้เข้าใจกฎของโลก (System) ก่อนแล้วค่อยเรียนรู้การหยิบจับ — พวกเขารับรู้ก่อนว่ามีมือและเท้า จากนั้นค่อยๆ เข้าใจกฎผ่านการมีปฏิสัมพันธ์กับสิ่งแวดล้อม เช่นเดียวกัน LLM ต้องรู้ว่าเรียกใช้เครื่องมืออะไรได้บ้าง (อ่านไฟล์ เขียนโค้ด ค้นหา รันคำสั่ง) ก่อนได้รับคำสั่งงาน (System Prompt) เพื่อจะได้ประเมินได้อย่างแม่นยำว่า "ฉันทำอะไรได้" และ "ฉันควรทำอย่างไร" เมื่อประมวลผลคำสั่ง
+**Know what cards you hold before deciding how to play.** This is the cognitive logic behind Tools preceding Instructions.
 
-ถ้าสลับลำดับ — บอกโมเดลก่อนว่า "งานของคุณคือรีแฟกเตอร์โมดูลนี้" แล้วค่อยบอกว่า "คุณมีเครื่องมือ Read, Edit, Bash" — โมเดลจะขาดข้อมูลสำคัญเกี่ยวกับขอบเขตความสามารถเมื่อทำความเข้าใจงาน อาจวางแผนที่ไม่สมจริงหรือมองข้ามวิธีการที่ใช้ได้
+## Why Are MCP Tools Also in This Position?
 
-**รู้ไพ่ในมือก่อน แล้วค่อยตัดสินใจว่าจะเล่นอย่างไร** นี่คือตรรกะเชิงปัญญาที่อยู่เบื้องหลังการวาง Tools ก่อน System
+MCP (Model Context Protocol) tools, like built-in tools, are placed at the very front of the Tools area. Understanding MCP's position in the context helps evaluate its real benefits and costs.
 
-## ทำไมเครื่องมือ MCP ก็อยู่ในตำแหน่งนี้ด้วย?
+### MCP Advantages
 
-เครื่องมือ MCP (Model Context Protocol) เช่นเดียวกับเครื่องมือในตัว ถูกวางไว้ที่ส่วนเริ่มต้นของพื้นที่ Tools การเข้าใจตำแหน่งของ MCP ในบริบทช่วยประเมินประโยชน์และต้นทุนที่แท้จริง
+- **Capability extension**: MCP lets models access external services (database queries, API calls, IDE operations, browser control, etc.), breaking beyond built-in tool boundaries
+- **Open ecosystem**: Anyone can implement an MCP server; the model gains new capabilities without retraining
+- **On-demand loading**: MCP servers can be selectively connected/disconnected based on task scenario, flexibly composing tool sets
 
-### ข้อดีของ MCP
+### MCP Costs
+- **Prefix bloat**: MCP tool Schemas are typically larger than built-in tools (containing detailed parameter descriptions, enums, etc.). Many MCP tools significantly increase the Tools area's token count, squeezing the context space available for Input
+- **Latency overhead**: MCP tool calls require cross-process communication (JSON-RPC over stdio/SSE), an order of magnitude slower than built-in function calls
+- **Stability risk**: MCP servers are external processes that may crash, timeout, or return unexpected formats, requiring additional error handling
 
-- **ขยายความสามารถ**: MCP ให้โมเดลเข้าถึงบริการภายนอก (คิวรีฐานข้อมูล, เรียก API, ปฏิบัติการ IDE, ควบคุมเบราว์เซอร์ ฯลฯ) ก้าวข้ามขอบเขตของเครื่องมือในตัว
-- **ระบบนิเวศเปิด**: ใครก็สามารถสร้าง MCP server ได้ โมเดลได้รับความสามารถใหม่โดยไม่ต้องเทรนใหม่
-- **โหลดตามต้องการ**: MCP server สามารถเชื่อมต่อ/ตัดการเชื่อมต่อได้ตามสถานการณ์ ประกอบชุดเครื่องมือได้อย่างยืดหยุ่น
+### Practical Recommendations
 
-### ต้นทุนของ MCP
+| Scenario | Recommendation |
+|----------|---------------|
+| Long conversations, high-frequency interaction | Minimize MCP tool count to keep requests smaller and easier to inspect |
+| Short tasks, one-off operations | Use MCP tools freely; overhead is usually limited |
+| Frequently adding/removing MCP servers | Each change reshapes the request; consider fixing the tool set |
+| Oversized Tool Schemas | Trim descriptions and enums to reduce prefix token footprint |
 
-- **ฆาตกรแคช**: คำจำกัดความ JSON Schema ของเครื่องมือ MCP แต่ละตัวถูกต่อเข้าที่จุดเริ่มต้นของ prefix KV-Cache การเพิ่มหรือลบเครื่องมือ MCP หนึ่งตัว = **แคชทั้งหมดถูกยกเลิกตั้งแต่ต้น** การเชื่อมต่อ/ตัดการเชื่อมต่อ MCP server บ่อยครั้งจะลดอัตราการ hit แคชอย่างมาก
-- **prefix บวม**: Schema ของเครื่องมือ MCP มักใหญ่กว่าเครื่องมือในตัว (คำอธิบายพารามิเตอร์โดยละเอียด, ค่า enum ฯลฯ) เครื่องมือ MCP จำนวนมากเพิ่มจำนวน token ในพื้นที่ Tools อย่างมาก บีบพื้นที่บริบทสำหรับ Messages
-- **ค่าใช้จ่ายด้านความหน่วง**: การเรียกเครื่องมือ MCP ต้องการการสื่อสารระหว่างโปรเซส (JSON-RPC ผ่าน stdio/SSE) ช้ากว่าการเรียกฟังก์ชันในตัวเป็นอันดับขนาด
-- **ความเสี่ยงด้านเสถียรภาพ**: MCP server เป็นโปรเซสภายนอกที่อาจล่ม หมดเวลา หรือส่งคืนรูปแบบที่ไม่คาดคิด ต้องการการจัดการข้อผิดพลาดเพิ่มเติม
-
-### คำแนะนำเชิงปฏิบัติ
-
-| สถานการณ์ | คำแนะนำ |
-|-----------|---------|
-| บทสนทนายาว, โต้ตอบบ่อย | ลดจำนวนเครื่องมือ MCP ให้น้อยที่สุดเพื่อปกป้องเสถียรภาพ prefix แคช |
-| งานสั้น, ปฏิบัติการครั้งเดียว | ใช้เครื่องมือ MCP ได้อย่างอิสระ; ผลกระทบต่อแคชจำกัด |
-| เพิ่ม/ลบ MCP server บ่อย | ทุกการเปลี่ยนแปลงทำให้แคชสร้างใหม่ทั้งหมด; พิจารณาตรึงชุดเครื่องมือ |
-| Tool Schema ขนาดใหญ่เกินไป | ลด description และ enum เพื่อลดการใช้ token ของ prefix |
-
-ในแผง Context ของ cc-viewer เครื่องมือ MCP แสดงร่วมกับเครื่องมือในตัวในพื้นที่ Tools ให้มุมมองที่ชัดเจนของขนาด Schema แต่ละเครื่องมือและการมีส่วนร่วมต่อ prefix แคช
+In CX Viewer's Context panel, MCP tools are displayed alongside built-in and dynamic tools in the Tools area, giving you a clear view of each tool's Schema size and contribution to request shape.

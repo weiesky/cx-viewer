@@ -1,19 +1,99 @@
 import React from 'react';
-import { Tabs, Typography, Button, Tag, Empty, Space, Select, Popover, Tooltip, message } from 'antd';
+import { Tabs, Typography, Button, Tag, Empty, Space, Select, message } from 'antd';
 import { CopyOutlined, FileTextOutlined, CodeOutlined, RightOutlined, DownOutlined } from '@ant-design/icons';
 import JsonViewer from '../viewers/JsonViewer';
 import ConceptHelp from '../common/ConceptHelp';
 import { t } from '../../i18n';
 import { apiUrl } from '../../utils/apiUrl';
-import { formatTokenCount, stripPrivateKeys, hasCodexMdReminder, isCodexMdReminder, hasSkillsReminder, isSkillsReminder, extractCachedContent } from '../../utils/helpers';
+import { formatTokenCount, stripPrivateKeys, hasCodexMdReminder, isCodexMdReminder, hasSkillsReminder, isSkillsReminder } from '../../utils/helpers';
+import { getResponseTools } from '../../../lib/openai-body.js';
+import { getInputCacheUsage } from '../../../lib/token-usage.js';
 import { classifyRequest } from '../../utils/requestType';
-import { isMainAgent, isSystemText, extractDisplayText } from '../../utils/contentFilter';
+import { isMainAgent } from '../../utils/contentFilter';
 import { restoreSlimmedEntry } from '../../utils/entry-slim.js';
-import AppHeader from './AppHeader';
 import ContextTab from './ContextTab';
 import styles from './DetailPanel.module.css';
 
 const { Text, Paragraph } = Typography;
+
+function getDisplayUrl(request) {
+  return request?.proxyUrl || request?.url || '';
+}
+
+function getUrlDetails(request) {
+  const displayUrl = getDisplayUrl(request);
+  try {
+    const url = new URL(displayUrl);
+    return {
+      host: url.host,
+      path: url.pathname,
+      query: Array.from(url.searchParams.entries()),
+    };
+  } catch {
+    return { host: '', path: displayUrl, query: [] };
+  }
+}
+
+function firstValue(obj, keys) {
+  if (!obj || typeof obj !== 'object') return undefined;
+  for (const key of keys) {
+    if (obj[key] !== undefined && obj[key] !== null && obj[key] !== '') return obj[key];
+  }
+  return undefined;
+}
+
+function findModelArray(body) {
+  if (Array.isArray(body)) return body;
+  if (!body || typeof body !== 'object') return null;
+  for (const key of ['models', 'data', 'items']) {
+    if (Array.isArray(body[key])) return body[key];
+  }
+  for (const [key, value] of Object.entries(body)) {
+    if (/models?/i.test(key) && Array.isArray(value)) return value;
+  }
+  return null;
+}
+
+function normalizeModelEntry(model, idx) {
+  if (typeof model === 'string') {
+    return { id: model, label: '', detail: '', status: '', raw: model, key: `${model}-${idx}` };
+  }
+  if (!model || typeof model !== 'object') {
+    return { id: String(model ?? `model-${idx + 1}`), label: '', detail: '', status: '', raw: model, key: `model-${idx}` };
+  }
+
+  const id = firstValue(model, ['id', 'slug', 'model', 'model_id', 'modelId', 'name', 'value', 'key']) || `model-${idx + 1}`;
+  const label = firstValue(model, ['display_name', 'displayName', 'title', 'label', 'description']) || '';
+  const context = firstValue(model, ['context_window', 'contextWindow', 'context_length', 'contextLength', 'max_context_tokens', 'maxContextTokens']);
+  const status = firstValue(model, ['status', 'state']) || (
+    model.enabled === false || model.available === false || model.is_available === false
+      ? 'unavailable'
+      : (model.enabled === true || model.available === true || model.is_available === true ? 'available' : '')
+  );
+  const detail = context ? `context ${formatTokenCount(context)}` : '';
+
+  return {
+    id: String(id),
+    label: String(label || ''),
+    detail,
+    status: String(status || ''),
+    raw: model,
+    key: `${id}-${idx}`,
+  };
+}
+
+function getToolOutput(request) {
+  const responseBody = request?.response?.body;
+  if (!responseBody || typeof responseBody !== 'object') return responseBody ?? null;
+  if (Object.prototype.hasOwnProperty.call(responseBody, 'output')) return responseBody.output;
+  return responseBody;
+}
+
+function renderMaybeJson(data, textClassName) {
+  if (data == null || data === '') return <Text type="secondary">{t('ui.noBody')}</Text>;
+  if (typeof data === 'string') return <pre className={textClassName}>{data}</pre>;
+  return <JsonViewer data={stripPrivateKeys(data)} defaultExpand="root" />;
+}
 
 class DetailPanel extends React.Component {
   constructor(props) {
@@ -24,140 +104,28 @@ class DetailPanel extends React.Component {
       requestHeadersExpanded: false,
       responseHeadersExpanded: false,
       reminderFilters: null,
-      cacheHighlightIdx: null,
-      cacheHighlightFading: false,
-      cacheCollapsed: { tools: false, system: false, messages: false },
+      modelCatalogExpanded: {},
     };
-  }
-
-  _cacheUnbindScrollFade() {
-    if (this._cacheOnScrollFade && this._cacheScrollEl) {
-      this._cacheScrollEl.removeEventListener('scroll', this._cacheOnScrollFade);
-      this._cacheOnScrollFade = null;
-    }
-  }
-
-  _cacheClearAllTimers() {
-    clearTimeout(this._cacheScrollSettleTimer);
-    clearTimeout(this._cacheFadeClearTimer);
-    clearTimeout(this._cacheAutoFadeTimer);
-    clearTimeout(this._cacheHighlightDelayTimer);
-    this._cacheUnbindScrollFade();
-    if (this._cacheScrollEndHandler && this._cacheScrollEl) {
-      this._cacheScrollEl.removeEventListener('scrollend', this._cacheScrollEndHandler);
-      this._cacheScrollEndHandler = null;
-    }
-  }
-
-  componentWillUnmount() {
-    this._cacheClearAllTimers();
-  }
-
-  _cacheBindScrollFade() {
-    this._cacheUnbindScrollFade();
-    const el = this._cacheScrollEl;
-    if (!el) return;
-    this._cacheOnScrollFade = () => {
-      clearTimeout(this._cacheAutoFadeTimer);
-      this.setState({ cacheHighlightFading: true });
-      this._cacheFadeClearTimer = setTimeout(() => {
-        this.setState({ cacheHighlightIdx: null, cacheHighlightFading: false });
-      }, 3000);
-      this._cacheUnbindScrollFade();
-    };
-    el.addEventListener('scroll', this._cacheOnScrollFade, { passive: true });
-  }
-
-  scrollToCacheMsg(idx) {
-    // Auto-expand messages section if collapsed
-    if (this.state.cacheCollapsed.messages) {
-      this.setState(prev => ({ cacheCollapsed: { ...prev.cacheCollapsed, messages: false } }), () => this.scrollToCacheMsg(idx));
-      return;
-    }
-    const el = this._cacheScrollEl;
-    if (!el) return;
-    const target = el.querySelector(`[data-msg-idx="${idx}"]`);
-    if (!target) return;
-    clearTimeout(this._cacheScrollSettleTimer);
-    clearTimeout(this._cacheFadeClearTimer);
-    clearTimeout(this._cacheAutoFadeTimer);
-    clearTimeout(this._cacheHighlightDelayTimer);
-    this._cacheUnbindScrollFade();
-    if (this._cacheScrollEndHandler) {
-      el.removeEventListener('scrollend', this._cacheScrollEndHandler);
-    }
-    this.setState({ cacheHighlightIdx: null, cacheHighlightFading: false });
-
-    let scrollDone = false, minPassed = false;
-    const showHighlight = () => {
-      if (!scrollDone || !minPassed) return;
-      this.setState({ cacheHighlightIdx: idx, cacheHighlightFading: false });
-      this._cacheScrollSettleTimer = setTimeout(() => this._cacheBindScrollFade(), 200);
-      this._cacheAutoFadeTimer = setTimeout(() => {
-        if (this.state.cacheHighlightIdx === idx && !this.state.cacheHighlightFading) {
-          this.setState({ cacheHighlightFading: true });
-          this._cacheFadeClearTimer = setTimeout(() => {
-            this.setState({ cacheHighlightIdx: null, cacheHighlightFading: false });
-          }, 3000);
-          this._cacheUnbindScrollFade();
-        }
-      }, 3000);
-    };
-
-    this._cacheScrollEndHandler = () => {
-      el.removeEventListener('scrollend', this._cacheScrollEndHandler);
-      scrollDone = true;
-      showHighlight();
-    };
-    el.addEventListener('scrollend', this._cacheScrollEndHandler, { once: true });
-    this._cacheScrollSettleTimer = setTimeout(() => {
-      el.removeEventListener('scrollend', this._cacheScrollEndHandler);
-      scrollDone = true;
-      showHighlight();
-    }, 800);
-    this._cacheHighlightDelayTimer = setTimeout(() => {
-      minPassed = true;
-      showHighlight();
-    }, 500);
-
-    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   shouldComponentUpdate(nextProps, nextState) {
     if (nextProps.request !== this.props.request) {
       const isMA = isMainAgent(nextProps.request);
-      this.setState({ diffExpanded: isMA && !!nextProps.expandDiff, requestHeadersExpanded: false, responseHeadersExpanded: false, reminderFilters: null });
-      // Clean up highlight timers when switching requests
-      this._cacheClearAllTimers();
+      this.setState({ diffExpanded: isMA && !!nextProps.expandDiff, requestHeadersExpanded: false, responseHeadersExpanded: false, reminderFilters: null, modelCatalogExpanded: {} });
     }
-    const onCacheTab = nextProps.currentTab === 'kv-cache-text';
     return (
       nextProps.request !== this.props.request ||
       nextProps.currentTab !== this.props.currentTab ||
       nextProps.onTabChange !== this.props.onTabChange ||
       nextProps.selectedIndex !== this.props.selectedIndex ||
       nextProps.expandDiff !== this.props.expandDiff ||
-      nextProps.pendingCacheHighlight !== this.props.pendingCacheHighlight ||
       nextState.bodyViewMode !== this.state.bodyViewMode ||
-      (onCacheTab && nextState.cacheHighlightIdx !== this.state.cacheHighlightIdx) ||
-      (onCacheTab && nextState.cacheHighlightFading !== this.state.cacheHighlightFading) ||
       nextState.diffExpanded !== this.state.diffExpanded ||
       nextState.requestHeadersExpanded !== this.state.requestHeadersExpanded ||
       nextState.responseHeadersExpanded !== this.state.responseHeadersExpanded ||
       nextState.reminderFilters !== this.state.reminderFilters ||
-      (onCacheTab && nextState.cacheCollapsed !== this.state.cacheCollapsed)
+      nextState.modelCatalogExpanded !== this.state.modelCatalogExpanded
     );
-  }
-
-  componentDidUpdate(prevProps) {
-    const pch = this.props.pendingCacheHighlight;
-    if (pch && pch !== prevProps.pendingCacheHighlight) {
-      // Wait for KV-Cache-Text tab to render and ref to bind
-      setTimeout(() => {
-        this.scrollToCacheMsg(pch.msgIdx);
-        this.props.onCacheHighlightDone?.();
-      }, 150);
-    }
   }
 
   getCurrentRequest() {
@@ -216,10 +184,10 @@ class DetailPanel extends React.Component {
 
     // Build codexMd expand set if active
     let codexMdExpandSet = null;
-    if (this.state.reminderFilters === 'codexMd' && Array.isArray(data.messages)) {
+    if (this.state.reminderFilters === 'codexMd' && Array.isArray(data.input)) {
       codexMdExpandSet = new Set();
-      codexMdExpandSet.add(data.messages);
-      for (const msg of data.messages) {
+      codexMdExpandSet.add(data.input);
+      for (const msg of data.input) {
         if (!msg || typeof msg !== 'object') continue;
         const content = msg.content;
         if (typeof content === 'string') {
@@ -244,10 +212,10 @@ class DetailPanel extends React.Component {
 
     // Build skills expand set if active
     let skillsExpandSet = null;
-    if (this.state.reminderFilters === 'skills' && Array.isArray(data.messages)) {
+    if (this.state.reminderFilters === 'skills' && Array.isArray(data.input)) {
       skillsExpandSet = new Set();
-      skillsExpandSet.add(data.messages);
-      for (const msg of data.messages) {
+      skillsExpandSet.add(data.input);
+      for (const msg of data.input) {
         if (!msg || typeof msg !== 'object') continue;
         const content = msg.content;
         if (typeof content === 'string') {
@@ -273,7 +241,7 @@ class DetailPanel extends React.Component {
     const filterExpandSet = codexMdExpandSet || skillsExpandSet;
 
     if (reqType === 'Preflight') {
-      // Collect all object/array refs under messages and system[2] that should be expanded
+      // Collect all object/array refs under input and instructions[2] that should be expanded
       const expandRefs = new Set();
       const collectAll = (obj) => {
         if (obj && typeof obj === 'object') {
@@ -282,20 +250,20 @@ class DetailPanel extends React.Component {
           else Object.values(obj).forEach(collectAll);
         }
       };
-      if (Array.isArray(data.messages)) collectAll(data.messages);
-      if (Array.isArray(data.system) && data.system.length >= 3) collectAll(data.system[2]);
+      if (Array.isArray(data.input)) collectAll(data.input);
+      if (Array.isArray(data.instructions) && data.instructions.length >= 3) collectAll(data.instructions[2]);
       return (level, value, field) => {
         if (level < 2) return true;
         if (expandRefs.has(value)) return true;
         if (filterExpandSet && filterExpandSet.has(value)) return true;
-        // expand system itself at root level so the 3rd item is visible
-        if (level === 1 && field === 'system') return true;
+        // expand instructions itself at root level so the 3rd item is visible
+        if (level === 1 && field === 'instructions') return true;
         return false;
       };
     }
 
-    if (reqType === 'MainAgent' && Array.isArray(data.messages) && data.messages.length === 1) {
-      const msg = data.messages[0];
+    if (reqType === 'MainAgent' && Array.isArray(data.input) && data.input.length === 1) {
+      const msg = data.input[0];
       const contentArr = msg && Array.isArray(msg.content) ? msg.content : null;
       const lastContent = contentArr && contentArr.length > 0 ? contentArr[contentArr.length - 1] : null;
       const expandRefs = new Set();
@@ -307,7 +275,7 @@ class DetailPanel extends React.Component {
         }
       };
       if (lastContent) collectAll(lastContent);
-      expandRefs.add(data.messages);
+      expandRefs.add(data.input);
       if (msg && typeof msg === 'object') expandRefs.add(msg);
       if (contentArr) expandRefs.add(contentArr);
       return (level, value, field) => {
@@ -400,6 +368,171 @@ class DetailPanel extends React.Component {
     return Object.keys(result).length ? result : null;
   }
 
+  renderMetadataOverview(request) {
+    if (!request) return null;
+    const { host, path, query } = getUrlDetails(request);
+    const body = request.response?.body;
+    const modelArray = findModelArray(body);
+    const models = modelArray ? modelArray.map(normalizeModelEntry) : [];
+    const hasExpandedModel = models.some(model => !!this.state.modelCatalogExpanded[model.key]);
+    const defaultModel = firstValue(body, ['default_model', 'defaultModel', 'default_model_slug', 'defaultModelSlug', 'preferred_model', 'preferredModel']);
+    const queryItems = query.length > 0 ? query : [];
+
+    return (
+      <div className={styles.metadataSection}>
+        <div className={styles.metadataHeader}>
+          <Text strong>Codex model catalog</Text>
+          <Text type="secondary" className={styles.metadataSubtle}>{host || path}</Text>
+        </div>
+
+        <div className={styles.metadataGrid}>
+          <div className={styles.metadataStat}>
+            <span className={styles.metadataStatLabel}>Path</span>
+            <span className={styles.metadataStatValue}>{path || '-'}</span>
+          </div>
+          <div className={styles.metadataStat}>
+            <span className={styles.metadataStatLabel}>Models</span>
+            <span className={styles.metadataStatValue}>{models.length || '-'}</span>
+          </div>
+          <div className={styles.metadataStat}>
+            <span className={styles.metadataStatLabel}>Default</span>
+            <span className={styles.metadataStatValue}>{defaultModel || '-'}</span>
+          </div>
+        </div>
+
+        {queryItems.length > 0 && (
+          <div className={styles.metadataKvList}>
+            {queryItems.map(([key, value], idx) => (
+              <div key={`${key}-${idx}`} className={styles.metadataKvRow}>
+                <span className={styles.metadataKey}>{key}</span>
+                <span className={styles.metadataValue}>{value}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!request.response ? (
+          <Text type="secondary">{t('ui.responseNotCaptured')}</Text>
+        ) : models.length > 0 ? (
+          <div className={`${styles.modelCatalogList} ${hasExpandedModel ? styles.modelCatalogListExpanded : ''}`}>
+            {models.map((model) => {
+              const expanded = !!this.state.modelCatalogExpanded[model.key];
+              return (
+                <div key={model.key} className={styles.modelCatalogItem}>
+                  <button
+                    type="button"
+                    className={styles.modelCatalogRow}
+                    aria-expanded={expanded}
+                    onClick={() => this.setState(prev => ({
+                      modelCatalogExpanded: {
+                        ...prev.modelCatalogExpanded,
+                        [model.key]: !prev.modelCatalogExpanded[model.key],
+                      },
+                    }))}
+                  >
+                    <div className={styles.modelCatalogMain}>
+                      <span className={styles.modelCatalogId}>{model.id}</span>
+                      {model.label && <span className={styles.modelCatalogLabel}>{model.label}</span>}
+                    </div>
+                    <span className={styles.modelCatalogDetail}>
+                      {expanded ? <DownOutlined className={styles.modelCatalogChevron} /> : <RightOutlined className={styles.modelCatalogChevron} />}
+                      {model.detail || 'details'}
+                    </span>
+                    {model.status && <span className={styles.modelCatalogStatus}>{model.status}</span>}
+                  </button>
+                  {expanded && (
+                    <div className={styles.modelCatalogDetails}>
+                      {typeof model.raw === 'string' ? (
+                        <pre className={styles.rawTextPre}>{model.raw}</pre>
+                      ) : (
+                        <JsonViewer data={stripPrivateKeys(model.raw)} defaultExpand="root" />
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : body != null ? (
+          <div className={styles.metadataRaw}>
+            {typeof body === 'string' ? (
+              <pre className={styles.rawTextPre}>{body}</pre>
+            ) : (
+              <JsonViewer data={stripPrivateKeys(body)} defaultExpand="root" />
+            )}
+          </div>
+        ) : (
+          <Text type="secondary">{t('ui.noBody')}</Text>
+        )}
+      </div>
+    );
+  }
+
+  renderToolOverview(request) {
+    if (!request) return null;
+    const body = request.body || {};
+    const name = body.tool_name || body.event_name || 'tool';
+    const input = body.tool_input ?? body.event_input ?? {};
+    const output = getToolOutput(request);
+    const status = body.status || request.response?.body?.status || request.response?.statusText || '';
+    const callId = body._callId || body._itemId || '';
+    const threadId = body._threadId || request._agentThreadId || '';
+    const turnId = body._turnId || '';
+    const itemType = body._itemType || body.server_request_kind || request.method || '';
+
+    return (
+      <div className={styles.toolSection}>
+        <div className={styles.metadataHeader}>
+          <Text strong>Codex tool item</Text>
+          <Text type="secondary" className={styles.metadataSubtle}>{request.url}</Text>
+        </div>
+
+        <div className={styles.toolSummaryGrid}>
+          <div className={styles.metadataStat}>
+            <span className={styles.metadataStatLabel}>Tool</span>
+            <span className={styles.metadataStatValue}>{name}</span>
+          </div>
+          <div className={styles.metadataStat}>
+            <span className={styles.metadataStatLabel}>Item type</span>
+            <span className={styles.metadataStatValue}>{itemType || '-'}</span>
+          </div>
+          <div className={styles.metadataStat}>
+            <span className={styles.metadataStatLabel}>Status</span>
+            <span className={styles.metadataStatValue}>{status || '-'}</span>
+          </div>
+          <div className={styles.metadataStat}>
+            <span className={styles.metadataStatLabel}>Call ID</span>
+            <span className={styles.metadataStatValue}>{callId || '-'}</span>
+          </div>
+        </div>
+
+        <div className={styles.metadataKvList}>
+          <div className={styles.metadataKvRow}>
+            <span className={styles.metadataKey}>Thread</span>
+            <span className={styles.metadataValue}>{threadId || '-'}</span>
+          </div>
+          <div className={styles.metadataKvRow}>
+            <span className={styles.metadataKey}>Turn</span>
+            <span className={styles.metadataValue}>{turnId || '-'}</span>
+          </div>
+        </div>
+
+        <div className={styles.toolPayloadGrid}>
+          <div className={styles.toolPayload}>
+            <div className={styles.toolPayloadHeader}>Input</div>
+            <div className={styles.toolPayloadBody}>{renderMaybeJson(input, styles.rawTextPre)}</div>
+          </div>
+          <div className={styles.toolPayload}>
+            <div className={styles.toolPayloadHeader}>Output</div>
+            <div className={styles.toolPayloadBody}>
+              {request.response ? renderMaybeJson(output, styles.rawTextPre) : <Text type="secondary">{t('ui.responseNotCaptured')}</Text>}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   render() {
     let request = this.getCurrentRequest();
     const { currentTab, onTabChange } = this.props;
@@ -414,6 +547,14 @@ class DetailPanel extends React.Component {
 
     const time = new Date(request.timestamp).toLocaleString('zh-CN');
     const statusOk = request.response && request.response.status < 400;
+    const nextReq = this.props.requests && this.props.selectedIndex != null ? this.props.requests[this.props.selectedIndex + 1] : null;
+    const requestClass = classifyRequest(request, nextReq);
+    const metadataOverview = requestClass.type === 'Metadata' && requestClass.subType === 'Models'
+      ? this.renderMetadataOverview(request)
+      : null;
+    const toolOverview = requestClass.type === 'Tool'
+      ? this.renderToolOverview(request)
+      : null;
 
     // 一次 render 只解析一次上一条 MainAgent 请求——Body Diff 与 ContextTab 的 tools diff 复用同一结果，
     // 避免 getPrevMainAgentRequest()（内部可能跑 restoreSlimmedEntry 重建）被重复调用两次。
@@ -505,6 +646,7 @@ class DetailPanel extends React.Component {
               {this.state.requestHeadersExpanded && this.renderHeaders(request.headers)}
             </div>
             {diffBlock}
+            {toolOverview}
             <div>
               <div className={styles.bodyHeader}>
                 <Text strong className={styles.bodyLabel}>Body<ConceptHelp doc="BodyFields" /></Text>
@@ -592,171 +734,17 @@ class DetailPanel extends React.Component {
         ),
       },
       {
-        key: 'kv-cache-text',
-        label: <span>KV-Cache-Text <ConceptHelp doc="KVCacheContent" /></span>,
-        children: (
-          <div className={`${styles.tabContent} ${styles.cacheTabContent}`}>
-            {(() => {
-              const cached = extractCachedContent([request]);
-              // 按请求 key 缓存最后一次有效的 token 值，避免同请求内闪烁且不串到别的请求
-              const reqKey = request.timestamp + '|' + request.url;
-              if (cached && (cached.cacheCreateTokens > 0 || cached.cacheReadTokens > 0)) {
-                this._lastCachedTokensKey = reqKey;
-                this._lastCachedTokens = { cacheCreateTokens: cached.cacheCreateTokens, cacheReadTokens: cached.cacheReadTokens };
-              }
-              if (!cached || (cached.system.length === 0 && cached.messages.length === 0 && cached.tools.length === 0)) {
-                return <Empty description={t('ui.noCachedContent')} image={Empty.PRESENTED_IMAGE_SIMPLE} />;
-              }
-              const buildPlainText = () => {
-                const parts = [];
-                if (cached.tools.length > 0) {
-                  // Wrap in <tools>...</tools> with 2-space indent to match on-model format.
-                  const indented = cached.tools
-                    .map(xml => xml.split('\n').map(l => (l ? '  ' + l : l)).join('\n'))
-                    .join('\n');
-                  parts.push(`<tools>\n${indented}\n</tools>`);
-                }
-                if (cached.system.length > 0) {
-                  // Wrap system content in <system-reminder> so the copied text carries
-                  // elevated salience when pasted into another model call.
-                  parts.push(`<system-reminder>\n${cached.system.join('\n\n')}\n</system-reminder>`);
-                }
-                if (cached.messages.length > 0) {
-                  cached.messages.forEach(t => parts.push(t));
-                }
-                return parts.join('\n\n');
-              };
-              const userPrompts = cached.messages
-                .map((text, i) => ({ text, msgIdx: i }))
-                .filter(({ text }) => text.startsWith('[user]'))
-                .map(({ text, msgIdx }) => {
-                  const disp = extractDisplayText(text.replace(/^\[user\]\s*/, ''));
-                  if (!disp) return { cleaned: '', msgIdx };
-                  const segments = AppHeader.parseSegments(disp);
-                  const cleaned = segments
-                    .filter(s => s.type === 'text')
-                    .map(s => s.content.trim())
-                    .filter(s => s && !isSystemText(s))
-                    .join(' ')
-                    .trim();
-                  return { cleaned, msgIdx };
-                })
-                .filter(({ cleaned }) => {
-                  if (!cleaned) return false;
-                  if (/Implement the following plan:/i.test(cleaned)) return false;
-                  return true;
-                });
-              const userPromptNavList = userPrompts.length > 0 ? (
-                <div className={styles.userPromptList}>
-                  {userPrompts.map(({ cleaned, msgIdx }) => (
-                    <div key={msgIdx} className={styles.userPromptItem}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-primary-bg-lighter)'; e.currentTarget.style.color = 'var(--text-white)'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'var(--text-secondary)'; }}
-                      onClick={() => this.scrollToCacheMsg(msgIdx)}>
-                      {cleaned}
-                    </div>
-                  ))}
-                </div>
-              ) : null;
-              return (
-                <div className={styles.cacheContent}>
-                  {(() => {
-                    const hasTokens = cached.cacheCreateTokens > 0 || cached.cacheReadTokens > 0;
-                    const displayTokens = hasTokens ? cached : (this._lastCachedTokensKey === reqKey ? this._lastCachedTokens : null);
-                    return (displayTokens || userPromptNavList) ? (
-                    <div className={styles.cacheTokenBar}>
-                      {displayTokens && <>
-                        {t('ui.tokens')}: <span className={styles.cacheTokenWrite}>write {formatTokenCount(displayTokens.cacheCreateTokens)}</span>
-                        {' / '}
-                        <span className={styles.cacheTokenRead}>read {formatTokenCount(displayTokens.cacheReadTokens)}</span>
-                        <Tooltip title={t('ui.copyAllCacheText')}>
-                          <CopyOutlined
-                            className={styles.cacheCopyIcon}
-                            onClick={() => {
-                              navigator.clipboard.writeText(buildPlainText()).then(() => {
-                                message.success(t('ui.copied'));
-                              }).catch(() => {});
-                            }}
-                          />
-                        </Tooltip>
-                      </>}
-                      {userPromptNavList && (
-                        <Popover content={userPromptNavList} trigger="hover" placement="left">
-                          <span className={styles.userPromptNavBtn}>{t('ui.userPromptNav')}</span>
-                        </Popover>
-                      )}
-                    </div>
-                    ) : null;
-                  })()}
-                  <div className={styles.cacheScrollArea} ref={el => { this._cacheScrollEl = el; }}>
-                    {cached.tools.length > 0 && (
-                      <div className={styles.cacheSectionBlock}>
-                        <div className={styles.cacheSectionHeader} onClick={() => this.setState(prev => ({ cacheCollapsed: { ...prev.cacheCollapsed, tools: !prev.cacheCollapsed.tools } }))}>
-                          <span className={styles.cacheCollapseArrow} style={{ transform: this.state.cacheCollapsed.tools ? 'rotate(-90deg)' : 'rotate(0deg)' }}>▼</span>
-                          {t('ui.tools')} ({cached.tools.length})
-                        </div>
-                        {!this.state.cacheCollapsed.tools && cached.tools.map((text, i) => (
-                          <pre key={i} className={styles.cachePre}>{text}</pre>
-                        ))}
-                      </div>
-                    )}
-                    {cached.system.length > 0 && (
-                      <div className={styles.cacheSectionBlock}>
-                        <div className={styles.cacheSectionHeader} onClick={() => this.setState(prev => ({ cacheCollapsed: { ...prev.cacheCollapsed, system: !prev.cacheCollapsed.system } }))}>
-                          <span className={styles.cacheCollapseArrow} style={{ transform: this.state.cacheCollapsed.system ? 'rotate(-90deg)' : 'rotate(0deg)' }}>▼</span>
-                          {t('ui.systemPrompt')} ({cached.system.length})
-                        </div>
-                        {!this.state.cacheCollapsed.system && cached.system.map((text, i) => (
-                          <pre key={i} className={styles.cachePreSystem}>{text}</pre>
-                        ))}
-                      </div>
-                    )}
-                    {cached.messages.length > 0 && (
-                      <div className={styles.cacheSectionBlock}>
-                        <div className={styles.cacheSectionHeader} onClick={() => this.setState(prev => ({ cacheCollapsed: { ...prev.cacheCollapsed, messages: !prev.cacheCollapsed.messages } }))}>
-                          <span className={styles.cacheCollapseArrow} style={{ transform: this.state.cacheCollapsed.messages ? 'rotate(-90deg)' : 'rotate(0deg)' }}>▼</span>
-                          {t('ui.messages')} ({cached.messages.length})
-                        </div>
-                        {!this.state.cacheCollapsed.messages && cached.messages.map((text, i) => {
-                          const isHl = i === this.state.cacheHighlightIdx;
-                          const hlStyle = isHl
-                            ? (this.state.cacheHighlightFading
-                              ? { boxShadow: '0 0 10px rgba(22,104,220,0)', transition: 'box-shadow 3s ease-out', position: 'relative' }
-                              : { boxShadow: '0 0 10px rgba(22,104,220,0.6)', transition: 'box-shadow 0.2s ease-in', position: 'relative' })
-                            : {};
-                          return (
-                            <pre key={i} data-msg-idx={i} className={styles.cachePre} style={hlStyle}>
-                              {isHl && (
-                                <svg className={styles.cacheHighlightSvg} style={{ opacity: this.state.cacheHighlightFading ? 0 : 1, transition: this.state.cacheHighlightFading ? 'opacity 3s ease-out' : undefined }} preserveAspectRatio="none">
-                                  <rect x="0.5" y="0.5" width="calc(100% - 1px)" height="calc(100% - 1px)" rx="4" ry="4"
-                                    fill="none" stroke="#1668dc" strokeWidth="1" strokeDasharray="6 4">
-                                    <animate attributeName="stroke-dashoffset" from="0" to="-100" dur="4s" repeatCount="indefinite" />
-                                  </rect>
-                                </svg>
-                              )}
-                              {text}
-                            </pre>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-        ),
-      },
-      {
         key: 'context',
-        label: 'Context',
+        label: toolOverview ? 'Tool' : metadataOverview ? 'Content' : 'Context',
         children: (
-          <div className={`${styles.tabContent} ${styles.cacheTabContent}`}>
-            <ContextTab
-              body={request.body}
-              response={request.response?.body}
-              prevTools={prevMainAgent?.body?.tools}
-            />
+          <div className={`${styles.tabContent} ${styles.contextTabContent}`}>
+            {toolOverview || metadataOverview || (
+              <ContextTab
+                body={request.body}
+                response={request.response?.body}
+                prevTools={getResponseTools(prevMainAgent?.body)}
+              />
+            )}
           </div>
         ),
       },
@@ -766,11 +754,8 @@ class DetailPanel extends React.Component {
     const tokenStats = usage ? (() => {
       const input = usage.input_tokens || 0;
       const output = usage.output_tokens || 0;
-      const cacheCreate = usage.cache_creation_input_tokens || 0;
-      const cacheRead = usage.cache_read_input_tokens || 0;
-      const totalInput = input + cacheCreate + cacheRead;
-      const hitRate = totalInput > 0 ? ((cacheRead / totalInput) * 100).toFixed(1) : '0.0';
-      return { input, output, cacheCreate, cacheRead, hitRate };
+      const cache = getInputCacheUsage(usage);
+      return { input, output, cacheRead: cache.read, cacheWrite: cache.write, hasCacheDetails: cache.hasCacheDetails };
     })() : null;
 
     return (
@@ -801,15 +786,13 @@ class DetailPanel extends React.Component {
                     <span className={styles.tokenTd}>{t('ui.stats.input')}: {formatTokenCount(tokenStats.input)}</span>
                     <span className={styles.tokenTd}>{t('ui.stats.output')}: {formatTokenCount(tokenStats.output)}</span>
                   </div>
-                  <div className={`${styles.tokenRow} ${styles.tokenRowBorder}`}>
-                    <span className={styles.tokenLabel}>{t('ui.stats.cache')}</span>
-                    <span className={styles.tokenTd}>{t('ui.stats.create')}: {formatTokenCount(tokenStats.cacheCreate)}</span>
-                    <span className={styles.tokenTd}>{t('ui.stats.read')}: {formatTokenCount(tokenStats.cacheRead)}</span>
-                  </div>
-                </div>
-                <div className={styles.tokenHitRate}>
-                  <div>{tokenStats.hitRate}%</div>
-                  <div className={styles.tokenHitRateLabel}>{t('ui.hitRate')}</div>
+                  {tokenStats.hasCacheDetails && (
+                    <div className={`${styles.tokenRow} ${styles.tokenRowBorder}`}>
+                      <span className={styles.tokenLabel}>{t('ui.stats.cache')}</span>
+                      <span className={styles.tokenTd}>{t('ui.stats.cacheRead')}: {formatTokenCount(tokenStats.cacheRead)}</span>
+                      <span className={styles.tokenTd}>{t('ui.stats.cacheWrite')}: {formatTokenCount(tokenStats.cacheWrite)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

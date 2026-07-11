@@ -15,7 +15,7 @@
 import { isMutatingCommand } from '../../../utils/commandValidator.js';
 
 // 文件修改类工具：触发文件浏览器与 Git 面板刷新
-const FILE_MUTATING_TOOLS = new Set(['Write', 'Edit', 'MultiEdit', 'NotebookEdit']);
+const FILE_MUTATING_TOOLS = new Set(['apply_patch']);
 
 // _processedToolIds 去重 Set 上限与砍头后的保留量；FIFO LRU 实现
 //
@@ -78,7 +78,7 @@ export class ToolFileChangeController {
     if (FILE_MUTATING_TOOLS.has(toolName)) {
       flags.needFileRefresh = true;
       flags.needGitRefresh = true;
-    } else if (toolName === 'Bash' && input && input.command && isMutatingCommand(input.command)) {
+    } else if (toolName === 'shell_command' && input && input.command && isMutatingCommand(input.command)) {
       flags.needFileRefresh = true;
       flags.needGitRefresh = true;
     }
@@ -110,7 +110,7 @@ export class ToolFileChangeController {
     // 基于 tool_result 触发刷新（确保工具已执行完且未失败），反查 tool_use 索引拿 toolName/input。
     //
     // 为什么改成 tool_result 触发：
-    // - tool_use 写入 jsonl 时工具尚未执行（特别是 Bash 长命令、需 permission 审批的工具）
+    // - tool_use 写入 jsonl 时工具尚未执行（特别是 shell_command 长命令、需 permission 审批的工具）
     // - tool_result 写入 = 工具已执行完；is_error=true 时跳过避免无谓刷新
     //
     // 为什么扫 props.requests：subAgent / teammate（Task 工具调用、Agent Team）
@@ -150,8 +150,8 @@ export class ToolFileChangeController {
     }
     for (const req of requests) {
       collectToolUseBlocks(req.response?.body?.content, toolUseMap);
-      if (Array.isArray(req.body?.messages)) {
-        for (const msg of req.body.messages) {
+      if (Array.isArray(req.body?.input)) {
+        for (const msg of req.body.input) {
           if (msg.role === 'assistant') collectToolUseBlocks(msg.content, toolUseMap);
         }
       }
@@ -169,8 +169,8 @@ export class ToolFileChangeController {
       }
     }
     for (const req of requests) {
-      if (!Array.isArray(req.body?.messages)) continue;
-      for (const msg of req.body.messages) {
+      if (!Array.isArray(req.body?.input)) continue;
+      for (const msg of req.body.input) {
         if (msg.role === 'user' && Array.isArray(msg.content)) {
           for (const block of msg.content) this._processToolResult(block, toolUseMap, flags);
         }

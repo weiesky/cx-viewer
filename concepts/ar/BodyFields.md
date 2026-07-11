@@ -1,42 +1,39 @@
-# شرح حقول Request Body
+# Request Body Fields
 
-شرح الحقول العليا لجسم طلب `/v1/messages` في Claude API.
+Field descriptions for CX-Viewer's normalized Codex request body. The original source may be OpenAI Responses API traffic, Codex app-server notifications, or Codex SDK events; CX-Viewer maps them into one stable viewer shape.
 
-## قائمة الحقول
+## Field List
 
-| الحقل | النوع | الشرح |
-|------|------|------|
-| **model** | string | اسم النموذج المستخدم، مثل `claude-opus-4-6`، `claude-sonnet-4-6` |
-| **messages** | array | سجل رسائل المحادثة. تحتوي كل رسالة على `role` (user/assistant) و`content` (مصفوفة من الكتل مثل النصوص والصور وtool_use وtool_result) |
-| **system** | array | System prompt. يتضمن التعليمات الأساسية لـ Codex وتعليمات استخدام الأدوات ومعلومات البيئة ومحتوى CLAUDE.md وغيرها. الكتل التي تحمل `cache_control` يتم تخزينها مؤقتًا عبر prompt caching |
-| **tools** | array | قائمة تعريفات الأدوات المتاحة. تحتوي كل أداة على `name` و`description` و`input_schema` (JSON Schema). عادةً يمتلك MainAgent أكثر من 20 أداة، بينما يمتلك SubAgent عددًا قليلًا فقط |
-| **metadata** | object | البيانات الوصفية للطلب، تتضمن عادةً `user_id` لتحديد هوية المستخدم |
-| **max_tokens** | number | الحد الأقصى لعدد الرموز (tokens) في رد النموذج الواحد، مثل `16000`، `64000` |
-| **thinking** | object | تكوين التفكير الموسع. `type: "enabled"` يُفعّل وضع التفكير، و`budget_tokens` يتحكم في الحد الأقصى لرموز التفكير |
-| **context_management** | object | تكوين إدارة السياق. `truncation: "auto"` يسمح لـ Codex باقتطاع سجل الرسائل الطويل تلقائيًا |
-| **output_config** | object | تكوين المخرجات، مثل إعداد `format` |
-| **stream** | boolean | ما إذا كان يتم تفعيل الاستجابة المتدفقة. يستخدم Codex دائمًا `true` |
+| Field | Type | Description |
+|-------|------|-------------|
+| **model** | string | The model name selected by Codex, e.g. a `gpt-*` model |
+| **input** | string/array | OpenAI Responses API input. Codex usually uses the array form for user input, assistant history, tool results, and other context items |
+| **instructions** | string/array | OpenAI Responses API instructions. This can include Codex core directives, tool usage guidelines, environment information, and `AGENTS.md` project instructions |
+| **tools** | array | Available tool definitions or compact tool descriptors. MainAgent usually has a broader tool set than SubAgent |
+| **metadata** | object | Request metadata such as `thread_id`, `turn_id`, `cwd`, SDK/app-server source, and subAgent parent-thread information |
+| **max_tokens** | number | Maximum number of tokens for a single model response, e.g. `16000`, `64000` |
+| **reasoning_effort** | string | Reasoning effort when reported by Codex |
+| **reasoning_summary** | string | Reasoning summary mode when reported by Codex |
+| **approval_policy** | string | Codex approval policy for the turn |
+| **sandbox_policy** | object/string | Sandbox policy for the turn when available |
+| **stream** | boolean | Whether the OpenAI Responses API request used streaming; app-server/SDK entries are normalized as streamed turns |
 
-## بنية messages
+## input Structure
 
-حقل `content` لكل رسالة هو مصفوفة من الكتل، والأنواع الشائعة هي:
+When `input` is an array, each input item usually contains `role` and `content`. `content` can be an array of blocks. Common types include:
 
-- **text**: محتوى نصي عادي
-- **tool_use**: استدعاء النموذج لأداة (يحتوي على `name`، `input`)
-- **tool_result**: نتيجة تنفيذ الأداة (يحتوي على `tool_use_id`، `content`)
-- **image**: محتوى صورة (base64 أو URL)
-- **thinking**: عملية تفكير النموذج (وضع التفكير الموسع)
+- **text**: Plain text content
+- **tool_use**: Model tool invocation (contains `name`, `input`)
+- **tool_result**: Tool execution result (contains `tool_use_id`, `content`)
+- **image/input_image/local_image**: Image content or an attached local image reference
+- **thinking**: Model's thinking process (extended thinking mode)
 
-## بنية system
+## instructions Structure
 
-تتضمن مصفوفة system prompt عادةً:
+`instructions` typically contains:
 
-1. **تعليمات الوكيل الأساسية** ("You are Codex...")
-2. **مواصفات استخدام الأدوات**
-3. **محتوى CLAUDE.md** (تعليمات على مستوى المشروع)
-4. **تذكيرات المهارات** (skills reminder)
-5. **معلومات البيئة** (نظام التشغيل، الصدفة، حالة git، إلخ) — في الواقع يعتمد Codex بشكل كبير على git. إذا كان المشروع يحتوي على مستودع git، يمكن لـ Codex إظهار فهم أفضل للمشروع، بما في ذلك القدرة على جلب التغييرات البعيدة وسجلات الالتزام للمساعدة في التحليل
-
-الكتل المعلّمة بـ `cache_control: { type: "ephemeral" }` يتم تخزينها مؤقتًا بواسطة Anthropic API لمدة 5 دقائق. عند إصابة الذاكرة المؤقتة يتم المحاسبة كـ `cache_read_input_tokens` (أقل بكثير من `input_tokens`).
-
-> **ملاحظة**: بالنسبة للعملاء الخاصين مثل Codex، لا يعتمد خادم Anthropic فعليًا بشكل كامل على خاصية `cache_control` في الطلب لتحديد سلوك التخزين المؤقت. يقوم الخادم بتنفيذ سياسة التخزين المؤقت تلقائيًا لحقول معينة (مثل system prompt وتعريفات الأدوات)، حتى لو لم يحمل الطلب علامة `cache_control` بشكل صريح. لذلك، عندما لا ترى هذه الخاصية في جسم الطلب، لا تحتاج إلى الاستغراب — فالخادم قد أنجز عملية التخزين المؤقت في الكواليس، لكنه لم يكشف هذه المعلومات للعميل. هذا تفاهم ضمني بين Codex وAnthropic API.
+1. **Core agent instructions** ("You are Codex...")
+2. **Tool usage guidelines**
+3. **AGENTS.md contents** (project-level instructions)
+4. **Skills reminders** (skills reminder)
+5. **Environment information** (OS, shell, git status, etc.) — In fact, Codex relies heavily on git. If a project has a git repository, Codex demonstrates a better understanding of the project, including the ability to pull remote changes and commit history to assist with analysis

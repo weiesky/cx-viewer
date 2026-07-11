@@ -2,7 +2,7 @@
 
 ## Contexto
 
-El MainAgent de Claude Code utiliza un mecanismo de envío de contexto completo: cada solicitud incluye el historial completo de la conversación, el system prompt, las definiciones de herramientas, etc. Esto significa que a medida que avanza la conversación, el cuerpo de la solicitud se vuelve cada vez más grande, y es difícil identificar rápidamente "qué se agregó en esta ronda" al ver el Body sin procesar.
+El MainAgent de Codex utiliza un mecanismo de envío de contexto completo: cada solicitud incluye el historial completo de la conversación, el system prompt, las definiciones de herramientas, etc. Esto significa que a medida que avanza la conversación, el cuerpo de la solicitud se vuelve cada vez más grande, y es difícil identificar rápidamente "qué se agregó en esta ronda" al ver el Body sin procesar.
 
 Body Diff JSON resuelve exactamente este problema: compara automáticamente los cuerpos de dos solicitudes MainAgent consecutivas, extrae la parte incremental y te permite ver de un vistazo el contenido realmente nuevo en esta solicitud.
 

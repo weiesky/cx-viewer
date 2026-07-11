@@ -1,7 +1,6 @@
 import React, { memo, useMemo } from 'react';
 import { Popover } from 'antd';
 import { t } from '../../i18n';
-import { pickHeadlineWindow } from '../../utils/rateLimitParser';
 import styles from './UsageWindowPill.module.css';
 
 // 与 LiveTagPopover 同款：静态 overlayInnerStyle 提到模块顶层,避免每次 render 新建字面量。
@@ -30,26 +29,72 @@ function resetText(resetAt) {
 
 function windowName(w) {
   const id = typeof w === 'string' ? w : w?.id;
-  if (typeof w === 'object' && w?.label) return w.label;
-  return id === '7d' ? t('ui.usage.weekly') : t('ui.usage.fiveHour');
+  if (id === '7d') return t('ui.usage.weekly');
+  if (id === '5h') return t('ui.usage.fiveHour');
+  return localizedWindowName(w);
 }
 
 function windowShort(w) {
   const id = typeof w === 'string' ? w : w?.id;
-  if (typeof w === 'object' && w?.label) return w.label.replace(/^Codex\s+/i, '');
-  return id === '7d' ? t('ui.usage.weeklyShort') : '5h';
+  if (id === '7d') return t('ui.usage.weeklyShort');
+  if (id === '5h') return '5h';
+  return localizedWindowName(w, true);
+}
+
+function slotInfo(w) {
+  const id = typeof w === 'string' ? w : w?.id;
+  const label = typeof w === 'object' && typeof w?.label === 'string' ? w.label.trim() : '';
+  const labelMatch = label.match(/^(.*?)\s+(primary|secondary)$/i);
+  if (labelMatch) return { name: labelMatch[1].trim(), slot: labelMatch[2].toLowerCase() };
+  const idMatch = String(id || '').match(/(?:^|:)(primary|secondary)$/i);
+  if (idMatch) return { name: label, slot: idMatch[1].toLowerCase() };
+  return null;
+}
+
+function localizedSlot(slot, short = false) {
+  if (slot === 'primary') return t(short ? 'ui.usage.primaryShort' : 'ui.usage.primary');
+  if (slot === 'secondary') return t(short ? 'ui.usage.secondaryShort' : 'ui.usage.secondary');
+  return slot;
+}
+
+function windowMinutesLabel(w, short = false) {
+  const minutes = typeof w === 'object' ? Number(w?.windowMinutes) : NaN;
+  if (!Number.isFinite(minutes)) return null;
+  if (minutes === 300) return short ? '5h' : t('ui.usage.fiveHour');
+  if (minutes === 10080) return short ? t('ui.usage.weeklyShort') : t('ui.usage.weekly');
+  return null;
+}
+
+function localizedWindowName(w, short = false) {
+  const id = typeof w === 'string' ? w : w?.id;
+  const label = typeof w === 'object' && typeof w?.label === 'string' ? w.label.trim() : '';
+  const minutesLabel = windowMinutesLabel(w, short);
+  const slot = slotInfo(w);
+  if (minutesLabel) {
+    if (short || !slot?.name) return minutesLabel;
+    return t('ui.usage.namedSlot', { name: slot.name, slot: minutesLabel });
+  }
+  if (slot) {
+    const slotLabel = localizedSlot(slot.slot, short);
+    if (short || !slot.name) return slotLabel;
+    return t('ui.usage.namedSlot', { name: slot.name, slot: slotLabel });
+  }
+  if (id === 'requests' || /^requests$/i.test(label)) return t(short ? 'ui.usage.requestsShort' : 'ui.usage.requests');
+  if (id === 'tokens' || /^tokens$/i.test(label)) return t(short ? 'ui.usage.tokensShort' : 'ui.usage.tokens');
+  return label || String(id || '');
 }
 
 function UsageWindowPill({ planUsage, authType }) {
-  const headline = useMemo(() => pickHeadlineWindow(planUsage), [planUsage]);
+  const windows = Array.isArray(planUsage?.windows) ? planUsage.windows : [];
+  const summaryWindow = useMemo(() => windows[0] || null, [windows]);
 
-  // 只保留填充条宽度(--usage-percent);颜色统一走 CSS 里的 --text-disabled，不再按阈值变色。
+  // 状态栏只展示第一项，完整窗口列表留在 hover 详情里。
   const triggerStyle = useMemo(() => {
-    const pct = headline && headline.utilization != null ? Math.round(headline.utilization * 100) : 0;
+    const pct = summaryWindow && summaryWindow.utilization != null ? Math.round(summaryWindow.utilization * 100) : 0;
     return {
       '--usage-percent': `${Math.min(100, Math.max(0, pct))}%`,
     };
-  }, [headline]);
+  }, [summaryWindow]);
 
   // 没有套餐限流数据时:OAuth(订阅)显示静默占位 pill,等待数据;其余(API Key / 未知)不渲染。
   if (!planUsage) {
@@ -72,13 +117,7 @@ function UsageWindowPill({ planUsage, authType }) {
     return null;
   }
 
-  // pill 文案:同时展示已有的两个窗口(5h / 周),例如 "5h 19% · 周 52%"。
-  const pillLabel = planUsage.windows
-    .filter((w) => w.utilization != null)
-    // 简化:周窗口(7d)未超过 60% 时不在 footer pill 上展示(只在 hover 详情里看);5h 照常显示。
-    .filter((w) => w.id !== '7d' || w.utilization > 0.6)
-    .map((w) => `${windowShort(w)} ${fmtPct(w.utilization)}`)
-    .join(' · ');
+  const pillLabel = summaryWindow ? `${windowShort(summaryWindow)} ${fmtPct(summaryWindow.utilization)}` : '—';
 
   const popContent = (
     <div className={styles.pop}>
@@ -86,7 +125,7 @@ function UsageWindowPill({ planUsage, authType }) {
       {/* 无边框 table 让「窗口名 / 血条 / 重置时间」三列对齐;百分比用 50px 血条 + 数字叠加展示。 */}
       <table className={styles.popTable}>
         <tbody>
-          {planUsage.windows.map((w) => {
+          {windows.map((w) => {
             const rt = resetText(w.resetAt);
             const pct = w.utilization != null ? Math.min(100, Math.max(0, Math.round(w.utilization * 100))) : 0;
             return (

@@ -28,12 +28,9 @@ CX-Viewer 归一化后的 Codex 响应体字段说明。
 | 字段 | 说明 |
 |------|------|
 | **input_tokens** | 未命中缓存的输入 token 数（需要全价计费） |
-| **cache_read_input_tokens** | 命中缓存的 token 数（缓存读取，计费远低于普通输入） |
 | **output_tokens** | 模型输出的 token 数 |
 | **reasoning_output_tokens** | 来源协议上报的推理 token 数 |
 | **total_tokens** | 来源协议上报的总 token 数 |
-
-OpenAI Responses usage 可能把缓存 token 放在 `input_tokens_details.cached_tokens` 中；CX-Viewer 会归一化到 `cache_read_input_tokens`，并从展示用的 `input_tokens` 中扣除，避免重复计数。
 
 ## stop_reason 含义
 

@@ -1,20 +1,20 @@
 # SubAgent: Search
 
-## Определение
+## Definition
 
-Search — это тип под-агента, запускаемого главным агентом Claude Code для выполнения поиска по кодовой базе. Он выполняет целенаправленный поиск файлов и содержимого с помощью таких инструментов, как Glob, Grep и Read, а затем возвращает результаты родительскому агенту.
+Search is a sub-agent type spawned by Codex's main agent to perform codebase searches. It discovers available search and reading capabilities through `tool_search`, then returns the results to the parent agent.
 
-## Поведение
+## Behavior
 
-- Запускается автоматически, когда главному агенту необходимо выполнить поиск или исследовать кодовую базу
-- Работает в изолированном контексте с доступом только для чтения
-- Использует Glob для сопоставления шаблонов файлов, Grep для поиска по содержимому и Read для инспекции файлов
-- Возвращает результаты поиска родительскому агенту для дальнейшей обработки
+- Spawned automatically when the main agent needs to search or explore the codebase
+- Runs in an isolated context with read-only access
+- Uses current Codex/deferred tools for file pattern matching, content search, and file inspection
+- Returns search results to the parent agent for further processing
 
-## Когда появляется
+## When It Appears
 
-Под-агенты Search обычно появляются когда:
+Search sub-agents typically appear when:
 
-1. Главному агенту необходимо найти конкретные файлы, функции или паттерны кода
-2. Пользователь запрашивает широкое исследование кодовой базы
-3. Агент изучает зависимости, ссылки или паттерны использования
+1. The main agent needs to find specific files, functions, or code patterns
+2. A broad codebase exploration is requested by the user
+3. The agent is investigating dependencies, references, or usage patterns

@@ -29,7 +29,6 @@ class App extends AppBase {
       leftPanelWidth: 380,
       terminalVisible: true,
       currentTab: 'context',
-      pendingCacheHighlight: null,
       contextBarSlot: null, // DOM slot registered by TerminalPanel toolbar / ChatInputBar bottom button area; AppHeader renders the usage pill bar there via createPortal
       planUsage: null, // Plan usage snapshot (OAuth only): auto-follows the latest response, updates only when requests reference changes and the parsed value differs (see componentDidUpdate)
       installMethod: null, // 'electron' | 'brew' | 'npm': fetched on demand when opening the version-info modal, for precise upgrade command matching
@@ -233,18 +232,6 @@ class App extends AppBase {
     this.setState({ currentTab: key });
   };
 
-  handleCacheHighlightDone = () => { this.setState({ pendingCacheHighlight: null }); };
-
-  handleNavigateCacheMsg = (msgIdx) => {
-    const filteredRequests = visibleRequests(this.state.requests, this.state.showAll);
-    let targetIdx = -1;
-    for (let i = filteredRequests.length - 1; i >= 0; i--) {
-      if (isMainAgent(filteredRequests[i])) { targetIdx = i; break; }
-    }
-    if (targetIdx < 0) return;
-    this.setState({ selectedIndex: targetIdx, scrollCenter: true, currentTab: 'kv-cache-text', pendingCacheHighlight: { msgIdx, key: Date.now() } });
-  };
-
   handleResize = (clientX) => {
     const container = this.mainContainerRef.current;
     if (!container) return;
@@ -304,7 +291,7 @@ class App extends AppBase {
   render() {
     const { filteredRequests, selectedRequest, fileLoading, fileLoadingCount, mainAgentSessions, viewMode } = this.renderPrepare();
     // 「仅展示当前会话」锁定：把传给 ChatView 的会话切到「以 pin 会话结尾」，
-    // 让 pin 会话从 ChatView 视角即最后一个会话（LR 卡片 / 审批 modal 等既有逻辑原样可用）。
+    // 让 pin 会话从 ChatView 视角即最后一个会话（审批 modal 等既有逻辑原样可用）。
     const { sessions: displaySessions, upperBoundTs: sessionUpperBoundTs } = this._displaySessionsFor(mainAgentSessions);
     const { selectedIndex, leftPanelWidth, currentTab } = this.state;
     const prefs = this._prefValues();
@@ -353,8 +340,6 @@ class App extends AppBase {
               requestCount={filteredRequests.length}
               requests={filteredRequests}
               viewMode={viewMode}
-              cacheExpireAt={this.state.cacheExpireAt}
-              cacheType={this.state.cacheType}
               onToggleViewMode={this.handleToggleViewMode}
               onLangChange={this.handleLangChange}
               onImportLocalLogs={this.handleImportLocalLogs}
@@ -374,8 +359,6 @@ class App extends AppBase {
               contextWindow={this.state.contextWindow}
               contextBarOptimistic={this.state.contextBarOptimistic}
               contextBarLocked={this.state.contextBarLocked}
-              onNavigateCacheMsg={this.handleNavigateCacheMsg}
-              serverCachedContent={this.state.serverCachedContent || this._lastKvCacheContent}
               resumeAutoChoice={this.state.resumeAutoChoice}
               onResumeAutoChoiceToggle={this.handleResumeAutoChoiceToggle}
               onResumeAutoChoiceChange={this.handleResumeAutoChoiceChange}
@@ -383,8 +366,8 @@ class App extends AppBase {
               onThemeColorChange={this.handleThemeColorChange}
               displayScale={this.state.displayScale}
               onDisplayScaleChange={this.handleDisplayScaleChange}
-              autoApproveSeconds={this.state.autoApproveSeconds}
-              onAutoApproveChange={this.handleAutoApproveChange}
+              approvalsReviewer={this.state.approvalsReviewer}
+              onApprovalsReviewerChange={this.handleApprovalsReviewerChange}
               approvalPrefs={this.state.approvalPrefs}
               onApprovalPrefsChange={this.handleApprovalPrefsChange}
               preferences={this.context?.preferences}
@@ -462,7 +445,6 @@ class App extends AppBase {
                       scrollCenter={this.state.scrollCenter}
                       onSelect={this.handleSelectRequest}
                       onScrollDone={this.handleScrollDone}
-                      cacheLossMap={this._cacheLossMap}
                     />
                   </div>
                 </div>
@@ -479,15 +461,13 @@ class App extends AppBase {
                     onTabChange={this.handleTabChange}
                     onViewInChat={this.handleViewInChat}
                     expandDiff={prefs.expandDiff}
-                    pendingCacheHighlight={this.state.pendingCacheHighlight}
-                    onCacheHighlightDone={this.handleCacheHighlightDone}
                   />
                 </div>
               </div>
               )
             )}
             <div className={styles.chatViewWrapper} style={{ display: viewMode === 'chat' ? 'flex' : 'none' }}>
-              <ChatView {...this._settingsProps()} getTokenStatsContent={this._getTokenStatsContent} requests={filteredRequests} mainAgentSessions={displaySessions} sessionUpperBoundTs={sessionUpperBoundTs} streamingLatest={this.state.streamingLatest} userProfile={this.state.userProfile} collapseToolResults={prefs.collapseToolResults} expandThinking={prefs.expandThinking} showFullToolContent={prefs.showFullToolContent} onlyCurrentSession={this._isLocalLog ? false : prefs.onlyCurrentSession} isLocalLog={!!this._isLocalLog} showThinkingSummaries={prefs.showThinkingSummaries} onViewRequest={this.handleViewRequest} scrollToTimestamp={this.state.chatScrollToTs} onScrollTsDone={this.handleScrollTsDone} cliMode={this._isLocalLog ? false : this.state.cliMode} sdkMode={this._isLocalLog ? false : this.state.sdkMode} terminalVisible={this._isLocalLog ? false : (this.state.sdkMode ? false : this.state.terminalVisible)} onToggleTerminal={() => this.setState(prev => ({ terminalVisible: !prev.terminalVisible }))} pendingUploadPaths={this.state.pendingUploadPaths} onUploadPathsConsumed={this.handleUploadPathsConsumed} uploadingDrop={this.state.uploadingDrop} fileLoading={this.state.fileLoading} isStreaming={this.state.isStreaming} hasMoreHistory={this.state.hasMoreHistory} loadingMore={this.state.loadingMore} onLoadMoreHistory={() => this.loadMoreHistory()} loadingSessionId={this.state.loadingSessionId} onLoadSession={(sid) => this.loadSession(sid)} lang={this.state.lang} autoApproveSeconds={this.state.autoApproveSeconds} onAutoApproveChange={this.handleAutoApproveChange} planAutoApproveSeconds={this.state.approvalPrefs?.planAutoApproveSeconds} onPlanAutoApproveChange={this.handlePlanAutoApproveChange} onClearContextOptimistic={this.handleClearContextOptimistic} onUserMessageSent={this.handleUserMessageSent} onPendingAsk={this.handleApprovalAsk} onPendingPtyPlan={this.handleApprovalPtyPlan} ownTabId={this.state.ownTabId} projectName={this.state.projectName} setContextBarSlot={this.setContextBarSlot} />
+              <ChatView {...this._settingsProps()} getTokenStatsContent={this._getTokenStatsContent} requests={filteredRequests} mainAgentSessions={displaySessions} sessionUpperBoundTs={sessionUpperBoundTs} streamingLatest={this.state.streamingLatest} userProfile={this.state.userProfile} collapseToolResults={prefs.collapseToolResults} expandThinking={prefs.expandThinking} showFullToolContent={prefs.showFullToolContent} onlyCurrentSession={this._isLocalLog ? false : prefs.onlyCurrentSession} isLocalLog={!!this._isLocalLog} showThinkingSummaries={prefs.showThinkingSummaries} onViewRequest={this.handleViewRequest} scrollToTimestamp={this.state.chatScrollToTs} onScrollTsDone={this.handleScrollTsDone} cliMode={this._isLocalLog ? false : this.state.cliMode} sdkMode={this._isLocalLog ? false : this.state.sdkMode} terminalVisible={this._isLocalLog ? false : (this.state.sdkMode ? false : this.state.terminalVisible)} onToggleTerminal={() => this.setState(prev => ({ terminalVisible: !prev.terminalVisible }))} pendingUploadPaths={this.state.pendingUploadPaths} onUploadPathsConsumed={this.handleUploadPathsConsumed} uploadingDrop={this.state.uploadingDrop} fileLoading={this.state.fileLoading} isStreaming={this.state.isStreaming} hasMoreHistory={this.state.hasMoreHistory} loadingMore={this.state.loadingMore} onLoadMoreHistory={() => this.loadMoreHistory()} loadingSessionId={this.state.loadingSessionId} onLoadSession={(sid) => this.loadSession(sid)} lang={this.state.lang} approvalsReviewer={this.state.approvalsReviewer} onApprovalsReviewerChange={this.handleApprovalsReviewerChange} onApprovalsReviewerSynced={this.handleApprovalsReviewerSynced} planAutoApproveSeconds={this.state.approvalPrefs?.planAutoApproveSeconds} onPlanAutoApproveChange={this.handlePlanAutoApproveChange} onClearContextOptimistic={this.handleClearContextOptimistic} onUserMessageSent={this.handleUserMessageSent} onPendingAsk={this.handleApprovalAsk} onPendingPtyPlan={this.handleApprovalPtyPlan} ownTabId={this.state.ownTabId} projectName={this.state.projectName} setContextBarSlot={this.setContextBarSlot} />
             </div>
           </Layout.Content>
           <div className={styles.footer}>

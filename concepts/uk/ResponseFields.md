@@ -1,50 +1,38 @@
-# Опис полів Response Body
+# Response Body Field Reference
 
-Опис полів тіла відповіді Claude API `/v1/messages`.
+Field reference for CX-Viewer's normalized Codex response body.
 
-## Поля верхнього рівня
+## Top-Level Fields
 
-| Поле | Тип | Опис |
-|------|------|------|
-| **model** | string | Фактична назва моделі, наприклад `claude-opus-4-6` |
-| **id** | string | Унікальний ідентифікатор відповіді, наприклад `msg_01Tgsr2QeH8AVXGoP2wAXRvU` |
-| **type** | string | Фіксоване значення `"message"` |
-| **role** | string | Фіксоване значення `"assistant"` |
-| **content** | array | Масив блоків вмісту виводу моделі, включаючи текст, виклики інструментів, процес мислення тощо |
-| **stop_reason** | string | Причина зупинки: `"end_turn"` (нормальне завершення), `"tool_use"` (потрібно виконати інструмент), `"max_tokens"` (досягнуто ліміт токенів) |
-| **stop_sequence** | string/null | Послідовність, що спричинила зупинку, зазвичай `null` |
-| **usage** | object | Статистика використання токенів (деталі нижче) |
+| Field | Type | Description |
+|-------|------|-------------|
+| **model** | string | The model name actually used |
+| **id** | string | Unique response or streamed item identifier when available |
+| **type** | string | Always `"message"` |
+| **role** | string | Always `"assistant"` |
+| **content** | array | Array of content blocks output by the model, containing text, tool calls, thinking process, etc. |
+| **stop_reason** | string | Normalized reason/status for stopping, such as `"end_turn"`, `"completed"`, `"failed"`, or `"max_tokens"` |
+| **stop_sequence** | string/null | The sequence that triggered the stop, usually `null` |
+| **usage** | object | Token usage statistics (see below) |
 
-## Типи блоків content
+## content Block Types
 
-| Тип | Опис |
-|------|------|
-| **text** | Текстова відповідь моделі, містить поле `text` |
-| **tool_use** | Запит на виклик інструменту, містить `name` (назва інструменту), `input` (параметри), `id` (ідентифікатор виклику, використовується для зіставлення з tool_result) |
-| **thinking** | Розширений процес мислення (з'являється лише при увімкненому режимі thinking), містить поле `thinking` |
+| Type | Description |
+|------|-------------|
+| **text** | The model's text reply, contains a `text` field |
+| **tool_use** | Tool call request, contains `name` (tool name), `input` (parameters), `id` (call ID, used to match tool_result) |
+| **thinking** | Extended thinking content (only appears when thinking mode is enabled), contains a `thinking` field |
 
-## Деталі поля usage
+## usage Field Details
 
-| Поле | Опис |
-|------|------|
-| **input_tokens** | Кількість вхідних токенів без влучення в кеш (тарифікуються за повною ціною) |
-| **cache_creation_input_tokens** | Кількість токенів, закешованих у цьому запиті (запис у кеш, тарифікується вище за звичайний ввід) |
-| **cache_read_input_tokens** | Кількість токенів із влученням у кеш (читання з кешу, тарифікується значно нижче за звичайний ввід) |
-| **output_tokens** | Кількість вихідних токенів моделі |
-| **service_tier** | Рівень обслуговування, наприклад `"standard"` |
-| **inference_geo** | Регіон виведення, наприклад `"not_available"` означає відсутність інформації про регіон |
+| Field | Description |
+|-------|-------------|
+| **output_tokens** | Number of tokens output by the model |
+| **reasoning_output_tokens** | Reasoning tokens when the source reports them |
+| **total_tokens** | Total tokens reported by the source |
 
-## Підполя cache_creation
+## stop_reason Meanings
 
-| Поле | Опис |
-|------|------|
-| **ephemeral_5m_input_tokens** | Кількість токенів короткострокового кешу з TTL 5 хвилин |
-| **ephemeral_1h_input_tokens** | Кількість токенів довгострокового кешу з TTL 1 година |
-
-> **Про тарифікацію кешу**: Ціна за одиницю `cache_read_input_tokens` значно нижча за `input_tokens`, тоді як ціна за одиницю `cache_creation_input_tokens` трохи вища за звичайний ввід. Тому підтримка високого відсотка влучень у кеш під час безперервних розмов може суттєво знизити витрати. За допомогою метрики "відсоток влучень" у cc-viewer можна зручно відстежувати цю пропорцію.
-
-## Значення stop_reason
-
-- **end_turn**: Модель нормально завершила відповідь
-- **tool_use**: Модель потребує виклику інструменту, content міститиме блок `tool_use`. У наступному запиті потрібно додати `tool_result` до messages для продовження розмови
-- **max_tokens**: Досягнуто ліміт `max_tokens`, відповідь обрізана і може бути неповною
+- **end_turn**: The model completed its reply normally
+- **tool_use**: The model needs to call a tool; CX-Viewer shows the matching tool result when the capture source provides it
+- **max_tokens**: The reply was truncated due to reaching the `max_tokens` limit and may be incomplete

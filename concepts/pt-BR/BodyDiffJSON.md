@@ -2,7 +2,7 @@
 
 ## Contexto
 
-O MainAgent do Claude Code utiliza um mecanismo de envio de contexto completo — cada requisição carrega o histórico completo da conversa, system prompt, definições de ferramentas, etc. Isso significa que, conforme a conversa avança, o corpo da requisição se torna cada vez maior, e visualizar o Body bruto dificulta identificar rapidamente "o que foi adicionado nesta rodada".
+O MainAgent do Codex utiliza um mecanismo de envio de contexto completo — cada requisição carrega o histórico completo da conversa, system prompt, definições de ferramentas, etc. Isso significa que, conforme a conversa avança, o corpo da requisição se torna cada vez maior, e visualizar o Body bruto dificulta identificar rapidamente "o que foi adicionado nesta rodada".
 
 O Body Diff JSON foi criado exatamente para resolver esse problema: ele compara automaticamente os bodies de duas requisições MainAgent consecutivas, extraindo a parte incremental, permitindo que você veja claramente o conteúdo efetivamente adicionado nesta requisição.
 
@@ -22,7 +22,7 @@ O Body Diff JSON foi criado exatamente para resolver esse problema: ele compara 
 Em uma rodada normal de conversa, o Body Diff JSON geralmente contém apenas:
 - `messages`: 1~2 mensagens adicionadas (a entrada do usuário + a resposta do assistente da rodada anterior)
 
-Se você vir alterações em campos como `system`, `tools`, `model` no diff, significa que houve mudança de configuração nesta rodada, o que frequentemente também é a causa da reconstrução de cache.
+Se você vir alterações em campos como `system`, `tools`, `model` no diff, significa que houve mudança de configuração nesta rodada.
 
 ## Como Usar
 

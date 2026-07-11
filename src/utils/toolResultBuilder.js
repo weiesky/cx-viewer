@@ -2,19 +2,20 @@
  * Incremental tool result state builder.
  * Processes assistant tool_use and user tool_result blocks into lookup maps.
  *
- * NOTE: server_tool_use（如 Anthropic 的 web_search）和 web_search_tool_result 不入此 map，
- * 它们由 ChatMessage.renderAssistantContent 直接从 assistant content 数组渲染。
- * 详见 src/utils/webSearchGrouping.js 与 src/components/viewers/WebSearchResultsView.jsx。
+ * NOTE: The primary wire input is the viewer's Codex projection. Historical
+ * server_tool_use/web_search_tool_result blocks remain a read-only compatibility
+ * path and are rendered directly by ChatMessage.
  */
 
 import { t } from '../i18n';
 import { buildSingleToolResultCore } from './toolResultCore.js';
+import { isAskToolName, isPlanToolName } from './toolNameAliases.js';
 
 // --- WeakMap cache for tool result state ---
 
 const _toolResultCache = new WeakMap();
 
-// 稳定引用,避免 `req.body?.messages || []` 每次构造新 `[]` 字面量打穿 WeakMap 缓存
+// 稳定引用,避免 `req.body?.input || []` 每次构造新 `[]` 字面量打穿 WeakMap 缓存
 // (subAgentEntries 扫描在每次 requests-change 时跑,缓存命中是热路径性能假设)。
 const EMPTY_MESSAGES = Object.freeze([]);
 
@@ -28,8 +29,6 @@ export function setToolResultCache(messages, state) {
 
 
 // --- State builder ---
-
-const MAX_EDIT_SNAPSHOTS = 300;
 
 export function createEmptyToolState() {
   return {
@@ -54,7 +53,11 @@ export function buildSingleToolResult(block, matchedTool) {
   const core = buildSingleToolResultCore(block, matchedTool);
   let label = t('ui.toolReturn');
   if (matchedTool) {
-    if (matchedTool.name === 'Task' && matchedTool.input) {
+    if (matchedTool.name === 'spawn_agent' && matchedTool.input) {
+      const task = matchedTool.input.task_name || matchedTool.input.name || 'agent';
+      label = `SubAgent: ${task}`;
+    } else if (matchedTool.name === 'Task' && matchedTool.input) {
+      // Read-only compatibility for pre-Codex cx-viewer logs.
       const st = matchedTool.input.subagent_type || '';
       const desc = matchedTool.input.description || '';
       label = `SubAgent: ${st}${desc ? ' — ' + desc : ''}`;
@@ -72,11 +75,11 @@ export function buildSingleToolResult(block, matchedTool) {
  * 的下一个 turn。两遍扫描建立"id → result"全局索引,渲染时 O(1) 查询,免去运行时配对。
  *
  * Pass 1: 全量构建 toolUseMap(供 label / toolName / toolInput 解析)
- *   - body.messages 里 role=assistant 的 tool_use 块
+ *   - body.input 里 role=assistant 的 tool_use 块
  *   - response.body.content 里的 tool_use 块(末轮)
  * Pass 2: 提取所有 tool_result 块写入索引(role=user 消息的 content[])
  *
- * id 冲突风险:Anthropic API 用 nanoid 24+ char,2^-128 量级,可忽略。
+ * Codex call_id is the authoritative correlation key.
  */
 export function buildGlobalToolResultIndex(requests) {
   const state = createEmptyGlobalIndexState();
@@ -124,7 +127,7 @@ export function appendToGlobalToolResultIndex(state, requests, startIndex) {
   for (let i = startIndex; i < requests.length; i++) {
     const r = requests[i];
     if (!r) continue;
-    const msgs = r.body?.messages;
+    const msgs = r.body?.input;
     if (Array.isArray(msgs)) {
       for (const m of msgs) {
         if (m?.role === 'assistant' && Array.isArray(m.content)) {
@@ -143,7 +146,7 @@ export function appendToGlobalToolResultIndex(state, requests, startIndex) {
   }
   for (let i = startIndex; i < requests.length; i++) {
     const r = requests[i];
-    const msgs = r?.body?.messages;
+    const msgs = r?.body?.input;
     if (!Array.isArray(msgs)) continue;
     for (const m of msgs) {
       if (m?.role !== 'user' || !Array.isArray(m.content)) continue;
@@ -167,11 +170,11 @@ export function appendToGlobalToolResultIndex(state, requests, startIndex) {
  * 渲染查询 O(1)。
  *
  * 补偿仅覆盖 toolResultMap;readContentMap / editSnapshotMap / latestPlanContent
- * 等辅助 map 不在补偿范围内 —— SubAgent 卡片只渲染 response.content 块,Read snapshot
+ * 等辅助 map 不在补偿范围内 —— SubAgent 卡片只渲染 response.content 块，文件快照
  * 等高级展开由 mainAgent 路径消费,与 SubAgent 解耦。
  */
 export function buildSubAgentResultMap(req, globalIndex) {
-  const localState = cachedBuildToolResultMap(req?.body?.messages || EMPTY_MESSAGES);
+  const localState = cachedBuildToolResultMap(req?.body?.input || EMPTY_MESSAGES);
   const respContent = req?.response?.body?.content;
   if (!Array.isArray(respContent) || !globalIndex) {
     return localState.toolResultMap;
@@ -189,7 +192,7 @@ export function buildSubAgentResultMap(req, globalIndex) {
 }
 
 export function appendToolResultMap(state, messages, startIndex) {
-  const { toolUseMap, toolResultMap, readContentMap, editSnapshotMap, askAnswerMap, planApprovalMap, _fileState } = state;
+  const { toolUseMap, toolResultMap, askAnswerMap, planApprovalMap } = state;
   for (let i = startIndex; i < messages.length; i++) {
     const msg = messages[i];
     if (msg.role === 'assistant' && Array.isArray(msg.content)) {
@@ -203,63 +206,15 @@ export function appendToolResultMap(state, messages, startIndex) {
             } catch {}
           }
           toolUseMap[parsed.id] = parsed;
-          // Write → .codex/plans/ 文件内容追踪
-          if (parsed.name === 'Write' && parsed.input?.file_path
-            && /[/\\]\.codex[/\\]plans[/\\]/.test(parsed.input.file_path) && parsed.input.content) {
-            state.latestPlanContent = parsed.input.content;
-          }
-          // ExitPlanMode V2: input 直接携带 plan + planFilePath（normalizeToolInput 注入）
-          // 不依赖前置 Write/Edit，是 multi-agent-room 等无前置场景的核心数据源
-          if (parsed.name === 'ExitPlanMode' && parsed.input && typeof parsed.input === 'object') {
+          // Plan tools can carry plan + planFilePath directly.
+          // 不依赖前置文件编辑，是 multi-agent-room 等无前置场景的核心数据源
+          if (isPlanToolName(parsed.name) && parsed.input && typeof parsed.input === 'object') {
             if (typeof parsed.input.plan === 'string' && parsed.input.plan.trim()) {
               state.latestPlanContent = parsed.input.plan;
               state._planDirty = (state._planDirty || 0) + 1;
             }
             if (typeof parsed.input.planFilePath === 'string' && parsed.input.planFilePath) {
               state.latestPlanFilePath = parsed.input.planFilePath;
-            }
-          }
-          // Edit → editSnapshotMap + _fileState 更新
-          if (parsed.name === 'Edit' && parsed.input) {
-            const fp = parsed.input.file_path;
-            const oldStr = parsed.input.old_string;
-            const newStr = parsed.input.new_string;
-            if (fp && oldStr != null && newStr != null && _fileState[fp]) {
-              const entry = _fileState[fp];
-              // 淘汰时留 null 占位：rebuild 时 key 已存在则跳过，避免重建已淘汰条目
-              if (!(parsed.id in editSnapshotMap)) {
-                editSnapshotMap[parsed.id] = { plainText: entry.plainText, lineNums: entry.lineNums.slice() };
-                state._editOrder.push(parsed.id);
-                if (state._editOrder.length > MAX_EDIT_SNAPSHOTS) {
-                  const evictId = state._editOrder.shift();
-                  editSnapshotMap[evictId] = null;
-                }
-              }
-              const idx = entry.plainText.indexOf(oldStr);
-              if (idx >= 0) {
-                const before = entry.plainText.substring(0, idx);
-                const lineOffset = before.split('\n').length - 1;
-                const oldLineCount = oldStr.split('\n').length;
-                const newLineCount = newStr.split('\n').length;
-                const lineDelta = newLineCount - oldLineCount;
-                entry.plainText = entry.plainText.substring(0, idx) + newStr + entry.plainText.substring(idx + oldStr.length);
-                if (lineDelta !== 0) {
-                  const startNum = entry.lineNums[lineOffset] || (lineOffset + 1);
-                  const newNums = [];
-                  for (let j = 0; j < newLineCount; j++) {
-                    newNums.push(startNum + j);
-                  }
-                  entry.lineNums = [
-                    ...entry.lineNums.slice(0, lineOffset),
-                    ...newNums,
-                    ...entry.lineNums.slice(lineOffset + oldLineCount).map(n => n + lineDelta),
-                  ];
-                }
-                // Edit plan 文件时同步 latestPlanContent（Write 只追踪全量写入，Edit 追踪增量编辑后的完整内容）
-                if (/[/\\]\.codex[/\\]plans[/\\]/.test(fp)) {
-                  state.latestPlanContent = entry.plainText;
-                }
-              }
             }
           }
         }
@@ -271,43 +226,9 @@ export function appendToolResultMap(state, messages, startIndex) {
           const entry = buildSingleToolResult(block, matchedTool);
           const { resultText, isPermissionDenied, isUltraplan } = entry;
           toolResultMap[block.tool_use_id] = entry;
-          if (matchedTool && matchedTool.name === 'Read' && matchedTool.input?.file_path) {
-            readContentMap[matchedTool.input.file_path] = resultText;
-            // _fileState 更新（行号解析）
-            const readLines = resultText.split('\n');
-            const plainLines = [];
-            const lineNums = [];
-            for (const rl of readLines) {
-              const m = rl.match(/^\s*(\d+)[\t→](.*)$/);
-              if (m) {
-                lineNums.push(parseInt(m[1], 10));
-                plainLines.push(m[2]);
-              }
-            }
-            if (plainLines.length > 0) {
-              const existing = _fileState[matchedTool.input.file_path];
-              if (existing) {
-                const mergedMap = new Map();
-                const existingLines = existing.plainText.split('\n');
-                for (let j = 0; j < existing.lineNums.length; j++) {
-                  mergedMap.set(existing.lineNums[j], existingLines[j]);
-                }
-                for (let j = 0; j < lineNums.length; j++) {
-                  mergedMap.set(lineNums[j], plainLines[j]);
-                }
-                const sortedKeys = [...mergedMap.keys()].sort((a, b) => a - b);
-                _fileState[matchedTool.input.file_path] = {
-                  plainText: sortedKeys.map(k => mergedMap.get(k)).join('\n'),
-                  lineNums: sortedKeys,
-                };
-              } else {
-                _fileState[matchedTool.input.file_path] = { plainText: plainLines.join('\n'), lineNums };
-              }
-            }
-          }
-          if (matchedTool && matchedTool.name === 'AskUserQuestion') {
+          if (matchedTool && isAskToolName(matchedTool.name)) {
             const parsed = parseAskAnswerText(resultText);
-            // 被拒绝的 AskUserQuestion：分 cancelled / rejected 两类——
+            // 被拒绝的 request_user_input：分 cancelled / rejected 两类——
             //   - cancelled：cx-viewer 主动取消（Cancel 按钮 / 输入框打字打断）。
             //     ask-bridge.js / sdk-manager.js 注入 reason 时统一加 [cx-viewer:cancel] 前缀
             //     作为协议级 sentinel，前缀匹配比模糊文案匹配稳定（SDK 升级换文案不影响）。
@@ -327,7 +248,7 @@ export function appendToolResultMap(state, messages, startIndex) {
             }
             state._askDirty = (state._askDirty || 0) + 1;
           }
-          if (matchedTool && matchedTool.name === 'ExitPlanMode') {
+          if (matchedTool && isPlanToolName(matchedTool.name)) {
             if (isPermissionDenied) {
               const userSaid = resultText.match(/the user said:\s*([\s\S]*)/i);
               planApprovalMap[block.tool_use_id] = {
@@ -365,7 +286,7 @@ export function cachedBuildToolResultMap(messages) {
   return cached;
 }
 
-/** 从 AskUserQuestion tool_result 文本中提取答案 map */
+/** 从 request_user_input tool_result 文本中提取答案 map */
 export function parseAskAnswerText(text) {
   const answers = {};
   const re = /"([^"]+)"="([^"]*)"/g;
@@ -376,7 +297,7 @@ export function parseAskAnswerText(text) {
   return answers;
 }
 
-/** 从 ExitPlanMode tool_result 文本中解析审批状态和计划内容 */
+/** 从 plan tool_result 文本中解析审批状态和计划内容 */
 export function parsePlanApproval(text) {
   if (!text) return { status: 'pending' };
   if (/User has approved/i.test(text)) {

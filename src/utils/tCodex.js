@@ -1,6 +1,6 @@
 // Codex 配置目录感知的 i18n 包装。由 AppBase 在 /api/preferences 响应里调
 // setCodexConfigDir() 注入；tc(key) 在调用时把 {configDir} 占位符替换成
-// home-friendly 展示路径（默认 "~/.codex"，设了 CODEX_CONFIG_DIR 时为绝对路径）。
+// home-friendly 展示路径（默认 "~/.codex"，设了 CODEX_HOME/CODEX_CONFIG_DIR 时为绝对路径）。
 
 import { t } from '../i18n';
 

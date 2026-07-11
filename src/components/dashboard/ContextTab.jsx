@@ -8,6 +8,7 @@ import { buildContextItemRawText } from '../../utils/contextRaw';
 import { computeToolsDiff } from '../../utils/toolsDiff';
 import JsonViewer from '../viewers/JsonViewer';
 import ConceptHelp from '../common/ConceptHelp';
+import { getResponseInstructions, getResponseTools, isResponseConfigInputItem } from '../../../lib/openai-body.js';
 
 import styles from './ContextTab.module.css';
 
@@ -27,9 +28,10 @@ function parseContentBlocks(content) {
     const blocks = [];
     for (const block of content) {
       if (!block) continue;
-      if (block.type === 'text') {
-        const trimmed = (block.text || '').trim();
-        if (trimmed) blocks.push({ type: 'markdown', text: trimmed });
+      if (block.type === 'text' || block.type === 'input_text' || block.type === 'output_text') {
+        const text = block.text ?? block.input_text ?? block.output_text ?? '';
+        const trimmed = typeof text === 'string' ? text.trim() : '';
+        if (trimmed) blocks.push({ type: 'markdown', text: trimmed, label: block.type });
       } else if (block.type === 'tool_use') {
         blocks.push({
           type: 'tool_use',
@@ -69,9 +71,10 @@ function parseResultContent(content) {
   if (Array.isArray(content)) {
     return content.flatMap((c) => {
       if (!c) return [];
-      if (c.type === 'text') {
-        const trimmed = (c.text || '').trim();
-        return trimmed ? [{ type: 'markdown', text: trimmed }] : [];
+      if (c.type === 'text' || c.type === 'input_text' || c.type === 'output_text') {
+        const text = c.text ?? c.input_text ?? c.output_text ?? '';
+        const trimmed = typeof text === 'string' ? text.trim() : '';
+        return trimmed ? [{ type: 'markdown', text: trimmed, label: c.type }] : [];
       }
       return [{ type: 'json', label: c.type || 'block', data: c }];
     });
@@ -79,27 +82,28 @@ function parseResultContent(content) {
   return [{ type: 'json', label: 'content', data: content }];
 }
 
-function parseSystemBlocks(system) {
-  if (!system) return null;
-  if (typeof system === 'string') {
-    return [{ type: 'markdown', text: system }];
+function parseInstructionsBlocks(instructions) {
+  if (!instructions) return null;
+  if (typeof instructions === 'string') {
+    return [{ type: 'markdown', text: instructions }];
   }
-  if (Array.isArray(system)) {
+  if (Array.isArray(instructions)) {
     const blocks = [];
-    system.forEach((item, i) => {
+    instructions.forEach((item, i) => {
       if (i > 0) blocks.push({ type: 'separator' });
       if (!item) return;
       if (typeof item === 'string') {
         blocks.push({ type: 'markdown', text: item });
-      } else if (item.type === 'text') {
-        blocks.push({ type: 'markdown', text: item.text || '' });
+      } else if (item.type === 'text' || item.type === 'input_text' || item.type === 'output_text') {
+        const text = item.text ?? item.input_text ?? item.output_text ?? '';
+        blocks.push({ type: 'markdown', text, label: item.type });
       } else {
         blocks.push({ type: 'json', label: item.type || 'item', data: item });
       }
     });
     return blocks;
   }
-  return [{ type: 'json', label: 'system', data: system }];
+  return [{ type: 'json', label: 'instructions', data: instructions }];
 }
 
 function parseToolBlocks(tool) {
@@ -116,45 +120,140 @@ function parseToolBlocks(tool) {
   return blocks;
 }
 
-// ── Message turn grouping ─────────────────────────────────────────────────────
+/**
+ * Codex embeds exec's child tool declarations in exec.description as Markdown
+ * H3 sections. Unlike protocol namespaces this grouping is descriptive rather
+ * than a `tools[]` field, but the declared tools still belong under exec.
+ */
+function parseExecDeclaredTools(tool, toolIndex) {
+  if (tool?.type !== 'custom' || tool?.name !== 'exec' || typeof tool.description !== 'string') return [];
+  const description = tool.description;
+  const headingRe = /^###\s+`([^`]+)`\s*$/gm;
+  const matches = Array.from(description.matchAll(headingRe));
+
+  return matches.map((match, childIndex) => {
+    const sectionStart = match.index + match[0].length;
+    const remaining = description.slice(sectionStart);
+    const nextHeading = remaining.search(/^#{2,3}\s+/m);
+    const section = (nextHeading >= 0 ? remaining.slice(0, nextHeading) : remaining).trim();
+    const declared = {
+      type: 'exec_declared_tool',
+      name: match[1],
+      description: section,
+    };
+    return {
+      id: `tool__${toolIndex}__child__${childIndex}`,
+      label: declared.name,
+      sublabel: declared.description.split('\n').find((line) => line.trim())?.trim() || undefined,
+      blocks: parseToolBlocks(declared),
+      raw: declared,
+    };
+  });
+}
+
+// ── Input item parsing ────────────────────────────────────────────────────────
 
 function extractPreviewText(content) {
   if (typeof content === 'string') return content.slice(0, 60).replace(/\n/g, ' ');
   if (Array.isArray(content)) {
     for (const block of content) {
-      if (block?.type === 'text' && block.text?.trim()) {
-        return block.text.trim().slice(0, 60).replace(/\n/g, ' ');
+      const text = block?.text ?? block?.input_text ?? block?.output_text;
+      if (
+        (block?.type === 'text' || block?.type === 'input_text' || block?.type === 'output_text') &&
+        typeof text === 'string' &&
+        text.trim()
+      ) {
+        return text.trim().slice(0, 60).replace(/\n/g, ' ');
       }
     }
   }
   return '';
 }
 
-// 注意：非 user 开头的消息（首条 assistant、连续 assistant 等）不进任何 turn，
-// 「原文」视图与解析视图同口径，同样不展示这些消息。
-function groupMessagesIntoTurns(messages) {
-  const turns = [];
-  let i = 0;
-  while (i < messages.length) {
-    const userMsg = messages[i];
-    if (userMsg?.role !== 'user') { i++; continue; }
-    const assistantMsg = messages[i + 1]?.role === 'assistant' ? messages[i + 1] : null;
-    turns.push({
-      id: `turn__${i}`,
-      isTurn: true,
-      turnIndex: turns.length,
-      timestamp: userMsg._timestamp || null,
-      assistantTimestamp: assistantMsg?._timestamp || null,
-      userBlocks: parseContentBlocks(userMsg?.content),
-      assistantBlocks: assistantMsg ? parseContentBlocks(assistantMsg.content) : null,
-      // 原始消息引用：供「原文」视图无损输出（解析 blocks 是单向的，不可逆）
-      rawUser: userMsg,
-      rawAssistant: assistantMsg,
-      preview: extractPreviewText(userMsg?.content),
-    });
-    i += assistantMsg ? 2 : 1;
+function getInputItemType(item) {
+  if (item && typeof item === 'object' && !Array.isArray(item)) {
+    return item.type || (item.role ? 'message' : 'input');
   }
-  return turns;
+  if (Array.isArray(item)) return 'array';
+  return typeof item;
+}
+
+function parseMaybeJsonString(value) {
+  if (typeof value !== 'string') return value ?? {};
+  const trimmed = value.trim();
+  if (!trimmed) return {};
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return value;
+  }
+}
+
+function parseInputItemBlocks(item) {
+  if (item == null) return [];
+  if (typeof item === 'string') return parseContentBlocks(item);
+  if (!item || typeof item !== 'object' || Array.isArray(item)) {
+    return [{ type: 'json', label: getInputItemType(item), data: item }];
+  }
+
+  if (item.type === 'function_call' || item.type === 'tool_use') {
+    return [{
+      type: 'tool_use',
+      name: item.name || 'unknown',
+      id: item.call_id || item.id || '',
+      input: item.input ?? parseMaybeJsonString(item.arguments),
+    }];
+  }
+
+  if (item.type === 'function_call_output' || item.type === 'tool_result') {
+    return [{
+      type: 'tool_result',
+      tool_use_id: item.call_id || item.tool_use_id || '',
+      is_error: item.is_error,
+      content: parseResultContent(item.output ?? item.content),
+    }];
+  }
+
+  if (Object.prototype.hasOwnProperty.call(item, 'content')) {
+    const blocks = parseContentBlocks(item.content);
+    if (blocks.length > 0) return blocks;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(item, 'output')) {
+    const blocks = parseResultContent(item.output);
+    if (blocks.length > 0) return blocks;
+  }
+
+  return [{ type: 'json', label: getInputItemType(item), data: item }];
+}
+
+function extractInputPreview(item) {
+  if (item == null) return '';
+  if (typeof item === 'string') return extractPreviewText(item);
+  if (!item || typeof item !== 'object' || Array.isArray(item)) return '';
+  const fromContent = extractPreviewText(item.content);
+  if (fromContent) return fromContent;
+  if (typeof item.output === 'string') return item.output.slice(0, 60).replace(/\n/g, ' ');
+  if (typeof item.arguments === 'string') return item.arguments.slice(0, 60).replace(/\n/g, ' ');
+  return item.name || item.type || '';
+}
+
+function buildInputItems(input) {
+  return input.flatMap((item, index) => {
+    if (isResponseConfigInputItem(item)) return [];
+    const timestamp = item && typeof item === 'object' ? (item._timestamp || item.timestamp || null) : null;
+    return [{
+      id: `input__${index}`,
+      isInputItem: true,
+      inputIndex: index,
+      role: item && typeof item === 'object' && !Array.isArray(item) ? item.role : null,
+      type: getInputItemType(item),
+      timestamp,
+      blocks: parseInputItemBlocks(item),
+      raw: item,
+      preview: extractInputPreview(item),
+    }];
+  });
 }
 
 function formatTurnTime(isoStr) {
@@ -168,7 +267,7 @@ function formatTurnTime(isoStr) {
 
 // ── Block renderers ───────────────────────────────────────────────────────────
 
-function TranslatableMarkdown({ text, compact }) {
+function TranslatableMarkdown({ text, label = 'text', compact }) {
   const displayHtml = renderMarkdown(text);
 
   if (compact) {
@@ -182,7 +281,7 @@ function TranslatableMarkdown({ text, compact }) {
   return (
     <div className={styles.textBlock}>
       <div className={styles.textBlockBar}>
-        <span className={`${styles.blockTag} ${styles.blockTagText}`}>text</span>
+        <span className={`${styles.blockTag} ${styles.blockTagText}`}>{label}</span>
       </div>
       <div className={`chat-md ${styles.textBlockBody}`} dangerouslySetInnerHTML={{ __html: displayHtml }} />
     </div>
@@ -229,7 +328,7 @@ function RenderBlock({ block, compact }) {
 
   if (block.type === 'markdown') {
     if (!block.text?.trim()) return null;
-    return <TranslatableMarkdown text={block.text} compact={compact} />;
+    return <TranslatableMarkdown text={block.text} label={block.label} compact={compact} />;
   }
 
   if (block.type === 'thinking') {
@@ -280,29 +379,22 @@ function RenderBlock({ block, compact }) {
   return null;
 }
 
-// ── Turn content renderer ─────────────────────────────────────────────────────
+// ── Input content renderer ────────────────────────────────────────────────────
 
-function TurnContent({ turn }) {
-  const timeStr = turn.timestamp ? formatTurnTime(turn.timestamp) : null;
-  const assistantTimeStr = turn.assistantTimestamp ? formatTurnTime(turn.assistantTimestamp) : null;
+function InputItemContent({ item }) {
+  const timeStr = item.timestamp ? formatTurnTime(item.timestamp) : null;
+  const badgeClass = item.role
+    ? (styles[`role_${item.role}`] || styles.role_input)
+    : styles.role_input;
+  const badgeText = item.role || item.type || 'input';
   return (
     <div>
       <div className={styles.roleHeader}>
-        <span className={`${styles.roleBadge} ${styles.role_user}`}>user</span>
-        <span className={styles.roleLabel}>{`Turn ${turn.turnIndex + 1}`}</span>
+        <span className={`${styles.roleBadge} ${badgeClass}`}>{badgeText}</span>
+        <span className={styles.roleLabel}>{`input[${item.inputIndex}]`}</span>
         {timeStr && <span className={styles.contentTime}>{timeStr}</span>}
       </div>
-      <RenderBlocks blocks={turn.userBlocks} />
-      {turn.assistantBlocks && (
-        <>
-          <div className={styles.turnDivider} />
-          <div className={styles.roleHeader}>
-            <span className={`${styles.roleBadge} ${styles.role_assistant}`}>assistant</span>
-            {assistantTimeStr && <span className={styles.contentTime}>{assistantTimeStr}</span>}
-          </div>
-          <RenderBlocks blocks={turn.assistantBlocks} />
-        </>
-      )}
+      <RenderBlocks blocks={item.blocks} />
     </div>
   );
 }
@@ -312,6 +404,10 @@ function TurnContent({ turn }) {
 function AccordionSection({ sectionKey, title, items, historyItems = [], onSelect, onSelectById, selectedId, sidebarRef, countOverride }) {
   const [open, setOpen] = useState(sectionKey !== 'tools');
   const [historyOpen, setHistoryOpen] = useState(false);
+  // Groups come from protocol namespaces (`tools[]`) or exec's explicitly
+  // declared description sections. Ungrouped function/custom tools remain
+  // ordinary first-level leaves.
+  const [expandedItemIds, setExpandedItemIds] = useState(() => new Set());
   // countOverride 存在时（如 tools 区：移除项是 diff 占位、不计入实际数量）按其统计，
   // 否则用列表项总数。
   const totalCount = countOverride != null ? countOverride : items.length + historyItems.length;
@@ -347,27 +443,50 @@ function AccordionSection({ sectionKey, title, items, historyItems = [], onSelec
     }
   }
 
-  function renderItem(item) {
+  function renderItem(item, depth = 0) {
     const active = selectedId === item.id;
+    const hasChildren = Array.isArray(item.children) && item.children.length > 0;
+    const childrenOpen = hasChildren && expandedItemIds.has(item.id);
     return (
-      <button
-        type="button"
-        key={item.id}
-        className={`${styles.item} ${active ? styles.itemActive : ''}`}
-        onClick={() => onSelect(item)}
-        onKeyDown={(event) => handleControlKeyDown(event, item.id)}
-        aria-current={active ? 'true' : undefined}
-        data-context-sidebar-control={item.id}
-        data-control-type="item"
-      >
-        <div className={styles.itemContent}>
-          <span className={styles.itemLabel}>{item.label}</span>
-          {item.sublabel && !active && (
-            <div className={styles.itemSublabel}>{item.sublabel}</div>
-          )}
-        </div>
-        {item.time && <span className={styles.itemTime}>{item.time}</span>}
-      </button>
+      <React.Fragment key={item.id}>
+        <button
+          type="button"
+          className={`${styles.item} ${depth > 0 ? styles.itemNested : ''} ${hasChildren ? styles.itemGroup : ''} ${active ? styles.itemActive : ''}`}
+          onClick={() => {
+            onSelect(item);
+            if (hasChildren) {
+              setExpandedItemIds((prev) => {
+                const next = new Set(prev);
+                if (next.has(item.id)) next.delete(item.id);
+                else next.add(item.id);
+                return next;
+              });
+            }
+          }}
+          onKeyDown={(event) => handleControlKeyDown(event, item.id)}
+          aria-current={active ? 'true' : undefined}
+          aria-expanded={hasChildren ? childrenOpen : undefined}
+          data-context-sidebar-control={item.id}
+          data-control-type="item"
+        >
+          <span className={styles.itemLead} aria-hidden="true">
+            {hasChildren
+              ? (childrenOpen
+                ? <DownOutlined className={styles.itemGroupArrow} />
+                : <RightOutlined className={styles.itemGroupArrow} />)
+              : <span className={styles.itemLeafMarker}>•</span>}
+          </span>
+          <div className={styles.itemContent}>
+            <span className={styles.itemLabel}>{item.label}</span>
+            {item.sublabel && !active && (
+              <div className={styles.itemSublabel}>{item.sublabel}</div>
+            )}
+          </div>
+          {hasChildren && <span className={styles.itemChildCount}>{item.children.length}</span>}
+          {item.time && <span className={styles.itemTime}>{item.time}</span>}
+        </button>
+        {childrenOpen && item.children.map((child) => renderItem(child, depth + 1))}
+      </React.Fragment>
     );
   }
 
@@ -401,10 +520,10 @@ function AccordionSection({ sectionKey, title, items, historyItems = [], onSelec
                   {t('ui.context.history')} ({historyItems.length})
                 </span>
               </button>
-              {historyOpen && historyItems.map(renderItem)}
+              {historyOpen && historyItems.map((item) => renderItem(item, 0))}
             </>
           )}
-          {items.map(renderItem)}
+          {items.map((item) => renderItem(item, 0))}
         </div>
       )}
     </div>
@@ -413,45 +532,31 @@ function AccordionSection({ sectionKey, title, items, historyItems = [], onSelec
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function ContextTab({ body, response, prevTools }) {
+export default function ContextTab({ body, prevTools }) {
   const [selectedItem, setSelectedItem] = useState(null);
   // 「原文」模式：右侧面板显示选中节点的原始 JSON 纯文本；切换节点时保持
   const [rawMode, setRawMode] = useState(false);
   const sidebarRef = useRef(null);
   const contentRef = useRef(null);
 
-  // Compute turns from messages; override last turn's assistant blocks with actual response.
-  const turns = useMemo(() => {
-    if (!Array.isArray(body?.messages)) return [];
-    const allTurns = groupMessagesIntoTurns(body.messages);
-    if (allTurns.length === 0) return allTurns;
-    const last = allTurns[allTurns.length - 1];
-    const responseBlocks = response?.content ? parseContentBlocks(response.content) : null;
-    return [
-      ...allTurns.slice(0, -1),
-      {
-        ...last,
-        assistantBlocks: responseBlocks ?? last.assistantBlocks,
-        // 当前轮 assistant 原文 = 完整 response body（即该回复的原始 JSON，含 usage/model）；
-        // response 为字符串/null（流式中）时回退请求体内 assistant，与解析视图同口径
-        rawAssistant: responseBlocks ? response : last.rawAssistant,
-      },
-    ];
-  }, [body, response]);
+  const inputItems = useMemo(() => {
+    if (!Array.isArray(body?.input)) return [];
+    return buildInputItems(body.input);
+  }, [body]);
 
-  // Auto-select last turn whenever body or response changes.
+  // Auto-select last input item whenever body changes.
   useEffect(() => {
-    if (turns.length > 0) {
-      setSelectedItem(turns[turns.length - 1]);
+    if (inputItems.length > 0) {
+      setSelectedItem(inputItems[inputItems.length - 1]);
     } else {
       setSelectedItem(null);
     }
-  }, [body, response]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [body]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Resolve selected turn against live turns array to pick up response updates.
+  // Resolve selected input against live input array after body refreshes.
   // 提前到 early return 之前：rawText 的 useMemo 依赖它（hooks 顺序约束）。
-  const currentSelectedItem = selectedItem?.isTurn
-    ? (turns.find((turn) => turn.id === selectedItem.id) ?? null)
+  const currentSelectedItem = selectedItem?.isInputItem
+    ? (inputItems.find((item) => item.id === selectedItem.id) ?? null)
     : selectedItem;
 
   const rawText = useMemo(() => buildContextItemRawText(currentSelectedItem), [currentSelectedItem]);
@@ -465,16 +570,28 @@ export default function ContextTab({ body, response, prevTools }) {
   }
 
   const accordionSections = [];
+  const tools = getResponseTools(body);
+  const instructions = getResponseInstructions(body);
 
-  // Tools (collapsed by default, shown first to match API cache prefix order)
-  if (Array.isArray(body.tools) && body.tools.length > 0) {
+  // Tools (collapsed by default, shown first to match API request order)
+  if (tools.length > 0) {
     // 相对上一条 MainAgent 请求的 tools diff：tools_search 等场景下 tools 列表逐请求变化，
     // 这里高亮新增/移除，让"变化时机/内容"可见。prevTools 为空（无上一条/非 MainAgent）时不显示 diff。
-    const diff = computeToolsDiff(prevTools, body.tools);
+    const diff = computeToolsDiff(prevTools, tools);
 
-    const toolItems = body.tools.map((tool, i) => {
+    const toolItems = tools.map((tool, i) => {
       const name = tool?.name || `Tool ${i}`;
       const isAdded = diff.isAdded(tool?.name);
+      const namespaceChildren = tool?.type === 'namespace' && Array.isArray(tool.tools)
+        ? tool.tools.map((child, childIndex) => ({
+          id: `tool__${i}__child__${childIndex}`,
+          label: child?.name || `Tool ${childIndex}`,
+          sublabel: child?.description || undefined,
+          blocks: parseToolBlocks(child),
+          raw: child,
+        }))
+        : null;
+      const execChildren = parseExecDeclaredTools(tool, i);
       return {
         id: `tool__${i}`,
         label: isAdded
@@ -482,6 +599,7 @@ export default function ContextTab({ body, response, prevTools }) {
           : name,
         blocks: parseToolBlocks(tool),
         raw: tool,
+        children: namespaceChildren || (execChildren.length > 0 ? execChildren : null),
       };
     });
 
@@ -500,7 +618,7 @@ export default function ContextTab({ body, response, prevTools }) {
       key: 'tools',
       // 数量徽标只算当前请求实际携带的 tools（少了工具就按少了之后算）；
       // 移除项是相对上一条的 diff 占位，不计入数量。
-      countOverride: body.tools.length,
+      countOverride: tools.length,
       title: (
         <>
           {t('ui.context.tools')} <ConceptHelp doc="ToolsFirst" />
@@ -516,36 +634,36 @@ export default function ContextTab({ body, response, prevTools }) {
     });
   }
 
-  // System prompt
-  const systemBlocks = parseSystemBlocks(body.system);
-  if (systemBlocks != null) {
+  // Instructions
+  const instructionsBlocks = parseInstructionsBlocks(instructions);
+  if (instructionsBlocks != null) {
     accordionSections.push({
-      key: 'system',
+      key: 'instructions',
       title: t('ui.context.systemPrompt'),
-      items: [{ id: 'system__0', label: t('ui.context.systemPrompt'), blocks: systemBlocks, raw: body.system }],
+      items: [{ id: 'instructions__0', label: t('ui.context.systemPrompt'), blocks: instructionsBlocks, raw: instructions }],
     });
   }
 
-  // Messages grouped into turns; history collapsed, current always visible.
-  if (turns.length > 0) {
-    const toHistoryItem = (turn) => ({
-      ...turn,
-      label: t('ui.context.historyTurnNoTime', { n: turn.turnIndex + 1 }),
-      time: turn.timestamp ? formatTurnTime(turn.timestamp) : null,
-      sublabel: turn.preview || undefined,
+  // Input is shown in the same order as request body.input; history collapsed, current always visible.
+  if (inputItems.length > 0) {
+    const toHistoryItem = (item) => ({
+      ...item,
+      label: t('ui.context.historyTurnNoTime', { n: item.inputIndex + 1 }),
+      time: item.timestamp ? formatTurnTime(item.timestamp) : null,
+      sublabel: item.preview || item.type || undefined,
     });
-    const toCurrentItem = (turn) => ({
-      ...turn,
+    const toCurrentItem = (item) => ({
+      ...item,
       label: t('ui.context.currentTurn'),
-      sublabel: turn.preview || undefined,
+      sublabel: item.preview || item.type || undefined,
     });
-    const historyTurns = turns.slice(0, -1).map(toHistoryItem);
-    const currentTurn = toCurrentItem(turns[turns.length - 1]);
+    const historyInputs = inputItems.slice(0, -1).map(toHistoryItem);
+    const currentInput = toCurrentItem(inputItems[inputItems.length - 1]);
     accordionSections.push({
-      key: 'messages',
+      key: 'input',
       title: t('ui.context.messages'),
-      historyItems: historyTurns.length > 0 ? historyTurns : undefined,
-      items: [currentTurn],
+      historyItems: historyInputs.length > 0 ? historyInputs : undefined,
+      items: [currentInput],
     });
   }
 
@@ -560,7 +678,10 @@ export default function ContextTab({ body, response, prevTools }) {
   const itemMap = new Map();
   accordionSections.forEach((section) => {
     (section.historyItems || []).forEach((item) => itemMap.set(item.id, item));
-    section.items.forEach((item) => itemMap.set(item.id, item));
+    section.items.forEach((item) => {
+      itemMap.set(item.id, item);
+      (item.children || []).forEach((child) => itemMap.set(child.id, child));
+    });
   });
 
   return (
@@ -624,8 +745,8 @@ export default function ContextTab({ body, response, prevTools }) {
             <div key={currentSelectedItem.id} className={styles.contentInner}>
               {rawMode ? (
                 <pre className={styles.rawPre}>{rawText}</pre>
-              ) : currentSelectedItem.isTurn ? (
-                <TurnContent turn={currentSelectedItem} />
+              ) : currentSelectedItem.isInputItem ? (
+                <InputItemContent item={currentSelectedItem} />
               ) : (
                 <>
                   {currentSelectedItem.role && (

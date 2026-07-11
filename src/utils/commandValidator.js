@@ -10,8 +10,8 @@ export function isImageFile(path) {
 }
 
 /**
- * Regex matching Bash commands that may mutate filesystem or git state.
- * 命中任一即触发文件浏览器与 git 面板自动刷新（ToolFileChangeController 的 Bash 路径依赖）。
+ * Regex matching shell commands that may mutate filesystem or git state.
+ * 命中任一即触发文件浏览器与 git 面板自动刷新（ToolFileChangeController 的 shell_command 路径依赖）。
  *
  * 覆盖类别：
  * - delete：rm（含 rm -rf）、rmdir（删空目录）、unlink（POSIX 单文件删除）、find ... -delete
@@ -37,7 +37,7 @@ export function isImageFile(path) {
 const MUTATING_CMD_RE = /\b(rm|rmdir|unlink|mkdir|mv|cp|touch|chmod|chown|ln|git\s+(checkout|reset|stash|merge|rebase|cherry-pick|restore|clean|rm)|npm\s+(install|uninstall|ci)|yarn\s+(add|remove)|pnpm\s+(add|remove|install)|pip\s+install|tar|unzip|curl\s+-[^\s]*o|wget)\b|\bfind\b[^|;&\n]*-delete\b|[^>]>(?!>)|>>/;
 
 /**
- * @param {string} cmd  Bash 命令字符串
+ * @param {string} cmd  shell 命令字符串
  * @returns {boolean}   true 表示命令可能修改文件树或 git 状态
  */
 export function isMutatingCommand(cmd) {

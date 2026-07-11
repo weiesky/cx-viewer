@@ -31,7 +31,7 @@ const events = [
   { type: 'item.completed', item: { id: 'reason_1', type: 'reasoning', text: 'checking workspace' } },
   { type: 'item.completed', item: { id: 'cmd_1', type: 'command_execution', command: 'pwd', aggregated_output: '/tmp\\\\n', exit_code: 0, status: 'completed' } },
   { type: 'item.completed', item: { id: 'msg_1', type: 'agent_message', text: 'hello from fake codex' } },
-  { type: 'turn.completed', usage: { input_tokens: 11, cached_input_tokens: 3, output_tokens: 7, reasoning_output_tokens: 2 } },
+  { type: 'turn.completed', usage: { input_tokens: 11, output_tokens: 7, reasoning_output_tokens: 2 } },
 ];
 for (const event of events) {
   process.stdout.write(JSON.stringify(event) + '\\n');
@@ -72,7 +72,7 @@ test('sdk-manager consumes Codex SDK events and emits viewer entries', async () 
     const toolEntry = entries.find(entry => entry.method === 'TOOL');
     assert.equal(toolEntry?.mainAgent, false);
     assert.equal(toolEntry?.subAgent, false);
-    assert.equal(toolEntry?.body?.tool_name, 'Bash');
+    assert.equal(toolEntry?.body?.tool_name, 'shell_command');
     assert.equal(toolEntry?.body?.tool_input?.command, 'pwd');
     assert.equal(toolEntry?.response?.body?.output?.exit_code, 0);
 
@@ -82,11 +82,16 @@ test('sdk-manager consumes Codex SDK events and emits viewer entries', async () 
     assert.equal(mainEntry?.body?.model, 'gpt-test');
     assert.equal(mainEntry?.body?.metadata?.thread_id, 'thread_fake_sdk');
     assert.equal(mainEntry?.response?.body?.content?.[0]?.text, 'hello from fake codex');
-    assert.equal(mainEntry?.response?.body?.usage?.cache_read_input_tokens, 3);
-    assert.equal(mainEntry?.body?.messages?.[0]?.role, 'user');
-    assert.equal(mainEntry?.body?.messages?.[1]?.content?.[0]?.type, 'thinking');
-    assert.equal(mainEntry?.body?.messages?.[1]?.content?.[1]?.name, 'Bash');
-    assert.equal(mainEntry?.body?.messages?.[2]?.content?.[0]?.type, 'tool_result');
+    assert.deepEqual(mainEntry?.response?.body?.usage, {
+      input_tokens: 11,
+      output_tokens: 7,
+      reasoning_output_tokens: 2,
+      total_tokens: 18,
+    });
+    assert.equal(mainEntry?.body?.input?.[0]?.role, 'user');
+    assert.equal(mainEntry?.body?.input?.[1]?.content?.[0]?.type, 'thinking');
+    assert.equal(mainEntry?.body?.input?.[1]?.content?.[1]?.name, 'shell_command');
+    assert.equal(mainEntry?.body?.input?.[2]?.content?.[0]?.type, 'tool_result');
   } finally {
     stopSession();
     rmSync(tmp, { recursive: true, force: true });

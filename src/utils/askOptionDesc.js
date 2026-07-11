@@ -1,6 +1,6 @@
 import { isPlaceholderAskId } from './askPortalMatcher.js';
 
-// AskUserQuestion options[].description is schema-optional; centralize fallback
+// request_user_input options[].description is schema-optional; centralize fallback
 // so AskQuestionForm and ChatMessage recap stay aligned.
 
 export function optionAriaLabel(opt) {
@@ -14,7 +14,7 @@ export function hasOptionDescription(opt) {
   return Boolean(opt && opt.description);
 }
 
-// Pick the questions the interactive AskUserQuestion card actually renders.
+// Pick the questions the interactive request_user_input card actually renders.
 //
 // The modal body is filled by the inline tool_use block (reconstructed from the log
 // stream) portaling into the modal's askSlot — it does not read pendingAsk.questions

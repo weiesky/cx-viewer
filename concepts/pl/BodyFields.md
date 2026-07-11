@@ -1,42 +1,39 @@
-# Opis pol Request Body
+# Request Body Fields
 
-Opis pol najwyzszego poziomu w request body Claude API `/v1/messages`.
+Field descriptions for CX-Viewer's normalized Codex request body. The original source may be OpenAI Responses API traffic, Codex app-server notifications, or Codex SDK events; CX-Viewer maps them into one stable viewer shape.
 
-## Lista pol
+## Field List
 
-| Pole | Typ | Opis |
-|------|------|------|
-| **model** | string | Nazwa uzytego modelu, np. `claude-opus-4-6`, `claude-sonnet-4-6` |
-| **messages** | array | Historia wiadomosci w konwersacji. Kazda wiadomosc zawiera `role` (user/assistant) i `content` (tablica blokow: tekst, obrazy, tool_use, tool_result itp.) |
-| **system** | array | System prompt. Zawiera glowne instrukcje Codex, wskazowki dotyczace uzycia narzedzi, informacje o srodowisku, zawartosc CLAUDE.md itp. Bloki z `cache_control` sa buforowane przez prompt caching |
-| **tools** | array | Lista definicji dostepnych narzedzi. Kazde narzedzie zawiera `name`, `description` i `input_schema` (JSON Schema). MainAgent ma zwykle 20+ narzedzi, SubAgent ma tylko kilka |
-| **metadata** | object | Metadane zadania, zwykle zawiera `user_id` do identyfikacji uzytkownika |
-| **max_tokens** | number | Maksymalna liczba tokenow w pojedynczej odpowiedzi modelu, np. `16000`, `64000` |
-| **thinking** | object | Konfiguracja rozszerzonego myslenia. `type: "enabled"` wlacza tryb myslenia, `budget_tokens` kontroluje gorny limit tokenow myslenia |
-| **context_management** | object | Konfiguracja zarzadzania kontekstem. `truncation: "auto"` pozwala Codex automatycznie obcinac zbyt dluga historie wiadomosci |
-| **output_config** | object | Konfiguracja wyjscia, np. ustawienia `format` |
-| **stream** | boolean | Czy wlaczyc odpowiedzi strumieniowe. Codex zawsze uzywa `true` |
+| Field | Type | Description |
+|-------|------|-------------|
+| **model** | string | The model name selected by Codex, e.g. a `gpt-*` model |
+| **input** | string/array | OpenAI Responses API input. Codex usually uses the array form for user input, assistant history, tool results, and other context items |
+| **instructions** | string/array | OpenAI Responses API instructions. This can include Codex core directives, tool usage guidelines, environment information, and `AGENTS.md` project instructions |
+| **tools** | array | Available tool definitions or compact tool descriptors. MainAgent usually has a broader tool set than SubAgent |
+| **metadata** | object | Request metadata such as `thread_id`, `turn_id`, `cwd`, SDK/app-server source, and subAgent parent-thread information |
+| **max_tokens** | number | Maximum number of tokens for a single model response, e.g. `16000`, `64000` |
+| **reasoning_effort** | string | Reasoning effort when reported by Codex |
+| **reasoning_summary** | string | Reasoning summary mode when reported by Codex |
+| **approval_policy** | string | Codex approval policy for the turn |
+| **sandbox_policy** | object/string | Sandbox policy for the turn when available |
+| **stream** | boolean | Whether the OpenAI Responses API request used streaming; app-server/SDK entries are normalized as streamed turns |
 
-## Struktura messages
+## input Structure
 
-`content` kazdej wiadomosci to tablica blokow, typowe typy:
+When `input` is an array, each input item usually contains `role` and `content`. `content` can be an array of blocks. Common types include:
 
-- **text**: Zwykla zawartosc tekstowa
-- **tool_use**: Model wywoluje narzedzie (zawiera `name`, `input`)
-- **tool_result**: Wynik wykonania narzedzia (zawiera `tool_use_id`, `content`)
-- **image**: Zawartosc obrazu (base64 lub URL)
-- **thinking**: Proces myslenia modelu (tryb rozszerzonego myslenia)
+- **text**: Plain text content
+- **tool_use**: Model tool invocation (contains `name`, `input`)
+- **tool_result**: Tool execution result (contains `tool_use_id`, `content`)
+- **image/input_image/local_image**: Image content or an attached local image reference
+- **thinking**: Model's thinking process (extended thinking mode)
 
-## Struktura system
+## instructions Structure
 
-Tablica system prompt zwykle zawiera:
+`instructions` typically contains:
 
-1. **Glowne instrukcje agenta** ("You are Codex...")
-2. **Zasady uzycia narzedzi**
-3. **Zawartosc CLAUDE.md** (instrukcje na poziomie projektu)
-4. **Przypomnienia o umiejetnosciach** (skills reminder)
-5. **Informacje o srodowisku** (OS, shell, status git itp.) — w rzeczywistosci Codex jest bardzo zalezny od git. Jesli projekt posiada repozytorium git, Codex moze wykazac lepsze zrozumienie projektu, w tym pobierac zdalne zmiany i historie commitow do analizy
-
-Bloki oznaczone `cache_control: { type: "ephemeral" }` sa buforowane przez Anthropic API przez 5 minut. Przy trafieniu w bufor sa rozliczane jako `cache_read_input_tokens` (znacznie taniej niz `input_tokens`).
-
-> **Uwaga**: W przypadku specjalizowanych klientow takich jak Codex, serwer Anthropic w rzeczywistosci nie polega calkowicie na atrybucie `cache_control` w zadaniu do okreslenia zachowania buforowania. Serwer automatycznie stosuje strategie buforowania dla okreslonych pol (takich jak system prompt i definicje tools), nawet jesli zadanie nie zawiera jawnie znacznika `cache_control`. Dlatego nie musisz sie dziwic, gdy nie widzisz tego atrybutu w request body — serwer juz wykonal operacje buforowania za kulisami, po prostu nie ujawnia tej informacji klientowi. To milczace porozumienie miedzy Codex a Anthropic API.
+1. **Core agent instructions** ("You are Codex...")
+2. **Tool usage guidelines**
+3. **AGENTS.md contents** (project-level instructions)
+4. **Skills reminders** (skills reminder)
+5. **Environment information** (OS, shell, git status, etc.) — In fact, Codex relies heavily on git. If a project has a git repository, Codex demonstrates a better understanding of the project, including the ability to pull remote changes and commit history to assist with analysis

@@ -1,55 +1,55 @@
-# UltraPlan — เครื่องอธิษฐานสุดยอด
+# UltraPlan — The Ultimate Wishing Machine
 
-## UltraPlan คืออะไร
+## What is UltraPlan
 
-UltraPlan คือ**การนำไปใช้งานแบบ localized** ของ cc-viewer สำหรับคำสั่ง `/ultraplan` ดั้งเดิมของ Claude Code ช่วยให้คุณใช้ความสามารถทั้งหมดของ `/ultraplan` ในสภาพแวดล้อมภายในเครื่องของคุณ**โดยไม่จำเป็นต้องเปิดใช้บริการระยะไกลอย่างเป็นทางการของ Claude** นำทาง Claude Code ให้สำเร็จงานวางแผนและดำเนินการที่ซับซ้อนโดยใช้**การทำงานร่วมกันแบบหลายเอเจนต์**
+UltraPlan is CX Viewer's **localized planning workflow** for Codex. It guides Codex through complex planning and implementation tasks using **multi-agent collaboration**.
 
-เมื่อเทียบกับโหมด Plan ปกติหรือ Agent Team แล้ว UltraPlan สามารถ:
-- ประเมินความซับซ้อนของงานโดยอัตโนมัติและเลือกกลยุทธ์การวางแผนที่เหมาะสมที่สุด
-- ส่งเอเจนต์คู่ขนานหลายตัวเพื่อสำรวจโค้ดเบสจากมิติที่แตกต่างกัน
-- รวมการค้นคว้าภายนอก (webSearch) เพื่อดูแนวปฏิบัติที่ดีที่สุดในอุตสาหกรรม
-- รวบรวมทีม Code Review โดยอัตโนมัติหลังจากดำเนินแผนเสร็จเพื่อตรวจสอบโค้ด
-- สร้างวงจรปิดที่สมบูรณ์ **วางแผน → ดำเนินการ → ตรวจสอบ → แก้ไข**
-
----
-
-## หมายเหตุสำคัญ
-
-### 1. UltraPlan ไม่ใช่สิ่งที่ทำได้ทุกอย่าง
-UltraPlan เป็นเครื่องอธิษฐานที่ทรงพลังกว่า แต่นั่นไม่ได้หมายความว่าทุกคำอธิษฐานจะเป็นจริงได้ มันทรงพลังกว่า Plan และ Agent Team แต่ไม่สามารถ "ทำเงินให้คุณ" ได้โดยตรง พิจารณาความละเอียดของงานที่เหมาะสม — แบ่งเป้าหมายใหญ่เป็นงานขนาดกลางที่ดำเนินการได้ แทนที่จะพยายามทำทุกอย่างในครั้งเดียว
-
-### 2. ปัจจุบันมีประสิทธิภาพสูงสุดสำหรับโปรเจกต์โปรแกรมมิ่ง
-เทมเพลตและเวิร์กโฟลว์ของ UltraPlan ได้รับการปรับปรุงอย่างลึกซึ้งสำหรับโปรเจกต์โปรแกรมมิ่ง สถานการณ์อื่น ๆ (เอกสาร, การวิเคราะห์ข้อมูล ฯลฯ) สามารถลองได้ แต่คุณอาจต้องรอการปรับปรุงในเวอร์ชันอนาคต
-
-### 3. เวลาดำเนินการและข้อกำหนดหน้าต่างบริบท
-- การรัน UltraPlan ที่สำเร็จโดยทั่วไปใช้เวลา **30 นาทีขึ้นไป**
-- ต้องการให้ MainAgent มีหน้าต่างบริบทขนาดใหญ่ (แนะนำโมเดล Opus ที่มีบริบท 1M)
-- หากคุณมีเพียงโมเดล 200K **ต้องแน่ใจว่าได้ `/clear` บริบทก่อนรัน**
-- คำสั่ง `/compact` ของ Claude Code ทำงานได้ไม่ดีเมื่อหน้าต่างบริบทไม่เพียงพอ — หลีกเลี่ยงการใช้พื้นที่จนหมด
-- การรักษาพื้นที่บริบทให้เพียงพอเป็นข้อกำหนดเบื้องต้นที่สำคัญสำหรับการดำเนินการ UltraPlan ที่สำเร็จ
-
-หากคุณมีคำถามหรือข้อเสนอแนะเกี่ยวกับ UltraPlan แบบ localized สามารถเปิด [Issues บน GitHub](https://github.com/anthropics/claude-code/issues) เพื่อพูดคุยและร่วมมือกัน
+Compared to regular Plan mode or Agent Team, UltraPlan can:
+- Automatically assess task complexity and select the optimal planning strategy
+- Deploy multiple parallel agents to explore the codebase from different dimensions
+- Incorporate external research (`web_search`) for industry best practices
+- Automatically assemble a Code Review Team after plan execution for code review
+- Form a complete **Plan → Execute → Review → Fix** closed loop
 
 ---
 
-## วิธีการทำงาน
+## Important Notes
 
-UltraPlan มีสองโหมดการทำงาน:
+### 1. UltraPlan Is Not Omnipotent
+UltraPlan is a more powerful wishing machine, but that doesn't mean every wish can be fulfilled. It's more powerful than Plan and Agent Team, but it can't directly "make you money." Consider reasonable task granularity — break large goals into executable medium-sized tasks rather than trying to accomplish everything in one shot.
 
-### โหมดอัตโนมัติ
-วิเคราะห์ความซับซ้อนของงานโดยอัตโนมัติ (คะแนน 4-12) และนำทางไปยังกลยุทธ์ที่แตกต่างกัน:
+### 2. Currently Most Effective for Programming Projects
+UltraPlan's templates and workflows are deeply optimized for programming projects. Other scenarios (documentation, data analysis, etc.) can be attempted, but you may want to wait for future version adaptations.
 
-| เส้นทาง | คะแนน | กลยุทธ์ |
-|---------|--------|---------|
-| เส้นทาง A | 4-6 | การวางแผนแบบเบาพร้อมการสำรวจโค้ดโดยตรง |
-| เส้นทาง B | 7-9 | การวางแผนพร้อมไดอะแกรมโครงสร้าง (Mermaid / ASCII) |
-| เส้นทาง C | 10-12 | การสำรวจแบบหลายเอเจนต์ + วงจรปิดการตรวจสอบ |
+### 3. Execution Time and Context Window Requirements
+- A successful UltraPlan run typically takes **30 minutes or more**
+- Requires MainAgent to have a large enough context window for multi-agent findings and review output
+- If your active model has a smaller context window, **make sure to `/clear` context before running**
+- Compaction is less reliable when the context window is already nearly full — avoid running out of space
+- Maintaining sufficient context space is a critical prerequisite for successful UltraPlan execution
 
-### โหมดบังคับ
-เปิดใช้งานเวิร์กโฟลว์หลายเอเจนต์แบบเต็มของเส้นทาง C โดยตรง:
-1. ส่งเอเจนต์คู่ขนานสูงสุด 5 ตัวเพื่อสำรวจโค้ดเบสพร้อมกัน (สถาปัตยกรรม, การระบุไฟล์, การประเมินความเสี่ยง ฯลฯ)
-2. ส่งเอเจนต์วิจัยเพิ่มเติมตามต้องการเพื่อตรวจสอบโซลูชันในอุตสาหกรรมผ่าน webSearch
-3. สังเคราะห์ผลการค้นพบทั้งหมดของเอเจนต์เป็นแผนการดำเนินงานโดยละเอียด
-4. ส่งเอเจนต์ตรวจสอบเพื่อพิจารณาแผนอย่างละเอียดจากหลายมุมมอง
-5. ดำเนินแผนเมื่อได้รับการอนุมัติ
-6. รวบรวมทีม Code Review โดยอัตโนมัติเพื่อตรวจสอบคุณภาพโค้ดหลังการดำเนินการ
+If you have any questions or suggestions about the localized UltraPlan workflow, open an issue in the CX Viewer project to discuss and collaborate.
+
+---
+
+## How It Works
+
+UltraPlan offers two operating modes:
+
+### Auto Mode
+Automatically analyzes task complexity (score 4-12) and routes to different strategies:
+
+| Route | Score | Strategy |
+|-------|-------|----------|
+| Route A | 4-6 | Lightweight planning with direct code exploration |
+| Route B | 7-9 | Planning with structural diagrams (Mermaid / ASCII) |
+| Route C | 10-12 | Multi-agent exploration + review closed loop |
+
+### Forced Mode
+Directly activates the full Route C multi-agent workflow:
+1. Deploy up to 5 parallel agents to explore the codebase simultaneously (architecture, file identification, risk assessment, etc.)
+2. Optionally deploy a research agent to investigate industry solutions via `web_search`
+3. Synthesize all agent findings into a detailed implementation plan
+4. Deploy a review agent to scrutinize the plan from multiple perspectives
+5. Execute the plan once approved
+6. Automatically assemble a Code Review Team to validate code quality after implementation

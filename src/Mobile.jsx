@@ -9,7 +9,8 @@ import { sortSkillsDefault } from './utils/skillsParser';
 import { handleSkillToggle, handleSkillDelete } from './utils/skillModalController';
 import { getEffectiveModel, computeContextPercent, sumUsageContextTokens } from './utils/helpers';
 import { contextSeverityColor } from './utils/formatters';
-import { PERM_AUTO_APPROVE_OPTIONS, PLAN_AUTO_APPROVE_OPTIONS, autoApproveSelectOptions } from './utils/autoApproveOptions';
+import { PLAN_AUTO_APPROVE_OPTIONS, autoApproveSelectOptions } from './utils/autoApproveOptions';
+import { approvalReviewerSelectOptions } from './utils/approvalReviewerOptions';
 import ChatView from './components/chat/ChatView';
 import TerminalPanel from './components/terminal/TerminalPanel';
 import { TerminalWsProvider } from './components/terminal/TerminalWsContext';
@@ -30,6 +31,7 @@ import OpenFolderIcon from './components/common/OpenFolderIcon';
 import { t, getLang, setLang, LANG_OPTIONS } from './i18n';
 import { useProjectAlias } from './hooks/useProjectAlias';
 import { apiUrl } from './utils/apiUrl';
+import { CODEX_PLAN_TOOL_NAME } from './utils/toolNameAliases.js';
 import * as SeqLoaders from './utils/seqResourceLoaders';
 
 // Bridge useProjectAlias into the mobile ctx label. Mobile-side is read-only
@@ -61,7 +63,6 @@ class Mobile extends AppBase {
       mobileCachePanelVisible: false,  // 手机模式：点击血条划出的侧边抽屉
       globalPermission: null,     // { permission, handlers } — 全局权限审批浮层
       globalPlanApproval: null,   // { plan, handlers } — 全局计划审批浮层
-      autoApproveSeconds: 0,
       hasGit: true,
       terminalPendingImages: [],  // 终端面板独立的 pending 图片/文件
       // ─── 血条 popover/抽屉用的状态（与 AppHeader 同语义）─────────
@@ -410,7 +411,7 @@ class Mobile extends AppBase {
 
     for (let ri = 0; ri < mainAgentRequests.length; ri++) {
       const req = mainAgentRequests[ri];
-      const messages = req.body?.messages || [];
+      const messages = req.body?.input || [];
       const timestamp = req.timestamp || '';
       const { userMsgs, fullTexts, slashCmd } = Mobile.extractUserTexts(messages);
 
@@ -469,11 +470,6 @@ class Mobile extends AppBase {
 
   handlePendingPermission = (data) => { this.setState({ globalPermission: data }); };
   handlePendingPlanApproval = (data) => { this.setState({ globalPlanApproval: data }); };
-
-  handleAutoApproveChange = (seconds) => {
-    this.setState({ autoApproveSeconds: seconds });
-    this.context.updatePreferences({ autoApproveSeconds: seconds });
-  };
 
   // 拖拽上传逻辑已上提到 AppBase；Mobile 仅 override 两个分发钩子：终端可见时落入
   // terminalPendingImages（图片队列），否则落入 pendingUploadPaths。toTerminal 在 drop
@@ -844,8 +840,9 @@ class Mobile extends AppBase {
                     onPendingPlanApproval={this.handlePendingPlanApproval}
                     onPendingAsk={this.handleApprovalAsk}
                     onPendingPtyPlan={this.handleApprovalPtyPlan}
-                    autoApproveSeconds={this.state.autoApproveSeconds}
-                    onAutoApproveChange={this.handleAutoApproveChange}
+                    approvalsReviewer={this.state.approvalsReviewer}
+                    onApprovalsReviewerChange={this.handleApprovalsReviewerChange}
+                    onApprovalsReviewerSynced={this.handleApprovalsReviewerSynced}
                     planAutoApproveSeconds={this.state.approvalPrefs?.planAutoApproveSeconds}
                     onPlanAutoApproveChange={this.handlePlanAutoApproveChange}
                     ownTabId={this.state.ownTabId}
@@ -871,8 +868,8 @@ class Mobile extends AppBase {
                 onRemovePendingImage={this._handleRemoveTerminalImage}
                 onClearPendingImages={this._handleClearTerminalImages}
                 onClearContextOptimistic={this.handleClearContextOptimistic}
-                autoApproveSeconds={this.state.autoApproveSeconds}
-                onAutoApproveChange={this.handleAutoApproveChange}
+                approvalsReviewer={this.state.approvalsReviewer}
+                onApprovalsReviewerChange={this.handleApprovalsReviewerChange}
                 planAutoApproveSeconds={this.state.approvalPrefs?.planAutoApproveSeconds}
                 onPlanAutoApproveChange={this.handlePlanAutoApproveChange}
               />
@@ -883,7 +880,7 @@ class Mobile extends AppBase {
               <MobileGitDiff visible={this.state.mobileGitDiffVisible} onClose={() => this.setState({ mobileGitDiffVisible: false })} />
             </div>
           </div>
-          {/* 移动端（含 iPad）血条点击 → 从左侧划出的 cache popover 抽屉。
+          {/* 移动端（含 iPad）血条点击 → 从左侧划出的上下文管理抽屉。
               内层 zoom 0.6 在 :global(html.pad-mode) 下被覆写为 1（见 App.module.css）。
               visible 时才 mount CachePopoverContent 以保留懒加载语义；关闭按钮放标题行右侧。 */}
           <div className={`${styles.mobileCachePanelOverlay} ${this.state.mobileCachePanelVisible ? styles.mobileCachePanelOverlayVisible : ''}`}>
@@ -906,7 +903,6 @@ class Mobile extends AppBase {
                   <CachePopoverContent
                     inDrawer
                     requests={filteredRequests}
-                    serverCachedContent={this.state.serverCachedContent}
                     contextPercent={mobileContextPercent}
                     contextTokens={mobileContextTokens}
                     fsSkills={this.state._fsSkills}
@@ -1066,13 +1062,18 @@ class Mobile extends AppBase {
               <div className={styles.mobileSettingsGroup}>
                 <div className={styles.mobileSettingsSectionTitle}>{t('ui.chatDisplay')}</div>
                 <div className={styles.mobileSettingsRow}>
-                  <span className={styles.mobileSettingsLabel}>{t('ui.permission.autoApprove.setting')}</span>
+                  <span className={styles.mobileSettingsLabel}>
+                    {t('ui.permission.reviewer.setting')}
+                    <Tooltip title={t('ui.permission.reviewer.help')} trigger="click">
+                      <QuestionCircleOutlined className={styles.mobileSettingsHelpIcon} />
+                    </Tooltip>
+                  </span>
                   <Select
                     size="small"
-                    value={this.state.autoApproveSeconds || 0}
-                    onChange={this.handleAutoApproveChange}
-                    options={autoApproveSelectOptions(PERM_AUTO_APPROVE_OPTIONS, t)}
-                    style={{ width: 100 }}
+                    value={this.state.approvalsReviewer}
+                    onChange={this.handleApprovalsReviewerChange}
+                    options={approvalReviewerSelectOptions(t)}
+                    style={{ width: 150 }}
                   />
                 </div>
                 {this.state.approvalPrefs && (
@@ -1323,13 +1324,11 @@ class Mobile extends AppBase {
             onDeny={this.state.globalPermission.handlers.deny}
             visible={true}
             global={true}
-            autoApproveSeconds={this.state.autoApproveSeconds}
-            onAutoApproveChange={this.handleAutoApproveChange}
           />
         )}
         {this.state.globalPlanApproval && (
           <ToolApprovalPanel
-            toolName="ExitPlanMode"
+            toolName={CODEX_PLAN_TOOL_NAME}
             toolInput={this.state.globalPlanApproval.plan.input}
             requestId={this.state.globalPlanApproval.plan.id}
             onAllow={this.state.globalPlanApproval.handlers.approve}

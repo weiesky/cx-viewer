@@ -77,7 +77,7 @@ function isWeakEnd(team) {
 /* ── helper: nav button styles (shared from parent) ── */
 function TeamButton({ requests, onOpenSession, navBtnClass }) {
   // 稳定引用：requests 变化才重算，避免 useEffect 误触发。
-  // 过滤 name === 'unknown'：parser 在 TeamCreate 缺 team_name 或 cross-file TeamDelete
+  // 过滤 name === 'unknown'：parser 在缺少 team metadata 或 cross-file close_agent
   // 推断失败时兜底 'unknown'（teamSessionParser.js:80, 98），UI 隐藏，parser 保留底层数据用于追溯。
   const teamSessions = useMemo(
     () => extractTeamSessions(requests).filter(t => t.name && t.name !== 'unknown'),
@@ -283,7 +283,7 @@ function TeamGantt({ teamAgents, teamTotalStart, teamTotalEnd, leadSegments, gan
                 }} />;
               })}
               {leadSegments && leadSegments.filter(s => s.label !== 'idle').map((seg, i) => {
-                const tips = { create: 'Team Created', tasks: 'Tasks Created', spawn: 'Agents Spawned', msg: 'SendMessage', cleanup: 'Team Cleanup', text: 'Status Update', thinking: 'Thinking...', 'report-received': 'Report Received' };
+                const tips = { create: 'Team Created', tasks: 'Agent Activity', spawn: 'Agents Spawned', msg: 'Input Sent', cleanup: 'Agent Closed', text: 'Status Update', thinking: 'Thinking...', 'report-received': 'Report Received' };
                 const dColor = seg.label === 'thinking' ? 'var(--color-code-purple)' : seg.label === 'report-received' ? 'var(--color-success)' : 'var(--color-primary)';
                 // 走 data-preview + usePreviewTip 委托浮层(替代失效原生 title):一段会话可渲 100+ 钻石、
                 // 钻石是纯 span 零 per-marker 组件开销,委托读 data-preview 单实例浮层渲出。
@@ -323,7 +323,7 @@ function TeamGantt({ teamAgents, teamTotalStart, teamTotalEnd, leadSegments, gan
               ))}
             </div>
           </div>
-          {/* TaskUpdate arrows */}
+          {/* task progress arrows */}
           {(() => {
             const rowH = 25;
             const leadY = rowH / 2;

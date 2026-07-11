@@ -2,22 +2,22 @@
 
 ## Definition
 
-A Teammate is a collaborative agent in Codex Agent Team mode. When the main agent creates a team via `TeamCreate` and spawns teammates using the `Agent` tool, each teammate runs as an independent agent process with its own context window and toolset, communicating with team members through `SendMessage`.
+A Teammate is a collaborative agent in Codex Agent Team mode. The main agent discovers the available multi-agent tools through `tool_search`; when those tools are available, each teammate runs as an independent agent process with its own context window and toolset.
 
 ## Differences from SubAgent
 
 | Feature | Teammate | SubAgent |
 |---------|----------|----------|
 | Lifecycle | Persistent, can receive multiple messages | One-off task, destroyed upon completion |
-| Communication | SendMessage bidirectional messaging | Parent→child unidirectional call, returns result |
+| Communication | Team messaging through the available multi-agent toolset | Parent→child unidirectional call, returns result |
 | Context | Independent full context, retained across turns | Isolated task context |
 | Collaboration | Team collaboration, can communicate with each other | Hierarchical structure, only interacts with parent agent |
 | Task Type | Complex multi-step tasks | Single tasks such as search and exploration |
 
 ## Behavior
 
-- Created by the main agent (team lead) via the `Agent` tool and assigned a `team_name`
-- Shares task lists through `TaskList` / `TaskGet` / `TaskUpdate`
+- Created by the main agent (team lead) through available multi-agent tooling and assigned a team identity
+- Shares task state through the available multi-agent task/status tools
 - Enters idle state after each turn, waiting to be woken by a new message
 - Can be gracefully terminated via `shutdown_request`
 

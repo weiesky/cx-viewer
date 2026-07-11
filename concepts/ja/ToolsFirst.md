@@ -1,77 +1,71 @@
-# なぜToolsが最初に表示されるのか？
+# Why Are Tools Listed First?
 
-cc-viewerのContextパネルでは、**ToolsはSystem PromptとMessagesより前に表示されます**。この順序は、**Anthropic APIのKV-Cacheプレフィックスシーケンス**を正確に反映しています。
+In CX Viewer's Context panel, **Tools appear before Instructions and Input**. For Codex, this is a diagnostic layout: tool definitions are a large, high-impact part of the request shape, so they are shown first before the instructions and conversation context they constrain.
 
-## KV-Cacheプレフィックスシーケンス
+## Request Context Layout
 
-Anthropic のAPIがKV-Cacheを構築する際、コンテキストを以下の**固定された順序**でプレフィックスとして連結します：
+Codex traffic can arrive from OpenAI Responses API calls, Codex app-server events, or SDK stream events. CX Viewer normalizes those sources into a consistent context view:
 
 ```
 ┌─────────────────────────────────────────────────┐
-│ 1. Tools (JSON Schema definitions)               │  ← Start of cache prefix
-│ 2. System Prompt                                 │
-│ 3. Messages (conversation history + current turn)│  ← End of cache prefix
+│ 1. Tools (JSON Schema definitions)               │  ← Capability surface
+│ 2. Instructions                                  │
+│ 3. Input (conversation history + current turn)   │
 └─────────────────────────────────────────────────┘
 ```
 
-つまり、**ToolsはSystem Promptより前、キャッシュプレフィックスの最先頭に位置します**。
+This does not claim a provider-specific serialization order. It gives you a stable way to inspect what capabilities were available before reading instructions and input history.
 
-## なぜToolsはSystemよりキャッシュの重みが大きいのか？
+## Why Tools Often Matter Most
 
-KV-Cacheのプレフィックスマッチングでは、**前方のコンテンツほど重要**です — 変更が発生すると、それ以降のすべてが無効化されます：
+Tool definitions are often the largest static part of an agent request. A small UI toggle can add, remove, or reshape many tool schemas, which changes model behavior and request size.
 
-1. **プレフィックスマッチングは先頭から開始される**：KV-Cacheは現在のリクエストをキャッシュされたプレフィックスと先頭からtoken単位で比較します。不一致が見つかった瞬間、それ以降のコンテンツはすべて無効化されます。
+1. **Capability changes are semantic changes**: Adding or removing a tool changes what the agent is allowed to do, not just the token count.
 
-2. **Toolsの変更 = キャッシュ全体が無効化**：Toolsは最前列にあるため、tool定義の変更（MCP toolの追加・削除1つでも）は**プレフィックスを最先頭から破壊し**、キャッシュされたSystem PromptとMessagesすべてを無効化します。
+2. **Tool schemas can dominate request size**: MCP and dynamic tools often have detailed JSON Schemas with descriptions, enums, and nested parameters.
 
-3. **Systemの変更 = Messagesキャッシュが無効化**：System Promptは中間に位置するため、その変更は後続のMessages部分のみを無効化します。
+4. **Input appends are usually cheaper to inspect**: Normal conversation turns mostly add new user input and the previous assistant/tool results, while tool and instruction changes tend to be rarer and more important.
 
-4. **Messagesの変更 = 末尾部分のみ影響**：Messagesは末尾にあるため、新しいmessageの追加は小さな末尾セグメントのみを無効化します — ToolsとSystemのキャッシュはそのまま保持されます。
+## Practical Impact
 
-## 実際の影響
-
-| 変更の種類 | キャッシュへの影響 | 典型的なシナリオ |
+| Change Type | Cache Impact | Typical Scenario |
 |-------------|-------------|-----------------|
-| Tool追加/削除 | **完全無効化** | MCPサーバーの接続/切断、IDEプラグインの切り替え |
-| System Promptの変更 | Messagesキャッシュが失われる | CLAUDE.mdの編集、system reminderの挿入 |
-| 新しいmessageの追加 | 末尾の増分のみ | 通常の会話フロー（最も一般的、最もコストが低い） |
+| Tool added/removed | Request shape changes | MCP server connect/disconnect, plugin toggle |
+| Instructions change | Instructions and policy changed | `AGENTS.md` edit, developer instruction update |
+| New input appended | Normal turn growth | User input, assistant reply, tool result |
 
-これが、[CacheRebuild](CacheRebuild.md)における`tools_change`が最もコストの高いリビルド理由になりやすい理由です — プレフィックスチェーンを最前部から破壊するからです。
+## Why Are Tool Definitions Placed Before the "Brain"?
 
-## なぜツール定義が「脳」より先に配置されるのか？
+From a diagnostic perspective, putting Tools first is useful because tool definitions describe the agent's available actions before you inspect the instructions that ask the agent to act.
 
-キャッシュの仕組みから言えば、Toolsが最前列に位置するのは技術的な事実です。しかし認知設計の観点からも、この順序は理にかなっています —— **Toolsは手足であり、System Promptは脳です**。
+Before taking action, a person needs to perceive what limbs and tools are available. An infant doesn't first understand the rules of the world (Instructions), then learn to reach and grab — they first sense that they have hands and feet, then gradually understand rules through interaction with the environment. Similarly, an LLM needs to know what tools it can call (read files, write code, search, execute commands) before receiving task instructions, so it can accurately assess "what can I do" and "how should I do it" when processing the instructions.
 
-人は行動する前に、自分がどんな手足や道具を使えるかを感知する必要があります。赤ちゃんは最初に世界のルール（System）を理解してから手を伸ばすのではなく、まず自分に手や足があることを感知し、環境との相互作用を通じて徐々にルールを理解していきます。同様に、LLMはタスク指示（System Prompt）を受け取る前に、どんなツールを呼び出せるか（ファイル読み取り、コード記述、検索、コマンド実行）を知っておく必要があります。そうすることで、指示を処理する際に「何ができるか」「どうすべきか」を正確に判断できるのです。
+If reversed — first telling the model "your task is to refactor this module", then telling it "you have shell_command, apply_patch, and tool_search" — the model would lack critical capability boundary information when understanding the task, potentially producing unrealistic plans or overlooking available approaches.
 
-もし逆だったら —— まずモデルに「このモジュールをリファクタリングせよ」と伝え、次に「Read、Edit、Bashなどのツールがある」と伝える —— モデルはタスクを理解する際に重要な能力境界の情報が欠けてしまい、非現実的な計画を立てたり、利用可能な手段を見落としたりする可能性があります。
+**Know what cards you hold before deciding how to play.** This is the cognitive logic behind Tools preceding Instructions.
 
-**手持ちのカードを知ってから、どう切るかを決める。** これがToolsがSystemより先に来る認知的論理です。
+## Why Are MCP Tools Also in This Position?
 
-## なぜMCPツールもこの位置にあるのか？
+MCP (Model Context Protocol) tools, like built-in tools, are placed at the very front of the Tools area. Understanding MCP's position in the context helps evaluate its real benefits and costs.
 
-MCP（Model Context Protocol）ツールは、組み込みツールと同様にTools領域の最前列に配置されます。MCPのコンテキスト内での位置を理解することは、その実際のメリットとコストを評価するのに役立ちます。
+### MCP Advantages
 
-### MCPの利点
+- **Capability extension**: MCP lets models access external services (database queries, API calls, IDE operations, browser control, etc.), breaking beyond built-in tool boundaries
+- **Open ecosystem**: Anyone can implement an MCP server; the model gains new capabilities without retraining
+- **On-demand loading**: MCP servers can be selectively connected/disconnected based on task scenario, flexibly composing tool sets
 
-- **能力拡張**：MCPにより、モデルは外部サービス（データベースクエリ、API呼び出し、IDE操作、ブラウザ制御など）にアクセスでき、組み込みツールの境界を超えることができます
-- **オープンエコシステム**：誰でもMCPサーバーを実装でき、モデルは再トレーニングなしで新しい能力を獲得できます
-- **オンデマンド読み込み**：タスクのシナリオに応じてMCPサーバーを選択的に接続/切断でき、ツールセットを柔軟に構成できます
+### MCP Costs
+- **Prefix bloat**: MCP tool Schemas are typically larger than built-in tools (containing detailed parameter descriptions, enums, etc.). Many MCP tools significantly increase the Tools area's token count, squeezing the context space available for Input
+- **Latency overhead**: MCP tool calls require cross-process communication (JSON-RPC over stdio/SSE), an order of magnitude slower than built-in function calls
+- **Stability risk**: MCP servers are external processes that may crash, timeout, or return unexpected formats, requiring additional error handling
 
-### MCPのコスト
+### Practical Recommendations
 
-- **キャッシュキラー**：各MCPツールのJSON Schema定義はKV-Cacheプレフィックスの最前列に連結されます。MCPツールを1つ追加/削除するだけで = **キャッシュ全体が最初から無効化**されます。MCPサーバーの接続/切断を頻繁に行うと、キャッシュヒット率が大幅に低下します
-- **プレフィックスの肥大化**：MCPツールのSchemaは通常、組み込みツールより大きくなります（詳細なパラメータ説明、列挙値などを含む）。多数のMCPツールはTools領域のトークン数を大幅に増加させ、Messagesに使えるコンテキスト空間を圧迫します
-- **レイテンシオーバーヘッド**：MCPツール呼び出しにはプロセス間通信（JSON-RPC over stdio/SSE）が必要で、組み込み関数呼び出しより1桁遅くなります
-- **安定性リスク**：MCPサーバーは外部プロセスであり、クラッシュ、タイムアウト、予期しないフォーマットの返却が起こりうるため、追加のエラーハンドリングが必要です
+| Scenario | Recommendation |
+|----------|---------------|
+| Long conversations, high-frequency interaction | Minimize MCP tool count to keep requests smaller and easier to inspect |
+| Short tasks, one-off operations | Use MCP tools freely; overhead is usually limited |
+| Frequently adding/removing MCP servers | Each change reshapes the request; consider fixing the tool set |
+| Oversized Tool Schemas | Trim descriptions and enums to reduce prefix token footprint |
 
-### 実践的な推奨事項
-
-| シナリオ | 推奨 |
-|----------|------|
-| 長い会話、高頻度のやり取り | MCPツールの数を最小限にし、キャッシュプレフィックスの安定性を保護 |
-| 短いタスク、一回限りの操作 | MCPツールを自由に使用可能；キャッシュへの影響は限定的 |
-| MCPサーバーの頻繁な追加/削除 | 変更のたびにキャッシュが全面再構築される；ツールセットの固定を検討 |
-| 過大なTool Schema | descriptionとenumを削減し、プレフィックスのトークン消費を削減 |
-
-cc-viewerのContextパネルでは、MCPツールは組み込みツールと並んでTools領域に表示され、各ツールのSchemaサイズとキャッシュプレフィックスへの寄与を直感的に確認できます。
+In CX Viewer's Context panel, MCP tools are displayed alongside built-in and dynamic tools in the Tools area, giving you a clear view of each tool's Schema size and contribution to request shape.

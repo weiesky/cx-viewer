@@ -1,6 +1,6 @@
 {
   "name": "cx-viewer",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Codex Logger visualization management tool",
   "license": "MIT",
   "main": "server.js",
@@ -21,6 +21,8 @@
     "start": "node server.js",
     "test": "CXV_TEST=1 CXV_LOG_DIR=tmp node --test",
     "test:coverage": "CXV_TEST=1 CXV_LOG_DIR=tmp node --test --experimental-test-coverage --test-coverage-include='lib/*.js' --test-coverage-include='*.js'",
+    "pack:dry-run": "node scripts/npm-pack-dry-run.mjs",
+    "release:check": "npm test && npm run build && npm run pack:dry-run",
     "prepublishOnly": "npm run build",
     "electron:dev": "electron electron/main.js",
     "electron:build": "npm run build && electron-builder",
@@ -44,6 +46,9 @@
     "url": "https://github.com/weiesky/cx-viewer/issues"
   },
   "homepage": "https://github.com/weiesky/cx-viewer#readme",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
   "engines": {
     "node": ">=20"
   },
@@ -105,7 +110,6 @@
     "electron-builder": "^26.0.12",
     "highlight.js": "^11.11.1",
     "html2canvas": "^1.4.1",
-    "jszip": "^3.10.1",
     "marked": "^17.0.2",
     "mermaid": "^11.13.0",
     "qrcode.react": "^4.2.0",
@@ -124,6 +128,7 @@
     "@opentelemetry/semantic-conventions": "^1.40.0",
     "@openai/codex-sdk": "0.142.5",
     "dompurify": "^3.3.3",
+    "jszip": "^3.10.1",
     "node-pty": "^1.1.0",
     "undici": "^7.22.0",
     "ws": "^8.19.0"

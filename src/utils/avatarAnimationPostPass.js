@@ -3,28 +3,25 @@ import { shouldAnimateTeammateAvatar, pickAvatarAnimationTargets } from './teamm
 
 /**
  * Avatar animation loading strategy — post-pass applied at the end of
- * ChatView.buildAllItems, once every item (and the out-of-band Last Response
- * timestamp) is known. Teammate rows animate their one-shot draw-in only when
- * within the 60s window of the newest item's timestamp; the single newest
- * teammate row always animates ("welcome flourish" on historic logs). Losers
- * get cloneElement({ animateAvatar: false }) — winners keep their original
- * element reference so cached elements skip reconciliation entirely.
+ * ChatView.buildAllItems, once every item is known. Teammate rows animate
+ * their one-shot draw-in only when within the 60s window of the newest item's
+ * timestamp; the single newest teammate row always animates ("welcome flourish"
+ * on historic logs). Losers get cloneElement({ animateAvatar: false }) —
+ * winners keep their original element reference so cached elements skip
+ * reconciliation entirely.
  *
  * The flags are frozen per build: the window is measured against the newest
  * item's timestamp, NOT wall clock (do not "fix" with Date.now()); they
  * refresh whenever new data rebuilds the list.
  *
  * @param {Array} items - freshly built ChatMessage element array; mutated in place
- * @param {string|null} lastResponseTs - session.entryTimestamp of the Last
- *   Response block, which lives OUTSIDE items but must count toward "newest"
  * @returns {Array} the same array, with stale teammate rows cloned to static
  */
-export function applyAvatarAnimationTargets(items, lastResponseTs = null) {
+export function applyAvatarAnimationTargets(items) {
   const scanEntries = items.map((item) => ({
     ts: item?.props?.timestamp,
     isTeammateAvatar: isTeammateAvatarItem(item?.props),
   }));
-  if (lastResponseTs) scanEntries.push({ ts: lastResponseTs, isTeammateAvatar: false });
   const { latestMs, newestTeammateIdx } = pickAvatarAnimationTargets(scanEntries);
   if (newestTeammateIdx === -1) return items;
   for (let i = 0; i < items.length; i++) {

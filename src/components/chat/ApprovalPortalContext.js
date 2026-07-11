@@ -13,7 +13,7 @@ import { createContext } from 'react';
  * Default value is a no-op: when the modal is disabled or unavailable, inline rendering
  * proceeds untouched.
  *
- * Note: permission and SDK ExitPlanMode panels deliberately stay inline-only and are NOT
+ * Note: permission and SDK plan approval panels deliberately stay inline-only and are NOT
  * routed through this context.
  */
 export const ApprovalPortalContext = createContext({

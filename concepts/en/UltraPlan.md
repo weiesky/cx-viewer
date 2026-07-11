@@ -7,7 +7,7 @@ UltraPlan is CX Viewer's **localized planning workflow** for Codex. It guides Co
 Compared to regular Plan mode or Agent Team, UltraPlan can:
 - Automatically assess task complexity and select the optimal planning strategy
 - Deploy multiple parallel agents to explore the codebase from different dimensions
-- Incorporate external research (webSearch) for industry best practices
+- Incorporate external research (`web_search`) for industry best practices
 - Automatically assemble a Code Review Team after plan execution for code review
 - Form a complete **Plan → Execute → Review → Fix** closed loop
 
@@ -48,7 +48,7 @@ Automatically analyzes task complexity (score 4-12) and routes to different stra
 ### Forced Mode
 Directly activates the full Route C multi-agent workflow:
 1. Deploy up to 5 parallel agents to explore the codebase simultaneously (architecture, file identification, risk assessment, etc.)
-2. Optionally deploy a research agent to investigate industry solutions via webSearch
+2. Optionally deploy a research agent to investigate industry solutions via `web_search`
 3. Synthesize all agent findings into a detailed implementation plan
 4. Deploy a review agent to scrutinize the plan from multiple perspectives
 5. Execute the plan once approved

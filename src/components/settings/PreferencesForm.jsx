@@ -2,7 +2,7 @@ import React from 'react';
 import { Switch, Select, Radio, Tooltip } from 'antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { t, LANG_OPTIONS } from '../../i18n';
-import { PERM_AUTO_APPROVE_OPTIONS, PLAN_AUTO_APPROVE_OPTIONS, autoApproveSelectOptions } from '../../utils/autoApproveOptions';
+import { PLAN_AUTO_APPROVE_OPTIONS, autoApproveSelectOptions } from '../../utils/autoApproveOptions';
 import styles from './PreferencesForm.module.css';
 
 // 纯展示偏好控件，作用于传入的 values（某个项目的 fork），改动经 onPatch(partial) 上抛。
@@ -35,15 +35,6 @@ export default function PreferencesForm({ values = {}, onPatch }) {
 
   return (
     <div className={styles.form}>
-      <Row label={t('ui.permission.autoApprove.setting')} help={t('ui.permission.autoApprove.help')}>
-        <Select
-          size="small"
-          value={v.autoApproveSeconds || 0}
-          onChange={(value) => patch({ autoApproveSeconds: value })}
-          options={autoApproveSelectOptions(PERM_AUTO_APPROVE_OPTIONS, t)}
-          style={{ width: 110 }}
-        />
-      </Row>
       <Row label={t('ui.approval.settings.planAutoApprove')} help={t('ui.approval.settings.planAutoApproveHelp')}>
         <Select
           size="small"

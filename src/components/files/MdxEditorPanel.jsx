@@ -49,7 +49,7 @@ const CODE_BLOCK_LANGUAGES = {
   tsx: 'TSX',
   py: 'Python',
   sh: 'Shell',
-  bash: 'Bash',
+  bash: 'Shell',
   json: 'JSON',
   yaml: 'YAML',
   md: 'Markdown',

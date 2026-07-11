@@ -2,13 +2,13 @@
 
 ## Definition
 
-Search is a sub-agent type spawned by Codex's main agent to perform codebase searches. It executes targeted file and content searches using tools such as Glob, Grep, and Read, then returns the results to the parent agent.
+Search is a sub-agent type spawned by Codex's main agent to perform codebase searches. It discovers available search and reading capabilities through `tool_search`, then returns the results to the parent agent.
 
 ## Behavior
 
 - Spawned automatically when the main agent needs to search or explore the codebase
 - Runs in an isolated context with read-only access
-- Uses Glob for file pattern matching, Grep for content search, and Read for file inspection
+- Uses current Codex/deferred tools for file pattern matching, content search, and file inspection
 - Returns search results to the parent agent for further processing
 
 ## When It Appears

@@ -14,15 +14,15 @@ Body Diff JSON solves exactly this problem: it automatically compares the bodies
    - New fields: Displayed directly
    - Deleted fields: Not shown (usually doesn't affect understanding)
    - Changed fields: Shows the current value
-   - `messages` array special handling: Only shows newly added messages (since normal conversation is append-only, prefix messages remain unchanged)
+   - `input` array special handling: Only shows newly added input items (since normal conversation is append-only, prefix input remains unchanged)
 4. **Request body shrinkage detection**: If the current request body is smaller than the previous one, it indicates context truncation or session reset, and a notice is displayed instead of a diff
 
 ## Typical Scenarios
 
 In a normal conversation round, Body Diff JSON typically contains only:
-- `messages`: 1-2 newly added messages (the user's input + the assistant's reply from the previous round)
+- `input`: 1-2 newly added input items (the user's input + the assistant's reply from the previous round)
 
-If you see changes to `system`, `tools`, `model`, or other fields in the diff, it means a configuration change occurred in this round, which is often the cause of a cache rebuild.
+If you see changes to `instructions`, `tools`, `model`, or other fields in the diff, it means a configuration change occurred in this round.
 
 ## Usage
 

@@ -2,7 +2,7 @@
 
 ## Cómo funciona
 
-CC Viewer inicia un servidor HTTP y genera una **dirección LAN** (ej: `http://192.168.1.100:7008`). Escanea el código QR para acceder a Claude Code desde tu móvil a través de la misma red WiFi.
+CC Viewer inicia un servidor HTTP y genera una **dirección LAN** (ej: `http://192.168.1.100:7008`). Escanea el código QR para acceder a Codex desde tu móvil a través de la misma red WiFi.
 
 ## ¿Por qué no puedo conectar?
 

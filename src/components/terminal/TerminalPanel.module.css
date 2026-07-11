@@ -19,8 +19,6 @@
      若不显式设 min-height:0，临界窗口高度下会撑大父容器，挤压底部 toolbar */
   min-height: 0;
   overflow: hidden;
-  /* 悬浮刷新按钮 (.terminalRefreshBtn) 的定位锚点 */
-  position: relative;
   padding: 4px 8px;
   /* flex container：让内层 .terminalHost 走 flex:1 撑满，并以 margin-bottom 留出 buffer */
   display: flex;
@@ -44,42 +42,6 @@
 
 .terminalContainerFocused {
   box-shadow: inset 0 0 0 4px var(--border-secondary), 0 0 8px var(--color-primary-bg-light);
-}
-
-/* 悬浮在主 terminal 右下角的「刷新渲染」按钮：抖动高度强制 xterm 重绘，修花屏/白屏。
-   right:18px 避开 xterm-viewport 滚动条；z-index:10 高于 xterm 内部层 (≤7)；
-   常驻但半透明，hover 提亮——花屏时仍可见，正常时不喧宾夺主 */
-.terminalRefreshBtn {
-  position: absolute;
-  bottom: 12px;
-  right: 18px;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  height: 24px;
-  padding: 0 9px;
-  border: 1px solid var(--border-secondary);
-  border-radius: 12px;
-  background: var(--bg-elevated);
-  color: var(--text-light);
-  font-size: 12px;
-  line-height: 1;
-  cursor: pointer;
-  opacity: 0.55;
-  transition: opacity 0.15s, background 0.15s, color 0.15s, border-color 0.15s;
-}
-
-.terminalRefreshBtn:hover {
-  opacity: 1;
-  background: var(--bg-surface);
-  color: var(--text-primary);
-  border-color: var(--text-disabled);
-}
-
-.terminalRefreshBtn svg {
-  width: 13px;
-  height: 13px;
 }
 
 :global([data-theme="light"]) .terminalContainerFocused {
@@ -620,12 +582,6 @@
   font-size: 13px;
   padding: 8px 12px;
   text-align: center;
-}
-
-.agentTeamDisabledTip {
-  color: var(--text-secondary);
-  font-size: 13px;
-  margin-bottom: 10px;
 }
 
 /* 终端工具栏 3 段式：

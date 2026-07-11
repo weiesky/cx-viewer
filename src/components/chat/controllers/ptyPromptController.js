@@ -13,23 +13,19 @@
  *   - the 200ms detection debounce timer,
  *   - _current (the synchronous mirror of state.ptyPrompt, avoiding stale
  *     closure reads — exposed to AskFlowController via ChatView's host),
- *   - the instant-auto-approve dedupe signature/timestamp window.
  *
  * No antd/i18n/JSX imports — statically loadable under node:test.
  *
  * host interface (injected by ChatView at construction):
  *  - getState()               -> live this.state
  *  - setState(update, cb?)    -> this.setState (functional updaters passed through)
- *  - isInstantAutoApprove()   -> props.autoApproveSeconds === AUTO_APPROVE_INSTANT
  *  - isAskSubmitting()        -> this._askFlow._askSubmitting (don't dismiss during ask submit)
- *  - permissionAutoAllow(p)   -> this._permission.autoAllow(p)
  *  - scrollToBottom()         -> this.scrollToBottom()
  *  - now()                    -> Date.now() (injectable for dedupe-window tests)
  */
 import { stripAnsi, splitTrailingAnsiCarry, detectPromptInBuffer, isFalsePositiveQuestion } from '../../../utils/promptDetect.js';
 import { isPlanApprovalPrompt, isDangerousOperationPrompt, parseToolInfoFromBuffer } from '../../../utils/promptClassifier.js';
 
-export const AUTO_ALLOW_PTY_DEDUPE_MS = 2000;
 export const PTY_BUFFER_MAX = 4096;
 export const DETECT_DEBOUNCE_MS = 200;
 export const PTY_HISTORY_CAP = 200;
@@ -41,8 +37,6 @@ export class PtyPromptController {
     this._ansiCarry = '';
     this._debounceTimer = null;
     this._current = null; // synchronous mirror of state.ptyPrompt
-    this._autoAllowedSig = null;
-    this._autoAllowedAt = 0;
   }
 
   getCurrent() { return this._current; }
@@ -77,7 +71,6 @@ export class PtyPromptController {
   clearPrompt() {
     this._buffer = '';
     this._current = null;
-    this._autoAllowedSig = null; // re-arm the instant-auto-approve dedupe for the next prompt round
     this.clearDebounce();
     if (this.host.getState().ptyPrompt) {
       this.host.setState({ ptyPrompt: null });
@@ -109,22 +102,6 @@ export class PtyPromptController {
       // danger-approval bubble when hooks don't fire (subAgent tool calls
       // bypass PreToolUse hooks).
       if (isDangerousOperationPrompt(prompt) && !state.pendingPermission) {
-        // Instant auto-approve: allow at the source without opening the panel.
-        // Structural reentry guard: auto-allow sets no pendingPermission (the
-        // old gate), and the 500ms _promptSubmitting window alone can't stop
-        // the same prompt re-detecting during slow PTY echo — dedupe by prompt
-        // signature within a short window.
-        if (this.host.isInstantAutoApprove()) {
-          const sig = `${prompt.question}\x00${(prompt.options || []).map(o => o.text).join('\x01')}`;
-          const now = this.host.now();
-          const dup = this._autoAllowedSig === sig && (now - (this._autoAllowedAt || 0)) < AUTO_ALLOW_PTY_DEDUPE_MS;
-          if (!dup) {
-            this._autoAllowedSig = sig;
-            this._autoAllowedAt = now;
-            this.host.permissionAutoAllow({ source: 'pty', ptyPrompt: prompt });
-          }
-          return;
-        }
         const toolInfo = parseToolInfoFromBuffer(this._buffer, question, options);
         const id = `pty_${this.host.now()}_${Math.random().toString(36).slice(2, 8)}`;
         this._current = prompt;
@@ -169,7 +146,7 @@ export class PtyPromptController {
     }
     // No match — dismiss the active prompt, EXCEPT plan-approval and dangerous
     // prompts (they stay active until explicitly answered) and while an
-    // AskUserQuestion submission is in flight.
+    // request_user_input submission is in flight.
     if (state.ptyPrompt) {
       if (isPlanApprovalPrompt(state.ptyPrompt)) return;
       if (isDangerousOperationPrompt(state.ptyPrompt)) return;

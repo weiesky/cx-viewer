@@ -1,77 +1,71 @@
-# 為什麼 Tools 排在最前面？
+# 为什么工具排在第一位？
 
-在 cx-viewer 的 Context 面板中，**Tools 顯示在 System Prompt 和 Messages 之前**。這個排列順序精確地反映了 **Anthropic API 的 KV-Cache 前綴序列**。
+在 CX Viewer 的 Context 面板中，**工具（Tools）被放在 Instructions 和 Input 之前**。对 Codex 来说，这是一个诊断视图：工具定义是请求结构里体积大、影响强的一部分，因此先展示能力面，再展示约束它的指令和输入上下文。
 
-## KV-Cache 前綴序列
+## 请求上下文布局
 
-當 Anthropic 的 API 建構 KV-Cache 時，會以這個**固定順序**將上下文串接為前綴：
+Codex 流量可能来自 OpenAI Responses API、Codex app-server 事件或 SDK 流事件。CX Viewer 会把这些来源归一化成一致的 Context 视图：
 
 ```
 ┌─────────────────────────────────────────────────┐
-│ 1. Tools (JSON Schema definitions)               │  ← Start of cache prefix
-│ 2. System Prompt                                 │
-│ 3. Messages (conversation history + current turn)│  ← End of cache prefix
+│ 1. Tools (JSON Schema 定义)                      │  ← 能力面
+│ 2. Instructions                                  │
+│ 3. Input (历史对话 + 当前 turn)                  │
 └─────────────────────────────────────────────────┘
 ```
 
-這意味著 **Tools 位於 cache 前綴的最開頭，排在 System Prompt 之前**。
+这个顺序不声称某个供应商一定按同样方式序列化请求，而是让你稳定地先检查可用能力，再阅读 instructions 和 input 历史。
 
-## 為什麼 Tools 的 Cache 權重高於 System？
+## 为什么 Tools 往往最值得先看？
 
-在 KV-Cache 前綴比對中，**越靠前的內容越關鍵** — 任何變動都會使其後的所有內容失效：
+工具定义通常是 agent 请求中最大的静态结构。一个 UI 开关、一个 MCP server 或一个动态工具变化，都可能让工具 schema 发生明显改变，进而影响模型行为和供应商报告的缓存用量。
 
-1. **前綴比對從頭開始**：KV-Cache 從起始位置逐 token 將當前請求與快取前綴進行比對。一旦發現不匹配，後續所有內容都會立即失效。
+1. **能力变化就是语义变化**：增减工具会改变 agent 能做什么，不只是 token 数变化。
 
-2. **Tools 變動 = 整個 cache 失效**：由於 Tools 排在最前面，任何工具定義的變更（即使只是新增或移除一個 MCP tool）都會**從最開頭破壞前綴**，使所有已快取的 System Prompt 和 Messages 失效。
+2. **工具 schema 可能占用大量上下文**：MCP 和动态工具通常包含详细 JSON Schema、描述、枚举和嵌套参数。
 
-3. **System 變動 = Messages cache 失效**：System Prompt 位於中間，因此其變更只會使後續的 Messages 部分失效。
+4. **input 追加通常更容易判断**：正常对话多数只是新增用户输入、上一轮 assistant 回复和工具结果；工具和指令变化更少，但诊断价值更高。
 
-4. **Messages 變動 = 只影響尾部**：Messages 排在最後，因此新增訊息只會使末尾的一小段失效 — Tools 和 System 的 cache 仍保持完整。
+## 实际影响
 
-## 實際影響
+| 变化类型 | 缓存影响 | 典型场景 |
+|----------|---------|---------|
+| 工具增减 | 供应商可能报告更低缓存复用 | MCP server 连接/断开、插件启停 |
+| Instructions 变化 | 指令和策略发生变化 | `AGENTS.md` 修改、developer instruction 更新 |
+| 新增 input | 仅末尾增量 | 正常对话流（最常见，也最省钱） |
 
-| 變動類型 | Cache 影響 | 典型情境 |
-|----------|-----------|---------|
-| Tool 新增/移除 | **完全失效** | MCP server 連線/斷線、IDE 插件切換 |
-| System Prompt 變更 | Messages cache 遺失 | CLAUDE.md 編輯、system reminder 注入 |
-| 新增訊息 | 僅尾部遞增 | 正常對話流程（最常見、成本最低） |
+## 为什么工具定义要排在思维之前？
 
-這就是為什麼 [CacheRebuild](CacheRebuild.md) 中的 `tools_change` 往往是成本最高的重建原因 — 它從最前端破壞了前綴鏈。
+从诊断角度看，把 Tools 放在前面很实用：工具定义先说明 agent 有哪些动作能力，然后再去看要求它行动的指令。
 
-## 為什麼工具定義要排在「大腦」之前？
+一个人在行动之前，需要先感知自己有哪些肢体和工具可以使用。一个婴儿不是先理解世界的规则（Instructions），再去学习如何伸手抓取；而是先感知到自己有手、有脚，然后在与环境的交互中逐渐理解规则。同样，LLM 在接收任务指令（Instructions）之前，先知道自己能调用哪些工具（读文件、写代码、搜索、执行命令），才能在接收到指令时准确评估"我能做什么"和"我该怎么做"。
 
-從快取機制的角度，Tools 排在最前面是技術事實。但從認知設計的角度，這個順序同樣合理 —— **工具是手腳，System Prompt 是大腦**。
+如果反过来 —— 先告诉模型"你的任务是重构这个模块"，再告诉它"你有 shell_command、apply_patch、tool_search 这些工具"—— 模型在理解任务时就缺少了关键的能力边界信息，可能产生不切实际的计划或遗漏可用的手段。
 
-一個人在行動之前，需要先感知自己有哪些肢體和工具可以使用。一個嬰兒不是先理解世界的規則（System），再去學習如何伸手抓取；而是先感知到自己有手、有腳，然後在與環境的互動中逐漸理解規則。同樣，LLM 在接收任務指令（System Prompt）之前，先知道自己能呼叫哪些工具（讀檔案、寫程式碼、搜尋、執行命令），才能在接收到指令時準確評估「我能做什麼」和「我該怎麼做」。
+**先知道手里有什么牌，再决定怎么打。** 这就是 Tools 优先于 Instructions 的认知逻辑。
 
-如果反過來 —— 先告訴模型「你的任務是重構這個模組」，再告訴它「你有 Read、Edit、Bash 這些工具」—— 模型在理解任務時就缺少了關鍵的能力邊界資訊，可能產生不切實際的計畫或遺漏可用的手段。
+## MCP 工具为什么也在这个位置？
 
-**先知道手裡有什麼牌，再決定怎麼打。** 這就是 Tools 優先於 System 的認知邏輯。
+MCP（Model Context Protocol）工具与内置工具一样，被放在 Tools 区域的最前端。理解 MCP 在 context 中的位置，有助于评估它的实际收益和代价。
 
-## MCP 工具為什麼也在這個位置？
+### MCP 的优势
 
-MCP（Model Context Protocol）工具與內建工具一樣，被放在 Tools 區域的最前端。理解 MCP 在 context 中的位置，有助於評估它的實際收益和代價。
+- **能力扩展**：MCP 让模型接入外部服务（数据库查询、API 调用、IDE 操作、浏览器控制等），突破了内置工具的边界
+- **生态开放**：任何人都可以实现 MCP server，模型无需重新训练就能获得新能力
+- **按需加载**：可以根据任务场景选择性连接/断开 MCP server，灵活组合工具集
 
-### MCP 的優勢
+### MCP 的代价
+- **前缀膨胀**：MCP tool 的 Schema 通常比内置工具更大（包含详细的参数描述、枚举值等）。大量 MCP tool 会显著增加 Tools 区域的 token 数，挤压留给 Input 的 context 空间
+- **延迟开销**：MCP tool 调用需要跨进程通信（JSON-RPC over stdio/SSE），比内置工具的函数调用慢一个数量级
+- **稳定性风险**：MCP server 是外部进程，可能崩溃、超时、返回异常格式，需要额外的错误处理
 
-- **能力擴展**：MCP 讓模型接入外部服務（資料庫查詢、API 呼叫、IDE 操作、瀏覽器控制等），突破了內建工具的邊界
-- **生態開放**：任何人都可以實現 MCP server，模型無需重新訓練就能獲得新能力
-- **按需載入**：可以根據任務場景選擇性連接/斷開 MCP server，靈活組合工具集
+### 实践建议
 
-### MCP 的代價
-
-- **快取殺手**：每個 MCP tool 的 JSON Schema 定義都會被拼入 KV-Cache 前綴的最前端。增減一個 MCP tool = **整個快取從頭失效**。如果頻繁連接/斷開 MCP server，快取命中率會大幅下降
-- **前綴膨脹**：MCP tool 的 Schema 通常比內建工具更大（包含詳細的參數描述、列舉值等）。大量 MCP tool 會顯著增加 Tools 區域的 token 數，擠壓留給 Messages 的 context 空間
-- **延遲開銷**：MCP tool 呼叫需要跨行程通訊（JSON-RPC over stdio/SSE），比內建工具的函式呼叫慢一個數量級
-- **穩定性風險**：MCP server 是外部行程，可能當機、逾時、回傳異常格式，需要額外的錯誤處理
-
-### 實踐建議
-
-| 場景 | 建議 |
+| 场景 | 建议 |
 |------|------|
-| 長對話、高頻互動 | 盡量減少 MCP tool 數量，保護快取前綴穩定性 |
-| 短任務、一次性操作 | 可以自由使用 MCP tool，快取影響有限 |
-| MCP server 頻繁增減 | 每次變動都會全量重建快取，考慮固定 tool 集合 |
-| Tool Schema 過大 | 精簡 description 和 enum，減少前綴 token 佔用 |
+| 长对话、高频交互 | 尽量减少 MCP tool 数量，保护缓存前缀稳定性 |
+| 短任务、一次性操作 | 可以自由使用 MCP tool，缓存影响有限 |
+| MCP server 频繁增减 | 每次变动都会全量重建缓存，考虑固定 tool 集合 |
+| Tool Schema 过大 | 精简 description 和 enum，减少前缀 token 占用 |
 
-在 cx-viewer 的 Context 面板中，MCP 工具與內建工具並列顯示在 Tools 區域，可以直觀看到每個 tool 的 Schema 體積和對快取前綴的貢獻。
+在 CX Viewer 的 Context 面板中，MCP 工具会和内置工具、动态工具一起显示在 Tools 区域，可以直观看到每个 tool 的 Schema 体积以及它对请求结构的贡献。

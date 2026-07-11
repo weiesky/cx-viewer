@@ -264,7 +264,7 @@ async function runCliMode(extraCodexArgs = [], cwd) {
   const { registerWorkspace } = await import('./workspace-registry.js');
   registerWorkspace(workingDir);
 
-  // 确保 AskUserQuestion hook 已注册到 ~/.codex/settings.json
+  // 确保 request_user_input hook 已注册到 Codex hooks.json
   ensureHooks();
 
   // 2. 设置 CLI 模式标记
@@ -366,7 +366,8 @@ async function runCliMode(extraCodexArgs = [], cwd) {
   }
 
   // 启动 App-Server Bridge（WebSocket 中间代理，获取完整执行日志）
-  const { LOG_FILE: currentLogFile } = await import('./interceptor.js');
+  const interceptorMod = await import('./interceptor.js');
+  const currentLogFile = interceptorMod.LOG_FILE;
   let _bridge = null;
   // configArgs 让 codex 通过 -c 覆盖重定向到抓包代理；bridge 失败回退直连时 TUI 也需要它
   let bridgeArgs = [...configArgs];
@@ -378,7 +379,10 @@ async function runCliMode(extraCodexArgs = [], cwd) {
       logFile: currentLogFile,
       env: process.env,
       extraConfigArgs: configArgs,
+      onApprovalsReviewerActive: (reviewer) => serverMod.setActiveCodexApprovalsReviewer(reviewer, true),
+      writeLogEntry: interceptorMod.appendLogEntry,
     });
+    serverMod.setCodexApprovalsReviewerUpdater(_bridge.setApprovalsReviewer);
     // 让 codex TUI 通过 --remote 连接到代理
     bridgeArgs = [...configArgs, '--remote', `ws://127.0.0.1:${_bridge.proxyPort}`];
     console.log(`[CX Viewer] App-Server bridge started (proxy:${_bridge.proxyPort} → server:${_bridge.appServerPort})`);
@@ -388,8 +392,15 @@ async function runCliMode(extraCodexArgs = [], cwd) {
 
   // 启动 PTY 中的 codex TUI
   const { spawnCodex, killPty } = await import('./pty-manager.js');
+  const savedApprovalsReviewer = serverMod.getApprovalsReviewerPreference();
+  const reviewerArgs = savedApprovalsReviewer
+    ? ['-c', `approvals_reviewer="${savedApprovalsReviewer}"`]
+    : [];
+  if (!_bridge && savedApprovalsReviewer) {
+    serverMod.setActiveCodexApprovalsReviewer(savedApprovalsReviewer, true);
+  }
   try {
-    await spawnCodex(null, workingDir, [...bridgeArgs, ...extraCodexArgs], codexPath, isNpmVersion, port);
+    await spawnCodex(null, workingDir, [...bridgeArgs, ...reviewerArgs, ...extraCodexArgs], codexPath, isNpmVersion, port);
   } catch (err) {
     console.error('[CX Viewer] Failed to spawn Codex:', err.message);
     if (_bridge) _bridge.stop();
@@ -425,6 +436,8 @@ async function runCliMode(extraCodexArgs = [], cwd) {
   };
   const cleanup = () => {
     killPty();
+    serverMod.setCodexApprovalsReviewerUpdater(null);
+    serverMod.setActiveCodexApprovalsReviewer(null, false);
     if (_bridge) _bridge.stop();
     try { stopProxy(); } catch {}
     cleanupOtelConfig();
@@ -461,7 +474,7 @@ async function runSdkMode(extraCodexArgs = [], cwd) {
   const { registerWorkspace } = await import('./workspace-registry.js');
   registerWorkspace(workingDir);
 
-  // 不需要 ensureHooks — SDK canUseTool 处理 AskUserQuestion + 权限
+  // 不需要 ensureHooks — SDK canUseTool 处理 request_user_input + 权限
   // 不需要 proxy — SDK 直接管理 API 通信
 
   // 设置环境标记（必须在 import server.js 之前）
@@ -496,6 +509,10 @@ async function runSdkMode(extraCodexArgs = [], cwd) {
   if (hasBypassPermissions(extraCodexArgs)) {
     permissionMode = 'bypassPermissions';
   }
+  const savedApprovalsReviewer = serverMod.getApprovalsReviewerPreference();
+  const sdkCodexArgs = savedApprovalsReviewer
+    ? [...extraCodexArgs, '-c', `approvals_reviewer="${savedApprovalsReviewer}"`]
+    : extraCodexArgs;
 
   // 初始化 SDK 会话
   sdkManager.initSdkSession(workingDir, basename(workingDir), {
@@ -505,7 +522,7 @@ async function runSdkMode(extraCodexArgs = [], cwd) {
     broadcastWs: (msg) => serverMod.broadcastWsMessage(msg),
     permissionMode,
     codexPath,
-    codexArgs: extraCodexArgs,
+    codexArgs: sdkCodexArgs,
   });
 
   // 注册 SDK 回调到 server.js（WS 消息路由用）
@@ -648,17 +665,8 @@ if (isUninstall) {
     console.log(t('cli.uninstall.hookFail', { error: shellResult.error }));
   }
 
-  // 清理 statusLine 配置和脚本（兼容历史版本遗留）
+  // 清理 statusLine 脚本（兼容历史版本遗留）
   try {
-    const settingsPath = resolve(homedir(), '.codex', 'settings.json');
-    if (existsSync(settingsPath)) {
-      const settings = JSON.parse(readFileSync(settingsPath, 'utf-8'));
-      if (settings.statusLine?.command?.includes('cxv-statusline')) {
-        delete settings.statusLine;
-        writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
-        console.log('Cleaned statusLine config from settings.json');
-      }
-    }
     const cxvScript = resolve(homedir(), '.codex', 'cxv-statusline.sh');
     if (existsSync(cxvScript)) {
       unlinkSync(cxvScript);

@@ -2,7 +2,7 @@
 
 ## Funktionsweise
 
-CC Viewer startet einen HTTP-Server und generiert eine **LAN-Adresse** (z.B. `http://192.168.1.100:7008`). Scannen Sie den QR-Code, um über dasselbe WiFi-Netzwerk von Ihrem Smartphone auf Claude Code zuzugreifen.
+CC Viewer startet einen HTTP-Server und generiert eine **LAN-Adresse** (z.B. `http://192.168.1.100:7008`). Scannen Sie den QR-Code, um über dasselbe WiFi-Netzwerk von Ihrem Smartphone auf Codex zuzugreifen.
 
 ## Warum kann ich keine Verbindung herstellen?
 

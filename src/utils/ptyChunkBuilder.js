@@ -2,7 +2,7 @@
  * PTY Chunk Builder — pure functions for building keystroke sequences.
  * Separates "what to send" from "how to send".
  *
- * Codex AskUserQuestion prompt model:
+ * Codex request_user_input prompt model:
  * - Single question: options list, Enter selects and submits
  * - Multi question: tabbed form [Q1] [Q2] ... [Submit]
  *   - Single select: ↓↓...Enter (selects and auto-advances to next tab)

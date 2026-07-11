@@ -4,16 +4,42 @@
 
 // ============== 请求体辅助 ==============
 
-const SUBAGENT_SYSTEM_RE = /command execution specialist|file search specialist|planning specialist|general-purpose agent|security monitor|performing a web search/i;
+import {
+  getInputItemText,
+  getInstructionsText,
+  getResponseConversationItems,
+  getResponseInputItems,
+  getResponseInstructions,
+  getResponseTools,
+} from '../../lib/openai-body.js';
+import { getEntryUpstreamLane } from './clearCheckpoint.js';
+export { getInstructionsText };
 
-// Legacy cc-viewer logs may include cc_is_subagent=true in a billing/header system block.
-// These entries can otherwise look like a full "You are Codex" request, so keep the guard
-// for imported historical logs while Codex-native entries use explicit mainAgent/subAgent flags.
-// 结尾 \b 锚定：仅匹配 `=true`（其后为 `;` / 空白 / 串尾），避免 `=truex` 之类误匹配。
-const LEGACY_SUBAGENT_BILLING_RE = /cc_is_subagent=true\b/;
+const SUBAGENT_INSTRUCTIONS_RE = /command execution specialist|file search specialist|planning specialist|general-purpose agent|security monitor|performing a web search/i;
+const CURRENT_CODEX_TOOL_NAMES = new Set([
+  'shell_command',
+  'apply_patch',
+  'view_image',
+  'update_plan',
+  'request_user_input',
+  'get_goal',
+  'create_goal',
+  'update_goal',
+  'tool_search',
+  'list_mcp_resources',
+  'list_mcp_resource_templates',
+  'read_mcp_resource',
+  'web_search',
+  'image_generation',
+  'spawn_agent',
+  'send_input',
+  'resume_agent',
+  'wait_agent',
+  'close_agent',
+]);
 
-// Teammate 检测：system prompt 中包含 Agent Teammate Communication 标记（外部进程 teammate）
-const TEAMMATE_SYSTEM_RE = /running as an agent in a team|Agent Teammate Communication/i;
+// Teammate 检测：instructions 中包含 Agent Teammate Communication 标记（外部进程 teammate）
+const TEAMMATE_INSTRUCTIONS_RE = /running as an agent in a team|Agent Teammate Communication/i;
 
 // Native teammate 检测（同进程内 Agent 子代理），独立模块便于版本兼容
 import { isNativeTeammate, extractNativeTeammateName } from './teammateDetector.js';
@@ -103,24 +129,12 @@ export function parseInterSessionNotification(text) {
   return { statuses, rest: rest.trim() };
 }
 
-/**
- * 提取请求体中的 system prompt 文本
- */
-export function getSystemText(body) {
-  const system = body?.system;
-  if (typeof system === 'string') return system;
-  if (Array.isArray(system)) {
-    return system.map(s => (s && s.text) || '').join('');
-  }
-  return '';
-}
-
-// WeakMap cache for isTeammate — avoids redundant getSystemText + regex per request
+// WeakMap cache for isTeammate — avoids redundant instructions parsing + regex per request
 const _isTeammateCache = new WeakMap();
 
 /**
  * 判断请求是否为 Teammate 子进程的请求。
- * 支持两种检测：interceptor ���式（req.teammate 字段）和 proxy 模式（system prompt 标记）。
+ * 支持两种检测：interceptor 模式（req.teammate 字段）和 proxy 模式（instructions 标记）。
  * 全局唯一入口，与 isMainAgent 同级。
  */
 export function isTeammate(req) {
@@ -129,7 +143,7 @@ export function isTeammate(req) {
   if (cached !== undefined) return cached;
   // interceptor 模式：通过 process.argv 写入的 teammate 字段
   if (req.teammate) { _isTeammateCache.set(req, true); return true; }
-  // native teammate：同进程内 Agent 子代理（system prompt 包含 "You are a Codex agent"）
+  // native teammate：同进程内 Agent 子代理（instructions 包含 "You are a Codex agent"）
   if (isNativeTeammate(req)) {
     // 注入 teammate 字段供下游 requestType.js 的 formatTeammateLabel 使用
     if (!req.teammate) {
@@ -138,9 +152,9 @@ export function isTeammate(req) {
     _isTeammateCache.set(req, true);
     return true;
   }
-  // proxy 模式：通过 system prompt 检测（外部进程 teammate）
-  const sysText = getSystemText(req.body || {});
-  const result = TEAMMATE_SYSTEM_RE.test(sysText);
+  // proxy 模式：通过 instructions 检测（外部进程 teammate）
+  const instructionsText = getInstructionsText(req.body || {});
+  const result = TEAMMATE_INSTRUCTIONS_RE.test(instructionsText);
   _isTeammateCache.set(req, result);
   return result;
 }
@@ -167,50 +181,56 @@ function _isMainAgentImpl(req) {
   // Teammate 子进程的请求不是 MainAgent，避免污染主会话视图
   if (isTeammate(req)) return false;
 
-  // cc_is_subagent=true ⇒ legacy imported subagent, never MainAgent. This stays before
-  // req.mainAgent to cover historical entries that were persisted with the wrong flag.
-  if (LEGACY_SUBAGENT_BILLING_RE.test(getSystemText(req.body || {}))) return false;
+  const body = req.body || {};
+  const instructionsText = getInstructionsText(body);
+  const nativeMetadata = body.client_metadata || body.metadata || {};
+  const metadataText = Object.entries(nativeMetadata).map(([key, value]) => `${key}:${value}`).join('\n');
+  const hasExplicitSubAgentEvidence = SUBAGENT_INSTRUCTIONS_RE.test(instructionsText)
+    || /parent_thread_id|subagent|sub_agent|thread_spawn|guardian/i.test(metadataText);
+  if (hasExplicitSubAgentEvidence) return false;
+
+  const upstreamLane = getEntryUpstreamLane(req);
+  if (upstreamLane === 'chatgpt-codex') return true;
 
   if (req.mainAgent) {
-    // 排除被误标记的 SubAgent（旧日志兼容）
-    const sysText = getSystemText(req.body || {});
-    if (SUBAGENT_SYSTEM_RE.test(sysText)) return false;
     return true;
   }
 
-  // 统一检测逻辑：支持新旧架构
-  const body = req.body || {};
-  if (!body.system || !Array.isArray(body.tools)) return false;
-
-  const sysText = getSystemText(body);
+  // 统一检测逻辑：仅按 Responses API 请求体检测
+  const instructions = getResponseInstructions(body);
+  const tools = getResponseTools(body);
+  if (!instructions || tools.length === 0) return false;
 
   // 必须包含 MainAgent 身份标识
-  if (!sysText.includes('You are Codex')) return false;
-
-  // 排除 SubAgent
-  if (SUBAGENT_SYSTEM_RE.test(sysText)) return false;
+  if (!instructionsText.includes('You are Codex')) return false;
 
   // 新架构检测（v2.1.69+）：延迟工具加载机制
-  const isSystemArray = Array.isArray(body.system);
-  const hasToolSearch = body.tools.some(t => t.name === 'ToolSearch');
+  const isInstructionsArray = Array.isArray(instructions);
+  const toolNames = new Set(tools.map(getToolName).filter(Boolean));
+  const hasToolSearch = toolNames.has('ToolSearch') || toolNames.has('tool_search');
 
-  if (isSystemArray && hasToolSearch) {
-    // 检查第一条消息是否包含 <available-deferred-tools>
-    const messages = body.messages || [];
-    const firstMsgContent = messages.length > 0 ?
-      (typeof messages[0].content === 'string' ? messages[0].content :
-       Array.isArray(messages[0].content) ? messages[0].content.map(c => c.text || '').join('') : '') : '';
-    if (firstMsgContent.includes('<available-deferred-tools>')) {
+  if (isInstructionsArray && hasToolSearch) {
+    // 检查第一条 input item 是否包含 <available-deferred-tools>
+    const input = getResponseConversationItems(body);
+    const firstInputContent = input.length > 0 ? getInputItemText(input[0]) : '';
+    if (firstInputContent.includes('<available-deferred-tools>')) {
       return true;
     }
   }
 
+  // Current Codex request-body tools use snake_case names/types. If the entry
+  // has Codex root instructions and any of these loaded tools, it is part of
+  // the MainAgent chain even when older capture layers missed mainAgent:true.
+  for (const name of CURRENT_CODEX_TOOL_NAMES) {
+    if (toolNames.has(name)) return true;
+  }
+
   // v2.1.81+: 轻量 MainAgent 初始请求工具数可能 < 10，降低阈值兼容
-  if (body.tools.length > 5) {
-    const hasEdit = body.tools.some(t => t.name === 'Edit');
-    const hasShell = body.tools.some(t => t.name === 'Bash' || t.name === 'PowerShell');
-    const hasTaskOrAgent = body.tools.some(t => t.name === 'Task' || t.name === 'Agent');
-    if (hasEdit && hasShell && hasTaskOrAgent) {
+  if (tools.length > 5) {
+    const hasPatch = toolNames.has('apply_patch');
+    const hasShell = toolNames.has('shell_command');
+    const hasDiscovery = toolNames.has('tool_search');
+    if (hasPatch && hasShell && hasDiscovery) {
       return true;
     }
   }
@@ -218,8 +238,13 @@ function _isMainAgentImpl(req) {
   return false;
 }
 
+function getToolName(tool) {
+  if (!tool || typeof tool !== 'object') return null;
+  return tool.name || tool.type || tool.function?.name || null;
+}
+
 // /clear checkpoint 检测：抽到独立无依赖模块，便于 node --test 直接 import。
-export { isPostClearCheckpoint, isCompactContinuation, isSessionBoundary } from './clearCheckpoint.js';
+export { isPostClearCheckpoint, isCompactContinuation, isSessionBoundary, getMainAgentSessionKey, getEntryUpstreamLane } from './clearCheckpoint.js';
 
 // ============== 文本内容过滤 ==============
 
@@ -473,14 +498,14 @@ export function classifyUserContent(content) {
 }
 
 /**
- * 从 teammate 请求的 messages 中提取名字。
- * 扫描 SendMessage 的 tool_result，查找 routing.sender 字段。
+ * 从 teammate 请求的 input 中提取名字。
+ * 扫描 send_input 的 tool_result，查找 routing.sender 字段。
  */
 export function extractTeammateName(body) {
-  const msgs = body?.messages;
-  if (!Array.isArray(msgs)) return null;
-  for (let i = msgs.length - 1; i >= 0; i--) {
-    const content = msgs[i].content;
+  const input = getResponseInputItems(body);
+  if (!Array.isArray(input)) return null;
+  for (let i = input.length - 1; i >= 0; i--) {
+    const content = input[i].content;
     if (!Array.isArray(content)) continue;
     for (const block of content) {
       if (block.type !== 'tool_result') continue;
@@ -500,9 +525,9 @@ export function extractTeammateName(body) {
 
 // ============== Teammate 名称解析（prompt 内容匹配）==============
 
-// 持久化注册表：Agent tool_use prompt 前缀 → teammate name
+// 持久化注册表：spawn_agent tool_use prompt 前缀 → teammate name
 const _promptRegistry = new Map();
-// Requests whose response has been scanned for Agent tool_use blocks. A request
+// Requests whose response has been scanned for spawn_agent tool_use blocks. A request
 // is only added once its response is present, so a spawn turn that completes
 // LATE (it was in-flight and therefore excluded from the filtered array, then
 // INSERTED mid-array on completion) still gets scanned — the old positional
@@ -542,12 +567,12 @@ const PROMPT_PREFIX_LEN = 60;
 const TM_TAG_RE = /<teammate-message[^>]*>/;
 
 /**
- * 从 teammate 首条 user message 中提取 <teammate-message> 后的 prompt 内容。
+ * 从 teammate 首条 user input item 中提取 <teammate-message> 后的 prompt 内容。
  */
 function _extractSpawnPrompt(req) {
-  const msgs = req.body?.messages;
-  if (!Array.isArray(msgs) || msgs.length === 0) return '';
-  const first = msgs[0];
+  const input = getResponseConversationItems(req.body);
+  if (!Array.isArray(input) || input.length === 0) return '';
+  const first = input[0];
   const content = first.content;
   if (typeof content === 'string') {
     const m = TM_TAG_RE.exec(content);
@@ -566,13 +591,13 @@ function _extractSpawnPrompt(req) {
 }
 
 /**
- * v2.1.90+ Agent 模式：native teammate 的首条 user message 是 raw prompt（无 <teammate-message> 包装）。
- * 直接提取首条 user message 文本内容用于 prompt prefix 匹配。
+ * v2.1.90+ collab 模式：native teammate 的首条 user input item 是 raw prompt（无 <teammate-message> 包装）。
+ * 直接提取首条 user input 文本内容用于 prompt prefix 匹配。
  */
 function _extractRawPrompt(req) {
-  const msgs = req.body?.messages;
-  if (!Array.isArray(msgs) || msgs.length === 0) return '';
-  const first = msgs[0];
+  const input = getResponseConversationItems(req.body);
+  if (!Array.isArray(input) || input.length === 0) return '';
+  const first = input[0];
   const content = first.content;
   if (typeof content === 'string') return content.trimStart();
   if (Array.isArray(content)) {
@@ -584,7 +609,7 @@ function _extractRawPrompt(req) {
 }
 
 /**
- * 预扫描 requests，通过匹配 MainAgent 的 Agent tool_use prompt
+ * 预扫描 requests，通过匹配 MainAgent 的 spawn_agent tool_use prompt
  * 与 native teammate 的首条消息内容，注入 req.teammate 名字。
  *
  * 必须在 classifyRequest 之前调用（classifyRequest 结果有 WeakMap 缓存）。
@@ -604,7 +629,7 @@ export function resolveTeammateNames(requests) {
   // over seeds when both exist for the same prefix (see _mergeSeedsIntoRegistry).
   _mergeSeedsIntoRegistry();
 
-  // Step 1: scan MainAgent responses for Agent tool_use blocks, building the
+  // Step 1: scan MainAgent responses for spawn_agent tool_use blocks, building the
   // prompt-prefix → name map. Full walk with O(1) WeakSet skips; a request is
   // marked scanned ONLY when its response exists, so it is re-visited (cheap,
   // two property reads) until the response arrives, then scanned exactly once.
@@ -616,7 +641,7 @@ export function resolveTeammateNames(requests) {
     if (!req.response) continue;
     if (Array.isArray(content)) {
       for (const block of content) {
-        if (block.type !== 'tool_use' || block.name !== 'Agent') continue;
+        if (block.type !== 'tool_use' || block.name !== 'spawn_agent') continue;
         const inp = block.input;
         if (!inp || !inp.name || !inp.prompt) continue;
         const prefix = inp.prompt.trimStart().slice(0, PROMPT_PREFIX_LEN);
@@ -631,10 +656,10 @@ export function resolveTeammateNames(requests) {
   // Step 2: 为缺少名字的 native/proxy teammate 注入 req.teammate
   for (const req of requests) {
     if (req.teammate) continue;
-    if (!isNativeTeammate(req) && !TEAMMATE_SYSTEM_RE.test(getSystemText(req.body || {}))) continue;
+    if (!isNativeTeammate(req) && !TEAMMATE_INSTRUCTIONS_RE.test(getInstructionsText(req.body || {}))) continue;
 
     let prompt = _extractSpawnPrompt(req);
-    // v2.1.90+ Agent 模式 fallback：无 <teammate-message> 时尝试 raw prompt
+    // v2.1.90+ collab 模式 fallback：无 <teammate-message> 时尝试 raw prompt
     if (!prompt && isNativeTeammate(req)) prompt = _extractRawPrompt(req);
     if (!prompt) continue;
     const prefix = prompt.slice(0, PROMPT_PREFIX_LEN);

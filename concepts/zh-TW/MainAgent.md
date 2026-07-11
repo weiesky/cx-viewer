@@ -20,4 +20,3 @@ MainAgent 是 Codex 在非 agent team 狀態下的主幹請求鏈路。每一次
 | system prompt | 完整的 Codex 主 prompt | 精簡的任務專用 prompt |
 | tools 陣列 | 包含全部可用工具 | 通常只包含任務所需的少量工具 |
 | 訊息歷史 | 累積完整對話上下文 | 僅包含子任務相關訊息 |
-| 快取行為 | 有 prompt caching（5 分鐘 TTL） | 通常無快取或快取較小 |

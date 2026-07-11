@@ -18,7 +18,6 @@ function LiveTagPopover({
   cachePopoverOpen,
   onOpenChange,
   requests,
-  serverCachedContent,
   contextPercent,
   contextTokens,
   ctxColor,
@@ -53,7 +52,6 @@ function LiveTagPopover({
       content={cachePopoverOpen ? (
         <CachePopoverContent
           requests={requests}
-          serverCachedContent={serverCachedContent}
           contextPercent={contextPercent}
           contextTokens={contextTokens}
           fsSkills={fsSkills}

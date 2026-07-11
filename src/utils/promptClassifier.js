@@ -29,7 +29,7 @@ export function isPlanApprovalPrompt(prompt) {
 
 /**
  * Pick the option number that APPROVES a plan, for auto-approval.
- * Mirrors the approve-button heuristic in ChatMessage._renderTool_ExitPlanMode:
+ * Mirrors the approve-button heuristic in ChatMessage's plan approval renderer:
  * the first option whose text matches /yes|approve|accept|proceed/i AND is NOT a
  * feedback/edit option (those open a textarea on manual click, so auto-submitting them
  * would be wrong); otherwise the first option; otherwise 1 (the CLI default "approve").
@@ -83,29 +83,28 @@ export function parseToolInfoFromBuffer(buf, question, options) {
   const q = (question || '').toLowerCase();
   const optTexts = (options || []).map(o => o.text || '').join(' ').toLowerCase();
 
-  // 1. Bash: buffer contains "Bash command" or "Run shell command"
-  if (/bash command|run shell command/i.test(buf)) {
-    const cmdMatch = buf.match(/(?:Bash command|Run shell command)\s*\n\s*\n((?:\s{4,}.+\n?)+)/i);
+  // 1. shell_command: buffer contains "Run shell command"
+  if (/run shell command/i.test(buf)) {
+    const cmdMatch = buf.match(/Run shell command\s*\n\s*\n((?:\s{4,}.+\n?)+)/i);
     const cmd = cmdMatch ? cmdMatch[1].replace(/^\s{4}/gm, '').trim() : null;
-    return { toolName: 'Bash', input: cmd ? { command: cmd } : { description: question } };
+    return { toolName: 'shell_command', input: cmd ? { command: cmd } : { description: question } };
   }
 
-  // 2. Edit: "make this edit to <path>"
+  // 2. apply_patch: "make this edit to <path>"
   const editMatch = q.match(/make this edit to\s+(.+?)\s*\??$/);
-  if (editMatch) return { toolName: 'Edit', input: { file_path: editMatch[1] } };
+  if (editMatch) return { toolName: 'apply_patch', input: { file_path: editMatch[1], description: question } };
 
-  // 3. Write: "write" + path
+  // 3. apply_patch: "write" + path
   const writeMatch = q.match(/write (?:this new file|to)\s+(.+?)\s*\??$/);
-  if (writeMatch) return { toolName: 'Write', input: { file_path: writeMatch[1] } };
-  if (/write/i.test(q)) return { toolName: 'Write', input: { description: question } };
+  if (writeMatch) return { toolName: 'apply_patch', input: { file_path: writeMatch[1], description: question } };
+  if (/write/i.test(q)) return { toolName: 'apply_patch', input: { description: question } };
 
-  // 4. Read: "read <path>" or options contain "allow reading from <path>"
+  // 4. read_mcp_resource: "read <path>" or options contain "allow reading from <path>"
   const readMatch = q.match(/read\s+(.+?)\s*\??$/) || optTexts.match(/allow reading from\s+(.+?)(?:\s+from this project)?/);
-  if (readMatch) return { toolName: 'Read', input: { file_path: readMatch[1] } };
+  if (readMatch) return { toolName: 'read_mcp_resource', input: { uri: readMatch[1], description: question } };
 
-  // 5. WebFetch/WebSearch
-  if (/fetch|url/i.test(q)) return { toolName: 'WebFetch', input: { description: question } };
-  if (/search/i.test(q)) return { toolName: 'WebSearch', input: { description: question } };
+  // 5. web_search
+  if (/fetch|url|search/i.test(q)) return { toolName: 'web_search', input: { description: question } };
 
   // 6. Fallback
   return { toolName: 'Tool', input: { description: question } };

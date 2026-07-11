@@ -71,11 +71,11 @@ export function buildTeamModalData(team, requests, mainAgentSessions) {
     }
   }
 
-  // 策略 2：从 TeamCreate request 的 body.messages 直接提取
+  // 策略 2：从 spawn_agent request 的 body.input 直接提取
   if (!hasUserMsg) {
     const tcRaw = requests[team.requestIndex];
     const tcReq = tcRaw?._slimmed ? restoreSlimmedEntry(tcRaw, requests) : tcRaw;
-    const tcMsgs = tcReq?.body?.messages || [];
+    const tcMsgs = tcReq?.body?.input || [];
     for (let m = tcMsgs.length - 1; m >= 0; m--) {
       if (tcMsgs[m].role !== 'user') continue;
       const c = tcMsgs[m].content;
@@ -156,7 +156,6 @@ export function buildTeamModalData(team, requests, mainAgentSessions) {
   let lastLeadTs = teamTotalStart;
   const _taskCreateSubjects = new Map();
   const _taskOwnerMap = new Map();
-  let _taskCreateCounter = 1;
 
   for (let i = 0; i < teamRequests.length; i++) {
     const req = teamRequests[i];
@@ -170,12 +169,13 @@ export function buildTeamModalData(team, requests, mainAgentSessions) {
       if (block.type !== 'tool_use') continue;
       const n = block.name;
       const inp = typeof block.input === 'string' ? (() => { try { return JSON.parse(block.input); } catch { return {}; } })() : (block.input || {});
-      if (n === 'Agent' && inp.name) {
+      if (n === 'spawn_agent') {
+        const agentName = inp.name || inp.agentName || inp.target || inp.newThreadId || inp.agent_type || `agent-${teamAgents.length + 1}`;
         const idx = teamAgents.length;
         teamAgents.push({
-          name: inp.name,
+          name: agentName,
           color: palette[idx % palette.length],
-          type: inp.subagent_type?.split(':').pop() || '',
+          type: inp.subagent_type?.split(':').pop() || inp.agent_type || '',
           spawnTime: ts,
           claimTime: null,
           doneTime: null,
@@ -183,15 +183,10 @@ export function buildTeamModalData(team, requests, mainAgentSessions) {
           taskSubject: null,
           events: [{ ts: tsMs, label: 'spawn' }],
         });
-        agentMap.set(inp.name, idx);
-      } else if (n === 'TaskCreate') {
-        if (inp.subject) {
-          const tId = String(inp.taskId || _taskCreateCounter++);
-          _taskCreateSubjects.set(tId, inp.subject);
-        }
-      } else if (n === 'TaskUpdate') {
-        const owner = inp.owner;
-        const taskId = inp.taskId != null ? String(inp.taskId) : null;
+        agentMap.set(agentName, idx);
+      } else if (n === 'resume_agent') {
+        const owner = inp.owner || inp.target || inp.id;
+        const taskId = inp.taskId != null ? String(inp.taskId) : (inp.id || inp.target || null);
         if (owner && taskId) _taskOwnerMap.set(taskId, owner);
 
         let targetAg = null;
@@ -222,16 +217,17 @@ export function buildTeamModalData(team, requests, mainAgentSessions) {
             targetAg.taskSubject = _taskCreateSubjects.get(taskId);
           }
         }
-      } else if (n === 'SendMessage') {
-        if (inp.message?.type === 'shutdown_request' && inp.to && agentMap.has(inp.to)) {
-          const ag = teamAgents[agentMap.get(inp.to)];
+      } else if (n === 'send_input') {
+        const target = inp.to || inp.target;
+        if (inp.message?.type === 'shutdown_request' && target && agentMap.has(target)) {
+          const ag = teamAgents[agentMap.get(target)];
           ag.shutdownTime = ts;
           ag.events.push({ ts: tsMs, label: 'shutdown' });
-        } else if (inp.message?.type === 'shutdown_response' && agentMap.has(inp.to === 'team-lead' ? '' : inp.to)) {
+        } else if (inp.message?.type === 'shutdown_response' && agentMap.has(target === 'team-lead' ? '' : target)) {
           // skip
-        } else if (inp.to && inp.to !== 'team-lead' && agentMap.has(inp.to)) {
-          teamAgents[agentMap.get(inp.to)].events.push({ ts: tsMs, label: 'msg-in' });
-        } else if (inp.to === 'team-lead') {
+        } else if (target && target !== 'team-lead' && agentMap.has(target)) {
+          teamAgents[agentMap.get(target)].events.push({ ts: tsMs, label: 'msg-in' });
+        } else if (target === 'team-lead') {
           if (typeof inp.message === 'string' || (inp.message && !inp.message.type)) {
             if (tsMs > lastLeadTs) {
               leadSegments.push({ start: lastLeadTs, end: tsMs, label: 'report-received', color: '#52c41a' });
@@ -240,10 +236,10 @@ export function buildTeamModalData(team, requests, mainAgentSessions) {
           }
         }
       }
-      if (isMA && (n === 'TeamCreate' || n === 'TaskCreate' || n === 'Agent' || n === 'SendMessage' || n === 'TeamDelete')) {
-        const label = n === 'TeamCreate' ? 'create' : n === 'TaskCreate' ? 'tasks' : n === 'Agent' ? 'spawn' : n === 'SendMessage' ? 'msg' : 'cleanup';
+      if (isMA && (n === 'spawn_agent' || n === 'send_input' || n === 'resume_agent' || n === 'wait_agent' || n === 'close_agent')) {
+        const label = n === 'spawn_agent' ? 'spawn' : n === 'send_input' ? 'msg' : (n === 'resume_agent' || n === 'wait_agent') ? 'tasks' : 'cleanup';
         if (tsMs > lastLeadTs) {
-          leadSegments.push({ start: lastLeadTs, end: tsMs, label, color: n === 'TeamDelete' ? '#52c41a' : n === 'SendMessage' ? '#ff4d4f' : '#1668dc' });
+          leadSegments.push({ start: lastLeadTs, end: tsMs, label, color: n === 'close_agent' ? '#52c41a' : n === 'send_input' ? '#ff4d4f' : '#1668dc' });
           lastLeadTs = tsMs;
         }
       }
@@ -299,7 +295,7 @@ export function buildTeamModalData(team, requests, mainAgentSessions) {
   for (let i = 0; i < teamRequests.length; i++) {
     const raw = teamRequests[i];
     const req = raw?._slimmed ? restoreSlimmedEntry(raw, requests) : raw;
-    const msgs = req.body?.messages || [];
+    const msgs = req.body?.input || [];
     for (const m of msgs) {
       if (m.role !== 'user' || !Array.isArray(m.content)) continue;
       for (const b of m.content) {

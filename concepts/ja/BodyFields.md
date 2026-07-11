@@ -1,42 +1,39 @@
-# Request Body フィールド説明
+# Request Body Fields
 
-Claude API `/v1/messages` リクエストボディのトップレベルフィールドの説明。
+Field descriptions for CX-Viewer's normalized Codex request body. The original source may be OpenAI Responses API traffic, Codex app-server notifications, or Codex SDK events; CX-Viewer maps them into one stable viewer shape.
 
-## フィールド一覧
+## Field List
 
-| フィールド | 型 | 説明 |
-|------|------|------|
-| **model** | string | 使用するモデル名。例：`claude-opus-4-6`、`claude-sonnet-4-6` |
-| **messages** | array | 会話メッセージの履歴。各メッセージには `role`（user/assistant）と `content`（テキスト、画像、tool_use、tool_result などの block 配列）が含まれる |
-| **system** | array | System prompt。Codex のコア指令、ツール使用説明、環境情報、CLAUDE.md の内容などを含む。`cache_control` 付きのブロックは prompt caching される |
-| **tools** | array | 利用可能なツール定義のリスト。各ツールには `name`、`description`、`input_schema`（JSON Schema）が含まれる。MainAgent には通常 20 以上のツールがあり、SubAgent には少数のみ |
-| **metadata** | object | リクエストメタデータ。通常、ユーザーを識別するための `user_id` を含む |
-| **max_tokens** | number | モデルが一度の応答で生成する最大トークン数。例：`16000`、`64000` |
-| **thinking** | object | 拡張思考の設定。`type: "enabled"` で思考モードを有効にし、`budget_tokens` で思考トークンの上限を制御する |
-| **context_management** | object | コンテキスト管理の設定。`truncation: "auto"` により、Codex は長すぎるメッセージ履歴を自動的に切り詰めることができる |
-| **output_config** | object | 出力設定。`format` の設定など |
-| **stream** | boolean | ストリーミングレスポンスを有効にするかどうか。Codex は常に `true` を使用する |
+| Field | Type | Description |
+|-------|------|-------------|
+| **model** | string | The model name selected by Codex, e.g. a `gpt-*` model |
+| **input** | string/array | OpenAI Responses API input. Codex usually uses the array form for user input, assistant history, tool results, and other context items |
+| **instructions** | string/array | OpenAI Responses API instructions. This can include Codex core directives, tool usage guidelines, environment information, and `AGENTS.md` project instructions |
+| **tools** | array | Available tool definitions or compact tool descriptors. MainAgent usually has a broader tool set than SubAgent |
+| **metadata** | object | Request metadata such as `thread_id`, `turn_id`, `cwd`, SDK/app-server source, and subAgent parent-thread information |
+| **max_tokens** | number | Maximum number of tokens for a single model response, e.g. `16000`, `64000` |
+| **reasoning_effort** | string | Reasoning effort when reported by Codex |
+| **reasoning_summary** | string | Reasoning summary mode when reported by Codex |
+| **approval_policy** | string | Codex approval policy for the turn |
+| **sandbox_policy** | object/string | Sandbox policy for the turn when available |
+| **stream** | boolean | Whether the OpenAI Responses API request used streaming; app-server/SDK entries are normalized as streamed turns |
 
-## messages の構造
+## input Structure
 
-各メッセージの `content` は block 配列で、一般的な型は以下の通り：
+When `input` is an array, each input item usually contains `role` and `content`. `content` can be an array of blocks. Common types include:
 
-- **text**: 通常のテキストコンテンツ
-- **tool_use**: モデルによるツール呼び出し（`name`、`input` を含む）
-- **tool_result**: ツールの実行結果（`tool_use_id`、`content` を含む）
-- **image**: 画像コンテンツ（base64 または URL）
-- **thinking**: モデルの思考プロセス（拡張思考モード）
+- **text**: Plain text content
+- **tool_use**: Model tool invocation (contains `name`, `input`)
+- **tool_result**: Tool execution result (contains `tool_use_id`, `content`)
+- **image/input_image/local_image**: Image content or an attached local image reference
+- **thinking**: Model's thinking process (extended thinking mode)
 
-## system の構造
+## instructions Structure
 
-system prompt 配列には通常以下が含まれる：
+`instructions` typically contains:
 
-1. **コア agent 指令**（"You are Codex..."）
-2. **ツール使用規範**
-3. **CLAUDE.md の内容**（プロジェクトレベルの指令）
-4. **スキルプロンプト**（skills reminder）
-5. **環境情報**（OS、shell、git ステータスなど）— 実際のところ、Codex は git に大きく依存している。プロジェクトに git リポジトリが存在する場合、Codex はリモートの変更やコミット履歴を取得して分析を補助するなど、プロジェクトに対してより優れた理解力を発揮できる
-
-`cache_control: { type: "ephemeral" }` マークが付いたブロックは Anthropic API により 5 分間キャッシュされ、キャッシュヒット時は `cache_read_input_tokens` として課金される（`input_tokens` よりはるかに低い）。
-
-> **注意**：Codex のような特殊なクライアントの場合、Anthropic のサーバー側はリクエスト中の `cache_control` 属性に完全に依存してキャッシュ動作を決定しているわけではない。サーバー側は特定のフィールド（system prompt やツール定義など）に対して自動的にキャッシュポリシーを適用しており、リクエストに `cache_control` マークが明示的に含まれていなくても同様である。したがって、リクエストボディにこの属性が見当たらなくても疑問に思う必要はない——サーバー側がバックグラウンドでキャッシュ操作を完了しており、その情報をクライアントに公開していないだけである。これは Codex と Anthropic API の間の暗黙の了解である。
+1. **Core agent instructions** ("You are Codex...")
+2. **Tool usage guidelines**
+3. **AGENTS.md contents** (project-level instructions)
+4. **Skills reminders** (skills reminder)
+5. **Environment information** (OS, shell, git status, etc.) — In fact, Codex relies heavily on git. If a project has a git repository, Codex demonstrates a better understanding of the project, including the ability to pull remote changes and commit history to assist with analysis

@@ -2,7 +2,7 @@
 
 ## Hintergrund
 
-Der MainAgent von Claude Code verwendet einen Vollkontext-Sendemechanismus – jede Anfrage enthält den vollständigen Gesprächsverlauf, System-Prompt, Tool-Definitionen usw. Das bedeutet, dass der Request-Body im Laufe des Gesprächs immer größer wird und es schwierig ist, im Roh-Body schnell zu erkennen, „was in dieser Runde tatsächlich neu hinzugekommen ist".
+Der MainAgent von Codex verwendet einen Vollkontext-Sendemechanismus – jede Anfrage enthält den vollständigen Gesprächsverlauf, System-Prompt, Tool-Definitionen usw. Das bedeutet, dass der Request-Body im Laufe des Gesprächs immer größer wird und es schwierig ist, im Roh-Body schnell zu erkennen, „was in dieser Runde tatsächlich neu hinzugekommen ist".
 
 Body Diff JSON löst genau dieses Problem: Es vergleicht automatisch die Bodies zweier aufeinanderfolgender MainAgent-Anfragen, extrahiert die inkrementellen Teile und zeigt auf einen Blick, welche Inhalte in dieser Anfrage tatsächlich neu sind.
 
@@ -22,7 +22,7 @@ Body Diff JSON löst genau dieses Problem: Es vergleicht automatisch die Bodies 
 In einer normalen Gesprächsrunde enthält Body Diff JSON normalerweise nur:
 - `messages`: 1–2 neue Nachrichten (Benutzereingabe + Antwort des Assistenten aus der vorherigen Runde)
 
-Wenn im Diff Änderungen an Feldern wie `system`, `tools`, `model` usw. erscheinen, bedeutet dies, dass sich die Konfiguration in dieser Runde geändert hat – was oft auch der Grund für einen Cache-Rebuild ist.
+Wenn im Diff Änderungen an Feldern wie `system`, `tools`, `model` usw. erscheinen, bedeutet dies, dass sich die Request-Konfiguration in dieser Runde geändert hat.
 
 ## Verwendung
 

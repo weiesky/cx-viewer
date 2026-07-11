@@ -4,9 +4,9 @@
  *
  * Wire format 协议详见 docs/WIRE_FORMAT.md（mainAgent entry 形态判定 / 字段词典 / §3.7 完成序倒置）
  *
- * 将 delta 格式的日志条目重建为完整的 messages 数组。
+ * 将 delta 格式的日志条目重建为完整的 input 数组。
  * 仅处理 mainAgent 条目；teammate（`entry.teammate` 字段，可能与 mainAgent:true 双标并存）
- * 与旧格式条目直接跳过——teammate 子进程与 leader 共写同一日志文件，其消息绝不能进入
+ * 与全量条目直接跳过——teammate 子进程与 leader 共写同一日志文件，其 input 绝不能进入
  * mainAgent 的累积状态。
  *
  * 完成序倒置守卫（KEEP IN SYNC: server/interceptor.js `_seq` 写入点）：
@@ -25,24 +25,24 @@
 /**
  * 判断一个条目是否为 checkpoint（应重置累积状态）。
  * 三种情况视为 checkpoint：
- * 1. 无 _deltaFormat 字段 → 旧格式全量条目
+ * 1. 无 _deltaFormat 字段 → 全量条目
  * 2. _isCheckpoint === true → 显式 checkpoint
- * 3. _totalMessageCount === body.messages.length → 隐式 checkpoint（delta 长度 === 总长度）
+ * 3. _totalMessageCount === body.input.length → 隐式 checkpoint（delta 长度 === 总长度）
  */
 export function isCheckpointEntry(entry) {
-  // 无 _deltaFormat：旧格式全量条目
+  // 无 _deltaFormat：全量条目
   if (!entry._deltaFormat) return true;
   // 显式 checkpoint
   if (entry._isCheckpoint) return true;
   // 隐式 checkpoint：delta 长度等于总长度
-  const msgs = entry.body?.messages;
+  const msgs = entry.body?.input;
   if (Array.isArray(msgs) && entry._totalMessageCount === msgs.length) return true;
   return false;
 }
 
 /**
  * 判断一个条目是否为需要重建的 delta 条目（mainAgent + _deltaFormat，排除 teammate）。
- * teammate 子进程的条目可能带 mainAgent:true 双标（system 含 "You are Codex"），
+ * teammate 子进程的条目可能带 mainAgent:true 双标（instructions 含 "You are Codex"），
  * 必须显式排除，否则其 delta/checkpoint 会污染 leader 的累积状态。
  */
 export function isDeltaEntry(entry) {
@@ -50,10 +50,40 @@ export function isDeltaEntry(entry) {
 }
 
 /**
- * 判断条目是否参与 mainAgent 累积状态（非 delta 的旧格式全量条目分支共用）。
+ * 判断条目是否参与 mainAgent 累积状态（非 delta 的全量条目分支共用）。
  */
 function _isMainAgentFullEntry(entry) {
-  return entry.mainAgent && !entry.teammate && Array.isArray(entry.body?.messages);
+  return entry.mainAgent && !entry.teammate && Array.isArray(entry.body?.input);
+}
+
+function _getConversationId(entry) {
+  return entry?._conversationId || 'mainAgent';
+}
+
+function _createContext(seqState) {
+  return {
+    accumulated: [],
+    intState: { baselineSeen: false, poisoned: false },
+    seqState: seqState || { lastSeq: 0, lastEpoch: null },
+  };
+}
+
+function _getContext(ctxByConversation, entry, sharedSeqStateByConversation = null) {
+  const id = _getConversationId(entry);
+  let ctx = ctxByConversation.get(id);
+  if (!ctx) {
+    let seqState = null;
+    if (sharedSeqStateByConversation) {
+      seqState = sharedSeqStateByConversation.get(id);
+      if (!seqState) {
+        seqState = { lastSeq: 0, lastEpoch: null };
+        sharedSeqStateByConversation.set(id, seqState);
+      }
+    }
+    ctx = _createContext(seqState);
+    ctxByConversation.set(id, ctx);
+  }
+  return ctx;
 }
 
 // ============================================================================
@@ -87,15 +117,15 @@ function _seqGuardCheck(entry, st) {
 
 /**
  * 标记乱序条目并尽量就地补偿：accumulated 已包含更新的真值时，用其前缀
- * （= 截至该条目声称长度的最新内容）回填 body.messages，避免裸 delta 切片
+ * （= 截至该条目声称长度的最新内容）回填 body.input，避免裸 delta 切片
  * 残留在请求详情面板 / mergeLogFiles 落盘产物中。
- * 返回 true 表示已补偿（messages 为一致全量），false 表示需后续 checkpoint 补偿。
+ * 返回 true 表示已补偿（input 为一致全量），false 表示需后续 checkpoint 补偿。
  */
 function _markStaleEntry(entry, accumulated) {
   entry._staleReorder = true;
   const total = entry._totalMessageCount;
-  if (Array.isArray(entry.body?.messages) && total && accumulated.length >= total) {
-    entry.body.messages = accumulated.slice(0, total);
+  if (Array.isArray(entry.body?.input) && total && accumulated.length >= total) {
+    entry.body.input = accumulated.slice(0, total);
     return true;
   }
   return false;
@@ -120,7 +150,7 @@ function _integrityCheck(entry, accumulated, st) {
   if (!total) return accumulated;
   if (accumulated.length > total) {
     accumulated = accumulated.slice(0, total);
-    entry.body.messages = accumulated;
+    entry.body.input = accumulated;
     entry._staleReorder = true;
     st.poisoned = true;
   } else if (accumulated.length < total && st.baselineSeen) {
@@ -137,7 +167,7 @@ function _integrityCheck(entry, accumulated, st) {
  * 累积态）——placeholder 与 completed 共享同一 _seq，先于守卫排除防 completed 被
  * "同 seq 重发"规则误吞。
  *
- * 经过本函数后 entry.body.messages 的三种终态：
+ * 经过本函数后 entry.body.input 的三种终态：
  * 1. 全量重建 —— 正常 delta 拼接 / checkpoint 原样 / replay 幂等回写；
  * 2. 真值前缀 —— stale 就地补偿、超长 slice 修复（_staleReorder 置位，merge 跳过）；
  * 3. 裸 delta 切片待补偿 —— stale 就地补偿失败 / poisoned 冻结（_staleReorder 或
@@ -153,23 +183,23 @@ function _integrityCheck(entry, accumulated, st) {
  */
 function _stepReconstruct(entry, ctx) {
   if (!isDeltaEntry(entry)) {
-    // 非 delta 条目（旧格式 / teammate）：如果是 mainAgent 旧格式，重置累积状态
+    // 非 delta 条目（全量 / teammate）：如果是 mainAgent 全量条目，重置累积状态
     if (_isMainAgentFullEntry(entry)) {
-      ctx.accumulated = [...entry.body.messages];
+      ctx.accumulated = [...entry.body.input];
       ctx.intState.baselineSeen = true;
       ctx.intState.poisoned = false;
     }
     return false;
   }
 
-  const msgs = entry.body?.messages;
+  const msgs = entry.body?.input;
   if (!Array.isArray(msgs)) return false;
 
   // 完成序倒置守卫
   const verdict = _seqGuardCheck(entry, ctx.seqState);
   if (verdict === 'replay') {
     // 同条重发（日志轮转 race 等）：幂等回写全量（不重复累积）
-    entry.body.messages = ctx.accumulated;
+    entry.body.input = ctx.accumulated;
     if (entry._totalMessageCount && ctx.accumulated.length !== entry._totalMessageCount) {
       entry._staleReorder = true;
       return true;
@@ -182,7 +212,7 @@ function _stepReconstruct(entry, ctx) {
   }
 
   if (isCheckpointEntry(entry)) {
-    // checkpoint：用当前 messages 重置累积状态（毒化态随之解除）
+    // checkpoint：用当前 input 重置累积状态（毒化态随之解除）
     ctx.accumulated = [...msgs];
     ctx.intState.baselineSeen = true;
     ctx.intState.poisoned = false;
@@ -192,9 +222,9 @@ function _stepReconstruct(entry, ctx) {
     entry._reconstructBroken = true;
     return true;
   } else {
-    // delta：拼接到累积数组，挂载重建后的完整 messages
+    // delta：拼接到累积数组，挂载重建后的完整 input
     ctx.accumulated = [...ctx.accumulated, ...msgs];
-    entry.body.messages = ctx.accumulated;
+    entry.body.input = ctx.accumulated;
     ctx.accumulated = _integrityCheck(entry, ctx.accumulated, ctx.intState);
     if (entry._staleReorder || entry._reconstructBroken ||
         (entry._totalMessageCount && ctx.accumulated.length !== entry._totalMessageCount)) {
@@ -206,7 +236,7 @@ function _stepReconstruct(entry, ctx) {
 
 /**
  * 批量重建 — 用于 readLogFile() 和 readLocalLog()。
- * 输入已去重的条目数组，输出重建后的条目数组（原地修改 body.messages）。
+ * 输入已去重的条目数组，输出重建后的条目数组（原地修改 body.input）。
  * 非 mainAgent delta 条目不受影响。
  *
  * @param {Array} entries - 已去重、按时间顺序排列的条目数组
@@ -214,11 +244,7 @@ function _stepReconstruct(entry, ctx) {
  */
 export function reconstructEntries(entries) {
   // 第一遍：正向重建
-  const ctx = {
-    accumulated: [],
-    intState: { baselineSeen: false, poisoned: false },
-    seqState: { lastSeq: 0, lastEpoch: null },
-  };
+  const ctxByConversation = new Map();
   const broken = []; // 记录重建失败的条目索引（用于第二遍补偿）
 
   for (let i = 0; i < entries.length; i++) {
@@ -226,6 +252,7 @@ export function reconstructEntries(entries) {
     // 跳过 inProgress 条目：孤立的 inProgress（请求超时未完成）在 dedup 后残留，
     // 其 delta 与后续 completed 条目重复，双重累积会导致 accumulated 偏移
     if (entry.inProgress) continue;
+    const ctx = _getContext(ctxByConversation, entry);
     if (_stepReconstruct(entry, ctx)) broken.push(i);
   }
 
@@ -238,17 +265,18 @@ export function reconstructEntries(entries) {
 }
 
 /**
- * 用候选全量条目（checkpoint/旧格式，排除 teammate）补偿一条断裂条目。
+ * 用候选全量条目（checkpoint/全量，排除 teammate）补偿一条断裂条目。
  * 内容已是真值前缀，清除标记让批量 merge / mergeLogFiles 正常消费。
  * @returns {boolean} true = 已补偿
  */
 function _tryRepairFromCandidate(brokenEntry, expectedCount, candidate) {
-  if (!candidate.mainAgent || candidate.teammate || !Array.isArray(candidate.body?.messages)) return false;
-  const candidateMsgs = candidate.body.messages;
+  if (!candidate.mainAgent || candidate.teammate || !Array.isArray(candidate.body?.input)) return false;
+  if (_getConversationId(candidate) !== _getConversationId(brokenEntry)) return false;
+  const candidateMsgs = candidate.body.input;
   const candidateTotal = candidate._totalMessageCount || candidateMsgs.length;
   const isFullEntry = !candidate._deltaFormat || isCheckpointEntry(candidate);
   if (isFullEntry && candidateTotal >= expectedCount) {
-    brokenEntry.body.messages = candidateMsgs.slice(0, expectedCount);
+    brokenEntry.body.input = candidateMsgs.slice(0, expectedCount);
     delete brokenEntry._staleReorder;
     delete brokenEntry._reconstructBroken;
     return true;
@@ -257,8 +285,8 @@ function _tryRepairFromCandidate(brokenEntry, expectedCount, candidate) {
 }
 
 /**
- * 补偿修复：对断裂的 delta 条目，从后续最近的 checkpoint 中提取完整 messages 回填。
- * checkpoint 包含截至该点的完整历史，可以据此反推之前条目的 messages。
+ * 补偿修复：对断裂的 delta 条目，从后续最近的 checkpoint 中提取完整 input 回填。
+ * checkpoint 包含截至该点的完整历史，可以据此反推之前条目的 input。
  * @param {object|null} [nextCheckpoint] - 数组内向后查找失败时的额外候选
  *   （段级调用方传入段外的下一 checkpoint，最后一段可为 null）
  */
@@ -268,7 +296,7 @@ function _compensateBrokenEntries(entries, brokenIndices, nextCheckpoint = null)
     const expectedCount = brokenEntry._totalMessageCount;
     if (!expectedCount) continue;
 
-    // 向后查找最近的 checkpoint 或旧格式全量条目（排除 teammate）
+    // 向后查找最近的 checkpoint 或全量条目（排除 teammate）
     let repaired = false;
     for (let j = brokenIdx + 1; j < entries.length; j++) {
       if (_tryRepairFromCandidate(brokenEntry, expectedCount, entries[j])) {
@@ -287,7 +315,7 @@ function _compensateBrokenEntries(entries, brokenIndices, nextCheckpoint = null)
  * 对一个 checkpoint 边界内的段进行正向重建，如有 broken 条目则用 nextCheckpoint 反向修复。
  * 段内条目数通常 ≤ CHECKPOINT_INTERVAL(10)，内存开销可控。
  *
- * @param {Array} segment - 段内条目数组（段首应为 checkpoint/旧格式条目）
+ * @param {Array} segment - 段内条目数组（段首应为 checkpoint/全量条目）
  * @param {object|null} nextCheckpoint - 下一个 checkpoint 条目（用于反向修复），最后一段可为 null
  * @param {{lastSeq: number, lastEpoch: string|null}} [sharedSeqState] - 跨段共享的 seq 守卫状态。
  *   流式分段调用方（log-stream）必须按文件维度传入同一对象：乱序的 stale checkpoint 自己就是
@@ -296,16 +324,16 @@ function _compensateBrokenEntries(entries, brokenIndices, nextCheckpoint = null)
  * @returns {Array} 重建后的段条目数组（原地修改）
  */
 export function reconstructSegment(segment, nextCheckpoint, sharedSeqState) {
-  const ctx = {
-    accumulated: [],
-    intState: { baselineSeen: false, poisoned: false },
-    seqState: sharedSeqState || { lastSeq: 0, lastEpoch: null },
-  };
+  const ctxByConversation = new Map();
+  const sharedSeqStateByConversation = sharedSeqState
+    ? (sharedSeqState.byConversation || (sharedSeqState.byConversation = new Map()))
+    : null;
   const broken = [];
 
   for (let i = 0; i < segment.length; i++) {
     const entry = segment[i];
     if (entry.inProgress) continue;
+    const ctx = _getContext(ctxByConversation, entry, sharedSeqStateByConversation);
     if (_stepReconstruct(entry, ctx)) broken.push(i);
   }
 
@@ -324,37 +352,34 @@ export function reconstructSegment(segment, nextCheckpoint, sharedSeqState) {
  * @returns {{ reconstruct: (entry: object) => object, reset: () => void }}
  */
 export function createIncrementalReconstructor() {
-  // accumulated：mainAgent 累积 messages；
-  // baselineSeen：自创建/reset 后是否见过 checkpoint/旧格式全量条目；
+  // accumulated：mainAgent 累积 input；
+  // baselineSeen：自创建/reset 后是否见过 checkpoint/全量条目；
   // poisoned：accumulated 被 slice 修复过（基底不可信），冻结到下一 checkpoint
-  const ctx = {
-    accumulated: [],
-    intState: { baselineSeen: false, poisoned: false },
-    seqState: { lastSeq: 0, lastEpoch: null },
-  };
+  const ctxByConversation = new Map();
 
   return {
     /**
      * 重建单条条目。
-     * - 非 delta 条目：如果是 mainAgent 旧格式，更新累积状态，原样返回
+     * - 非 delta 条目：如果是 mainAgent 全量格式，更新累积状态，原样返回
      * - 乱序条目（_seq 守卫）：不进累积态，标 _staleReorder 后返回
      * - checkpoint：重置累积状态，原样返回
-     * - delta：拼接重建 + 完整性校验，修改 body.messages 后返回
+     * - delta：拼接重建 + 完整性校验，修改 body.input 后返回
      *
      * @param {object} entry - 单条日志条目
      * @returns {object} 重建后的条目（同一引用）
      */
     reconstruct(entry) {
-      // inProgress 条目：用 accumulated 副本重建 messages，但不更新 accumulated 本身，
+      // inProgress 条目：用 accumulated 副本重建 input，但不更新 accumulated 本身，
       // 也不参与 seq 守卫（placeholder 与 completed 共享同一 _seq，先于守卫跳过，
       // 防 completed 被"同 seq 重发"规则误吞）。
-      // 这样客户端收到完整 messages（避免 delta 闪烁），
+      // 这样客户端收到完整 input（避免 delta 闪烁），
       // 而后续 completed 条目仍能基于正确的 accumulated 重建。
       if (entry.inProgress) {
         if (isDeltaEntry(entry) && !isCheckpointEntry(entry)) {
-          const msgs = entry.body?.messages;
+          const msgs = entry.body?.input;
           if (Array.isArray(msgs)) {
-            entry.body.messages = [...ctx.accumulated, ...msgs];
+            const ctx = _getContext(ctxByConversation, entry);
+            entry.body.input = [...ctx.accumulated, ...msgs];
           }
         }
         return entry;
@@ -363,6 +388,7 @@ export function createIncrementalReconstructor() {
       // 忽略 needs-compensation 返回值：增量路径是实时流、无法回看后续 checkpoint
       // 做第二遍补偿。stale 仅靠 _markStaleEntry 就地回填；未补偿条目带
       // _staleReorder/_reconstructBroken 标记，由客户端 isMergeBlockedEntry 阻断 merge。
+      const ctx = _getContext(ctxByConversation, entry);
       _stepReconstruct(entry, ctx);
       return entry;
     },
@@ -371,11 +397,7 @@ export function createIncrementalReconstructor() {
      * 重置累积状态（用于 full_reload 等场景）。
      */
     reset() {
-      ctx.accumulated = [];
-      ctx.intState.baselineSeen = false;
-      ctx.intState.poisoned = false;
-      ctx.seqState.lastSeq = 0;
-      ctx.seqState.lastEpoch = null;
+      ctxByConversation.clear();
     }
   };
 }

@@ -29,7 +29,7 @@ const MAX_IMAGE_BASE64_LEN = 2 * 1024 * 1024;
 
 /**
  * 提取 tool_result 内嵌的 image 块为可直接渲染的 src 列表(或大图占位)。
- * Anthropic API 协议:Read 图片文件 / 截图等返回 `{type:'image', source: {type:'base64', media_type, data}}`,
+ * Tool results for image files / screenshots may return `{type:'image', source: {type:'base64', media_type, data}}`,
  * 也可能是 `{type:'url', url}`。
  *
  * 安全/性能:
@@ -107,7 +107,6 @@ export function buildSingleToolResultCore(block, matchedTool) {
 }
 
 const ANSI_ESCAPE = /\x1b\[[0-9;]*[A-Za-z]/g;
-const READ_LINE_PREFIX = /^\s*\d+[→\t](.*)$/;
 
 /**
  * 紧凑模式 Popover 浮窗的 tool_result 预览:从 toolResultMap entry 生成截断文本。
@@ -117,8 +116,7 @@ const READ_LINE_PREFIX = /^\s*\d+[→\t](.*)$/;
  *   - isPermissionDenied / isInputValidationError(外部已有红 badge,避免双显示)
  *
  * 工具特定清洗:
- *   - Read:strip 行号前缀(`   123→content` → `content`)
- *   - Bash:strip ANSI 转义(`\x1b[31mERROR\x1b[0m` → `ERROR`)
+ *   - shell_command:strip ANSI 转义(`\x1b[31mERROR\x1b[0m` → `ERROR`)
  *
  * 截断策略:行数上限 maxLines(默认 50,留够内容让 CSS max-height + overflow:auto 触发
  * 滚动),每行字符上限 maxChars(默认 500,防止超长单行撑爆 popover)。
@@ -127,7 +125,7 @@ export function compactResultPreview(entry, opts = {}) {
   if (!entry || typeof entry !== 'object') return null;
   if (entry.isPermissionDenied || entry.isInputValidationError) return null;
 
-  // 图片优先:Read 图片文件 / 截图等场景,images 数组非空则返回图片预览(text 可同时存在,作为辅助文本)
+  // 图片优先:图片文件 / 截图等场景,images 数组非空则返回图片预览(text 可同时存在,作为辅助文本)
   const images = Array.isArray(entry.images) ? entry.images : null;
   const hasImages = images && images.length > 0;
 
@@ -141,7 +139,7 @@ export function compactResultPreview(entry, opts = {}) {
   let text = null;
   if (hasText) {
     let cleaned = raw;
-    if (entry.toolName === 'Bash') {
+    if (entry.toolName === 'shell_command') {
       cleaned = cleaned.replace(ANSI_ESCAPE, '');
     }
     const lines = cleaned.split('\n');
@@ -150,10 +148,6 @@ export function compactResultPreview(entry, opts = {}) {
     const out = [];
     for (let i = 0; i < slice.length; i++) {
       let line = slice[i];
-      if (entry.toolName === 'Read') {
-        const m = line.match(READ_LINE_PREFIX);
-        if (m) line = m[1];
-      }
       if (line.length > maxChars) line = line.slice(0, maxChars) + '…';
       out.push(line);
     }

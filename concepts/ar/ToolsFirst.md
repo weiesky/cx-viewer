@@ -1,77 +1,71 @@
-# لماذا تُدرج الأدوات أولاً؟
+# Why Are Tools Listed First?
 
-في لوحة السياق بـ cc-viewer، **تظهر Tools قبل System Prompt والMessages**. يعكس هذا الترتيب بدقة **تسلسل بادئة KV-Cache في Anthropic API**.
+In CX Viewer's Context panel, **Tools appear before Instructions and Input**. For Codex, this is a diagnostic layout: tool definitions are a large, high-impact part of the request shape, so they are shown first before the instructions and conversation context they constrain.
 
-## تسلسل بادئة KV-Cache
+## Request Context Layout
 
-عندما تبني Anthropic API الـ KV-Cache، تقوم بتسلسل السياق في بادئة وفق هذا **الترتيب الثابت**:
+Codex traffic can arrive from OpenAI Responses API calls, Codex app-server events, or SDK stream events. CX Viewer normalizes those sources into a consistent context view:
 
 ```
 ┌─────────────────────────────────────────────────┐
-│ 1. Tools (JSON Schema definitions)               │  ← Start of cache prefix
-│ 2. System Prompt                                 │
-│ 3. Messages (conversation history + current turn)│  ← End of cache prefix
+│ 1. Tools (JSON Schema definitions)               │  ← Capability surface
+│ 2. Instructions                                  │
+│ 3. Input (conversation history + current turn)   │
 └─────────────────────────────────────────────────┘
 ```
 
-هذا يعني أن **Tools تأتي قبل System Prompt في بداية بادئة الـ cache تماماً**.
+This does not claim a provider-specific serialization order. It gives you a stable way to inspect what capabilities were available before reading instructions and input history.
 
-## لماذا تمتلك Tools وزناً أعلى في الـ Cache من System؟
+## Why Tools Often Matter Most
 
-في مطابقة بادئة KV-Cache، **المحتوى الأسبق أكثر أهمية** — أي تغيير يُبطل كل ما يليه:
+Tool definitions are often the largest static part of an agent request. A small UI toggle can add, remove, or reshape many tool schemas, which changes model behavior and request size.
 
-1. **مطابقة البادئة تبدأ من البداية**: يقارن KV-Cache الطلب الحالي بالبادئة المخزنة token بـ token من البداية. فور اكتشاف عدم تطابق، يُبطَل كل المحتوى اللاحق.
+1. **Capability changes are semantic changes**: Adding or removing a tool changes what the agent is allowed to do, not just the token count.
 
-2. **تغيير Tools = إبطال كامل للـ cache**: بما أن Tools تأتي أولاً، فأي تغيير في تعريفات الأدوات (حتى إضافة أو حذف MCP tool واحدة) **يكسر البادئة من البداية تماماً**، مما يُبطل كل الـ System Prompt والMessages المخزنة.
+2. **Tool schemas can dominate request size**: MCP and dynamic tools often have detailed JSON Schemas with descriptions, enums, and nested parameters.
 
-3. **تغيير System = إبطال cache الـ Messages**: يقع System Prompt في المنتصف، لذا تؤثر تغييراته فقط على جزء الـ Messages الذي يليه.
+4. **Input appends are usually cheaper to inspect**: Normal conversation turns mostly add new user input and the previous assistant/tool results, while tool and instruction changes tend to be rarer and more important.
 
-4. **تغيير Messages = يؤثر فقط على الذيل**: Messages تأتي في النهاية، لذا إضافة رسائل جديدة تُبطل فقط جزءاً صغيراً في النهاية — يبقى cache الـ Tools والـ System سليماً.
+## Practical Impact
 
-## التأثير العملي
+| Change Type | Cache Impact | Typical Scenario |
+|-------------|-------------|-----------------|
+| Tool added/removed | Request shape changes | MCP server connect/disconnect, plugin toggle |
+| Instructions change | Instructions and policy changed | `AGENTS.md` edit, developer instruction update |
+| New input appended | Normal turn growth | User input, assistant reply, tool result |
 
-| نوع التغيير | تأثير الـ Cache | السيناريو النموذجي |
-|-------------|----------------|---------------------|
-| إضافة/حذف Tool | **إبطال كامل** | اتصال/انقطاع MCP server، تفعيل/تعطيل إضافة IDE |
-| تغيير System Prompt | فقدان cache الـ Messages | تعديل CLAUDE.md، حقن system reminder |
-| إضافة رسالة جديدة | زيادة طرفية فقط | تدفق المحادثة الطبيعي (الأكثر شيوعاً، الأقل تكلفة) |
+## Why Are Tool Definitions Placed Before the "Brain"?
 
-لهذا السبب يُعد `tools_change` في [CacheRebuild](CacheRebuild.md) أغلى أسباب إعادة البناء في الغالب — لأنه يكسر سلسلة البادئة من الأمام تماماً.
+From a diagnostic perspective, putting Tools first is useful because tool definitions describe the agent's available actions before you inspect the instructions that ask the agent to act.
 
-## لماذا توضع تعريفات الأدوات قبل "الدماغ"؟
+Before taking action, a person needs to perceive what limbs and tools are available. An infant doesn't first understand the rules of the world (Instructions), then learn to reach and grab — they first sense that they have hands and feet, then gradually understand rules through interaction with the environment. Similarly, an LLM needs to know what tools it can call (read files, write code, search, execute commands) before receiving task instructions, so it can accurately assess "what can I do" and "how should I do it" when processing the instructions.
 
-من منظور التخزين المؤقت، وجود Tools في المقدمة هو حقيقة تقنية. لكن من منظور التصميم المعرفي، هذا الترتيب منطقي بنفس القدر — **الأدوات هي اليدان والقدمان، وSystem Prompt هو الدماغ**.
+If reversed — first telling the model "your task is to refactor this module", then telling it "you have shell_command, apply_patch, and tool_search" — the model would lack critical capability boundary information when understanding the task, potentially producing unrealistic plans or overlooking available approaches.
 
-قبل التصرف، يحتاج الشخص إلى إدراك الأطراف والأدوات المتاحة له. الرضيع لا يفهم أولاً قواعد العالم (System) ثم يتعلم الإمساك — بل يدرك أولاً أن لديه يدين وقدمين، ثم يفهم القواعد تدريجياً من خلال التفاعل مع البيئة. وبالمثل، يحتاج نموذج LLM إلى معرفة الأدوات التي يمكنه استدعاؤها (قراءة الملفات، كتابة الكود، البحث، تنفيذ الأوامر) قبل تلقي تعليمات المهمة (System Prompt)، ليتمكن من تقييم "ماذا يمكنني أن أفعل" و"كيف يجب أن أفعل ذلك" بدقة عند معالجة التعليمات.
+**Know what cards you hold before deciding how to play.** This is the cognitive logic behind Tools preceding Instructions.
 
-لو كان الترتيب معكوساً — إخبار النموذج أولاً "مهمتك إعادة هيكلة هذه الوحدة"، ثم إخباره "لديك أدوات Read وEdit وBash" — سيفتقر النموذج إلى معلومات حاسمة عن حدود قدراته عند فهم المهمة، مما قد ينتج خططاً غير واقعية أو يتجاهل أساليب متاحة.
+## Why Are MCP Tools Also in This Position?
 
-**اعرف أوراقك قبل أن تقرر كيف تلعبها.** هذا هو المنطق المعرفي وراء وضع Tools قبل System.
+MCP (Model Context Protocol) tools, like built-in tools, are placed at the very front of the Tools area. Understanding MCP's position in the context helps evaluate its real benefits and costs.
 
-## لماذا توجد أدوات MCP أيضاً في هذا الموضع؟
+### MCP Advantages
 
-أدوات MCP (Model Context Protocol)، مثل الأدوات المدمجة، توضع في بداية منطقة Tools. فهم موقع MCP في السياق يساعد في تقييم فوائده وتكاليفه الحقيقية.
+- **Capability extension**: MCP lets models access external services (database queries, API calls, IDE operations, browser control, etc.), breaking beyond built-in tool boundaries
+- **Open ecosystem**: Anyone can implement an MCP server; the model gains new capabilities without retraining
+- **On-demand loading**: MCP servers can be selectively connected/disconnected based on task scenario, flexibly composing tool sets
 
-### مزايا MCP
+### MCP Costs
+- **Prefix bloat**: MCP tool Schemas are typically larger than built-in tools (containing detailed parameter descriptions, enums, etc.). Many MCP tools significantly increase the Tools area's token count, squeezing the context space available for Input
+- **Latency overhead**: MCP tool calls require cross-process communication (JSON-RPC over stdio/SSE), an order of magnitude slower than built-in function calls
+- **Stability risk**: MCP servers are external processes that may crash, timeout, or return unexpected formats, requiring additional error handling
 
-- **توسيع القدرات**: يتيح MCP للنماذج الوصول إلى خدمات خارجية (استعلامات قواعد البيانات، استدعاءات API، عمليات IDE، التحكم بالمتصفح، إلخ)، متجاوزاً حدود الأدوات المدمجة
-- **نظام بيئي مفتوح**: يمكن لأي شخص تنفيذ خادم MCP؛ يكتسب النموذج قدرات جديدة دون إعادة التدريب
-- **التحميل عند الطلب**: يمكن توصيل/فصل خوادم MCP بشكل انتقائي حسب السيناريو، مع تركيب مرن لمجموعات الأدوات
+### Practical Recommendations
 
-### تكاليف MCP
+| Scenario | Recommendation |
+|----------|---------------|
+| Long conversations, high-frequency interaction | Minimize MCP tool count to keep requests smaller and easier to inspect |
+| Short tasks, one-off operations | Use MCP tools freely; overhead is usually limited |
+| Frequently adding/removing MCP servers | Each change reshapes the request; consider fixing the tool set |
+| Oversized Tool Schemas | Trim descriptions and enums to reduce prefix token footprint |
 
-- **قاتل التخزين المؤقت**: يتم ربط تعريف JSON Schema لكل أداة MCP في بداية بادئة KV-Cache. إضافة أو إزالة أداة MCP واحدة = **إبطال التخزين المؤقت بالكامل من البداية**. التوصيل/الفصل المتكرر لخوادم MCP يقلل بشكل كبير من معدل إصابة التخزين المؤقت
-- **تضخم البادئة**: مخططات أدوات MCP عادة أكبر من الأدوات المدمجة (أوصاف مفصلة للمعاملات، قيم تعداد، إلخ). العديد من أدوات MCP يزيد بشكل ملحوظ عدد الرموز في منطقة Tools، مما يقلص مساحة السياق المتاحة للرسائل
-- **عبء التأخير**: تتطلب استدعاءات أدوات MCP اتصالاً بين العمليات (JSON-RPC عبر stdio/SSE)، وهو أبطأ بمرتبة من استدعاءات الدوال المدمجة
-- **مخاطر الاستقرار**: خوادم MCP هي عمليات خارجية قد تتعطل أو تنتهي مهلتها أو تعيد تنسيقات غير متوقعة، مما يتطلب معالجة أخطاء إضافية
-
-### توصيات عملية
-
-| السيناريو | التوصية |
-|-----------|---------|
-| محادثات طويلة، تفاعل متكرر | تقليل عدد أدوات MCP لحماية استقرار بادئة التخزين المؤقت |
-| مهام قصيرة، عمليات لمرة واحدة | استخدام أدوات MCP بحرية؛ التأثير على التخزين المؤقت محدود |
-| إضافة/إزالة متكررة لخوادم MCP | كل تغيير يؤدي إلى إعادة بناء كاملة للتخزين المؤقت؛ النظر في تثبيت مجموعة الأدوات |
-| مخططات أدوات كبيرة الحجم | تقليص الأوصاف والتعدادات لتقليل استهلاك رموز البادئة |
-
-في لوحة Context في cc-viewer، تُعرض أدوات MCP إلى جانب الأدوات المدمجة في منطقة Tools، مما يوفر رؤية واضحة لحجم مخطط كل أداة ومساهمتها في بادئة التخزين المؤقت.
+In CX Viewer's Context panel, MCP tools are displayed alongside built-in and dynamic tools in the Tools area, giving you a clear view of each tool's Schema size and contribution to request shape.

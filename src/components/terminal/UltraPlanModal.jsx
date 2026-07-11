@@ -44,7 +44,7 @@ function _expertIcon(d) {
 }
 
 export default function UltraPlanModal({
-  open, variant, prompt, files, agentTeamEnabled, customExperts, expertOrder, expertHidden,
+  open, variant, prompt, files, customExperts, expertOrder, expertHidden,
   onClose, onVariantChange, onPromptChange, onSend, onUpload, onPaste, onRemoveFile, onOpenCustomEditor, onOpenManager,
   modalSize, onModalSizeChange,
 }) {
@@ -192,11 +192,8 @@ export default function UltraPlanModal({
           </div>
         </div>
 
-        {!agentTeamEnabled ? (
-          <div className={styles.disabledTip}>{t('ui.ultraplan.agentTeamRequired')}</div>
-        ) : (
-          <>
-            <div className={styles.variantRow}>
+        <>
+          <div className={styles.variantRow}>
               {buildExpertList(customExperts, expertOrder, expertHidden)
                 .filter(d => !d.hidden)
                 .map(d => {
@@ -308,15 +305,14 @@ export default function UltraPlanModal({
               )}
             </div>
 
-            <div className={styles.footer}>
-              <button className={styles.sendBtn} disabled={!hasContent} onClick={onSend}>{t('ui.ultraplan.send')}</button>
-              <button className={styles.uploadBtn} onClick={onUpload}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-                {t('ui.ultraplan.upload')}
-              </button>
-            </div>
-          </>
-        )}
+          <div className={styles.footer}>
+            <button className={styles.sendBtn} disabled={!hasContent} onClick={onSend}>{t('ui.ultraplan.send')}</button>
+            <button className={styles.uploadBtn} onClick={onUpload}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              {t('ui.ultraplan.upload')}
+            </button>
+          </div>
+        </>
         </div>
       </div>
       {lightbox && (

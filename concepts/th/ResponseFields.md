@@ -1,50 +1,38 @@
-# คำอธิบายฟิลด์ Response Body
+# Response Body Field Reference
 
-คำอธิบายฟิลด์ของ Response Body จาก Claude API `/v1/messages`
+Field reference for CX-Viewer's normalized Codex response body.
 
-## ฟิลด์ระดับบนสุด
+## Top-Level Fields
 
-| ฟิลด์ | ประเภท | คำอธิบาย |
-|------|------|------|
-| **model** | string | ชื่อโมเดลที่ใช้จริง เช่น `claude-opus-4-6` |
-| **id** | string | ตัวระบุเฉพาะของการตอบกลับนี้ เช่น `msg_01Tgsr2QeH8AVXGoP2wAXRvU` |
-| **type** | string | ค่าคงที่ `"message"` |
-| **role** | string | ค่าคงที่ `"assistant"` |
-| **content** | array | อาร์เรย์ของบล็อกเนื้อหาที่โมเดลสร้างขึ้น ประกอบด้วยข้อความ การเรียกใช้เครื่องมือ กระบวนการคิด เป็นต้น |
-| **stop_reason** | string | เหตุผลที่หยุด: `"end_turn"` (จบปกติ), `"tool_use"` (ต้องเรียกใช้เครื่องมือ), `"max_tokens"` (ถึงขีดจำกัดโทเค็น) |
-| **stop_sequence** | string/null | ลำดับอักขระที่ทำให้หยุด โดยปกติเป็น `null` |
-| **usage** | object | สถิติการใช้โทเค็น (ดูรายละเอียดด้านล่าง) |
+| Field | Type | Description |
+|-------|------|-------------|
+| **model** | string | The model name actually used |
+| **id** | string | Unique response or streamed item identifier when available |
+| **type** | string | Always `"message"` |
+| **role** | string | Always `"assistant"` |
+| **content** | array | Array of content blocks output by the model, containing text, tool calls, thinking process, etc. |
+| **stop_reason** | string | Normalized reason/status for stopping, such as `"end_turn"`, `"completed"`, `"failed"`, or `"max_tokens"` |
+| **stop_sequence** | string/null | The sequence that triggered the stop, usually `null` |
+| **usage** | object | Token usage statistics (see below) |
 
-## ประเภทบล็อก content
+## content Block Types
 
-| ประเภท | คำอธิบาย |
-|------|------|
-| **text** | การตอบกลับแบบข้อความของโมเดล มีฟิลด์ `text` |
-| **tool_use** | คำขอเรียกใช้เครื่องมือ มี `name` (ชื่อเครื่องมือ), `input` (พารามิเตอร์), `id` (ID การเรียกใช้ สำหรับจับคู่กับ tool_result) |
-| **thinking** | เนื้อหาการคิดแบบขยาย (ปรากฏเฉพาะเมื่อเปิดโหมด thinking) มีฟิลด์ `thinking` |
+| Type | Description |
+|------|-------------|
+| **text** | The model's text reply, contains a `text` field |
+| **tool_use** | Tool call request, contains `name` (tool name), `input` (parameters), `id` (call ID, used to match tool_result) |
+| **thinking** | Extended thinking content (only appears when thinking mode is enabled), contains a `thinking` field |
 
-## รายละเอียดฟิลด์ usage
+## usage Field Details
 
-| ฟิลด์ | คำอธิบาย |
-|------|------|
-| **input_tokens** | จำนวนโทเค็นอินพุตที่ไม่ตรงแคช (คิดค่าบริการเต็มราคา) |
-| **cache_creation_input_tokens** | จำนวนโทเค็นที่สร้างแคชใหม่ในครั้งนี้ (การเขียนแคช คิดค่าบริการสูงกว่าอินพุตปกติ) |
-| **cache_read_input_tokens** | จำนวนโทเค็นที่ตรงแคช (การอ่านแคช คิดค่าบริการต่ำกว่าอินพุตปกติมาก) |
-| **output_tokens** | จำนวนโทเค็นเอาต์พุตของโมเดล |
-| **service_tier** | ระดับบริการ เช่น `"standard"` |
-| **inference_geo** | ภูมิภาคการประมวลผล เช่น `"not_available"` หมายความว่าไม่มีข้อมูลภูมิภาค |
+| Field | Description |
+|-------|-------------|
+| **output_tokens** | Number of tokens output by the model |
+| **reasoning_output_tokens** | Reasoning tokens when the source reports them |
+| **total_tokens** | Total tokens reported by the source |
 
-## ฟิลด์ย่อยของ cache_creation
+## stop_reason Meanings
 
-| ฟิลด์ | คำอธิบาย |
-|------|------|
-| **ephemeral_5m_input_tokens** | จำนวนโทเค็นสร้างแคชระยะสั้น TTL 5 นาที |
-| **ephemeral_1h_input_tokens** | จำนวนโทเค็นสร้างแคชระยะยาว TTL 1 ชั่วโมง |
-
-> **เกี่ยวกับค่าบริการแคช**: ราคาต่อหน่วยของ `cache_read_input_tokens` ต่ำกว่า `input_tokens` มาก ในขณะที่ราคาต่อหน่วยของ `cache_creation_input_tokens` สูงกว่าอินพุตปกติเล็กน้อย ดังนั้น การรักษาอัตราการตรงแคชให้สูงในการสนทนาต่อเนื่องสามารถลดค่าใช้จ่ายได้อย่างมาก คุณสามารถติดตามอัตราส่วนนี้ได้อย่างเห็นภาพผ่านตัวชี้วัด "อัตราการตรงแคช" ใน cc-viewer
-
-## ความหมายของ stop_reason
-
-- **end_turn**: โมเดลตอบกลับเสร็จสมบูรณ์ตามปกติ
-- **tool_use**: โมเดลต้องเรียกใช้เครื่องมือ content จะมีบล็อก `tool_use` ในคำขอรอบถัดไปต้องเพิ่ม `tool_result` ใน messages เพื่อดำเนินการสนทนาต่อ
-- **max_tokens**: ถูกตัดเนื่องจากถึงขีดจำกัด `max_tokens` การตอบกลับอาจไม่สมบูรณ์
+- **end_turn**: The model completed its reply normally
+- **tool_use**: The model needs to call a tool; CX-Viewer shows the matching tool result when the capture source provides it
+- **max_tokens**: The reply was truncated due to reaching the `max_tokens` limit and may be incomplete

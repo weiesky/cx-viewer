@@ -24,7 +24,7 @@ const SPEECH_LANG_MAP = {
   tr: 'tr-TR', uk: 'uk-UA',
 };
 
-function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, onKeyDown, onChange, onSend, onStop, onSuggestionClick, onUploadPath, presetItems, onPresetSend, onOpenPresetModal, onOpenUltraPlan, onClearContext, isStreaming, pendingImages, onRemovePendingImage, uploadingItems, sendDeferred, onUploadStart, onUploadEnd, setContextBarSlot, autoApproveSeconds, onAutoApproveChange, planAutoApproveSeconds, onPlanAutoApproveChange, onClearContextNow, ultraplanPopover, agentTeamEnabled }) {
+function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, onKeyDown, onChange, onSend, onStop, onSuggestionClick, onUploadPath, presetItems, onPresetSend, onOpenPresetModal, onOpenUltraPlan, onClearContext, isStreaming, pendingImages, onRemovePendingImage, uploadingItems, sendDeferred, onUploadStart, onUploadEnd, setContextBarSlot, approvalsReviewer, onApprovalsReviewerChange, planAutoApproveSeconds, onPlanAutoApproveChange, onClearContextNow, ultraplanPopover }) {
   const [plusOpen, setPlusOpen] = useState(false);
   // 桌面四芒星菜单的级联展开行（与终端工具栏同款交互）：null | 'perm' | 'plan' | 'agentteam'
   const [quickExpanded, setQuickExpanded] = useState(null);
@@ -371,21 +371,18 @@ function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, 
                 {!isMobile ? (
                   <>
                     {/* 桌面：与终端工具栏四芒星菜单同款级联结构（共享 QuickAutoApproveRows）。
-                        改值必须走 AppBase handler（经 ChatView 钻取的 onAutoApproveChange /
-                        onPlanAutoApproveChange），原因见组件内注释 */}
+                        reviewer 与 Plan 档位都必须走 AppBase handler。 */}
                     <QuickAutoApproveRows
-                      autoApproveSeconds={autoApproveSeconds}
+                      approvalsReviewer={approvalsReviewer}
                       planAutoApproveSeconds={planAutoApproveSeconds}
-                      onAutoApproveChange={onAutoApproveChange}
+                      onApprovalsReviewerChange={onApprovalsReviewerChange}
                       onPlanAutoApproveChange={onPlanAutoApproveChange}
                       expandedKey={quickExpanded}
                       onToggle={setQuickExpanded}
                       onHoverEnter={qmHover.enter}
                       onHoverLeave={qmHover.leave}
                     />
-                    {/* AgentTeam ▸：原平铺的自定义快捷方式 + 预设列表收进级联子菜单。
-                        未启用时只引导去终端启用——启用流程依赖终端 ws
-                        （TerminalPanel.handleEnableAgentTeam），本菜单无法就地启用 */}
+                    {/* AgentTeam ▸：原平铺的自定义快捷方式 + 预设列表收进级联子菜单。 */}
                     <div
                       className={`${chrome.quickMenuGroup} ${quickExpanded === 'agentteam' ? chrome.quickMenuGroupOpen : ''}`}
                       onMouseEnter={() => qmHover.enter('agentteam')}
@@ -398,27 +395,21 @@ function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, 
                       </button>
                       <div className={chrome.quickMenuSubWrap}>
                         <div className={chrome.quickMenuSub}>
-                          {!agentTeamEnabled ? (
-                            <div className={chrome.quickMenuSubTipBox}>{t('ui.chatInput.agentTeamEnableHint')}</div>
-                          ) : (
-                            <>
-                              {onOpenPresetModal && (
-                                <button className={`${styles.plusMenuItem} ${styles.plusMenuItemMuted} ${styles.quickMenuPresetItem}`} onClick={() => { closePlusMenu(); onOpenPresetModal(); }}>
-                                  {t('ui.terminal.customShortcuts')}
-                                </button>
-                              )}
-                              {(presetItems || []).map(item => {
-                                const isBuiltinRaw = item.builtinId && !item.modified;
-                                const name = isBuiltinRaw ? t(item.teamName) : item.teamName;
-                                const desc = isBuiltinRaw ? t(item.description) : item.description;
-                                return (
-                                  <button key={item.id} className={`${styles.plusMenuItem} ${styles.quickMenuPresetItem}`} onClick={() => { closePlusMenu(); onPresetSend?.(desc); }} title={desc}>
-                                    {name || desc}
-                                  </button>
-                                );
-                              })}
-                            </>
+                          {onOpenPresetModal && (
+                            <button className={`${styles.plusMenuItem} ${styles.plusMenuItemMuted} ${styles.quickMenuPresetItem}`} onClick={() => { closePlusMenu(); onOpenPresetModal(); }}>
+                              {t('ui.terminal.customShortcuts')}
+                            </button>
                           )}
+                          {(presetItems || []).map(item => {
+                            const isBuiltinRaw = item.builtinId && !item.modified;
+                            const name = isBuiltinRaw ? t(item.teamName) : item.teamName;
+                            const desc = isBuiltinRaw ? t(item.description) : item.description;
+                            return (
+                              <button key={item.id} className={`${styles.plusMenuItem} ${styles.quickMenuPresetItem}`} onClick={() => { closePlusMenu(); onPresetSend?.(desc); }} title={desc}>
+                                {name || desc}
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     </div>

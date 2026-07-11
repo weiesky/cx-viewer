@@ -123,30 +123,6 @@
   line-height: 1.6;
 }
 
-.cacheDot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  margin: 0 3px;
-  vertical-align: middle;
-}
-
-.cacheDotLoss {
-  background-color: var(--color-red-dark-bg);
-  cursor: help;
-}
-
-.cacheDotNormal {
-  background-color: var(--border-hover);
-}
-
-/* tools 变化专属着色：在 cache-loss 红点基础上换成紫色 + 描边，时间线上一眼可辨 */
-.cacheDotTools {
-  background-color: var(--color-code-purple);
-  box-shadow: 0 0 0 1.5px var(--color-purple-border);
-}
-
 .tagMainAgent {
   color: var(--color-code-orange);
   border-color: var(--color-code-orange-border);

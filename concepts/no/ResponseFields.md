@@ -1,50 +1,38 @@
-# Feltbeskrivelse for Response Body
+# Response Body Field Reference
 
-Feltbeskrivelse for responskroppen i Claude API `/v1/messages`.
+Field reference for CX-Viewer's normalized Codex response body.
 
-## Toppnivåfelter
+## Top-Level Fields
 
-| Felt | Type | Beskrivelse |
-|------|------|------|
-| **model** | string | Det faktiske modellnavnet, f.eks. `claude-opus-4-6` |
-| **id** | string | Unik identifikator for dette svaret, f.eks. `msg_01Tgsr2QeH8AVXGoP2wAXRvU` |
-| **type** | string | Fast verdi `"message"` |
-| **role** | string | Fast verdi `"assistant"` |
-| **content** | array | Array med innholdsblokker fra modellens utdata, inkludert tekst, verktøykall, tenkeprosess m.m. |
-| **stop_reason** | string | Stoppårsak: `"end_turn"` (normal avslutning), `"tool_use"` (verktøy må utføres), `"max_tokens"` (token-grense nådd) |
-| **stop_sequence** | string/null | Sekvensen som utløste stopp, vanligvis `null` |
-| **usage** | object | Statistikk over tokenforbruk (se nedenfor) |
+| Field | Type | Description |
+|-------|------|-------------|
+| **model** | string | The model name actually used |
+| **id** | string | Unique response or streamed item identifier when available |
+| **type** | string | Always `"message"` |
+| **role** | string | Always `"assistant"` |
+| **content** | array | Array of content blocks output by the model, containing text, tool calls, thinking process, etc. |
+| **stop_reason** | string | Normalized reason/status for stopping, such as `"end_turn"`, `"completed"`, `"failed"`, or `"max_tokens"` |
+| **stop_sequence** | string/null | The sequence that triggered the stop, usually `null` |
+| **usage** | object | Token usage statistics (see below) |
 
-## content-blokktyper
+## content Block Types
 
-| Type | Beskrivelse |
-|------|------|
-| **text** | Modellens tekstsvar, inneholder feltet `text` |
-| **tool_use** | Forespørsel om verktøykall, inneholder `name` (verktøynavn), `input` (parametere), `id` (kall-ID, brukes til å matche tool_result) |
-| **thinking** | Utvidet tenkeinnhold (vises kun når thinking-modus er aktivert), inneholder feltet `thinking` |
+| Type | Description |
+|------|-------------|
+| **text** | The model's text reply, contains a `text` field |
+| **tool_use** | Tool call request, contains `name` (tool name), `input` (parameters), `id` (call ID, used to match tool_result) |
+| **thinking** | Extended thinking content (only appears when thinking mode is enabled), contains a `thinking` field |
 
-## Detaljer om usage-feltet
+## usage Field Details
 
-| Felt | Beskrivelse |
-|------|------|
-| **input_tokens** | Antall input-tokens uten cache-treff (faktureres til full pris) |
-| **cache_creation_input_tokens** | Antall tokens som ble cachet i denne forespørselen (cache-skriving, faktureres høyere enn vanlig input) |
-| **cache_read_input_tokens** | Antall tokens med cache-treff (cache-lesing, faktureres vesentlig lavere enn vanlig input) |
-| **output_tokens** | Antall tokens i modellens utdata |
-| **service_tier** | Tjenestenivå, f.eks. `"standard"` |
-| **inference_geo** | Inferensregion, f.eks. `"not_available"` betyr at regionsinformasjon ikke er tilgjengelig |
+| Field | Description |
+|-------|-------------|
+| **output_tokens** | Number of tokens output by the model |
+| **reasoning_output_tokens** | Reasoning tokens when the source reports them |
+| **total_tokens** | Total tokens reported by the source |
 
-## cache_creation-underfelt
+## stop_reason Meanings
 
-| Felt | Beskrivelse |
-|------|------|
-| **ephemeral_5m_input_tokens** | Antall tokens for korttids-cacheoppretting med 5 minutters TTL |
-| **ephemeral_1h_input_tokens** | Antall tokens for langtids-cacheoppretting med 1 times TTL |
-
-> **Om cache-fakturering**: Enhetsprisen for `cache_read_input_tokens` er vesentlig lavere enn for `input_tokens`, mens enhetsprisen for `cache_creation_input_tokens` er noe høyere enn vanlig input. Derfor kan en høy cache-treffrate i pågående samtaler redusere kostnadene betydelig. Via "treffrate"-metrikken i cc-viewer kan du enkelt overvåke dette forholdet.
-
-## Betydningen av stop_reason
-
-- **end_turn**: Modellen har fullført svaret normalt
-- **tool_use**: Modellen må kalle et verktøy, og content vil inneholde en `tool_use`-blokk. I neste forespørsel må `tool_result` legges til i messages for å fortsette samtalen
-- **max_tokens**: `max_tokens`-grensen er nådd og svaret er avkortet, det kan være ufullstendig
+- **end_turn**: The model completed its reply normally
+- **tool_use**: The model needs to call a tool; CX-Viewer shows the matching tool result when the capture source provides it
+- **max_tokens**: The reply was truncated due to reaching the `max_tokens` limit and may be incomplete

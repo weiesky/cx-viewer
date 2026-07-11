@@ -8,7 +8,7 @@ import styles from './ChatMessage.module.css';
 const NO_TIMEOUT_THRESHOLD_MS = 12 * 60 * 60 * 1000;
 
 /**
- * AskUserQuestion 倒计时显示 — 独立小组件，自己持有 setInterval，
+ * request_user_input 倒计时显示 — 独立小组件，自己持有 setInterval，
  * 不让 AskQuestionForm 每秒整体 re-render。
  *
  * 校准模式（不是 setTimeout 递归累加）：

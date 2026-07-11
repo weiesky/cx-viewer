@@ -1,7 +1,7 @@
 /**
  * 从当前会话的 requests 提取所有 Workflow(UltraCode)run。
  *
- * 数据源:tool_result 块在 requests[i].body.messages 的 **user 轮**(与 toolResultBuilder.js
+ * 数据源:tool_result 块在 requests[i].body.input 的 **user 轮**(与 toolResultBuilder.js
  * 的全局索引扫描同源,见其 role==='user' 分支)。每个 Workflow 工具的后台启动返回文本
  * 原生携带 Task ID / Run ID / Transcript dir 路径(含 sessionId),由 parseWorkflowFromText 解析,
  * 无需服务端 _cxvWorkflow 注入——历史日志(含旧日志)同样可枚举。
@@ -17,7 +17,7 @@ const SUMMARY_RE = /Summary:\s*(.+)/;
  * 枚举 requests 里的全部 workflow run,按 taskId 主键去重(回填缺失的 runId/sessionId),
  * 按最早出现时间倒序(最新在前)。
  *
- * @param {Array} requests - ChatView 的 requests 数组(每项含 timestamp 与 body.messages)
+ * @param {Array} requests - ChatView 的 requests 数组(每项含 timestamp 与 body.input)
  * @returns {Array<{ runId: string|null, taskId: string|null, sessionId: string|null,
  *                    resultText: string, timestamp: any, summary: string|null }>}
  */
@@ -30,13 +30,13 @@ export function extractWorkflowRuns(requests) {
   const byKey = new Map();
 
   // tool_use_id → 工具名。仅认 Workflow 工具产生的 tool_result——否则其它工具
-  // (Read/Bash/Write 等)若回显含 "Workflow launched in background"/"Run ID:" 字面量的
+  // 其他工具若回显含 "Workflow launched in background"/"Run ID:" 字面量的
   // 源码或日志,会被 parseWorkflowFromText 误判为一次真实启动(自引用误检)。
   // 与 ToolResultView 渲染内联面板前判 toolName==='Workflow' 同源,扫法对齐 toolResultBuilder。
   const toolNameById = buildToolUseNameMap(requests);
 
   for (const req of requests) {
-    const msgs = req?.body?.messages;
+    const msgs = req?.body?.input;
     if (!Array.isArray(msgs)) continue;
     for (const m of msgs) {
       if (m?.role !== 'user' || !Array.isArray(m.content)) continue;
@@ -81,13 +81,13 @@ export function extractWorkflowRuns(requests) {
 }
 
 /**
- * 扫 assistant 轮(body.messages)与当前轮 response(response.body.content)的 tool_use,
+ * 扫 assistant 轮(body.input)与当前轮 response(response.body.content)的 tool_use,
  * 建 id → name 映射。tool_result 凭 tool_use_id 反查工具名,只放行 Workflow。
  */
 function buildToolUseNameMap(requests) {
   const map = new Map();
   for (const req of requests) {
-    const msgs = req?.body?.messages;
+    const msgs = req?.body?.input;
     if (Array.isArray(msgs)) {
       for (const m of msgs) {
         if (m?.role === 'assistant' && Array.isArray(m.content)) {

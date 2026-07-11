@@ -2,7 +2,7 @@
 
 ## Baggrund
 
-Claude Codes MainAgent bruger en mekanisme med fuld kontekstafsendelse — hver request inkluderer den komplette samtalehistorik, system prompt, værktøjsdefinitioner osv. Det betyder, at efterhånden som samtalen skrider frem, bliver request body stadigt større, og det bliver svært hurtigt at finde ud af "hvad blev der tilføjet i denne runde" ved at se på den rå Body.
+Codexs MainAgent bruger en mekanisme med fuld kontekstafsendelse — hver request inkluderer den komplette samtalehistorik, system prompt, værktøjsdefinitioner osv. Det betyder, at efterhånden som samtalen skrider frem, bliver request body stadigt større, og det bliver svært hurtigt at finde ud af "hvad blev der tilføjet i denne runde" ved at se på den rå Body.
 
 Body Diff JSON er skabt netop for at løse dette problem: den sammenligner automatisk body fra to på hinanden følgende MainAgent-requests og udtrækker den inkrementelle del, så du med ét blik kan se det faktisk tilføjede indhold i denne request.
 
@@ -22,7 +22,7 @@ Body Diff JSON er skabt netop for at løse dette problem: den sammenligner autom
 I en normal samtalerunde indeholder Body Diff JSON normalt kun:
 - `messages`: 1~2 tilføjede beskeder (brugerens input + assistentens svar fra forrige runde)
 
-Hvis du ser ændringer i felter som `system`, `tools`, `model` i diff'en, betyder det, at der er sket en konfigurationsændring i denne runde, hvilket ofte også er årsagen til cache-genopbygning.
+Hvis du ser ændringer i felter som `system`, `tools`, `model` i diff'en, betyder det, at der er sket en konfigurationsændring i denne runde.
 
 ## Brug
 

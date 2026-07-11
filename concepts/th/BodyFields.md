@@ -1,42 +1,39 @@
-# คำอธิบายฟิลด์ Request Body
+# Request Body Fields
 
-คำอธิบายฟิลด์ระดับบนสุดของ request body สำหรับ `/v1/messages` ของ Claude API
+Field descriptions for CX-Viewer's normalized Codex request body. The original source may be OpenAI Responses API traffic, Codex app-server notifications, or Codex SDK events; CX-Viewer maps them into one stable viewer shape.
 
-## รายการฟิลด์
+## Field List
 
-| ฟิลด์ | ประเภท | คำอธิบาย |
-|------|------|------|
-| **model** | string | ชื่อโมเดลที่ใช้ เช่น `claude-opus-4-6`, `claude-sonnet-4-6` |
-| **messages** | array | ประวัติข้อความสนทนา แต่ละข้อความประกอบด้วย `role` (user/assistant) และ `content` (อาร์เรย์ของบล็อก เช่น ข้อความ, รูปภาพ, tool_use, tool_result) |
-| **system** | array | System prompt ประกอบด้วยคำสั่งหลักของ Codex, คำแนะนำการใช้เครื่องมือ, ข้อมูลสภาพแวดล้อม, เนื้อหา CLAUDE.md เป็นต้น บล็อกที่มี `cache_control` จะถูกแคชผ่าน prompt caching |
-| **tools** | array | รายการคำจำกัดความของเครื่องมือที่ใช้ได้ แต่ละเครื่องมือประกอบด้วย `name`, `description` และ `input_schema` (JSON Schema) โดยทั่วไป MainAgent มีเครื่องมือมากกว่า 20 รายการ ขณะที่ SubAgent มีเพียงไม่กี่รายการ |
-| **metadata** | object | เมตาดาต้าของคำขอ โดยทั่วไปประกอบด้วย `user_id` สำหรับระบุตัวตนผู้ใช้ |
-| **max_tokens** | number | จำนวนโทเค็นสูงสุดต่อการตอบกลับหนึ่งครั้งของโมเดล เช่น `16000`, `64000` |
-| **thinking** | object | การกำหนดค่าการคิดแบบขยาย `type: "enabled"` เปิดใช้งานโหมดการคิด `budget_tokens` ควบคุมขีดจำกัดโทเค็นการคิด |
-| **context_management** | object | การกำหนดค่าการจัดการบริบท `truncation: "auto"` อนุญาตให้ Codex ตัดประวัติข้อความที่ยาวเกินไปโดยอัตโนมัติ |
-| **output_config** | object | การกำหนดค่าเอาต์พุต เช่น การตั้งค่า `format` |
-| **stream** | boolean | เปิดใช้งานการตอบกลับแบบสตรีมหรือไม่ Codex ใช้ `true` เสมอ |
+| Field | Type | Description |
+|-------|------|-------------|
+| **model** | string | The model name selected by Codex, e.g. a `gpt-*` model |
+| **input** | string/array | OpenAI Responses API input. Codex usually uses the array form for user input, assistant history, tool results, and other context items |
+| **instructions** | string/array | OpenAI Responses API instructions. This can include Codex core directives, tool usage guidelines, environment information, and `AGENTS.md` project instructions |
+| **tools** | array | Available tool definitions or compact tool descriptors. MainAgent usually has a broader tool set than SubAgent |
+| **metadata** | object | Request metadata such as `thread_id`, `turn_id`, `cwd`, SDK/app-server source, and subAgent parent-thread information |
+| **max_tokens** | number | Maximum number of tokens for a single model response, e.g. `16000`, `64000` |
+| **reasoning_effort** | string | Reasoning effort when reported by Codex |
+| **reasoning_summary** | string | Reasoning summary mode when reported by Codex |
+| **approval_policy** | string | Codex approval policy for the turn |
+| **sandbox_policy** | object/string | Sandbox policy for the turn when available |
+| **stream** | boolean | Whether the OpenAI Responses API request used streaming; app-server/SDK entries are normalized as streamed turns |
 
-## โครงสร้าง messages
+## input Structure
 
-`content` ของแต่ละข้อความเป็นอาร์เรย์ของบล็อก ประเภทที่พบบ่อย ได้แก่:
+When `input` is an array, each input item usually contains `role` and `content`. `content` can be an array of blocks. Common types include:
 
-- **text**: เนื้อหาข้อความธรรมดา
-- **tool_use**: โมเดลเรียกใช้เครื่องมือ (ประกอบด้วย `name`, `input`)
-- **tool_result**: ผลลัพธ์การทำงานของเครื่องมือ (ประกอบด้วย `tool_use_id`, `content`)
-- **image**: เนื้อหารูปภาพ (base64 หรือ URL)
-- **thinking**: กระบวนการคิดของโมเดล (โหมดการคิดแบบขยาย)
+- **text**: Plain text content
+- **tool_use**: Model tool invocation (contains `name`, `input`)
+- **tool_result**: Tool execution result (contains `tool_use_id`, `content`)
+- **image/input_image/local_image**: Image content or an attached local image reference
+- **thinking**: Model's thinking process (extended thinking mode)
 
-## โครงสร้าง system
+## instructions Structure
 
-อาร์เรย์ system prompt โดยทั่วไปประกอบด้วย:
+`instructions` typically contains:
 
-1. **คำสั่งหลักของเอเจนต์** ("You are Codex...")
-2. **ข้อกำหนดการใช้เครื่องมือ**
-3. **เนื้อหา CLAUDE.md** (คำสั่งระดับโปรเจกต์)
-4. **การแจ้งเตือนทักษะ** (skills reminder)
-5. **ข้อมูลสภาพแวดล้อม** (OS, shell, สถานะ git ฯลฯ) — ในความเป็นจริง Codex พึ่งพา git เป็นอย่างมาก หากโปรเจกต์มี git repository Codex สามารถแสดงความเข้าใจโปรเจกต์ได้ดีขึ้น รวมถึงสามารถดึงการเปลี่ยนแปลงจากรีโมตและบันทึกคอมมิตมาช่วยในการวิเคราะห์
-
-บล็อกที่ทำเครื่องหมายด้วย `cache_control: { type: "ephemeral" }` จะถูกแคชโดย Anthropic API เป็นเวลา 5 นาที เมื่อแคชถูกเรียกใช้จะคิดค่าใช้จ่ายเป็น `cache_read_input_tokens` (ต่ำกว่า `input_tokens` มาก)
-
-> **หมายเหตุ**: สำหรับไคลเอ็นต์พิเศษอย่าง Codex เซิร์ฟเวอร์ของ Anthropic ไม่ได้พึ่งพาคุณสมบัติ `cache_control` ในคำขอทั้งหมดเพื่อกำหนดพฤติกรรมการแคช เซิร์ฟเวอร์จะดำเนินนโยบายการแคชโดยอัตโนมัติสำหรับฟิลด์เฉพาะ (เช่น system prompt, คำจำกัดความเครื่องมือ) แม้ว่าคำขอจะไม่มีเครื่องหมาย `cache_control` อย่างชัดเจน ดังนั้น เมื่อคุณไม่เห็นคุณสมบัตินี้ใน request body ไม่ต้องแปลกใจ เซิร์ฟเวอร์ได้ดำเนินการแคชเบื้องหลังแล้ว เพียงแต่ไม่ได้เปิดเผยข้อมูลนี้ให้ไคลเอ็นต์ทราบ นี่คือความเข้าใจโดยปริยายระหว่าง Codex กับ Anthropic API
+1. **Core agent instructions** ("You are Codex...")
+2. **Tool usage guidelines**
+3. **AGENTS.md contents** (project-level instructions)
+4. **Skills reminders** (skills reminder)
+5. **Environment information** (OS, shell, git status, etc.) — In fact, Codex relies heavily on git. If a project has a git repository, Codex demonstrates a better understanding of the project, including the ability to pull remote changes and commit history to assist with analysis

@@ -37,26 +37,6 @@ export class PermissionController {
     this.shiftQueue();
   };
 
-  // 免审批直放：用显式 perm（不依赖 getState/pendingPermission）立即放行。调用方不设置
-  // pendingPermission，故不弹面板、不入队，从源头绕过 ToolApprovalPanel。pty 路径复用
-  // promptOptionClick（其 _promptSubmitting 500ms 守卫 + _ptyBuffer 清空已防同一 prompt 被
-  // 缓冲区重复解析触发二次导航）。
-  // 返回是否已实际放行：hook 路径 ws 未连通时返回 false，调用方应回落到正常面板路径
-  // （保持可见/可恢复，避免静默丢成 timeout-deny）。pty 路径已点击选项，返回 true。
-  autoAllow = (perm) => {
-    if (perm?.source === 'pty' && perm.ptyPrompt) {
-      const optNum = this._findPtyOptionNumber(perm.ptyPrompt, 'allow');
-      this.host.promptOptionClick(optNum);
-      return true;
-    }
-    const ws = this.host.ws();
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'perm-hook-answer', id: perm.id, decision: 'allow' }));
-      return true;
-    }
-    return false;
-  };
-
   allowSession = (id) => {
     const perm = this.host.getState().pendingPermission;
     if (perm?.source === 'pty' && perm.ptyPrompt) {

@@ -6,11 +6,10 @@
  * Codex uses several tool surfaces across Responses/app-server events. This is
  * an inspection-friendly approximation, not a canonical wire format.
  *
- * Single source of truth: src/utils/toolsXmlFormatter.js re-exports from here,
- * server/lib/kv-cache-analyzer.js imports from here.
+ * Single source of truth: src/utils/toolsXmlFormatter.js re-exports from here.
  *
  * Note: free-text fields (name / description / enum) are NOT XML-escaped.
- * parseCachedTools relies on first-match semantics — the tool-level <name>
+ * parseToolXmlList relies on first-match semantics — the tool-level <name>
  * always appears before any nested tag-shaped substring inside a description,
  * so non-greedy match always picks the right one. Escaping was tried but
  * caused user-visible &lt; entities in display layer; reverted intentionally.
@@ -58,7 +57,7 @@ function formatParameter(name, schema, required) {
 
 export function formatToolAsXml(tool) {
   if (!tool || typeof tool !== 'object') return '';
-  const name = tool.name || 'unknown';
+  const name = tool.name || tool.type || tool.function?.name || 'unknown';
   const description = typeof tool.description === 'string' ? tool.description : '';
   const schema = tool.input_schema || tool.parameters || {};
   const properties =

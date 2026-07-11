@@ -1,42 +1,39 @@
-# Beskrivelse af Request Body-felter
+# Request Body Fields
 
-Beskrivelse af topniveau-felterne i Claude API `/v1/messages` request body.
+Field descriptions for CX-Viewer's normalized Codex request body. The original source may be OpenAI Responses API traffic, Codex app-server notifications, or Codex SDK events; CX-Viewer maps them into one stable viewer shape.
 
-## Feltliste
+## Field List
 
-| Felt | Type | Beskrivelse |
-|------|------|------|
-| **model** | string | Navnet på den anvendte model, f.eks. `claude-opus-4-6`, `claude-sonnet-4-6` |
-| **messages** | array | Samtalens beskedhistorik. Hver besked indeholder `role` (user/assistant) og `content` (et block-array med tekst, billeder, tool_use, tool_result osv.) |
-| **system** | array | System prompt. Indeholder Codexs kerneinstruktioner, vejledning til brug af værktøjer, miljøoplysninger, CLAUDE.md-indhold m.m. Blokke med `cache_control` cachelagres via prompt caching |
-| **tools** | array | Liste over tilgængelige værktøjsdefinitioner. Hvert værktøj indeholder `name`, `description` og `input_schema` (JSON Schema). MainAgent har typisk 20+ værktøjer, SubAgent har kun få |
-| **metadata** | object | Request-metadata, indeholder typisk `user_id` til brugeridentifikation |
-| **max_tokens** | number | Maksimalt antal tokens i et enkelt modelsvar, f.eks. `16000`, `64000` |
-| **thinking** | object | Konfiguration af udvidet tænkning. `type: "enabled"` aktiverer tænketilstand, `budget_tokens` styrer øvre grænse for tænke-tokens |
-| **context_management** | object | Konfiguration af kontekststyring. `truncation: "auto"` tillader Codex automatisk at afkorte for lange beskedhistorikker |
-| **output_config** | object | Outputkonfiguration, f.eks. `format`-indstillinger |
-| **stream** | boolean | Om streaming-svar er aktiveret. Codex bruger altid `true` |
+| Field | Type | Description |
+|-------|------|-------------|
+| **model** | string | The model name selected by Codex, e.g. a `gpt-*` model |
+| **input** | string/array | OpenAI Responses API input. Codex usually uses the array form for user input, assistant history, tool results, and other context items |
+| **instructions** | string/array | OpenAI Responses API instructions. This can include Codex core directives, tool usage guidelines, environment information, and `AGENTS.md` project instructions |
+| **tools** | array | Available tool definitions or compact tool descriptors. MainAgent usually has a broader tool set than SubAgent |
+| **metadata** | object | Request metadata such as `thread_id`, `turn_id`, `cwd`, SDK/app-server source, and subAgent parent-thread information |
+| **max_tokens** | number | Maximum number of tokens for a single model response, e.g. `16000`, `64000` |
+| **reasoning_effort** | string | Reasoning effort when reported by Codex |
+| **reasoning_summary** | string | Reasoning summary mode when reported by Codex |
+| **approval_policy** | string | Codex approval policy for the turn |
+| **sandbox_policy** | object/string | Sandbox policy for the turn when available |
+| **stream** | boolean | Whether the OpenAI Responses API request used streaming; app-server/SDK entries are normalized as streamed turns |
 
-## messages-struktur
+## input Structure
 
-Hver beskeds `content` er et block-array med følgende almindelige typer:
+When `input` is an array, each input item usually contains `role` and `content`. `content` can be an array of blocks. Common types include:
 
-- **text**: Almindeligt tekstindhold
-- **tool_use**: Modellen kalder et værktøj (indeholder `name`, `input`)
-- **tool_result**: Resultatet af værktøjsudførelse (indeholder `tool_use_id`, `content`)
-- **image**: Billedindhold (base64 eller URL)
-- **thinking**: Modellens tænkeproces (udvidet tænketilstand)
+- **text**: Plain text content
+- **tool_use**: Model tool invocation (contains `name`, `input`)
+- **tool_result**: Tool execution result (contains `tool_use_id`, `content`)
+- **image/input_image/local_image**: Image content or an attached local image reference
+- **thinking**: Model's thinking process (extended thinking mode)
 
-## system-struktur
+## instructions Structure
 
-System prompt-arrayet indeholder typisk:
+`instructions` typically contains:
 
-1. **Kerne-agent-instruktioner** ("You are Codex...")
-2. **Regler for brug af værktøjer**
-3. **CLAUDE.md-indhold** (projektspecifikke instruktioner)
-4. **Færdighedspåmindelser** (skills reminder)
-5. **Miljøoplysninger** (OS, shell, git-status osv.) — Codex er faktisk meget afhængig af git. Hvis projektet har et git-repository, kan Codex vise bedre forståelse af projektet, herunder hente fjernændringer og commit-historik til analyse
-
-Blokke markeret med `cache_control: { type: "ephemeral" }` cachelagres af Anthropic API i 5 minutter. Ved cache-hit faktureres de som `cache_read_input_tokens` (betydeligt billigere end `input_tokens`).
-
-> **Bemærk**: For specialiserede klienter som Codex er Anthropic-serveren faktisk ikke fuldstændigt afhængig af `cache_control`-attributten i requesten til at bestemme cacheadfærd. Serveren anvender automatisk cachestrategier for bestemte felter (som system prompt og tools-definitioner), selv når requesten ikke eksplicit indeholder `cache_control`-markering. Derfor behøver du ikke undre dig, når du ikke ser denne attribut i request body — serveren har allerede udført cacheoperationen bag kulisserne, men viser det bare ikke til klienten. Det er en stiltiende aftale mellem Codex og Anthropic API.
+1. **Core agent instructions** ("You are Codex...")
+2. **Tool usage guidelines**
+3. **AGENTS.md contents** (project-level instructions)
+4. **Skills reminders** (skills reminder)
+5. **Environment information** (OS, shell, git status, etc.) — In fact, Codex relies heavily on git. If a project has a git repository, Codex demonstrates a better understanding of the project, including the ability to pull remote changes and commit history to assist with analysis

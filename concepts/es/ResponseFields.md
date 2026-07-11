@@ -1,50 +1,38 @@
-# Referencia de campos del cuerpo de respuesta
+# Response Body Field Reference
 
-Referencia de campos del cuerpo de respuesta de la API de Claude `/v1/messages`.
+Field reference for CX-Viewer's normalized Codex response body.
 
-## Campos de nivel superior
+## Top-Level Fields
 
-| Campo | Tipo | Descripción |
+| Field | Type | Description |
 |-------|------|-------------|
-| **model** | string | Nombre del modelo realmente utilizado, p. ej. `claude-opus-4-6` |
-| **id** | string | Identificador único de esta respuesta, p. ej. `msg_01Tgsr2QeH8AVXGoP2wAXRvU` |
-| **type** | string | Siempre `"message"` |
-| **role** | string | Siempre `"assistant"` |
-| **content** | array | Array de bloques de contenido generados por el modelo, que incluyen texto, llamadas a herramientas, proceso de pensamiento, etc. |
-| **stop_reason** | string | Razón de la detención: `"end_turn"` (finalización normal), `"tool_use"` (se necesita ejecutar una herramienta), `"max_tokens"` (se alcanzó el límite de tokens) |
-| **stop_sequence** | string/null | La secuencia que provocó la detención, generalmente `null` |
-| **usage** | object | Estadísticas de uso de tokens (ver más abajo) |
+| **model** | string | The model name actually used |
+| **id** | string | Unique response or streamed item identifier when available |
+| **type** | string | Always `"message"` |
+| **role** | string | Always `"assistant"` |
+| **content** | array | Array of content blocks output by the model, containing text, tool calls, thinking process, etc. |
+| **stop_reason** | string | Normalized reason/status for stopping, such as `"end_turn"`, `"completed"`, `"failed"`, or `"max_tokens"` |
+| **stop_sequence** | string/null | The sequence that triggered the stop, usually `null` |
+| **usage** | object | Token usage statistics (see below) |
 
-## Tipos de bloques de content
+## content Block Types
 
-| Tipo | Descripción |
+| Type | Description |
 |------|-------------|
-| **text** | Respuesta de texto del modelo, contiene un campo `text` |
-| **tool_use** | Solicitud de llamada a herramienta, contiene `name` (nombre de la herramienta), `input` (parámetros), `id` (ID de la llamada, usado para asociar con tool_result) |
-| **thinking** | Contenido de pensamiento extendido (solo aparece cuando el modo de pensamiento está activado), contiene un campo `thinking` |
+| **text** | The model's text reply, contains a `text` field |
+| **tool_use** | Tool call request, contains `name` (tool name), `input` (parameters), `id` (call ID, used to match tool_result) |
+| **thinking** | Extended thinking content (only appears when thinking mode is enabled), contains a `thinking` field |
 
-## Detalle de campos de usage
+## usage Field Details
 
-| Campo | Descripción |
+| Field | Description |
 |-------|-------------|
-| **input_tokens** | Número de tokens de entrada que no alcanzaron la caché (facturados a precio completo) |
-| **cache_creation_input_tokens** | Número de tokens de nuevas entradas de caché creadas (escritura en caché, facturación superior a la entrada normal) |
-| **cache_read_input_tokens** | Número de tokens que alcanzaron la caché (lectura de caché, facturación mucho menor que la entrada normal) |
-| **output_tokens** | Número de tokens generados por el modelo |
-| **service_tier** | Nivel de servicio, p. ej. `"standard"` |
-| **inference_geo** | Geografía de inferencia, p. ej. `"not_available"` indica que no se proporcionó información geográfica |
+| **output_tokens** | Number of tokens output by the model |
+| **reasoning_output_tokens** | Reasoning tokens when the source reports them |
+| **total_tokens** | Total tokens reported by the source |
 
-## Subcampos de cache_creation
+## stop_reason Meanings
 
-| Campo | Descripción |
-|-------|-------------|
-| **ephemeral_5m_input_tokens** | Número de tokens de creación de caché a corto plazo con TTL de 5 minutos |
-| **ephemeral_1h_input_tokens** | Número de tokens de creación de caché a largo plazo con TTL de 1 hora |
-
-> **Sobre la facturación de caché**: El precio unitario de `cache_read_input_tokens` es mucho menor que el de `input_tokens`, mientras que el precio unitario de `cache_creation_input_tokens` es ligeramente superior al de la entrada normal. Por lo tanto, mantener una alta tasa de aciertos de caché en conversaciones continuas puede reducir significativamente los costos. Puede monitorear visualmente esta proporción a través de la métrica "Tasa de aciertos" en cc-viewer.
-
-## Significado de stop_reason
-
-- **end_turn**: El modelo completó su respuesta normalmente
-- **tool_use**: El modelo necesita llamar a una herramienta; el contenido incluirá un bloque `tool_use`. La siguiente solicitud debe añadir un `tool_result` en los mensajes para continuar la conversación
-- **max_tokens**: La respuesta fue truncada al alcanzar el límite de `max_tokens` y puede estar incompleta
+- **end_turn**: The model completed its reply normally
+- **tool_use**: The model needs to call a tool; CX-Viewer shows the matching tool result when the capture source provides it
+- **max_tokens**: The reply was truncated due to reaching the `max_tokens` limit and may be incomplete

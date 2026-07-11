@@ -2,7 +2,7 @@
 
 ## Arka Plan
 
-Claude Code'un MainAgent'ı tam bağlam gönderme mekanizması kullanır — her istek, konuşma geçmişinin tamamını, system prompt'u, araç tanımlarını ve diğer içerikleri taşır. Bu, konuşma ilerledikçe istek gövdesinin giderek büyüyeceği anlamına gelir ve ham Body'yi doğrudan inceleyerek "bu turda tam olarak ne eklendi" sorusunu yanıtlamak zorlaşır.
+Codex'un MainAgent'ı tam bağlam gönderme mekanizması kullanır — her istek, konuşma geçmişinin tamamını, system prompt'u, araç tanımlarını ve diğer içerikleri taşır. Bu, konuşma ilerledikçe istek gövdesinin giderek büyüyeceği anlamına gelir ve ham Body'yi doğrudan inceleyerek "bu turda tam olarak ne eklendi" sorusunu yanıtlamak zorlaşır.
 
 Body Diff JSON tam olarak bu sorunu çözmek için tasarlanmıştır: ardışık iki MainAgent isteğinin gövdesini otomatik olarak karşılaştırır, artımlı kısmı çıkarır ve bu istekte gerçekten eklenen içeriği bir bakışta görmenizi sağlar.
 
