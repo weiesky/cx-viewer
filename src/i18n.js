@@ -6235,6 +6235,26 @@ const i18nData = {
     "tr": "Tüm araçları görüntüle",
     "uk": "Переглянути всі інструменти"
   },
+  "ui.toolCatalog.cat.codeMode": {
+    "zh": "代码模式",
+    "en": "Code Mode",
+    "zh-TW": "程式碼模式",
+    "ko": "코드 모드",
+    "ja": "コードモード",
+    "de": "Codemodus",
+    "es": "Modo de código",
+    "fr": "Mode code",
+    "it": "Modalità codice",
+    "da": "Kodetilstand",
+    "pl": "Tryb kodu",
+    "ru": "Режим кода",
+    "ar": "وضع التعليمات البرمجية",
+    "no": "Kodemodus",
+    "pt-BR": "Modo de código",
+    "th": "โหมดโค้ด",
+    "tr": "Kod Modu",
+    "uk": "Режим коду"
+  },
   "ui.toolCatalog.cat.agent": {
     "zh": "Agent 与任务",
     "en": "Agent & Tasks",

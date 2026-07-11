@@ -1,0 +1,55 @@
+name: Publish to npm
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: npm-publish-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'weiesky/cx-viewer'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js and npm registry
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.x
+          registry-url: https://registry.npmjs.org/
+          package-manager-cache: false
+
+      - name: Verify release tag matches package version
+        shell: bash
+        run: |
+          package_version="$(node -p "require('./package.json').version")"
+          release_tag="${{ github.event.release.tag_name }}"
+          tag_version="${release_tag#v}"
+
+          if [[ "$tag_version" != "$package_version" ]]; then
+            echo "Release tag '$release_tag' does not match package.json version '$package_version'."
+            exit 1
+          fi
+
+      # This repository does not currently commit a package-lock.json, so npm ci
+      # cannot be used. Keep the runner install ephemeral and do not create a lock.
+      - name: Install dependencies
+        run: npm install --no-package-lock
+
+      - name: Test, build, and inspect package contents
+        run: npm run release:check
+
+      # Authentication comes from npm Trusted Publishing via GitHub OIDC.
+      # Provenance is generated automatically for trusted publishes.
+      - name: Publish package
+        run: npm publish --access public

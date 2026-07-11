@@ -1,6 +1,13 @@
 # Codex Tools
 
-The tools shown in the context-usage popover come from the currently loaded Codex request-body tools, not the legacy tool catalog. The latest main-agent request in the local cx-viewer logs loaded these 14 tools:
+The tools shown in the context-usage popover come from the currently loaded Codex request-body tools, not the legacy tool catalog. The July 11, 2026 local request logs contain 14 nested/core tools plus two newly loaded tool groups with 8 callable entries, for 22 documented tools in total.
+
+## Code Mode
+
+- exec: Code Mode's orchestration suite for discovering, composing, parallelizing, and resuming nested tool workflows inside a fresh V8 isolate.
+- wait: resume or terminate a yielded exec cell and return its latest output.
+
+## Core tools
 
 - shell_command: run local shell commands with explicit working directory and sandbox/approval metadata.
 - apply_patch: edit workspace files with structured patches.
@@ -16,5 +23,16 @@ The tools shown in the context-usage popover come from the currently loaded Code
 - read_mcp_resource: read a specific MCP resource.
 - web_search: search the web for text or images.
 - image_generation: generate PNG images.
+
+## Multi-Agent V2
+
+- spawn_agent: create a bounded sub-agent task.
+- send_message: queue context or guidance for an existing agent without starting a turn.
+- followup_task: assign a follow-up and start the target when it is idle.
+- wait_agent: wait for mailbox, completion, or user-steering updates.
+- interrupt_agent: stop the target's current turn while keeping the agent available.
+- list_agents: inspect the live agent tree.
+
+The Code Mode and Multi-Agent V2 names are confirmed both by the captured request bodies and by the corresponding tool registration code in `openai/codex`. MCP, plugin, app-connector, and other dynamic tools are intentionally not hard-coded here because Codex discovers and injects them per session.
 
 Legacy tool names are not part of the Codex tool catalog and are not kept as concept aliases.
