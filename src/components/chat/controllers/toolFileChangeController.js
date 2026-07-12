@@ -13,6 +13,7 @@
 //   setPendingGitRefresh() → 同上（_pendingGitRefresh）
 
 import { isMutatingCommand } from '../../../utils/commandValidator.js';
+import { getToolPatchOperations } from '../../../utils/applyPatchParser.js';
 
 // 文件修改类工具：触发文件浏览器与 Git 面板刷新
 const FILE_MUTATING_TOOLS = new Set(['apply_patch']);
@@ -43,7 +44,7 @@ export function collectToolUseBlocks(blocks, toolUseMap) {
       if (typeof input === 'string') {
         // 流式过程中 input 字段可能是 "[object Object]{...}" 残片：上游 toString 污染
         // 把已有的 [object Object] 前缀剥掉再 parse；解析失败兜底空对象，不影响 toolName 路径
-        try { input = JSON.parse(input.replace(/^\[object Object\]/, '')); } catch { input = {}; }
+        try { input = JSON.parse(input.replace(/^\[object Object\]/, '')); } catch { /* exec keeps raw JavaScript */ }
       }
       toolUseMap.set(block.id, { name: block.name, input });
     }
@@ -75,7 +76,8 @@ export class ToolFileChangeController {
     if (!meta) return;
     const { name: toolName, input } = meta;
 
-    if (FILE_MUTATING_TOOLS.has(toolName)) {
+    const patchOperations = getToolPatchOperations(toolName, input);
+    if (FILE_MUTATING_TOOLS.has(toolName) || patchOperations.length > 0) {
       flags.needFileRefresh = true;
       flags.needGitRefresh = true;
     } else if (toolName === 'shell_command' && input && input.command && isMutatingCommand(input.command)) {
@@ -85,13 +87,14 @@ export class ToolFileChangeController {
 
     // Auto-refresh FileContentView when the currently open file is modified.
     // 仅文件修改类工具才读 currentFile —— 保持原短路：只读工具（占多数）不触碰 host.getState。
-    if (FILE_MUTATING_TOOLS.has(toolName)) {
+    if (FILE_MUTATING_TOOLS.has(toolName) || patchOperations.length > 0) {
       const currentFile = this.host.getState().currentFile;
       if (currentFile) {
-        const fp = input && input.file_path;
-        // typeof guard：Pass 1 JSON.parse 兜底为 {} 时 fp 为 undefined；流式异常 input
-        // 也可能让 fp 为 number/object，rel.startsWith 会抛 TypeError 中断整个 _processToolResult
-        if (typeof fp === 'string' && fp) {
+        const paths = patchOperations.length > 0
+          ? patchOperations.flatMap(op => [op.path, op.moveTo].filter(Boolean))
+          : [input && input.file_path];
+        for (const fp of paths) {
+          if (typeof fp !== 'string' || !fp) continue;
           let rel = fp;
           const projectDir = this.host.getProjectDir();
           if (rel.startsWith('/') && projectDir && rel.startsWith(projectDir + '/')) {
@@ -99,6 +102,7 @@ export class ToolFileChangeController {
           }
           if (rel === currentFile || (rel.startsWith('/') && rel.endsWith('/' + currentFile))) {
             flags.needContentRefresh = true;
+            break;
           }
         }
       }

@@ -10,9 +10,7 @@
  * toolResultBuilder.js 的传递依赖（./helpers 无 .js 后缀）污染。
  */
 
-// 容量上限设计：1000 vs entry-slim.js 的 _toolsPool/_systemPool 上限 200，差异源自流量域不同。
-// tools/system 是 entry-level 配置数组，全 session 命中分布稳定，实测 pool size <5（200 极宽松）；
-// readResultPool 池化的是 tool_result 字符串（v4 派生层 + v5 raw payload），
+// readResultPool 池化的是 tool_result 字符串（派生层 + MainAgent input raw payload），
 // 单 session 唯一字符串数量与 tool 调用次数同阶（v4 实测 4400 calls / pool size 363）。
 // B 项加入 raw payload 后预期再 +20-40%，1000 留 ~30% 余量；超阈值由 _poolEvictions 暴露。
 const _MAX_READ_POOL_SIZE = 1000;
@@ -21,8 +19,8 @@ const _SIG_MID_THRESHOLD = 512;
 const _readResultPool = new Map();
 let _poolEvictions = 0;
 
-// v5: sig 增加 mid-slice（当 length > 512）。对齐 entry-slim.js _systemSig 的边界增强模式。
-// B 项把 raw payload tool_result block.content 也接入此 pool（含 shell/log 类
+// sig 增加 mid-slice（当 length > 512）。input raw payload 的 tool_result block.content
+// 也接入此 pool（含 shell/log 类
 // 长度+前后缀重合的结构化输出），暴露面变大。length+first 64+last 64 在该场景对碰撞抗性
 // 不足，加 mid-64 后要求"长度+三段共 192 字节"全匹配才视为同串。
 function _readResultSig(s) {
@@ -87,7 +85,7 @@ export function internToolResult(s) {
  * 设计动机：JS string `===` 是值比较，调用方拿到 internReadResult 的返回值无法判断"这是
  * pool 命中（应替换 block.content 节省内存）"还是"刚注册（保持原 ref 即可）"。
  * 此函数把命中信号显式上抛——`null` = 未命中或短结果（无需替换），非 null = 命中（应替换）。
- * v5 entry-slim.js 的 lazy-clone 路径依赖这个信号决定是否触发 messages 浅克隆。
+ * entry-slim.js 的 lazy-clone 路径依赖这个信号决定是否触发 input 浅克隆。
  *
  * @param {string} s - tool_result 内容原文
  * @returns {string|null} 命中时返回 pool 共享 ref；未命中（已注册）或短结果（< 256）返回 null

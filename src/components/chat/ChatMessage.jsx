@@ -28,6 +28,8 @@ import { isPlanApprovalPrompt } from '../../utils/promptClassifier';
 import ToolResultView from '../viewers/ToolResultView';
 import { getPlanApprovalForToolUse, isNonInteractivePlanTool } from './interactionOwnership';
 import { isAskToolName, isPlanToolName } from '../../utils/toolNameAliases.js';
+import { getToolPatchOperations } from '../../utils/applyPatchParser.js';
+import ApplyPatchView from './ApplyPatchView';
 
 import ImageLightbox from '../common/ImageLightbox';
 import defaultAvatarUrl from '../../img/default-avatar.svg';
@@ -145,6 +147,10 @@ class ChatMessage extends React.Component {
       planFeedbackOptNumber: null,
       planApprovalSubmitting: false,
     };
+    // A large exec patch can be hundreds of KB. Parse each stable tool_use block
+    // once and share the result between compact/full-display decisions and the
+    // actual diff renderer without retaining dead messages (WeakMap).
+    this._patchOperationsCache = new WeakMap();
   }
 
   shouldComponentUpdate(nextProps, nextState) {
@@ -346,6 +352,15 @@ class ChatMessage extends React.Component {
     );
   }
 
+  _getToolPatchOperations(tu) {
+    if (!tu || typeof tu !== 'object') return [];
+    const cached = this._patchOperationsCache.get(tu);
+    if (cached) return cached;
+    const operations = getToolPatchOperations(tu.name, tu.input);
+    this._patchOperationsCache.set(tu, operations);
+    return operations;
+  }
+
   renderToolCall(tu) {
     // 如果 input 是字符串（流式组装残留），尝试解析
     if (typeof tu.input === 'string') {
@@ -355,6 +370,11 @@ class ChatMessage extends React.Component {
       } catch {
         // 无法解析，保持原样
       }
+    }
+
+    const patchOperations = this._getToolPatchOperations(tu);
+    if (patchOperations.length > 0) {
+      return <ApplyPatchView key={tu.id} toolUse={tu} operations={patchOperations} onOpenFile={this.props.onOpenFile} />;
     }
 
     const inp = (tu.input && typeof tu.input === 'object') ? tu.input : {};
@@ -1151,7 +1171,7 @@ class ChatMessage extends React.Component {
     const simplify = !this.props.showFullToolContent;
     let simplifiedLabelAdded = false;
     toolUseBlocks.forEach((tu, tuIdx) => {
-      const isFullDisplayTool = tu.name === 'apply_patch' || isPlanToolName(tu.name) || isAskToolName(tu.name) || tu.name === 'Workflow';
+      const isFullDisplayTool = tu.name === 'apply_patch' || this._getToolPatchOperations(tu).length > 0 || isPlanToolName(tu.name) || isAskToolName(tu.name) || tu.name === 'Workflow';
       const tr = toolResultMap[tu.id];
       if (simplify && !isFullDisplayTool) {
         // 简化模式：首个标签前加 "使用工具: " 标签
@@ -1251,7 +1271,7 @@ class ChatMessage extends React.Component {
       if (block.type === 'tool_use') {
         const tu = block;
         const tuIdxInList = toolUseGlobalIndices.indexOf(i);
-        const isFullDisplayTool = tu.name === 'apply_patch' || isPlanToolName(tu.name) || isAskToolName(tu.name) || tu.name === 'Workflow';
+        const isFullDisplayTool = tu.name === 'apply_patch' || this._getToolPatchOperations(tu).length > 0 || isPlanToolName(tu.name) || isAskToolName(tu.name) || tu.name === 'Workflow';
         const tr = toolResultMap[tu.id];
         if (simplify && !isFullDisplayTool) {
           if (!simplifiedLabelAdded) {

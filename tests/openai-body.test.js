@@ -10,9 +10,8 @@ import {
 import { classifyAgentRequest, isCodexResponsesRequest } from '../lib/interceptor-core.js';
 import { isMainAgentEntry } from '../lib/main-agent-entry.js';
 import {
-  _resetInternPoolsForTest,
-  internEntryBigFields,
-  slimBodyBigFields,
+  createEntrySlimmer,
+  restoreSlimmedEntry,
 } from '../src/utils/entry-slim.js';
 
 function currentCodexBody() {
@@ -62,13 +61,29 @@ test('current Codex input config layout remains a MainAgent request', () => {
   assert.equal(isMainAgentEntry({ body }), true);
 });
 
-test('embedded Codex config survives historical input slimming', () => {
-  _resetInternPoolsForTest();
-  const interned = internEntryBigFields({ body: currentCodexBody() });
-  const slimmedBody = slimBodyBigFields(interned.body);
+test('embedded Codex config is recovered by restoring a slimmed MainAgent input', () => {
+  const first = { mainAgent: true, body: currentCodexBody() };
+  const second = {
+    mainAgent: true,
+    body: {
+      ...currentCodexBody(),
+      input: [...currentCodexBody().input, {
+        type: 'message',
+        role: 'assistant',
+        content: [{ type: 'output_text', text: 'done' }],
+      }],
+    },
+  };
+  const entries = [first, second];
+  const slimmer = createEntrySlimmer(entry => entry.mainAgent === true);
+  entries.forEach((entry, index) => slimmer.process(entry, entries, index));
+  slimmer.finalize(entries);
 
-  assert.deepEqual(slimmedBody.input, []);
-  assert.equal(getResponseTools(slimmedBody).length, 2);
-  assert.equal(getInstructionsText(slimmedBody), 'You are Codex, an agent based on GPT-5.');
-  _resetInternPoolsForTest();
+  assert.deepEqual(entries[0].body.input, []);
+  assert.equal(getResponseTools(entries[0].body).length, 0);
+  assert.equal(getInstructionsText(entries[0].body), '');
+
+  const restored = restoreSlimmedEntry(entries[0], entries);
+  assert.equal(getResponseTools(restored.body).length, 2);
+  assert.equal(getInstructionsText(restored.body), 'You are Codex, an agent based on GPT-5.');
 });

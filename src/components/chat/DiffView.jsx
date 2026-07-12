@@ -32,7 +32,7 @@ function computeDiffLines(oldStr, newStr, startLine) {
   return lines;
 }
 
-function DiffView({ file_path, old_string, new_string, startLine = 1, onOpenFile, label = 'Edit:' }) {
+function DiffView({ file_path, open_file_path, old_string, new_string, startLine = 1, onOpenFile, label = 'Edit:', summaryLabel = null }) {
   const [collapsed, setCollapsed] = useState(false);
 
   const diffLines = useMemo(
@@ -63,11 +63,11 @@ function DiffView({ file_path, old_string, new_string, startLine = 1, onOpenFile
     <div className={styles.wrapper}>
       <div className={styles.header}>
         <Text className={onOpenFile ? styles.filePathClickable : styles.filePath}>
-          {label} <span onClick={onOpenFile ? (e) => { e.stopPropagation(); onOpenFile(file_path); } : undefined}>{file_path}</span>
+          {label} <span onClick={onOpenFile ? (e) => { e.stopPropagation(); onOpenFile(open_file_path || file_path); } : undefined}>{file_path}</span>
         </Text>
         <span className={styles.headerRight}>
           <Text className={styles.diffSummary}>
-            {t('ui.diffSummary', { added, removed })}
+            {summaryLabel || t('ui.diffSummary', { added, removed })}
           </Text>
           <Text
             className={styles.toggle}
@@ -77,7 +77,7 @@ function DiffView({ file_path, old_string, new_string, startLine = 1, onOpenFile
           </Text>
         </span>
       </div>
-      {!collapsed && (
+      {!collapsed && diffLines.length > 0 && (
         <div className={styles.diffBody}>
           {/* Fixed left gutter: line numbers + prefix */}
           <div className={styles.gutter} style={{ '--line-num-w': `${lineNumWidth}px` }}>

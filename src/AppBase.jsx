@@ -23,7 +23,7 @@ import { buildSessionIndex, splitHotCold, mergeSessionIndices, HOT_SESSION_COUNT
 import { mergeMainAgentSessions as _mergeMainAgentSessions, isMergeBlockedEntry } from './utils/sessionMerge';
 import { createConversationEntryNormalizer, shouldExcludeFromConversation, stampConversationMessageCount } from './utils/conversationEntryNormalize';
 import { reconstructEntries, createIncrementalReconstructor } from '../server/lib/delta-reconstructor.js';
-import { createEntrySlimmer, createIncrementalSlimmer, restoreSlimmedEntry, internEntryBigFields } from './utils/entry-slim.js';
+import { createEntrySlimmer, createIncrementalSlimmer, restoreSlimmedEntry, internMainAgentInput } from './utils/entry-slim.js';
 import { yieldToMain, runChunkedPass, INGEST_BATCH_SIZE } from './utils/ingestPipeline.js';
 import { reinitializeMermaid } from './hooks/useMermaidRender';
 import { APPROVALS_REVIEWER_DEFAULT, normalizeApprovalsReviewer } from './utils/approvalReviewerOptions';
@@ -211,8 +211,8 @@ class AppBase extends React.Component {
     this._ingestProgressCount = 0;
   }
 
-  /** 批量剪枝 entries：清空旧 MainAgent 的 body.input，保留最后一条完整。
-   *  v3: intern body.tools / body.instructions 让所有 entry 共享 pool 引用 */
+  /** 批量剪枝 entries：只清空旧 MainAgent 的 body.input，保留最后一条完整；
+   *  SubAgent / Teammate 以及 body.instructions / body.tools 等其他字段不改写。 */
   // Centralised document.title writer. All paths that used to do
   //   document.title = projectName
   //   document.title = `${projectName} - CX Viewer`
@@ -254,7 +254,7 @@ class AppBase extends React.Component {
 
   _batchSlim(entries) {
     for (let i = 0; i < entries.length; i++) {
-      entries[i] = internEntryBigFields(entries[i]);
+      entries[i] = internMainAgentInput(entries[i], isMainAgent);
       stampConversationMessageCount(entries[i]);
     }
     const slimmer = createEntrySlimmer(isMainAgent);
@@ -614,7 +614,7 @@ class AppBase extends React.Component {
    *  → finalize 一次。两个 pass 各自分帧（保持"intern 先全部完成"的既有顺序假设）。 */
   async _batchSlimChunked(entries, ctl) {
     const r1 = await runChunkedPass(entries.length, (i) => {
-      entries[i] = internEntryBigFields(entries[i]);
+      entries[i] = internMainAgentInput(entries[i], isMainAgent);
       stampConversationMessageCount(entries[i]);
     }, ctl);
     if (r1.aborted) return { aborted: true };
@@ -1812,12 +1812,11 @@ class AppBase extends React.Component {
           if (Array.isArray(rawEntry.teammateNames)) setTeammateNameSeeds(rawEntry.teammateNames);
           continue;
         }
-        // v3: intern body.tools / body.instructions → pool 共享引用，消除 fullEntry 累积
-        // v5: 同时 intern body.input 内 tool_result block.content（lazy-clone 三层
-        //     input/content/block）。下方会 mutate `messages[i]._timestamp`
+        // MainAgent 的 body.input 内 tool_result block.content 走共享池（lazy-clone 三层
+        // input/content/block）；SubAgent / Teammate 原始报文不改写。下方会 mutate `messages[i]._timestamp`
         //     的安全前提：浅 clone 仅 spread 顶层字段保留 _timestamp 写位；共享的
         //     block.content 是 string primitive 不可变，跨 entry 共享 ref 不会串扰。
-        const entry = internEntryBigFields(this._sseReconstructor.reconstruct(rawEntry));
+        const entry = internMainAgentInput(this._sseReconstructor.reconstruct(rawEntry), isMainAgent);
         stampConversationMessageCount(entry);
         const key = `${entry.timestamp}|${entry.url}`;
         const existingIndex = this._requestIndexMap.get(key);
