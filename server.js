@@ -52,6 +52,13 @@ import { listLocalLogs, deleteLogFiles, mergeLogFiles } from './lib/log-manageme
 import { countLogEntries, streamRawEntriesAsync, readPagedEntries } from './lib/log-stream.js';
 import { listSkills, toggleSkill, deleteSkill, importSkillUpload, imSkillRoots, imSkillImportRoot } from './lib/skills-api.js';
 import { readCodexGlobalConfig, updateCodexGlobalConfig } from './lib/codex-config.js';
+import {
+  CodexMemoryError,
+  getCodexMemoryDir,
+  isCodexMemoryRequestAllowed,
+  readCodexMemoryFile,
+  readCodexMemoryOverview,
+} from './lib/codex-memory.js';
 import { APPROVALS_REVIEWER_DEFAULT, isSupportedApprovalsReviewer, normalizeApprovalsReviewer, shouldDeferPermissionHookToCodex } from './lib/approval-reviewer.js';
 import { searchCode } from './lib/code-search.js';
 import { searchReplace } from './lib/code-replace.js';
@@ -568,6 +575,35 @@ function getAllLocalIps() {
   return ips;
 }
 
+// Codex memories are global, cross-project user data. Unlike ordinary viewer
+// telemetry APIs, do not expose them to arbitrary browser origins merely
+// because the TCP peer is loopback (DNS rebinding can also reach loopback).
+function authorizeCodexMemoryRequest(req, res, parsedUrl) {
+  const allowed = isCodexMemoryRequestAllowed({
+    host: req.headers.host || '',
+    origin: req.headers.origin || '',
+    token: parsedUrl.searchParams.get('token'),
+    expectedToken: ACCESS_TOKEN,
+    localIps: getAllLocalIps(),
+  });
+  if (!allowed) {
+    sendJson(res, 403, { error: 'Forbidden', code: 'memory_access_forbidden' });
+    return false;
+  }
+  if (req.headers.origin) res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
+  else res.removeHeader('Access-Control-Allow-Origin');
+  return true;
+}
+
+function sendCodexMemoryError(res, err) {
+  if (err instanceof CodexMemoryError) {
+    sendJson(res, err.status, { error: err.code, code: err.code });
+    return;
+  }
+  console.error('[CX Viewer] Codex memory error:', err?.message || err);
+  sendJson(res, 500, { error: 'memory_error', code: 'memory_error' });
+}
+
 async function handleRequest(req, res) {
   const parsedUrl = new URL(req.url, `${serverProtocol}://${req.headers.host}`);
   const url = parsedUrl.pathname;
@@ -944,6 +980,25 @@ async function handleRequest(req, res) {
       sendJson(res, 200, { content: readFileSync(hit.path, 'utf8') });
     } catch (err) {
       sendJson(res, 500, { error: err.message || 'Failed to read AGENTS.md' });
+    }
+    return;
+  }
+
+  if (url === '/api/codex-memories' && method === 'GET') {
+    if (!authorizeCodexMemoryRequest(req, res, parsedUrl)) return;
+    try {
+      const file = parsedUrl.searchParams.get('file');
+      if (file) {
+        sendJson(res, 200, readCodexMemoryFile(file));
+      } else {
+        sendJson(res, 200, await readCodexMemoryOverview({
+          cwd: currentProjectDir(),
+          executable: _workspaceCodexPath || process.env.CXV_CODEX_BIN || 'codex',
+          featureArgs: _workspaceCodexArgs,
+        }));
+      }
+    } catch (err) {
+      sendCodexMemoryError(res, err);
     }
     return;
   }
@@ -2287,6 +2342,25 @@ async function handleRequest(req, res) {
     execFile(cmd, [dir], () => {});
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true, dir }));
+    return;
+  }
+
+  if (url === '/api/open-codex-memories-dir' && method === 'POST') {
+    if (!authorizeCodexMemoryRequest(req, res, parsedUrl)) return;
+    const dir = getCodexMemoryDir();
+    let isDirectory = false;
+    try { isDirectory = existsSync(dir) && statSync(dir).isDirectory(); } catch {}
+    if (!isDirectory) {
+      sendJson(res, 404, { error: 'memory_dir_missing', code: 'memory_dir_missing' });
+      return;
+    }
+    const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'explorer' : 'xdg-open';
+    try {
+      await execFileAsync(cmd, [dir], { timeout: 5000 });
+      sendJson(res, 200, { ok: true });
+    } catch {
+      sendJson(res, 500, { error: 'memory_open_failed', code: 'memory_open_failed' });
+    }
     return;
   }
 

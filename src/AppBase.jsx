@@ -24,6 +24,7 @@ import { mergeMainAgentSessions as _mergeMainAgentSessions, isMergeBlockedEntry 
 import { createConversationEntryNormalizer, shouldExcludeFromConversation, stampConversationMessageCount } from './utils/conversationEntryNormalize';
 import { reconstructEntries, createIncrementalReconstructor } from '../server/lib/delta-reconstructor.js';
 import { createEntrySlimmer, createIncrementalSlimmer, restoreSlimmedEntry, internMainAgentInput } from './utils/entry-slim.js';
+import { createRepeatEntryExpander } from '../lib/repeat-entry.js';
 import { yieldToMain, runChunkedPass, INGEST_BATCH_SIZE } from './utils/ingestPipeline.js';
 import { reinitializeMermaid } from './hooks/useMermaidRender';
 import { APPROVALS_REVIEWER_DEFAULT, normalizeApprovalsReviewer } from './utils/approvalReviewerOptions';
@@ -200,6 +201,7 @@ class AppBase extends React.Component {
     this._pendingEntries = [];
     this._flushRafId = null;
     this._sseSlimmer = null; this._sseReconstructor = null;
+    this._repeatEntryExpander = createRepeatEntryExpander();
     // 冷启动分帧摄取管线（_runColdIngestCore）并发控制：
     // - _ingestRunning 在途时 live 条目入 _liveGateBuffer（见 handleEventMessage），
     //   提交后统一泄洪，防止 live 条目与未提交基线交错污染 sessionMerge
@@ -253,8 +255,9 @@ class AppBase extends React.Component {
   };
 
   _batchSlim(entries) {
+    this._repeatEntryExpander.reset();
     for (let i = 0; i < entries.length; i++) {
-      entries[i] = internMainAgentInput(entries[i], isMainAgent);
+      entries[i] = internMainAgentInput(this._repeatEntryExpander.process(entries[i]), isMainAgent);
       stampConversationMessageCount(entries[i]);
     }
     const slimmer = createEntrySlimmer(isMainAgent);
@@ -613,8 +616,9 @@ class AppBase extends React.Component {
   /** _batchSlim 的分帧版：与同步版完全同序 —— intern 全量 pass → slimmer.process 全量 pass
    *  → finalize 一次。两个 pass 各自分帧（保持"intern 先全部完成"的既有顺序假设）。 */
   async _batchSlimChunked(entries, ctl) {
+    this._repeatEntryExpander.reset();
     const r1 = await runChunkedPass(entries.length, (i) => {
-      entries[i] = internMainAgentInput(entries[i], isMainAgent);
+      entries[i] = internMainAgentInput(this._repeatEntryExpander.process(entries[i]), isMainAgent);
       stampConversationMessageCount(entries[i]);
     }, ctl);
     if (r1.aborted) return { aborted: true };
@@ -1816,7 +1820,8 @@ class AppBase extends React.Component {
         // input/content/block）；SubAgent / Teammate 原始报文不改写。下方会 mutate `messages[i]._timestamp`
         //     的安全前提：浅 clone 仅 spread 顶层字段保留 _timestamp 写位；共享的
         //     block.content 是 string primitive 不可变，跨 entry 共享 ref 不会串扰。
-        const entry = internMainAgentInput(this._sseReconstructor.reconstruct(rawEntry), isMainAgent);
+        const repeatedEntry = this._repeatEntryExpander.process(rawEntry);
+        const entry = internMainAgentInput(this._sseReconstructor.reconstruct(repeatedEntry), isMainAgent);
         stampConversationMessageCount(entry);
         const key = `${entry.timestamp}|${entry.url}`;
         const existingIndex = this._requestIndexMap.get(key);

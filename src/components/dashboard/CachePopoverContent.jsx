@@ -7,7 +7,7 @@ import { contextSeverityColor } from '../../utils/formatters';
 import { BUILTIN_SKILL_NAMES, mergeActiveSkills } from '../../utils/skillsParser';
 import { t } from '../../i18n';
 import { apiUrl } from '../../utils/apiUrl';
-import { renderMarkdown } from '../../utils/markdown';
+import { renderMemoryMarkdown } from '../../utils/markdown';
 import { isMobile } from '../../env';
 import ConceptHelp from '../common/ConceptHelp';
 import ToolsHelp from '../common/ToolsHelp';
@@ -226,12 +226,12 @@ export default function CachePopoverContent({
     );
   };
 
-  // 拦截记忆区块内的 <a> 点击：仅对单段 .md basename 触发明细 Modal；规则统一在 parseMemoryLink。
+  // 拦截记忆区块内的 <a> 点击：仅对 memories root 内的生成 Markdown 触发明细 Modal。
   const handleMemoryLinkClick = (e) => {
     const a = e.target.closest('a');
     if (!a) return;
     const hrefRaw = a.getAttribute('href') || '';
-    const r = parseMemoryLink(hrefRaw);
+    const r = parseMemoryLink(hrefRaw, memory?.file || 'MEMORY.md');
     if (r.allow) return;
     e.preventDefault();
     if (r.open) onOpenMemoryDetail?.(r.open);
@@ -310,19 +310,6 @@ export default function CachePopoverContent({
     </>
   ) : null;
 
-  // 记忆区块标题尾部 (N)：仅对 [text](file.md) 形式计数；外链/锚点不计
-  const memoryCount = (() => {
-    if (!memory || !memory.exists || !memory.content) return null;
-    const matches = memory.content.match(/\]\(\s*([^)\s]+\.md)(?:\s+"[^"]*")?\s*\)/gi);
-    if (!matches) return 0;
-    const set = new Set();
-    for (const m of matches) {
-      const inner = m.match(/\(\s*([^)\s]+\.md)/i);
-      if (inner) set.add(inner[1].toLowerCase());
-    }
-    return set.size;
-  })();
-
   // AGENTS.md 三态：null=loading / false=error / [] 隐藏整段 / [...] 渲染 chip 列表。
   // 与 memory 不同：空列表（项目+全局都没有 AGENTS.md）直接隐藏整个 section 减少视觉噪声。
   const codexMdVisible = codexMd === null || codexMd === false
@@ -361,28 +348,22 @@ export default function CachePopoverContent({
   const memoryBody = (() => {
     if (memory === null) return <div className={`${sharedChrome.cachePopoverEmpty} ${styles.memoryStatus}`}>{t('ui.memoryLoading')}</div>;
     if (memory === false) return <div className={`${sharedChrome.cachePopoverEmpty} ${styles.memoryStatus}`}>{t('ui.memoryLoadError')}</div>;
-    if (!memory.exists) {
-      return (
-        <div className={`${sharedChrome.cachePopoverEmpty} ${styles.memoryStatus}`}>
-          <div>{t('ui.memoryNotFound')}</div>
-          <div className={styles.memoryDirHint} title={memory.dir}>{memory.dir}</div>
-        </div>
-      );
-    }
+    if (memory.status === 'disabled') return <div className={`${sharedChrome.cachePopoverEmpty} ${styles.memoryStatus}`}>{t('ui.memoryDisabled')}</div>;
+    if (memory.status === 'unsupported') return <div className={`${sharedChrome.cachePopoverEmpty} ${styles.memoryStatus}`}>{t('ui.memoryUnsupported')}</div>;
+    if (memory.status === 'missing') return <div className={`${sharedChrome.cachePopoverEmpty} ${styles.memoryStatus}`}>{t('ui.memoryNotFound')}</div>;
+    if (memory.status === 'error') return <div className={`${sharedChrome.cachePopoverEmpty} ${styles.memoryStatus}`}>{t('ui.memoryLoadError')}</div>;
     if (!memory.content || !memory.content.trim()) {
-      return (
-        <div className={`${sharedChrome.cachePopoverEmpty} ${styles.memoryStatus}`}>
-          <div>{t('ui.memoryEmpty')}</div>
-          <div className={styles.memoryDirHint} title={memory.indexPath}>{memory.indexPath}</div>
-        </div>
-      );
+      return <div className={`${sharedChrome.cachePopoverEmpty} ${styles.memoryStatus}`}>{t('ui.memoryEmpty')}</div>;
     }
     return (
-      <div
-        className={sharedChrome.memoryMarkdown}
-        onClick={handleMemoryLinkClick}
-        dangerouslySetInnerHTML={{ __html: renderMarkdown(memory.content) }}
-      />
+      <>
+        {memory.enabled === false && <Alert type="warning" showIcon banner message={t('ui.memoryDisabledWithData')} />}
+        <div
+          className={sharedChrome.memoryMarkdown}
+          onClick={handleMemoryLinkClick}
+          dangerouslySetInnerHTML={{ __html: renderMemoryMarkdown(memory.content) }}
+        />
+      </>
     );
   })();
 
@@ -477,17 +458,19 @@ export default function CachePopoverContent({
         <div className={`${styles.cacheSection} ${styles.cacheSectionBordered}`}>
           <div className={styles.cacheSectionHeader}>
             <div className={`${styles.cacheSectionLabel} ${styles.memoryLabelWithIcon}`}>
-              <OpenFolderIcon apiEndpoint={apiUrl('/api/open-memory-dir')} title={t('ui.memoryOpenDir')} size={14} />
-              {t('ui.persistentMemory')}{memoryCount !== null ? ` (${memoryCount})` : ''}
+              {memory && memory !== false && memory.directoryExists && (
+                <OpenFolderIcon apiEndpoint={apiUrl('/api/open-codex-memories-dir')} title={t('ui.memoryOpenDir')} size={14} />
+              )}
+              {t('ui.persistentMemory')}
             </div>
             {onRefreshMemory && (() => {
               // 三态契约 → 刷新按钮的 disable / tooltip 决策：
               //   null  = lazy-load 进行中     → disabled + 提示"加载中"
               //   false = lazy-load 失败       → enabled（允许重试）
-              //   {exists:false} = 无 MEMORY.md → enabled（用户可能刚创建文件，要能主动重查）
-              //   {exists:true , content}      → enabled（正常刷新）
+              //   disabled/unsupported/missing → enabled（配置或后台生成后可主动重查）
+              //   ready                        → enabled（正常重读磁盘）
               const isLoading = memory === null;
-              const isMissingFile = memory && memory.exists === false;
+              const isMissingFile = memory && memory.status === 'missing';
               const refreshDisabled = isLoading;
               const tooltipTitle = isLoading ? t('ui.memoryLoading')
                 : isMissingFile ? t('ui.memoryNotFound')

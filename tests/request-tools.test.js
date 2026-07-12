@@ -15,6 +15,18 @@ function mainAgent(tools) {
   };
 }
 
+function threadedMainAgent(threadId, tools) {
+  return {
+    mainAgent: true,
+    body: {
+      client_metadata: { thread_id: threadId },
+      instructions: 'You are Codex.',
+      tools,
+      input: [],
+    },
+  };
+}
+
 test('loaded tool extraction reads request body tools as XML', () => {
   const tools = extractLoadedTools([
     mainAgent([
@@ -66,4 +78,24 @@ test('loaded tool extraction reads current Codex additional_tools input item', (
 
   assert.equal(tools.length, 2);
   assert.match(tools[0], /<name>shell_command<\/name>/);
+});
+
+test('loaded tool extraction falls back past an empty MainAgent frame in the same thread', () => {
+  const tools = extractLoadedTools([
+    threadedMainAgent('thread-a', [{ name: 'shell_command' }, { name: 'apply_patch' }]),
+    threadedMainAgent('thread-a', []),
+  ]);
+
+  assert.equal(tools.length, 2);
+  assert.match(tools[0], /<name>shell_command<\/name>/);
+  assert.match(tools[1], /<name>apply_patch<\/name>/);
+});
+
+test('loaded tool extraction does not borrow tools from another thread', () => {
+  const tools = extractLoadedTools([
+    threadedMainAgent('thread-a', [{ name: 'stale_tool' }]),
+    threadedMainAgent('thread-b', []),
+  ]);
+
+  assert.deepEqual(tools, []);
 });

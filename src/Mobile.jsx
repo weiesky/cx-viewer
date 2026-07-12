@@ -147,10 +147,10 @@ class Mobile extends AppBase {
 
   handleDeleteSkill = (skill) => handleSkillDelete(this, skill);
 
-  loadMemory = async () => SeqLoaders.loadProjectMemory(this);
+  loadMemory = async () => SeqLoaders.loadCodexMemories(this);
 
   // 与 AppHeader.handleRefreshMemory 同语义：用户主动刷新带 toast 反馈，
-  // stale（workspace 中途切换）保持静默不误报失败。
+  // stale（快速重复操作/卸载）保持静默不误报失败。
   handleRefreshMemory = async () => {
     if (this.state._memoryRefreshing) return;
     this.setState({ _memoryRefreshing: true });
@@ -158,7 +158,7 @@ class Mobile extends AppBase {
     let ok = false;
     let stale = false;
     try {
-      const r = await fetch(apiUrl('/api/project-memory'));
+      const r = await fetch(apiUrl('/api/codex-memories'));
       const data = await r.json();
       if (seq !== this._memorySeq) { stale = true; }
       else if (!r.ok) { this.setState({ _memory: false }); }
@@ -176,19 +176,19 @@ class Mobile extends AppBase {
 
   loadMemoryDetail = async (name) => {
     const seq = ++this._memoryDetailSeq;
-    this.setState({ _memoryDetail: { name, loading: true } });
+    this.setState({ _memoryDetail: { name, file: name, loading: true } });
     try {
-      const r = await fetch(apiUrl(`/api/project-memory?file=${encodeURIComponent(name)}`));
+      const r = await fetch(apiUrl(`/api/codex-memories?file=${encodeURIComponent(name)}`));
       const data = await r.json();
       if (seq !== this._memoryDetailSeq) return;
       if (!r.ok) {
-        this.setState({ _memoryDetail: { name, error: data.error || `http:${r.status}` } });
+        this.setState({ _memoryDetail: { name, file: name, error: data.error || `http:${r.status}` } });
         return;
       }
-      this.setState({ _memoryDetail: { name, content: data.content || '' } });
+      this.setState({ _memoryDetail: { name: data.file || name, file: data.file || name, content: data.content || '' } });
     } catch (e) {
       if (seq === this._memoryDetailSeq) {
-        this.setState({ _memoryDetail: { name, error: e.message || 'network' } });
+        this.setState({ _memoryDetail: { name, file: name, error: e.message || 'network' } });
       }
     }
   };
@@ -313,17 +313,13 @@ class Mobile extends AppBase {
 
   componentDidUpdate(prevProps, prevState) {
     if (super.componentDidUpdate) super.componentDidUpdate(prevProps, prevState);
-    // workspace 切换：projectName 变了 → 旧的 _fsSkills/_memory/_codexMd 属于旧项目，作废 + 刷 seq
+    // workspace 切换：skills/AGENTS.md 属项目资源；Codex memories 是 CODEX_HOME 全局资源，不作废。
     if (prevState.projectName !== this.state.projectName) {
       this._fsSkillsSeq++;
-      this._memorySeq++;
       this._codexMdSeq++;
       this._codexMdDetailSeq++;
       this.setState({
         _fsSkills: null,
-        _memory: null,
-        _memoryDetail: null,
-        _memoryRefreshing: false,
         _codexMd: null,
         _codexMdDetail: null,
       });
@@ -542,7 +538,7 @@ class Mobile extends AppBase {
           }
         }
       }
-      // Fixed 258K percent math shared with the desktop header via
+      // Fixed 353K percent math shared with the desktop header via
       // utils/helpers.computeContextPercent.
       mobileContextPercent = computeContextPercent({
         contextWindow,

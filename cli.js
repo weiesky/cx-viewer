@@ -10,7 +10,7 @@ import { homedir } from 'node:os';
 import { spawn } from 'node:child_process';
 import { t } from './i18n.js';
 import { INJECT_IMPORT, resolveCliPath, resolveNativePath, resolveNpmCodexPath, buildShellCandidates } from './findcx.js';
-import { normalizeCodexArgs, hasBypassPermissions } from './lib/cli-args.js';
+import { normalizeCodexArgs, hasBypassPermissions, getReasoningSummaryConfigArgs } from './lib/cli-args.js';
 import { ensureHooks } from './lib/ensure-hooks.js';
 import { APPROVALS_REVIEWER_DEFAULT } from './lib/approval-reviewer.js';
 
@@ -222,6 +222,7 @@ async function runProxyCommand(args) {
       if (nativePath) {
         cmd = nativePath;
       }
+      cmdArgs = [...getReasoningSummaryConfigArgs(), ...cmdArgs];
     }
     env.CXV_DIRECT_MODE = '1';
 
@@ -282,6 +283,8 @@ async function runCliMode(extraCodexArgs = [], cwd) {
 
   // 启动 HTTP 服务器（工作区模式下需要手动调用 startViewer）
   const serverMod = await import('./server.js');
+  serverMod.setWorkspaceCodexArgs(extraCodexArgs);
+  serverMod.setWorkspaceCodexPath(codexPath, isNpmVersion);
   await serverMod.startViewer();
 
   // 等待服务器启动完成
@@ -325,7 +328,9 @@ async function runCliMode(extraCodexArgs = [], cwd) {
   // proxy.js detects OAuth via the chatgpt-account-id request header and routes
   // to chatgpt.com/backend-api/codex; API-key traffic routes to api.openai.com.
   let _proxyPort = null;
-  let configArgs = [];
+  // Request readable reasoning summaries for traffic captured by CX Viewer.
+  // Explicit Codex arguments are appended later and can override this default.
+  let configArgs = getReasoningSummaryConfigArgs();
   {
     const { readFileSync, existsSync } = await import('node:fs');
     const { join } = await import('node:path');
@@ -359,7 +364,7 @@ async function runCliMode(extraCodexArgs = [], cwd) {
       if (!process.env.CXV_ORIGINAL_CHATGPT_BASE_URL) {
         process.env.CXV_ORIGINAL_CHATGPT_BASE_URL = 'https://chatgpt.com/backend-api/codex';
       }
-      configArgs = ['-c', `openai_base_url="http://127.0.0.1:${_proxyPort}/v1"`];
+      configArgs.push('-c', `openai_base_url="http://127.0.0.1:${_proxyPort}/v1"`);
       console.log(`[CX Viewer] HTTP capture proxy started on 127.0.0.1:${_proxyPort} (${authMode} mode)`);
     } catch (err) {
       console.warn('[CX Viewer] HTTP capture proxy failed to start:', err.message);
@@ -489,6 +494,8 @@ async function runSdkMode(extraCodexArgs = [], cwd) {
 
   // 启动 HTTP 服务器
   const serverMod = await import('./server.js');
+  serverMod.setWorkspaceCodexArgs(extraCodexArgs);
+  serverMod.setWorkspaceCodexPath(codexPath, /\.m?js$/i.test(codexPath));
   await serverMod.startViewer();
   serverMod.setWorkspaceLaunched(true);
   serverMod.initPostLaunch();
@@ -511,9 +518,10 @@ async function runSdkMode(extraCodexArgs = [], cwd) {
     permissionMode = 'bypassPermissions';
   }
   const savedApprovalsReviewer = serverMod.getApprovalsReviewerPreference() || APPROVALS_REVIEWER_DEFAULT;
+  const sdkBaseArgs = [...getReasoningSummaryConfigArgs(), ...extraCodexArgs];
   const sdkCodexArgs = savedApprovalsReviewer
-    ? [...extraCodexArgs, '-c', `approvals_reviewer="${savedApprovalsReviewer}"`]
-    : extraCodexArgs;
+    ? [...sdkBaseArgs, '-c', `approvals_reviewer="${savedApprovalsReviewer}"`]
+    : sdkBaseArgs;
 
   // 初始化 SDK 会话
   sdkManager.initSdkSession(workingDir, basename(workingDir), {

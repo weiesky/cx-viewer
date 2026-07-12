@@ -647,8 +647,8 @@
   line-height: 1;
 }
 
-/* ─── 持久记忆区块 ────────────────────────────────
-   入口 MEMORY.md 内联渲染：复用 marked + DOMPurify 管线（src/utils/markdown.js）。
+/* ─── Codex 本地记忆区块 ──────────────────────────
+   CODEX_HOME/memories 的入口 Markdown 内联渲染，使用记忆专用安全清洗管线。
    Modal（明细）也使用同一 className，因此样式一份代替两份。
 
    设计要点：

@@ -11,6 +11,30 @@ Check out the fun part — here's what you can see on mobile:
 
 ### Installation
 
+#### Homebrew (macOS and Linux)
+
+```bash
+brew tap weiesky/cx-viewer https://github.com/weiesky/cx-viewer.git
+brew install weiesky/cx-viewer/cx-viewer
+```
+
+CX-Viewer requires the OpenAI Codex CLI. If Codex is not installed on macOS:
+
+```bash
+brew install --cask codex
+```
+
+Upgrade or uninstall later with:
+
+```bash
+brew upgrade weiesky/cx-viewer/cx-viewer
+brew uninstall cx-viewer
+```
+
+Release-maintainer steps are documented in [docs/HOMEBREW.md](docs/HOMEBREW.md).
+
+#### npm
+
 ```bash
 npm install -g cx-viewer --registry=https://registry.npmjs.org
 ```

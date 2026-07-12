@@ -4,7 +4,7 @@
 //   - 血条总量固定为 CODEX_CONTEXT_WINDOW_TOKENS
 //   - 模型窗口 helper 仅供 workflow 等非血条视图展示模型能力标签
 //
-export const CODEX_CONTEXT_WINDOW_TOKENS = 258000;
+export const CODEX_CONTEXT_WINDOW_TOKENS = 353000;
 
 // [Nk]/[Nm] 显式窗口后缀,如 gpt-5[1m]、codex-large[200k]、[500k]。
 // 显式 opt-in 优先级最高,胜过一切家族规则。

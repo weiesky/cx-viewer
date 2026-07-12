@@ -59,9 +59,10 @@ export async function loadFsSkills(component, { isLocalLog } = {}) {
   return { ok: true, skills: res.data.skills };
 }
 
-// 拉取项目入口 MEMORY.md。lazy-load 失败静默回退 false；用户主动刷新走 handleRefreshMemory（带 toast）。
-export async function loadProjectMemory(component) {
-  const res = await _seqGuardedFetch(component, '_memorySeq', apiUrl('/api/project-memory'));
+// 拉取 CODEX_HOME 下的全局 memories overview。lazy-load 失败静默回退 false；
+// 用户主动刷新走 handleRefreshMemory（带 toast）。
+export async function loadCodexMemories(component) {
+  const res = await _seqGuardedFetch(component, '_memorySeq', apiUrl('/api/codex-memories'));
   if (res.stale) return;
   if (res.error || !res.ok) { component.setState({ _memory: false }); return; }
   component.setState({ _memory: res.data });

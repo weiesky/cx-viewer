@@ -34,7 +34,7 @@ export function getEffectiveModel(request) {
 
 /**
  * Single source of truth for the Codex context-bar percentage. The total window
- * is intentionally fixed at 258K, matching the UI contract for the blood bar.
+ * is intentionally fixed at 353K, matching the UI contract for the blood bar.
  */
 export function computeContextPercent({ contextWindow, lastTotalTokens = 0 }) {
   let percent = 0;

@@ -12,6 +12,7 @@
 // 形式判断（用于 RequestList 打 Synthetic tag）；isSystemText 走的是"纯文本起首匹配"（用于对话流隐藏）。
 import { getInputItemText, getResponseConversationItems, getResponseInputItems, getResponseInstructions, getResponseTools } from '../../lib/openai-body.js';
 import { isMainAgent, isTeammate, getInstructionsText, getEntryUpstreamLane, extractTeammateName, SYNTHETIC_PROMPTS } from './contentFilter.js';
+import { isMetadataModelsEntry } from '../../lib/repeat-entry.js';
 
 function getMessageText(msg) {
   return getInputItemText(msg);
@@ -116,28 +117,7 @@ function getToolSubType(req) {
 }
 
 export function isModelCatalogRequest(req) {
-  if (!req) return false;
-  const method = String(req.method || 'GET').toUpperCase();
-  if (method !== 'GET') return false;
-
-  const urls = [req.proxyUrl, req.url].filter(Boolean);
-  for (const url of urls) {
-    try {
-      const pathname = new URL(url).pathname.replace(/\/+$/, '');
-      if (
-        pathname === '/backend-api/codex/models' ||
-        pathname.endsWith('/codex/models') ||
-        pathname === '/v1/models'
-      ) {
-        return true;
-      }
-    } catch {
-      if (/\/(?:backend-api\/)?codex\/models(?:[?#]|$)/.test(String(url)) || /\/v1\/models(?:[?#]|$)/.test(String(url))) {
-        return true;
-      }
-    }
-  }
-  return false;
+  return isMetadataModelsEntry(req);
 }
 
 /**

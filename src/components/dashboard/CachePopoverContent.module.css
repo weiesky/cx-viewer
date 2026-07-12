@@ -180,12 +180,3 @@
 .memoryStatus {
   padding: 6px 4px;
 }
-
-.memoryDirHint {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-tertiary);
-  margin-top: 4px;
-  word-break: break-all;
-  user-select: text;
-}

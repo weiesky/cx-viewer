@@ -86,8 +86,8 @@ class AppHeader extends React.Component {
       // 文件系统权威的 skill 列表（/api/skills 返回）；live-tail 下作为 popover chip 和管理弹窗的共享数据源。
       // null=未加载 / false=失败 / [] 或 Array=加载结果。workspace 切换由 componentDidUpdate + seq 控制。
       _fsSkills: null,
-      // 当前项目「持久记忆」入口 MEMORY.md：null=未加载 / false=失败 / { exists, dir, indexPath, content }。
-      // 与 _fsSkills 同样依赖 projectName 切换作废 + seq 防回包污染。
+      // Codex 用户级本地记忆：null=未加载 / false=传输失败 / overview 状态对象=成功。
+      // store 位于 CODEX_HOME，不随 workspace 切换；seq 只负责刷新/卸载竞态。
       _memory: null,
       // 用户主动点击"刷新记忆"按钮的 spin 状态。与 _memory===null 区分：
       // null 是 lazy-load 空态（按钮 disabled），_memoryRefreshing 是用户触发的显式刷新。
@@ -378,9 +378,6 @@ class AppHeader extends React.Component {
       this._fsSkillsSeq++;
       this.setState({ _fsSkills: null });
       if (!this.props.isLocalLog && this.props.projectName) this.reloadFsSkills();
-      // _memory 同样作废 —— 沿用 _fsSkills 的失效策略，下次 popover 打开时按需重拉。
-      this._memorySeq++;
-      this.setState({ _memory: null, _memoryDetail: null, _memoryRefreshing: false });
       // _codexMd 候选随项目变化（cwd 父链不同），同步作废
       this._codexMdSeq++;
       this._codexMdDetailSeq++;
@@ -573,11 +570,11 @@ class AppHeader extends React.Component {
     );
   }
 
-  loadMemory = async () => SeqLoaders.loadProjectMemory(this);
+  loadMemory = async () => SeqLoaders.loadCodexMemories(this);
 
   // 用户主动点击"刷新记忆"按钮：自管 seq 三态（ok/stale/fail）以决定 toast。
   // 与 loadMemory 区分的原因：lazy-load 失败不打扰用户，只在 popover 内显示 memoryLoadError；
-  // 主动刷新失败要 message.error 明确反馈。stale（workspace 中途切换）保持静默，避免误报。
+  // 主动刷新失败要 message.error 明确反馈。stale（快速重复操作/卸载）保持静默，避免误报。
   handleRefreshMemory = async () => {
     if (this.state._memoryRefreshing) return;
     this.setState({ _memoryRefreshing: true });
@@ -585,7 +582,7 @@ class AppHeader extends React.Component {
     let ok = false;
     let stale = false;
     try {
-      const r = await fetch(apiUrl('/api/project-memory'));
+      const r = await fetch(apiUrl('/api/codex-memories'));
       const data = await r.json();
       if (seq !== this._memorySeq) { stale = true; }
       else if (!r.ok) { this.setState({ _memory: false }); }
@@ -647,23 +644,23 @@ class AppHeader extends React.Component {
     }
   };
 
-  // 加载明细文件：name 必须是单段 .md basename（前端先校验，server 再校验一遍）。
+  // 加载 Codex 生成的嵌套 Markdown；前端负责链接 UX 归一化，server 是最终安全边界。
   // seq 防快速连点：用户连点两个不同明细时，慢的回包不应覆盖快的（否则用户最后看到的是错的内容）。
   loadMemoryDetail = async (name) => {
     const seq = ++this._memoryDetailSeq;
-    this.setState({ _memoryDetail: { name, loading: true } });
+    this.setState({ _memoryDetail: { name, file: name, loading: true } });
     try {
-      const r = await fetch(apiUrl(`/api/project-memory?file=${encodeURIComponent(name)}`));
+      const r = await fetch(apiUrl(`/api/codex-memories?file=${encodeURIComponent(name)}`));
       const data = await r.json();
       if (seq !== this._memoryDetailSeq) return;
       if (!r.ok) {
-        this.setState({ _memoryDetail: { name, error: data.error || `http:${r.status}` } });
+        this.setState({ _memoryDetail: { name, file: name, error: data.error || `http:${r.status}` } });
         return;
       }
-      this.setState({ _memoryDetail: { name, content: data.content || '' } });
+      this.setState({ _memoryDetail: { name: data.file || name, file: data.file || name, content: data.content || '' } });
     } catch (e) {
       if (seq === this._memoryDetailSeq) {
-        this.setState({ _memoryDetail: { name, error: e.message || 'network' } });
+        this.setState({ _memoryDetail: { name, file: name, error: e.message || 'network' } });
       }
     }
   };
@@ -1278,7 +1275,7 @@ class AppHeader extends React.Component {
         }
       }
     }
-    // Fixed 258K percent math lives in utils/helpers.computeContextPercent,
+    // Fixed 353K percent math lives in utils/helpers.computeContextPercent,
     // shared with Mobile so the two shells can never drift again.
     let contextPercent = isLocalLog ? 0 : computeContextPercent({
       contextWindow,

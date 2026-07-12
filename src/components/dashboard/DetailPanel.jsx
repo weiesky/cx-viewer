@@ -646,7 +646,6 @@ class DetailPanel extends React.Component {
               {this.state.requestHeadersExpanded && this.renderHeaders(request.headers)}
             </div>
             {diffBlock}
-            {toolOverview}
             <div>
               <div className={styles.bodyHeader}>
                 <Text strong className={styles.bodyLabel}>Body<ConceptHelp doc="BodyFields" /></Text>

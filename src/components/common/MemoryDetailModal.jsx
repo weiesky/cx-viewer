@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal } from 'antd';
 import { t } from '../../i18n';
-import { renderMarkdown } from '../../utils/markdown';
+import { renderMarkdown, renderMemoryMarkdown } from '../../utils/markdown';
 import { parseMemoryLink } from '../../utils/memoryLinkParser';
 import styles from './sharedChrome.module.css';
 
@@ -15,9 +15,9 @@ import styles from './sharedChrome.module.css';
 //   'passthrough' → 不拦截，浏览器原生处理（AGENTS.md 等场景需要 https:// / 相对链接正常打开）。
 export default function MemoryDetailModal({ detail, onClose, onOpenMemoryDetail, linkMode = 'memory' }) {
   if (!detail) return null;
-  const { name, content, error, loading } = detail;
+  const { name, file, content, error, loading } = detail;
 
-  // 链接拦截：规则统一在 parseMemoryLink；命中 .md basename 切到对应明细。
+  // 链接拦截：规则统一在 parseMemoryLink；命中安全的生成 Markdown 切到对应明细。
   // passthrough 模式（AGENTS.md 视图）：外链在新 tab 打开（noopener），其他链接吃掉防止 SPA 误导航。
   // 安全：协议白名单(^https?://)是 utils/markdown.js 里 DOMPurify 之外的第二道闸 ——
   // DOMPurify 默认会剥 javascript:/data: URL，但若未来 markdown pipeline 替换/降级，
@@ -37,7 +37,7 @@ export default function MemoryDetailModal({ detail, onClose, onOpenMemoryDetail,
       // 相对路径 / 其它协议 → 阻止默认行为（不在 SPA 内做 routing），不打开
       return;
     }
-    const r = parseMemoryLink(hrefRaw);
+    const r = parseMemoryLink(hrefRaw, file || name);
     if (r.allow) return;
     e.preventDefault();
     if (r.open) onOpenMemoryDetail?.(r.open);
@@ -55,7 +55,7 @@ export default function MemoryDetailModal({ detail, onClose, onOpenMemoryDetail,
       <div
         className={`${styles.detailMarkdownCard} ${styles.memoryMarkdown}`}
         onClick={handleLinkClick}
-        dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
+        dangerouslySetInnerHTML={{ __html: linkMode === 'memory' ? renderMemoryMarkdown(content) : renderMarkdown(content) }}
       />
     );
   }

@@ -15,6 +15,7 @@ import { LOG_DIR } from './findcx.js';
 import { assembleOpenAiResponseMessage, assembleStreamMessage, cleanupTempFiles, classifyAgentRequest, findRecentLog, isOpenAiApiPath, parseRequestBodyForLog, rotateLogFile } from './lib/interceptor-core.js';
 import { MAX_LOG_SIZE as _MAX_LOG_SIZE, CHECKPOINT_INTERVAL as _CHECKPOINT_INTERVAL } from './lib/constants.js';
 import { getMainAgentSessionKey } from './src/utils/clearCheckpoint.js';
+import { createModelCatalogLogCompactor } from './lib/model-catalog-log.js';
 
 
 
@@ -270,6 +271,8 @@ export function resetWorkspace() {
 }
 
 const MAX_LOG_SIZE = _MAX_LOG_SIZE;
+const _modelCatalogLogCompactor = createModelCatalogLogCompactor();
+let _modelCatalogCompactorLogFile = '';
 
 function generateRotationLogFilePath() {
   const now = new Date();
@@ -313,9 +316,26 @@ export function checkAndRotateLogFile(nextWriteBytes = 0) {
 export function appendLogEntry(entry) {
   if (!entry || !LOG_FILE) return { written: false, logFile: LOG_FILE };
   try {
-    const line = JSON.stringify(entry) + '\n---\n';
-    const bytes = Buffer.byteLength(line);
-    checkAndRotateLogFile(bytes);
+    if (_modelCatalogCompactorLogFile !== LOG_FILE) {
+      _modelCatalogLogCompactor.reset();
+      _modelCatalogCompactorLogFile = LOG_FILE;
+    }
+    let storedEntry = _modelCatalogLogCompactor.process(entry);
+    if (!storedEntry) {
+      return { written: false, compacted: true, logFile: LOG_FILE, bytes: 0 };
+    }
+    let line = JSON.stringify(storedEntry) + '\n---\n';
+    let bytes = Buffer.byteLength(line);
+    const rotated = checkAndRotateLogFile(bytes);
+    if (rotated) {
+      // A repeat marker cannot be the first record of a new segment because its
+      // base lives in the previous file. Reset and write this entry in full.
+      _modelCatalogLogCompactor.reset();
+      _modelCatalogCompactorLogFile = LOG_FILE;
+      storedEntry = _modelCatalogLogCompactor.process(entry);
+      line = JSON.stringify(storedEntry) + '\n---\n';
+      bytes = Buffer.byteLength(line);
+    }
     appendFileSync(LOG_FILE, line);
     return { written: true, logFile: LOG_FILE, bytes };
   } catch (err) {

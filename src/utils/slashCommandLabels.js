@@ -21,7 +21,7 @@ const COMMAND_KEYS = Object.freeze({
   '/init': 'ui.slashCommand.init',
   '/agents': 'ui.slashCommand.agents',
   '/config': 'ui.slashCommand.config',
-  '/memory': 'ui.slashCommand.memory',
+  '/memories': 'ui.slashCommand.memory',
   '/permissions': 'ui.slashCommand.permissions',
   '/hooks': 'ui.slashCommand.hooks',
   '/plugins': 'ui.slashCommand.plugins',
