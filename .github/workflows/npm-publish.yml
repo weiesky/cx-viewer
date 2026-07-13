@@ -1,6 +1,9 @@
 name: Publish to npm
 
 on:
+  push:
+    tags:
+      - 'v*'
   release:
     types: [published]
 
@@ -9,7 +12,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: npm-publish-${{ github.event.release.tag_name }}
+  group: npm-publish-${{ github.event.release.tag_name || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -59,9 +62,11 @@ jobs:
 
       - name: Verify release tag matches package version
         shell: bash
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name || github.ref_name }}
         run: |
           package_version="$(node -p "require('./package.json').version")"
-          release_tag="${{ github.event.release.tag_name }}"
+          release_tag="$RELEASE_TAG"
           tag_version="${release_tag#v}"
 
           if [[ "$tag_version" != "$package_version" ]]; then
