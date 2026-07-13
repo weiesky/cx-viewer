@@ -1,6 +1,6 @@
 {
   "name": "cx-viewer",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "Codex Logger visualization management tool",
   "license": "MIT",
   "main": "server.js",

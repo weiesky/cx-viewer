@@ -35,6 +35,11 @@ export const LEGACY_ASK_PLACEHOLDER_ID = '__ask__';
 // askQueue entry.kind — 决定 _promoteNextAskFromQueue 弹起后路由哪条 submit 路径。
 export const ASK_KIND = { HOOK: 'hook', SDK: 'sdk' };
 
+// WebSocket.OPEN is always 1, but Node 20 does not expose a global WebSocket.
+// Keep this controller browser-global-free so its state machine remains testable
+// on every supported Node.js runtime.
+const WS_OPEN = 1;
+
 /**
  * Build both answer shapes during the legacy transition period:
  * - hookAnswers keeps the historical question-text map.
@@ -209,7 +214,7 @@ export class AskFlowController {
     }
     // ws 突然 closed：hook 路径无法走 → 转 PTY 由 _waitForWsAndSubmit 接管重连
     const ws = this.host.ws();
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
+    if (!ws || ws.readyState !== WS_OPEN) {
       const answers = this._pendingHookAnswers;
       this._pendingHookAnswers = null;
       this._submitViaPty(answers);
@@ -233,7 +238,7 @@ export class AskFlowController {
     const ws = this.host.ws();
 
     // ws 暂时不可用 → 准备 queue 后等 Provider 自动重连。
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
+    if (!ws || ws.readyState !== WS_OPEN) {
       this._askAnswerQueue = this._planSubmissionSteps(answers);
       this._askSubmitting = true;
       this._isMultiQuestionForm = answers.length > 1;
@@ -265,7 +270,7 @@ export class AskFlowController {
       return;
     }
     const ws = this.host.ws();
-    if (ws && ws.readyState === WebSocket.OPEN) {
+    if (ws && ws.readyState === WS_OPEN) {
       // WS connected, now wait for ptyPrompt
       if (!this.host.getCurrentPtyPrompt()) {
         this._askPromptRetries = 0;
@@ -463,7 +468,7 @@ export class AskFlowController {
    */
   _submitViaHookBridge(answers, explicitHeadId, explicitQuestions) {
     const ws = this.host.ws();
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
+    if (!ws || ws.readyState !== WS_OPEN) {
       // Fallback to PTY path
       this._askHookActive = false;
       this._askHookQuestions = null;
@@ -556,7 +561,7 @@ export class AskFlowController {
 
     // 发 WS ask-cancel；WS 不可用 → 缓存到 _pendingCancelIds 让 reopen 时重发
     const ws = this.host.ws();
-    if (ws && ws.readyState === WebSocket.OPEN) {
+    if (ws && ws.readyState === WS_OPEN) {
       try { ws.send(JSON.stringify({ type: 'ask-cancel', id: askId, reason: cancelReason })); } catch {}
     } else {
       if (!this._pendingCancelIds) this._pendingCancelIds = new Map();
@@ -627,7 +632,7 @@ export class AskFlowController {
         return;
       }
       const ws = this.host.ws();
-      if (ws && ws.readyState === WebSocket.OPEN) {
+      if (ws && ws.readyState === WS_OPEN) {
         // 构造 answers 对象: { questionText: selectedLabel }；qs 优先取快照（promote 后会错位）
         const sdkAnswers = {};
         const qs = submitCtx.hookQuestions || questions;
@@ -662,14 +667,14 @@ export class AskFlowController {
     // _askHookActive=false 但 pendingAsk 仍存在 + ws OPEN → 直接尝试 hook bridge
     if (!submitCtx.wasHookActive && !this._askSubmitting
         && submitCtx.headAskId
-        && this.host.ws() && this.host.ws().readyState === WebSocket.OPEN) {
+        && this.host.ws() && this.host.ws().readyState === WS_OPEN) {
       this._submitViaHookBridge(answers, submitCtx.headAskId, submitCtx.hookQuestions);
       return;
     }
 
     // Hook bridge 可能尚未就绪（streaming response 先于 hook 触发）：短暂等待
     if (!submitCtx.wasHookActive && !this._askSubmitting
-        && this.host.ws() && this.host.ws().readyState === WebSocket.OPEN) {
+        && this.host.ws() && this.host.ws().readyState === WS_OPEN) {
       this._pendingHookAnswers = answers;
       this._askHookWaitRetries = 0;
       this._askSubmitting = true;
@@ -846,7 +851,7 @@ export class AskFlowController {
   onWsOpen() {
     if (this.host.isUnmounted()) return;
     const ws = this.host.ws();
-    if (this._pendingCancelIds && this._pendingCancelIds.size > 0 && ws && ws.readyState === WebSocket.OPEN) {
+    if (this._pendingCancelIds && this._pendingCancelIds.size > 0 && ws && ws.readyState === WS_OPEN) {
       for (const [askId, reason] of this._pendingCancelIds) {
         try { ws.send(JSON.stringify({ type: 'ask-cancel', id: askId, reason })); } catch {}
       }

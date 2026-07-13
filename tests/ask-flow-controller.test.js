@@ -99,7 +99,7 @@ test('resolved and timeout events fill the transcript item card before clearing 
   }
 });
 
-test('submitting indexes the answer by the rendered card id and app-server aliases', () => {
+test('submitting without a global WebSocket indexes the answer by every app-server alias', () => {
   const questions = [{
     id: 'choice',
     question: 'Proceed?',
@@ -123,12 +123,19 @@ test('submitting indexes the answer by the rendered card id and app-server alias
     clearPtyDebounce() {},
   });
 
-  const controller = new AskFlowController(host);
-  controller.handleAskQuestionSubmit(
-    [{ questionIndex: 0, type: 'single', optionIndex: 0 }],
-    'rendered-tool-card-id',
-    questions,
-  );
+  const originalWebSocket = globalThis.WebSocket;
+  try {
+    delete globalThis.WebSocket;
+    const controller = new AskFlowController(host);
+    controller.handleAskQuestionSubmit(
+      [{ questionIndex: 0, type: 'single', optionIndex: 0 }],
+      'rendered-tool-card-id',
+      questions,
+    );
+  } finally {
+    if (originalWebSocket === undefined) delete globalThis.WebSocket;
+    else globalThis.WebSocket = originalWebSocket;
+  }
 
   const expected = { 'Proceed?': 'Yes' };
   assert.deepEqual(host.state().localAskAnswers, {
