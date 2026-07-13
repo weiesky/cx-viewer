@@ -74,15 +74,32 @@ jobs:
             exit 1
           fi
 
+      - name: Check whether package version is already published
+        id: npm-version
+        shell: bash
+        run: |
+          package_name="$(node -p "require('./package.json').name")"
+          package_version="$(node -p "require('./package.json').version")"
+
+          if npm view "$package_name@$package_version" version >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+            echo "$package_name@$package_version is already published; skipping duplicate publish."
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+
       # This repository does not currently commit a package-lock.json, so npm ci
       # cannot be used. Keep the runner install ephemeral and do not create a lock.
       - name: Install dependencies
+        if: steps.npm-version.outputs.published != 'true'
         run: npm install --no-package-lock
 
       - name: Test, build, and inspect package contents
+        if: steps.npm-version.outputs.published != 'true'
         run: npm run release:check
 
       # Authentication comes from npm Trusted Publishing via GitHub OIDC.
       # Provenance is generated automatically for trusted publishes.
       - name: Publish package
+        if: steps.npm-version.outputs.published != 'true'
         run: npm publish --access public
