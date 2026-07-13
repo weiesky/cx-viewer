@@ -24,7 +24,49 @@
 // internToolResultIfPooled 的命中信号是 lazy-clone 决策的关键：JS string === 是值比较，
 // 普通 internToolResult 返回的 ref 无法用于 ref-不变性判断。
 import { internToolResultIfPooled } from './readResultPool.js';
-import { isCompactContinuation, getMainAgentSessionKey } from './clearCheckpoint.js';
+import { classifySessionTransition, conversationIdsConflict, getMainAgentConversationId, isCompactContinuation, getMainAgentSessionKey, isPostClearCheckpoint } from './clearCheckpoint.js';
+import { extractDirectContextCompaction } from './contextCompaction.js';
+import { getResponseToolDeclaration } from '../../lib/openai-body.js';
+
+function getEntryToolSnapshot(entry) {
+  const direct = getResponseToolDeclaration(entry?.body);
+  if (direct.declared) return direct;
+  if (Array.isArray(entry?._loadedTools)) return { declared: true, tools: entry._loadedTools };
+  return { declared: false, tools: [] };
+}
+
+// Current Responses requests may keep `additional_tools` inside body.input.
+// When a later delta omits that declaration, move the latest declaration onto
+// the new session anchor before the previous input is slimmed. Only the newest
+// anchor keeps this internal snapshot, so stability does not multiply tool
+// schemas across the whole log.
+function inheritToolSnapshot(entry, previousEntry) {
+  const direct = getResponseToolDeclaration(entry?.body);
+  if (direct.declared) {
+    if (Object.prototype.hasOwnProperty.call(entry, '_loadedTools')) delete entry._loadedTools;
+    return;
+  }
+  const snapshot = getEntryToolSnapshot(previousEntry);
+  if (snapshot.declared) entry._loadedTools = snapshot.tools;
+}
+
+/** Carry a rolling snapshot through an in-progress → final dedup replacement. */
+export function inheritToolSnapshotOnDedup(previousEntry, nextEntry) {
+  if (!previousEntry || !nextEntry) return nextEntry;
+  const direct = getResponseToolDeclaration(nextEntry.body);
+  if (direct.declared || Array.isArray(nextEntry._loadedTools)) return nextEntry;
+  if (previousEntry._sessionId != null && nextEntry._sessionId != null
+      && previousEntry._sessionId !== nextEntry._sessionId) return nextEntry;
+  const previousConversation = getMainAgentConversationId(previousEntry);
+  const nextConversation = getMainAgentConversationId(nextEntry);
+  if (previousConversation && nextConversation && previousConversation !== nextConversation) return nextEntry;
+  const previousKey = getMainAgentSessionKey(previousEntry);
+  const nextKey = getMainAgentSessionKey(nextEntry);
+  if (previousKey && nextKey && previousKey !== nextKey) return nextEntry;
+  const snapshot = getEntryToolSnapshot(previousEntry);
+  if (snapshot.declared) nextEntry._loadedTools = snapshot.tools;
+  return nextEntry;
+}
 
 /**
  * 把 input[*].content[*] 中的 tool_result block.content 字符串替换为 readResultPool
@@ -124,6 +166,7 @@ export function createEntrySlimmer(isMainAgentFn) {
   let prevMsgCount = 0;
   let prevUserId = null;
   let prevSessionKey = null;
+  let prevConversationId = null;
 
   return {
     /**
@@ -142,6 +185,7 @@ export function createEntrySlimmer(isMainAgentFn) {
       const count = entry.body.input.length;
       const userId = entry.body.metadata?.user_id || null;
       const sessionKey = getMainAgentSessionKey(entry);
+      const conversationId = getMainAgentConversationId(entry);
 
       // Preserve the /compact-continuation signal BEFORE this entry can be slimmed
       // by a later one: once body.input is emptied, isCompactContinuation() can
@@ -157,32 +201,44 @@ export function createEntrySlimmer(isMainAgentFn) {
       // _fullEntryIndex pointing at the shorter compact entry, and
       // restoreSlimmedEntry's guard (fullEntry.input.length < _messageCount)
       // would permanently fail to restore it.
-      const isNewSession = prevMsgCount > 0 && (
-        (prevSessionKey && sessionKey && sessionKey !== prevSessionKey) ||
-        (count < prevMsgCount * 0.5 && (prevMsgCount - count) > 4) ||
-        (prevUserId && userId && userId !== prevUserId)
-      );
+      const transition = classifySessionTransition(entry, {
+        prevCount: prevMsgCount,
+        count,
+        prevUserId,
+        userId,
+        prevSessionKey,
+        sessionKey,
+        prevConversationId,
+        conversationId,
+      }, { splitCompactHistoryDrop: true });
+      const isNewSession = transition.isBoundary;
 
       // 瞬态请求过滤（阈值与 App.jsx _flushPendingEntries 保持一致：>4）
-      if (isNewSession && count <= 4 && prevMsgCount > 4) {
-        return entry;
-      }
+      if (transition.isTransient) return entry;
 
       if (isNewSession) {
         prevMainIdx = currentIdx;
         prevMsgCount = count;
         prevUserId = userId;
         prevSessionKey = sessionKey || null;
+        prevConversationId = conversationId || null;
         return entry;
       }
+
+      inheritToolSnapshot(entry, prevMainIdx >= 0 ? entries[prevMainIdx] : null);
 
       // 同 session：只剪枝前一条 MainAgent 的 input
       if (prevMainIdx >= 0 && prevMainIdx < entries.length) {
         const prev = entries[prevMainIdx];
         if (prev.body?.input?.length > 0) {
           const pCount = prev.body.input.length;
+          const contextCompaction = extractDirectContextCompaction(prev);
+          const postClearCheckpoint = isPostClearCheckpoint(prev, Number.MAX_SAFE_INTEGER);
           prev._messageCount = pCount;
           prev._slimmed = true;
+          if (contextCompaction.present) prev._contextCompaction = contextCompaction;
+          if (postClearCheckpoint) prev._postClearCheckpoint = true;
+          if (Object.prototype.hasOwnProperty.call(prev, '_loadedTools')) delete prev._loadedTools;
           // 批量路径：原代码就是 in-place mutate prev.body.input = []，
           // 这里同样 in-place 替换 body.input。entries 数组在 _batchSlim 阶段
           // 还未传给 React，无渲染中间态风险。
@@ -194,6 +250,7 @@ export function createEntrySlimmer(isMainAgentFn) {
       prevMsgCount = count;
       prevUserId = userId;
       prevSessionKey = sessionKey || null;
+      prevConversationId = conversationId || null;
       return entry;
     },
 
@@ -208,6 +265,7 @@ export function createEntrySlimmer(isMainAgentFn) {
       let pCount = 0;
       let pUserId = null;
       let pSessionKey = null;
+      let pConversationId = null;
 
       for (let i = 0; i < entries.length; i++) {
         const e = entries[i];
@@ -221,15 +279,22 @@ export function createEntrySlimmer(isMainAgentFn) {
         const count = e._messageCount || e.body?.input?.length || 0;
         const userId = e.body?.metadata?.user_id || null;
         const sessionKey = getMainAgentSessionKey(e);
+        const conversationId = getMainAgentConversationId(e);
 
         // KEEP IN SYNC (semantics): intentionally divergent from isSessionBoundary
         // (clearCheckpoint.js) — see the comment on the process() predicate above.
-        const isNew = pCount > 0 && (
-          (pSessionKey && sessionKey && sessionKey !== pSessionKey) ||
-          (count < pCount * 0.5 && (pCount - count) > 4) ||
-          (pUserId && userId && userId !== pUserId)
-        );
-        if (isNew && count <= 4 && pCount > 10) continue;
+        const transition = classifySessionTransition(e, {
+          prevCount: pCount,
+          count,
+          prevUserId: pUserId,
+          userId,
+          prevSessionKey: pSessionKey,
+          sessionKey,
+          prevConversationId: pConversationId,
+          conversationId,
+        }, { splitCompactHistoryDrop: true });
+        const isNew = transition.isBoundary;
+        if (transition.isTransient) continue;
 
         if (isNew) {
           // 上一个 session 结束：回填 _fullEntryIndex
@@ -240,6 +305,7 @@ export function createEntrySlimmer(isMainAgentFn) {
           currentFullIdx = -1;
           pCount = 0;
           pSessionKey = null;
+          pConversationId = null;
         }
 
         if (isSlimmed) {
@@ -251,6 +317,7 @@ export function createEntrySlimmer(isMainAgentFn) {
         pCount = count;
         pUserId = userId;
         pSessionKey = sessionKey || null;
+        pConversationId = conversationId || null;
       }
 
       // 最后一个 session
@@ -269,9 +336,19 @@ export function createEntrySlimmer(isMainAgentFn) {
  * @returns {object} 还原后的 entry（新对象）或原样返回
  */
 export function restoreSlimmedEntry(entry, requests) {
-  if (!entry._slimmed || entry._fullEntryIndex == null) return entry;
+  if (!entry._slimmed || !Number.isSafeInteger(entry._fullEntryIndex)) return entry;
+  const entryIndex = Array.isArray(requests) ? requests.indexOf(entry) : -1;
+  if (entry._fullEntryIndex < 0 || entry._fullEntryIndex >= requests.length
+      || (entryIndex >= 0 && entry._fullEntryIndex <= entryIndex)) return entry;
   const fullEntry = requests[entry._fullEntryIndex];
   if (!fullEntry?.body?.input) return entry;
+  if (entry.mainAgent === true && fullEntry.mainAgent === false) return entry;
+  if (entry._sessionId != null && fullEntry._sessionId != null
+      && entry._sessionId !== fullEntry._sessionId) return entry;
+  if (conversationIdsConflict(getMainAgentConversationId(entry), getMainAgentConversationId(fullEntry))) return entry;
+  const entryKey = getMainAgentSessionKey(entry);
+  const fullKey = getMainAgentSessionKey(fullEntry);
+  if (entryKey && fullKey && entryKey !== fullKey) return entry;
   if (fullEntry.body.input.length < entry._messageCount) return entry;
   // input 是唯一被降级的字段；entry.body 的其他字段必须保留该请求原值。
   // input 是累积量：fullEntry 的 input 前缀 slice 即本 entry 的原始 input。
@@ -303,6 +380,7 @@ export function createIncrementalSlimmer(isMainAgentFn) {
   let prevMsgCount = 0;
   let prevUserId = null;
   let prevSessionKey = null;
+  let prevConversationId = null;
   const sessionSlimmedIndices = new Set();
 
   return {
@@ -322,6 +400,7 @@ export function createIncrementalSlimmer(isMainAgentFn) {
       const count = entry.body.input.length;
       const userId = entry.body.metadata?.user_id || null;
       const sessionKey = getMainAgentSessionKey(entry);
+      const conversationId = getMainAgentConversationId(entry);
 
       // Preserve the /compact-continuation signal before slimming — same rationale
       // as createEntrySlimmer.process(): incrementally-slimmed entries can be
@@ -332,16 +411,20 @@ export function createIncrementalSlimmer(isMainAgentFn) {
       // session 边界检测（与 batch slimmer / mergeMainAgentSessions 一致）
       // KEEP IN SYNC (semantics): intentionally divergent from isSessionBoundary
       // (clearCheckpoint.js) — see the comment on createEntrySlimmer.process().
-      const isNewSession = prevMsgCount > 0 && (
-        (prevSessionKey && sessionKey && sessionKey !== prevSessionKey) ||
-        (count < prevMsgCount * 0.5 && (prevMsgCount - count) > 4) ||
-        (prevUserId && userId && userId !== prevUserId)
-      );
+      const transition = classifySessionTransition(entry, {
+        prevCount: prevMsgCount,
+        count,
+        prevUserId,
+        userId,
+        prevSessionKey,
+        sessionKey,
+        prevConversationId,
+        conversationId,
+      }, { splitCompactHistoryDrop: true });
+      const isNewSession = transition.isBoundary;
 
       // 瞬态请求过滤（阈值与 App.jsx _flushPendingEntries 保持一致：>4）
-      if (isNewSession && count <= 4 && prevMsgCount > 4) {
-        return entry;
-      }
+      if (transition.isTransient) return entry;
 
       if (isNewSession) {
         sessionSlimmedIndices.clear();
@@ -349,8 +432,11 @@ export function createIncrementalSlimmer(isMainAgentFn) {
         prevMsgCount = count;
         prevUserId = userId;
         prevSessionKey = sessionKey || null;
+        prevConversationId = conversationId || null;
         return entry;
       }
+
+      inheritToolSnapshot(entry, prevMainIdx >= 0 ? requests[prevMainIdx] : null);
 
       // 前向 slim：剪枝上一条 MainAgent 的 input 与 body 大字段
       // 注意：必须 clone entry 再修改，不能 in-place mutate。
@@ -359,12 +445,17 @@ export function createIncrementalSlimmer(isMainAgentFn) {
       if (prevMainIdx >= 0 && prevMainIdx < requests.length) {
         const orig = requests[prevMainIdx];
         if (orig.body?.input?.length > 0) {
+          const contextCompaction = extractDirectContextCompaction(orig);
+          const postClearCheckpoint = isPostClearCheckpoint(orig, Number.MAX_SAFE_INTEGER);
+          const { _loadedTools: _discardedToolSnapshot, ...origWithoutToolSnapshot } = orig;
           const cloned = {
-            ...orig,
+            ...origWithoutToolSnapshot,
             body: slimBodyInput(orig.body),
             _messageCount: orig.body.input.length,
             _slimmed: true,
             _fullEntryIndex: currentIdx,
+            ...(contextCompaction.present ? { _contextCompaction: contextCompaction } : {}),
+            ...(postClearCheckpoint ? { _postClearCheckpoint: true } : {}),
           };
           requests[prevMainIdx] = cloned;
           sessionSlimmedIndices.add(prevMainIdx);
@@ -383,6 +474,7 @@ export function createIncrementalSlimmer(isMainAgentFn) {
       prevMsgCount = count;
       prevUserId = userId;
       prevSessionKey = sessionKey || null;
+      prevConversationId = conversationId || null;
       return entry;
     },
 

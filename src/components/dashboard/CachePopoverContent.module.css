@@ -180,3 +180,82 @@
 .memoryStatus {
   padding: 6px 4px;
 }
+
+.compactionSection {
+  border-color: var(--color-success-light);
+  background: var(--color-success-bg-light);
+  padding: 4px 10px;
+}
+
+.compactionRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 20px;
+}
+
+.compactionLabel {
+  flex: none;
+  margin: 0;
+  padding: 0;
+  color: var(--color-success-text);
+  line-height: 18px;
+}
+
+.compactionSummaryButton {
+  flex: 1 1 auto;
+  min-width: 0;
+  appearance: none;
+  display: flex;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  text-align: start;
+  cursor: help;
+}
+
+.compactionSummaryButton:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+  border-radius: 2px;
+}
+
+.compactionSummaryText {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 18px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  unicode-bidi: plaintext;
+}
+
+.compactionSummaryTooltip {
+  max-height: min(50vh, 360px);
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  unicode-bidi: plaintext;
+}
+
+.compactionTruncated {
+  flex: none;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+.skillCountBreakdown {
+  display: block;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 400;
+}

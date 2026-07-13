@@ -10,7 +10,7 @@ import { homedir } from 'node:os';
 import { spawn } from 'node:child_process';
 import { t } from './i18n.js';
 import { INJECT_IMPORT, resolveCliPath, resolveNativePath, resolveNpmCodexPath, buildShellCandidates } from './findcx.js';
-import { normalizeCodexArgs, hasBypassPermissions, getReasoningSummaryConfigArgs } from './lib/cli-args.js';
+import { appendCxvFinalConfigArgs, getDefaultModeRequestUserInputConfigArgs, normalizeCodexArgs, hasBypassPermissions, getReasoningSummaryConfigArgs } from './lib/cli-args.js';
 import { ensureHooks } from './lib/ensure-hooks.js';
 import { APPROVALS_REVIEWER_DEFAULT } from './lib/approval-reviewer.js';
 
@@ -328,9 +328,12 @@ async function runCliMode(extraCodexArgs = [], cwd) {
   // proxy.js detects OAuth via the chatgpt-account-id request header and routes
   // to chatgpt.com/backend-api/codex; API-key traffic routes to api.openai.com.
   let _proxyPort = null;
-  // Request readable reasoning summaries for traffic captured by CX Viewer.
-  // Explicit Codex arguments are appended later and can override this default.
-  let configArgs = getReasoningSummaryConfigArgs();
+  // Reasoning summaries remain a user-overridable default. Native Default-mode
+  // request_user_input is appended again at each child-process boundary so CX
+  // Viewer's interactive bridge always agrees with Codex's advertised tools.
+  const defaultModeAskArgs = getDefaultModeRequestUserInputConfigArgs();
+  const baseConfigArgs = [...getReasoningSummaryConfigArgs(), ...defaultModeAskArgs];
+  let proxyRedirectArgs = [];
   {
     const { readFileSync, existsSync } = await import('node:fs');
     const { join } = await import('node:path');
@@ -364,7 +367,7 @@ async function runCliMode(extraCodexArgs = [], cwd) {
       if (!process.env.CXV_ORIGINAL_CHATGPT_BASE_URL) {
         process.env.CXV_ORIGINAL_CHATGPT_BASE_URL = 'https://chatgpt.com/backend-api/codex';
       }
-      configArgs.push('-c', `openai_base_url="http://127.0.0.1:${_proxyPort}/v1"`);
+      proxyRedirectArgs = ['-c', `openai_base_url="http://127.0.0.1:${_proxyPort}/v1"`];
       console.log(`[CX Viewer] HTTP capture proxy started on 127.0.0.1:${_proxyPort} (${authMode} mode)`);
     } catch (err) {
       console.warn('[CX Viewer] HTTP capture proxy failed to start:', err.message);
@@ -375,8 +378,10 @@ async function runCliMode(extraCodexArgs = [], cwd) {
   const interceptorMod = await import('./interceptor.js');
   const currentLogFile = interceptorMod.LOG_FILE;
   let _bridge = null;
-  // configArgs 让 codex 通过 -c 覆盖重定向到抓包代理；bridge 失败回退直连时 TUI 也需要它
-  let bridgeArgs = [...configArgs];
+  // Proxy redirect args exist only after successful startup. App-server gets
+  // the native ask override last; the TUI receives the same final overrides below.
+  const appServerConfigArgs = [...baseConfigArgs, ...proxyRedirectArgs];
+  let bridgeArgs = [...appServerConfigArgs];
   try {
     const { startAppServerBridge } = await import('./lib/appserver-bridge.js');
     _bridge = await startAppServerBridge({
@@ -384,13 +389,13 @@ async function runCliMode(extraCodexArgs = [], cwd) {
       codexPath,
       logFile: currentLogFile,
       env: process.env,
-      extraConfigArgs: configArgs,
+      extraConfigArgs: appServerConfigArgs,
       onApprovalsReviewerActive: (reviewer) => serverMod.setActiveCodexApprovalsReviewer(reviewer, true),
       writeLogEntry: interceptorMod.appendLogEntry,
     });
     serverMod.setCodexApprovalsReviewerUpdater(_bridge.setApprovalsReviewer);
     // 让 codex TUI 通过 --remote 连接到代理
-    bridgeArgs = [...configArgs, '--remote', `ws://127.0.0.1:${_bridge.proxyPort}`];
+    bridgeArgs = [...appServerConfigArgs, '--remote', `ws://127.0.0.1:${_bridge.proxyPort}`];
     console.log(`[CX Viewer] App-Server bridge started (proxy:${_bridge.proxyPort} → server:${_bridge.appServerPort})`);
   } catch (err) {
     console.warn('[CX Viewer] App-Server bridge failed, falling back to direct mode:', err.message);
@@ -406,7 +411,11 @@ async function runCliMode(extraCodexArgs = [], cwd) {
     serverMod.setActiveCodexApprovalsReviewer(savedApprovalsReviewer, true);
   }
   try {
-    await spawnCodex(null, workingDir, [...bridgeArgs, ...reviewerArgs, ...extraCodexArgs], codexPath, isNpmVersion, port);
+    const tuiArgs = appendCxvFinalConfigArgs(
+      [...bridgeArgs, ...reviewerArgs, ...extraCodexArgs],
+      { proxyPort: _proxyPort },
+    );
+    await spawnCodex(null, workingDir, tuiArgs, codexPath, isNpmVersion, port);
   } catch (err) {
     console.error('[CX Viewer] Failed to spawn Codex:', err.message);
     if (_bridge) _bridge.stop();
@@ -480,7 +489,8 @@ async function runSdkMode(extraCodexArgs = [], cwd) {
   const { registerWorkspace } = await import('./workspace-registry.js');
   registerWorkspace(workingDir);
 
-  // 不需要 ensureHooks — SDK canUseTool 处理 request_user_input + 权限
+  // SDK 0.142.5 does not expose a request_user_input callback; sdk-manager
+  // explicitly disables that native feature until the interaction is serviceable.
   // 不需要 proxy — SDK 直接管理 API 通信
 
   // 设置环境标记（必须在 import server.js 之前）

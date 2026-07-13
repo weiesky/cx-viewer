@@ -10,7 +10,7 @@ import ImageLightbox from '../common/ImageLightbox';
 import GitChanges from '../git/GitChanges';
 import GitDiffView from '../git/GitDiffView';
 import ToolApprovalPanel from '../approval/ToolApprovalPanel';
-import { getModelInfo, getEffectiveModel, resolveProducerModelInfo, AUTO_APPROVE_INSTANT } from '../../utils/helpers';
+import { getModelInfo, getEffectiveModel, getDisplayedSessionModelName, getSessionIdentityCandidates, resolveProducerModelInfo, AUTO_APPROVE_INSTANT } from '../../utils/helpers';
 import { formatPromptNavTime } from '../../utils/formatters';
 import { buildPromptNavItems } from '../../utils/promptNav';
 import { getTeammateAvatar } from '../../utils/teammateAvatars';
@@ -28,7 +28,12 @@ import { createEmptyToolState, appendToolResultMap, cachedBuildToolResultMap, ge
 import { refreshCachedItemProp } from '../../utils/refreshCachedItemProp';
 import { ASK_TOOL_NAMES, CODEX_PLAN_TOOL_NAME, PLAN_TOOL_NAMES, isPlanToolName } from '../../utils/toolNameAliases.js';
 import { refreshResolvedModelInfo, healUnresolvedTeammateEntries, needsFullReqRescan } from '../../utils/identityHeal';
-import { resolveBubbleProducerTs } from '../../utils/sessionManager';
+import { getLatestSessionByActivity, isSessionDividerBoundary, resolveBubbleProducerTs } from '../../utils/sessionManager';
+import {
+  getConversationGroupStartTs,
+  getCurrentConversationStartIndex,
+  getImmediateFragmentUpperBound,
+} from '../../utils/sessionDisplay';
 import { TeamButton, TeamModal } from '../dashboard/TeamSessionPanel';
 import { WorkflowButton, WorkflowRunsModal } from '../dashboard/WorkflowRunsPanel';
 import SnapLineOverlay from '../common/SnapLineOverlay';
@@ -54,6 +59,7 @@ import { PermissionController } from './controllers/permissionController';
 import { ToolFileChangeController } from './controllers/toolFileChangeController';
 import { SplitDragController, TERMINAL_WIDTH_STORAGE_KEY, SIDEBAR_WIDTH_STORAGE_KEY } from './controllers/splitDragController';
 import { PtyPromptController } from './controllers/ptyPromptController';
+import { createPendingInputRecord, getPendingInputDisplayText, reconcilePendingInputs } from '../../utils/pendingInputEcho';
 import { TERMINAL_CHAR_WIDTH, RESIZER_WIDTH_PX } from '../../utils/splitDragCalc';
 import { isMobile, isIOS, isPad } from '../../env';
 import { t } from '../../i18n';
@@ -105,6 +111,23 @@ const useVirtuoso = isMobile && !isIOS && !isPad;
 // 稳定空对象引用，避免每次 render 创建新 {} 导致子组件重渲染
 const EMPTY_OBJ = {};
 const EMPTY_MAP = {};
+
+function createRequestScanCache() {
+  return {
+    tsToIndex: {},
+    modelIndicesByTimestamp: {},
+    modelNameByReqIdx: [],
+    sessionIdentityCandidatesByReqIdx: [],
+    mainAgentByReqIdx: [],
+    lastModelNameBySession: new Map(),
+    modelRevisionBySession: new Map(),
+    subAgentEntries: [],
+    processedCount: 0,
+    subAgentProcessedCount: 0,
+    globalIndexState: createEmptyGlobalIndexState(),
+    globalIndexProcessedCount: 0,
+  };
+}
 
 // ASK_KIND / LEGACY_ASK_PLACEHOLDER_ID 现由 ./controllers/askFlowController 定义并 import（见顶部）。
 
@@ -182,16 +205,16 @@ class ChatView extends React.Component {
     //   tsToIndex            : req.timestamp → requests 数组下标；per-message modelInfo 解析的中转
     //
     // ── 模型状态机（区分"活跃 vs 已完成"）──
-    //   modelName            : 最后扫到的 MainAgent req.body.model。即使 req 还在流式（没 response）也更新。
-    //                          用于侧边栏角色菜单、权限模态等"需要最新态"的消费者。
-    //   completedModelName   : 仅当 req.response 存在时才更新的 model。在流式进行中永远指向"上一次已完成的模型"，
-    //                          用于 SSE streaming avatar —— 继承已完成而非推测 in-flight。避免头像闪烁。
-    //   modelNameByReqIdx[i] : 每个 request 下标"当时活跃"的模型名（carry-over：无 body.model 的 req 继承前一个）。
-    //                          per-message avatar 解析：tsToIndex[ts] → modelNameByReqIdx[idx] → getModelInfo。
+    //   modelNameByReqIdx[i] : request 的有效模型，缺失时只在相同内部 session 内继承。
+    //   sessionIdentityCandidatesByReqIdx[i] : 阻止 producer lookup / carry 穿过 /clear 或会话切换。
+    //   modelRevision        : 仅模型索引变化时递增，供 session element cache 定向修复身份。
     //
     // ── SubAgent/Teammate 渲染入口 ──
     //   subAgentEntries      : 非 MainAgent 的 Sub/Teammate 消息渲染数据（时序插入到主列表里）
-    this._reqScanCache = { tsToIndex: {}, modelName: null, completedModelName: null, modelNameByReqIdx: [], subAgentEntries: [], processedCount: 0, subAgentProcessedCount: 0, globalIndexState: createEmptyGlobalIndexState(), globalIndexProcessedCount: 0 };
+    this._reqScanCache = createRequestScanCache();
+    this._modelResolutionRevision = 0;
+    this._lastPendingPermissionModelName = null;
+    this._pendingInputSeq = 0;
 
     // buildAllItems session 级缓存
     // 每项: { session, msgsLen, subCount, items, tsEntries, lastPendingAskId, lastPendingPlanId }
@@ -221,7 +244,7 @@ class ChatView extends React.Component {
       terminalWidth: initialTerminalWidth || 624, // 默认 80cols * 7.8px
       needsInitialSnap: initialTerminalWidth === null, // 标记是否需要初始化吸附
       inputEmpty: true,
-      pendingInput: null,
+      pendingInputs: [],
       stickyBottom: true,
       userScrolling: false, // 用户滚动意图暂停窗口（wheel/touch/pointer 拖动进行中或空窗内）
       ptyPrompt: null,
@@ -464,6 +487,15 @@ class ChatView extends React.Component {
     }
   }
 
+  _createPendingInputRecord = (wireText, displayText = wireText) => createPendingInputRecord({
+    id: `pending-input-${++this._pendingInputSeq}`,
+    wireText,
+    displayText,
+    createdAt: new Date().toISOString(),
+    requestCursor: Array.isArray(this.props.requests) ? this.props.requests.length : 0,
+    renderedItems: this.state.allItems,
+  });
+
   componentDidMount() {
     this.startRender();
     // 注册 ws 消息 handler。Provider 本身根据 cliMode/terminalVisible 决定何时建立 ws,
@@ -530,6 +562,13 @@ class ChatView extends React.Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
+    // Reconcile optimistic sends against persisted user rows independently of
+    // the sessions prop reference. One server row consumes at most one queued
+    // send, so identical prompts can safely be in flight together.
+    if (this.state.pendingInputs.length > 0) {
+      const pendingInputs = reconcilePendingInputs(this.state.pendingInputs, this.state.allItems);
+      if (pendingInputs !== this.state.pendingInputs) this.setState({ pendingInputs });
+    }
     if (prevProps.isStreaming !== this.props.isStreaming) {
       this._streamSpinnerUrl = this.props.isStreaming
         ? (Math.random() < 0.5 ? orbitingUrl : shimmerUrl)
@@ -543,6 +582,7 @@ class ChatView extends React.Component {
     if (prevProps.projectName !== this.props.projectName) {
       if (prevProps.projectName) {
         this.setState({ fileExplorerExpandedPaths: loadExpandedPaths(this.props.projectName) });
+        if (this.state.pendingInputs.length > 0) this.setState({ pendingInputs: [] });
       }
       this._fileScrollSnapshot = null;
     }
@@ -608,12 +648,18 @@ class ChatView extends React.Component {
         this._lastObservedLpid = lpid;
       }
     }
-    // 通知父组件权限审批状态变化（用于移动端全局浮层）
-    if (prevState.pendingPermission !== this.state.pendingPermission && this.props.onPendingPermission) {
+    // 通知父组件权限审批状态变化（用于移动端全局浮层）。模型身份可能晚于
+    // permission 对象到达（初始 in-progress / pin hydrate），因此身份变化也要重发。
+    const pendingPermissionModelName = this.state.pendingPermission
+      ? this._resolveDisplayedModelName()
+      : null;
+    if ((prevState.pendingPermission !== this.state.pendingPermission
+        || pendingPermissionModelName !== this._lastPendingPermissionModelName)
+        && this.props.onPendingPermission) {
       if (this.state.pendingPermission) {
         this.props.onPendingPermission({
           permission: this.state.pendingPermission,
-          modelName: this._reqScanCache?.modelName,
+          modelName: pendingPermissionModelName,
           handlers: {
             allow: this.handlePermissionAllow,
             allowSession: this.props.sdkMode ? this.handlePermissionAllowSession : null,
@@ -623,6 +669,7 @@ class ChatView extends React.Component {
       } else {
         this.props.onPendingPermission(null);
       }
+      this._lastPendingPermissionModelName = pendingPermissionModelName;
     }
     if (prevState.pendingPlanApproval !== this.state.pendingPlanApproval && this.props.onPendingPlanApproval) {
       if (this.state.pendingPlanApproval) {
@@ -801,33 +848,25 @@ class ChatView extends React.Component {
           this._incToolState = null;
           this._incToolProcessedCount = 0;
           this._incToolSessionIdx = -1;
-      this._reqScanCache = { tsToIndex: {}, modelName: null, completedModelName: null, modelNameByReqIdx: [], subAgentEntries: [], processedCount: 0, subAgentProcessedCount: 0, globalIndexState: createEmptyGlobalIndexState(), globalIndexProcessedCount: 0 };
+          this._reqScanCache = createRequestScanCache();
           this._sessionItemCache = [];
           // 会话/工作区切换：清除乐观停止标志，避免陈旧 true 泄漏到新会话
           if (this.state.stopOptimistic) this._clearStopOptimistic();
         }
         this._prevSessions = this.props.mainAgentSessions;
       }
+      // Request scanning is invalidated inside buildAllItems by object identity;
+      // keeping the cache here allows append-only updates to remain per-session.
       // 会话/工作区切换：复位「加载更早」展开量，新会话从最近窗口开始（移动端+桌面端一致）
       this._mobileExtraItems = 0;
       this.startRender();
-      if (this.state.pendingInput) {
-        this.setState({ pendingInput: null });
-      }
       this._clearPendingImages();
       this._updateSuggestion();
       this._toolFileMonitor.check();
     } else if (prevProps.requests !== this.props.requests) {
-      // requests（filteredRequests）变化但 mainAgentSessions 未变 → 重建 tsToIndex 避免索引偏移
-      this._reqScanCache.tsToIndex = {};
-      this._reqScanCache.modelName = null;
-      this._reqScanCache.completedModelName = null;
-      this._reqScanCache.modelNameByReqIdx = [];
-      this._reqScanCache.processedCount = 0;
-      this._reqScanCache.subAgentEntries = [];
-      this._reqScanCache.subAgentProcessedCount = 0;
-      this._reqScanCache.globalIndexState = createEmptyGlobalIndexState();
-      this._reqScanCache.globalIndexProcessedCount = 0;
+      // requests changed without a session-object change. buildAllItems uses
+      // needsFullReqRescan for insert/replacement and otherwise scans only the
+      // appended tail, preserving per-session model cache revisions.
       this.startRender();
       // subAgent / teammate 的 tool_result 只走 requests 路径（不进 mainAgentSessions），
       // 必须在这里也调一次刷新检查，否则它们的文件修改完全感知不到
@@ -1232,6 +1271,14 @@ class ChatView extends React.Component {
     return !this.props.cliMode && !this.props.sdkMode;
   }
 
+  _resolveDisplayedModelName() {
+    const sessions = this.props.mainAgentSessions || [];
+    const anchor = this.props.onlyCurrentSession && this.props.sessionUpperBoundTs != null
+      ? sessions[sessions.length - 1]
+      : getLatestSessionByActivity(sessions);
+    return getDisplayedSessionModelName(sessions, anchor);
+  }
+
   // teammateIdentity: only set by _buildTeammateFallbackItems (teammate session
   // logs). Assistant rows then carry the TEAMMATE's identity (label + portrait
   // via ChatMessage's teammate branch) instead of the model identity — a model
@@ -1299,7 +1346,7 @@ class ChatView extends React.Component {
       const lookupTs = resolveBubbleProducerTs(msg);
       const reqIdx = lookupTs ? tsToIndex[lookupTs] : undefined;
       const hasViewRequest = reqIdx != null && onViewRequest;
-      const modelInfo = resolveModelInfo(ts, msg.role);
+      const modelInfo = resolveModelInfo(ts, msg.role, msg);
 
       if (msg.role === 'user') {
         if (Array.isArray(content)) {
@@ -1510,31 +1557,47 @@ class ChatView extends React.Component {
       const startIdx = (!fullRescan && requests.length >= cache.processedCount) ? cache.processedCount : 0;
       if (startIdx === 0) {
         cache.tsToIndex = {};
-        cache.modelName = null;
-        cache.completedModelName = null;
         cache.modelNameByReqIdx = [];
+        cache.modelIndicesByTimestamp = {};
+        cache.sessionIdentityCandidatesByReqIdx = [];
+        cache.mainAgentByReqIdx = [];
+        cache.lastModelNameBySession = new Map();
+        cache.modelRevisionBySession = new Map();
         cache.subAgentEntries = [];
         cache.subAgentProcessedCount = 0;
         cache.globalIndexState = createEmptyGlobalIndexState();
         cache.globalIndexProcessedCount = 0;
       }
-      // carry-over 初值：从上轮末态继承，保证流式追加时非 MainAgent 或无 body.model 的 req 也能拿到"最近活跃模型"
-      let lastModelName = cache.modelName;
       for (let i = startIdx; i < requests.length; i++) {
         const req = requests[i];
         const ma = isMainAgent(req);
+        const sessionCandidates = getSessionIdentityCandidates(req);
+        // Strongest candidate is the internal logical epoch when present. A
+        // sparse frame may inherit only within that epoch; never from the
+        // previous visible conversation just because it is adjacent.
+        const sessionCarryKey = sessionCandidates[0] || null;
+        cache.sessionIdentityCandidatesByReqIdx[i] = sessionCandidates;
+        cache.mainAgentByReqIdx[i] = ma;
         if (ma && req.timestamp) {
           cache.tsToIndex[req.timestamp] = i;
+          const candidates = cache.modelIndicesByTimestamp[req.timestamp];
+          if (candidates === undefined) cache.modelIndicesByTimestamp[req.timestamp] = i;
+          else if (Array.isArray(candidates)) candidates.push(i);
+          else cache.modelIndicesByTimestamp[req.timestamp] = [candidates, i];
         }
         const effectiveModel = getEffectiveModel(req);
         if (ma && effectiveModel) {
-          lastModelName = effectiveModel;
-          cache.modelName = lastModelName;
-          // 只在 response 已到达时更新 completedModelName。
-          // 流式进行中的 request 尚无 response，不应污染"上一次已完成的模型"。
-          if (req.response) cache.completedModelName = lastModelName;
+          if (sessionCarryKey) {
+            const previousModel = cache.lastModelNameBySession.get(sessionCarryKey) || null;
+            if (fullRescan || previousModel !== effectiveModel) {
+              cache.modelRevisionBySession.set(sessionCarryKey, ++this._modelResolutionRevision);
+            }
+            cache.lastModelNameBySession.set(sessionCarryKey, effectiveModel);
+          }
         }
-        cache.modelNameByReqIdx[i] = lastModelName;
+        cache.modelNameByReqIdx[i] = effectiveModel
+          || (sessionCarryKey ? cache.lastModelNameBySession.get(sessionCarryKey) : null)
+          || null;
       }
       cache.processedCount = requests.length;
       cache.lastScannedReq = requests.length > 0 ? requests[requests.length - 1] : null;
@@ -1604,11 +1667,6 @@ class ChatView extends React.Component {
       cache.subAgentProcessedCount = requests.length;
     }
     const tsToIndex = cache.tsToIndex;
-    // Per-message resolver：1v1 严格遵从，未匹配返回 null（ChatMessage 显示中性 'MainAgent'）。
-    // assistant message 的 _timestamp 实际指向【下一轮 entry】的 ts（详见
-    // src/AppBase.jsx:184-186, src/utils/sessionMerge.js:44/50），所以 producer
-    // req idx = idx - 1；user message producer idx = idx。
-    const resolveModelInfo = (ts, role) => resolveProducerModelInfo(ts, role, tsToIndex, cache.modelNameByReqIdx);
     const subAgentEntries = cache.subAgentEntries;
 
     const allItems = [];
@@ -1664,9 +1722,19 @@ class ChatView extends React.Component {
     let subIdx = 0;
     // 仅展示当前会话：跳过更早 session 的 SubAgent entries，避免它们 bleed 进当前 session 顶部
     //（下方 forEach 对更早 session 直接 return，不会推进 subIdx，故这里先把游标快进到当前 session 起点）。
-    if (onlyCurrentSession && mainAgentSessions.length > 1) {
-      const shown = mainAgentSessions[mainAgentSessions.length - 1];
-      const shownStart = shown && shown.messages && shown.messages[0] && shown.messages[0]._timestamp;
+    const currentOnlyAnchor = onlyCurrentSession
+      ? (this.props.sessionUpperBoundTs != null
+        ? mainAgentSessions[mainAgentSessions.length - 1]
+        : getLatestSessionByActivity(mainAgentSessions))
+      : null;
+    const startSi = onlyCurrentSession
+      ? getCurrentConversationStartIndex(mainAgentSessions, currentOnlyAnchor)
+      : 0;
+    if (onlyCurrentSession && startSi > 0) {
+      // A visible conversation may begin with a cold placeholder followed by a
+      // hot fragment. Use firstTs/messages[0] from the earliest usable fragment
+      // so older SubAgent rows cannot bleed into the current-only view.
+      const shownStart = getConversationGroupStartTs(mainAgentSessions, startSi);
       if (shownStart) {
         while (subIdx < subAgentEntries.length && subAgentEntries[subIdx].timestamp < shownStart) subIdx++;
       }
@@ -1675,11 +1743,10 @@ class ChatView extends React.Component {
     // 写入 this._currentLastPendingPlanId 供 componentDidUpdate 派生 pendingPtyPlan 用。
     let buildLpid = null;
 
-    const startSi = onlyCurrentSession ? mainAgentSessions.length - 1 : 0;
     mainAgentSessions.forEach((session, si) => {
       // 仅展示当前会话：跳过当前(最末)session 之前的全部 session（含其冷占位「加载」按钮，见下方 _cold 分支）。
-      if (si < startSi) return;
-      if (si > startSi) {
+      if (onlyCurrentSession ? si !== startSi : si < startSi) return;
+      if (si > startSi && isSessionDividerBoundary(mainAgentSessions[si - 1], session)) {
         allItems.push(
           <Divider key={`session-div-${si}`} className={styles.sessionDivider}>
             <Text className={styles.sessionDividerText}>{t('ui.session')}</Text>
@@ -1708,6 +1775,27 @@ class ChatView extends React.Component {
         return; // 跳过 renderSessionMessages
       }
 
+      // Resolve against the session currently being rendered. `_generatedTs`
+      // is the exact producer when present; old logs may use the previous
+      // MainAgent only when it belongs to this same logical session. The final
+      // fallback is the model owned by this session, never the global tail.
+      const sessionIdentityCandidates = getSessionIdentityCandidates(session);
+      const sessionModelRevision = sessionIdentityCandidates.reduce(
+        (revision, candidate) => Math.max(revision, cache.modelRevisionBySession.get(candidate) || 0),
+        0,
+      );
+      const resolveModelInfo = (timestamp, role, message = null) => resolveProducerModelInfo({
+        message: message || { role, _timestamp: timestamp },
+        timestamp,
+        role,
+        tsToIndex: cache.modelIndicesByTimestamp,
+        modelNameByReqIdx: cache.modelNameByReqIdx,
+        sessionIdentityCandidatesByReqIdx: cache.sessionIdentityCandidatesByReqIdx,
+        mainAgentByReqIdx: cache.mainAgentByReqIdx,
+        sessionIdentityCandidates,
+        sessionModelName: session.modelName,
+      });
+
       // === session 级缓存判断 ===
       const sc = this._sessionItemCache[si];
       let msgs, lastPendingAskId, lastPendingPlanId;
@@ -1730,7 +1818,9 @@ class ChatView extends React.Component {
         // could resolve the producer (post-refresh race). The resolver closes
         // over caches rebuilt earlier in THIS call; the write-back below
         // persists healed elements, so later FULL HITs are same-ref and free.
-        msgs = refreshResolvedModelInfo(msgs, resolveModelInfo);
+        if (sc.modelRevision !== sessionModelRevision || sc.sessionModelName !== session.modelName) {
+          msgs = refreshResolvedModelInfo(msgs, resolveModelInfo);
+        }
         lastPendingAskId = sc.lastPendingAskId;
         lastPendingPlanId = sc.lastPendingPlanId;
       } else if (sc && sc.session === session && session.messages.length > sc.msgsLen) {
@@ -1740,7 +1830,9 @@ class ChatView extends React.Component {
         msgs = refreshCachedItemProp(sc.items, sc.planApprovalMap, mergedPlanApprovalMap, PLAN_TOOL_NAMES, 'planApprovalMap').slice();
         msgs = refreshCachedItemProp(msgs, sc.askAnswerMap, mergedAskAnswerMap, ASK_TOOL_NAMES, 'askAnswerMap');
         // Same modelInfo healing for the reused old segment (see FULL HIT above).
-        msgs = refreshResolvedModelInfo(msgs, resolveModelInfo);
+        if (sc.modelRevision !== sessionModelRevision || sc.sessionModelName !== session.modelName) {
+          msgs = refreshResolvedModelInfo(msgs, resolveModelInfo);
+        }
         // 增量 result 范围内若无新 pending plan/ask，但 sc 旧值仍未 resolved → 保留 sc 值，
         // 否则会让 modal 在 streaming 间隙短暂关闭再重弹（闪烁）。Heal logic shared
         // via interactionOwnership.healStalePendingIds (plan checks the RAW map,
@@ -1804,6 +1896,8 @@ class ChatView extends React.Component {
         // 记下本轮 planApprovalMap / askAnswerMap 引用，下轮 FULL HIT / INCREMENTAL 据此判断是否要刷新旧 element 的 prop。
         planApprovalMap: mergedPlanApprovalMap,
         askAnswerMap: mergedAskAnswerMap,
+        modelRevision: sessionModelRevision,
+        sessionModelName: session.modelName || null,
       };
       if (lastPendingPlanId) buildLpid = lastPendingPlanId;
 
@@ -1831,8 +1925,11 @@ class ChatView extends React.Component {
       // 插入剩余的 SubAgent entries（时间戳在最后一条消息之后）
       while (subIdx < subAgentEntries.length) {
         const sa = subAgentEntries[subIdx];
-        // 只插入属于当前 session 时间范围内的（下一个 session 之前的）
-        const nextSessionStart = si < mainAgentSessions.length - 1 && mainAgentSessions[si + 1].messages?.[0]?._timestamp;
+        // Chronology follows the immediate internal fragment boundary. Visible
+        // divider identity is deliberately separate: same-conversation
+        // fragments hide the divider but must not pull later SubAgent rows
+        // ahead of the next fragment's MainAgent messages.
+        const nextSessionStart = onlyCurrentSession ? null : getImmediateFragmentUpperBound(mainAgentSessions, si);
         // pin 锁在更早会话时，传入的会话已被切到「以 pin 会话结尾」，nextSessionStart 失效（无 si+1），
         // 改用 sessionUpperBoundTs（= 下一个未展示会话的起点）截断，避免更晚会话的 sub-agent 渗入。
         const bound = nextSessionStart || this.props.sessionUpperBoundTs;
@@ -2045,15 +2142,16 @@ class ChatView extends React.Component {
       return;
     }
 
-    this.setState({
+    const pendingRecord = this._createPendingInputRecord(assembled, userInput);
+    this.setState(prev => ({
       ultraplanModalOpen: false,
       ultraplanPopoverOpen: false,
       ultraplanPrompt: '',
       ultraplanVariant: 'codeExpert',
       ultraplanFiles: [],
-      pendingInput: userInput,
+      pendingInputs: [...prev.pendingInputs, pendingRecord],
       inputSuggestion: null,
-    }, () => {
+    }), () => {
       if (this.props.sdkMode) {
         this._inputWs.send(JSON.stringify({ type: 'sdk-user-message', text: assembled }));
       } else {
@@ -2457,7 +2555,12 @@ class ChatView extends React.Component {
     }
     if (!skipUiState) {
       this._clearPendingImages();
-      this.setState({ inputEmpty: true, pendingInput: text, inputSuggestion: null }, () => this.scrollToBottom());
+      const pendingRecord = this._createPendingInputRecord(text);
+      this.setState(prev => ({
+        inputEmpty: true,
+        pendingInputs: [...prev.pendingInputs, pendingRecord],
+        inputSuggestion: null,
+      }), () => this.scrollToBottom());
     }
   };
 
@@ -2537,7 +2640,12 @@ class ChatView extends React.Component {
       textarea.value = '';
       textarea.style.height = 'auto';
       this._clearPendingImages();
-      this.setState({ inputEmpty: true, pendingInput: userText || imagePaths, inputSuggestion: null }, () => this.scrollToBottom());
+      const pendingRecord = this._createPendingInputRecord(text);
+      this.setState(prev => ({
+        inputEmpty: true,
+        pendingInputs: [...prev.pendingInputs, pendingRecord],
+        inputSuggestion: null,
+      }), () => this.scrollToBottom());
       this.handleAskCancel(askId, 'Interrupted by user');
       // 数组队列代替 Map[askId] 索引：连续两次 typed-interrupt < 500ms 时（handleAskCancel 内
       // setState 还没 commit，第二次 handleInputSend 仍读到旧 askId），避免 Map.set(askId, ...)
@@ -2597,7 +2705,11 @@ class ChatView extends React.Component {
         this._inputWs.send(JSON.stringify({ type: 'input', data: '\r' }));
       }
     }, 50);
-    this.setState({ inputSuggestion: null, pendingInput: text }, () => this.scrollToBottom());
+    const pendingRecord = this._createPendingInputRecord(text);
+    this.setState(prev => ({
+      inputSuggestion: null,
+      pendingInputs: [...prev.pendingInputs, pendingRecord],
+    }), () => this.scrollToBottom());
   };
 
   handleUploadPath = (path) => {
@@ -2964,7 +3076,8 @@ class ChatView extends React.Component {
     // --- 角色收集 + 筛选 ---
     const collectedRolesMap = new Map();
     const userProfile = this.props.userProfile;
-    const modelInfo = this._reqScanCache ? getModelInfo(this._reqScanCache.modelName) : null;
+    const displayedSessionModelName = this._resolveDisplayedModelName();
+    const modelInfo = getModelInfo(displayedSessionModelName);
     for (const item of allItems) {
       if (!item || !item.props) continue;
       const role = item.props.role;
@@ -3035,12 +3148,10 @@ class ChatView extends React.Component {
         return false;
       });
       if (hasVisibleContent) {
-        // SSE streaming 消息的 modelInfo：继承"上一次已完成的 MainAgent model"，
-        // 而非当前正在进行中的 request.body.model（后者可能还没被扫到或不稳定）。
-        // completedModelName 仅在 req.response 存在时更新，流式期间永远指向上一次已完成模型。
-        // fallback 到 modelName 只是为了冷启动（从未有已完成请求时的边界情况）。
-        const cache = this._reqScanCache;
-        const streamingModelInfo = cache ? getModelInfo(cache.completedModelName || cache.modelName) : null;
+        // SDK stream-progress carries the active model explicitly. Prefer it
+        // so a session/model transition cannot flash the previous session's
+        // avatar; older producers fall back only to the displayed session.
+        const streamingModelInfo = getModelInfo(sl.model || displayedSessionModelName);
         streamingLiveItem = (
           <ChatMessage
             key="streaming-live-msg"
@@ -3084,11 +3195,23 @@ class ChatView extends React.Component {
       ? highlightVisibleIdx
       : (highlightTs != null ? visible.findIndex(item => (item.props?.displayTs || item.props?.timestamp) === highlightTs) : -1);
 
-    const { pendingInput, stickyBottom, ptyPromptHistory } = this.state;
-
-    const pendingBubble = cliMode && pendingInput ? (
-      <ChatMessage key="pending-input" role="user" text={pendingInput} lang={this.props.lang} timestamp={new Date().toISOString()} userProfile={this.props.userProfile} isHistoryLog={false} />
-    ) : null;
+    const { pendingInputs, stickyBottom, ptyPromptHistory } = this.state;
+    const _userFilteredOut = _isFiltering && !this.state.roleFilterSelected.has('user');
+    const showPendingInputs = cliMode && !_userFilteredOut && this.props.sessionUpperBoundTs == null;
+    // Derive the acknowledged view during render as well as in cdU so the
+    // server row and optimistic copy are never committed in the same frame.
+    const displayPendingInputs = reconcilePendingInputs(pendingInputs, this.state.allItems);
+    const pendingBubbles = showPendingInputs ? displayPendingInputs.map(record => (
+      <ChatMessage
+        key={record.id}
+        role="user"
+        text={getPendingInputDisplayText(record)}
+        lang={this.props.lang}
+        timestamp={record.createdAt}
+        userProfile={this.props.userProfile}
+        isHistoryLog={false}
+      />
+    )) : null;
 
     const stickyBtn = !stickyBottom ? (
       <button className={styles.stickyBottomBtn} onClick={this.handleStickToBottom}>
@@ -3132,7 +3255,7 @@ class ChatView extends React.Component {
               {loading ? <Spin size="large" /> : <Empty description={t('ui.noChat')} />}
             </div>
           ) : null}
-          {pendingBubble}
+          {pendingBubbles}
         </div>
         {stickyBtn}
       </div>
@@ -3146,7 +3269,7 @@ class ChatView extends React.Component {
           this._virtuosoHeader = loadMoreBtn,
           this._virtuosoFooter = <>
             {spinnerNode}
-            {pendingBubble}
+            {pendingBubbles}
             {streamingLiveItem && (
               targetIdx != null && targetIdx >= visible.length
                 ? <div key="stream-resp-anchor" ref={this._scrollTargetRef}>{streamingLiveItem}</div>
@@ -3577,7 +3700,7 @@ class ChatView extends React.Component {
                 pendingImages={this.state.pendingImages}
                 onRemovePendingImage={this._removePendingImage}
                 onClearPendingImages={this._clearPendingImages}
-                modelName={this._reqScanCache?.modelName}
+                modelName={displayedSessionModelName}
                 getChatScroller={() => this._getScrollContainer()}
                 onClearContextOptimistic={this.props.onClearContextOptimistic}
                 setContextBarSlot={this.props.setContextBarSlot}

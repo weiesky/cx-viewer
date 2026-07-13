@@ -47,6 +47,7 @@ test('catalog includes the Code Mode and Multi-Agent V2 tools seen in current re
 
   assert.deepEqual(byCategory.codeMode, ['exec', 'wait']);
   assert.deepEqual(byCategory.team, [
+    'collaboration',
     'spawn_agent',
     'send_message',
     'followup_task',

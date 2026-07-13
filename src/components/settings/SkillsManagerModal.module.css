@@ -89,6 +89,24 @@
   margin-bottom: 6px;
 }
 
+.readonlySkillDescription {
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.readonlySkillChip {
+  appearance: none;
+  font-family: inherit;
+  cursor: help;
+}
+
+.readonlySkillChip:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 /* Skill 管理 Modal 里的卡片 disabled 状态 + 来源徽章 */
 .skillCardDisabled {
   opacity: 0.55;

@@ -92,6 +92,11 @@ test('pty manager captures output history and exposes replay state for the web t
     assert.deepEqual(getPtyState(), { running: false, exitCode: 7 });
     assert.equal(writeToPty('after-exit'), false);
 
+    await spawnCodex(4321, tmp, ['--model', 'gpt-test'], '/bin/codex-fake', false, 7008);
+    assert.deepEqual(calls[1].args, [
+      '--model', 'gpt-test',
+    ]);
+
     removeListener();
   } finally {
     _resetPtyManagerForTests();

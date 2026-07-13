@@ -83,7 +83,7 @@ test('loaded tool extraction reads current Codex additional_tools input item', (
 test('loaded tool extraction falls back past an empty MainAgent frame in the same thread', () => {
   const tools = extractLoadedTools([
     threadedMainAgent('thread-a', [{ name: 'shell_command' }, { name: 'apply_patch' }]),
-    threadedMainAgent('thread-a', []),
+    threadedMainAgent('thread-a', undefined),
   ]);
 
   assert.equal(tools.length, 2);
@@ -97,5 +97,49 @@ test('loaded tool extraction does not borrow tools from another thread', () => {
     threadedMainAgent('thread-b', []),
   ]);
 
+  assert.deepEqual(tools, []);
+});
+
+test('loaded tool extraction reads the rolling snapshot after additional_tools was slimmed', () => {
+  const tools = extractLoadedTools([{
+    mainAgent: true,
+    _sessionId: 'session-a',
+    _slimmed: true,
+    _loadedTools: [{ name: 'exec', description: 'Run code.' }, { name: 'wait' }],
+    body: { input: [], instructions: 'You are Codex.' },
+  }]);
+
+  assert.equal(tools.length, 2);
+  assert.match(tools[0], /<name>exec<\/name>/);
+  assert.match(tools[1], /<name>wait<\/name>/);
+});
+
+test('loaded tool extraction keeps the current internal session isolated', () => {
+  const tools = extractLoadedTools([
+    {
+      mainAgent: true,
+      _sessionId: 'session-a',
+      _loadedTools: [{ name: 'stale_tool' }],
+      body: { input: [], instructions: 'You are Codex.' },
+    },
+    {
+      mainAgent: true,
+      _sessionId: 'session-b',
+      inProgress: true,
+      _loadedTools: [{ name: 'collaboration' }],
+      body: { input: [], instructions: 'You are Codex.' },
+    },
+  ]);
+
+  assert.equal(tools.length, 1);
+  assert.match(tools[0], /<name>collaboration<\/name>/);
+  assert.doesNotMatch(tools[0], /stale_tool/);
+});
+
+test('an explicit empty tool declaration clears inherited tools', () => {
+  const tools = extractLoadedTools([
+    threadedMainAgent('thread-a', [{ name: 'exec' }]),
+    threadedMainAgent('thread-a', []),
+  ]);
   assert.deepEqual(tools, []);
 });

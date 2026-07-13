@@ -11,7 +11,7 @@ import { SettingsContext } from './contexts/SettingsContext';
 import { filterRelevantRequests, isRelevantRequest, visibleRequests } from './utils/helpers';
 import { snapToPreset, stepPreset } from './utils/displayScaleHelper';
 import { getProjectAlias, subscribeToAlias } from './utils/projectAlias';
-import { isMainAgent, isSessionBoundary, getMainAgentSessionKey, setTeammateNameSeeds, clearTeammateNameSeeds } from './utils/contentFilter';
+import { isMainAgent, classifySessionTransition, getMainAgentConversationId, getMainAgentSessionKey, isPostClearCheckpoint, setTeammateNameSeeds, clearTeammateNameSeeds } from './utils/contentFilter';
 import { apiUrl, getBasePath } from './utils/apiUrl';
 import { publish as publishWorkflowUpdate } from './utils/workflowStore';
 import { reportSwallowed } from './utils/errorReport';
@@ -23,11 +23,12 @@ import { buildSessionIndex, splitHotCold, mergeSessionIndices, HOT_SESSION_COUNT
 import { mergeMainAgentSessions as _mergeMainAgentSessions, isMergeBlockedEntry } from './utils/sessionMerge';
 import { createConversationEntryNormalizer, shouldExcludeFromConversation, stampConversationMessageCount } from './utils/conversationEntryNormalize';
 import { reconstructEntries, createIncrementalReconstructor } from '../server/lib/delta-reconstructor.js';
-import { createEntrySlimmer, createIncrementalSlimmer, restoreSlimmedEntry, internMainAgentInput } from './utils/entry-slim.js';
+import { createEntrySlimmer, createIncrementalSlimmer, restoreSlimmedEntry, inheritToolSnapshotOnDedup, internMainAgentInput } from './utils/entry-slim.js';
 import { createRepeatEntryExpander } from '../lib/repeat-entry.js';
 import { yieldToMain, runChunkedPass, INGEST_BATCH_SIZE } from './utils/ingestPipeline.js';
 import { reinitializeMermaid } from './hooks/useMermaidRender';
 import { APPROVALS_REVIEWER_DEFAULT, normalizeApprovalsReviewer } from './utils/approvalReviewerOptions';
+import { getContextCompactionEpochKey, loadExcludedContextCompactionEpoch, saveExcludedContextCompactionEpoch } from './utils/contextCompaction';
 import styles from './App.module.css';
 
 export { styles };
@@ -175,6 +176,11 @@ class AppBase extends React.Component {
     this.eventSource = null;
     this._liveConversationNormalizer = createConversationEntryNormalizer();
     this._currentSessionId = null;
+    // Track the pre-/clear logical session id. Persistence is project-scoped
+    // and only committed after a real post-clear checkpoint is observed.
+    this._contextCompactionExcludedEpoch = null;
+    this._contextCompactionCommittedExcludedEpoch = null;
+    this._contextCompactionPendingExcludedEpoch = null;
     // pin 竞态守卫（_maintainPinState/_hydratePin/session_pin SSE 用）：
     //  _isHydratingPin   — 服务端 pin 的 GET 在途；期间禁 lazy-lock + 禁 persist，防抢在真值返回前误锁/回写。
     //  _applyingRemotePin — 正在采纳服务端值（hydrate/SSE）；期间禁 persist，防把服务端值当本地改动回 POST（防回环）。
@@ -522,6 +528,27 @@ class AppBase extends React.Component {
     return resolveDisplaySessions(mainAgentSessions, this.state.pinnedSessionTs, this._effectiveOnlyCurrentSession());
   }
 
+  _setContextCompactionStorageScope(projectName, instanceId = null) {
+    const scope = typeof instanceId === 'string' && instanceId
+      ? `instance:${instanceId}`
+      : (typeof projectName === 'string' && projectName ? `project:${projectName}` : null);
+    this._contextCompactionStorageScope = scope;
+    const committed = loadExcludedContextCompactionEpoch(scope);
+    this._contextCompactionCommittedExcludedEpoch = committed;
+    this._contextCompactionPendingExcludedEpoch = null;
+    this._contextCompactionExcludedEpoch = committed;
+  }
+
+  _observeSuccessfulContextClear(entry) {
+    if (this._contextCompactionPendingExcludedEpoch === null
+        || !isPostClearCheckpoint(entry, Number.MAX_SAFE_INTEGER)) return;
+    const committed = this._contextCompactionPendingExcludedEpoch;
+    this._contextCompactionPendingExcludedEpoch = null;
+    this._contextCompactionCommittedExcludedEpoch = committed;
+    this._contextCompactionExcludedEpoch = committed;
+    saveExcludedContextCompactionEpoch(committed, this._contextCompactionStorageScope);
+  }
+
   /**
    * 单次遍历完成 timestamp 赋值 + session 构建 + 过滤 + index 重建。
    * 合并 assignMessageTimestamps + buildSessionsFromEntries + filterRelevantRequests + _rebuildRequestIndex，
@@ -550,6 +577,7 @@ class AppBase extends React.Component {
       prevMainAgentTs: null,      // 上一次 mainAgent entry 的 ts，给本次新增 assistant msg 赋
       prevUserId: null,
       prevSessionKey: null,
+      prevConversationId: null,
       sessions: [],
       filtered: [],
       currentSessionId: null,
@@ -585,6 +613,7 @@ class AppBase extends React.Component {
 
     // assignTimestamps + buildSessions（仅 mainAgent）
     if (!conversationExcluded && isMainAgent(conversationEntry) && conversationEntry.body && Array.isArray(conversationEntry.body.input)) {
+      this._observeSuccessfulContextClear(conversationEntry);
       // Boundary detection + positional timestamp accumulation extracted to
       // applyBatchEntryTimestamps (sessionManager.js) — shares isSessionBoundary
       // with the live SSE path (_flushPendingEntries) so batch reload and live
@@ -593,10 +622,26 @@ class AppBase extends React.Component {
       // KEEP IN SYNC: test/session-boundary-parity.test.js runBatchLeg mirrors
       // this slim → applyBatchEntryTimestamps → merge call order.
       applyBatchEntryTimestamps(st, conversationEntry);
+      // Stamp the authoritative logical session before merge so every rendered
+      // session fragment carries the same divider identity as entry._sessionId.
+      conversationEntry._sessionId = st.currentSessionId;
+      entry._sessionId = st.currentSessionId;
 
       // session 合并（跳过 _slimmed；批量路径额外跳过 stale/broken/inProgress，见谓词 JSDoc）
       if (!conversationEntry._slimmed && !mergeBlocked) {
         st.sessions = this.mergeMainAgentSessions(st.sessions, conversationEntry);
+      } else if (!conversationEntry._slimmed && conversationEntry.inProgress === true) {
+        // A cached log may end on the first in-progress frame of a new epoch.
+        // Own its session/model metadata without merging partial conversation
+        // input; the later finalized dedup fills this placeholder in place.
+        const last = st.sessions[st.sessions.length - 1];
+        if (!last || last.sessionId !== st.currentSessionId) {
+          const metadataEntry = {
+            ...conversationEntry,
+            body: { ...conversationEntry.body, input: [] },
+          };
+          st.sessions = this.mergeMainAgentSessions(st.sessions, metadataEntry, { skipTransientFilter: true });
+        }
       }
     }
 
@@ -926,6 +971,7 @@ class AppBase extends React.Component {
       .then(data => {
         const projectName = data.projectName || '';
         const instanceId = data.instanceId || null;
+        this._setContextCompactionStorageScope(projectName, instanceId);
         // instanceId 与 projectName 同批入 state；标题在回调里应用，确保读到已更新的 instanceId。
         this.setState({ projectName, instanceId }, () => this._applyDocTitle(projectName));
         this._resubscribeAlias(projectName);
@@ -1531,6 +1577,7 @@ class AppBase extends React.Component {
           // (getSessionStableId(null) || this._currentSessionId) 会拿旧项目的会话 id 误锁新项目，
           // 在 hydrate GET 抢先返回前可能把旧 id POST 进新项目的 pin 文件。
           this._currentSessionId = null;
+          this._setContextCompactionStorageScope(data.projectName || '', data.instanceId || null);
           // SSE workspace switch — rebind alias subscription to the new
           // project before writing the title so the title reflects the new
           // alias if one exists. _applyDocTitle handles the "no alias"
@@ -1827,6 +1874,7 @@ class AppBase extends React.Component {
         const existingIndex = this._requestIndexMap.get(key);
 
         if (existingIndex !== undefined) {
+          inheritToolSnapshotOnDedup(requests[existingIndex], entry);
           requests[existingIndex] = entry;
           if (this._sseSlimmer) this._sseSlimmer.onDedup(existingIndex);
         } else {
@@ -1852,6 +1900,7 @@ class AppBase extends React.Component {
           ? entry
           : this._liveConversationNormalizer(entry, { commit: !mergeBlocked });
         if (!conversationExcluded && isMainAgent(conversationEntry) && conversationEntry.body && Array.isArray(conversationEntry.body.input) && !conversationEntry._slimmed && !mergeBlocked) {
+          this._observeSuccessfulContextClear(conversationEntry);
           const timestamp = conversationEntry.timestamp || new Date().toISOString();
           const lastSession = mainAgentSessions.length > 0 ? mainAgentSessions[mainAgentSessions.length - 1] : null;
           const prevMessages = lastSession?.messages || [];
@@ -1862,6 +1911,7 @@ class AppBase extends React.Component {
 
           const userId = conversationEntry.body.metadata?.user_id || null;
           const sessionKey = getMainAgentSessionKey(conversationEntry);
+          const conversationId = getMainAgentConversationId(conversationEntry);
           // Session-boundary detection shares isSessionBoundary (clearCheckpoint.js)
           // with the batch path (applyBatchEntryTimestamps) so live streaming and
           // reload segment sessions identically: post-/clear checkpoint always
@@ -1873,14 +1923,18 @@ class AppBase extends React.Component {
           // yielding two sessions with the SAME stable id and a mis-resolved pin).
           // KEEP IN SYNC: test/session-boundary-parity.test.js runLiveLeg mirrors
           // this boundary → assignMessageTimestamps → in-place/merge call order.
-          const isNewSession = isSessionBoundary(conversationEntry, {
+          const transition = classifySessionTransition(conversationEntry, {
             prevCount,
             count: messageCount,
             prevUserId: lastSession ? lastSession.userId : null,
             userId,
             prevSessionKey: lastSession ? lastSession.sessionKey || null : null,
             sessionKey,
+            prevConversationId: lastSession ? lastSession.conversationId || null : null,
+            conversationId,
           });
+          const isNewSession = transition.isBoundary;
+          conversationEntry._sessionBoundaryReason = transition.reason;
 
           // SSE 实时流每条 entry 都是完整 request+response，不存在"中间态"；
           // 历史代码曾在此处 `if (isTransient) continue` 跳过极短 entry 防中间态污染，
@@ -1897,6 +1951,7 @@ class AppBase extends React.Component {
           } else if (this._currentSessionId === null) {
             this._currentSessionId = timestamp;
           }
+          conversationEntry._sessionId = this._currentSessionId;
 
           // 赋 _timestamp 和 _generatedTs（assistant 角色新增 msg 拿 prevMainAgentTs 反映生成时 ts）
           assignMessageTimestamps(messages, prevMessages, isNewSession, prevCount, timestamp, this._prevMainAgentTs, messageOffset);
@@ -2075,10 +2130,28 @@ class AppBase extends React.Component {
   // 同时进入 locked 状态：忽略 SSE / 其他 re-render，强制血条 0K (0%)，直到用户
   // 通过 _sendUserMessageImmediate 发出一条非 /clear 消息（见 handleUserMessageSent）。
   handleClearContextOptimistic = () => {
+    // Exclude the logical session being cleared. The next clear checkpoint is
+    // assigned a new _sessionId by the shared live/batch session pipeline.
+    let epoch = this._currentSessionId || null;
+    for (let i = this.state.requests.length - 1; i >= 0; i--) {
+      if (!isMainAgent(this.state.requests[i])) continue;
+      epoch = getContextCompactionEpochKey(this.state.requests[i]) || epoch;
+      break;
+    }
+    this._contextCompactionExcludedEpoch = epoch;
+    this._contextCompactionPendingExcludedEpoch = epoch;
     this.setState({ contextBarOptimistic: true, contextBarLocked: true });
     if (this._clearOptimisticTimer) clearTimeout(this._clearOptimisticTimer);
     this._clearOptimisticTimer = setTimeout(() => {
-      this.setState({ contextBarOptimistic: false });
+      const clearFailed = this._contextCompactionPendingExcludedEpoch !== null;
+      if (clearFailed) {
+        this._contextCompactionPendingExcludedEpoch = null;
+        this._contextCompactionExcludedEpoch = this._contextCompactionCommittedExcludedEpoch;
+      }
+      this.setState({
+        contextBarOptimistic: false,
+        ...(clearFailed ? { contextBarLocked: false } : {}),
+      });
       this._clearOptimisticTimer = null;
     }, 30000);
   };
@@ -2093,6 +2166,7 @@ class AppBase extends React.Component {
   handleWorkspaceLaunch = ({ projectName }) => {
     this._isLocalLog = false;
     this._localLogFile = null;
+    this._setContextCompactionStorageScope(projectName || '');
     // 切 project：清掉旧 project 残留的 /clear optimistic 30s timer，避免延迟到新 project 触发。
     if (this._clearOptimisticTimer) {
       clearTimeout(this._clearOptimisticTimer);

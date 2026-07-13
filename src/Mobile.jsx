@@ -7,7 +7,8 @@ import { isMainAgent, classifyUserContent, extractDisplayText } from './utils/co
 import { parseImOrigin } from './utils/imOrigin';
 import { sortSkillsDefault } from './utils/skillsParser';
 import { handleSkillToggle, handleSkillDelete } from './utils/skillModalController';
-import { getEffectiveModel, computeContextPercent, sumUsageContextTokens } from './utils/helpers';
+import { getDisplayedSessionModelName, computeContextPercent, sumUsageContextTokens } from './utils/helpers';
+import { getLatestSessionByActivity } from './utils/sessionManager';
 import { contextSeverityColor } from './utils/formatters';
 import { PLAN_AUTO_APPROVE_OPTIONS, autoApproveSelectOptions } from './utils/autoApproveOptions';
 import { approvalReviewerSelectOptions } from './utils/approvalReviewerOptions';
@@ -514,11 +515,13 @@ class Mobile extends AppBase {
     }
 
     const mobileIsLocalLog = !!this._isLocalLog;
-    let mobileModelName = null;
-    for (let i = filteredRequests.length - 1; i >= 0; i--) {
-      const effective = getEffectiveModel(filteredRequests[i]);
-      if (isMainAgent(filteredRequests[i]) && effective) { mobileModelName = effective; break; }
-    }
+    // Header identity follows the conversation actually displayed after the
+    // current-session/pin slice, rather than whichever request happened to be
+    // the global log tail.
+    const mobileDisplayAnchor = (!mobileIsLocalLog && prefs.onlyCurrentSession && sessionUpperBoundTs != null)
+      ? displaySessions[displaySessions.length - 1]
+      : getLatestSessionByActivity(displaySessions);
+    const mobileModelName = getDisplayedSessionModelName(displaySessions, mobileDisplayAnchor);
 
     // contextPercent 计算抽到 render 顶部：header 血条 + 抽屉里的 CachePopoverContent 都要用同一份。
     // 与原 IIFE 同语义；side effect（_lastContextPercent 更新）也搬上来一次性做完。
@@ -899,6 +902,9 @@ class Mobile extends AppBase {
                   <CachePopoverContent
                     inDrawer
                     requests={filteredRequests}
+                    toolRequests={this.state.requests}
+                    contextCompactionRequests={this.state.requests}
+                    contextCompactionAnchorEpoch={mobileDisplayAnchor?.sessionId || null}
                     contextPercent={mobileContextPercent}
                     contextTokens={mobileContextTokens}
                     fsSkills={this.state._fsSkills}
@@ -910,6 +916,8 @@ class Mobile extends AppBase {
                     onOpenMemoryDetail={this.loadMemoryDetail}
                     onOpenCodexMd={this.loadCodexMdDetail}
                     onRefreshMemory={this.handleRefreshMemory}
+                    contextCompactionSuppressed={this.state.contextBarLocked}
+                    contextCompactionExcludedEpoch={mobileIsLocalLog ? null : this._contextCompactionExcludedEpoch}
                   />
                 )}
               </div>

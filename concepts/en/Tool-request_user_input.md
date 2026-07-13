@@ -1,6 +1,6 @@
 # request_user_input
 
-`request_user_input` asks the user one to three structured short questions in Plan mode. Use it only when the answer is genuinely useful for unblocking or materially improving the plan.
+`request_user_input` asks the user one to three structured short questions when it is loaded in the current tool catalog; it is available in both Default and Plan modes. In Default mode, prefer safe, reasonable assumptions and continued execution, and use it only when a missing user choice would create material risk or genuinely block progress.
 
 Fields:
 

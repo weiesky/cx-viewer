@@ -63,6 +63,37 @@ export function mergeActiveSkills(fsSkills, historicalSkills) {
   return [...out.values()];
 }
 
+// Context-pollution warnings are actionable only for skills the user controls
+// directly. Plugin and builtin skills remain visible in the total chip list but
+// do not count toward the warning thresholds.
+export function countActiveUserSkills(fsSkills) {
+  if (!Array.isArray(fsSkills)) return 0;
+  const names = new Set();
+  for (const s of fsSkills) {
+    if (!s || !s.enabled || (s.source !== 'user' && s.source !== 'project')) continue;
+    const name = skillToDisplayName(s);
+    if (name && !BUILTIN_SKILL_NAMES.has(name)) names.add(name);
+  }
+  return names.size;
+}
+
+// The filesystem API is authoritative about skill source and enabled state.
+// If it is loading/failed, retain the historical system-reminder behavior as a
+// best-effort fallback instead of silently suppressing all warnings.
+export function countSkillWarningCandidates(fsSkills, historicalSkills = []) {
+  if (Array.isArray(fsSkills)) return countActiveUserSkills(fsSkills);
+  const names = new Set();
+  for (const skill of historicalSkills || []) {
+    const name = typeof skill?.name === 'string' ? skill.name : '';
+    // System reminders serialize plugin skills as `<plugin>:<skill>`. When the
+    // filesystem API is unavailable we cannot recover richer source metadata,
+    // so exclude that namespaced form conservatively rather than blaming
+    // plugin-provided skills for user-controlled context pollution.
+    if (name && !name.includes(':') && !BUILTIN_SKILL_NAMES.has(name)) names.add(name);
+  }
+  return names.size;
+}
+
 // 从 <user_instructions> 内部文本里抽出 skills 列表。
 // 识别 header 句 "skills are available for use with the Skill tool" 后，按行扫描
 // `- <name>: <desc>` 格式；name 内允许冒号（plugin:foo / skill-creator:skill-creator

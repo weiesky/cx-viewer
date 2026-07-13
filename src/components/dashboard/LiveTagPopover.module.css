@@ -1,6 +1,9 @@
 /* Re-homed from dashboard/AppHeader.module.css — owned by LiveTagPopover. */
 
 .liveTag {
+  appearance: none;
+  font-family: inherit;
+  cursor: pointer;
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -17,6 +20,11 @@
   transition: border-color 0.3s, color 0.3s;
   white-space: nowrap;
   background: var(--bg-base-pure);
+}
+
+.liveTag:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 

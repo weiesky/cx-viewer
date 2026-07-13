@@ -671,6 +671,9 @@ class AppHeader extends React.Component {
   shouldComponentUpdate(nextProps, nextState) {
     return (
       nextProps.requests !== this.props.requests ||
+      nextProps.toolRequests !== this.props.toolRequests ||
+      nextProps.contextCompactionRequests !== this.props.contextCompactionRequests ||
+      nextProps.contextCompactionAnchorEpoch !== this.props.contextCompactionAnchorEpoch ||
       nextProps.requestCount !== this.props.requestCount ||
       nextProps.viewMode !== this.props.viewMode ||
       nextProps.isLocalLog !== this.props.isLocalLog ||
@@ -685,6 +688,7 @@ class AppHeader extends React.Component {
       nextProps.contextWindow !== this.props.contextWindow ||
       nextProps.contextBarOptimistic !== this.props.contextBarOptimistic ||
       nextProps.contextBarLocked !== this.props.contextBarLocked ||
+      nextProps.contextCompactionExcludedEpoch !== this.props.contextCompactionExcludedEpoch ||
       nextProps.contextBarSlot !== this.props.contextBarSlot ||
       nextProps.resumeAutoChoice !== this.props.resumeAutoChoice ||
       nextProps.themeColor !== this.props.themeColor ||
@@ -1259,7 +1263,7 @@ class AppHeader extends React.Component {
     const slot = this.props.contextBarSlot;
     if (!slot) return null;
 
-    const { requests = [], isLocalLog, localLogFile, projectName, contextWindow, contextBarOptimistic, contextBarLocked } = this.props;
+    const { requests = [], toolRequests, contextCompactionRequests, contextCompactionAnchorEpoch, isLocalLog, localLogFile, projectName, contextWindow, contextBarOptimistic, contextBarLocked, contextCompactionExcludedEpoch } = this.props;
 
     // 计算上下文使用率:原始占用比(used / 窗口全量),与 Codex /context 口径一致。
     // 分子 sumUsageContextTokens = input + output；含末轮 output 是因为它已进入下一轮上下文。
@@ -1305,6 +1309,9 @@ class AppHeader extends React.Component {
         cachePopoverOpen={this.state._cachePopoverOpen}
         onOpenChange={this.handleCachePopoverOpenChange}
         requests={requests}
+        toolRequests={toolRequests}
+        contextCompactionRequests={contextCompactionRequests}
+        contextCompactionAnchorEpoch={contextCompactionAnchorEpoch}
         contextPercent={contextPercent}
         contextTokens={contextTokens}
         ctxColor={ctxColor}
@@ -1319,6 +1326,8 @@ class AppHeader extends React.Component {
         onRefreshMemory={this.handleRefreshMemory}
         onToolsCatalogOpenChange={this._setToolsCatalogOpen}
         projectName={projectName}
+        contextCompactionSuppressed={contextBarLocked}
+        contextCompactionExcludedEpoch={isLocalLog ? null : contextCompactionExcludedEpoch}
       />,
       slot
     );

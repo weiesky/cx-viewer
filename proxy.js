@@ -158,15 +158,85 @@ export function resolveUpstream(reqUrl, headers = {}) {
 
 let _proxyServer = null;
 
+const MODEL_OBSERVE_LIMIT = 256 * 1024;
+
+function normalizeObservedModel(value) {
+  if (typeof value !== 'string') return null;
+  const model = value.trim();
+  return model && model.length <= 256 ? model : null;
+}
+
+/** Inspect only the bounded SSE/JSON prefix needed to learn response.model. */
+export async function observeResponseModelStream(stream, onModel) {
+  if (!stream || typeof stream.getReader !== 'function' || typeof onModel !== 'function') return null;
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+  let lineBuffer = '';
+  let jsonSource = '';
+  let bytes = 0;
+  let lastModel = null;
+  const emitModel = (value) => {
+    const model = normalizeObservedModel(value);
+    if (!model || model === lastModel) return;
+    lastModel = model;
+    onModel(model);
+  };
+  try {
+    while (bytes < MODEL_OBSERVE_LIMIT) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      const remaining = MODEL_OBSERVE_LIMIT - bytes;
+      const bounded = value?.byteLength > remaining ? value.subarray(0, remaining) : value;
+      bytes += bounded?.byteLength || 0;
+      const text = decoder.decode(bounded, { stream: true });
+      jsonSource += text;
+      lineBuffer += text;
+      const lines = lineBuffer.split(/\r?\n/);
+      lineBuffer = lines.pop() || '';
+      for (const line of lines) {
+        if (!line.startsWith('data:')) continue;
+        const payload = line.startsWith('data:') ? line.slice(5).trim() : line.trim();
+        if (!payload || payload === '[DONE]') continue;
+        try {
+          const event = JSON.parse(payload);
+          emitModel(event?.response?.model || event?.model);
+        } catch { /* wait for another complete SSE/JSON line */ }
+      }
+    }
+    const tail = decoder.decode();
+    jsonSource += tail;
+    lineBuffer += tail;
+    if (lineBuffer.startsWith('data:')) {
+      try {
+        const event = JSON.parse(lineBuffer.slice(5).trim());
+        emitModel(event?.response?.model || event?.model);
+      } catch { }
+    }
+    try {
+      const event = JSON.parse(jsonSource.trim());
+      emitModel(event?.response?.model || event?.model);
+    } catch { /* bounded prefix did not contain model metadata */ }
+    return lastModel;
+  } finally {
+    try { await reader.cancel(); } catch { }
+    try { reader.releaseLock(); } catch { }
+  }
+}
+
 export function stopProxy() {
   if (_proxyServer) {
-    try { _proxyServer.close(); } catch { }
+    const server = _proxyServer;
+    try { server.close(); } catch { }
+    // SDK clients keep HTTP connections alive. A plain close() waits for those
+    // sockets and can keep tests/process shutdown alive indefinitely.
+    try { server.closeIdleConnections?.(); } catch { }
+    try { server.closeAllConnections?.(); } catch { }
     _proxyServer = null;
   }
   _proxyOwnPort = null;
 }
 
-export function startProxy() {
+export function startProxy({ onResponseModel = null } = {}) {
   return ensureProxyInterceptor().then(() => new Promise((resolve, reject) => {
     const server = createServer(async (req, res) => {
       // Normalize the request target. When a client (or an upstream HTTP proxy
@@ -252,8 +322,14 @@ export function startProxy() {
 
         if (response.body) {
           const { Readable, pipeline } = await import('node:stream');
+          let responseBody = response.body;
+          if (typeof onResponseModel === 'function' && typeof responseBody.tee === 'function') {
+            const [forwardBody, inspectBody] = responseBody.tee();
+            responseBody = forwardBody;
+            void observeResponseModelStream(inspectBody, onResponseModel).catch(() => {});
+          }
           // @ts-ignore
-          const nodeStream = Readable.fromWeb(response.body);
+          const nodeStream = Readable.fromWeb(responseBody);
           // 持久 error handler 兜底：防止 pipeline 清理后延迟到达的 error 事件导致进程崩溃
           nodeStream.on('error', () => {});
           // pipeline handles stream errors; without this, unhandled 'error' events crash the process.

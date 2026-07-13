@@ -16,6 +16,7 @@
  * @returns {boolean}
  */
 export function isPostClearCheckpoint(entry, prevMessageCount = 0) {
+  if (entry?._postClearCheckpoint === true) return true;
   if (!entry || entry._isCheckpoint !== true) return false;
   const msgs = entry.body && entry.body.input;
   if (!Array.isArray(msgs) || msgs.length === 0) return false;
@@ -106,6 +107,48 @@ export function getMainAgentSessionKey(entry) {
 }
 
 /**
+ * Authoritative identity for user-visible conversation boundaries.
+ *
+ * `_sessionId` is an internal timestamp-based storage group and may change on
+ * heuristic splits (clear checkpoints, truncated snapshots, user changes). It
+ * must therefore not drive the visible "Session" divider. Prefer the upstream
+ * session id when present and fall back to Codex's durable thread id.
+ */
+export function getMainAgentConversationId(entry) {
+  const body = entry?.body || {};
+  const metadata = { ...(body.metadata || {}), ...(body.client_metadata || {}) };
+  const sessionId = metadata.session_id || metadata.sessionId
+    || body.session_id || body.sessionId
+    || entry?.session_id || entry?.sessionId || null;
+  if (sessionId) return `session:${sessionId}`;
+
+  const threadId = metadata.thread_id || metadata.threadId
+    || metadata.conversation_id || metadata.conversationId
+    || body.thread_id || body.threadId
+    || entry?.thread_id || entry?.threadId
+    || entry?._threadId || entry?._agentThreadId || null;
+  return threadId ? `thread:${threadId}` : null;
+}
+
+function conversationIdKind(value) {
+  if (typeof value !== 'string') return null;
+  if (value.startsWith('session:')) return 'session';
+  if (value.startsWith('thread:')) return 'thread';
+  return null;
+}
+
+/** Optional session_id must not conflict with the same frame's thread fallback. */
+export function conversationIdsConflict(previousId, currentId) {
+  if (!previousId || !currentId || previousId === currentId) return false;
+  const previousKind = conversationIdKind(previousId);
+  const currentKind = conversationIdKind(currentId);
+  // Compare only like-for-like identities. A full frame may expose session_id
+  // while a sparse delta exposes only thread_id; the shared sessionKey check
+  // below remains authoritative for that mixed-strength transition.
+  return previousKind !== null && previousKind === currentKind;
+}
+
+/**
  * Shared session-boundary predicate — the single source of truth for "does this
  * mainAgent entry start a NEW logical session?", used by BOTH the batch path
  * (applyBatchEntryTimestamps → _processOneEntry) and the live SSE path
@@ -141,14 +184,52 @@ export function getMainAgentSessionKey(entry) {
  * @param {string|null} ctx.userId - this entry's user_id
  * @param {string|null} [ctx.prevSessionKey] - previous Codex thread/upstream lane key
  * @param {string|null} [ctx.sessionKey] - current Codex thread/upstream lane key
- * @returns {boolean}
+ * @param {string|null} [ctx.prevConversationId] - previous authoritative session/thread id
+ * @param {string|null} [ctx.conversationId] - current authoritative session/thread id
+ * @returns {string|null} boundary reason, or null when the logical epoch continues
  */
-export function isSessionBoundary(entry, { prevCount, count, prevUserId, userId, prevSessionKey = null, sessionKey = null }) {
-  if (isPostClearCheckpoint(entry, prevCount)) return true;
-  if (prevCount > 0 && prevSessionKey && sessionKey && sessionKey !== prevSessionKey) return true;
+export function getSessionBoundaryReason(entry, {
+  prevCount,
+  count,
+  prevUserId,
+  userId,
+  prevSessionKey = null,
+  sessionKey = null,
+  prevConversationId = null,
+  conversationId = null,
+}) {
+  if (isPostClearCheckpoint(entry, prevCount)) return 'clear';
+  if (prevCount > 0 && conversationIdsConflict(prevConversationId, conversationId)) {
+    return 'conversation';
+  }
+  if (prevCount > 0 && prevSessionKey && sessionKey && sessionKey !== prevSessionKey) return 'session-key';
   const bigDrop = prevCount > 0 && count < prevCount * 0.5 && (prevCount - count) > 4;
   const compactLike = (entry && entry._compactContinuation === true) || isCompactContinuation(entry);
-  if (bigDrop && !compactLike) return true;
-  if (prevCount > 0 && prevUserId && userId && userId !== prevUserId) return true;
-  return false;
+  if (bigDrop && !compactLike) return 'history-drop';
+  if (prevCount > 0 && prevUserId && userId && userId !== prevUserId) return 'user';
+  return null;
+}
+
+/** Shared live/batch transition decision, including explicit in-progress filtering. */
+export function classifySessionTransition(entry, context, { splitCompactHistoryDrop = false } = {}) {
+  let reason = getSessionBoundaryReason(entry, context);
+  const prevCount = context?.prevCount || 0;
+  const count = context?.count || 0;
+  const bigDrop = prevCount > 0 && count < prevCount * 0.5 && (prevCount - count) > 4;
+  const compactLike = entry?._compactContinuation === true || isCompactContinuation(entry);
+  if (!reason && splitCompactHistoryDrop && bigDrop && compactLike) reason = 'compact-storage';
+  const transient = entry?.inProgress === true
+    && reason === 'history-drop'
+    && count <= 4
+    && prevCount > 4;
+  return {
+    reason: transient ? null : reason,
+    rawReason: reason,
+    isBoundary: reason !== null && !transient,
+    isTransient: transient,
+  };
+}
+
+export function isSessionBoundary(entry, context) {
+  return getSessionBoundaryReason(entry, context) !== null;
 }

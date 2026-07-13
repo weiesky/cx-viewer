@@ -50,6 +50,7 @@
   --color-primary-shadow: rgba(22, 104, 220, 0.6);
   /* Success (green) */
   --color-success: #22c55e;
+  --color-success-text: #4ade80;
   --color-success-light: #4ade80;
   --color-success-dark: #2ea043;
   --color-success-bg-light: rgba(34, 197, 94, 0.15);
@@ -203,6 +204,7 @@
   --color-primary-shadow: rgba(9, 105, 218, 0.3);
   /* Success (green) */
   --color-success: #1A7F37;
+  --color-success-text: #116329;
   --color-success-light: #2DA44E;
   --color-success-dark: #116329;
   --color-success-bg-light: rgba(26, 127, 55, 0.08);

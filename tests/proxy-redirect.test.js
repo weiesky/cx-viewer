@@ -2,12 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer, request as httpRequest } from 'node:http';
 import { once } from 'node:events';
+import { gzipSync } from 'node:zlib';
 
 import { resolveUpstream, isOAuthRequest, _setProxyOwnPortForTests, startProxy, stopProxy } from '../proxy.js';
 
 const OAUTH_HEADERS = { 'chatgpt-account-id': 'acct-123', authorization: 'Bearer oauth-token' };
 const APIKEY_HEADERS = { authorization: 'Bearer sk-test' };
-
 test.beforeEach(() => {
   process.env.CXV_ORIGINAL_BASE_URL = 'https://api.openai.com/v1';
   process.env.CXV_ORIGINAL_CHATGPT_BASE_URL = 'https://chatgpt.com/backend-api/codex';
@@ -33,7 +33,7 @@ test('OAuth request strips /v1 and routes to chatgpt backend', () => {
   assert.equal(fullUrl, 'https://chatgpt.com/backend-api/codex/responses');
 });
 
-test('query string is preserved through rewrite', () => {
+test('query string is preserved through routing', () => {
   const { fullUrl } = resolveUpstream('/v1/responses?x=1', OAUTH_HEADERS);
   assert.equal(fullUrl, 'https://chatgpt.com/backend-api/codex/responses?x=1');
 });
@@ -60,34 +60,71 @@ test('proxy forwards to the correct upstream host/path and preserves auth header
   // Mock upstream that records what it received.
   let seen = null;
   const upstream = createServer((req, res) => {
-    seen = { url: req.url, headers: req.headers };
-    res.writeHead(200, { 'content-type': 'application/json' });
-    res.end('{"ok":true}');
+    const chunks = [];
+    req.on('data', chunk => chunks.push(chunk));
+    req.on('end', () => {
+      seen = { url: req.url, headers: req.headers, body: Buffer.concat(chunks) };
+      res.writeHead(200, { 'content-type': 'text/event-stream' });
+      res.end('data: {"type":"response.created","response":{"model":"gpt-observed"}}\n\ndata: [DONE]\n\n');
+    });
   });
   upstream.listen(0, '127.0.0.1');
   await once(upstream, 'listening');
   const upstreamPort = upstream.address().port;
 
   process.env.CXV_ORIGINAL_CHATGPT_BASE_URL = `http://127.0.0.1:${upstreamPort}/backend-api/codex`;
-  const proxyPort = await startProxy();
+  let resolveObserved;
+  const observedModel = new Promise(resolve => { resolveObserved = resolve; });
+  const proxyPort = await startProxy({ onResponseModel: resolveObserved });
+  const compressedBody = gzipSync('{"model":"gpt-test","counter":9007199254740993}');
   try {
     const res = await fetch(`http://127.0.0.1:${proxyPort}/v1/responses`, {
       method: 'POST',
-      headers: { ...OAUTH_HEADERS, 'content-type': 'application/json' },
-      body: '{"model":"gpt"}',
+      headers: { ...OAUTH_HEADERS, 'content-type': 'application/json', 'content-encoding': 'gzip' },
+      body: compressedBody,
     });
     assert.equal(res.status, 200);
+    await res.text();
+    assert.equal(await observedModel, 'gpt-observed');
     assert.ok(seen, 'upstream received a request');
     assert.equal(seen.url, '/backend-api/codex/responses');
     assert.equal(seen.headers['chatgpt-account-id'], 'acct-123');
     assert.equal(seen.headers['authorization'], 'Bearer oauth-token');
+    assert.equal(seen.headers['content-encoding'], 'gzip');
     // Accept-Encoding is forced to identity so the SSE stream comes back plain.
     assert.equal(seen.headers['accept-encoding'], 'identity');
+    assert.deepEqual(seen.body, compressedBody, 'proxy must forward request bytes verbatim');
   } finally {
     stopProxy();
     upstream.close();
     await once(upstream, 'close');
   }
+});
+
+test('response model observation keeps watching through reroute completion and multiline JSON', async () => {
+  const observed = [];
+  const encoder = new TextEncoder();
+  const sse = new ReadableStream({
+    start(controller) {
+      controller.enqueue(encoder.encode('data: {"type":"response.created","response":{"model":"model-a"}}\n\n'));
+      controller.enqueue(encoder.encode('data: {"type":"response.completed","response":{"model":"model-b"}}\n\n'));
+      controller.close();
+    },
+  });
+  const { observeResponseModelStream } = await import('../proxy.js');
+  assert.equal(await observeResponseModelStream(sse, model => observed.push(model)), 'model-b');
+  assert.deepEqual(observed, ['model-a', 'model-b']);
+
+  const jsonObserved = [];
+  const json = new ReadableStream({
+    start(controller) {
+      controller.enqueue(encoder.encode('{\n  "response": {\n'));
+      controller.enqueue(encoder.encode('    "model": "pretty-model"\n  }\n}'));
+      controller.close();
+    },
+  });
+  assert.equal(await observeResponseModelStream(json, model => jsonObserved.push(model)), 'pretty-model');
+  assert.deepEqual(jsonObserved, ['pretty-model']);
 });
 
 test('absolute-form request target (via upstream HTTP proxy) is normalized to path', async () => {

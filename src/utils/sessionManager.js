@@ -1,6 +1,7 @@
 // Wire format 协议详见 docs/WIRE_FORMAT.md（applyInPlaceLastMsgReplace 信号驱动短路是其客户端唯一消费方）
 import { parseImOrigin } from './imOrigin.js';
-import { isSessionBoundary, isPostClearCheckpoint, getMainAgentSessionKey } from './clearCheckpoint.js';
+import { classifySessionTransition, conversationIdsConflict, getMainAgentConversationId, isPostClearCheckpoint, getMainAgentSessionKey } from './clearCheckpoint.js';
+import { getEffectiveModelName } from './modelIdentity.js';
 
 export const HOT_SESSION_COUNT = 8;
 
@@ -118,7 +119,7 @@ export function buildSessionIndex(entries, mainAgentSessions) {
   for (let i = 0; i < mainAgentSessions.length; i++) {
     const session = mainAgentSessions[i];
     // 用 groupMap 的排序 key 对齐 session（而非 session.entryTimestamp，后者会被更新为最后一条 entry 的 timestamp）
-    const sessionId = sortedGroupKeys[i] || session?.entryTimestamp || null;
+    const sessionId = session?.sessionId || sortedGroupKeys[i] || session?.entryTimestamp || null;
     const g = sessionId ? (groupMap.get(sessionId) || { firstTs: null, lastTs: null, entryCount: 0 }) : { firstTs: null, lastTs: null, entryCount: 0 };
 
     let msgCount = 0;
@@ -144,6 +145,8 @@ export function buildSessionIndex(entries, mainAgentSessions) {
 
     result.push({
       sessionId,
+      conversationId: session?.conversationId || null,
+      modelName: session?.modelName || null,
       firstTs: g.firstTs,
       lastTs: g.lastTs || session?.entryTimestamp || null,
       entryCount: g.entryCount,
@@ -222,6 +225,8 @@ export function splitHotCold(entries, mainAgentSessions, sessionIndex, hotCount,
       return {
         _cold: true,
         sessionId: sid,
+        conversationId: meta.conversationId || null,
+        modelName: meta.modelName || null,
         preview: meta.preview,
         msgCount: meta.msgCount,
         firstTs: meta.firstTs,
@@ -257,6 +262,34 @@ export function getSessionStableId(session) {
   if (session._cold) return session.sessionId || session.entryTimestamp || null;
   const first = session.messages && session.messages[0];
   return (first && first._timestamp) || session.sessionId || null;
+}
+
+/**
+ * Identity used by visible "Session" dividers. It is intentionally separate
+ * from the timestamp-based internal sessionId: upstream session_id wins, then
+ * thread_id. Old cached indexes without either field retain the legacy stable
+ * internal id as a compatibility fallback.
+ */
+export function getSessionBoundaryId(session) {
+  if (!session) return null;
+  return session.conversationId || session.sessionId || getSessionStableId(session) || null;
+}
+
+export function isSessionDividerBoundary(previous, current) {
+  if (!previous || !current) return false;
+  const previousId = getSessionBoundaryId(previous);
+  const currentId = getSessionBoundaryId(current);
+  if (previousId != null && currentId != null) {
+    if (!conversationIdsConflict(previousId, currentId)) {
+      if (previousId === currentId) return false;
+      // Mixed session:/thread: strength is compatible when the durable lane
+      // agrees; optional metadata must not create a divider by itself.
+      if (previous.sessionKey && current.sessionKey) return previous.sessionKey !== current.sessionKey;
+      return false;
+    }
+    return true;
+  }
+  return previous !== current;
 }
 
 /**
@@ -419,26 +452,26 @@ export function applyBatchEntryTimestamps(st, entry) {
   const messageOffset = entry._conversationWindowStart ?? 0;
   const userId = entry.body.metadata?.user_id || null;
   const sessionKey = getMainAgentSessionKey(entry);
+  const conversationId = getMainAgentConversationId(entry);
   const timestamp = entry.timestamp || new Date().toISOString();
 
   const prevCount = st.timestamps.length;
   // Post-/clear checkpoints must always start a new session (bypass the transient
   // filter below), otherwise the first count=1 entry after a delta rebuild would
   // be swallowed and its _timestamp stolen by the next count>4 entry.
-  const postClearCheckpoint = isPostClearCheckpoint(entry, prevCount);
-  const isNewSession = isSessionBoundary(entry, {
+  const transition = classifySessionTransition(entry, {
     prevCount,
     count,
     prevUserId: st.prevUserId,
     userId,
     prevSessionKey: st.prevSessionKey,
     sessionKey,
+    prevConversationId: st.prevConversationId,
+    conversationId,
   });
-  // Transient protection: very short entries (<=4 msgs) after a long conversation
-  // are usually in-flight requests (request body only, no response yet) and must
-  // not reset the accumulated timestamps. Real /clear starts are exempt.
-  const isTransient = isNewSession && !postClearCheckpoint && count <= 4 && prevCount > 4 && count < prevCount * 0.5;
-  if (isNewSession && !isTransient) {
+  const isNewSession = transition.isBoundary;
+  entry._sessionBoundaryReason = transition.reason;
+  if (isNewSession) {
     st.currentSessionId = timestamp;
     st.timestamps = [];
     st.generatedTimestamps = [];
@@ -484,6 +517,7 @@ export function applyBatchEntryTimestamps(st, entry) {
   }
   st.prevUserId = userId;
   st.prevSessionKey = sessionKey || null;
+  st.prevConversationId = conversationId || null;
   // Remember this entry's ts as the next entry's prevMainAgentTs.
   st.prevMainAgentTs = timestamp;
 }
@@ -665,11 +699,13 @@ export function applyInPlaceLastMsgReplace(prevSessions, entry, timestamp, isNew
   if (newLastMsg && !newLastMsg._timestamp) newLastMsg._timestamp = timestamp;
   stitched.push(newLastMsg);
   const newLastSession = {
-    userId: lastSession.userId,
+    ...lastSession,
     messages: stitched,
     response: entry.response,
     entryTimestamp: timestamp,
   };
+  const modelName = getEffectiveModelName(entry);
+  if (modelName) newLastSession.modelName = modelName;
   // 末位替换：返回新 sessions 数组保持原顺序、prev 长度不变。
   // 下游 ChatView _sessionItemCache[last] 按 index 索引该 session，依赖 index 恒定不能错位。
   // appliedCount 加 cap 防长期累积溢出（实际 9999 远超调试需要）。

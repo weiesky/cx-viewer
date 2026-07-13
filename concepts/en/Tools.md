@@ -1,6 +1,6 @@
 # Codex Tools
 
-The tools shown in the context-usage popover come from the currently loaded Codex request-body tools, not the legacy tool catalog. The July 11, 2026 local request logs contain 14 nested/core tools plus two newly loaded tool groups with 8 callable entries, for 22 documented tools in total.
+The tools shown in the context-usage popover come from the currently loaded Codex request-body tools, not the legacy tool catalog. The catalog documents both loaded tool-group entry points and their callable operations.
 
 ## Code Mode
 
@@ -13,7 +13,7 @@ The tools shown in the context-usage popover come from the currently loaded Code
 - apply_patch: edit workspace files with structured patches.
 - view_image: inspect local image files.
 - update_plan: maintain the task plan.
-- request_user_input: ask structured short questions in Plan mode.
+- request_user_input: ask structured short questions in Default or Plan mode when the tool is loaded.
 - get_goal: read the active goal status, budget, and usage.
 - create_goal: create a goal only when explicitly requested.
 - update_goal: mark a goal complete or blocked under the goal rules.
@@ -26,6 +26,7 @@ The tools shown in the context-usage popover come from the currently loaded Code
 
 ## Multi-Agent V2
 
+- collaboration: the Multi-Agent V2 tool group for creating, messaging, reusing, waiting on, inspecting, and interrupting teammates.
 - spawn_agent: create a bounded sub-agent task.
 - send_message: queue context or guidance for an existing agent without starting a turn.
 - followup_task: assign a follow-up and start the target when it is idle.

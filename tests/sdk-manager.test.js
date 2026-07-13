@@ -15,6 +15,10 @@ import {
 function createFakeCodexScript(dir) {
   const script = join(dir, 'fake-codex.js');
   writeFileSync(script, `#!/usr/bin/env node
+if (!process.argv.includes('features.default_mode_request_user_input=false')) {
+  console.error('SDK must disable unserviceable Default-mode request_user_input');
+  process.exit(3);
+}
 const input = await new Promise((resolve) => {
   let data = '';
   process.stdin.setEncoding('utf8');
@@ -51,11 +55,14 @@ test('sdk-manager consumes Codex SDK events and emits viewer entries', async () 
   const entries = [];
   const streamProgress = [];
   const streamingStatus = [];
+  const previousCodexHome = process.env.CODEX_HOME;
 
   try {
+    process.env.CODEX_HOME = tmp;
+    writeFileSync(join(tmp, 'config.toml'), 'model = "gpt-config-sdk"\n', 'utf8');
     initSdkSession(tmp, 'sdk-test-project', {
       codexPath: fakeCodex,
-      codexArgs: ['-m', 'gpt-test'],
+      codexArgs: [],
       onEntry: entry => entries.push(entry),
       onStreamProgress: data => streamProgress.push(data),
       onStreamingStatus: data => streamingStatus.push(data),
@@ -68,6 +75,7 @@ test('sdk-manager consumes Codex SDK events and emits viewer entries', async () 
     assert.equal(streamingStatus[0]?.active, true);
     assert.equal(streamingStatus.at(-1)?.active, false);
     assert.ok(streamProgress.length >= 1);
+    assert.equal(streamProgress.at(-1)?.model, 'gpt-config-sdk');
 
     const toolEntry = entries.find(entry => entry.method === 'TOOL');
     assert.equal(toolEntry?.mainAgent, false);
@@ -79,7 +87,7 @@ test('sdk-manager consumes Codex SDK events and emits viewer entries', async () 
     const mainEntry = entries.find(entry => entry.mainAgent === true);
     assert.equal(mainEntry?.subAgent, false);
     assert.equal(mainEntry?.project, 'sdk-test-project');
-    assert.equal(mainEntry?.body?.model, 'gpt-test');
+    assert.equal(mainEntry?.body?.model, 'gpt-config-sdk');
     assert.equal(mainEntry?.body?.metadata?.thread_id, 'thread_fake_sdk');
     assert.equal(mainEntry?.response?.body?.content?.[0]?.text, 'hello from fake codex');
     assert.deepEqual(mainEntry?.response?.body?.usage, {
@@ -94,6 +102,8 @@ test('sdk-manager consumes Codex SDK events and emits viewer entries', async () 
     assert.equal(mainEntry?.body?.input?.[2]?.content?.[0]?.type, 'tool_result');
   } finally {
     stopSession();
+    if (previousCodexHome === undefined) delete process.env.CODEX_HOME;
+    else process.env.CODEX_HOME = previousCodexHome;
     rmSync(tmp, { recursive: true, force: true });
   }
 });

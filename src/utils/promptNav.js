@@ -1,4 +1,5 @@
 import { getSlashCommandLabel } from './slashCommandLabels.js';
+import { isSessionDividerBoundary } from './sessionManager.js';
 
 // buildPromptNavItems：从「当前可见项」与权威的 mainAgentSessions 计算用户 Prompt 导航的数据项。
 // 纯函数（无 React/DOM），渲染留在 ChatView——便于单测覆盖会话边界标记、去重与无 ts 容错。
@@ -13,12 +14,14 @@ export function buildPromptNavItems(visible, mainAgentSessions) {
   // 不依赖主视图的 <Divider>（其在角色过滤时会被滤掉），保证导航里始终能标出会话边界。
   const sessions = mainAgentSessions || [];
   const tsToSession = new Map();
+  let visibleSessionIndex = 0;
   for (let si = 0; si < sessions.length; si++) {
+    if (si > 0 && isSessionDividerBoundary(sessions[si - 1], sessions[si])) visibleSessionIndex++;
     const msgs = sessions[si] && sessions[si].messages;
     if (!Array.isArray(msgs)) continue;
     for (const m of msgs) {
       const ts = m && m._timestamp;
-      if (ts != null && !tsToSession.has(ts)) tsToSession.set(ts, si);
+      if (ts != null && !tsToSession.has(ts)) tsToSession.set(ts, visibleSessionIndex);
     }
   }
 

@@ -20,6 +20,7 @@ import { isMainAgent } from './utils/contentFilter';
 import { classifyRequest } from './utils/requestType';
 import { apiUrl } from './utils/apiUrl';
 import { BLUR_MASK_STYLE } from './utils/modalMask';
+import { getLatestSessionByActivity } from './utils/sessionManager';
 
 class App extends AppBase {
   constructor(props) {
@@ -295,6 +296,7 @@ class App extends AppBase {
     const { sessions: displaySessions, upperBoundTs: sessionUpperBoundTs } = this._displaySessionsFor(mainAgentSessions);
     const { selectedIndex, leftPanelWidth, currentTab } = this.state;
     const prefs = this._prefValues();
+    const contextCompactionAnchor = getLatestSessionByActivity(displaySessions);
 
     // 工作区选择器模式
     if (this.state.workspaceMode) {
@@ -339,6 +341,9 @@ class App extends AppBase {
               ref={this.appHeaderRef}
               requestCount={filteredRequests.length}
               requests={filteredRequests}
+              toolRequests={this.state.requests}
+              contextCompactionRequests={this.state.requests}
+              contextCompactionAnchorEpoch={contextCompactionAnchor?.sessionId || null}
               viewMode={viewMode}
               onToggleViewMode={this.handleToggleViewMode}
               onLangChange={this.handleLangChange}
@@ -359,6 +364,7 @@ class App extends AppBase {
               contextWindow={this.state.contextWindow}
               contextBarOptimistic={this.state.contextBarOptimistic}
               contextBarLocked={this.state.contextBarLocked}
+              contextCompactionExcludedEpoch={this._contextCompactionExcludedEpoch}
               resumeAutoChoice={this.state.resumeAutoChoice}
               onResumeAutoChoiceToggle={this.handleResumeAutoChoiceToggle}
               onResumeAutoChoiceChange={this.handleResumeAutoChoiceChange}

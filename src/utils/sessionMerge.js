@@ -1,5 +1,6 @@
 // Wire format 协议详见 docs/WIRE_FORMAT.md（服务端 entry 形态 / 关键字段 / 已知特殊窗口）
-import { isPostClearCheckpoint, getMainAgentSessionKey } from './clearCheckpoint.js';
+import { conversationIdsConflict, getMainAgentConversationId, isPostClearCheckpoint, getMainAgentSessionKey } from './clearCheckpoint.js';
+import { getEffectiveModelName } from './modelIdentity.js';
 
 /**
  * 计算消息的轻量内容指纹，用于「反向锚点」对齐：以 `newMessages[0]` 的 fp 为锚，
@@ -157,15 +158,20 @@ export function mergeMainAgentSessions(prevSessions, entry, options = {}) {
   const newResponse = entry.response;
   const userId = entry.body.metadata?.user_id || null;
   const sessionKey = getMainAgentSessionKey(entry);
+  const sessionId = entry._sessionId || null;
+  const conversationId = getMainAgentConversationId(entry);
+  const modelName = getEffectiveModelName(entry);
 
   const entryTimestamp = entry.timestamp || null;
 
   if (prevSessions.length === 0) {
-    return [{ userId, sessionKey, messages: newMessages, response: newResponse, entryTimestamp }];
+    return [{ userId, sessionKey, sessionId, conversationId, modelName, messages: newMessages, response: newResponse, entryTimestamp }];
   }
 
   const lastSession = prevSessions[prevSessions.length - 1];
   const differentSessionKey = !!(sessionKey && lastSession.sessionKey && sessionKey !== lastSession.sessionKey);
+  const differentSessionId = !!(sessionId && lastSession.sessionId && sessionId !== lastSession.sessionId);
+  const differentConversationId = conversationIdsConflict(lastSession.conversationId, conversationId);
 
   const prevMsgCount = lastSession.messages ? lastSession.messages.length : 0;
   const isNewConversation = prevMsgCount > 0 && newMessages.length < prevMsgCount * 0.5 && (prevMsgCount - newMessages.length) > 4;
@@ -178,14 +184,14 @@ export function mergeMainAgentSessions(prevSessions, entry, options = {}) {
     for (let i = 0; i < newMessages.length; i++) {
       if (!newMessages[i]._timestamp) newMessages[i]._timestamp = entryTimestamp;
     }
-    return [...prevSessions, { userId, sessionKey, messages: newMessages, response: newResponse, entryTimestamp }];
+    return [...prevSessions, { userId, sessionKey, sessionId, conversationId, modelName, messages: newMessages, response: newResponse, entryTimestamp }];
   }
 
-  if (differentSessionKey) {
+  if (differentConversationId || differentSessionId || differentSessionKey) {
     for (let i = 0; i < newMessages.length; i++) {
       if (!newMessages[i]._timestamp) newMessages[i]._timestamp = entryTimestamp;
     }
-    return [...prevSessions, { userId, sessionKey, messages: newMessages, response: newResponse, entryTimestamp }];
+    return [...prevSessions, { userId, sessionKey, sessionId, conversationId, modelName, messages: newMessages, response: newResponse, entryTimestamp }];
   }
 
   if (!options.skipTransientFilter && isNewConversation && newMessages.length <= 4 && prevMsgCount > 4) {
@@ -208,7 +214,10 @@ export function mergeMainAgentSessions(prevSessions, entry, options = {}) {
       lastSession.messages = [...lastSession.messages.slice(0, -1), replacement];
       lastSession.response = newResponse;
       lastSession.entryTimestamp = entryTimestamp;
+      if (modelName) lastSession.modelName = modelName;
       if (sessionKey && !lastSession.sessionKey) lastSession.sessionKey = sessionKey;
+      if (sessionId && !lastSession.sessionId) lastSession.sessionId = sessionId;
+      if (conversationId && !lastSession.conversationId) lastSession.conversationId = conversationId;
       return [...prevSessions];
     }
 
@@ -282,9 +291,14 @@ export function mergeMainAgentSessions(prevSessions, entry, options = {}) {
 
     lastSession.response = newResponse;
     lastSession.entryTimestamp = entryTimestamp;
+    // Model-less transport/checkpoint frames must not erase the last
+    // authoritative identity known for this logical session.
+    if (modelName) lastSession.modelName = modelName;
     if (sessionKey && !lastSession.sessionKey) lastSession.sessionKey = sessionKey;
+    if (sessionId && !lastSession.sessionId) lastSession.sessionId = sessionId;
+    if (conversationId && !lastSession.conversationId) lastSession.conversationId = conversationId;
     return [...prevSessions];
   } else {
-    return [...prevSessions, { userId, sessionKey, messages: newMessages, response: newResponse, entryTimestamp }];
+    return [...prevSessions, { userId, sessionKey, sessionId, conversationId, modelName, messages: newMessages, response: newResponse, entryTimestamp }];
   }
 }

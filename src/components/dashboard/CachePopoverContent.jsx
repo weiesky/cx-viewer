@@ -4,7 +4,7 @@ import { ReloadOutlined, PlusOutlined, FolderOpenOutlined, FileZipOutlined, File
 import { parseToolXmlList, extractLoadedSkills } from '../../utils/helpers';
 import { extractLoadedTools } from '../../utils/requestTools';
 import { contextSeverityColor } from '../../utils/formatters';
-import { BUILTIN_SKILL_NAMES, mergeActiveSkills } from '../../utils/skillsParser';
+import { BUILTIN_SKILL_NAMES, countSkillWarningCandidates, mergeActiveSkills } from '../../utils/skillsParser';
 import { t } from '../../i18n';
 import { apiUrl } from '../../utils/apiUrl';
 import { renderMemoryMarkdown } from '../../utils/markdown';
@@ -13,6 +13,7 @@ import ConceptHelp from '../common/ConceptHelp';
 import ToolsHelp from '../common/ToolsHelp';
 import OpenFolderIcon from '../common/OpenFolderIcon';
 import { parseMemoryLink } from '../../utils/memoryLinkParser';
+import { extractCurrentContextCompaction } from '../../utils/contextCompaction';
 import styles from './CachePopoverContent.module.css';
 import sharedChrome from '../common/sharedChrome.module.css';
 
@@ -35,6 +36,9 @@ const SUPPORTS_DIRECTORY_UPLOAD = typeof document !== 'undefined'
 // 解析结果（lastToolsRef/lastParsedTools/lastSkillsRef/lastChosenForSkills）通过 useRef 保留在组件实例内，与 AppHeader 旧版同语义。
 export default function CachePopoverContent({
   requests = [],
+  toolRequests = null,
+  contextCompactionRequests = null,
+  contextCompactionAnchorEpoch = null,
   contextPercent = 0,
   contextTokens = 0,
   fsSkills,
@@ -48,6 +52,8 @@ export default function CachePopoverContent({
   onToolsCatalogOpenChange,
   memoryRefreshing = false,
   inDrawer = false,
+  contextCompactionSuppressed = false,
+  contextCompactionExcludedEpoch = null,
 }) {
   const skillFileInputRef = useRef(null);
   const skillFolderInputRef = useRef(null);
@@ -123,9 +129,23 @@ export default function CachePopoverContent({
   const lastSkillsRef = useRef(null);
   const lastChosenForSkills = useRef(null);
 
-  const loadedTools = useMemo(() => extractLoadedTools(requests), [requests]);
+  // Tool identity follows the raw request stream, including the current
+  // in-progress MainAgent frame. `requests` is the visible list and excludes
+  // that frame, which previously made the section fall back or disappear.
+  const loadedTools = useMemo(
+    () => extractLoadedTools(toolRequests || requests),
+    [toolRequests, requests],
+  );
+  const contextCompaction = useMemo(
+    () => extractCurrentContextCompaction(contextCompactionRequests || requests, {
+      suppressed: contextCompactionSuppressed,
+      excludedEpoch: contextCompactionExcludedEpoch,
+      anchorEpoch: contextCompactionAnchorEpoch,
+    }),
+    [contextCompactionRequests, requests, contextCompactionSuppressed, contextCompactionExcludedEpoch, contextCompactionAnchorEpoch],
+  );
 
-  // 血条弹层展示的是当前 MainAgent 请求已载入工具，直接读最新 body.tools。
+  // 血条弹层展示当前 MainAgent 会话已载入的工具；缺失声明的 delta 使用滚动快照。
   const toolsArr = loadedTools.length > 0
     ? loadedTools
     : null;
@@ -159,6 +179,8 @@ export default function CachePopoverContent({
   const mergedSkills = mergeActiveSkills(fsSkills, lastSkillsRef.current || []);
   const skills = mergedSkills !== null ? mergedSkills : historicalSkills;
   const hasSkills = skills.length > 0;
+  const skillCountIsAuthoritative = Array.isArray(fsSkills);
+  const warningSkillCount = countSkillWarningCandidates(fsSkills, historicalSkills);
 
   const renderBuiltinChip = ({ name, description }) => {
     const title = [name, description].filter(Boolean).join('\n\n');
@@ -382,6 +404,32 @@ export default function CachePopoverContent({
         </div>
       </div>
       <div className={inDrawer ? styles.cacheScrollAreaInDrawer : styles.cacheScrollArea}>
+        {contextCompaction.present && (
+          <div className={`${styles.cacheSection} ${styles.cacheSectionBordered} ${styles.compactionSection}`}>
+            <div className={styles.compactionRow}>
+              <div className={`${styles.cacheSectionLabel} ${styles.compactionLabel}`}>
+                {t('ui.contextCompaction')}
+              </div>
+              {contextCompaction.summary && (
+                <Tooltip
+                  title={<div className={styles.compactionSummaryTooltip} dir="auto">{contextCompaction.summary}</div>}
+                  trigger={['hover', 'focus', 'click']}
+                  placement="bottom"
+                  styles={{ root: { maxWidth: 560 } }}
+                >
+                  <button type="button" className={styles.compactionSummaryButton} dir="auto">
+                    <span className={styles.compactionSummaryText}>{contextCompaction.summary}</span>
+                  </button>
+                </Tooltip>
+              )}
+              {contextCompaction.truncated && (
+                <span className={styles.compactionTruncated} title={t('ui.contextCompactionSummaryTruncated')}>
+                  {t('ui.contextCompactionSummaryTruncated')}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
         {hasBuiltin && (
           <div className={`${styles.cacheSection} ${styles.cacheSectionBordered}`}>
             {/* 点标题也可打开「所有工具」目录(zIndex 抬到 1100 盖住血条 Popover;不改文案颜色) */}
@@ -422,8 +470,13 @@ export default function CachePopoverContent({
             <div className={styles.cacheSectionHeader}>
               <div className={styles.cacheSectionLabel}>
                 {t('ui.loadedSkills')} ({skills.length})
+                {skillCountIsAuthoritative && (
+                  <span className={styles.skillCountBreakdown}>
+                    {' · '}{t('ui.skillSource.user')}/{t('ui.skillSource.project')}: {warningSkillCount}
+                  </span>
+                )}
               </div>
-              {skills.length > 20 ? (
+              {warningSkillCount > 20 ? (
                 <Alert
                   type="error"
                   showIcon
@@ -431,7 +484,7 @@ export default function CachePopoverContent({
                   message={t('ui.skillsWarnPollution')}
                   style={{ marginRight: 'auto', padding: '2px 8px', fontSize: 11 }}
                 />
-              ) : skills.length > 10 ? (
+              ) : warningSkillCount > 10 ? (
                 <Alert
                   type="warning"
                   showIcon

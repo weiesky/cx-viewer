@@ -10,6 +10,20 @@ import modelGlmUrl from '../img/model-glm.svg';
 import modelMinimaxUrl from '../img/model-minimax.svg';
 import modelDeepseekUrl from '../img/model-deepseek.svg';
 import modelCodexAnimatedSvg from '../img/codex/writing.svg?raw';
+import {
+  getEffectiveModelName,
+  resolveProducerModelName,
+} from './modelIdentity.js';
+
+export {
+  getEffectiveModelName,
+  getDisplayedSessionModelName,
+  getSessionIdentityCandidates,
+  normalizeBoundedIdentity,
+  normalizeModelName,
+  resolveProducerModelName,
+  sessionIdentityCandidatesMatch,
+} from './modelIdentity.js';
 
 // 上下文相关规则唯一事实源在 server/lib/context-rules.js(CLIENT-SAFE,无 node 依赖,
 // Vite 跨目录打包,先例见 toolsXmlFormatter.js)。前端一律经此处 re-export 取用,
@@ -29,7 +43,7 @@ import { CODEX_CONTEXT_WINDOW_TOKENS } from '../../server/lib/context-rules.js';
  * are missing — callers should fall back to a sensible default.
  */
 export function getEffectiveModel(request) {
-  return request?.response?.body?.model || request?.body?.model || null;
+  return getEffectiveModelName(request);
 }
 
 /**
@@ -47,33 +61,12 @@ export function computeContextPercent({ contextWindow, lastTotalTokens = 0 }) {
 }
 
 /**
- * Per-message model info resolver. 1v1 严格遵从：每条消息的 modelInfo 来自
- * 它自己那条 request 的 effectiveModel，不回落到全局最新 model。
+ * SVG-aware wrapper around the session-scoped raw identity resolver.
  *
- * 关键 off-by-one：assistant message 的 _timestamp 在 _processEntries 中
- * 被赋值为【下一轮 entry】的 ts（详见 src/AppBase.jsx:184-186 与
- * src/utils/sessionMerge.js:44/50），所以 producer req idx = idx - 1；
- * user message 的 _timestamp 与生产者 req 一致，producer idx = idx。
- *
- * mid-session 启动边界：cx-viewer 在 mid-conversation 才启动时，第一个 entry
- * 的 body.input 已包含历史 [user, assistant, user, ...]，那条 assistant
- * 的 _timestamp = T0、idx=0、producerIdx=-1。其真实 producer 不在 server 视野内，
- * 退而求其次用当前 entry 的 model（modelNameByReqIdx[0]）作为最佳估计 ——
- * 同一段对话通常 model 一致，比显示中性 'MainAgent' 更接近用户预期。
- *
- * @param {string|null} ts message._timestamp
- * @param {string} role original msg.role ('user' | 'assistant')；ChatMessage 内部
- *                       派生 role（plan-prompt / teammate-message 等）不传入此函数。
- * @param {Object} tsToIndex map req.timestamp → request 数组下标
- * @param {Array<string|null>} modelNameByReqIdx 按 request idx 存储的"当时活跃" model name
  * @returns {Object|null} modelInfo (svg/color/name/...) 或 null（caller 应渲染中性 'MainAgent' 头像）
  */
-export function resolveProducerModelInfo(ts, role, tsToIndex, modelNameByReqIdx) {
-  if (!ts) return null;
-  const idx = tsToIndex[ts];
-  if (idx == null) return null;
-  const producerIdx = role === 'assistant' ? Math.max(idx - 1, 0) : idx;
-  const name = modelNameByReqIdx[producerIdx];
+export function resolveProducerModelInfo(options) {
+  const name = resolveProducerModelName(options);
   return name ? getModelInfo(name) : null;
 }
 

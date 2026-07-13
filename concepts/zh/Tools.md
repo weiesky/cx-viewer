@@ -1,6 +1,6 @@
 # Codex 工具
 
-“上下文消耗”弹窗里的 Codex 工具清单来自当前会话请求体中的已装载工具，而不是旧版工具集合。2026 年 7 月 11 日的本地请求日志包含 14 个嵌套/核心工具，以及两个新装载工具组中的 8 个可调用入口，共计 22 个已收录工具。
+“上下文消耗”弹窗里的 Codex 工具清单来自当前会话请求体中的已装载工具，而不是旧版工具集合。目录会同时收录已装载的工具组入口及其可调用操作。
 
 ## Code Mode
 
@@ -13,7 +13,7 @@
 - apply_patch：用结构化 patch 修改工作区文件。
 - view_image：查看本地图片文件。
 - update_plan：维护任务计划。
-- request_user_input：在 Plan mode 下向用户提出结构化短问题。
+- request_user_input：当前工具清单已装载时，可在 Default 或 Plan mode 下向用户提出结构化短问题。
 - get_goal：读取当前 goal 的状态、预算和用量。
 - create_goal：在明确要求时创建 goal。
 - update_goal：在目标真正完成或满足阻塞规则时更新 goal 状态。
@@ -26,6 +26,7 @@
 
 ## Multi-Agent V2
 
+- collaboration：Multi-Agent V2 工具组，用于创建、通信、复用、等待、检查和中断 teammate。
 - spawn_agent：创建一个边界清晰的子 Agent 任务。
 - send_message：向现有 Agent 投递上下文或指导，但不启动新一轮。
 - followup_task：分配后续任务，并在目标空闲时启动它。

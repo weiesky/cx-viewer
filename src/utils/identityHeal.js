@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatTeammateLabel } from './requestType';
+import { formatTeammateLabel } from './requestType.js';
 
 /**
  * Late-identity healing helpers for ChatView.buildAllItems.
@@ -15,10 +15,11 @@ import { formatTeammateLabel } from './requestType';
  */
 
 /**
- * Patch cached ChatMessage elements whose modelInfo was baked as null once the
- * request scan can resolve it. Mirrors refreshCachedItemProp: clones ONLY rows
- * that transition null → resolved, returns the SAME array reference when
- * nothing changed (React reconciler then skips everything).
+ * Reconcile model identity baked into cached ChatMessage elements after the
+ * request scan changes. This deliberately covers both null → resolved and
+ * wrong-model → corrected transitions: an in-flight request can initially
+ * expose its requested model and later complete with an authoritative reroute.
+ * Returns the SAME array reference when nothing changed.
  *
  * Strict-null marker: rows that display model identity always receive
  * `modelInfo` explicitly (null when unresolved); rows that never get the prop
@@ -26,19 +27,26 @@ import { formatTeammateLabel } from './requestType';
  * and are re-checked cheaply each pass without cloning.
  *
  * @param {Array} items - cached ChatMessage element array
- * @param {Function} resolveModelInfo - (ts, role) => modelInfo|null, closing
- *   over the CURRENT request-scan caches
+ * @param {Function} resolveModelInfo - (ts, role, message) => modelInfo|null,
+ *   closing over the CURRENT request-scan caches and rendered session identity
  * @returns {Array} same array if clean, else a new array with healed clones
  */
 export function refreshResolvedModelInfo(items, resolveModelInfo) {
   let dirty = false;
   const out = items.map((m) => {
-    if (!m || !m.props || m.props.modelInfo !== null || !m.props.timestamp) return m;
+    if (!m || !m.props || m.props.modelInfo === undefined || !m.props.timestamp) return m;
     // Non-assistant rows (plan-prompt/teammate/task-notification) were
     // originally computed with msg.role 'user' — preserve that mapping.
     const role = m.props.role === 'assistant' ? 'assistant' : 'user';
-    const next = resolveModelInfo(m.props.timestamp, role);
-    if (!next) return m;
+    const message = {
+      role,
+      _timestamp: m.props.timestamp,
+      ...(role === 'assistant' && m.props.displayTs
+        ? { _generatedTs: m.props.displayTs }
+        : {}),
+    };
+    const next = resolveModelInfo(m.props.timestamp, role, message);
+    if (next === m.props.modelInfo) return m;
     dirty = true;
     return React.cloneElement(m, { modelInfo: next });
   });

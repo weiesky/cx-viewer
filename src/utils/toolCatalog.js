@@ -18,7 +18,7 @@ export const TOOL_CATALOG = [
   { key: 'planning', tools: ['update_plan', 'request_user_input', 'get_goal', 'create_goal', 'update_goal'] },
   {
     key: 'team',
-    tools: ['spawn_agent', 'send_message', 'followup_task', 'wait_agent', 'interrupt_agent', 'list_agents'],
+    tools: ['collaboration', 'spawn_agent', 'send_message', 'followup_task', 'wait_agent', 'interrupt_agent', 'list_agents'],
   },
   {
     key: 'integration',

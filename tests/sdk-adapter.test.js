@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { sdkUsageToViewerUsage } from '../lib/sdk-adapter.js';
+import { DEFAULT_CODEX_TOOLS, sdkUsageToViewerUsage } from '../lib/sdk-adapter.js';
+
+test('SDK mode does not advertise an unserviceable request_user_input tool', () => {
+  assert.equal(DEFAULT_CODEX_TOOLS.some(tool => tool.name === 'request_user_input'), false);
+});
 
 test('sdk adapter normalizes snake_case and camelCase token usage', () => {
   assert.deepEqual(sdkUsageToViewerUsage({

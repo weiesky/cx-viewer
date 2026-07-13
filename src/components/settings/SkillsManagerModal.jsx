@@ -106,20 +106,31 @@ export default function SkillsManagerModal({
               })}
             </div>
           )}
-          {/* Plugin：不可单独禁用（要走 `codex plugin disable <name>` CLI），折叠成 chip 行；每 chip tooltip 带 plugin 名 */}
+          {/* Plugin：分组标题已说明整体禁用方式；chip hover 专注展示功能描述，便于判断插件是否需要保留。 */}
           {pluginSkills.length > 0 && (
             <div className={styles.skillsReadonlySection}>
               <div className={styles.skillsReadonlyLabel}>{t('ui.skillsPluginLabel')}</div>
               <div className={headerStyles.toolChipGrid}>
-                {pluginSkills.map((s, i) => {
-                  // pluginName 现在返 "name@marketplace"（pluginKey），tooltip 显示时剥后缀
-                  const pluginDisplay = (s.pluginName || '').split('@')[0];
-                  return (
-                    <Tooltip key={`plugin-${s.name}-${i}`} title={t('ui.skillCannotDisablePlugin', { plugin: pluginDisplay })}>
-                      <span className={headerStyles.cacheToolChip}>{s.name}</span>
-                    </Tooltip>
-                  );
-                })}
+                {pluginSkills.map((s, i) => (
+                  <Tooltip
+                    key={`plugin-${s.name}-${i}`}
+                    title={(
+                      <div className={styles.readonlySkillDescription}>
+                        {s.description || t('ui.noDescription')}
+                      </div>
+                    )}
+                    trigger={['hover', 'focus', 'click']}
+                    styles={{ root: { maxWidth: 480 } }}
+                  >
+                    <button
+                      type="button"
+                      className={`${headerStyles.cacheToolChip} ${styles.readonlySkillChip}`}
+                      aria-label={`${s.name}: ${s.description || t('ui.noDescription')}`}
+                    >
+                      {s.name}
+                    </button>
+                  </Tooltip>
+                ))}
               </div>
             </div>
           )}

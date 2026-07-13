@@ -18,6 +18,9 @@ function LiveTagPopover({
   cachePopoverOpen,
   onOpenChange,
   requests,
+  toolRequests,
+  contextCompactionRequests,
+  contextCompactionAnchorEpoch,
   contextPercent,
   contextTokens,
   ctxColor,
@@ -32,6 +35,8 @@ function LiveTagPopover({
   onRefreshMemory,
   onToolsCatalogOpenChange,
   projectName,
+  contextCompactionSuppressed,
+  contextCompactionExcludedEpoch,
 }) {
   // 用 CSS 变量替代 inline style 字面量,稳定 ctxColor / contextPercent 时 triggerStyle 引用不变。
   const triggerStyle = useMemo(() => ({
@@ -52,6 +57,9 @@ function LiveTagPopover({
       content={cachePopoverOpen ? (
         <CachePopoverContent
           requests={requests}
+          toolRequests={toolRequests}
+          contextCompactionRequests={contextCompactionRequests}
+          contextCompactionAnchorEpoch={contextCompactionAnchorEpoch}
           contextPercent={contextPercent}
           contextTokens={contextTokens}
           fsSkills={fsSkills}
@@ -64,15 +72,24 @@ function LiveTagPopover({
           onSkillImported={onSkillImported}
           onRefreshMemory={onRefreshMemory}
           onToolsCatalogOpenChange={onToolsCatalogOpenChange}
+          contextCompactionSuppressed={contextCompactionSuppressed}
+          contextCompactionExcludedEpoch={contextCompactionExcludedEpoch}
         />
       ) : <div className={styles.cachePopoverPlaceholder} />}
-      trigger="hover"
+      trigger={['hover', 'focus', 'click']}
       placement="topRight"
       overlayInnerStyle={POPOVER_OVERLAY_STYLE}
       open={cachePopoverOpen}
       onOpenChange={onOpenChange}
     >
-      <span className={styles.liveTag} style={triggerStyle}>
+      <button
+        type="button"
+        className={styles.liveTag}
+        style={triggerStyle}
+        aria-haspopup="dialog"
+        aria-expanded={cachePopoverOpen}
+        aria-label={t('ui.contextManagement')}
+      >
         <span className={styles.liveTagFill} />
         <span className={styles.liveTagContent}>
           <span className={styles.liveTagText}>
@@ -81,7 +98,7 @@ function LiveTagPopover({
               : `${contextPercent}%`}
           </span>
         </span>
-      </span>
+      </button>
     </Popover>
   );
 }
