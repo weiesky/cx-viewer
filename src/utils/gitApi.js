@@ -13,7 +13,17 @@ export async function fetchAllRepos() {
       const statusRes = await fetch(apiUrl('/api/git-status'));
       if (!statusRes.ok) return [];
       const data = await statusRes.json();
-      return [{ name: '.', path: '.', isRoot: true, changes: data.changes || [], insertions: data.insertions || 0, deletions: data.deletions || 0, commits: [], hasUpstream: false }];
+      return [{
+        name: '.',
+        path: '.',
+        isRoot: true,
+        changes: data.changes || [],
+        insertions: data.insertions || 0,
+        deletions: data.deletions || 0,
+        insertionsCapped: !!data.insertions_capped,
+        commits: [],
+        hasUpstream: false,
+      }];
     } catch {
       return [];
     }
@@ -37,6 +47,7 @@ export async function fetchAllRepos() {
         changes: statusData.changes || [],
         insertions: statusData.insertions || 0,
         deletions: statusData.deletions || 0,
+        insertionsCapped: !!statusData.insertions_capped,
         commits: commitsData.commits || [],
         hasUpstream: !!commitsData.hasUpstream,
         branch: commitsData.branch || null,

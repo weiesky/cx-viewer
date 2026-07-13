@@ -8,7 +8,7 @@
  * 前一条立即释放。被剪枝的 entry 记录 _fullEntryIndex 供按需还原。
  *
  * 该方案由 Claude Code 旧格式的 body.messages 迁移而来，现在只处理 body.input：
- * - body.instructions / body.tools 不裁剪、不池化；
+ * - body.instructions / body.tools 不裁剪；相同值仅共享引用，不从未来请求恢复；
  * - body.metadata / body.tool_choice 等其他字段也保持原样；
  * - 只对 MainAgent 生效，SubAgent / Teammate / 其他请求完全不改写。
  *
@@ -27,6 +27,125 @@ import { internToolResultIfPooled } from './readResultPool.js';
 import { classifySessionTransition, conversationIdsConflict, getEntryUserId, getMainAgentConversationId, isCompactContinuation, getMainAgentSessionKey, isPostClearCheckpoint } from './clearCheckpoint.js';
 import { extractDirectContextCompactionRecord, extractDirectContextCompactionRecordFromHistory } from './contextCompaction.js';
 import { getResponseToolDeclaration } from '../../lib/openai-body.js';
+
+const MAX_INTERN_POOL_BYTES = 16 * 1024 * 1024;
+const MAX_INTERN_VALUE_BYTES = 2 * 1024 * 1024;
+const MAX_COLLISION_CANDIDATES = 4;
+const MAX_LEGACY_PREFIX_COMPARE_BYTES = 4 * 1024 * 1024;
+
+function createInternPool() {
+  return { entries: new Map(), bytes: 0 };
+}
+
+const toolsPool = createInternPool();
+const instructionsPool = createInternPool();
+
+function jsonEqual(left, right, budget = null) {
+  if (budget && (typeof left === 'string' || typeof right === 'string')) {
+    budget.remaining -= Math.max(
+      typeof left === 'string' ? left.length * 2 : 0,
+      typeof right === 'string' ? right.length * 2 : 0,
+    );
+    if (budget.remaining < 0) {
+      budget.exhausted = true;
+      return false;
+    }
+  }
+  if (left === right) return true;
+  if (budget) {
+    budget.remaining -= 16;
+    if (budget.remaining < 0) {
+      budget.exhausted = true;
+      return false;
+    }
+  }
+  if (!left || !right || typeof left !== 'object' || typeof right !== 'object') return false;
+  if (Array.isArray(left) !== Array.isArray(right)) return false;
+  if (Array.isArray(left)) {
+    if (left.length !== right.length) return false;
+    for (let i = 0; i < left.length; i++) {
+      if (!jsonEqual(left[i], right[i], budget)) return false;
+    }
+    return true;
+  }
+  const leftKeys = Object.keys(left);
+  const rightKeys = Object.keys(right);
+  if (leftKeys.length !== rightKeys.length) return false;
+  for (const key of leftKeys) {
+    if (!Object.prototype.hasOwnProperty.call(right, key) || !jsonEqual(left[key], right[key], budget)) return false;
+  }
+  return true;
+}
+
+function valueSignature(value, knownSerialized = null) {
+  let serialized = knownSerialized;
+  if (serialized == null) {
+    try { serialized = JSON.stringify(value); } catch { return ''; }
+  }
+  let first = 2166136261;
+  let second = 2246822519;
+  for (let i = 0; i < serialized.length; i++) {
+    const code = serialized.charCodeAt(i);
+    first = Math.imul(first ^ code, 16777619);
+    second = Math.imul(second ^ code, 3266489917);
+  }
+  return `${serialized.length}:${first >>> 0}:${second >>> 0}`;
+}
+
+function internExact(pool, value) {
+  let serialized;
+  try { serialized = JSON.stringify(value); } catch { return { value, reused: false }; }
+  const bytes = serialized.length * 2;
+  if (bytes > MAX_INTERN_VALUE_BYTES) return { value, reused: false };
+  const signature = valueSignature(value, serialized);
+  if (!signature) return { value, reused: false };
+  const bucket = pool.entries.get(signature);
+  if (bucket) {
+    const match = bucket.candidates.find(candidate => jsonEqual(candidate, value));
+    if (match !== undefined) return { value: match, reused: true };
+    if (bucket.candidates.length >= MAX_COLLISION_CANDIDATES) return { value, reused: false };
+    if (pool.bytes + bytes > MAX_INTERN_POOL_BYTES) return { value, reused: false };
+    const owned = Array.isArray(value) ? JSON.parse(serialized) : value;
+    if (Array.isArray(owned)) Object.freeze(owned);
+    bucket.candidates.push(owned);
+    bucket.bytes += bytes;
+    pool.bytes += bytes;
+    return { value: owned, reused: false };
+  }
+  while (pool.bytes + bytes > MAX_INTERN_POOL_BYTES && pool.entries.size > 0) {
+    const oldestKey = pool.entries.keys().next().value;
+    const oldest = pool.entries.get(oldestKey);
+    pool.bytes -= oldest?.bytes || 0;
+    pool.entries.delete(oldestKey);
+  }
+  const owned = Array.isArray(value) ? JSON.parse(serialized) : value;
+  if (Array.isArray(owned)) Object.freeze(owned);
+  pool.entries.set(signature, { candidates: [owned], bytes });
+  pool.bytes += bytes;
+  return { value: owned, reused: false };
+}
+
+function isInputPrefix(previousEntry, currentEntry) {
+  const previous = previousEntry?.body?.input;
+  const current = currentEntry?.body?.input;
+  if (!Array.isArray(previous) || !Array.isArray(current) || previous.length > current.length) return false;
+  if (currentEntry?._baseInputDigest && previousEntry?._inputDigest
+      && currentEntry._baseMessageCount === previous.length) {
+    return currentEntry._baseInputDigest === previousEntry._inputDigest;
+  }
+  const budget = { remaining: MAX_LEGACY_PREFIX_COMPARE_BYTES, exhausted: false };
+  for (let i = 0; i < previous.length; i++) {
+    if (!jsonEqual(previous[i], current[i], budget)) return false;
+  }
+  return true;
+}
+
+export function _resetEntryInternPoolsForTest() {
+  toolsPool.entries.clear();
+  toolsPool.bytes = 0;
+  instructionsPool.entries.clear();
+  instructionsPool.bytes = 0;
+}
 
 function getEntryToolSnapshot(entry) {
   const direct = getResponseToolDeclaration(entry?.body);
@@ -186,9 +305,38 @@ export function internInputToolResultBlocks(input) {
 export function internMainAgentInput(entry, isMainAgentFn) {
   if (!entry?.body || typeof isMainAgentFn !== 'function' || !isMainAgentFn(entry)) return entry;
   const body = entry.body;
-  if (!Array.isArray(body.input) || body.input.length === 0) return entry;
-  const input = internInputToolResultBlocks(body.input);
-  if (input !== body.input) return { ...entry, body: { ...body, input } };
+  let input = internInputToolResultBlocks(body.input);
+  let tools = body.tools;
+  let instructions = body.instructions;
+  let dirty = input !== body.input;
+
+  if (Array.isArray(tools)) {
+    const { value: pooled } = internExact(toolsPool, tools);
+    if (pooled !== tools) { tools = pooled; dirty = true; }
+  }
+  if (typeof instructions === 'string' || Array.isArray(instructions)) {
+    const { value: pooled, reused } = internExact(instructionsPool, instructions);
+    if (pooled !== instructions || (typeof instructions === 'string' && reused)) {
+      instructions = pooled;
+      dirty = true;
+    }
+  }
+
+  if (Array.isArray(input)) {
+    let clonedInput = null;
+    for (let i = 0; i < input.length; i++) {
+      const item = input[i];
+      if (item?.type !== 'additional_tools' || !Array.isArray(item.tools)) continue;
+      const { value: pooled } = internExact(toolsPool, item.tools);
+      if (pooled !== item.tools) {
+        if (!clonedInput) clonedInput = input.slice();
+        clonedInput[i] = { ...item, tools: pooled };
+      }
+    }
+    if (clonedInput) { input = clonedInput; dirty = true; }
+  }
+
+  if (dirty) return { ...entry, body: { ...body, input, tools, instructions } };
   return entry;
 }
 
@@ -273,7 +421,14 @@ export function createEntrySlimmer(isMainAgentFn) {
       if (isNewSession && transition.reason !== 'compact-storage') compactionOwnerBySource.clear();
       captureContextCompaction(entry, entries, currentIdx, compactionOwnerBySource);
 
-      if (isNewSession) {
+      const previousEntry = prevMainIdx >= 0 ? entries[prevMainIdx] : null;
+      const isRewriteBoundary = !isNewSession && previousEntry?.body?.input?.length > 0
+        && !isInputPrefix(previousEntry, entry);
+
+      if (!isNewSession) inheritToolSnapshot(entry, previousEntry);
+
+      if (isNewSession || isRewriteBoundary) {
+        if (isRewriteBoundary) entry._inputRewriteBoundary = true;
         prevMainIdx = currentIdx;
         prevMsgCount = count;
         prevUserId = userId;
@@ -281,8 +436,6 @@ export function createEntrySlimmer(isMainAgentFn) {
         prevConversationId = conversationId || null;
         return entry;
       }
-
-      inheritToolSnapshot(entry, prevMainIdx >= 0 ? entries[prevMainIdx] : null);
 
       // 同 session：只剪枝前一条 MainAgent 的 input
       if (prevMainIdx >= 0 && prevMainIdx < entries.length) {
@@ -350,7 +503,7 @@ export function createEntrySlimmer(isMainAgentFn) {
           prevConversationId: pConversationId,
           conversationId,
         }, { splitCompactHistoryDrop: true });
-        const isNew = transition.isBoundary;
+        const isNew = transition.isBoundary || e._inputRewriteBoundary === true;
         if (transition.isTransient) continue;
 
         if (isNew) {
@@ -489,8 +642,15 @@ export function createIncrementalSlimmer(isMainAgentFn) {
       if (isNewSession && transition.reason !== 'compact-storage') compactionOwnerBySource.clear();
       captureContextCompaction(entry, requests, currentIdx, compactionOwnerBySource);
 
-      if (isNewSession) {
+      const previousEntry = prevMainIdx >= 0 ? requests[prevMainIdx] : null;
+      const isRewriteBoundary = !isNewSession && previousEntry?.body?.input?.length > 0
+        && !isInputPrefix(previousEntry, entry);
+
+      if (!isNewSession) inheritToolSnapshot(entry, previousEntry);
+
+      if (isNewSession || isRewriteBoundary) {
         sessionSlimmedIndices.clear();
+        if (isRewriteBoundary) entry._inputRewriteBoundary = true;
         prevMainIdx = currentIdx;
         prevMsgCount = count;
         prevUserId = userId;
@@ -498,8 +658,6 @@ export function createIncrementalSlimmer(isMainAgentFn) {
         prevConversationId = conversationId || null;
         return entry;
       }
-
-      inheritToolSnapshot(entry, prevMainIdx >= 0 ? requests[prevMainIdx] : null);
 
       // 前向 slim：剪枝上一条 MainAgent 的 input 与 body 大字段
       // 注意：必须 clone entry 再修改，不能 in-place mutate。

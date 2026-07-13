@@ -296,6 +296,7 @@ export default function GitChanges({ style, onClose, onFileClick, onOpenFile, re
   // Aggregate insertions/deletions across all repos
   const totalInsertions = repos ? repos.reduce((sum, r) => sum + (r.insertions || 0), 0) : 0;
   const totalDeletions = repos ? repos.reduce((sum, r) => sum + (r.deletions || 0), 0) : 0;
+  const totalInsertionsCapped = !!repos?.some(r => r.insertionsCapped);
 
   return (
     <div className={styles.gitChanges} style={style}>
@@ -308,9 +309,12 @@ export default function GitChanges({ style, onClose, onFileClick, onOpenFile, re
           {onManualRefresh && (
             <RefreshIcon onClick={onManualRefresh} title={t('ui.gitChanges.refresh')} />
           )}
-          {(totalInsertions > 0 || totalDeletions > 0) && (
+          {(totalInsertions > 0 || totalDeletions > 0 || totalInsertionsCapped) && (
             <>
-              <span className={`${styles.statBadge} ${styles.statInsert}`}>+{totalInsertions}</span>
+              <span
+                className={`${styles.statBadge} ${styles.statInsert}`}
+                title={totalInsertionsCapped ? 'Insertion count is capped for large untracked files' : undefined}
+              >+{totalInsertions}{totalInsertionsCapped ? '…' : ''}</span>
               <span className={`${styles.statBadge} ${styles.statDelete}`}>-{totalDeletions}</span>
             </>
           )}
@@ -436,9 +440,12 @@ export default function GitChanges({ style, onClose, onFileClick, onOpenFile, re
                   <path d="M18 9a9 9 0 0 1-9 9"/>
                 </svg>
                 <span className={styles.repoName}>{repo.name}</span>
-                {(repo.insertions > 0 || repo.deletions > 0) && (
+                {(repo.insertions > 0 || repo.deletions > 0 || repo.insertionsCapped) && (
                   <>
-                    <span className={`${styles.statBadge} ${styles.statInsert}`}>+{repo.insertions}</span>
+                    <span
+                      className={`${styles.statBadge} ${styles.statInsert}`}
+                      title={repo.insertionsCapped ? 'Insertion count is capped for large untracked files' : undefined}
+                    >+{repo.insertions}{repo.insertionsCapped ? '…' : ''}</span>
                     <span className={`${styles.statBadge} ${styles.statDelete}`}>-{repo.deletions}</span>
                   </>
                 )}

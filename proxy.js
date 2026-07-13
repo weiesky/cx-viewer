@@ -166,6 +166,14 @@ function normalizeObservedModel(value) {
   return model && model.length <= 256 ? model : null;
 }
 
+function isDownstreamClosed(req, res) {
+  return Boolean(req.aborted || res.destroyed || res.writableEnded);
+}
+
+async function cancelResponseBody(response) {
+  try { await response?.body?.cancel(); } catch { }
+}
+
 /** Inspect only the bounded SSE/JSON prefix needed to learn response.model. */
 export async function observeResponseModelStream(stream, onModel) {
   if (!stream || typeof stream.getReader !== 'function' || typeof onModel !== 'function') return null;
@@ -251,6 +259,19 @@ export function startProxy({ onResponseModel = null } = {}) {
       const { fullUrl, originalBaseUrl, authMode } = resolveUpstream(reqPath, req.headers);
       if (process.env.CXV_DEBUG) console.error(`[CX-Proxy] ${req.method} ${reqPath} [${authMode}] → ${fullUrl}`);
 
+      // A startup models request may be superseded by another Codex process and
+      // disconnected while its upstream fetch is still pending. Abort that fetch
+      // promptly instead of later trying to pipe into an already-destroyed
+      // ServerResponse (Node 24 throws ERR_STREAM_UNABLE_TO_PIPE in that case).
+      const upstreamAbort = new AbortController();
+      const abortUpstream = () => {
+        if (isDownstreamClosed(req, res) && !upstreamAbort.signal.aborted) {
+          upstreamAbort.abort();
+        }
+      };
+      req.once('aborted', abortUpstream);
+      res.once('close', abortUpstream);
+
       // Use the patched fetch (which logs to cx-viewer)
       try {
         // Convert incoming headers, stripping hop-by-hop + length/encoding headers.
@@ -278,6 +299,7 @@ export function startProxy({ onResponseModel = null } = {}) {
         const fetchOptions = {
           method: req.method,
           headers: headers,
+          signal: upstreamAbort.signal,
         };
 
         // 标记此请求为 CX-Viewer 代理转发的 Codex/OpenAI API 请求
@@ -289,6 +311,14 @@ export function startProxy({ onResponseModel = null } = {}) {
         }
 
         const response = await fetch(fullUrl, fetchOptions);
+
+        // The downstream can close between fetch resolution and response
+        // handoff (notably while the interceptor inspects a cloned JSON body).
+        // Do not call writeHead/pipeline on the destroyed response stream.
+        if (isDownstreamClosed(req, res)) {
+          void cancelResponseBody(response);
+          return;
+        }
 
         // fetch 自动解压，需移除编码相关 header 避免客户端重复解压
         const responseHeaders = {};
@@ -307,6 +337,7 @@ export function startProxy({ onResponseModel = null } = {}) {
               console.error(`[CX-Viewer Proxy] ${extractApiErrorMessage(response.status, errorText)}`);
             }
 
+            if (isDownstreamClosed(req, res)) return;
             res.writeHead(response.status, responseHeaders);
             res.end(errorText);
             return;
@@ -334,7 +365,7 @@ export function startProxy({ onResponseModel = null } = {}) {
           nodeStream.on('error', () => {});
           // pipeline handles stream errors; without this, unhandled 'error' events crash the process.
           pipeline(nodeStream, res, (err) => {
-            if (err && process.env.CXV_DEBUG) {
+            if (err && !isDownstreamClosed(req, res) && process.env.CXV_DEBUG) {
               console.error('[CX-Viewer Proxy] Stream pipeline error:', err.message);
             }
           });
@@ -342,6 +373,11 @@ export function startProxy({ onResponseModel = null } = {}) {
           res.end();
         }
       } catch (err) {
+        // Client cancellation is expected during Codex startup (the app-server
+        // and TUI can supersede each other's models request). It is not an
+        // upstream forwarding failure and the downstream is no longer writable.
+        if (isDownstreamClosed(req, res)) return;
+
         // Surface the real reason: log it and include it in the 502 body so it
         // shows up directly in Codex's error message (aids diagnosis without
         // needing CXV_DEBUG). Only the upstream host is revealed, not credentials.
@@ -349,6 +385,9 @@ export function startProxy({ onResponseModel = null } = {}) {
         console.error(`[CX-Viewer Proxy] Forward to ${fullUrl} failed: ${detail}`);
         res.statusCode = 502;
         res.end(`Proxy Error: ${detail} (upstream: ${fullUrl})`);
+      } finally {
+        req.off('aborted', abortUpstream);
+        res.off('close', abortUpstream);
       }
     });
 

@@ -45,9 +45,9 @@ import styles from './AppHeader.module.css';
 import sharedChrome from '../common/sharedChrome.module.css';
 
 
-// 认证 state 的单一形状工厂 —— 初始态 / 401 降级 / 服务端回包归一化三处共用，避免字段漂移。
-// 服务端权威生产者是 server/routes/auth.js 的 buildState(同样字段集)。
-function makeAuthState(over = {}) {
+// 认证 state 的单一形状工厂 —— 初始态 / 访问拒绝 / 服务端回包归一化三处共用，避免字段漂移。
+// 服务端权威生产者是 lib/auth-routes.js 的 buildState（同样字段集）。
+export function makeAuthState(over = {}) {
   return {
     enabled: false,
     isAdmin: false,
@@ -56,8 +56,25 @@ function makeAuthState(over = {}) {
     hasProjectOverride: false,
     projectDir: null,
     global: { enabled: false, password: null },
+    remotePasswordLoginAvailable: false,
+    secureTransport: false,
+    loadStatus: 'idle',
     ...over,
   };
+}
+
+export function buildAuthShareUrl(localUrl, authState) {
+  const passwordShareIsSafe = authState?.enabled
+    && authState.remotePasswordLoginAvailable === true
+    && authState.secureTransport === true;
+  if (!localUrl || !passwordShareIsSafe) return localUrl;
+  try {
+    const shared = new URL(localUrl);
+    shared.searchParams.delete('token');
+    return shared.toString();
+  } catch {
+    return localUrl;
+  }
 }
 
 // countryToFlag 已随地理位置控件一起迁到 src/components/common/CountryFlag.jsx
@@ -104,7 +121,7 @@ class AppHeader extends React.Component {
       // isAdmin 仅本机(127.0.0.1)为 true，决定二维码下方是否显示管理区。
       // scope='project'|'global'(当前生效来源)；hasProjectOverride=本项目是否有专用配置；
       // global={enabled,password}=全局默认；projectDir=本 server 项目(非 CLI 为 null)。
-      // 远程登录窗口期 fetch 可能 401 → catch 降级为非 admin、视为已开启，不破坏 header。
+      // loadStatus 区分权威成功、401/403 和传输/服务端失败；未知态始终保留分享 token。
       authState: makeAuthState(),
       // 密码输入框临时编辑态（受控），与权威值区分；null=未进入编辑
       _authPasswordDraft: null,
@@ -122,6 +139,7 @@ class AppHeader extends React.Component {
     // 切换/快速重开 popover 时旧回包不会污染新状态（参考 _memorySeq 模式）
     this._codexMdSeq = 0;
     this._codexMdDetailSeq = 0;
+    this._authStateSeq = 0;
   }
 
   // ===== Electron 原生 tab bar header 桥接（把部分控件迁移到最顶部 tab bar）=====
@@ -346,16 +364,7 @@ class AppHeader extends React.Component {
     fetch(apiUrl('/api/local-url')).then(r => r.json()).then(data => {
       if (data.url) this.setState({ localUrl: data.url });
     }).catch(() => {});
-    // 认证态：非 2xx(远程登录窗口期会 401) 或网络错误 → 降级为非 admin、视为已开启，
-    // 既不暴露管理区也不破坏 header。本机(admin)会拿到真实 { enabled, isAdmin:true, password }。
-    fetch(apiUrl('/api/auth/state')).then(r => {
-      if (!r.ok) throw new Error('auth-state ' + r.status);
-      return r.json();
-    }).then(data => {
-      this._applyAuthState(data);
-    }).catch(() => {
-      this.setState({ authState: makeAuthState({ enabled: true, global: { enabled: true, password: null } }) });
-    });
+    this.reloadAuthState();
     // codex-settings 由 SettingsProvider 集中 fetch,这里只订阅 Promise 拿 model 字段
     this.context._codexSettingsReady.then(data => {
       if (data && data.model) this.setState({ settingsModel: data.model });
@@ -373,6 +382,10 @@ class AppHeader extends React.Component {
     this._pushHeaderModel();
     // Workspace 切换：projectName 变了 → 旧的 _fsSkills 属于旧项目，直接作废。
     // 递增 seq 防止正在途中的 reload 回包把脏数据塞回 state。
+    const authContextChanged = prevProps.projectName !== this.props.projectName
+      || prevProps.instanceId !== this.props.instanceId;
+    if (authContextChanged) this.reloadAuthState();
+
     if (prevProps.projectName !== this.props.projectName) {
       // seq++ 杀掉任何在途的 reloadFsSkills（即使下面不再重启新的 fetch，也要确保旧回包不会写脏数据）
       this._fsSkillsSeq++;
@@ -387,6 +400,36 @@ class AppHeader extends React.Component {
 
   reloadFsSkills = async () => SeqLoaders.loadFsSkills(this, { isLocalLog: this.props.isLocalLog });
 
+  reloadAuthState = async () => {
+    const seq = ++this._authStateSeq;
+    this.setState({ _authScope: null, _authPasswordDraft: null });
+    try {
+      const response = await fetch(apiUrl('/api/auth/state'));
+      if (seq !== this._authStateSeq) return null;
+      if (response.status === 401 || response.status === 403) {
+        this.setState({
+          authState: makeAuthState({ loadStatus: 'access-denied' }),
+          _authScope: null,
+          _authPasswordDraft: null,
+        });
+        return null;
+      }
+      if (!response.ok) throw new Error(`auth-state ${response.status}`);
+      const data = await response.json();
+      if (seq !== this._authStateSeq) return null;
+      this._applyAuthState(data);
+      return data;
+    } catch {
+      if (seq !== this._authStateSeq) return null;
+      this.setState({
+        authState: makeAuthState({ loadStatus: 'error' }),
+        _authScope: null,
+        _authPasswordDraft: null,
+      });
+      return null;
+    }
+  };
+
   // 把服务端返回的认证 state 写入本地(含 scope 信息),并清空编辑草稿。
   _applyAuthState(data) {
     this.setState({
@@ -398,15 +441,21 @@ class AppHeader extends React.Component {
         hasProjectOverride: !!data.hasProjectOverride,
         projectDir: data.projectDir || null,
         global: data.global && typeof data.global === 'object' ? data.global : { enabled: false, password: null },
+        remotePasswordLoginAvailable: data.remotePasswordLoginAvailable === true,
+        secureTransport: data.secureTransport === true,
+        loadStatus: 'ready',
       }),
       _authPasswordDraft: null,
+      _authScope: null,
     });
   }
 
-  // 提交认证配置变更(admin-only)。body = { scope?, enabled?, password?, clearOverride? }；
-  // 成功后用服务端回的权威 state 覆盖本地。失败 → message.error 不改 state。
-  postAuthConfig = async (body, opts = {}) => {
+  // 提交认证配置变更(admin-only)。body = { action?, scope?, enabled?, password?, clearOverride? }；
+  // 成功后用服务端回的权威 state 覆盖本地；失败则强制刷新，处理服务端已提交但响应丢失的情况。
+  postAuthConfig = async (body) => {
     if (this.state._authSaving) return;
+    const requestProjectName = this.props.projectName;
+    const requestInstanceId = this.props.instanceId;
     this.setState({ _authSaving: true });
     try {
       const post = async (b) => {
@@ -418,28 +467,27 @@ class AppHeader extends React.Component {
         if (!r.ok) throw new Error('auth-config ' + r.status);
         return r.json();
       };
-      let data = await post(body);
-      // 切到「全局」且全局原本未启用时：先启用全局(上一步生成共享密码)，再清除本项目覆盖→继承全局。
-      // 两步合一,只弹一次提示、_authSaving 全程为真防重入。
-      if (opts.thenClearOverride) data = await post({ clearOverride: true });
+      const data = await post(body);
+      if (requestProjectName !== this.props.projectName || requestInstanceId !== this.props.instanceId) {
+        await this.reloadAuthState();
+        return;
+      }
       this._applyAuthState(data);
       message.success(t('ui.auth.saved'));
     } catch {
       message.error(t('ui.auth.saveFailed'));
+      await this.reloadAuthState();
     } finally {
       this.setState({ _authSaving: false });
     }
   };
 
   // 二维码 / URL 输入框要展示的分享地址。
-  // 密码保护开启时,远程用户不再需要 token —— 空密码模式直接放行,非空密码则进登录页用密码进入;
-  // 故去掉 ?token= 给出更干净、可长期收藏/扫码的 URL。关闭时仍需 token,保留原始地址。
+  // 仅当服务端确认远程密码登录可用且传输安全时删除 token；未知态、HTTP 或认证关闭时保留 token。
+  // URL 解析只删除 token 参数，其它 query 和 hash 必须原样保留。
   // authState.enabled 变化会触发 re-render,二维码随之重绘。
   shareUrl() {
-    const { localUrl, authState } = this.state;
-    if (!localUrl || !authState.enabled) return localUrl;
-    const i = localUrl.indexOf('?');
-    return i === -1 ? localUrl : localUrl.slice(0, i);
+    return buildAuthShareUrl(this.state.localUrl, this.state.authState);
   }
 
   // 二维码下方的密码管理区（仅 admin 渲染）。项目中心模型：整块表示「当前项目」的防护——
@@ -510,12 +558,12 @@ class AppHeader extends React.Component {
               onChange={(v) => {
                 this.setState({ _authScope: v, _authPasswordDraft: null });
                 if (v === 'global') {
-                  // 继承全局：删除本项目覆盖。全局未启用时先启用全局(生成共享密码)再清覆盖，
-                  // 保证切换后本项目仍受保护、开关不抖、tab 不消失。
+                  // 继承全局：删除本项目覆盖。全局未启用时由后端用一个原子 action 启用并继承，
+                  // 避免两次请求之间暴露半完成配置。
                   if (authState.global && authState.global.enabled) {
                     this.postAuthConfig({ clearOverride: true });
                   } else {
-                    this.postAuthConfig({ scope: 'global', enabled: true }, { thenClearOverride: true });
+                    this.postAuthConfig({ action: 'enable-global-and-inherit' });
                   }
                 } else {
                   // 本项目自有：建立/启用项目覆盖(无密码→后端生成)。
@@ -535,7 +583,7 @@ class AppHeader extends React.Component {
   }
 
   // 某作用域的密码框（复制 + 保存 + 空密码警告）。「本项目 / 全局」两 tab 共用。
-  // 密码统一以大写展示(登录侧忽略大小写,见 routes/auth.js)；输入也强制大写,所见即所存。
+  // 密码统一以大写展示（登录侧忽略大小写，见 lib/auth-routes.js）；输入也强制大写，所见即所存。
   renderPasswordInput(scope, cfg) {
     const { _authPasswordDraft, _authSaving } = this.state;
     const pw = (cfg.password ?? '').toUpperCase();
@@ -717,6 +765,7 @@ class AppHeader extends React.Component {
     this._memoryDetailSeq++;
     this._codexMdSeq++;
     this._codexMdDetailSeq++;
+    this._authStateSeq++;
   }
 
   // 命令相关的标签集合，已作为独立 prompt 输出，在 segments 中直接丢弃

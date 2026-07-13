@@ -197,6 +197,7 @@ Plugin enable/disable managed via `disabledPlugins` array in `preferences.json`.
 ├── <project>/                     # Per-project log directory
 │   ├── <project>_20260404_123456.jsonl  # JSONL log files
 │   ├── <project>.json             # Stats data (background generated)
+│   ├── raw/                        # Bounded/rotated app-server RPC sidecars
 │   └── images/                    # Persistent uploaded image copies
 └── ...
 
@@ -209,9 +210,10 @@ Plugin enable/disable managed via `disabledPlugins` array in `preferences.json`.
 |---------|-------|-------------|
 | Port range | 7008-7099 | Auto-scans for available port |
 | Bind address | 0.0.0.0 | All network interfaces |
-| Access token | Random 16-byte hex | LAN access requires `?token=xxx`; localhost is exempt |
-| HTTPS | Plugin only | Requires plugin providing `httpsOptions` hook |
-| CORS | `*` | All origins allowed |
+| Access token | Random 16-byte hex | LAN access requires `?token=xxx` or a valid password session |
+| Password sessions | Project/global scope, 30 days | Available only when the remote transport is secure; logout revokes the current session and configuration changes revoke all sessions |
+| HTTPS | Server/plugin dependent | Remote password login requires HTTPS; plain HTTP sharing retains the URL token |
+| Browser origin | Same-origin/allowlisted Host | Localhost is not by itself an administrator trust signal |
 | Upload limit | 50MB | Maximum single file upload size |
 
 ## 12. URL Parameters

@@ -15,10 +15,13 @@ Common reasons:
 
 ## Security Notice
 
-> CX Viewer's LAN service is accessible to all devices on the same network by default.
+> CX Viewer binds to the LAN, but remote requests must present the generated URL token or use an enabled password-protected session.
 
 - Be cautious when using on **public WiFi** (cafes, airports) — others on the same network could potentially access your service
-- CX Viewer uses **token-based authentication** for LAN access (token is embedded in the URL); requests without a valid token are rejected
+- The QR URL contains a random **access token** unless secure password login is available and the share UI explicitly removes it
+- Password login is offered only over a secure transport. On plain HTTP, keep the token in the URL or enable HTTPS through the configured server/plugin path
+- Password sessions have a server-enforced 30-day lifetime; logout revokes the current session, and changing/disabling protection revokes all sessions
+- Local browser and terminal WebSocket requests are origin-checked; a third-party web page is not treated as an administrator merely because it connects to `127.0.0.1`
 - Recommended for use on trusted home or office networks
 
 ## Beyond the LAN

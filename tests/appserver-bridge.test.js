@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -9,7 +9,10 @@ import {
   _parseAppServerServerMessageForTests,
   _resetAppServerBridgeForTests,
   _injectApprovalsReviewerForTests,
+  _flushAppServerRawSidecarsForTests,
+  _getAppServerRawStateForTests,
   _writeAppServerEntryForTests,
+  resetRawCaptureBoundary,
 } from '../lib/appserver-bridge.js';
 
 test('app-server bridge delegates log writes to the shared rotating writer', () => {
@@ -22,6 +25,230 @@ test('app-server bridge delegates log writes to the shared rotating writer', () 
   _writeAppServerEntryForTests(entry);
   assert.deepEqual(seen, [entry]);
   _resetAppServerBridgeForTests();
+});
+
+test('app-server bridge stores raw JSON-RPC frames in thread sidecars instead of business entries', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'cxv-appserver-raw-sidecar-'));
+  const logFile = join(tmp, 'bridge.jsonl');
+
+  try {
+    _resetAppServerBridgeForTests({
+      logFile,
+      cwd: tmp,
+      project: 'bridge-project',
+      model: 'gpt-test',
+    });
+
+    _parseAppServerClientMessageForTests({
+      id: 1,
+      method: 'thread/start',
+      params: { cwd: tmp, developerInstructions: 'You are Codex' },
+    });
+    server('thread/started', { thread: { id: 'root-thread', cwd: tmp } });
+    client('turn/start', {
+      threadId: 'root-thread',
+      model: 'gpt-test',
+      cwd: tmp,
+      input: [{ type: 'text', text: 'root prompt' }],
+      clientUserMessageId: 'raw-sidecar-user',
+    });
+    server('item/completed', {
+      threadId: 'root-thread',
+      item: { id: 'root-message', type: 'agentMessage', text: 'root answer' },
+    });
+    server('turn/completed', {
+      threadId: 'root-thread',
+      turn: { id: 'root-turn', threadId: 'root-thread', status: 'completed' },
+    });
+    _flushAppServerRawSidecarsForTests();
+
+    const entries = readEntries(logFile);
+    assert.equal(entries.length, 1);
+    assert.equal(entries[0]._codexRawRequest, undefined);
+    assert.equal(typeof entries[0]._codexRaw?.streamId, 'string');
+    assert.deepEqual({ ...entries[0]._codexRaw, streamId: '<stream>' }, {
+      version: 1,
+      streamId: '<stream>',
+      threadId: 'root-thread',
+      sidecar: 'root-thread.jsonl',
+      fromSeq: 2,
+      toSeq: 5,
+    });
+
+    const rawDir = join(tmp, 'raw');
+    const protocolFile = join(rawDir, '_app-server.jsonl');
+    const rootFile = join(rawDir, 'root-thread.jsonl');
+    assert.equal(existsSync(protocolFile), true);
+    assert.equal(existsSync(rootFile), true);
+
+    const protocolFrames = readFileSync(protocolFile, 'utf8').trim().split('\n').map(JSON.parse);
+    assert.equal(protocolFrames.length, 1);
+    assert.equal(protocolFrames[0].method, 'thread/start');
+    assert.equal(protocolFrames[0].thread_id, null);
+    assert.equal(protocolFrames[0].direction, 'client');
+
+    const rootFrames = readFileSync(rootFile, 'utf8').trim().split('\n').map(JSON.parse);
+    assert.deepEqual(rootFrames.map(frame => frame.method), [
+      'thread/started',
+      'turn/start',
+      'item/completed',
+      'turn/completed',
+    ]);
+    assert.equal(rootFrames.every(frame => frame.thread_id === 'root-thread'), true);
+    assert.equal(rootFrames.every(frame => typeof frame.stream_id === 'string' && frame.stream_id), true);
+    assert.deepEqual(rootFrames.map(frame => frame.seq), [...rootFrames.map(frame => frame.seq)].sort((a, b) => a - b));
+  } finally {
+    _resetAppServerBridgeForTests();
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('each business entry references only raw frames captured since the previous entry', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'cxv-appserver-raw-range-'));
+  const seen = [];
+  try {
+    _resetAppServerBridgeForTests({
+      logFile: join(tmp, 'bridge.jsonl'),
+      writeLogEntry: entry => { seen.push(entry); return { written: true }; },
+    });
+    server('raw/first', { threadId: 'thread-range', value: 1 });
+    _writeAppServerEntryForTests({ body: { metadata: { thread_id: 'thread-range' } } });
+    server('raw/second', { threadId: 'thread-range', value: 2 });
+    _writeAppServerEntryForTests({ body: { metadata: { thread_id: 'thread-range' } } });
+
+    assert.equal(seen.length, 2);
+    assert.deepEqual(
+      seen.map(entry => [entry._codexRaw.fromSeq, entry._codexRaw.toSeq]),
+      [[1, 1], [2, 2]],
+    );
+  } finally {
+    _resetAppServerBridgeForTests();
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('raw capture boundary discards pending frames and starts a new stream', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'cxv-appserver-raw-boundary-'));
+  const seen = [];
+  try {
+    _resetAppServerBridgeForTests({
+      logFile: join(tmp, 'bridge.jsonl'),
+      writeLogEntry: entry => { seen.push(entry); return { written: true }; },
+    });
+    server('raw/before-clear', { threadId: 'thread-clear' });
+    const boundary = resetRawCaptureBoundary();
+    server('raw/after-clear', { threadId: 'thread-clear' });
+    _writeAppServerEntryForTests({ body: { metadata: { thread_id: 'thread-clear' } } });
+    _flushAppServerRawSidecarsForTests();
+
+    assert.notEqual(boundary.previousStreamId, boundary.streamId);
+    assert.equal(seen[0]._codexRaw.streamId, boundary.streamId);
+    assert.deepEqual([seen[0]._codexRaw.fromSeq, seen[0]._codexRaw.toSeq], [1, 1]);
+    const frames = readFileSync(join(tmp, 'raw', 'thread-clear.jsonl'), 'utf8').trim().split('\n').map(JSON.parse);
+    assert.deepEqual(frames.map(frame => frame.method), ['raw/after-clear']);
+  } finally {
+    _resetAppServerBridgeForTests();
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('raw sidecars rotate into bounded segments and enforce per-thread retention', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'cxv-appserver-raw-rotation-'));
+  const logFile = join(tmp, 'bridge.jsonl');
+  try {
+    _resetAppServerBridgeForTests({
+      logFile,
+      rawStorageOptions: {
+        segmentBytes: 700,
+        threadQuotaBytes: 1600,
+        globalQuotaBytes: 4000,
+        bufferBytes: 64 * 1024,
+      },
+    });
+    for (let i = 0; i < 30; i++) {
+      server('raw/test', { threadId: 'thread-rotate', index: i, payload: 'x'.repeat(90) });
+    }
+    _flushAppServerRawSidecarsForTests();
+    const rawDir = join(tmp, 'raw');
+    const files = readdirSync(rawDir).filter(name => name.startsWith('thread-rotate') && name.endsWith('.jsonl'));
+    const total = files.reduce((sum, name) => sum + statSync(join(rawDir, name)).size, 0);
+    assert.equal(files.some(name => /\.part-\d{4}\.jsonl$/.test(name)), true);
+    assert.equal(total <= 2300, true, `retained ${total} bytes`);
+  } finally {
+    _resetAppServerBridgeForTests();
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('raw sidecar global quota also evicts one-segment active threads', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'cxv-appserver-raw-global-quota-'));
+  try {
+    _resetAppServerBridgeForTests({
+      logFile: join(tmp, 'bridge.jsonl'),
+      rawStorageOptions: {
+        segmentBytes: 4096,
+        threadQuotaBytes: 4096,
+        globalQuotaBytes: 1500,
+        bufferBytes: 64 * 1024,
+      },
+    });
+    for (let i = 0; i < 3; i++) server('raw/test', { threadId: `thread-global-${i}`, payload: 'x'.repeat(700) });
+    _flushAppServerRawSidecarsForTests();
+    const rawDir = join(tmp, 'raw');
+    const total = readdirSync(rawDir).reduce((sum, name) => sum + statSync(join(rawDir, name)).size, 0);
+    assert.equal(total <= 1500, true, `retained ${total} bytes`);
+  } finally {
+    _resetAppServerBridgeForTests();
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('raw sidecar write failures retain only a bounded chunk buffer', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'cxv-appserver-raw-failure-'));
+  try {
+    _resetAppServerBridgeForTests({
+      logFile: join(tmp, 'bridge.jsonl'),
+      rawStorageOptions: {
+        bufferBytes: 1200,
+        append: () => { throw new Error('disk unavailable'); },
+      },
+    });
+    for (let i = 0; i < 40; i++) {
+      server('raw/test', { threadId: 'thread-fail', index: i, payload: 'x'.repeat(120) });
+    }
+    _flushAppServerRawSidecarsForTests();
+    const state = _getAppServerRawStateForTests();
+    assert.equal(state.bufferedBytes <= 1200, true);
+    assert.equal(state.droppedFrames > 0, true);
+  } finally {
+    _resetAppServerBridgeForTests();
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('raw routing maps are bounded and terminal notifications release turn/item routes', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'cxv-appserver-raw-routes-'));
+  try {
+    _resetAppServerBridgeForTests({
+      logFile: join(tmp, 'bridge.jsonl'),
+      rawStorageOptions: { routeMapMax: 3 },
+    });
+    for (let i = 0; i < 10; i++) {
+      _parseAppServerClientMessageForTests({ id: i, method: 'turn/start', params: { threadId: `thread-${i}`, turnId: `turn-${i}`, input: [] } });
+    }
+    assert.equal(_getAppServerRawStateForTests().rpcRoutes <= 3, true);
+    server('item/started', { threadId: 'thread-final', item: { id: 'item-final', turnId: 'turn-final' } });
+    let state = _getAppServerRawStateForTests();
+    assert.equal(state.itemRoutes > 0, true);
+    server('item/completed', { threadId: 'thread-final', item: { id: 'item-final', turnId: 'turn-final' } });
+    server('turn/completed', { threadId: 'thread-final', turn: { id: 'turn-final', threadId: 'thread-final', status: 'completed' } });
+    state = _getAppServerRawStateForTests();
+    assert.equal(state.itemRoutes, 0);
+    assert.equal(state.turnRoutes < 3, true);
+  } finally {
+    _resetAppServerBridgeForTests();
+    rmSync(tmp, { recursive: true, force: true });
+  }
 });
 
 test('app-server bridge injects Codex approval reviewer into stable lifecycle requests', () => {

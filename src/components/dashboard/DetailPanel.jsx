@@ -105,13 +105,32 @@ class DetailPanel extends React.Component {
       responseHeadersExpanded: false,
       reminderFilters: null,
       modelCatalogExpanded: {},
+      rawFrames: null,
+      rawLoading: false,
+      rawError: '',
+      rawKey: '',
+      rawTruncated: false,
+      rawMatched: 0,
     };
   }
 
   shouldComponentUpdate(nextProps, nextState) {
     if (nextProps.request !== this.props.request) {
       const isMA = isMainAgent(nextProps.request);
-      this.setState({ diffExpanded: isMA && !!nextProps.expandDiff, requestHeadersExpanded: false, responseHeadersExpanded: false, reminderFilters: null, modelCatalogExpanded: {} });
+      this._rawLoadSeq = (this._rawLoadSeq || 0) + 1;
+      this.setState({
+        diffExpanded: isMA && !!nextProps.expandDiff,
+        requestHeadersExpanded: false,
+        responseHeadersExpanded: false,
+        reminderFilters: null,
+        modelCatalogExpanded: {},
+        rawFrames: null,
+        rawLoading: false,
+        rawError: '',
+        rawKey: '',
+        rawTruncated: false,
+        rawMatched: 0,
+      });
     }
     return (
       nextProps.request !== this.props.request ||
@@ -124,7 +143,13 @@ class DetailPanel extends React.Component {
       nextState.requestHeadersExpanded !== this.state.requestHeadersExpanded ||
       nextState.responseHeadersExpanded !== this.state.responseHeadersExpanded ||
       nextState.reminderFilters !== this.state.reminderFilters ||
-      nextState.modelCatalogExpanded !== this.state.modelCatalogExpanded
+      nextState.modelCatalogExpanded !== this.state.modelCatalogExpanded ||
+      nextState.rawFrames !== this.state.rawFrames ||
+      nextState.rawLoading !== this.state.rawLoading ||
+      nextState.rawError !== this.state.rawError ||
+      nextState.rawKey !== this.state.rawKey ||
+      nextState.rawTruncated !== this.state.rawTruncated ||
+      nextState.rawMatched !== this.state.rawMatched
     );
   }
 
@@ -156,6 +181,41 @@ class DetailPanel extends React.Component {
     const clean = typeof data === 'object' ? stripPrivateKeys(data) : data;
     const text = typeof clean === 'string' ? clean : JSON.stringify(clean, null, 2);
     navigator.clipboard.writeText(text).then(() => message.success(t('ui.copySuccess')));
+  }
+
+  async loadRawFrames(request = this.getCurrentRequest(), { force = false } = {}) {
+    const ref = request?._codexRaw;
+    if (!ref) return;
+    const selectedFile = typeof window === 'undefined'
+      ? null
+      : new URLSearchParams(window.location.search).get('logfile');
+    const file = selectedFile || ref.logFile || null;
+    const rawKey = `${file || 'current'}|${ref.streamId}|${ref.sidecar}|${ref.fromSeq}|${ref.toSeq}`;
+    if (!force && this.state.rawLoading && this.state.rawKey === rawKey) return;
+    if (!force && this.state.rawFrames && this.state.rawKey === rawKey) return;
+
+    const seq = (this._rawLoadSeq || 0) + 1;
+    this._rawLoadSeq = seq;
+    this.setState({ rawLoading: true, rawError: '', rawKey, rawTruncated: false, rawMatched: 0 });
+    try {
+      const response = await fetch(apiUrl('/api/raw-sidecar/frames'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file, ref, limit: 1000 }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
+      if (this._rawLoadSeq !== seq) return;
+      this.setState({
+        rawFrames: Array.isArray(payload.frames) ? payload.frames : [],
+        rawLoading: false,
+        rawTruncated: !!payload.truncated,
+        rawMatched: Number.isSafeInteger(payload.matched) ? payload.matched : 0,
+      });
+    } catch (error) {
+      if (this._rawLoadSeq !== seq) return;
+      this.setState({ rawFrames: null, rawLoading: false, rawError: error.message || 'Failed to load raw frames', rawTruncated: false, rawMatched: 0 });
+    }
   }
 
   renderHeaders(headers) {
@@ -749,6 +809,50 @@ class DetailPanel extends React.Component {
       },
     ];
 
+    if (request._codexRaw || currentTab === 'raw') {
+      const rawRef = request._codexRaw;
+      tabItems.push({
+        key: 'raw',
+        label: 'Codex Raw',
+        children: rawRef ? (
+          <div className={styles.tabContent}>
+            <div className={styles.bodyHeader}>
+              <Space size="small" wrap>
+                <Text type="secondary">
+                  seq {rawRef.fromSeq}–{rawRef.toSeq} · {rawRef.streamId}
+                </Text>
+              </Space>
+              <Button
+                size="small"
+                loading={this.state.rawLoading}
+                onClick={() => this.loadRawFrames(request, { force: true })}
+              >
+                {this.state.rawFrames ? 'Reload' : 'Load raw frames'}
+              </Button>
+            </div>
+            {this.state.rawError ? (
+              <Empty description={this.state.rawError} />
+            ) : this.state.rawFrames ? (
+              <>
+                {this.state.rawTruncated && (
+                  <Paragraph type="warning">
+                    Showing the newest 1000 of {this.state.rawMatched} matching frames.
+                  </Paragraph>
+                )}
+                <JsonViewer data={this.state.rawFrames} defaultExpand="root" />
+              </>
+            ) : (
+              <Text type="secondary">Raw protocol frames are loaded on demand (up to 1000 frames).</Text>
+            )}
+          </div>
+        ) : (
+          <div className={styles.tabContent}>
+            <Empty description="Raw protocol frames are unavailable for this request." />
+          </div>
+        ),
+      });
+    }
+
     const usage = request.response?.body?.usage;
     const tokenStats = usage ? (() => {
       const input = usage.input_tokens || 0;
@@ -800,7 +904,10 @@ class DetailPanel extends React.Component {
 
         <Tabs
           activeKey={currentTab}
-          onChange={onTabChange}
+          onChange={(key) => {
+            if (key === 'raw') this.loadRawFrames(request);
+            if (onTabChange) onTabChange(key);
+          }}
           items={tabItems}
           size="small"
         />

@@ -7,6 +7,7 @@ import {
   inheritToolSnapshotOnDedup,
   internMainAgentInput,
   restoreSlimmedEntry,
+  _resetEntryInternPoolsForTest,
 } from '../src/utils/entry-slim.js';
 import { _resetReadPoolForTest } from '../src/utils/readResultPool.js';
 import { isPostClearCheckpoint } from '../src/utils/clearCheckpoint.js';
@@ -108,7 +109,7 @@ function makeCurrentLayoutEntry(name, conversationInput, tools = null) {
   };
 }
 
-test('batch slimmer rolls additional_tools forward when later frames omit the declaration', () => {
+test('batch slimmer keeps a full anchor when additional_tools disappears and rolls its snapshot forward', () => {
   const declared = [{ name: 'exec', description: 'Run code.' }, { name: 'wait' }];
   const first = makeCurrentLayoutEntry('first', [{ role: 'user', content: 'one' }], declared);
   const second = makeCurrentLayoutEntry('second', [
@@ -121,7 +122,8 @@ test('batch slimmer rolls additional_tools forward when later frames omit the de
   entries.forEach((entry, index) => slimmer.process(entry, entries, index));
   slimmer.finalize(entries);
 
-  assert.equal(entries[0]._slimmed, true);
+  assert.equal(entries[0]._slimmed, undefined);
+  assert.equal(entries[1]._inputRewriteBoundary, true);
   assert.equal(entries[0]._loadedTools, undefined);
   assert.equal(entries[1]._loadedTools, declared);
 });
@@ -152,6 +154,80 @@ test('incremental slimmer keeps one rolling tool snapshot on the latest MainAgen
   assert.equal(requests[0]._loadedTools, undefined);
   assert.equal(requests[1]._loadedTools, undefined);
   assert.equal(requests[2]._loadedTools, declared);
+});
+
+test('batch and incremental slimmer never restore an old request from a rewritten input prefix', () => {
+  const firstInput = [{ role: 'user', content: 'draft' }];
+  const rewrittenInput = [
+    { role: 'user', content: 'final' },
+    { role: 'assistant', content: 'done' },
+  ];
+  const finalInput = [...rewrittenInput, { role: 'user', content: 'continue' }];
+
+  const entries = [
+    makeCurrentLayoutEntry('first', firstInput),
+    makeCurrentLayoutEntry('rewritten', rewrittenInput),
+    makeCurrentLayoutEntry('final', finalInput),
+  ];
+  const batch = createEntrySlimmer(isMainAgent);
+  entries.forEach((item, index) => batch.process(item, entries, index));
+  batch.finalize(entries);
+
+  assert.equal(entries[0]._slimmed, undefined);
+  assert.deepEqual(entries[0].body.input, firstInput);
+  assert.equal(entries[1]._slimmed, true);
+  assert.deepEqual(restoreSlimmedEntry(entries[1], entries).body.input, rewrittenInput);
+
+  const requests = [];
+  const incremental = createIncrementalSlimmer(isMainAgent);
+  for (const item of [
+    makeCurrentLayoutEntry('live-first', structuredClone(firstInput)),
+    makeCurrentLayoutEntry('live-rewritten', structuredClone(rewrittenInput)),
+    makeCurrentLayoutEntry('live-final', structuredClone(finalInput)),
+  ]) {
+    incremental.processEntry(item, requests, requests.length);
+    requests.push(item);
+  }
+  assert.equal(requests[0]._slimmed, undefined);
+  assert.deepEqual(requests[0].body.input, firstInput);
+  assert.equal(requests[1]._slimmed, true);
+  assert.deepEqual(restoreSlimmedEntry(requests[1], requests).body.input, rewrittenInput);
+});
+
+test('delta prefix digests avoid unbounded legacy deep comparison for oversized input items', () => {
+  const huge = 'x'.repeat(2_200_000);
+  const first = makeCurrentLayoutEntry('first', [{ role: 'user', content: huge }]);
+  first._inputDigest = 'digest-one';
+  const second = makeCurrentLayoutEntry('second', [
+    { role: 'user', content: huge },
+    { role: 'assistant', content: 'done' },
+  ]);
+  second._baseInputDigest = 'digest-one';
+  second._baseMessageCount = first.body.input.length;
+
+  const entries = [first, second];
+  const slimmer = createEntrySlimmer(isMainAgent);
+  entries.forEach((item, index) => slimmer.process(item, entries, index));
+  slimmer.finalize(entries);
+
+  assert.equal(entries[0]._slimmed, true);
+  assert.equal(entries[1]._inputRewriteBoundary, undefined);
+});
+
+test('oversized legacy prefix comparison fails safe by keeping a full anchor', () => {
+  const huge = 'x'.repeat(2_200_000);
+  const first = makeCurrentLayoutEntry('legacy-first', [{ role: 'user', content: huge }]);
+  const second = makeCurrentLayoutEntry('legacy-second', [
+    { role: 'user', content: huge },
+    { role: 'assistant', content: 'done' },
+  ]);
+  const entries = [first, second];
+  const slimmer = createEntrySlimmer(isMainAgent);
+  entries.forEach((item, index) => slimmer.process(item, entries, index));
+  slimmer.finalize(entries);
+
+  assert.equal(entries[0]._slimmed, undefined);
+  assert.equal(entries[1]._inputRewriteBoundary, true);
 });
 
 test('dedup replacement preserves a rolling tool snapshot but respects explicit empty tools', () => {
@@ -288,7 +364,7 @@ test('batch and incremental ownership exclude marker-less work after a repeated 
   assert.deepEqual(requests[3]._contextCompaction.prompts.map(prompt => prompt.id), ['old']);
 });
 
-test('slimming preserves a post-clear checkpoint marker', () => {
+test('post-clear checkpoints stay as full rewrite anchors', () => {
   const clear = makeEntry('clear', [{
     role: 'user',
     content: [{ type: 'text', text: '<command-name>/clear</command-name>' }],
@@ -302,9 +378,9 @@ test('slimming preserves a post-clear checkpoint marker', () => {
   const slimmer = createEntrySlimmer(isMainAgent);
   entries.forEach((entry, index) => slimmer.process(entry, entries, index));
   slimmer.finalize(entries);
-  assert.equal(entries[0]._slimmed, true);
-  assert.equal(entries[0]._postClearCheckpoint, true);
-  assert.equal(entries[0].body.input.length, 0);
+  assert.equal(entries[0]._slimmed, undefined);
+  assert.equal(entries[1]._inputRewriteBoundary, true);
+  assert.equal(entries[0].body.input.length, 1);
   assert.equal(isPostClearCheckpoint(entries[0], 20), true);
 });
 
@@ -380,21 +456,47 @@ test('client_metadata user identity blocks cross-account restore and slimming', 
   assert.equal(requests[0]._slimmed, undefined);
 });
 
-test('raw input interning is gated to MainAgent and does not pool tools or instructions', () => {
+test('MainAgent interning pools exact tools and instructions without borrowing changed values', () => {
   _resetReadPoolForTest();
+  _resetEntryInternPoolsForTest();
   const repeatedResult = 'x'.repeat(300);
   const input = [{ role: 'user', content: [{ type: 'tool_result', content: repeatedResult }] }];
   const first = makeEntry('first', input);
-  const second = makeEntry('second', structuredClone(input));
+  const second = makeEntry('first', structuredClone(input));
   const subAgent = makeEntry('sub', structuredClone(input), { mainAgent: false, subAgent: true });
 
-  assert.equal(internMainAgentInput(first, isMainAgent), first);
+  const internedFirst = internMainAgentInput(first, isMainAgent);
+  assert.notEqual(internedFirst, first);
+  assert.equal(Object.isFrozen(first.body.tools), false);
   const internedSecond = internMainAgentInput(second, isMainAgent);
   assert.notEqual(internedSecond, second);
-  assert.equal(internedSecond.body.tools, second.body.tools);
+  assert.equal(internedSecond.body.tools, internedFirst.body.tools);
   assert.equal(internedSecond.body.instructions, second.body.instructions);
   assert.equal(Object.hasOwn(internedSecond.body, '_cxvTools'), false);
   assert.equal(Object.hasOwn(internedSecond.body, '_cxvInstructions'), false);
+
+  const changed = makeEntry('changed', structuredClone(input));
+  const internedChanged = internMainAgentInput(changed, isMainAgent);
+  assert.notEqual(internedChanged.body.tools, changed.body.tools);
+  assert.deepEqual(internedChanged.body.tools, changed.body.tools);
+  assert.equal(Object.isFrozen(changed.body.tools), false);
+  assert.equal(internedChanged.body.instructions, 'instructions-changed');
   assert.equal(internMainAgentInput(subAgent, isMainAgent), subAgent);
   _resetReadPoolForTest();
+  _resetEntryInternPoolsForTest();
+});
+
+test('current-layout additional_tools arrays share only exact declarations', () => {
+  _resetEntryInternPoolsForTest();
+  const first = makeCurrentLayoutEntry('one', [{ role: 'user', content: 'one' }], [{ name: 'exec' }]);
+  const second = makeCurrentLayoutEntry('two', [{ role: 'user', content: 'two' }], [{ name: 'exec' }]);
+  const changed = makeCurrentLayoutEntry('three', [{ role: 'user', content: 'three' }], [{ name: 'wait' }]);
+  const internedFirst = internMainAgentInput(first, isMainAgent);
+  const internedSecond = internMainAgentInput(second, isMainAgent);
+  const internedChanged = internMainAgentInput(changed, isMainAgent);
+  assert.equal(Object.isFrozen(first.body.input[0].tools), false);
+  assert.equal(internedSecond.body.input[0].tools, internedFirst.body.input[0].tools);
+  assert.notEqual(internedChanged.body.input[0].tools, changed.body.input[0].tools);
+  assert.deepEqual(internedChanged.body.input[0].tools, changed.body.input[0].tools);
+  _resetEntryInternPoolsForTest();
 });

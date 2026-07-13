@@ -1,10 +1,10 @@
 import { createServer } from 'node:http';
 import { createServer as createHttpsServer } from 'node:https';
 import { createConnection } from 'node:net';
-import { randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { constants as fsConstants, readFileSync, writeFileSync, existsSync, watchFile, unwatchFile, statSync, fstatSync, readdirSync, renameSync, unlinkSync, rmSync, openSync, readSync, closeSync, realpathSync, mkdirSync, createReadStream, cpSync, copyFileSync, appendFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join, extname, resolve, basename, sep } from 'node:path';
+import { dirname, join, extname, resolve, basename, relative, sep } from 'node:path';
 import { homedir, platform, networkInterfaces } from 'node:os';
 import { execFile, exec, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -44,11 +44,17 @@ import { loadPlugins, runWaterfallHook, runParallelHook, getPluginsInfo, getPlug
 import { uploadPlugins, installPluginFromUrl } from './lib/plugin-manager.js';
 import { getUserProfile } from './lib/user-profile.js';
 import { getGitDiffs } from './lib/git-diff.js';
+import { getGitWorkingTreeLineStats } from './lib/git-change-stats.js';
 import { CONTEXT_WINDOW_FILE, buildContextWindowEvent } from './lib/context-watcher.js';
 import { CODEX_CONTEXT_WINDOW_TOKENS, sumUsageContextTokens } from './server/lib/context-rules.js';
 import { watchLogFile, startWatching, getWatchedFiles, sendEventToClients, sendToClients } from './lib/log-watcher.js';
 import { isMainAgentEntry } from './lib/main-agent-entry.js';
-import { listLocalLogs, deleteLogFiles, mergeLogFiles } from './lib/log-management.js';
+import {
+  listLocalLogs,
+  deleteLogFiles,
+  mergeLogFiles,
+  clearRawSidecarsForLog,
+} from './lib/log-management.js';
 import { countLogEntries, streamRawEntriesAsync, readPagedEntries } from './lib/log-stream.js';
 import { listSkills, toggleSkill, deleteSkill, importSkillUpload, imSkillRoots, imSkillImportRoot } from './lib/skills-api.js';
 import { readCodexGlobalConfig, updateCodexGlobalConfig } from './lib/codex-config.js';
@@ -63,21 +69,23 @@ import { APPROVALS_REVIEWER_DEFAULT, isSupportedApprovalsReviewer, normalizeAppr
 import { searchCode } from './lib/code-search.js';
 import { searchReplace } from './lib/code-replace.js';
 import { OTEL_AUTH_HEADER } from './lib/otel-config.js';
+import {
+  clearProjectAuthOverride,
+  decideAuth,
+  enableGlobalAuthAndClearProjectOverride,
+  loadAuthConfig,
+  loadAuthState,
+  isLoopbackHost,
+  isSameOriginRequest,
+  localeFromAcceptLanguage,
+  parseCookies,
+  renderLoginPage,
+  saveAuthConfig,
+} from './lib/auth.js';
+import { handleAuthRoute } from './lib/auth-routes.js';
+import { readPreferences, updatePreferences } from './lib/preferences.js';
+import { resetRawCaptureBoundary } from './lib/appserver-bridge.js';
 
-
-// 动态获取 getPrefsFile()（LOG_DIR 可能在运行时被 setLogDir 修改）
-function getPrefsFile() { return join(LOG_DIR, 'preferences.json'); }
-function readPreferences() {
-  let prefs = {};
-  try { if (existsSync(getPrefsFile())) prefs = JSON.parse(readFileSync(getPrefsFile(), 'utf-8')); } catch { }
-  return prefs;
-}
-function writePreferences(prefs) {
-  const prefsFile = getPrefsFile();
-  const prefsDir = dirname(prefsFile);
-  if (!existsSync(prefsDir)) mkdirSync(prefsDir, { recursive: true });
-  writeFileSync(prefsFile, JSON.stringify(prefs, null, 2));
-}
 
 let _codexApprovalsReviewerUpdater = null;
 let _runtimeApprovalsReviewer = null;
@@ -160,6 +168,36 @@ function readJsonBody(req, maxSize = MAX_POST_BODY) {
       catch { reject(Object.assign(new Error('Invalid JSON'), { status: 400 })); }
     });
     req.on('error', err => fail(err));
+  });
+}
+
+function runRawSidecarWorker(workerData) {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL('./server/raw-sidecar-worker.js', import.meta.url), { workerData });
+    let settled = false;
+    const finish = (error, result) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (error) reject(error);
+      else resolve(result);
+    };
+    const timer = setTimeout(() => {
+      worker.terminate().catch(() => {});
+      finish(Object.assign(new Error('Raw sidecar scan timed out'), { status: 408 }));
+    }, 15_000);
+    timer.unref?.();
+    worker.once('message', message => {
+      if (message?.ok) finish(null, message.result);
+      else finish(Object.assign(new Error(message?.error || 'Raw sidecar request failed'), {
+        code: message?.code || undefined,
+        status: message?.status || undefined,
+      }));
+    });
+    worker.once('error', error => finish(error));
+    worker.once('exit', code => {
+      if (code !== 0) finish(new Error(`Raw sidecar worker exited with code ${code}`));
+    });
   });
 }
 
@@ -336,13 +374,15 @@ function normalizePluginFilename(name) {
 function removeDisabledPluginNames(names) {
   const targetNames = Array.from(new Set((names || []).filter(Boolean)));
   if (targetNames.length === 0) return false;
-  const prefs = readPreferences();
-  const disabledPlugins = Array.isArray(prefs.disabledPlugins) ? prefs.disabledPlugins : [];
-  const next = disabledPlugins.filter(name => !targetNames.includes(name));
-  if (next.length === disabledPlugins.length) return false;
-  prefs.disabledPlugins = next;
-  writePreferences(prefs);
-  return true;
+  let changed = false;
+  updatePreferences(prefs => {
+    const disabledPlugins = Array.isArray(prefs.disabledPlugins) ? prefs.disabledPlugins : [];
+    const next = disabledPlugins.filter(name => !targetNames.includes(name));
+    changed = next.length !== disabledPlugins.length;
+    if (changed) prefs.disabledPlugins = next;
+    return prefs;
+  });
+  return changed;
 }
 
 const isCliMode = process.env.CXV_CLI_MODE === '1';
@@ -436,6 +476,118 @@ const ACCESS_TOKEN = randomBytes(16).toString('hex');
 // OTLP is a log-writing endpoint, so it must remain authenticated even on
 // loopback. The token is injected only into Codex child processes.
 const OTEL_ACCESS_TOKEN = randomBytes(32).toString('hex');
+
+let authProject = process.env.CXV_PROJECT_DIR || null;
+let authLogDir = LOG_DIR;
+let authConfig = loadAuthConfig(authProject);
+let authSessionGeneration = 0;
+const AUTH_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const AUTH_SESSION_MAX = 2048;
+const authSessions = new Map();
+
+function invalidateAuthSessions() {
+  authSessionGeneration++;
+  authSessions.clear();
+}
+
+function syncAuthProject() {
+  const nextProject = process.env.CXV_PROJECT_DIR || null;
+  const nextLogDir = LOG_DIR;
+  if (nextProject !== authProject || nextLogDir !== authLogDir) {
+    authProject = nextProject;
+    authLogDir = nextLogDir;
+    authConfig = loadAuthConfig(authProject);
+    invalidateAuthSessions();
+  }
+  return authProject;
+}
+
+function getAuthConfig() {
+  syncAuthProject();
+  // Another viewer process may update the shared preferences file. Reload on
+  // every auth decision so an old password cannot remain valid in this process.
+  authConfig = loadAuthConfig(authProject);
+  return authConfig;
+}
+
+function getAuthState() {
+  return loadAuthState(syncAuthProject());
+}
+
+function getAuthSessionContext() {
+  const state = getAuthState();
+  const context = [
+    authLogDir,
+    authProject || '',
+    state.scope,
+    state.effective.revision,
+    state.effective.enabled ? '1' : '0',
+    authSessionGeneration,
+  ].join('\0');
+  return createHmac('sha256', ACCESS_TOKEN).update(context).digest('base64url');
+}
+
+function pruneAuthSessions(now = Date.now()) {
+  for (const [token, session] of authSessions) {
+    if (session.expiresAt <= now || session.generation !== authSessionGeneration) authSessions.delete(token);
+  }
+  while (authSessions.size >= AUTH_SESSION_MAX) authSessions.delete(authSessions.keys().next().value);
+}
+
+function issueAuthSessionToken() {
+  const now = Date.now();
+  pruneAuthSessions(now);
+  const token = randomBytes(32).toString('base64url');
+  authSessions.set(token, {
+    context: getAuthSessionContext(),
+    generation: authSessionGeneration,
+    expiresAt: now + AUTH_SESSION_TTL_MS,
+  });
+  return token;
+}
+
+function isAuthSessionValid(token) {
+  if (typeof token !== 'string' || !token) return false;
+  const session = authSessions.get(token);
+  if (!session || session.expiresAt <= Date.now() || session.generation !== authSessionGeneration
+      || !timingSafeEqual(Buffer.from(session.context), Buffer.from(getAuthSessionContext()))) {
+    authSessions.delete(token);
+    return false;
+  }
+  return true;
+}
+
+function revokeAuthSession(cookieHeader) {
+  const token = parseCookies(cookieHeader).cxv_auth;
+  if (token) authSessions.delete(token);
+}
+
+function setAuthConfig(config, scope) {
+  const projectDir = syncAuthProject();
+  saveAuthConfig(config, {
+    scope: scope === 'global' ? 'global' : (projectDir ? 'project' : 'global'),
+    projectDir,
+  });
+  authConfig = loadAuthConfig(projectDir);
+  invalidateAuthSessions();
+  return authConfig;
+}
+
+function clearAuthOverride() {
+  const projectDir = syncAuthProject();
+  clearProjectAuthOverride(projectDir);
+  authConfig = loadAuthConfig(projectDir);
+  invalidateAuthSessions();
+  return authConfig;
+}
+
+function enableGlobalAndInherit() {
+  const projectDir = syncAuthProject();
+  enableGlobalAuthAndClearProjectOverride(projectDir);
+  authConfig = loadAuthConfig(projectDir);
+  invalidateAuthSessions();
+  return authConfig;
+}
 
 export const OTEL_PAYLOAD_LIMITS = Object.freeze({
   bodyBytes: MAX_POST_BODY,
@@ -656,12 +808,8 @@ function readOtelJsonBody(req, maxSize = OTEL_PAYLOAD_LIMITS.bodyBytes) {
 
 let clients = [];
 let server;
-let secondaryServer = null;
 let actualPort = 0;
-let secondaryPort = 0;
 let serverProtocol = 'http';
-let publicAccessProtocol = 'http';
-let publicAccessPort = 0;
 let pluginRoutes = [];
 // Stats Worker 实例
 let statsWorker = null;
@@ -697,30 +845,7 @@ async function refreshPluginRuntime() {
 }
 
 function getPublicAccessUrl(ip = getLocalIp()) {
-  const protocol = publicAccessProtocol || serverProtocol;
-  const port = publicAccessPort || actualPort;
-  return `${protocol}://${ip}:${port}?token=${ACCESS_TOKEN}`;
-}
-
-function findAvailablePort(startPort) {
-  return new Promise((resolve) => {
-    function tryPort(port) {
-      if (port > MAX_PORT) {
-        resolve(null);
-        return;
-      }
-      const probe = createConnection({ host: '127.0.0.1', port });
-      probe.on('connect', () => {
-        probe.destroy();
-        tryPort(port + 1);
-      });
-      probe.on('error', () => {
-        probe.destroy();
-        resolve(port);
-      });
-    }
-    tryPort(startPort);
-  });
+  return `${serverProtocol}://${ip}:${actualPort}?token=${ACCESS_TOKEN}`;
 }
 
 function startStatsWorker() {
@@ -840,29 +965,87 @@ async function handleRequest(req, res) {
     return;
   }
 
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const requestOrigin = typeof req.headers.origin === 'string' ? req.headers.origin : '';
+  const requestHost = typeof req.headers.host === 'string' ? req.headers.host : '';
+  const originAllowed = isSameOriginRequest(requestOrigin, requestHost, serverProtocol);
+
+  // Browser API access is same-origin. Header-less CLI/native clients remain
+  // compatible; a hostile Origin never gains CORS permission to localhost.
+  if (requestOrigin && originAllowed) res.setHeader('Access-Control-Allow-Origin', requestOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (method === 'OPTIONS') {
-    res.writeHead(200);
+    res.writeHead(originAllowed ? 200 : 403);
     res.end();
     return;
   }
-
-  // 局域网访问 token 验证（本地 127.0.0.1 / ::1 免验证，静态资源免验证）
-  const remoteIp = req.socket.remoteAddress;
-  const isLocal = remoteIp === '127.0.0.1' || remoteIp === '::1' || remoteIp === '::ffff:127.0.0.1';
-  const isStaticAsset = url.startsWith('/assets/') || url === '/favicon.ico';
-  if (!isLocal && !isStaticAsset) {
-    const urlToken = parsedUrl.searchParams.get('token');
-    if (urlToken !== ACCESS_TOKEN) {
-      res.writeHead(403, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Forbidden: invalid token' }));
-      return;
-    }
+  if (requestOrigin && !originAllowed) {
+    res.writeHead(403, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Forbidden: cross-origin request' }));
+    return;
   }
+
+  // 局域网访问验证：本机、分享 token、密码登录 Cookie 三种方式均可放行。
+  const remoteIp = req.socket.remoteAddress;
+  const isLoopbackPeer = remoteIp === '127.0.0.1' || remoteIp === '::1' || remoteIp === '::ffff:127.0.0.1';
+  const isLocal = isLoopbackPeer && isLoopbackHost(requestHost) && originAllowed;
+  const isStaticAsset = url.startsWith('/assets/') || url === '/favicon.ico';
+  const currentAuthConfig = getAuthConfig();
+  const remotePasswordLogin = serverProtocol === 'https';
+  const cookieToken = parseCookies(req.headers.cookie).cxv_auth;
+  const authDecision = decideAuth({
+    isStaticAsset,
+    pathname: url,
+    isLocal,
+    urlToken: parsedUrl.searchParams.get('token'),
+    cookieToken,
+    accessToken: ACCESS_TOKEN,
+    sessionToken: isAuthSessionValid(cookieToken) ? cookieToken : '',
+    enabled: currentAuthConfig.enabled,
+    password: currentAuthConfig.password,
+    wantsHtml: method === 'GET' && ((req.headers.accept || '').includes('text/html') || url === '/'),
+    passwordLoginAvailable: isLocal || remotePasswordLogin,
+  });
+  if (authDecision.action === 'login-page') {
+    const lang = localeFromAcceptLanguage(req.headers['accept-language']);
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+    res.end(renderLoginPage({ lang }));
+    return;
+  }
+  if (authDecision.action === 'unauthorized') {
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Unauthorized' }));
+    return;
+  }
+  if (authDecision.action === 'forbidden') {
+    res.writeHead(403, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Forbidden: invalid token' }));
+    return;
+  }
+  if (authDecision.action === 'insecure-password') {
+    res.writeHead(403, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Secure transport required for password login', code: 'secure_transport_required' }));
+    return;
+  }
+
+  if (await handleAuthRoute(req, res, {
+    pathname: url,
+    method,
+    isLocal,
+    deps: {
+      getSessionToken: issueAuthSessionToken,
+      revokeSession: revokeAuthSession,
+      authBodyLimit: 4096,
+      secureCookies: serverProtocol === 'https',
+      remotePasswordLogin,
+      getAuthConfig,
+      getAuthState,
+      setAuthConfig,
+      clearAuthOverride,
+      enableGlobalAndInherit,
+    },
+  })) return;
 
   const pluginRoute = pluginRoutes.find(route => route.method === method && route.path === url);
   if (pluginRoute) {
@@ -1117,6 +1300,11 @@ async function handleRequest(req, res) {
 
   if (url === '/api/preferences' && method === 'GET') {
     let prefs = readPreferences();
+    if (!isLocal) {
+      prefs = { ...prefs };
+      delete prefs.auth;
+      delete prefs.authByProject;
+    }
     prefs.logDir = LOG_DIR; // 始终返回当前运行时的日志目录
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(prefs));
@@ -1129,6 +1317,9 @@ async function handleRequest(req, res) {
     req.on('end', () => {
       try {
         const incoming = JSON.parse(body);
+        // 认证配置只能通过本机专用的 /api/auth/config 修改。
+        delete incoming.auth;
+        delete incoming.authByProject;
         if (Object.prototype.hasOwnProperty.call(incoming, 'approvalsReviewer')) {
           if (!isSupportedApprovalsReviewer(incoming.approvalsReviewer)) {
             sendJson(res, 400, { error: 'Unsupported approvalsReviewer' });
@@ -1139,10 +1330,11 @@ async function handleRequest(req, res) {
         // 如果修改了日志目录，先切换再保存到新位置（新目录下生成 preferences.json）
         if (incoming.logDir && typeof incoming.logDir === 'string') {
           setLogDir(incoming.logDir);
+          // LOG_DIR is part of the authentication/session context. Refresh now
+          // so this response cannot leave the old directory's config cached.
+          syncAuthProject();
         }
-        let prefs = readPreferences();
-        Object.assign(prefs, incoming);
-        writePreferences(prefs);
+        const prefs = updatePreferences(current => Object.assign(current, incoming));
         const reviewerState = Object.prototype.hasOwnProperty.call(incoming, 'approvalsReviewer')
           ? applyRuntimeApprovalsReviewer(incoming.approvalsReviewer)
           : null;
@@ -1199,8 +1391,7 @@ async function handleRequest(req, res) {
         return;
       }
       const approvalsReviewer = normalizeApprovalsReviewer(incoming.approvalsReviewer);
-      const prefs = { ...readPreferences(), approvalsReviewer };
-      writePreferences(prefs);
+      updatePreferences(prefs => Object.assign(prefs, { approvalsReviewer }));
       const runtime = applyRuntimeApprovalsReviewer(approvalsReviewer);
       broadcastApprovalsReviewer(runtime.approvalsReviewer);
       sendJson(res, 200, { ok: true, ...runtime });
@@ -3078,7 +3269,7 @@ async function handleRequest(req, res) {
   if (url === '/api/git-status' && method === 'GET') {
     try {
       const cwd = process.env.CXV_PROJECT_DIR || process.cwd();
-      const { stdout: output } = await execFileAsync('git', ['status', '--porcelain'], { cwd, encoding: 'utf-8', timeout: 5000 });
+      const { stdout: output } = await execFileAsync('git', ['status', '--porcelain=v1', '--untracked-files=all'], { cwd, encoding: 'utf-8', timeout: 5000 });
       const lines = output.split('\n').filter(line => line.trim());
       const changes = lines.map(line => {
         const status = line.substring(0, 2).trim();
@@ -3093,8 +3284,12 @@ async function handleRequest(req, res) {
         }
         return { status, file };
       });
+      const lineStats = await getGitWorkingTreeLineStats(
+        cwd,
+        changes.filter(change => change.status === '??').map(change => change.file),
+      );
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ changes }));
+      res.end(JSON.stringify({ changes, ...lineStats }));
     } catch (err) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: err.message, changes: [] }));
@@ -3266,17 +3461,17 @@ async function handleRequest(req, res) {
     const hookResult = await runWaterfallHook('localUrl', {
       url: defaultUrl,
       ip: localIp,
-      port: publicAccessPort || actualPort,
+      port: actualPort,
       token: ACCESS_TOKEN,
-      protocol: publicAccessProtocol || serverProtocol,
-      httpUrl: actualPort ? `http://${localIp}:${actualPort}?token=${ACCESS_TOKEN}` : null,
-      httpsUrl: secondaryPort ? `https://${localIp}:${secondaryPort}?token=${ACCESS_TOKEN}` : null,
+      protocol: serverProtocol,
+      httpUrl: serverProtocol === 'http' ? defaultUrl : null,
+      httpsUrl: serverProtocol === 'https' ? defaultUrl : null,
     });
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       url: hookResult.url,
-      httpUrl: actualPort ? `http://${localIp}:${actualPort}?token=${ACCESS_TOKEN}` : null,
-      httpsUrl: secondaryPort ? `https://${localIp}:${secondaryPort}?token=${ACCESS_TOKEN}` : null,
+      httpUrl: serverProtocol === 'http' ? defaultUrl : null,
+      httpsUrl: serverProtocol === 'https' ? defaultUrl : null,
     }));
     return;
   }
@@ -3290,6 +3485,43 @@ async function handleRequest(req, res) {
     } catch (err) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
+  // Raw app-server protocol frames are stored separately from the compact business log.
+  // Access is granted only through a reference that is present in the selected log.
+  if (url === '/api/raw-sidecars' && method === 'GET') {
+    const requestedFile = parsedUrl.searchParams.get('file');
+    const file = requestedFile || (LOG_FILE ? relative(LOG_DIR, LOG_FILE).split(sep).join('/') : '');
+    if (!file || !file.endsWith('.jsonl')) {
+      sendJson(res, 400, { error: 'Invalid or unavailable log file' });
+      return;
+    }
+    try {
+      sendJson(res, 200, await runRawSidecarWorker({ action: 'list', logDir: LOG_DIR, file }));
+    } catch (err) {
+      const status = err.code === 'NOT_FOUND' ? 404 : err.code === 'ACCESS_DENIED' ? 403 : 500;
+      sendJson(res, status, { error: err.message });
+    }
+    return;
+  }
+
+  if (url === '/api/raw-sidecar/frames' && method === 'POST') {
+    try {
+      const { file: requestedFile, ref, limit } = await readJsonBody(req, 16 * 1024);
+      const file = requestedFile || (LOG_FILE ? relative(LOG_DIR, LOG_FILE).split(sep).join('/') : '');
+      if (!file || !file.endsWith('.jsonl') || !ref || typeof ref !== 'object'
+          || typeof ref.streamId !== 'string' || typeof ref.sidecar !== 'string'
+          || !Number.isSafeInteger(ref.fromSeq) || !Number.isSafeInteger(ref.toSeq)) {
+        sendJson(res, 400, { error: 'Invalid raw sidecar request' });
+        return;
+      }
+      const page = await runRawSidecarWorker({ action: 'frames', logDir: LOG_DIR, file, ref, limit });
+      sendJson(res, 200, page);
+    } catch (err) {
+      const status = err.status || (err.code === 'NOT_FOUND' ? 404 : err.code === 'ACCESS_DENIED' ? 403 : 500);
+      sendJson(res, status, { error: err.message });
     }
     return;
   }
@@ -3408,6 +3640,9 @@ async function handleRequest(req, res) {
   if (url === '/api/clear-current-log' && method === 'POST') {
     try {
       if (LOG_FILE && existsSync(LOG_FILE)) {
+        const file = relative(LOG_DIR, LOG_FILE).split(sep).join('/');
+        const { previousStreamId } = resetRawCaptureBoundary();
+        clearRawSidecarsForLog(LOG_DIR, file, { additionalStreamIds: [previousStreamId] });
         writeFileSync(LOG_FILE, '');
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true, file: LOG_FILE }));
@@ -3654,10 +3889,6 @@ async function handleRequest(req, res) {
 
 export async function startViewer() {
   pluginRoutes = [];
-  secondaryServer = null;
-  secondaryPort = 0;
-  publicAccessProtocol = 'http';
-  publicAccessPort = 0;
   // 加载插件（需要在创建服务器之前，以便通过 hook 获取 HTTPS 证书）
   await loadPlugins();
 
@@ -3672,9 +3903,8 @@ export async function startViewer() {
     console.error('[CX Viewer] httpsOptions hook error:', err.message);
   }
 
-  // 自动生成自签证书，供 HTTPS 访问使用。
-  // CLI 模式下会保留 HTTP 主入口，同时额外起一个 HTTPS 入口用于二维码和局域网麦克风访问。
-  if (!httpsOptions) {
+  // 非 CLI 服务可在同一个主端口上使用 HTTPS；CLI 始终只保留 HTTP 主端口。
+  if (!httpsOptions && !isCliMode) {
     try {
       const { generateKeyPairSync, createSign, X509Certificate } = await import('node:crypto');
       const { privateKey, publicKey } = generateKeyPairSync('rsa', {
@@ -3713,7 +3943,6 @@ export async function startViewer() {
   const useHttps = !!httpsOptions && !isCliMode;
   const protocol = useHttps ? 'https' : 'http';
   serverProtocol = protocol;
-  publicAccessProtocol = protocol;
   if (useHttps) console.error(httpsFromPlugin ? '[CX Viewer] HTTPS mode enabled via plugin hook' : '[CX Viewer] HTTPS mode enabled via self-signed certificate');
 
   return new Promise((resolve, reject) => {
@@ -3749,38 +3978,7 @@ export async function startViewer() {
         currentServer.listen(port, HOST, async () => {
           server = currentServer;
           actualPort = port;
-          publicAccessPort = port;
           const url = `${serverProtocol}://127.0.0.1:${port}`;
-          if (isCliMode && httpsOptions) {
-            const httpsPort = await findAvailablePort(port + 1);
-            if (httpsPort) {
-              try {
-                secondaryServer = createHttpsServer(httpsOptions, handleRequest);
-                await new Promise((resolveSecondary, rejectSecondary) => {
-                  secondaryServer.once('error', rejectSecondary);
-                  secondaryServer.listen(httpsPort, HOST, () => {
-                    secondaryServer.off('error', rejectSecondary);
-                    resolveSecondary();
-                  });
-                });
-                secondaryPort = httpsPort;
-                publicAccessProtocol = 'https';
-                publicAccessPort = httpsPort;
-                console.error('[CX Viewer] Secondary HTTPS access enabled for QR/remote browser');
-                console.error(`  ➜ HTTPS:   https://127.0.0.1:${httpsPort}`);
-                const _ips = getAllLocalIps();
-                for (const _ip of _ips) {
-                  console.error(`  ➜ HTTPS:   https://${_ip}:${httpsPort}?token=${ACCESS_TOKEN}`);
-                }
-              } catch (err) {
-                secondaryServer = null;
-                secondaryPort = 0;
-                publicAccessProtocol = serverProtocol;
-                publicAccessPort = port;
-                console.error('[CX Viewer] Secondary HTTPS server creation failed:', err.message);
-              }
-            }
-          }
           if (!isCliMode) {
             console.error(t('server.started'));
             console.error(t('server.startedLocal', { protocol: serverProtocol, port }));
@@ -3788,10 +3986,6 @@ export async function startViewer() {
             for (const _ip of _ips) {
               console.error(t('server.startedNetwork', { protocol: serverProtocol, ip: _ip, port, token: ACCESS_TOKEN }));
             }
-          } else if (secondaryPort) {
-            console.error(t('server.started'));
-            console.error(t('server.startedLocal', { protocol: serverProtocol, port }));
-            console.error(t('server.startedNetwork', { protocol: 'https', ip: getLocalIp(), port: secondaryPort, token: ACCESS_TOKEN }));
           }
           // v2.0.69 之前的版本会清空控制台，自动打开浏览器确保用户能看到界面
           if (!isCliMode) {
@@ -3814,9 +4008,6 @@ export async function startViewer() {
           // CLI 模式下启动 WebSocket 服务 (必须 await，否则插件 hook 拿不到 upgrade listeners)
           if (isCliMode) {
             await setupTerminalWebSocket(currentServer);
-            if (secondaryServer) {
-              await setupTerminalWebSocket(secondaryServer);
-            }
           }
           // 通知插件服务器已启动
           refreshPluginRuntime()
@@ -3867,7 +4058,40 @@ async function setupTerminalWebSocket(httpServer) {
     };
 
     httpServer.on('upgrade', (req, socket, head) => {
-      const pathname = new URL(req.url, `${serverProtocol}://${req.headers.host}`).pathname;
+      const wsUrl = new URL(req.url, `${serverProtocol}://${req.headers.host}`);
+      const pathname = wsUrl.pathname;
+      const remoteIp = req.socket.remoteAddress;
+      const isLoopbackPeer = remoteIp === '127.0.0.1' || remoteIp === '::1' || remoteIp === '::ffff:127.0.0.1';
+      const wsOrigin = typeof req.headers.origin === 'string' ? req.headers.origin : '';
+      const wsHost = typeof req.headers.host === 'string' ? req.headers.host : '';
+      const wsSameOrigin = !!wsOrigin && isSameOriginRequest(wsOrigin, wsHost, serverProtocol);
+      if (wsOrigin && !wsSameOrigin) {
+        socket.destroy();
+        return;
+      }
+      // Browser WebSockets must be same-origin even over loopback. Header-less
+      // native clients use an explicit token/session instead of ambient trust.
+      const isLocal = isLoopbackPeer && isLoopbackHost(wsHost) && wsSameOrigin;
+      const currentAuthConfig = getAuthConfig();
+      const cookieToken = parseCookies(req.headers.cookie).cxv_auth;
+      const authDecision = decideAuth({
+        isStaticAsset: false,
+        pathname,
+        isLocal,
+        urlToken: wsUrl.searchParams.get('token'),
+        cookieToken,
+        accessToken: ACCESS_TOKEN,
+        sessionToken: isAuthSessionValid(cookieToken) ? cookieToken : '',
+        enabled: currentAuthConfig.enabled,
+        password: currentAuthConfig.password,
+        wantsHtml: false,
+        passwordLoginAvailable: serverProtocol === 'https',
+        allowPasswordless: false,
+      });
+      if (authDecision.action !== 'allow') {
+        socket.destroy();
+        return;
+      }
       if (pathname === '/ws/terminal') {
         wss.handleUpgrade(req, socket, head, (ws) => {
           wss.emit('connection', ws, req);

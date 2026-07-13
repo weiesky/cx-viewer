@@ -166,6 +166,51 @@ test('absolute-form request target (via upstream HTTP proxy) is normalized to pa
   }
 });
 
+test('client disconnect while upstream is pending cancels quietly', async () => {
+  let markUpstreamStarted;
+  const upstreamStarted = new Promise(resolve => { markUpstreamStarted = resolve; });
+  let markUpstreamClosed;
+  const upstreamClosed = new Promise(resolve => { markUpstreamClosed = resolve; });
+  const upstream = createServer((req, res) => {
+    markUpstreamStarted();
+    res.once('close', markUpstreamClosed);
+    // Intentionally leave the response pending. The proxy should cancel this
+    // connection as soon as its downstream client goes away.
+  });
+  upstream.listen(0, '127.0.0.1');
+  await once(upstream, 'listening');
+  const upstreamPort = upstream.address().port;
+
+  process.env.CXV_ORIGINAL_CHATGPT_BASE_URL = `http://127.0.0.1:${upstreamPort}/backend-api/codex`;
+  const proxyPort = await startProxy();
+  const errors = [];
+  const originalConsoleError = console.error;
+  console.error = (...args) => { errors.push(args.map(String).join(' ')); };
+  try {
+    const clientReq = httpRequest({
+      host: '127.0.0.1',
+      port: proxyPort,
+      path: '/v1/models?client_version=test',
+      headers: OAUTH_HEADERS,
+    });
+    clientReq.on('error', () => {});
+    clientReq.end();
+    await upstreamStarted;
+    clientReq.destroy();
+    await upstreamClosed;
+    assert.equal(
+      errors.some(line => line.includes('[CX-Viewer Proxy] Forward to')),
+      false,
+      'a downstream cancellation must not be reported as an upstream failure',
+    );
+  } finally {
+    console.error = originalConsoleError;
+    stopProxy();
+    upstream.close();
+    await once(upstream, 'close');
+  }
+});
+
 test('WebSocket upgrade is refused (426, no 101) to force HTTP/SSE fallback', async () => {
   const proxyPort = await startProxy();
   try {
