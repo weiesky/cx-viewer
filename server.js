@@ -85,11 +85,17 @@ import {
 import { handleAuthRoute } from './lib/auth-routes.js';
 import { readPreferences, updatePreferences } from './lib/preferences.js';
 import { resetRawCaptureBoundary } from './lib/appserver-bridge.js';
+import {
+  buildCodexAutoResolutionAnswers,
+  projectCodexAnswersForConversation,
+} from './lib/codex-request-user-input.js';
 
 
 let _codexApprovalsReviewerUpdater = null;
 let _runtimeApprovalsReviewer = null;
 let _codexNativeReviewerAvailable = false;
+let _codexRequestUserInputBridge = null;
+const pendingCodexAsks = new Map();
 
 export function getApprovalsReviewerPreference() {
   const value = readPreferences().approvalsReviewer;
@@ -129,6 +135,111 @@ function broadcastApprovalsReviewer(value) {
   terminalWss.clients.forEach((client) => {
     if (client.readyState === 1) try { client.send(payload); } catch {}
   });
+}
+
+function openTerminalClients() {
+  if (!terminalWss) return [];
+  return [...terminalWss.clients].filter(client => client.readyState === 1);
+}
+
+function broadcastCodexAskMessage(message, exclude = null) {
+  const payload = JSON.stringify(message);
+  for (const client of openTerminalClients()) {
+    if (client === exclude) continue;
+    try { client.send(payload); } catch {}
+  }
+}
+
+function removePendingCodexAsk(id) {
+  const key = String(id);
+  const pending = pendingCodexAsks.get(key);
+  if (!pending) return null;
+  pendingCodexAsks.delete(key);
+  if (pending.timer) clearTimeout(pending.timer);
+  return pending;
+}
+
+/** Claim an app-server request_user_input request only when a GUI is online. */
+export function offerCodexRequestUserInput(request) {
+  if (!request?.uiId || !Array.isArray(request.questions) || request.questions.length === 0) return false;
+  if (!_codexRequestUserInputBridge || openTerminalClients().length === 0) return false;
+
+  const id = String(request.uiId);
+  const timeoutMs = Number.isFinite(request.autoResolutionMs) && request.autoResolutionMs > 0
+    ? request.autoResolutionMs
+    : null;
+  const pending = {
+    id,
+    questions: request.questions,
+    threadId: request.threadId || null,
+    turnId: request.turnId || null,
+    itemId: request.itemId || null,
+    createdAt: request.createdAt || Date.now(),
+    timeoutMs,
+    timer: null,
+  };
+  if (timeoutMs) {
+    pending.timer = setTimeout(() => {
+      const current = pendingCodexAsks.get(id);
+      if (!current) return;
+      const codexAnswers = buildCodexAutoResolutionAnswers(current.questions);
+      const answers = projectCodexAnswersForConversation(current.questions, codexAnswers);
+      const resolved = _codexRequestUserInputBridge?.resolve(id, codexAnswers);
+      if (!resolved) return;
+      removePendingCodexAsk(id);
+      broadcastCodexAskMessage({
+        type: 'ask-hook-timeout',
+        id,
+        itemId: current.itemId,
+        questions: current.questions,
+        answers,
+        codexAnswers,
+      });
+    }, timeoutMs);
+    pending.timer.unref?.();
+  }
+  pendingCodexAsks.set(id, pending);
+  broadcastCodexAskMessage({
+    type: 'ask-hook-pending',
+    source: 'codex-app-server',
+    id,
+    questions: pending.questions,
+    threadId: pending.threadId,
+    turnId: pending.turnId,
+    itemId: pending.itemId,
+    startedAt: pending.createdAt,
+    timeoutMs,
+  });
+  return true;
+}
+
+/** App-server cleared a request because the turn ended/interrupted elsewhere. */
+export function clearCodexRequestUserInput(request) {
+  const id = request?.uiId != null ? String(request.uiId) : '';
+  if (!id || !removePendingCodexAsk(id)) return false;
+  broadcastCodexAskMessage({
+    type: 'ask-hook-resolved',
+    id,
+    reason: request.reason || 'server-resolved',
+  });
+  return true;
+}
+
+export function setCodexRequestUserInputBridge(bridge) {
+  _codexRequestUserInputBridge = bridge && typeof bridge === 'object'
+    ? {
+        resolve: typeof bridge.resolve === 'function' ? bridge.resolve : null,
+        cancel: typeof bridge.cancel === 'function' ? bridge.cancel : null,
+        releaseToTui: typeof bridge.releaseToTui === 'function' ? bridge.releaseToTui : null,
+      }
+    : null;
+}
+
+function releaseCodexAsksToTuiWhenGuiDisconnects() {
+  if (openTerminalClients().length > 0 || !_codexRequestUserInputBridge?.releaseToTui) return;
+  for (const id of [...pendingCodexAsks.keys()]) {
+    if (_codexRequestUserInputBridge.releaseToTui(id)) removePendingCodexAsk(id);
+  }
 }
 
 function sendJson(res, status, data) {
@@ -2870,7 +2981,26 @@ async function handleRequest(req, res) {
     return;
   }
 
-  // Ask hook bridge: long-poll endpoint for request_user_input hook
+  // Rehydrate app-server asks after a browser WebSocket reconnect.
+  if (url === '/api/pending-asks' && method === 'GET') {
+    sendJson(res, 200, {
+      pendingAsks: [...pendingCodexAsks.values()].map(pending => ({
+        id: pending.id,
+        questions: pending.questions,
+        threadId: pending.threadId,
+        turnId: pending.turnId,
+        itemId: pending.itemId,
+        createdAt: pending.createdAt,
+        timeoutMs: pending.timeoutMs,
+        source: 'codex-app-server',
+      })),
+    });
+    return;
+  }
+
+  // Legacy ask hook bridge. Current Codex CLI integrations use the app-server
+  // server-request path above; retain this endpoint only for older direct-mode
+  // installations that may still invoke ask-bridge.js.
   if (url === '/api/ask-hook' && method === 'POST') {
     let body = '';
     req.on('data', (chunk) => {
@@ -4192,10 +4322,47 @@ async function setupTerminalWebSocket(httpServer) {
                 } catch {}
               }, { settleMs: msg.settleMs || 150 });
             }
+          } else if (msg.type === 'ask-cancel') {
+            const askId = msg.id != null ? String(msg.id) : '';
+            let cancelled = false;
+            if (askId && pendingCodexAsks.has(askId)) {
+              cancelled = _codexRequestUserInputBridge?.cancel?.(askId) === true;
+              if (cancelled) removePendingCodexAsk(askId);
+            } else if (pendingAskHook) {
+              const { res: hookRes, timer } = pendingAskHook;
+              clearTimeout(timer);
+              pendingAskHook = null;
+              cancelled = true;
+              try {
+                if (!hookRes.headersSent) {
+                  hookRes.writeHead(200, { 'Content-Type': 'application/json' });
+                  hookRes.end(JSON.stringify({ answers: {} }));
+                }
+              } catch {}
+            }
+            if (cancelled) {
+              broadcastCodexAskMessage({
+                type: 'ask-hook-cancelled',
+                id: askId,
+                reason: msg.reason || 'User aborted',
+              });
+            } else if (askId && ws.readyState === 1) {
+              try { ws.send(JSON.stringify({ type: 'ask-hook-already-answered', id: askId })); } catch {}
+            }
           } else if (msg.type === 'ask-hook-answer') {
-            // Client answered AskUserQuestion via hook bridge
+            // Current path: respond directly to Codex app-server JSON-RPC.
             let askAnswered = false;
-            if (pendingAskHook) {
+            const askId = msg.id != null ? String(msg.id) : '';
+            const pendingCodexAsk = askId ? pendingCodexAsks.get(askId) : null;
+            if (askId && pendingCodexAsks.has(askId)) {
+              askAnswered = _codexRequestUserInputBridge?.resolve?.(
+                askId,
+                msg.codexAnswers || msg.answers || {},
+              ) === true;
+              if (askAnswered) removePendingCodexAsk(askId);
+            } else if (pendingAskHook) {
+              // Legacy fallback for Codex versions that once exposed the tool
+              // through PreToolUse hooks.
               const { res: hookRes, timer } = pendingAskHook;
               clearTimeout(timer);
               pendingAskHook = null;
@@ -4209,10 +4376,19 @@ async function setupTerminalWebSocket(httpServer) {
             }
             // Broadcast resolved to other clients so they clear their ask panel
             if (askAnswered && terminalWss) {
-              const rmsg = JSON.stringify({ type: 'ask-hook-resolved' });
-              terminalWss.clients.forEach((c) => {
-                if (c !== ws && c.readyState === 1) try { c.send(rmsg); } catch {}
+              const rmsg = JSON.stringify({
+                type: 'ask-hook-resolved',
+                ...(askId ? { id: askId } : {}),
+                ...(pendingCodexAsk?.itemId ? { itemId: pendingCodexAsk.itemId } : {}),
+                ...(pendingCodexAsk?.questions ? { questions: pendingCodexAsk.questions } : {}),
+                answers: msg.answers || {},
+                codexAnswers: msg.codexAnswers || {},
               });
+              terminalWss.clients.forEach((c) => {
+                if (c.readyState === 1) try { c.send(rmsg); } catch {}
+              });
+            } else if (!askAnswered && askId && ws.readyState === 1) {
+              try { ws.send(JSON.stringify({ type: 'ask-hook-already-answered', id: askId })); } catch {}
             }
           } else if (msg.type === 'perm-hook-answer') {
             // Permission approval — SDK mode (canUseTool) or PTY mode (hook bridge)
@@ -4324,6 +4500,10 @@ async function setupTerminalWebSocket(httpServer) {
             }
           }
         }
+        // If every browser GUI disconnected while Codex is waiting for an
+        // answer, hand the original JSON-RPC request back to the TUI instead of
+        // leaving the turn stranded behind an unreachable web form.
+        setImmediate(releaseCodexAsksToTuiWhenGuiDisconnects);
       });
     });
   } catch (err) {
@@ -4378,6 +4558,11 @@ export function stopViewer() {
 async function _doStop() {
   try { await Promise.race([runParallelHook('serverStopping'), new Promise(r => setTimeout(r, 3000))]); } catch { }
   pluginRoutes = [];
+  for (const pending of pendingCodexAsks.values()) {
+    if (pending.timer) clearTimeout(pending.timer);
+  }
+  pendingCodexAsks.clear();
+  _codexRequestUserInputBridge = null;
   // 如果用户未做选择，将临时文件转为正式文件
   if (_resumeState && _resumeState.tempFile) {
     try {

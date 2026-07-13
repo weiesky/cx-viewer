@@ -1,6 +1,6 @@
 {
   "name": "cx-viewer",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "Codex Logger visualization management tool",
   "license": "MIT",
   "main": "server.js",
@@ -21,6 +21,7 @@
     "start": "node server.js",
     "test": "CXV_TEST=1 CXV_LOG_DIR=tmp node --test",
     "test:coverage": "CXV_TEST=1 CXV_LOG_DIR=tmp node --test --experimental-test-coverage --test-coverage-include='lib/*.js' --test-coverage-include='*.js'",
+    "verify:codex-ask": "node scripts/verify-codex-request-user-input.mjs",
     "pack:dry-run": "node scripts/npm-pack-dry-run.mjs",
     "release:check": "npm test && npm run build && npm run pack:dry-run",
     "prepublishOnly": "npm run build",

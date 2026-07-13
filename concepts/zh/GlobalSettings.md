@@ -117,17 +117,12 @@ cxv [选项] [codex 参数...]
 | `--sandbox` | 指定沙箱模式 |
 | `--ask-for-approval` | 指定审批策略 |
 
-## 六、Hook 配置
+## 六、交互桥接配置
 
-CX-Viewer 的 Codex 集成主要走本地 wrapper/proxy 路径。Hook bridge 只使用当前 Codex 工具名。
+CX-Viewer 通过本地 WebSocket 代理把 Codex CLI TUI 连接到 App Server。Web UI 在线时会接管原生 `request_user_input` server request，并使用原 JSON-RPC request ID 回答；Web UI 不可用时，原请求会自动交回 TUI。启动时还会用实际安装的 CLI 生成 schema，确认该版本支持此协议。
 
-### 1. request_user_input 桥接
-- **匹配器**: `"request_user_input"`
-- **命令**: `node <安装目录>/lib/ask-bridge.js`
-- **作用**: 在 bridge 路径启用时，将工具/用户审批转发到 Web UI
-
-### 2. 权限审批桥接
-- **匹配器**: `""` (空 = 匹配所有工具)
+### 权限审批 Hook
+- **匹配器**: `".*"`（正则匹配所有权限请求）
 - **命令**: `node <安装目录>/lib/perm-bridge.js`
 - **作用**: `shell_command`、`apply_patch`、`web_search`、`image_generation` 等会变更文件或访问外部资源的工具需要 Web UI 审批，其余自动放行
 

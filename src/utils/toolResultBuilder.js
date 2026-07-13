@@ -8,8 +8,13 @@
  */
 
 import { t } from '../i18n';
+import { parseAskAnswerText } from './askAnswerParser.js';
 import { buildSingleToolResultCore } from './toolResultCore.js';
 import { isAskToolName, isPlanToolName } from './toolNameAliases.js';
+
+// Preserve the existing utility export for callers outside this module while
+// keeping its pure implementation independently testable in Node.
+export { parseAskAnswerText };
 
 // --- WeakMap cache for tool result state ---
 
@@ -227,10 +232,14 @@ export function appendToolResultMap(state, messages, startIndex) {
           const { resultText, isPermissionDenied, isUltraplan } = entry;
           toolResultMap[block.tool_use_id] = entry;
           if (matchedTool && isAskToolName(matchedTool.name)) {
-            const parsed = parseAskAnswerText(resultText);
+            // Codex native function_call_output keys answers by the stable
+            // question id. Resolve that id through the matching tool input for
+            // the question-text map consumed by ChatMessage. Raw messages stay
+            // untouched; only this derived lookup map is enriched.
+            const parsed = parseAskAnswerText(resultText, matchedTool.input?.questions);
             // 被拒绝的 request_user_input：分 cancelled / rejected 两类——
             //   - cancelled：cx-viewer 主动取消（Cancel 按钮 / 输入框打字打断）。
-            //     ask-bridge.js / sdk-manager.js 注入 reason 时统一加 [cx-viewer:cancel] 前缀
+            //     structured app-server bridge / sdk-manager.js 注入 reason 时统一加 [cx-viewer:cancel] 前缀
             //     作为协议级 sentinel，前缀匹配比模糊文案匹配稳定（SDK 升级换文案不影响）。
             //   - rejected：schema 校验失败 / hook deny 等"未触达"语义。
             //   ChatMessage 用这两个 sentinel 区分渲染（cancelled 显式带 __cancelReason__ 灰态）。
@@ -284,17 +293,6 @@ export function cachedBuildToolResultMap(messages) {
     _toolResultCache.set(messages, cached);
   }
   return cached;
-}
-
-/** 从 request_user_input tool_result 文本中提取答案 map */
-export function parseAskAnswerText(text) {
-  const answers = {};
-  const re = /"([^"]+)"="([^"]*)"/g;
-  let m;
-  while ((m = re.exec(text)) !== null) {
-    answers[m[1]] = m[2];
-  }
-  return answers;
 }
 
 /** 从 plan tool_result 文本中解析审批状态和计划内容 */

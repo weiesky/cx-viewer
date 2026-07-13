@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 
 import { ensureHooks } from '../lib/ensure-hooks.js';
 
-test('ensureHooks writes Codex hooks.json without touching settings.json', () => {
+test('ensureHooks removes the obsolete ask hook and preserves permission hooks', () => {
   const dir = mkdtempSync(join(tmpdir(), 'cxv-hooks-'));
   const oldCodexHome = process.env.CODEX_HOME;
   const oldCodexConfigDir = process.env.CODEX_CONFIG_DIR;
@@ -16,6 +16,10 @@ test('ensureHooks writes Codex hooks.json without touching settings.json', () =>
   try {
     writeFileSync(join(dir, 'hooks.json'), JSON.stringify({
       hooks: {
+        PreToolUse: [{
+          matcher: 'request_user_input',
+          hooks: [{ type: 'command', command: 'node /old/cx-viewer/lib/ask-bridge.js' }],
+        }],
         PermissionRequest: [{
           matcher: '.*',
           hooks: [{ type: 'command', command: 'node audit-hook.js' }],
@@ -34,7 +38,7 @@ test('ensureHooks writes Codex hooks.json without touching settings.json', () =>
       hooks.PreToolUse.some(entry =>
         entry.matcher === 'request_user_input' && entry.hooks?.[0]?.command?.includes('ask-bridge.js')
       ),
-      true
+      false
     );
     assert.equal(
       hooks.PermissionRequest.some(entry =>

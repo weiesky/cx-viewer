@@ -117,17 +117,12 @@ cxv [options] [codex args...]
 | `--sandbox` | Set sandbox mode |
 | `--ask-for-approval` | Set approval policy |
 
-## 6. Hook Configuration
+## 6. Interactive Bridge Configuration
 
-CX-Viewer's Codex integration primarily uses the local wrapper/proxy path. Hook bridges use current Codex tool names only.
+CX-Viewer connects the Codex CLI TUI to a local App Server through a WebSocket proxy. Native `request_user_input` server requests are claimed by the Web UI when it is connected, answered with the original JSON-RPC request ID, and handed back to the TUI when the Web UI is unavailable. The exact installed CLI schema is checked at startup.
 
-### 1. request_user_input Bridge
-- **Matcher**: `"request_user_input"`
-- **Command**: `node <install_dir>/lib/ask-bridge.js`
-- **Purpose**: Forward tool/user approval prompts to the Web UI when a bridge path is active
-
-### 2. Permission Approval Bridge
-- **Matcher**: `""` (empty = match all tools)
+### Permission Approval Hook
+- **Matcher**: `".*"` (regular expression matching all permission requests)
 - **Command**: `node <install_dir>/lib/perm-bridge.js`
 - **Purpose**: Mutating or external tools such as `shell_command`, `apply_patch`, `web_search`, and `image_generation` require Web UI approval; others pass through
 

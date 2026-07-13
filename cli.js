@@ -13,6 +13,7 @@ import { INJECT_IMPORT, resolveCliPath, resolveNativePath, resolveNpmCodexPath, 
 import { appendCxvFinalConfigArgs, getDefaultModeRequestUserInputConfigArgs, normalizeCodexArgs, hasBypassPermissions, getReasoningSummaryConfigArgs } from './lib/cli-args.js';
 import { ensureHooks } from './lib/ensure-hooks.js';
 import { APPROVALS_REVIEWER_DEFAULT } from './lib/approval-reviewer.js';
+import { inspectCodexRequestUserInputSupport } from './lib/codex-appserver-capabilities.js';
 import { appendOtelTraceExporterConfigArgsOnce, getOtelTraceExporterConfigArgs, OTEL_TRACE_HEADERS_ENV, stripLegacyOtelConfigBlock, withOtelTraceAuthHeader } from './lib/otel-config.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -263,11 +264,18 @@ async function runCliMode(extraCodexArgs = [], cwd) {
 
   const workingDir = cwd || process.cwd();
 
+  const askProtocol = inspectCodexRequestUserInputSupport(codexPath);
+  if (askProtocol.verified) {
+    console.log(`[CX Viewer] Codex request_user_input protocol verified (${askProtocol.version}: ${askProtocol.methods.join(', ')})`);
+  } else {
+    console.warn(`[CX Viewer] Could not verify native request_user_input interception${askProtocol.version ? ` for ${askProtocol.version}` : ''}: ${askProtocol.error}`);
+  }
+
   // 注册工作区
   const { registerWorkspace } = await import('./workspace-registry.js');
   registerWorkspace(workingDir);
 
-  // 确保 request_user_input hook 已注册到 Codex hooks.json
+  // 清理旧 request_user_input hook，并确保权限审批 hook 已注册。
   ensureHooks();
 
   // 2. 设置 CLI 模式标记
@@ -394,9 +402,16 @@ async function runCliMode(extraCodexArgs = [], cwd) {
       env: process.env,
       extraConfigArgs: appServerConfigArgs,
       onApprovalsReviewerActive: (reviewer) => serverMod.setActiveCodexApprovalsReviewer(reviewer, true),
+      onRequestUserInput: serverMod.offerCodexRequestUserInput,
+      onRequestUserInputCleared: serverMod.clearCodexRequestUserInput,
       writeLogEntry: interceptorMod.appendLogEntry,
     });
     serverMod.setCodexApprovalsReviewerUpdater(_bridge.setApprovalsReviewer);
+    serverMod.setCodexRequestUserInputBridge({
+      resolve: _bridge.resolveRequestUserInput,
+      cancel: _bridge.cancelRequestUserInput,
+      releaseToTui: _bridge.releaseRequestUserInputToTui,
+    });
     // 让 codex TUI 通过 --remote 连接到代理
     bridgeArgs = [...childBaseConfigArgs, '--remote', `ws://127.0.0.1:${_bridge.proxyPort}`];
     console.log(`[CX Viewer] App-Server bridge started (proxy:${_bridge.proxyPort} → server:${_bridge.appServerPort})`);
@@ -449,6 +464,7 @@ async function runCliMode(extraCodexArgs = [], cwd) {
   const cleanup = () => {
     killPty();
     serverMod.setCodexApprovalsReviewerUpdater(null);
+    serverMod.setCodexRequestUserInputBridge(null);
     serverMod.setActiveCodexApprovalsReviewer(null, false);
     if (_bridge) _bridge.stop();
     try { stopProxy(); } catch {}

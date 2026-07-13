@@ -35,12 +35,69 @@ export const LEGACY_ASK_PLACEHOLDER_ID = '__ask__';
 // askQueue entry.kind — 决定 _promoteNextAskFromQueue 弹起后路由哪条 submit 路径。
 export const ASK_KIND = { HOOK: 'hook', SDK: 'sdk' };
 
+/**
+ * Build both answer shapes during the legacy transition period:
+ * - hookAnswers keeps the historical question-text map.
+ * - codexAnswers follows the app-server ToolRequestUserInputResponse schema and
+ *   preserves multi-select values as arrays keyed by the stable question id.
+ */
+export function buildStructuredAskAnswers(answers = [], questions = []) {
+  const hookAnswers = {};
+  const codexAnswers = {};
+
+  for (const answer of answers) {
+    const question = questions[answer.questionIndex];
+    if (!question) continue;
+    let values = [];
+
+    if (answer.type === 'other') {
+      values = [answer.text || ''];
+    } else if (answer.type === 'multi') {
+      values = (answer.selectedIndices || [])
+        .map(index => question.options?.[index]?.label)
+        .filter(Boolean);
+    } else {
+      values = [question.options?.[answer.optionIndex]?.label || ''];
+    }
+
+    hookAnswers[question.question] = answer.type === 'multi' ? values.join(', ') : values[0];
+    if (question.id) codexAnswers[question.id] = { answers: values };
+  }
+
+  return { hookAnswers, codexAnswers };
+}
+
+function resolvedAnswerText(value) {
+  const raw = value && typeof value === 'object' && !Array.isArray(value)
+    ? value.answers
+    : value;
+  if (Array.isArray(raw)) return raw.map(item => String(item ?? '')).join(', ');
+  if (raw == null) return '';
+  return String(raw);
+}
+
+/** Normalize either bridge answer shape to ChatMessage's question-text map. */
+export function buildResolvedAskAnswerMap(questions = [], answers = {}, codexAnswers = {}) {
+  const result = {};
+  for (const question of questions) {
+    if (!question || typeof question !== 'object') continue;
+    const text = question.question || question.id;
+    let value;
+    if (Object.prototype.hasOwnProperty.call(answers || {}, text)) value = answers[text];
+    else if (question.id && Object.prototype.hasOwnProperty.call(answers || {}, question.id)) value = answers[question.id];
+    else if (question.id && Object.prototype.hasOwnProperty.call(codexAnswers || {}, question.id)) value = codexAnswers[question.id];
+    else continue;
+    result[text] = resolvedAnswerText(value);
+  }
+  return result;
+}
+
 export class AskFlowController {
   constructor(host) {
     this.host = host;
     // ── ask 状态机实例字段（从 ChatView 平移；过渡期 ChatView 用 getter/setter 垫片转发）──
-    this._askHookActive = false;      // PreToolUse hook bridge is pending
-    // hook bridge 在本 session 内是否曾经握手过——区分"新版 CC 有 ask-bridge"和"老版无 hook"两种场景。
+    this._askHookActive = false;      // structured ask bridge (app-server or legacy hook) is pending
+    // bridge 在本 session 内是否曾经握手过——区分结构化 GUI 通道和 PTY fallback。
     this._askHookEverActive = false;
     this._askHookQuestions = null;    // 当前 head 的 questions
     this._sdkAskId = null;            // 当前 SDK ask id（SDK 模式）
@@ -56,26 +113,46 @@ export class AskFlowController {
     this._waitForWsTimer = null;
     this._waitForPtyTimer = null;
     this._lastClearedPendingAsk = null; // PTY 路径 abort 回滚面包屑
-    this._lastAskSubmitId = null;
+    this._lastAskSubmitIds = [];
     this._pendingCancelIds = null;    // Map<askId, reason>：WS 不可用时缓存的 cancel，reopen 时重发
   }
 
   // 清 askMetaMap 中指定 askId 的 entry — 内存回收钩子。entry 不存在时返 null（不触发 re-render）。
-  _clearAskMeta = (askId) => {
-    if (!askId) return;
+  _clearAskMeta = (...askIds) => {
+    const ids = askIds.filter(Boolean);
+    if (ids.length === 0) return;
     this.host.setState(prev => {
-      if (!prev.askMetaMap || !prev.askMetaMap[askId]) return null;
+      if (!prev.askMetaMap || !ids.some(id => prev.askMetaMap[id])) return null;
       const next = { ...prev.askMetaMap };
-      delete next[askId];
+      for (const id of ids) delete next[id];
       return { askMetaMap: next };
     });
+  };
+
+  _applyResolvedAnswersLocal = ({ askId, itemId, questions, answers, codexAnswers }) => {
+    const state = this.host.getState();
+    const pending = state.pendingAsk?.id === askId
+      ? state.pendingAsk
+      : state.askQueue.find(ask => ask.id === askId);
+    const resolvedQuestions = Array.isArray(questions) && questions.length > 0
+      ? questions
+      : (pending?.questions || []);
+    const localAnswers = buildResolvedAskAnswerMap(resolvedQuestions, answers, codexAnswers);
+    if (Object.keys(localAnswers).length === 0) return;
+    // Transport request ids and transcript tool_use ids are different in the
+    // native app-server protocol. Cards are keyed by itemId.
+    const cardId = itemId || pending?.itemId || askId;
+    if (!cardId) return;
+    this.host.setState(prev => ({
+      localAskAnswers: { ...(prev.localAskAnswers || {}), [cardId]: localAnswers },
+    }));
   };
 
   _promoteNextAskFromQueue = () => {
     // 清当前 head 的 askMetaMap 条目（内存回收）
     const state = this.host.getState();
-    const prevHeadId = state.pendingAsk?.id;
-    if (prevHeadId) this._clearAskMeta(prevHeadId);
+    const prevHead = state.pendingAsk;
+    if (prevHead?.id) this._clearAskMeta(prevHead.id, prevHead.itemId);
 
     const queue = state.askQueue;
     const next = queue && queue.length > 0 ? queue[0] : null;
@@ -89,7 +166,7 @@ export class AskFlowController {
       }
       this._askHookQuestions = next.questions;
       this.host.setState({
-        pendingAsk: { id: next.id, questions: next.questions },
+        pendingAsk: { id: next.id, itemId: next.itemId || null, questions: next.questions },
         askQueue: queue.slice(1),
       });
     } else {
@@ -261,12 +338,12 @@ export class AskFlowController {
       this._lastClearedPendingAsk = null;
       this.host.setState({ pendingAsk: restored });
     }
-    const askId = this._lastAskSubmitId;
-    if (askId) {
-      this._lastAskSubmitId = null;
+    const askIds = this._lastAskSubmitIds || [];
+    if (askIds.length > 0) {
+      this._lastAskSubmitIds = [];
       this.host.setState((prev) => {
         const nextLocal = { ...(prev.localAskAnswers || {}) };
-        delete nextLocal[askId];
+        for (const id of askIds) delete nextLocal[id];
         return { localAskAnswers: nextLocal };
       });
     }
@@ -367,7 +444,7 @@ export class AskFlowController {
       this.host.clearPtyDebounce();
       // 队列已空 = PTY 路径成功结束。清掉 abort 回滚用的暂存字段
       this._lastClearedPendingAsk = null;
-      this._lastAskSubmitId = null;
+      this._lastAskSubmitIds = [];
     }
 
     // Wait for next prompt to appear (multi-question scenario)
@@ -381,7 +458,8 @@ export class AskFlowController {
   }
 
   /**
-   * Submit request_user_input answers via hook bridge (structured JSON, no PTY simulation).
+   * Submit request_user_input answers via the structured bridge (Codex
+   * app-server first, legacy hook fallback; no PTY simulation).
    */
   _submitViaHookBridge(answers, explicitHeadId, explicitQuestions) {
     const ws = this.host.ws();
@@ -397,34 +475,17 @@ export class AskFlowController {
 
     // 优先用快照 questions（promote 已把 instance 字段切到下一个 ask）
     const questions = explicitQuestions || this._askHookQuestions || [];
-    const hookAnswers = {};
-
-    for (const answer of answers) {
-      const q = questions[answer.questionIndex];
-      if (!q) continue;
-      const questionText = q.question;
-
-      if (answer.type === 'other') {
-        hookAnswers[questionText] = answer.text || '';
-      } else if (answer.type === 'multi') {
-        const labels = (answer.selectedIndices || [])
-          .map((i) => q.options?.[i]?.label)
-          .filter(Boolean);
-        hookAnswers[questionText] = labels.join(', ');
-      } else {
-        hookAnswers[questionText] = q.options?.[answer.optionIndex]?.label || '';
-      }
-    }
+    const { hookAnswers, codexAnswers } = buildStructuredAskAnswers(answers, questions);
 
     // Resolve which pending ask in pendingAskHooks Map this answer addresses.
     const resolvedAskId = (explicitHeadId !== undefined ? explicitHeadId : this.host.getState().pendingAsk?.id) || null;
-    const payload = { type: 'ask-hook-answer', answers: hookAnswers };
+    const payload = { type: 'ask-hook-answer', answers: hookAnswers, codexAnswers };
     if (resolvedAskId && resolvedAskId !== LEGACY_ASK_PLACEHOLDER_ID) payload.id = resolvedAskId;
     ws.send(JSON.stringify(payload));
 
     // 成功路径：清掉 abort 回滚用的暂存字段
     this._lastClearedPendingAsk = null;
-    this._lastAskSubmitId = null;
+    this._lastAskSubmitIds = [];
 
     // 不立即清除 _askHookActive：保留 hook bridge 状态以支持重试
     this._askSubmitting = false;
@@ -511,7 +572,11 @@ export class AskFlowController {
     // promote 会立刻把 _askHookQuestions / _askHookActive / _sdkAskId 切到下一个 ask。
     const submitCtx = {
       headAskId: this.host.getState().pendingAsk?.id || null,
-      hookQuestions: this._askHookQuestions,
+      headItemId: this.host.getState().pendingAsk?.itemId || null,
+      // The transcript card can become interactive before the structured
+      // bridge's pending notification arrives. Preserve the questions passed
+      // by the rendered form as the timing-safe fallback for answer encoding.
+      hookQuestions: this._askHookQuestions || questions || [],
       wasHookActive: this._askHookActive,
       wasSdkAskId: this._sdkAskId,
     };
@@ -532,9 +597,22 @@ export class AskFlowController {
       }
       // 暂存原 pendingAsk + askId：PTY 路径 prompt 失效时 _abortAskSubmitWithRollback 据此恢复。
       this._lastClearedPendingAsk = this.host.getState().pendingAsk;
-      this._lastAskSubmitId = askId;
+      // `askId` is the id of the tool card that actually rendered the form.
+      // Native app-server requests also carry a transport id and may carry an
+      // itemId, but neither is guaranteed to equal the live transcript id on
+      // every Codex build/streaming path.  Index the optimistic answer by all
+      // known aliases so the exact card the user clicked always resolves.
+      const answerIds = [...new Set([
+        askId,
+        submitCtx.headItemId,
+        submitCtx.headAskId,
+      ].filter(Boolean).map(String))];
+      this._lastAskSubmitIds = answerIds;
       this.host.setState(prev => ({
-        localAskAnswers: { ...(prev.localAskAnswers || {}), [askId]: localAnswers },
+        localAskAnswers: {
+          ...(prev.localAskAnswers || {}),
+          ...Object.fromEntries(answerIds.map(id => [id, localAnswers])),
+        },
       }));
       // 乐观推进 head：全局 modal 与 inline form 同帧切到下一个 ask（或清空），不依赖 server ack。
       this._promoteNextAskFromQueue();
@@ -545,7 +623,7 @@ export class AskFlowController {
       const resolvedId = askId || submitCtx.wasSdkAskId;
       if (!resolvedId) {
         this._lastClearedPendingAsk = null;
-        this._lastAskSubmitId = null;
+        this._lastAskSubmitIds = [];
         return;
       }
       const ws = this.host.ws();
@@ -567,10 +645,10 @@ export class AskFlowController {
         }
         ws.send(JSON.stringify({ type: 'sdk-ask-answer', id: resolvedId, answers: sdkAnswers }));
         this._lastClearedPendingAsk = null;
-        this._lastAskSubmitId = null;
+        this._lastAskSubmitIds = [];
       } else {
         this._lastClearedPendingAsk = null;
-        this._lastAskSubmitId = null;
+        this._lastAskSubmitIds = [];
       }
       return;
     }
@@ -612,9 +690,14 @@ export class AskFlowController {
       // Legacy server（无 id）→ fall back 到 LEGACY_ASK_PLACEHOLDER_ID 单槽语义。
       if (Array.isArray(msg.questions) && msg.questions.length > 0) {
         const askId = msg.id != null ? String(msg.id) : LEGACY_ASK_PLACEHOLDER_ID;
+        const itemId = msg.itemId != null ? String(msg.itemId) : null;
         if (typeof msg.startedAt === 'number' && typeof msg.timeoutMs === 'number') {
           this.host.setState(prev => ({
-            askMetaMap: { ...prev.askMetaMap, [askId]: { startedAt: msg.startedAt, timeoutMs: msg.timeoutMs } },
+            askMetaMap: {
+              ...prev.askMetaMap,
+              [askId]: { startedAt: msg.startedAt, timeoutMs: msg.timeoutMs },
+              ...(itemId ? { [itemId]: { startedAt: msg.startedAt, timeoutMs: msg.timeoutMs } } : {}),
+            },
           }));
         }
         if (msg.id == null && this.host.getState().pendingAsk?.id === LEGACY_ASK_PLACEHOLDER_ID) {
@@ -624,12 +707,12 @@ export class AskFlowController {
           if (state.pendingAsk) {
             if (state.pendingAsk.id === askId) return null;
             if (state.askQueue.some(a => a.id === askId)) return null;
-            return { askQueue: [...state.askQueue, { id: askId, questions: msg.questions, kind: ASK_KIND.HOOK }] };
+            return { askQueue: [...state.askQueue, { id: askId, itemId, questions: msg.questions, kind: ASK_KIND.HOOK }] };
           }
           this._askHookActive = true; this._askHookEverActive = true;
           this._askHookQuestions = msg.questions;
           this._sdkAskId = null;
-          return { pendingAsk: { id: askId, questions: msg.questions } };
+          return { pendingAsk: { id: askId, itemId, questions: msg.questions } };
         });
       }
       return true;
@@ -641,6 +724,13 @@ export class AskFlowController {
         if (this.host.getState().pendingAsk?.id === LEGACY_ASK_PLACEHOLDER_ID) this._promoteNextAskFromQueue();
         return true;
       }
+      this._applyResolvedAnswersLocal({
+        askId,
+        itemId: msg.itemId != null ? String(msg.itemId) : null,
+        questions: msg.questions,
+        answers: msg.answers,
+        codexAnswers: msg.codexAnswers,
+      });
       if (this.host.getState().pendingAsk?.id === askId) {
         this._promoteNextAskFromQueue();
       } else if (this.host.getState().askQueue.some(a => a.id === askId)) {
@@ -690,6 +780,13 @@ export class AskFlowController {
     if (msg.type === 'ask-hook-resolved' || msg.type === 'ask-hook-already-answered') {
       // resolved：另一端回答了；already-answered：本端抢答失败 ack。两者语义一样（清 modal/queue）。
       const askId = msg.id != null ? String(msg.id) : null;
+      this._applyResolvedAnswersLocal({
+        askId,
+        itemId: msg.itemId != null ? String(msg.itemId) : null,
+        questions: msg.questions,
+        answers: msg.answers,
+        codexAnswers: msg.codexAnswers,
+      });
       if (askId == null) {
         if (this.host.getState().pendingAsk?.id === LEGACY_ASK_PLACEHOLDER_ID) this._promoteNextAskFromQueue();
       } else if (this.host.getState().pendingAsk?.id === askId) {
@@ -762,8 +859,11 @@ export class AskFlowController {
           for (const ask of data.pendingAsks) {
             if (!ask || !ask.id || !Array.isArray(ask.questions) || ask.questions.length === 0) continue;
             this.handleWsMessage({
-              type: 'ask-hook-pending', id: ask.id, questions: ask.questions,
-              startedAt: ask.createdAt, timeoutMs: 24 * 60 * 60 * 1000,
+              type: 'ask-hook-pending', id: ask.id, itemId: ask.itemId, questions: ask.questions,
+              startedAt: ask.createdAt,
+              timeoutMs: Number.isFinite(ask.timeoutMs) && ask.timeoutMs > 0
+                ? ask.timeoutMs
+                : 24 * 60 * 60 * 1000,
             });
           }
         })
