@@ -253,6 +253,183 @@
   white-space: nowrap;
 }
 
+.compactionPromptToggle {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: min(42%, 320px);
+  appearance: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-success-text);
+  font: inherit;
+  font-size: 11px;
+  line-height: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.compactionPromptToggle:hover {
+  text-decoration: underline;
+}
+
+.compactionPromptToggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.compactionPromptList {
+  max-height: min(48vh, 420px);
+  margin-block: 6px 0;
+  margin-inline: -4px;
+  padding: 8px;
+  padding-inline-start: 32px;
+  overflow-y: auto;
+  border-top: 1px solid var(--color-success-light);
+  color: var(--text-secondary);
+}
+
+.compactionPromptList:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.compactionPromptListInDrawer {
+  max-height: none;
+  overflow-y: visible;
+}
+
+.compactionPromptItem {
+  margin-block: 0 8px;
+  margin-inline: 0;
+  padding: 7px 8px;
+  border-radius: 4px;
+  background: var(--bg-container);
+  overflow-wrap: anywhere;
+}
+
+.compactionPromptItem:last-child {
+  margin-bottom: 0;
+}
+
+.compactionPromptText {
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  unicode-bidi: plaintext;
+}
+
+.compactionPromptImageButton {
+  display: inline-flex;
+  max-width: 100%;
+  margin-block: 5px 2px;
+  margin-inline: 0 6px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-secondary);
+  border-radius: 5px;
+  background: var(--bg-surface);
+  cursor: zoom-in;
+  vertical-align: top;
+}
+
+.compactionPromptImageButton:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.compactionPromptImage {
+  display: block;
+  width: auto;
+  max-width: 180px;
+  height: 112px;
+  object-fit: contain;
+}
+
+.compactionPromptImageFallback,
+.compactionPromptEmpty {
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 18px;
+}
+
+.compactionPromptImageFallback {
+  display: inline-block;
+  margin-block: 4px;
+  margin-inline: 0;
+  padding: 3px 6px;
+  border: 1px dashed var(--border-secondary);
+  border-radius: 4px;
+}
+
+.compactionPromptRemoteButton {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: 100%;
+  margin-block: 5px 2px;
+  margin-inline: 0 6px;
+  padding: 4px 7px;
+  overflow: hidden;
+  border: 1px dashed var(--border-secondary);
+  border-radius: 4px;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 11px;
+  line-height: 18px;
+  overflow-wrap: anywhere;
+  text-align: start;
+  cursor: pointer;
+}
+
+.compactionPromptPrivateWarning {
+  color: var(--color-warning-text, #ad6800);
+  font-weight: 600;
+}
+
+.compactionPromptRemoteButton:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.compactionPromptEmpty {
+  margin-top: 6px;
+  padding: 7px 8px;
+  border-top: 1px solid var(--color-success-light);
+}
+
+.compactionPromptLoadMore {
+  display: block;
+  width: 100%;
+  margin-block: 6px 0;
+  margin-inline: 0;
+  padding: 5px 8px;
+  border: 1px solid var(--border-secondary);
+  border-radius: 4px;
+  background: var(--bg-surface);
+  color: var(--color-success-text);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.compactionPromptLoadMore:hover {
+  background: var(--bg-hover, var(--bg-surface));
+}
+
+.compactionPromptLoadMore:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.compactionPromptRegion {
+  min-width: 0;
+}
+
 .skillCountBreakdown {
   display: block;
   color: var(--text-muted);

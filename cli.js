@@ -13,6 +13,7 @@ import { INJECT_IMPORT, resolveCliPath, resolveNativePath, resolveNpmCodexPath, 
 import { appendCxvFinalConfigArgs, getDefaultModeRequestUserInputConfigArgs, normalizeCodexArgs, hasBypassPermissions, getReasoningSummaryConfigArgs } from './lib/cli-args.js';
 import { ensureHooks } from './lib/ensure-hooks.js';
 import { APPROVALS_REVIEWER_DEFAULT } from './lib/approval-reviewer.js';
+import { appendOtelTraceExporterConfigArgsOnce, getOtelTraceExporterConfigArgs, OTEL_TRACE_HEADERS_ENV, stripLegacyOtelConfigBlock, withOtelTraceAuthHeader } from './lib/otel-config.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -306,22 +307,23 @@ async function runCliMode(extraCodexArgs = [], cwd) {
   // 启动日志监听和统计（startViewer 在 workspace 模式下跳过了这些）
   serverMod.initPostLaunch();
 
-  // 注入 OTel 配置到 config.toml（补充数据源）
+  // Keep the temporary exporter process-local. Adding another [otel] table to
+  // config.toml makes Codex reject an otherwise valid user configuration.
   const otelEndpoint = `${protocol}://127.0.0.1:${port}`;
   const codexConfigPath = resolve(homedir(), '.codex', 'config.toml');
-  let _otelConfigInjected = false;
-  const OTEL_MARKER = '# >>> CX-Viewer OTel >>>';
-  const OTEL_MARKER_END = '# <<< CX-Viewer OTel <<<';
+  const otelConfigArgs = getOtelTraceExporterConfigArgs(otelEndpoint);
+  process.env[OTEL_TRACE_HEADERS_ENV] = withOtelTraceAuthHeader(
+    process.env[OTEL_TRACE_HEADERS_ENV],
+    serverMod.getOtelAccessToken(),
+  );
   try {
-    let configContent = existsSync(codexConfigPath) ? readFileSync(codexConfigPath, 'utf-8') : '';
-    const otelRegex = new RegExp(`\\n?${OTEL_MARKER}[\\s\\S]*?${OTEL_MARKER_END}\\n?`, 'g');
-    configContent = configContent.replace(otelRegex, '\n');
-    const otelBlock = `\n${OTEL_MARKER}\n[otel]\ntrace_exporter = { otlp-http = { protocol = "json", endpoint = "${otelEndpoint}" } }\n${OTEL_MARKER_END}\n`;
-    configContent = configContent.trimEnd() + otelBlock;
-    writeFileSync(codexConfigPath, configContent);
-    _otelConfigInjected = true;
+    if (existsSync(codexConfigPath)) {
+      const configContent = readFileSync(codexConfigPath, 'utf-8');
+      const legacy = stripLegacyOtelConfigBlock(configContent);
+      if (legacy.removed) writeFileSync(codexConfigPath, legacy.content);
+    }
   } catch (err) {
-    console.error('[CX Viewer] Failed to inject OTel config:', err.message);
+    console.warn('[CX Viewer] Failed to remove legacy OTel config block:', err.message);
   }
 
   // Start HTTP capture proxy for all auth modes (API-key and ChatGPT/OAuth).
@@ -380,8 +382,9 @@ async function runCliMode(extraCodexArgs = [], cwd) {
   let _bridge = null;
   // Proxy redirect args exist only after successful startup. App-server gets
   // the native ask override last; the TUI receives the same final overrides below.
-  const appServerConfigArgs = [...baseConfigArgs, ...proxyRedirectArgs];
-  let bridgeArgs = [...appServerConfigArgs];
+  const childBaseConfigArgs = [...baseConfigArgs, ...proxyRedirectArgs];
+  const appServerConfigArgs = appendOtelTraceExporterConfigArgsOnce(childBaseConfigArgs, otelConfigArgs);
+  let bridgeArgs = [...childBaseConfigArgs];
   try {
     const { startAppServerBridge } = await import('./lib/appserver-bridge.js');
     _bridge = await startAppServerBridge({
@@ -395,7 +398,7 @@ async function runCliMode(extraCodexArgs = [], cwd) {
     });
     serverMod.setCodexApprovalsReviewerUpdater(_bridge.setApprovalsReviewer);
     // 让 codex TUI 通过 --remote 连接到代理
-    bridgeArgs = [...appServerConfigArgs, '--remote', `ws://127.0.0.1:${_bridge.proxyPort}`];
+    bridgeArgs = [...childBaseConfigArgs, '--remote', `ws://127.0.0.1:${_bridge.proxyPort}`];
     console.log(`[CX Viewer] App-Server bridge started (proxy:${_bridge.proxyPort} → server:${_bridge.appServerPort})`);
   } catch (err) {
     console.warn('[CX Viewer] App-Server bridge failed, falling back to direct mode:', err.message);
@@ -411,9 +414,12 @@ async function runCliMode(extraCodexArgs = [], cwd) {
     serverMod.setActiveCodexApprovalsReviewer(savedApprovalsReviewer, true);
   }
   try {
-    const tuiArgs = appendCxvFinalConfigArgs(
-      [...bridgeArgs, ...reviewerArgs, ...extraCodexArgs],
-      { proxyPort: _proxyPort },
+    const tuiArgs = appendOtelTraceExporterConfigArgsOnce(
+      appendCxvFinalConfigArgs(
+        [...bridgeArgs, ...reviewerArgs, ...extraCodexArgs],
+        { proxyPort: _proxyPort },
+      ),
+      otelConfigArgs,
     );
     await spawnCodex(null, workingDir, tuiArgs, codexPath, isNpmVersion, port);
   } catch (err) {
@@ -440,22 +446,12 @@ async function runCliMode(extraCodexArgs = [], cwd) {
   }
 
   // 5. 注册退出处理
-  const cleanupOtelConfig = () => {
-    if (!_otelConfigInjected) return;
-    try {
-      let c = readFileSync(codexConfigPath, 'utf-8');
-      const re = new RegExp(`\\n?${OTEL_MARKER}[\\s\\S]*?${OTEL_MARKER_END}\\n?`, 'g');
-      c = c.replace(re, '\n');
-      writeFileSync(codexConfigPath, c.trimEnd() + '\n');
-    } catch {}
-  };
   const cleanup = () => {
     killPty();
     serverMod.setCodexApprovalsReviewerUpdater(null);
     serverMod.setActiveCodexApprovalsReviewer(null, false);
     if (_bridge) _bridge.stop();
     try { stopProxy(); } catch {}
-    cleanupOtelConfig();
     serverMod.stopViewer().finally(() => process.exit());
   };
   process.on('SIGINT', cleanup);

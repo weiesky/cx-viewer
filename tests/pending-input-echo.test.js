@@ -6,6 +6,7 @@ import {
   createPendingInputRecord,
   getPendingInputDisplayText,
   reconcilePendingInputs,
+  removePendingInputsById,
 } from '../src/utils/pendingInputEcho.js';
 
 function row(key, text, timestamp, requestIndex, role = 'user') {
@@ -69,4 +70,14 @@ test('line endings and surrounding whitespace are normalized', () => {
   const record = pending('p1', 'hello\r\nworld');
   const echoed = [row('new', '  hello\nworld  ', '2026-07-13T06:00:01.000Z', 1)];
   assert.equal(reconcilePendingInputs([record], echoed).length, 0);
+});
+
+test('cancelled queued sends remove only their own optimistic rows', () => {
+  const first = pending('p1', 'first');
+  const second = pending('p2', 'second');
+  const third = pending('p3', 'third');
+  const records = [first, second, third];
+  const remaining = removePendingInputsById(records, new Set(['p1', 'p3']));
+  assert.deepEqual(remaining.map(record => record.id), ['p2']);
+  assert.equal(removePendingInputsById(records, []), records);
 });

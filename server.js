@@ -1,10 +1,10 @@
 import { createServer } from 'node:http';
 import { createServer as createHttpsServer } from 'node:https';
 import { createConnection } from 'node:net';
-import { randomBytes } from 'node:crypto';
-import { readFileSync, writeFileSync, existsSync, watchFile, unwatchFile, statSync, readdirSync, renameSync, unlinkSync, rmSync, openSync, readSync, closeSync, realpathSync, mkdirSync, createReadStream, cpSync, copyFileSync, appendFileSync } from 'node:fs';
+import { randomBytes, timingSafeEqual } from 'node:crypto';
+import { constants as fsConstants, readFileSync, writeFileSync, existsSync, watchFile, unwatchFile, statSync, fstatSync, readdirSync, renameSync, unlinkSync, rmSync, openSync, readSync, closeSync, realpathSync, mkdirSync, createReadStream, cpSync, copyFileSync, appendFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join, extname, resolve, basename } from 'node:path';
+import { dirname, join, extname, resolve, basename, sep } from 'node:path';
 import { homedir, platform, networkInterfaces } from 'node:os';
 import { execFile, exec, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -62,6 +62,7 @@ import {
 import { APPROVALS_REVIEWER_DEFAULT, isSupportedApprovalsReviewer, normalizeApprovalsReviewer, shouldDeferPermissionHookToCodex } from './lib/approval-reviewer.js';
 import { searchCode } from './lib/code-search.js';
 import { searchReplace } from './lib/code-replace.js';
+import { OTEL_AUTH_HEADER } from './lib/otel-config.js';
 
 
 // 动态获取 getPrefsFile()（LOG_DIR 可能在运行时被 setLogDir 修改）
@@ -432,6 +433,226 @@ const HOST = '0.0.0.0';
 
 // 局域网访问 token（本地 127.0.0.1 免验证）
 const ACCESS_TOKEN = randomBytes(16).toString('hex');
+// OTLP is a log-writing endpoint, so it must remain authenticated even on
+// loopback. The token is injected only into Codex child processes.
+const OTEL_ACCESS_TOKEN = randomBytes(32).toString('hex');
+
+export const OTEL_PAYLOAD_LIMITS = Object.freeze({
+  bodyBytes: MAX_POST_BODY,
+  maxDepth: 32,
+  maxNodes: 100_000,
+  maxStringChars: 2 * 1024 * 1024,
+  maxTotalStringChars: 8 * 1024 * 1024,
+  maxResourceSpans: 64,
+  maxScopeSpans: 256,
+  maxSpans: 4096,
+  maxEvents: 16_384,
+  maxAttributes: 65_536,
+});
+
+function safeTokenEquals(candidate, expected) {
+  if (typeof candidate !== 'string' || typeof expected !== 'string') return false;
+  const left = Buffer.from(candidate);
+  const right = Buffer.from(expected);
+  return left.length === right.length && timingSafeEqual(left, right);
+}
+
+function authorizeOtelRequest(req) {
+  const value = req.headers[OTEL_AUTH_HEADER];
+  return !Array.isArray(value) && safeTokenEquals(value, OTEL_ACCESS_TOKEN);
+}
+
+function rejectUnauthorizedOtelRequest(req, res) {
+  // Never leave an untrusted request body attached to a reusable socket.
+  // Resume without buffering and close after the small error response.
+  req.resume();
+  res.setHeader('Connection', 'close');
+  sendJson(res, 403, { error: 'Forbidden', code: 'otel_access_forbidden' });
+}
+
+function otelLimitError(message) {
+  return Object.assign(new Error(message), { status: 413, code: 'otel_payload_too_large' });
+}
+
+function createOtelJsonBudgetScanner(limits) {
+  let depth = 0;
+  let nodes = 1;
+  let inString = false;
+  let escaped = false;
+  let stringBytes = 0;
+  let totalStringBytes = 0;
+  return {
+    scan(chunk) {
+      for (const byte of chunk) {
+        if (inString) {
+          if (escaped) {
+            escaped = false;
+            stringBytes++;
+          } else if (byte === 0x5c) {
+            escaped = true;
+            stringBytes++;
+          } else if (byte === 0x22) {
+            inString = false;
+            totalStringBytes += stringBytes;
+            if (totalStringBytes > limits.maxTotalStringChars) {
+              throw otelLimitError('OTLP total string budget exceeded');
+            }
+          } else {
+            stringBytes++;
+            if (stringBytes > limits.maxStringChars) {
+              throw otelLimitError('OTLP string budget exceeded');
+            }
+          }
+          continue;
+        }
+        if (byte === 0x22) {
+          inString = true;
+          escaped = false;
+          stringBytes = 0;
+        } else if (byte === 0x5b || byte === 0x7b) {
+          depth++;
+          nodes++;
+          if (depth > limits.maxDepth) throw otelLimitError('OTLP JSON depth budget exceeded');
+          if (nodes > limits.maxNodes) throw otelLimitError('OTLP JSON node budget exceeded');
+        } else if (byte === 0x5d || byte === 0x7d) {
+          depth--;
+        } else if (byte === 0x2c || byte === 0x3a) {
+          nodes++;
+          if (nodes > limits.maxNodes) throw otelLimitError('OTLP JSON node budget exceeded');
+        }
+      }
+    },
+  };
+}
+
+/** Preflight JSON complexity before V8 allocates the parsed object graph. */
+export function validateOtlpJsonTextBudget(value, limits = OTEL_PAYLOAD_LIMITS) {
+  const scanner = createOtelJsonBudgetScanner(limits);
+  scanner.scan(Buffer.from(String(value || ''), 'utf8'));
+  return true;
+}
+
+/** Validate both generic JSON complexity and OTLP-specific collection budgets. */
+export function validateOtlpTracePayload(payload, limits = OTEL_PAYLOAD_LIMITS) {
+  let nodes = 0;
+  let totalStringChars = 0;
+  const stack = [{ value: payload, depth: 0 }];
+  while (stack.length > 0) {
+    const { value, depth } = stack.pop();
+    if (++nodes > limits.maxNodes) throw otelLimitError('OTLP JSON node budget exceeded');
+    if (depth > limits.maxDepth) throw otelLimitError('OTLP JSON depth budget exceeded');
+    if (typeof value === 'string') {
+      if (value.length > limits.maxStringChars) throw otelLimitError('OTLP string budget exceeded');
+      totalStringChars += value.length;
+      if (totalStringChars > limits.maxTotalStringChars) throw otelLimitError('OTLP total string budget exceeded');
+    } else if (Array.isArray(value)) {
+      for (let i = 0; i < value.length; i++) stack.push({ value: value[i], depth: depth + 1 });
+    } else if (value && typeof value === 'object') {
+      for (const [key, child] of Object.entries(value)) {
+        if (key.length > limits.maxStringChars) throw otelLimitError('OTLP string budget exceeded');
+        totalStringChars += key.length;
+        if (totalStringChars > limits.maxTotalStringChars) throw otelLimitError('OTLP total string budget exceeded');
+        stack.push({ value: child, depth: depth + 1 });
+      }
+    }
+  }
+
+  const resourceSpans = Array.isArray(payload?.resourceSpans) ? payload.resourceSpans : [];
+  if (resourceSpans.length > limits.maxResourceSpans) throw otelLimitError('OTLP resource span budget exceeded');
+  let scopeCount = 0;
+  let spanCount = 0;
+  let eventCount = 0;
+  let attributeCount = 0;
+  const addAttributes = (attrs) => {
+    if (!Array.isArray(attrs)) return;
+    attributeCount += attrs.length;
+    if (attributeCount > limits.maxAttributes) throw otelLimitError('OTLP attribute budget exceeded');
+  };
+  for (const resource of resourceSpans) {
+    addAttributes(resource?.resource?.attributes);
+    const scopes = Array.isArray(resource?.scopeSpans) ? resource.scopeSpans : [];
+    scopeCount += scopes.length;
+    if (scopeCount > limits.maxScopeSpans) throw otelLimitError('OTLP scope span budget exceeded');
+    for (const scope of scopes) {
+      addAttributes(scope?.scope?.attributes);
+      const spans = Array.isArray(scope?.spans) ? scope.spans : [];
+      spanCount += spans.length;
+      if (spanCount > limits.maxSpans) throw otelLimitError('OTLP span budget exceeded');
+      for (const span of spans) {
+        addAttributes(span?.attributes);
+        const events = Array.isArray(span?.events) ? span.events : [];
+        eventCount += events.length;
+        if (eventCount > limits.maxEvents) throw otelLimitError('OTLP event budget exceeded');
+        for (const event of events) addAttributes(event?.attributes);
+        const links = Array.isArray(span?.links) ? span.links : [];
+        for (const link of links) addAttributes(link?.attributes);
+      }
+    }
+  }
+  return payload;
+}
+
+function readOtelBody(req, maxSize = OTEL_PAYLOAD_LIMITS.bodyBytes, parseJson = false) {
+  const declared = Number(req.headers['content-length']);
+  if (Number.isFinite(declared) && declared > maxSize) {
+    req.resume();
+    return Promise.reject(otelLimitError('OTLP request body too large'));
+  }
+  return new Promise((resolveBody, rejectBody) => {
+    const chunks = [];
+    const jsonBudgetScanner = parseJson ? createOtelJsonBudgetScanner(OTEL_PAYLOAD_LIMITS) : null;
+    let total = 0;
+    let done = false;
+    const finishError = (error) => {
+      if (done) return;
+      done = true;
+      req.removeListener('data', onData);
+      req.removeListener('end', onEnd);
+      req.removeListener('error', onError);
+      req.resume();
+      rejectBody(error);
+    };
+    const onData = (chunk) => {
+      total += chunk.length;
+      if (total > maxSize) {
+        chunks.length = 0;
+        finishError(otelLimitError('OTLP request body too large'));
+        return;
+      }
+      if (parseJson) {
+        try {
+          jsonBudgetScanner.scan(chunk);
+        } catch (error) {
+          chunks.length = 0;
+          finishError(error);
+          return;
+        }
+        chunks.push(chunk);
+      }
+    };
+    const onEnd = () => {
+      if (done) return;
+      done = true;
+      if (!parseJson) {
+        resolveBody(undefined);
+        return;
+      }
+      try {
+        resolveBody(JSON.parse(Buffer.concat(chunks, total).toString('utf8')));
+      } catch {
+        rejectBody(Object.assign(new Error('Invalid OTLP JSON'), { status: 400, code: 'invalid_otel_json' }));
+      }
+    };
+    const onError = (error) => finishError(error);
+    req.on('data', onData);
+    req.on('end', onEnd);
+    req.on('error', onError);
+  });
+}
+
+function readOtelJsonBody(req, maxSize = OTEL_PAYLOAD_LIMITS.bodyBytes) {
+  return readOtelBody(req, maxSize, true);
+}
 
 let clients = [];
 let server;
@@ -609,8 +830,8 @@ async function handleRequest(req, res) {
   const url = parsedUrl.pathname;
   const method = req.method;
 
-  // Debug: log OTel requests to file (temporary)
-  if (url.startsWith('/v1/')) {
+  // Optional diagnostics only; never create an unbounded shared /tmp log by default.
+  if (process.env.CXV_DEBUG && url.startsWith('/v1/')) {
     try { appendFileSync('/tmp/cxv-otel.log', `${new Date().toISOString()} ${method} ${url} ct=${req.headers['content-type']||'-'}\n`); } catch {}
   }
 
@@ -678,30 +899,53 @@ async function handleRequest(req, res) {
 
   // OTLP HTTP 接收端点 — 接收 Codex 原生 OTel trace 数据
   if (url === '/v1/traces' && method === 'POST') {
-    const buffers = [];
-    for await (const chunk of req) buffers.push(chunk);
-    const body = Buffer.concat(buffers);
+    if (!authorizeOtelRequest(req)) {
+      rejectUnauthorizedOtelRequest(req, res);
+      return;
+    }
     try {
-      const otlpData = JSON.parse(body.toString());
+      const otlpData = validateOtlpTracePayload(await readOtelJsonBody(req));
       const entries = parseOtlpTraces(otlpData);
       if (entries.length > 0 && LOG_FILE) {
         for (const entry of entries.flat().filter(Boolean)) appendLogEntry(entry);
       }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end('{}');
-    } catch {
-      // 可能是 protobuf 格式，暂时忽略
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end('{}');
+    } catch (error) {
+      const status = Number.isInteger(error?.status) ? error.status : 400;
+      // Do not keep a connection alive after rejecting an oversized declared
+      // body: the HTTP parser may still be waiting for bytes the client never
+      // intends to send, which can poison the next request on that socket.
+      if (status === 413) res.setHeader('Connection', 'close');
+      sendJson(res, status, {
+        error: error?.message || 'Invalid OTLP payload',
+        code: error?.code || 'invalid_otel_payload',
+      });
     }
     return;
   }
 
   // OTLP logs/metrics endpoints (Codex may also send these)
   if ((url === '/v1/logs' || url === '/v1/metrics') && method === 'POST') {
-    console.error(`[OTel] Received ${method} ${url} (${req.headers['content-type'] || 'no-ct'})`);
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end('{}');
+    if (!authorizeOtelRequest(req)) {
+      rejectUnauthorizedOtelRequest(req, res);
+      return;
+    }
+    try {
+      await readOtelBody(req);
+      if (process.env.CXV_DEBUG) {
+        console.error(`[OTel] Received ${method} ${url} (${req.headers['content-type'] || 'no-ct'})`);
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end('{}');
+    } catch (error) {
+      const status = Number.isInteger(error?.status) ? error.status : 400;
+      if (status === 413) res.setHeader('Connection', 'close');
+      sendJson(res, status, {
+        error: error?.message || 'Invalid OTLP payload',
+        code: error?.code || 'invalid_otel_payload',
+      });
+    }
     return;
   }
 
@@ -2627,12 +2871,14 @@ async function handleRequest(req, res) {
     const reqPath = parsedUrl.searchParams.get('path');
     const isEditorSession = parsedUrl.searchParams.get('editorSession') === 'true';
     const cwd = process.env.CXV_PROJECT_DIR || process.cwd();
+    let constrainedFd = null;
     try {
       // 上传图片路径（/tmp/cx-viewer-uploads/ 或持久化目录）直接使用，跳过项目目录安全检查
       const uploadPrefix = UPLOAD_DIR + '/';
       const pName = _projectName || 'default';
       const persistPrefix = join(homedir(), '.codex', 'cx-viewer', pName, 'images') + '/';
       let targetFile;
+      let constrainedImageRoot = null;
       if (reqPath && reqPath.startsWith(uploadPrefix)) {
         targetFile = resolve(reqPath);
         // 路径穿越防护：resolve 后必须仍在 upload 目录内
@@ -2645,8 +2891,12 @@ async function handleRequest(req, res) {
         if (!existsSync(targetFile)) {
           const fileName = targetFile.split('/').pop();
           const persistFile = join(persistPrefix, fileName);
-          if (existsSync(persistFile)) targetFile = persistFile;
+          if (existsSync(persistFile)) {
+            targetFile = persistFile;
+            constrainedImageRoot = persistPrefix;
+          }
         }
+        if (!constrainedImageRoot) constrainedImageRoot = uploadPrefix;
       } else if (reqPath && reqPath.startsWith(persistPrefix)) {
         targetFile = resolve(reqPath);
         // 路径穿越防护：resolve 后必须仍在持久化目录内
@@ -2655,6 +2905,7 @@ async function handleRequest(req, res) {
           res.end(JSON.stringify({ error: 'Path traversal denied' }));
           return;
         }
+        constrainedImageRoot = persistPrefix;
       } else {
         targetFile = resolveFilePath(cwd, reqPath, isEditorSession);
       }
@@ -2663,7 +2914,39 @@ async function handleRequest(req, res) {
         res.end(JSON.stringify({ error: `File not found: ${targetFile}` }));
         return;
       }
-      const stat = statSync(targetFile);
+      if (constrainedImageRoot) {
+        const rootPath = constrainedImageRoot.endsWith(sep)
+          ? constrainedImageRoot.slice(0, -1)
+          : constrainedImageRoot;
+        // Open the exact final entry without following a symlink, then verify
+        // containment and path identity against that same descriptor. Reading
+        // from the fd below removes the check-to-open race.
+        try {
+          constrainedFd = openSync(
+            targetFile,
+            fsConstants.O_RDONLY | (fsConstants.O_NOFOLLOW || 0),
+          );
+        } catch (error) {
+          if (error?.code === 'ELOOP' || error?.code === 'EMLINK') {
+            res.writeHead(403, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Symlink escape denied' }));
+            return;
+          }
+          throw error;
+        }
+        const descriptorStat = fstatSync(constrainedFd);
+        const canonicalPath = realpathSync(targetFile);
+        const currentPathStat = statSync(canonicalPath);
+        if (!isPathContained(canonicalPath, rootPath)
+            || descriptorStat.dev !== currentPathStat.dev
+            || descriptorStat.ino !== currentPathStat.ino) {
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Symlink escape denied' }));
+          return;
+        }
+        targetFile = canonicalPath;
+      }
+      const stat = constrainedFd === null ? statSync(targetFile) : fstatSync(constrainedFd);
       if (!stat.isFile()) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Not a file' }));
@@ -2681,7 +2964,7 @@ async function handleRequest(req, res) {
       };
       const ext = (targetFile.match(/\.[^.]+$/) || [''])[0].toLowerCase();
       const mime = extMime[ext] || 'application/octet-stream';
-      const data = method === 'HEAD' ? null : readFileSync(targetFile);
+      const data = method === 'HEAD' ? null : readFileSync(constrainedFd === null ? targetFile : constrainedFd);
       const size = method === 'HEAD' ? stat.size : data.length;
       const headers = { 'Content-Type': mime, 'Content-Length': size };
       // 防止用户项目中的恶意 HTML 在同源下执行脚本（XSS 防护）
@@ -2693,6 +2976,10 @@ async function handleRequest(req, res) {
       const message = status === 500 ? `Cannot read file: ${err.message}` : err.message;
       res.writeHead(status, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: message }));
+    } finally {
+      if (constrainedFd !== null) {
+        try { closeSync(constrainedFd); } catch {}
+      }
     }
     return;
   }
@@ -3832,6 +4119,10 @@ export { getAllLocalIps };
 
 export function getAccessToken() {
   return ACCESS_TOKEN;
+}
+
+export function getOtelAccessToken() {
+  return OTEL_ACCESS_TOKEN;
 }
 
 // 流式状态 SSE 推送定时器：检测 streamingState 变化并广播给所有客户端

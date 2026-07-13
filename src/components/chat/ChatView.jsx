@@ -59,7 +59,7 @@ import { PermissionController } from './controllers/permissionController';
 import { ToolFileChangeController } from './controllers/toolFileChangeController';
 import { SplitDragController, TERMINAL_WIDTH_STORAGE_KEY, SIDEBAR_WIDTH_STORAGE_KEY } from './controllers/splitDragController';
 import { PtyPromptController } from './controllers/ptyPromptController';
-import { createPendingInputRecord, getPendingInputDisplayText, reconcilePendingInputs } from '../../utils/pendingInputEcho';
+import { createPendingInputRecord, getPendingInputDisplayText, reconcilePendingInputs, removePendingInputsById } from '../../utils/pendingInputEcho';
 import { TERMINAL_CHAR_WIDTH, RESIZER_WIDTH_PX } from '../../utils/splitDragCalc';
 import { isMobile, isIOS, isPad } from '../../env';
 import { t } from '../../i18n';
@@ -2575,18 +2575,28 @@ class ChatView extends React.Component {
   };
 
   handleInputStop = () => {
-    // Stop 取消「等上传完成的缓发」必须在 ws 早返之前——否则 ws 不 OPEN 时点停止,缓发不会被撤销。
+    // Stop 取消所有尚未真正发出的输入必须在 ws 早返之前——断线时这些 timer / optimistic
+    // bubbles 同样需要撤销，不能把「未发送」继续显示成已发送。
     // 上传本身(HTTP)继续 resolve 进 pendingImages,无害,用户可稍后再发。
     this._clearDeferSend();
-    if (!this._inputWs || this._inputWs.readyState !== WebSocket.OPEN) return;
     // Stop 应 halt 所有待发：清掉 typed-interrupt 武装的 pending-flush 队列（含 500ms 兜底 timer）。
     // 否则随后到达的 ask-hook-cancelled ack（本端 handleAskCancel 或服务端 interruptTurn 广播）会
     // takePendingFlush 把它发出去 —— 等于点了"停止"又自动发消息。与服务端 interruptTurn 清空
     // _messageQueue 同源（停止即丢弃在途待发）。
     if (this._pendingFlushQueue && this._pendingFlushQueue.length) {
-      for (const entry of this._pendingFlushQueue) clearTimeout(entry.tid);
+      const cancelledPendingIds = new Set();
+      for (const entry of this._pendingFlushQueue) {
+        clearTimeout(entry.tid);
+        if (entry.pendingId) cancelledPendingIds.add(entry.pendingId);
+      }
       this._pendingFlushQueue.length = 0;
+      if (cancelledPendingIds.size > 0) {
+        this.setState(prev => ({
+          pendingInputs: removePendingInputsById(prev.pendingInputs, cancelledPendingIds),
+        }));
+      }
     }
+    if (!this._inputWs || this._inputWs.readyState !== WebSocket.OPEN) return;
     // 按模式分流中断（与 _sendUserMessageImmediate 的 sdkMode 分流同源）：
     // SDK 模式模型不在 PTY 里，ESC 无效 → 发 sdk-interrupt 让服务端 close 当前 query（保留会话）；
     // CLI/PTY 模式 → ESC 打断 Codex TUI 当前生成。
@@ -2660,7 +2670,7 @@ class ChatView extends React.Component {
           this._sendUserMessageImmediate(entry.text, null, true);
         }
       }, 500);
-      this._pendingFlushQueue.push({ askId, text, tid });
+      this._pendingFlushQueue.push({ askId, text, tid, pendingId: pendingRecord.id });
       return;
     }
 
@@ -3320,7 +3330,7 @@ class ChatView extends React.Component {
                 : el;
             })}
             {spinnerNode}
-            {pendingBubble}
+            {pendingBubbles}
             {streamingLiveItem && (
               targetIdx != null && targetIdx >= visible.length
                 ? <div key="stream-resp-anchor" ref={this._scrollTargetRef}>{streamingLiveItem}</div>

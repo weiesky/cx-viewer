@@ -4,10 +4,12 @@
  * `custom_tool_call`, `*_output`), while the historical renderer consumes
  * role messages containing text/thinking/tool_use/tool_result blocks.
  */
-import { getMainAgentSessionKey } from './clearCheckpoint.js';
+import { getEntryUserId, getMainAgentSessionKey } from './clearCheckpoint.js';
 import { messageFingerprint } from './sessionMerge.js';
+import { normalizeCodexUserText, projectUserPromptItem } from './userPromptContent.js';
 
 const CODEX_RESPONSE_ITEM_TYPES = new Set([
+  'compaction',
   'reasoning',
   'function_call',
   'function_call_output',
@@ -95,17 +97,6 @@ function readableReasoning(item) {
   const summary = textFromContent(item?.summary);
   const content = textFromContent(item?.content);
   return summary || content || item?.text || '';
-}
-
-function normalizeCodexUserText(value) {
-  if (typeof value !== 'string') return value;
-  const trimmed = value.trim();
-  if (/^<environment_context>[\s\S]*<\/environment_context>$/.test(trimmed)) return '';
-  if (/^<codex_internal_context\b[\s\S]*<\/codex_internal_context>$/.test(trimmed)) {
-    const objective = trimmed.match(/<objective>([\s\S]*?)<\/objective>/);
-    return objective ? objective[1].trim() : '';
-  }
-  return value;
 }
 
 function normalizeMessageContent(item) {
@@ -217,6 +208,22 @@ export function isCodexResponsesInput(input) {
 export function codexItemsToViewerMessages(input, responseContent = null) {
   const messages = [];
   let assistantBlocks = [];
+  let latestCompactionIndex = -1;
+  for (let i = 0; i < (input || []).length; i++) {
+    if (input[i]?.type === 'compaction') latestCompactionIndex = i;
+  }
+  let latestPromptBeforeCompaction = -1;
+  if (latestCompactionIndex >= 0) {
+    for (let i = latestCompactionIndex - 1; i >= 0; i--) {
+      if (projectUserPromptItem(input[i])) {
+        latestPromptBeforeCompaction = i;
+        break;
+      }
+    }
+  }
+  const compactHistoryCutoff = latestCompactionIndex < 0
+    ? -1
+    : (latestPromptBeforeCompaction >= 0 ? latestPromptBeforeCompaction : latestCompactionIndex);
 
   const flushAssistant = () => {
     if (assistantBlocks.length === 0) return;
@@ -236,8 +243,15 @@ export function codexItemsToViewerMessages(input, responseContent = null) {
     }
   };
 
-  for (const item of input || []) {
+  for (let itemIndex = 0; itemIndex < (input || []).length; itemIndex++) {
+    const item = input[itemIndex];
     if (!item || typeof item !== 'object') continue;
+
+    // A native compaction replaces the transcript before its latest prompt.
+    // Retain that prompt and every causal item from it to the marker (assistant
+    // reasoning/tool calls/results), but do not leave earlier assistant/tool
+    // messages orphaned after their user prompt has been removed.
+    if (compactHistoryCutoff >= 0 && itemIndex < compactHistoryCutoff) continue;
 
     if (item.type === 'message' || (!item.type && item.role)) {
       if (item.role === 'developer' || item.role === 'system') continue;
@@ -422,8 +436,7 @@ function isPrefix(previous, current) {
 function conversationProjectionKey(entry) {
   const sessionKey = getMainAgentSessionKey(entry);
   if (sessionKey) return sessionKey;
-  const metadata = entry?.body?.metadata || {};
-  const user = metadata.user_id || metadata.userId || 'anonymous';
+  const user = getEntryUserId(entry) || 'anonymous';
   return `${user}|${entry?.url || 'codex-responses'}`;
 }
 
@@ -458,6 +471,7 @@ export function createConversationEntryNormalizer() {
 
     const key = conversationProjectionKey(entry);
     const rawIds = rawInput.map(rawItemIdentity);
+    const hasNativeCompaction = rawInput.some(item => item?.type === 'compaction');
     const fullMessages = projected.body.input;
     const fullFingerprints = fullMessages.map(messageFingerprint);
     const previous = states.get(key);
@@ -483,6 +497,15 @@ export function createConversationEntryNormalizer() {
       // not necessarily carry the legacy English summary preamble, so preserve
       // the protocol identity signal for boundary and timestamp logic.
       projected._compactContinuation = true;
+    }
+
+    if (hasNativeCompaction) {
+      // The wire array can still be a cumulative prefix extension even though
+      // `compaction` semantically replaces its projected conversation history.
+      // Give both live and batch merge paths an explicit authoritative signal.
+      projected._compactContinuation = true;
+      projected._authoritativeConversationReplace = true;
+      windowStart = 0;
     }
 
     states.set(key, { rawIds, messageFingerprints: fullFingerprints });

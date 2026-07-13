@@ -24,8 +24,8 @@
 // internToolResultIfPooled 的命中信号是 lazy-clone 决策的关键：JS string === 是值比较，
 // 普通 internToolResult 返回的 ref 无法用于 ref-不变性判断。
 import { internToolResultIfPooled } from './readResultPool.js';
-import { classifySessionTransition, conversationIdsConflict, getMainAgentConversationId, isCompactContinuation, getMainAgentSessionKey, isPostClearCheckpoint } from './clearCheckpoint.js';
-import { extractDirectContextCompaction } from './contextCompaction.js';
+import { classifySessionTransition, conversationIdsConflict, getEntryUserId, getMainAgentConversationId, isCompactContinuation, getMainAgentSessionKey, isPostClearCheckpoint } from './clearCheckpoint.js';
+import { extractDirectContextCompactionRecord, extractDirectContextCompactionRecordFromHistory } from './contextCompaction.js';
 import { getResponseToolDeclaration } from '../../lib/openai-body.js';
 
 function getEntryToolSnapshot(entry) {
@@ -53,19 +53,73 @@ function inheritToolSnapshot(entry, previousEntry) {
 /** Carry a rolling snapshot through an in-progress → final dedup replacement. */
 export function inheritToolSnapshotOnDedup(previousEntry, nextEntry) {
   if (!previousEntry || !nextEntry) return nextEntry;
-  const direct = getResponseToolDeclaration(nextEntry.body);
-  if (direct.declared || Array.isArray(nextEntry._loadedTools)) return nextEntry;
-  if (previousEntry._sessionId != null && nextEntry._sessionId != null
-      && previousEntry._sessionId !== nextEntry._sessionId) return nextEntry;
+  if (isPostClearCheckpoint(previousEntry, Number.MAX_SAFE_INTEGER)
+      || isPostClearCheckpoint(nextEntry, Number.MAX_SAFE_INTEGER)) return nextEntry;
+  const previousUserId = getEntryUserId(previousEntry);
+  const nextUserId = getEntryUserId(nextEntry);
+  if (previousUserId && nextUserId && previousUserId !== nextUserId) return nextEntry;
   const previousConversation = getMainAgentConversationId(previousEntry);
   const nextConversation = getMainAgentConversationId(nextEntry);
-  if (previousConversation && nextConversation && previousConversation !== nextConversation) return nextEntry;
+  if (conversationIdsConflict(previousConversation, nextConversation)) return nextEntry;
   const previousKey = getMainAgentSessionKey(previousEntry);
   const nextKey = getMainAgentSessionKey(nextEntry);
   if (previousKey && nextKey && previousKey !== nextKey) return nextEntry;
-  const snapshot = getEntryToolSnapshot(previousEntry);
-  if (snapshot.declared) nextEntry._loadedTools = snapshot.tools;
+
+  const compaction = extractDirectContextCompactionRecord(nextEntry, previousEntry);
+  if (compaction.present) {
+    nextEntry._contextCompaction = compaction;
+  } else if (!nextEntry._contextCompaction && previousEntry._contextCompaction?.present === true) {
+    nextEntry._contextCompaction = previousEntry._contextCompaction;
+  }
+
+  const direct = getResponseToolDeclaration(nextEntry.body);
+  if (!direct.declared && !Array.isArray(nextEntry._loadedTools)) {
+    const snapshot = getEntryToolSnapshot(previousEntry);
+    if (snapshot.declared) nextEntry._loadedTools = snapshot.tools;
+  }
   return nextEntry;
+}
+
+function captureContextCompaction(entry, requests, currentIndex, ownerBySource) {
+  const record = extractDirectContextCompactionRecordFromHistory(entry, requests, currentIndex);
+  if (!record.present) return;
+  if (record.sourceKey && record.prompts.length > 0) {
+    let previousOwnerIndex = ownerBySource.get(record.sourceKey);
+    if (previousOwnerIndex === undefined) {
+      // Warm incremental startup may create the slimmer after an owner already
+      // exists in state. Discover it once; repeated frames are O(1) thereafter.
+      for (let i = currentIndex - 1; i >= 0; i--) {
+        const marker = requests[i]?._contextCompaction;
+        if (marker?.sourceKey === record.sourceKey
+            && Array.isArray(marker.prompts) && marker.prompts.length > 0) {
+          previousOwnerIndex = i;
+          break;
+        }
+      }
+    }
+    if (previousOwnerIndex !== undefined && previousOwnerIndex < currentIndex) {
+      const candidate = requests[previousOwnerIndex];
+      const marker = candidate?._contextCompaction;
+      if (marker?.sourceKey === record.sourceKey
+          && Array.isArray(marker.prompts) && marker.prompts.length > 0) {
+        requests[previousOwnerIndex] = { ...candidate, _contextCompaction: { ...marker, prompts: [] } };
+      }
+    }
+    ownerBySource.set(record.sourceKey, currentIndex);
+  }
+  entry._contextCompaction = record;
+}
+
+function markerForSlimmedEntry(record, nextEntry) {
+  const nextMarker = nextEntry?._contextCompaction;
+  if (record?.present && nextMarker?.present
+      && Array.isArray(nextMarker.prompts) && nextMarker.prompts.length > 0) {
+    // The latest cumulative entry owns the only prompt payload. Older markers
+    // remain as small presence descriptors so backtracking still works without
+    // multiplying the same prompt history across every slimmed frame.
+    return { ...record, prompts: [] };
+  }
+  return record;
 }
 
 /**
@@ -167,6 +221,7 @@ export function createEntrySlimmer(isMainAgentFn) {
   let prevUserId = null;
   let prevSessionKey = null;
   let prevConversationId = null;
+  const compactionOwnerBySource = new Map();
 
   return {
     /**
@@ -183,10 +238,9 @@ export function createEntrySlimmer(isMainAgentFn) {
       if (!entry.body || !Array.isArray(entry.body.input) || entry.body.input.length === 0) return entry;
 
       const count = entry.body.input.length;
-      const userId = entry.body.metadata?.user_id || null;
+      const userId = getEntryUserId(entry);
       const sessionKey = getMainAgentSessionKey(entry);
       const conversationId = getMainAgentConversationId(entry);
-
       // Preserve the /compact-continuation signal BEFORE this entry can be slimmed
       // by a later one: once body.input is emptied, isCompactContinuation() can
       // no longer see the summary input[0], and isSessionBoundary (clearCheckpoint.js)
@@ -216,6 +270,9 @@ export function createEntrySlimmer(isMainAgentFn) {
       // 瞬态请求过滤（阈值与 App.jsx _flushPendingEntries 保持一致：>4）
       if (transition.isTransient) return entry;
 
+      if (isNewSession && transition.reason !== 'compact-storage') compactionOwnerBySource.clear();
+      captureContextCompaction(entry, entries, currentIdx, compactionOwnerBySource);
+
       if (isNewSession) {
         prevMainIdx = currentIdx;
         prevMsgCount = count;
@@ -232,11 +289,11 @@ export function createEntrySlimmer(isMainAgentFn) {
         const prev = entries[prevMainIdx];
         if (prev.body?.input?.length > 0) {
           const pCount = prev.body.input.length;
-          const contextCompaction = extractDirectContextCompaction(prev);
+          const contextCompaction = extractDirectContextCompactionRecord(prev);
           const postClearCheckpoint = isPostClearCheckpoint(prev, Number.MAX_SAFE_INTEGER);
           prev._messageCount = pCount;
           prev._slimmed = true;
-          if (contextCompaction.present) prev._contextCompaction = contextCompaction;
+          if (contextCompaction.present) prev._contextCompaction = markerForSlimmedEntry(contextCompaction, entry);
           if (postClearCheckpoint) prev._postClearCheckpoint = true;
           if (Object.prototype.hasOwnProperty.call(prev, '_loadedTools')) delete prev._loadedTools;
           // 批量路径：原代码就是 in-place mutate prev.body.input = []，
@@ -277,7 +334,7 @@ export function createEntrySlimmer(isMainAgentFn) {
         if (!isSlimmed && !isMainAgentFn(e)) continue;
 
         const count = e._messageCount || e.body?.input?.length || 0;
-        const userId = e.body?.metadata?.user_id || null;
+        const userId = getEntryUserId(e);
         const sessionKey = getMainAgentSessionKey(e);
         const conversationId = getMainAgentConversationId(e);
 
@@ -343,6 +400,9 @@ export function restoreSlimmedEntry(entry, requests) {
   const fullEntry = requests[entry._fullEntryIndex];
   if (!fullEntry?.body?.input) return entry;
   if (entry.mainAgent === true && fullEntry.mainAgent === false) return entry;
+  const entryUserId = getEntryUserId(entry);
+  const fullEntryUserId = getEntryUserId(fullEntry);
+  if (entryUserId && fullEntryUserId && entryUserId !== fullEntryUserId) return entry;
   if (entry._sessionId != null && fullEntry._sessionId != null
       && entry._sessionId !== fullEntry._sessionId) return entry;
   if (conversationIdsConflict(getMainAgentConversationId(entry), getMainAgentConversationId(fullEntry))) return entry;
@@ -382,6 +442,7 @@ export function createIncrementalSlimmer(isMainAgentFn) {
   let prevSessionKey = null;
   let prevConversationId = null;
   const sessionSlimmedIndices = new Set();
+  const compactionOwnerBySource = new Map();
 
   return {
     /**
@@ -398,10 +459,9 @@ export function createIncrementalSlimmer(isMainAgentFn) {
       if (!entry.body?.input?.length) return entry;
 
       const count = entry.body.input.length;
-      const userId = entry.body.metadata?.user_id || null;
+      const userId = getEntryUserId(entry);
       const sessionKey = getMainAgentSessionKey(entry);
       const conversationId = getMainAgentConversationId(entry);
-
       // Preserve the /compact-continuation signal before slimming — same rationale
       // as createEntrySlimmer.process(): incrementally-slimmed entries can be
       // re-ingested by the batch pipeline on a warm-cache reconnect, where
@@ -426,6 +486,9 @@ export function createIncrementalSlimmer(isMainAgentFn) {
       // 瞬态请求过滤（阈值与 App.jsx _flushPendingEntries 保持一致：>4）
       if (transition.isTransient) return entry;
 
+      if (isNewSession && transition.reason !== 'compact-storage') compactionOwnerBySource.clear();
+      captureContextCompaction(entry, requests, currentIdx, compactionOwnerBySource);
+
       if (isNewSession) {
         sessionSlimmedIndices.clear();
         prevMainIdx = currentIdx;
@@ -445,7 +508,7 @@ export function createIncrementalSlimmer(isMainAgentFn) {
       if (prevMainIdx >= 0 && prevMainIdx < requests.length) {
         const orig = requests[prevMainIdx];
         if (orig.body?.input?.length > 0) {
-          const contextCompaction = extractDirectContextCompaction(orig);
+          const contextCompaction = extractDirectContextCompactionRecord(orig);
           const postClearCheckpoint = isPostClearCheckpoint(orig, Number.MAX_SAFE_INTEGER);
           const { _loadedTools: _discardedToolSnapshot, ...origWithoutToolSnapshot } = orig;
           const cloned = {
@@ -454,7 +517,7 @@ export function createIncrementalSlimmer(isMainAgentFn) {
             _messageCount: orig.body.input.length,
             _slimmed: true,
             _fullEntryIndex: currentIdx,
-            ...(contextCompaction.present ? { _contextCompaction: contextCompaction } : {}),
+            ...(contextCompaction.present ? { _contextCompaction: markerForSlimmedEntry(contextCompaction, entry) } : {}),
             ...(postClearCheckpoint ? { _postClearCheckpoint: true } : {}),
           };
           requests[prevMainIdx] = cloned;

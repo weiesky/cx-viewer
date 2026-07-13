@@ -15,6 +15,19 @@
  * @param {number} [prevMessageCount=0]
  * @returns {boolean}
  */
+export function getEntryUserId(entry) {
+  const body = entry?.body;
+  if (!body || typeof body !== 'object') return null;
+  // Native Responses uses client_metadata; legacy/proxy captures use metadata.
+  // Prefer the native envelope when both exist and accept both casing styles.
+  for (const metadata of [body.client_metadata, body.metadata]) {
+    if (!metadata || typeof metadata !== 'object') continue;
+    const value = metadata.user_id ?? metadata.userId;
+    if (typeof value === 'string' && value) return value;
+  }
+  return null;
+}
+
 export function isPostClearCheckpoint(entry, prevMessageCount = 0) {
   if (entry?._postClearCheckpoint === true) return true;
   if (!entry || entry._isCheckpoint !== true) return false;

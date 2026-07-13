@@ -11,7 +11,7 @@ import { SettingsContext } from './contexts/SettingsContext';
 import { filterRelevantRequests, isRelevantRequest, visibleRequests } from './utils/helpers';
 import { snapToPreset, stepPreset } from './utils/displayScaleHelper';
 import { getProjectAlias, subscribeToAlias } from './utils/projectAlias';
-import { isMainAgent, classifySessionTransition, getMainAgentConversationId, getMainAgentSessionKey, isPostClearCheckpoint, setTeammateNameSeeds, clearTeammateNameSeeds } from './utils/contentFilter';
+import { isMainAgent, classifySessionTransition, getEntryUserId, getMainAgentConversationId, getMainAgentSessionKey, isPostClearCheckpoint, setTeammateNameSeeds, clearTeammateNameSeeds } from './utils/contentFilter';
 import { apiUrl, getBasePath } from './utils/apiUrl';
 import { publish as publishWorkflowUpdate } from './utils/workflowStore';
 import { reportSwallowed } from './utils/errorReport';
@@ -1909,7 +1909,7 @@ class AppBase extends React.Component {
           const messageCount = conversationEntry._conversationMessageCount ?? messages.length;
           const messageOffset = conversationEntry._conversationWindowStart ?? 0;
 
-          const userId = conversationEntry.body.metadata?.user_id || null;
+          const userId = getEntryUserId(conversationEntry);
           const sessionKey = getMainAgentSessionKey(conversationEntry);
           const conversationId = getMainAgentConversationId(conversationEntry);
           // Session-boundary detection shares isSessionBoundary (clearCheckpoint.js)

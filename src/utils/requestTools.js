@@ -28,7 +28,7 @@ function chooseLatestMainAgentTools(requests) {
   // section flicker out until a later full request arrived.
   let anchor = null;
   for (let i = requests.length - 1; i >= 0; i--) {
-    if (isMainAgent(requests[i])) {
+    if (isMainAgent(requests[i]) && requests[i]?._otelSource !== true) {
       anchor = requests[i];
       break;
     }
@@ -39,7 +39,7 @@ function chooseLatestMainAgentTools(requests) {
   const anchorKey = getMainAgentSessionKey(anchor);
   for (let i = requests.length - 1; i >= 0; i--) {
     const request = requests[i];
-    if (!isMainAgent(request)) continue;
+    if (!isMainAgent(request) || request?._otelSource === true) continue;
 
     // `_sessionId` is the strongest boundary available in the normalized live
     // stream. It prevents /clear or another logical epoch in the same Codex

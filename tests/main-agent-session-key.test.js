@@ -188,6 +188,29 @@ test('merge keeps distinct stamped session ids separate even on the same thread'
   assert.deepEqual(sessions.map(s => s.sessionId), ['epoch-a', 'epoch-b']);
 });
 
+test('client_metadata user changes form a hard merge boundary', () => {
+  const first = mainEntry({
+    url: 'https://chatgpt.com/backend-api/codex/responses',
+    input: Array.from({ length: 10 }, (_, index) => msg(
+      index % 2 === 0 ? 'user' : 'assistant',
+      `account A ${index}`,
+    )),
+  });
+  first.body.metadata = {};
+  first.body.client_metadata = { thread_id: 'shared', user_id: 'account-a' };
+  const second = mainEntry({
+    url: 'https://chatgpt.com/backend-api/codex/responses',
+    input: [msg('user', 'account B')],
+    timestamp: '2026-01-01T00:00:01.000Z',
+  });
+  second.body.metadata = {};
+  second.body.client_metadata = { thread_id: 'shared', user_id: 'account-b' };
+  let sessions = mergeMainAgentSessions([], first);
+  sessions = mergeMainAgentSessions(sessions, second);
+  assert.equal(sessions.length, 2);
+  assert.deepEqual(sessions.map(session => session.userId), ['account-a', 'account-b']);
+});
+
 test('authoritative session_id changes advance the batch logical epoch', () => {
   const st = {
     timestamps: [], generatedTimestamps: [], currentSessionId: null,

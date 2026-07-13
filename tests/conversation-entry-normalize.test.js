@@ -356,6 +356,48 @@ test('recognizes an image-only Responses request and appends its current respons
   assert.equal(projected.body.input[1]._codexCurrentResponse, true);
 });
 
+test('conversation projection keeps only the latest valid user prompt before compaction', () => {
+  const messages = codexItemsToViewerMessages([
+    { type: 'additional_tools', tools: [{ name: 'exec' }] },
+    { type: 'message', role: 'system', content: 'system' },
+    { type: 'message', role: 'user', id: 'old-1', content: [{ type: 'input_text', text: 'old task one' }] },
+    { type: 'message', role: 'assistant', id: 'old-answer', content: [{ type: 'output_text', text: 'orphaned old answer' }] },
+    { type: 'function_call_output', call_id: 'call-1', output: 'tool output' },
+    { type: 'message', role: 'user', id: 'old-2', content: [{ type: 'input_text', text: 'latest task before compact' }] },
+    { type: 'function_call', call_id: 'call-2', name: 'shell_command', arguments: '{"command":"pwd"}' },
+    { type: 'function_call_output', call_id: 'call-2', output: 'workspace' },
+    { type: 'compaction', encrypted_content: 'opaque' },
+    { type: 'message', role: 'user', id: 'after', content: [{ type: 'input_text', text: 'new task after compact' }] },
+  ]);
+
+  const visibleUserText = messages
+    .filter(message => message.role === 'user')
+    .flatMap(message => Array.isArray(message.content) ? message.content : [{ type: 'text', text: message.content }])
+    .filter(block => block.type === 'text')
+    .map(block => block.text);
+  assert.deepEqual(visibleUserText, ['latest task before compact', 'new task after compact']);
+  assert.equal(messages.some(message => JSON.stringify(message).includes('orphaned old answer')), false);
+  assert.equal(messages.some(message => JSON.stringify(message).includes('tool output')), false);
+  assert.equal(messages.some(message => JSON.stringify(message).includes('workspace')), true);
+});
+
+test('plain-string Responses messages are detected when a native compaction item is present', () => {
+  const entry = {
+    mainAgent: true,
+    body: {
+      client_metadata: { thread_id: 'thread-string-layout' },
+      input: [
+        { type: 'message', role: 'user', content: 'old prompt' },
+        { type: 'message', role: 'user', content: 'latest prompt' },
+        { type: 'compaction', id: 'compact-string-layout' },
+      ],
+    },
+  };
+  const projected = normalizeConversationEntry(entry);
+  assert.notEqual(projected, entry);
+  assert.deepEqual(projected.body.input.map(message => message.content), ['latest prompt']);
+});
+
 test('repairs cache token details from raw_response in legacy Codex logs', () => {
   const entry = {
     mainAgent: true,
@@ -500,6 +542,72 @@ test('stateful Codex projection resets its input epoch after compact and isolate
   ));
   assert.equal(otherThread._conversationWindowStart, 0);
   assert.equal(otherThread.body.input.length, 4);
+});
+
+test('native compaction is an authoritative stateful replacement in the production merge path', () => {
+  const normalize = createConversationEntryNormalizer();
+  const raw = [];
+  for (let i = 0; i < 7; i++) {
+    raw.push(
+      codexMessage(`user-${i}`, 'user', `task ${i}`),
+      codexMessage(`assistant-${i}`, 'assistant', `answer ${i}`),
+    );
+  }
+
+  const before = normalize(cumulativeEntry(
+    '2026-07-10T02:10:00.000Z',
+    raw,
+    null,
+    null,
+  ));
+  const compacted = normalize(cumulativeEntry(
+    '2026-07-10T02:10:01.000Z',
+    [...raw, { type: 'compaction', id: 'compact-native' }],
+    'assistant-after-native-compact',
+    'continued after compact',
+  ));
+
+  assert.equal(compacted._compactContinuation, true);
+  assert.equal(compacted._authoritativeConversationReplace, true);
+  let sessions = mergeMainAgentSessions([], before);
+  sessions = mergeMainAgentSessions(sessions, compacted);
+  assert.equal(sessions.length, 1);
+  assert.deepEqual(
+    sessions[0].messages
+      .filter(message => message.role === 'user')
+      .map(message => message.content[0].text),
+    ['task 6'],
+  );
+  assert.equal(sessions[0].messages.some(message => JSON.stringify(message).includes('task 0')), false);
+  assert.equal(sessions[0].messages.some(message => JSON.stringify(message).includes('continued after compact')), true);
+});
+
+test('native compaction replacement tolerates a sparse frame without user_id', () => {
+  const normalize = createConversationEntryNormalizer();
+  const before = normalize(cumulativeEntry(
+    '2026-07-10T02:20:00.000Z',
+    [codexMessage('user-old', 'user', 'old task')],
+    'assistant-old',
+    'old answer',
+  ));
+  const sparseRaw = cumulativeEntry(
+    '2026-07-10T02:20:01.000Z',
+    [
+      codexMessage('user-new', 'user', 'new task'),
+      { type: 'compaction', id: 'compact-sparse-user' },
+    ],
+    'assistant-new',
+    'new answer',
+  );
+  delete sparseRaw.body.metadata.user_id;
+  const compacted = normalize(sparseRaw);
+
+  let sessions = mergeMainAgentSessions([], before);
+  sessions = mergeMainAgentSessions(sessions, compacted);
+
+  assert.equal(sessions.length, 1);
+  assert.equal(sessions[0].messages.some(message => JSON.stringify(message).includes('old task')), false);
+  assert.equal(sessions[0].messages.some(message => JSON.stringify(message).includes('new task')), true);
 });
 
 test('batch timestamps use logical positions for Codex cumulative projection windows', () => {

@@ -1,5 +1,5 @@
 // Wire format 协议详见 docs/WIRE_FORMAT.md（服务端 entry 形态 / 关键字段 / 已知特殊窗口）
-import { conversationIdsConflict, getMainAgentConversationId, isPostClearCheckpoint, getMainAgentSessionKey } from './clearCheckpoint.js';
+import { conversationIdsConflict, getEntryUserId, getMainAgentConversationId, isPostClearCheckpoint, getMainAgentSessionKey } from './clearCheckpoint.js';
 import { getEffectiveModelName } from './modelIdentity.js';
 
 /**
@@ -156,7 +156,7 @@ export function isMergeBlockedEntry(entry, options = {}) {
 export function mergeMainAgentSessions(prevSessions, entry, options = {}) {
   const newMessages = entry.body.input;
   const newResponse = entry.response;
-  const userId = entry.body.metadata?.user_id || null;
+  const userId = getEntryUserId(entry);
   const sessionKey = getMainAgentSessionKey(entry);
   const sessionId = entry._sessionId || null;
   const conversationId = getMainAgentConversationId(entry);
@@ -172,6 +172,7 @@ export function mergeMainAgentSessions(prevSessions, entry, options = {}) {
   const differentSessionKey = !!(sessionKey && lastSession.sessionKey && sessionKey !== lastSession.sessionKey);
   const differentSessionId = !!(sessionId && lastSession.sessionId && sessionId !== lastSession.sessionId);
   const differentConversationId = conversationIdsConflict(lastSession.conversationId, conversationId);
+  const differentUser = !!(userId && lastSession.userId && userId !== lastSession.userId);
 
   const prevMsgCount = lastSession.messages ? lastSession.messages.length : 0;
   const isNewConversation = prevMsgCount > 0 && newMessages.length < prevMsgCount * 0.5 && (prevMsgCount - newMessages.length) > 4;
@@ -187,11 +188,34 @@ export function mergeMainAgentSessions(prevSessions, entry, options = {}) {
     return [...prevSessions, { userId, sessionKey, sessionId, conversationId, modelName, messages: newMessages, response: newResponse, entryTimestamp }];
   }
 
-  if (differentConversationId || differentSessionId || differentSessionKey) {
+  // User identity is an authorization boundary, not a transient-history hint.
+  // Establish the new lane before the short-history filter can discard the
+  // first frame from another account on a reused thread id.
+  if (differentUser || differentConversationId || differentSessionId || differentSessionKey) {
     for (let i = 0; i < newMessages.length; i++) {
       if (!newMessages[i]._timestamp) newMessages[i]._timestamp = entryTimestamp;
     }
     return [...prevSessions, { userId, sessionKey, sessionId, conversationId, modelName, messages: newMessages, response: newResponse, entryTimestamp }];
+  }
+
+  // A native Responses `compaction` is an authoritative transcript rewrite.
+  // Its raw protocol input may remain a cumulative prefix, so size/drop
+  // heuristics cannot reliably distinguish it from an ordinary delta. Consume
+  // the normalizer's explicit signal before transient filtering and anchoring.
+  // User identity remains a hard boundary: a marker cannot replace another
+  // account's visible session merely because transport ids are incomplete.
+  if (entry._authoritativeConversationReplace === true) {
+    for (let i = 0; i < newMessages.length; i++) {
+      if (!newMessages[i]._timestamp) newMessages[i]._timestamp = entryTimestamp;
+    }
+    lastSession.messages = newMessages;
+    lastSession.response = newResponse;
+    lastSession.entryTimestamp = entryTimestamp;
+    if (modelName) lastSession.modelName = modelName;
+    if (sessionKey && !lastSession.sessionKey) lastSession.sessionKey = sessionKey;
+    if (sessionId && !lastSession.sessionId) lastSession.sessionId = sessionId;
+    if (conversationId && !lastSession.conversationId) lastSession.conversationId = conversationId;
+    return [...prevSessions];
   }
 
   if (!options.skipTransientFilter && isNewConversation && newMessages.length <= 4 && prevMsgCount > 4) {

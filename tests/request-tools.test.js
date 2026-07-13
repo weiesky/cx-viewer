@@ -143,3 +143,17 @@ test('an explicit empty tool declaration clears inherited tools', () => {
   ]);
   assert.deepEqual(tools, []);
 });
+
+test('OTel usage mirrors never replace the real MainAgent tool anchor', () => {
+  const tools = extractLoadedTools([
+    threadedMainAgent('thread-a', [{ name: 'exec' }]),
+    {
+      mainAgent: true,
+      _otelSource: true,
+      url: 'codex://api/request',
+      body: { model: 'gpt-test' },
+    },
+  ]);
+  assert.equal(tools.length, 1);
+  assert.match(tools[0], /<name>exec<\/name>/);
+});

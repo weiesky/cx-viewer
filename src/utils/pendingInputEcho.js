@@ -104,3 +104,12 @@ export function reconcilePendingInputs(records, renderedItems) {
 export function getPendingInputDisplayText(record) {
   return normalizePromptText(record?.displayText || record?.wireText);
 }
+
+/** Remove optimistic rows whose queued sends were explicitly cancelled. */
+export function removePendingInputsById(records, ids) {
+  if (!Array.isArray(records) || records.length === 0) return records || [];
+  const cancelled = ids instanceof Set ? ids : new Set(Array.isArray(ids) ? ids : []);
+  if (cancelled.size === 0) return records;
+  const remaining = records.filter(record => !cancelled.has(record?.id));
+  return remaining.length === records.length ? records : remaining;
+}

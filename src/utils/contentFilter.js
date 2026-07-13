@@ -244,7 +244,7 @@ function getToolName(tool) {
 }
 
 // /clear checkpoint 检测：抽到独立无依赖模块，便于 node --test 直接 import。
-export { classifySessionTransition, isPostClearCheckpoint, isCompactContinuation, isSessionBoundary, getSessionBoundaryReason, getMainAgentConversationId, getMainAgentSessionKey, getEntryUpstreamLane } from './clearCheckpoint.js';
+export { classifySessionTransition, isPostClearCheckpoint, isCompactContinuation, isSessionBoundary, getSessionBoundaryReason, getEntryUserId, getMainAgentConversationId, getMainAgentSessionKey, getEntryUpstreamLane } from './clearCheckpoint.js';
 
 // ============== 文本内容过滤 ==============
 

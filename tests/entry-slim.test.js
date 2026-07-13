@@ -174,9 +174,10 @@ test('slimming preserves a bounded context compaction marker', () => {
   const batch = createEntrySlimmer(isMainAgent);
   entries.forEach((entry, index) => batch.process(entry, entries, index));
   batch.finalize(entries);
-  assert.deepEqual(entries[0]._contextCompaction, {
-    present: true, count: 1, summary: null, truncated: false,
-  });
+  assert.equal(entries[0]._contextCompaction.present, true);
+  assert.equal(entries[0]._contextCompaction.count, 1);
+  assert.equal(entries[0]._contextCompaction.summary, null);
+  assert.deepEqual(entries[0]._contextCompaction.prompts, []);
   assert.equal(JSON.stringify(entries[0]._contextCompaction).includes('ciphertext'), false);
 
   const requests = [];
@@ -187,6 +188,104 @@ test('slimming preserves a bounded context compaction marker', () => {
   const liveLast = makeEntry('live-last', [compaction, { role: 'user', content: 'later' }]);
   incremental.processEntry(liveLast, requests, 1);
   assert.deepEqual(requests[0]._contextCompaction, entries[0]._contextCompaction);
+});
+
+test('batch and incremental slimming capture pre-compaction prompts before the source is released', () => {
+  const previousInput = [
+    { type: 'message', role: 'user', content: 'inspect architecture' },
+    { type: 'message', role: 'assistant', content: 'done' },
+    { type: 'message', role: 'user', content: 'fix the bug' },
+  ];
+  const compactInput = [{ type: 'compaction', id: 'compact-1', encrypted_content: 'opaque' }];
+  const laterInput = [...compactInput, { type: 'message', role: 'user', content: 'continue' }];
+
+  const entries = [makeEntry('before', previousInput), makeEntry('compact', compactInput), makeEntry('later', laterInput)];
+  entries.forEach(entry => { entry.body.metadata.thread_id = 'thread-compaction'; });
+  const batch = createEntrySlimmer(isMainAgent);
+  entries.forEach((entry, index) => batch.process(entry, entries, index));
+  batch.finalize(entries);
+  assert.deepEqual(entries[1]._contextCompaction.prompts, []);
+  assert.deepEqual(
+    entries[2]._contextCompaction.prompts.map(prompt => prompt.segments[0].text),
+    ['inspect architecture', 'fix the bug'],
+  );
+
+  const requests = [];
+  const incremental = createIncrementalSlimmer(isMainAgent);
+  const liveEntries = [makeEntry('live-before', previousInput), makeEntry('live-compact', compactInput), makeEntry('live-later', laterInput)];
+  liveEntries.forEach(entry => { entry.body.metadata.thread_id = 'thread-compaction'; });
+  for (const entry of liveEntries) {
+    incremental.processEntry(entry, requests, requests.length);
+    requests.push(entry);
+  }
+  assert.deepEqual(requests[1]._contextCompaction.prompts, []);
+  assert.deepEqual(
+    requests[2]._contextCompaction.prompts.map(prompt => prompt.segments[0].text),
+    ['inspect architecture', 'fix the bug'],
+  );
+});
+
+test('dedup replacement inherits an already captured compaction prompt marker', () => {
+  const previous = makeCurrentLayoutEntry('in-progress', [{ type: 'compaction', id: 'compact-dedup' }]);
+  previous._contextCompaction = {
+    present: true,
+    count: 1,
+    summary: null,
+    truncated: false,
+    sourceKey: 'session-current-layout:id:compact-dedup',
+    prompts: [{ segments: [{ type: 'text', text: 'kept task' }] }],
+  };
+  const completed = makeCurrentLayoutEntry('completed', [{ role: 'assistant', content: 'done' }]);
+  inheritToolSnapshotOnDedup(previous, completed);
+  assert.equal(completed._contextCompaction.prompts[0].segments[0].text, 'kept task');
+});
+
+test('dedup replacement never carries a compaction marker across a clear boundary', () => {
+  const previous = makeCurrentLayoutEntry('before-clear', [{ type: 'compaction', id: 'compact-before-clear' }]);
+  previous._contextCompaction = {
+    present: true,
+    count: 1,
+    summary: null,
+    truncated: false,
+    sourceKey: 'compaction:id:compact-before-clear',
+    prompts: [{ segments: [{ type: 'text', text: 'old work' }] }],
+  };
+  const cleared = makeCurrentLayoutEntry('after-clear', [{
+    role: 'user',
+    content: [{ type: 'text', text: '<command-name>/clear</command-name>' }],
+  }]);
+  cleared._isCheckpoint = true;
+  inheritToolSnapshotOnDedup(previous, cleared);
+  assert.equal(cleared._contextCompaction, undefined);
+});
+
+test('batch and incremental ownership exclude marker-less work after a repeated marker', () => {
+  const makeSequence = prefix => {
+    const sequence = [
+      makeEntry(`${prefix}-before`, [{ type: 'message', role: 'user', id: 'old', content: 'old task' }]),
+      makeEntry(`${prefix}-compact`, [{ type: 'compaction', id: 'compact-gap' }]),
+      makeEntry(`${prefix}-gap`, [{ type: 'message', role: 'user', id: 'gap', content: 'gap task' }]),
+      makeEntry(`${prefix}-repeat`, [{ type: 'compaction', id: 'compact-gap' }]),
+    ];
+    sequence.forEach(entry => { entry.body.metadata.thread_id = 'thread-gap'; });
+    return sequence;
+  };
+
+  const entries = makeSequence('batch');
+  const batch = createEntrySlimmer(isMainAgent);
+  entries.forEach((entry, index) => batch.process(entry, entries, index));
+  batch.finalize(entries);
+  assert.deepEqual(entries[1]._contextCompaction.prompts, []);
+  assert.deepEqual(entries[3]._contextCompaction.prompts.map(prompt => prompt.id), ['old']);
+
+  const requests = [];
+  const incremental = createIncrementalSlimmer(isMainAgent);
+  for (const entry of makeSequence('live')) {
+    incremental.processEntry(entry, requests, requests.length);
+    requests.push(entry);
+  }
+  assert.deepEqual(requests[1]._contextCompaction.prompts, []);
+  assert.deepEqual(requests[3]._contextCompaction.prompts.map(prompt => prompt.id), ['old']);
 });
 
 test('slimming preserves a post-clear checkpoint marker', () => {
@@ -251,6 +350,34 @@ test('restore rejects a full-entry pointer from another session', () => {
   const other = makeEntry('other', [{ role: 'user', content: 'secret' }]);
   other._sessionId = 'epoch-b';
   assert.equal(restoreSlimmedEntry(slimmed, [slimmed, other]), slimmed);
+});
+
+test('client_metadata user identity blocks cross-account restore and slimming', () => {
+  const slimmed = makeEntry('account-a', []);
+  slimmed.body.metadata = {};
+  slimmed.body.client_metadata = { user_id: 'account-a', thread_id: 'shared' };
+  slimmed._slimmed = true;
+  slimmed._messageCount = 1;
+  slimmed._fullEntryIndex = 1;
+  const otherAccount = makeEntry('account-b', [{ role: 'user', content: 'account B secret' }]);
+  otherAccount.body.metadata = {};
+  otherAccount.body.client_metadata = { user_id: 'account-b', thread_id: 'shared' };
+  assert.equal(restoreSlimmedEntry(slimmed, [slimmed, otherAccount]), slimmed);
+
+  const first = makeEntry('live-a', [{ role: 'user', content: 'A' }]);
+  first.body.metadata = {};
+  first.body.client_metadata = { user_id: 'account-a', thread_id: 'shared' };
+  const second = makeEntry('live-b', [
+    { role: 'user', content: 'A' },
+    { role: 'user', content: 'B' },
+  ]);
+  second.body.metadata = {};
+  second.body.client_metadata = { user_id: 'account-b', thread_id: 'shared' };
+  const requests = [first];
+  const slimmer = createIncrementalSlimmer(isMainAgent);
+  slimmer.processEntry(first, [], 0);
+  slimmer.processEntry(second, requests, 1);
+  assert.equal(requests[0]._slimmed, undefined);
 });
 
 test('raw input interning is gated to MainAgent and does not pool tools or instructions', () => {

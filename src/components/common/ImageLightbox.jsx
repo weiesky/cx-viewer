@@ -18,6 +18,7 @@ export default function ImageLightbox({ src, alt, onClose, zIndex }) {
   const imgRef = useRef(null);
   const touchRef = useRef(null);
   const overlayRef = useRef(null);
+  const closeButtonRef = useRef(null);
   const stateRef = useRef({ zoom: 1, offset: { x: 0, y: 0 } });
   const fitZoomRef = useRef(1);
   const mountedRef = useRef(true);
@@ -42,18 +43,50 @@ export default function ImageLightbox({ src, alt, onClose, zIndex }) {
     return () => clearTimeout(id);
   }, [closing, onClose]);
 
-  // ESC to close + body scroll lock with scrollbar-gutter
+  // ESC to close + modal focus lifecycle + body scroll lock.
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') doClose(); };
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusTimer = setTimeout(() => {
+      if (mountedRef.current) (closeButtonRef.current || overlayRef.current)?.focus();
+    }, 0);
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        doClose();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const root = overlayRef.current;
+      if (!root) return;
+      const focusable = [...root.querySelectorAll(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      )].filter(node => !node.hasAttribute('hidden') && node.getAttribute('aria-hidden') !== 'true');
+      if (focusable.length === 0) {
+        e.preventDefault();
+        root.focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && (document.activeElement === first || !root.contains(document.activeElement))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (document.activeElement === last || !root.contains(document.activeElement))) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
     window.addEventListener('keydown', onKey);
     const prevOverflow = document.body.style.overflow;
     const prevScrollbarGutter = document.body.style.scrollbarGutter;
     document.body.style.overflow = 'hidden';
     document.body.style.scrollbarGutter = 'stable';
     return () => {
+      clearTimeout(focusTimer);
       window.removeEventListener('keydown', onKey);
       document.body.style.overflow = prevOverflow;
       document.body.style.scrollbarGutter = prevScrollbarGutter;
+      if (opener?.isConnected) opener.focus();
     };
   }, [doClose]);
 
@@ -197,13 +230,14 @@ export default function ImageLightbox({ src, alt, onClose, zIndex }) {
       role="dialog"
       aria-modal="true"
       aria-label={alt || 'Image preview'}
+      tabIndex={-1}
       style={zIndex != null ? { zIndex } : undefined}
       onClick={handleOverlayClick}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      <button className={styles.closeBtn} onClick={doClose} title={closeLabel} aria-label={closeLabel}>
+      <button ref={closeButtonRef} type="button" className={styles.closeBtn} onClick={doClose} title={closeLabel} aria-label={closeLabel}>
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
         </svg>

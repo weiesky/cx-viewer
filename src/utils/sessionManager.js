@@ -1,6 +1,6 @@
 // Wire format 协议详见 docs/WIRE_FORMAT.md（applyInPlaceLastMsgReplace 信号驱动短路是其客户端唯一消费方）
 import { parseImOrigin } from './imOrigin.js';
-import { classifySessionTransition, conversationIdsConflict, getMainAgentConversationId, isPostClearCheckpoint, getMainAgentSessionKey } from './clearCheckpoint.js';
+import { classifySessionTransition, conversationIdsConflict, getEntryUserId, getMainAgentConversationId, isPostClearCheckpoint, getMainAgentSessionKey } from './clearCheckpoint.js';
 import { getEffectiveModelName } from './modelIdentity.js';
 
 export const HOT_SESSION_COUNT = 8;
@@ -450,7 +450,7 @@ export function applyBatchEntryTimestamps(st, entry) {
   const messages = entry.body.input;
   const count = entry._conversationMessageCount ?? entry._messageCount ?? messages.length;
   const messageOffset = entry._conversationWindowStart ?? 0;
-  const userId = entry.body.metadata?.user_id || null;
+  const userId = getEntryUserId(entry);
   const sessionKey = getMainAgentSessionKey(entry);
   const conversationId = getMainAgentConversationId(entry);
   const timestamp = entry.timestamp || new Date().toISOString();
