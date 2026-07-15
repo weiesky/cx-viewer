@@ -57,10 +57,11 @@ test('auth share URL retains token for unknown, unavailable, or insecure passwor
   for (const state of cases) assert.equal(buildAuthShareUrl(localUrl, state), localUrl);
 });
 
-test('auth component refreshes on both identity props and uses the atomic inherit action', () => {
+test('auth component refreshes on project identity and uses the atomic inherit action', () => {
   assert.match(source, /prevProps\.projectName\s*!==\s*this\.props\.projectName/);
-  assert.match(source, /prevProps\.instanceId\s*!==\s*this\.props\.instanceId/);
+  assert.doesNotMatch(source, /\binstanceId\b/);
   assert.match(source, /if \(authContextChanged\) this\.reloadAuthState\(\)/);
+  assert.match(source, /requestProjectName\s*!==\s*this\.props\.projectName/);
   assert.match(source, /this\.reloadAuthState\(\);[\s\S]*?_codexSettingsReady/);
   assert.match(source, /action:\s*'enable-global-and-inherit'/);
   assert.doesNotMatch(source, /thenClearOverride/);

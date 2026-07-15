@@ -117,8 +117,10 @@ function findReverseAnchor(newMsgs, curMsgs, newFps, sharedCurFpsCache) {
  * 重建层标记的脏条目不得进入 mainAgentSessions 合并——
  *  - `_staleReorder`：完成序倒置的乱序条目（内容已被更新条目取代）；
  *  - `_reconstructBroken`：重建结果与 _totalMessageCount 不符且无法修复（拼接会翻倍/错位）；
- *  - 批量路径额外跳过 `inProgress`：孤立占位条目的 body.input 是裸 delta 切片
+ *  - 旧版批量路径额外跳过 `inProgress`：孤立占位条目的 body.input 是裸 delta 切片
  *    （批量 reconstructEntries 不为 inProgress 重建全量），merge 会触发 rebuild 截断。
+ *    V2 冷启动投影是例外：descriptor 的 input revision 已由 reducer 完整解析，进行中
+ *    winner 里已经持久化的工具调用/结果必须立即进入对话，不能等下一 completed commit。
  *    SSE 实时路径不拦 inProgress——watcher 增量重建器已为其拼出全量 input，
  *    无 live-port 配置下"提问气泡请求时即显示"依赖这一行为。
  * AppBase 的 SSE 与批量两个 merge 入口、以及单测共用此谓词，防三处逻辑漂移。
@@ -126,13 +128,26 @@ function findReverseAnchor(newMsgs, curMsgs, newFps, sharedCurFpsCache) {
  * @param {object} entry
  * @param {object} [options]
  * @param {boolean} [options.batch=false] - 批量（强刷/历史加载）路径
+ * @param {boolean} [options.allowMaterializedInProgress=false] - 允许已完整物化的 V2 进行中快照
  * @returns {boolean} true = 该条目不应参与 session 合并
  */
 export function isMergeBlockedEntry(entry, options = {}) {
   if (!entry) return true;
   if (entry._staleReorder || entry._reconstructBroken) return true;
-  if (options.batch && entry.inProgress) return true;
+  if (options.batch && entry.inProgress && !options.allowMaterializedInProgress) return true;
   return false;
+}
+
+/**
+ * Cold-ingest guard shared by AppBase and tests.  `_v2Descriptor` is attached
+ * only after the V2 reducer has resolved the complete input revision; legacy
+ * V1 in-progress delta slices therefore remain blocked.
+ */
+export function isColdIngestMergeBlockedEntry(entry) {
+  return isMergeBlockedEntry(entry, {
+    batch: true,
+    allowMaterializedInProgress: !!entry?._v2Descriptor,
+  });
 }
 
 /**

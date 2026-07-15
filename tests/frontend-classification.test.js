@@ -35,6 +35,36 @@ test('frontend classification respects Codex root and subagent flags', () => {
   assert.equal(formatRequestTag('SubAgent', 'researcher'), 'SubAgent:researcher');
 });
 
+test('explicit MainAgent identity wins over subagent words in root instructions', () => {
+  const root = {
+    method: 'POST',
+    url: 'https://api.openai.com/v1/responses',
+    mainAgent: true,
+    subAgent: false,
+    body: {
+      instructions: 'You are Codex. Delegate suitable tasks to a general-purpose subagent.',
+      client_metadata: { available_roles: 'subagent,guardian' },
+      tools: [],
+      input: [{ role: 'user', content: 'continue' }],
+    },
+  };
+  assert.equal(isMainAgent(root), true);
+  assert.deepEqual(classifyRequest(root), { type: 'MainAgent', subType: null });
+});
+
+test('explicit SubAgent identity still wins when legacy flags conflict', () => {
+  const sub = {
+    method: 'POST',
+    mainAgent: true,
+    subAgent: true,
+    body: {
+      instructions: 'You are a general-purpose agent for delegated work.',
+      input: [{ role: 'user', content: 'inspect one file' }],
+    },
+  };
+  assert.equal(isMainAgent(sub), false);
+});
+
 test('frontend classification tags Codex tool events as Tool', () => {
   const rootTool = {
     method: 'TOOL',

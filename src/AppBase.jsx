@@ -19,16 +19,22 @@ import { playEvent as playVoiceEvent, unlockAudio, setTurnEndCooldownMs } from '
 import { getDefaultBindingsForLocale as vpDefaultBindingsForLocale } from '../server/lib/voice-pack-events';
 import { mergeVoicePackInto } from '../server/lib/approval-modal-prefs';
 import { saveEntries, loadEntries, clearEntries, getCacheMeta, saveSessionEntries, loadSessionEntries } from './utils/entryCache';
-import { buildSessionIndex, splitHotCold, mergeSessionIndices, HOT_SESSION_COUNT, assignMessageTimestamps, applyInPlaceLastMsgReplace, getSessionStableId, resolveDisplaySessions, getLatestSessionByActivity, resolveHydratedPin, runPinHydration, applyBatchEntryTimestamps } from './utils/sessionManager';
-import { mergeMainAgentSessions as _mergeMainAgentSessions, isMergeBlockedEntry } from './utils/sessionMerge';
+import { buildSessionIndex, splitHotCold, mergeSessionIndices, HOT_SESSION_COUNT, assignMessageTimestamps, applyInPlaceLastMsgReplace, getSessionStableId, resolveDisplaySessions, getLatestSessionByActivity, applyBatchEntryTimestamps } from './utils/sessionManager';
+import { mergeMainAgentSessions as _mergeMainAgentSessions, isColdIngestMergeBlockedEntry, isMergeBlockedEntry } from './utils/sessionMerge';
 import { createConversationEntryNormalizer, shouldExcludeFromConversation, stampConversationMessageCount } from './utils/conversationEntryNormalize';
 import { reconstructEntries, createIncrementalReconstructor } from '../server/lib/delta-reconstructor.js';
 import { createEntrySlimmer, createIncrementalSlimmer, restoreSlimmedEntry, inheritToolSnapshotOnDedup, internMainAgentInput } from './utils/entry-slim.js';
 import { createRepeatEntryExpander } from '../lib/repeat-entry.js';
+import { setLatestMapValue } from '../lib/log-entry-order.js';
 import { yieldToMain, runChunkedPass, INGEST_BATCH_SIZE } from './utils/ingestPipeline.js';
 import { reinitializeMermaid } from './hooks/useMermaidRender';
 import { APPROVALS_REVIEWER_DEFAULT, normalizeApprovalsReviewer } from './utils/approvalReviewerOptions';
 import { getContextCompactionEpochKey, loadExcludedContextCompactionEpoch, saveExcludedContextCompactionEpoch } from './utils/contextCompaction';
+import { buildLegacyRequestViewModels } from './utils/requestViewModels';
+import { fetchLogV2Page, fetchLogV2Snapshot } from './utils/logV2Transport';
+import { loadV2CachedSnapshot, reconcileV2CachedSnapshot, saveV2CachedSnapshot } from './utils/logV2Cache';
+import { isV2ConversationCandidate, LogV2Archive } from './utils/logV2Archive';
+import { LOG_V2_WIRE_KINDS, LOG_V2_WIRE_LIMITS, LOG_V2_WIRE_VERSION } from '../lib/log-v2/wire-schema';
 import styles from './App.module.css';
 
 export { styles };
@@ -85,16 +91,12 @@ class AppBase extends React.Component {
       viewMode: 'raw',
       mainAgentSessions: [], // [{ messages, response }]
       // 「仅展示当前会话」锁定的会话稳定 id（= 会话起点 ts）；null = 未锁定。
-      // 服务端持久化（按项目 + 可选 --pid 实例隔离），同进程多端经 SSE 实时一致。
-      // 命名提示：本字段就是服务端 /api/session-pin 里的 `pinnedSessionId`（同一个值，Ts/Id 同物）。
+      // “仅展示当前会话”的本地稳定 id（= 会话起点 ts）。
       pinnedSessionTs: null,
-      // 本实例 id（来自 cxv --pid），随 /api/project-name 拿回；null = 默认模式。仅用于标题 项目(id)。
-      instanceId: null,
       importModalVisible: false,
       localLogs: {},       // { projectName: [{file, timestamp, size}] }
       localLogsLoading: false,
       refreshingStats: false,
-      logShowAllInstances: false, // 「显示全部实例」开关：true 时越过 --pid 硬隔离列出全部实例日志
       showAll: false,
       lang: getLang(),
       userProfile: null,    // { name, avatar }
@@ -181,14 +183,6 @@ class AppBase extends React.Component {
     this._contextCompactionExcludedEpoch = null;
     this._contextCompactionCommittedExcludedEpoch = null;
     this._contextCompactionPendingExcludedEpoch = null;
-    // pin 竞态守卫（_maintainPinState/_hydratePin/session_pin SSE 用）：
-    //  _isHydratingPin   — 服务端 pin 的 GET 在途；期间禁 lazy-lock + 禁 persist，防抢在真值返回前误锁/回写。
-    //  _applyingRemotePin — 正在采纳服务端值（hydrate/SSE）；期间禁 persist，防把服务端值当本地改动回 POST（防回环）。
-    //  _hydratePinSeq    — monotonic token per hydrate round; a GET that resolves after a
-    //                      newer hydrate started (project switch, another reconnect) is discarded.
-    this._isHydratingPin = false;
-    this._applyingRemotePin = false;
-    this._hydratePinSeq = 0;
     this._approvalsReviewerUpdateSeq = 0;
     this._approvalsReviewerWriteQueue = Promise.resolve();
     this._approvalsReviewerPendingWrites = 0;
@@ -217,6 +211,15 @@ class AppBase extends React.Component {
     this._ingestToken = 0;
     this._liveGateBuffer = [];
     this._ingestProgressCount = 0;
+    this._v2InitAttempted = false;
+    this._v2Archive = null;
+    this._v2LiveBuffer = [];
+    this._v2LiveChain = Promise.resolve();
+    this._v2Epoch = 0;
+    this._v2AppliedSeq = 0;
+    this._v2SnapshotController = null;
+    this._v2PendingPage = null;
+    this._v2LiveNeedsReset = false;
   }
 
   /** 批量剪枝 entries：只清空旧 MainAgent 的 body.input，保留最后一条完整；
@@ -233,13 +236,10 @@ class AppBase extends React.Component {
     try {
       if (typeof document === 'undefined') return;
       const alias = getProjectAlias(projectName);
-      // --pid 实例：标题加 (id) 后缀，让多开 cxv 时能从标签页一眼分辨是哪个实例。
-      const id = this.state.instanceId;
-      const suffix = id ? `(${id})` : '';
       if (alias) {
-        document.title = `${alias}${suffix}`;
+        document.title = alias;
       } else if (projectName) {
-        document.title = `${projectName}${suffix}`;
+        document.title = projectName;
       } else {
         document.title = 'CX Viewer';
       }
@@ -271,14 +271,23 @@ class AppBase extends React.Component {
     slimmer.finalize(entries);
   }
 
-  /** Rebuild the O(1) request dedup index from a full entries array. */
-  _rebuildRequestIndex(entries) {
+  /** Rebuild the O(1) request dedup index from an entries array.
+   *
+   * Baseline replacements must also reset both incremental processors.  A live
+   * V2 winner replacement only changes the physical position of an entry that
+   * has already passed through the current reconstructor, so that caller keeps
+   * the reconstructor alive for the rest of the same SSE batch.
+   */
+  _rebuildRequestIndex(entries, { resetIncremental = true } = {}) {
     this._requestIndexMap.clear();
     for (let i = 0; i < entries.length; i++) {
       const e = entries[i];
       this._requestIndexMap.set(`${e.timestamp}|${e.url}`, i);
     }
-    this._sseSlimmer = null; this._sseReconstructor = null;
+    if (resetIncremental) {
+      this._sseSlimmer = null;
+      this._sseReconstructor = null;
+    }
   }
 
   // 给子组件(ChatView / TerminalPanel)一次性注入 SettingsContext 的所有字段。
@@ -415,15 +424,13 @@ class AppBase extends React.Component {
     return s;
   }
 
-  // Single definition of "the current session's stable id" — used by follow-latest
-  // (_maintainPinState), hydrate adoption (_hydratePin), and the session_pin SSE
-  // listener. Keep all three on this helper so the derivation can never drift
-  // between the paths again (that divergence class is the bug this fixes).
+  // Single definition of "the current session's stable id" used by the local
+  // follow-latest state machine.
   _derivedLatestId() {
     return getSessionStableId(getLatestSessionByActivity(this.state.mainAgentSessions));
   }
 
-  // 一次性清理旧版浏览器本地 pin（cxv_pinnedSession_<项目>）。pin 已改服务端存储，这些键不再使用，
+  // 一次性清理旧版浏览器本地 pin（cxv_pinnedSession_<项目>）。这些键已不再使用，
   // 历史上每访问一个项目就攒一个、永不回收。mount 时调用一次即可。
   _cleanupLegacyPinKeys() {
     try {
@@ -436,90 +443,26 @@ class AppBase extends React.Component {
     } catch {}
   }
 
-  // pin 持久化 → 服务端（POST /api/session-pin），由 server 按项目 + --pid 实例键落盘并 SSE 广播本进程，
-  // 多端实时一致。本地日志模式无 server，短路不发。
-  _persistPin() {
-    if (this._isLocalLog) return;
-    const val = this.state.pinnedSessionTs;
-    try {
-      fetch(apiUrl('/api/session-pin'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pinnedSessionId: val == null ? null : String(val) }),
-      }).catch(() => {});
-    } catch {}
-  }
-
-  // 从服务端读回 pin（刷新/切项目/重连后恢复）。异步：hydrate 在途时置 _isHydratingPin，
-  // 抑制 _maintainPinState 的 lazy-lock / persist，避免抢在 GET 返回前误锁并 POST 覆盖服务端真值。
-  // 采纳服务端值时置 _applyingRemotePin，避免被 persist 分支当成本地改动回写。
-  //
-  // Orchestration lives in runPinHydration (sessionManager.js) so the race-sensitive
-  // ordering is unit-tested: a stale server pin loses to the locally derived latest
-  // when the toggle is on (resolveHydratedPin); a superseded GET (newer hydrate
-  // started meanwhile) is discarded without touching the gate; and after settling,
-  // the gate is cleared BEFORE _maintainPinState(null) re-runs follow-latest — so a
-  // reconnect on an idle stream self-heals instead of sticking to a stale pin.
-  _hydratePin() {
-    if (this._isLocalLog) return;
-    const seq = ++this._hydratePinSeq;
-    this._isHydratingPin = true;
-    runPinHydration({
-      fetchPin: () => fetch(apiUrl('/api/session-pin'))
-        .then(res => res.ok ? res.json() : null)
-        .then(data => data && data.pinnedSessionId),
-      // Unmount counts as supersession: a GET resolving after teardown must not
-      // setState (adopt/self-heal) or clear a gate nobody owns anymore.
-      isCurrent: () => seq === this._hydratePinSeq && !this._unmounted,
-      getDerived: () => this._derivedLatestId(),
-      effOnly: () => this._effectiveOnlyCurrentSession(),
-      getLocalPin: () => this.state.pinnedSessionTs,
-      adopt: (val) => {
-        this._applyingRemotePin = true;
-        this.setState({ pinnedSessionTs: val }, () => { this._applyingRemotePin = false; });
-      },
-      persistLocal: () => this._persistPin(),
-      clearGate: () => { this._isHydratingPin = false; },
-      selfHeal: () => this._maintainPinState(null),
-    });
-  }
-
   // App / Mobile 子类的 componentDidUpdate 都 `super.componentDidUpdate(...)`，故 pin 维护集中在此。
-  componentDidUpdate(prevProps, prevState) {
-    this._maintainPinState(prevState);
+  componentDidUpdate() {
+    this._maintainPinState();
   }
 
-  // 维护 pin：过滤开启时始终把 pin 跟随到「当前会话」（= 最新会话的稳定 id）；切项目重 hydrate；
-  // pin 变化持久化。「当前会话」以日志最新条目所属会话为准，不依赖界面 /clear 交互 —— 从新终端
+  // 维护本地 pin：过滤开启时始终跟随「当前会话」（= 最新会话的稳定 id）。
+  // 「当前会话」以日志最新条目所属会话为准，不依赖界面 /clear 交互 —— 从新终端
   // (如 Ghostty)启动的会话，重载/实时都能自动切过去（配合 _flushPendingEntries 的实时推进）。
-  _maintainPinState(prevState) {
-    const effOnly = this._effectiveOnlyCurrentSession();
-
-    // _isHydratingPin：服务端 pin 的 GET 在途时，不要抢先推进（否则会在真值返回前误锁到最新）。
-    if (effOnly && !this._isHydratingPin) {
+  _maintainPinState() {
+    if (this._effectiveOnlyCurrentSession()) {
       // "Current session" = newest ACTIVITY among hot sessions, NOT the last list
       // element: mainAgentSessions is insertion-ordered, and with interleaved
       // multi-terminal sessions or a truncated reconnect replay the tail is often
-      // an old session — following it anchored (and persisted) the wrong pin.
+      // an old session.
       const latestId = this._derivedLatestId() || this._currentSessionId || null;
-      // 始终跟随最新会话（不再只在「开关刚打开 / pin 为空」时锁一次）：这样即便持久化的 pin
-      // 指向旧会话（cx-viewer 关闭期间新终端已启动，重开后 batch 重载出新会话），也会自动切到
-      // 最新会话。因为没有「手动锁定任意旧会话」的 UI，「当前会话」恒等于最新会话，此推进安全。
-      // 不变式：切项目那一拍这里的乐观锁不会被持久化——下面同一趟的 _hydratePin() 会同步置
-      // _isHydratingPin=true，把下一拍 persist 分支挡掉（由 hydrate 的服务端真值收口），故无需在此回写。
+      // 始终跟随最新会话。因为没有「手动锁定任意旧会话」的 UI，
+      // 「当前会话」恒等于最新会话，此推进安全。
       if (latestId && this.state.pinnedSessionTs !== latestId) {
         this.setState({ pinnedSessionTs: latestId });
       }
-    }
-
-    if (prevState && prevState.projectName !== this.state.projectName) {
-      // 切项目：从服务端重新 hydrate（旧 pin 已在切换 setState 里清空）。
-      this._hydratePin();
-    } else if (prevState && prevState.pinnedSessionTs !== this.state.pinnedSessionTs && this.state.projectName
-               && !this._applyingRemotePin && !this._isHydratingPin) {
-      // pin 本地变化且 projectName 稳定 → 持久化到服务端。
-      // _applyingRemotePin：来自 hydrate/SSE 的服务端值不回写（防回环）；_isHydratingPin：hydrate 在途不写。
-      this._persistPin();
     }
   }
 
@@ -528,10 +471,8 @@ class AppBase extends React.Component {
     return resolveDisplaySessions(mainAgentSessions, this.state.pinnedSessionTs, this._effectiveOnlyCurrentSession());
   }
 
-  _setContextCompactionStorageScope(projectName, instanceId = null) {
-    const scope = typeof instanceId === 'string' && instanceId
-      ? `instance:${instanceId}`
-      : (typeof projectName === 'string' && projectName ? `project:${projectName}` : null);
+  _setContextCompactionStorageScope(projectName) {
+    const scope = typeof projectName === 'string' && projectName ? `project:${projectName}` : null;
     this._contextCompactionStorageScope = scope;
     const committed = loadExcludedContextCompactionEpoch(scope);
     this._contextCompactionCommittedExcludedEpoch = committed;
@@ -589,7 +530,7 @@ class AppBase extends React.Component {
    *  同步与分帧路径共用此方法 —— mergeMainAgentSessions 的调用序列/参数/
    *  _sessionId 赋值因此与抽取前完全相同（sessionMerge 脆弱区零语义变化）。 */
   _processOneEntry(entry, i, st) {
-    const mergeBlocked = isMergeBlockedEntry(entry, { batch: true });
+    const mergeBlocked = isColdIngestMergeBlockedEntry(entry);
     const conversationExcluded = shouldExcludeFromConversation(entry);
     const conversationEntry = conversationExcluded
       ? entry
@@ -701,16 +642,20 @@ class AppBase extends React.Component {
    *  前向补偿），不可切片 —— 作为独立任务隔离，算法不动。
    *  Delta 重建必须在 entry-slim 之前：delta 条目的 body.input 只有增量部分，
    *  先 slim 会永久丢失增量数据，导致重建后 input 为空。 */
-  async _runColdIngestCore(rawEntries, ctl) {
-    const entries = Array.isArray(rawEntries) ? reconstructEntries(rawEntries) : rawEntries;
+  async _runColdIngestCore(rawEntries, ctl, { preSlimmed = false } = {}) {
+    const entries = preSlimmed
+      ? rawEntries
+      : (Array.isArray(rawEntries) ? reconstructEntries(rawEntries) : rawEntries);
     if (ctl.shouldAbort()) return { aborted: true };
     if (!(Array.isArray(entries) && entries.length > 0)) {
       return { aborted: false, empty: true, entries: Array.isArray(entries) ? entries : [], mainAgentSessions: [], filtered: [] };
     }
     await ctl.yieldFn();   // reconstruct 是长任务，先让出一帧再进分帧 passes
     if (ctl.shouldAbort()) return { aborted: true };
-    const s = await this._batchSlimChunked(entries, ctl);
-    if (s.aborted) return { aborted: true };
+    if (!preSlimmed) {
+      const s = await this._batchSlimChunked(entries, ctl);
+      if (s.aborted) return { aborted: true };
+    }
     const p = await this._processEntriesChunked(entries, ctl);
     if (p.aborted) return { aborted: true };
     return { aborted: false, empty: false, entries, mainAgentSessions: p.mainAgentSessions, filtered: p.filtered };
@@ -718,19 +663,22 @@ class AppBase extends React.Component {
 
   /** 管线提交：单次原子 setState；回调里关闸 + 泄洪 live 缓冲（对已提交基线重建）。 */
   _commitColdIngest(myToken, newState, after) {
-    if (this._ingestToken !== myToken || this._unmounted) return; // 已被 supersede
-    this.setState(newState, () => {
-      if (this._ingestToken !== myToken) return; // setState 提交期间又被 supersede
-      this._ingestRunning = false;
-      const buffered = this._liveGateBuffer;
-      this._liveGateBuffer = [];
-      if (buffered.length > 0) {
-        this._pendingEntries.push(...buffered);
-        if (!this._flushRafId) {
-          this._flushRafId = requestAnimationFrame(this._flushPendingEntries);
+    return new Promise((resolve) => {
+      if (this._ingestToken !== myToken || this._unmounted) { resolve(false); return; }
+      this.setState(newState, () => {
+        if (this._ingestToken !== myToken) { resolve(false); return; }
+        this._ingestRunning = false;
+        const buffered = this._liveGateBuffer;
+        this._liveGateBuffer = [];
+        if (buffered.length > 0) {
+          this._pendingEntries.push(...buffered);
+          if (!this._flushRafId) {
+            this._flushRafId = requestAnimationFrame(this._flushPendingEntries);
+          }
         }
-      }
-      if (after) after();
+        if (after) after();
+        resolve(true);
+      });
     });
   }
 
@@ -750,7 +698,7 @@ class AppBase extends React.Component {
   }
 
   /** initSSE load_end 的分帧版主流程（移动端 hot/cold 分层提交原样保留）。 */
-  async _runSseColdIngest(rawEntries, { isIncremental, unlockContextBar }) {
+  async _runSseColdIngest(rawEntries, { isIncremental, unlockContextBar, preSlimmed = false }) {
     const myToken = ++this._ingestToken;
     this._ingestRunning = true;
     // Seed lifecycle: reset carried teammate-name seeds ONLY on non-incremental
@@ -765,13 +713,12 @@ class AppBase extends React.Component {
       this._backfillCount = 0;
     }
     const ctl = this._makeIngestCtl(myToken);
-    const core = await this._runColdIngestCore(rawEntries, ctl);
+    const core = await this._runColdIngestCore(rawEntries, ctl, { preSlimmed });
     if (core.aborted) return;
     if (core.empty) {
       const st = { fileLoading: false, fileLoadingCount: 0 };
       if (unlockContextBar) st.contextBarLocked = false;
-      this._commitColdIngest(myToken, st);
-      return;
+      return this._commitColdIngest(myToken, st);
     }
     const { entries, mainAgentSessions, filtered } = core;
 
@@ -807,9 +754,11 @@ class AppBase extends React.Component {
       };
       // 增量模式保留缓存恢复时设的 hasMoreHistory；非增量（limit）模式用服务端的值
       // hasMoreHistory 必须 AND 上 _oldestTs 非空，否则后续 loadMoreHistory() 会拼 before=null 触发 400
-      if (!isIncremental) newState.hasMoreHistory = !!this._hasMoreHistory && !!this._oldestTs;
+      if (!isIncremental) newState.hasMoreHistory = this._v2Archive
+        ? !!this._v2Archive.hasMore
+        : !!this._hasMoreHistory && !!this._oldestTs;
       if (unlockContextBar) newState.contextBarLocked = false;
-      this._commitColdIngest(myToken, newState);
+      return this._commitColdIngest(myToken, newState);
     } else {
       const newState = {
         requests: entries,
@@ -818,9 +767,11 @@ class AppBase extends React.Component {
         fileLoading: false,
         fileLoadingCount: 0,
       };
-      if (!isIncremental) newState.hasMoreHistory = !!this._hasMoreHistory && !!this._oldestTs;
+      if (!isIncremental) newState.hasMoreHistory = this._v2Archive
+        ? !!this._v2Archive.hasMore
+        : !!this._hasMoreHistory && !!this._oldestTs;
       if (unlockContextBar) newState.contextBarLocked = false;
-      this._commitColdIngest(myToken, newState, () => {
+      return this._commitColdIngest(myToken, newState, () => {
         if (isMobile && this.state.projectName) {
           saveEntries(this.state.projectName, entries);
         }
@@ -867,7 +818,7 @@ class AppBase extends React.Component {
   }
 
   componentDidMount() {
-    // pin 已改服务端存储：清掉旧版浏览器本地 cxv_pinnedSession_* 残留（一次性）。
+    // 清掉旧版浏览器本地 cxv_pinnedSession_* 残留（一次性）。
     this._cleanupLegacyPinKeys();
     // 全局键盘缩放监听(Cmd/Ctrl +/-/0)仅 Electron 注册——驱动原生 setZoomFactor 并与下拉同步。
     // 纯浏览器**不**注册,把 Cmd/Ctrl +/- 交还浏览器原生缩放(不拦截)。unmount 时按同一 ref 卸载。
@@ -970,10 +921,8 @@ class AppBase extends React.Component {
       .then(res => res.json())
       .then(data => {
         const projectName = data.projectName || '';
-        const instanceId = data.instanceId || null;
-        this._setContextCompactionStorageScope(projectName, instanceId);
-        // instanceId 与 projectName 同批入 state；标题在回调里应用，确保读到已更新的 instanceId。
-        this.setState({ projectName, instanceId }, () => this._applyDocTitle(projectName));
+        this._setContextCompactionStorageScope(projectName);
+        this.setState({ projectName }, () => this._applyDocTitle(projectName));
         this._resubscribeAlias(projectName);
         // 移动端：从缓存恢复数据，在 SSE 数据到达前立即渲染
         if (isMobile && projectName && !logfile && this.state.requests.length === 0) {
@@ -1052,7 +1001,14 @@ class AppBase extends React.Component {
       this._tabBridgeDisposers = null;
     }
     this._unmounted = true;
+    this._v2Epoch++;
+    this._v2SnapshotController?.abort();
+    this._v2PageController?.abort();
+    this._v2PageController = null;
     if (this.eventSource) this.eventSource.close();
+    if (this._v2LiveSource) { this._v2LiveSource.close(); this._v2LiveSource = null; }
+    if (this._v2LiveRetryTimer) { clearTimeout(this._v2LiveRetryTimer); this._v2LiveRetryTimer = null; }
+    if (this._v2RetryTimer) { clearTimeout(this._v2RetryTimer); this._v2RetryTimer = null; }
     if (this._localLogES) { this._localLogES.close(); this._localLogES = null; }
     if (this._autoSelectTimer) clearTimeout(this._autoSelectTimer);
     if (this._loadingCountTimer) cancelAnimationFrame(this._loadingCountTimer);
@@ -1110,6 +1066,7 @@ class AppBase extends React.Component {
   };
 
   _reconnectSSE() {
+    if (this._isLocalLog) return;
     // SSE 连接真死（心跳超时 / 重试上限），清除流式 overlay 避免卡死
     if (this.state.streamingLatest) this.setState({ streamingLatest: null });
     if (this._sseReconnectCount >= 10) {
@@ -1233,6 +1190,10 @@ class AppBase extends React.Component {
 
   async loadMoreHistory() {
     if (!this.state.hasMoreHistory || this._loadingMore) return;
+    if (this._v2Archive) {
+      await this._loadMoreV2History();
+      return;
+    }
     // 防御 _hasMoreHistory=true 而 _oldestTs 为 null 的不一致状态：
     // 没有锚点时间戳就别去拼 before=null，否则服务端 400。把 hasMoreHistory 同步
     // 关掉避免上层 loader 反复触发。
@@ -1315,12 +1276,415 @@ class AppBase extends React.Component {
     this._loadingMore = false;
   }
 
+  async _loadMoreV2History() {
+    if ((!this._v2Archive?.hasMore && !this._v2PendingPage) || this._loadingMore) return;
+    const archive = this._v2Archive;
+    const epoch = this._v2Epoch;
+    const controller = new AbortController();
+    this._v2PageController = controller;
+    this._loadingMore = true;
+    this.setState({ loadingMore: true });
+    try {
+      let pending = this._v2PendingPage;
+      if (!pending || pending.archive !== archive || pending.epoch !== epoch) {
+        const page = await fetchLogV2Page({
+          handle: archive.objectStore.handle,
+          archive: archive.start.archive,
+          limit: 100,
+          ackPageToken: archive.pageAckToken,
+          signal: controller.signal,
+        });
+        if (epoch !== this._v2Epoch || archive !== this._v2Archive) return;
+        if (page && (typeof page.start.pageToken !== 'string' || !page.start.pageToken)) {
+          throw new Error('V2 page response is missing its acknowledgement token');
+        }
+        const rows = archive.prependPage(page);
+        pending = { archive, epoch, page, rows };
+        this._v2PendingPage = pending;
+      }
+      const { page, rows } = pending;
+      const older = await this._projectV2Rows(rows, archive, { epoch, finalize: false });
+      const stillCurrent = older.filter(entry => (
+        archive.state.winners.get(entry._v2Descriptor.entryKey)?.seq === entry._v2Descriptor.seq
+      ));
+      const merged = [...stillCurrent, ...this.state.requests];
+      this._batchSlim(merged);
+      const { mainAgentSessions } = this._processEntries(merged);
+      this._hasMoreHistory = archive.hasMore;
+      if (isMobile && mainAgentSessions.length > HOT_SESSION_COUNT) {
+        const sessionIndex = buildSessionIndex(merged, mainAgentSessions);
+        const fullIndex = mergeSessionIndices(this.state.sessionIndex, sessionIndex);
+        const unslimmed = merged.map(entry => entry._slimmed ? restoreSlimmedEntry(entry, merged) : entry);
+        const { hotEntries, allSessions, coldGroups } = splitHotCold(
+          unslimmed, mainAgentSessions, fullIndex, HOT_SESSION_COUNT, this._pinnedSessionIdSet()
+        );
+        this._sseSlimmer = null;
+        this._sseReconstructor = null;
+        if (this.state.projectName) {
+          for (const [sessionId, coldEntries] of coldGroups) {
+            saveSessionEntries(this.state.projectName, sessionId, coldEntries);
+          }
+          saveEntries(this.state.projectName, merged);
+        }
+        this.setState({
+          requests: hotEntries,
+          mainAgentSessions: allSessions,
+          sessionIndex: fullIndex,
+          hasMoreHistory: archive.hasMore,
+          loadingMore: false,
+        });
+      } else {
+        this.setState(prev => ({
+          requests: merged,
+          mainAgentSessions,
+          hasMoreHistory: archive.hasMore,
+          loadingMore: false,
+          selectedIndex: prev.selectedIndex == null
+            ? null
+            : prev.selectedIndex + visibleRequests(stillCurrent, prev.showAll).length,
+        }));
+      }
+      archive.pageAckToken = page?.start?.pageToken || archive.pageAckToken;
+      this._v2PendingPage = null;
+    } catch (error) {
+      if (error?.code === 'CXV_LOG_V2_WIRE_RESET_REQUIRED') {
+        if (this._isLocalLog) this.loadLocalLogFile(this._localLogFile);
+        else this._resetV2Communication();
+      } else {
+        reportSwallowed('log-v2.page', error);
+        message.error(t('ui.loadMoreHistoryFailed'));
+      }
+      if (!this._unmounted) this.setState({ loadingMore: false });
+    } finally {
+      this._loadingMore = false;
+      if (this._v2PageController === controller) {
+        this._v2PageController = null;
+        if (!this._unmounted) this.setState({ loadingMore: false });
+      }
+    }
+  }
+
+  async _projectV2Rows(rows, archive, {
+    signal = null,
+    epoch = this._v2Epoch,
+    finalize = true,
+  } = {}) {
+    const entries = [];
+    const slimmer = createEntrySlimmer(isMainAgent);
+    for (const row of rows) {
+      if (signal?.aborted || epoch !== this._v2Epoch || archive !== this._v2Archive) {
+        const error = new Error('V2 projection aborted');
+        error.name = 'AbortError';
+        throw error;
+      }
+      let entry = row;
+      if (isV2ConversationCandidate(row)) {
+        const projected = await archive.projectConversationDescriptor(row._v2Descriptor, { signal });
+        entry = {
+          ...projected,
+          _v2RowHandle: row._v2RowHandle,
+          _v2Descriptor: row._v2Descriptor,
+          _classification: row._classification,
+        };
+      } else {
+        entry = {
+          ...row,
+          body: { ...(row.body || {}) },
+          response: row.response && typeof row.response === 'object'
+            ? { ...row.response, body: { ...(row.response.body || {}) } }
+            : row.response,
+        };
+      }
+      entry = internMainAgentInput(entry, isMainAgent);
+      stampConversationMessageCount(entry);
+      entries.push(entry);
+      slimmer.process(entry, entries, entries.length - 1);
+      // The previous cumulative MainAgent input is pruned as soon as the next
+      // row arrives, keeping only a bounded adjacent pair during projection.
+      if (entries.length % INGEST_BATCH_SIZE === 0) await yieldToMain();
+    }
+    if (finalize) slimmer.finalize(entries);
+    return entries;
+  }
+
+  async _initV2Snapshot() {
+    const epoch = ++this._v2Epoch;
+    this._v2SnapshotController?.abort();
+    this._v2PageController?.abort();
+    this._v2PageController = null;
+    this._v2PendingPage = null;
+    const controller = new AbortController();
+    this._v2SnapshotController = controller;
+    try {
+      this._v2Unavailable = false;
+      const snapshotLimit = isMobile ? 200 : 400;
+      const cacheScope = `active:${snapshotLimit}`;
+      const cached = await loadV2CachedSnapshot(cacheScope);
+      if (epoch !== this._v2Epoch || this._unmounted) return false;
+      let response = await fetchLogV2Snapshot({
+        limit: snapshotLimit,
+        knownCursor: cached?.end?.cursor,
+        signal: controller.signal,
+      });
+      let snapshot;
+      try {
+        snapshot = reconcileV2CachedSnapshot(cached, response);
+      } catch (error) {
+        if (!response.start.notModified) throw error;
+        response = await fetchLogV2Snapshot({ limit: snapshotLimit, signal: controller.signal });
+        snapshot = response;
+      }
+      if (epoch !== this._v2Epoch || this._unmounted) return false;
+      let archive;
+      try {
+        archive = new LogV2Archive(snapshot);
+      } catch (error) {
+        if (!response.start.notModified) throw error;
+        response = await fetchLogV2Snapshot({ limit: snapshotLimit, signal: controller.signal });
+        snapshot = response;
+        archive = new LogV2Archive(snapshot);
+      }
+      if (!response.start.notModified) saveV2CachedSnapshot(cacheScope, snapshot);
+      this._v2Archive = archive;
+      this._v2BootstrapReady = false;
+      this._v2LiveNeedsReset = false;
+      this._v2AppliedSeq = snapshot.end.cursor.throughSeq;
+      this._startV2Live(snapshot, epoch);
+      this._hasMoreHistory = !!snapshot.start.hasMore;
+      const entries = await this._projectV2Rows(archive.rows, archive, { signal: controller.signal, epoch });
+      await this._runSseColdIngest(entries, {
+        isIncremental: false,
+        unlockContextBar: false,
+        preSlimmed: true,
+      });
+      if (epoch !== this._v2Epoch || this._unmounted) return false;
+      this._v2BootstrapReady = true;
+      if (this._v2LiveNeedsReset) {
+        this._v2LiveNeedsReset = false;
+        this._resetV2Communication();
+        return true;
+      }
+      const buffered = this._v2LiveBuffer;
+      this._v2LiveBuffer = [];
+      for (const commit of buffered) this._queueV2Commit(commit, epoch);
+      return true;
+    } catch (error) {
+      if (epoch === this._v2Epoch) {
+        this._v2Archive = null;
+        this._v2Unavailable = error?.status === 404;
+      }
+      if (error?.code && error.code !== 'CXV_LOG_V2_SNAPSHOT_FAILED') {
+        reportSwallowed('log-v2.snapshot', error);
+      }
+      return false;
+    } finally {
+      if (this._v2SnapshotController === controller) this._v2SnapshotController = null;
+    }
+  }
+
+  hydrateV2Request = (handle, options = {}) => {
+    if (!this._v2Archive) return Promise.reject(new Error('V2 archive is not loaded'));
+    return this._v2Archive.hydrate(handle, options).catch((error) => {
+      if (error?.code === 'CXV_LOG_V2_WIRE_RESET_REQUIRED') {
+        if (this._isLocalLog && this._localLogFile) this.loadLocalLogFile(this._localLogFile);
+        else this._resetV2Communication();
+      }
+      throw error;
+    });
+  };
+
+  _startV2Live(snapshot, epoch) {
+    this._v2LiveSource?.close();
+    if (this._v2LiveRetryTimer) { clearTimeout(this._v2LiveRetryTimer); this._v2LiveRetryTimer = null; }
+    const cursor = snapshot.end.cursor;
+    const query = new URLSearchParams({
+      generation: cursor.archive.generation,
+      afterSeq: String(cursor.throughSeq),
+      handle: snapshot.start.objectHandle,
+    });
+    const source = new EventSource(apiUrl(`/api/log-v2/live?${query}`));
+    this._v2LiveSource = source;
+    const fragments = new Map();
+    const resetAfterBootstrap = () => {
+      fragments.clear();
+      source.close();
+      if (epoch !== this._v2Epoch || source !== this._v2LiveSource) return;
+      if (!this._v2BootstrapReady) {
+        this._v2LiveNeedsReset = true;
+        return;
+      }
+      this._resetV2Communication();
+    };
+    const acceptCommit = (commit) => {
+      if (epoch !== this._v2Epoch) return;
+      if (!this._v2BootstrapReady) {
+        if (this._v2LiveBuffer.length >= 512) {
+          reportSwallowed('log-v2.live-buffer', new Error('V2 bootstrap live buffer overflow'));
+          resetAfterBootstrap();
+          return;
+        }
+        this._v2LiveBuffer.push(commit);
+      } else this._queueV2Commit(commit, epoch);
+    };
+    source.addEventListener('v2_commit', (event) => {
+      try {
+        acceptCommit(JSON.parse(event.data));
+      } catch (error) {
+        reportSwallowed('log-v2.live-commit', error);
+      }
+    });
+    source.addEventListener('v2_fragment', (event) => {
+      if (epoch !== this._v2Epoch) return;
+      try {
+        const frame = JSON.parse(event.data);
+        if (frame.version !== LOG_V2_WIRE_VERSION) throw new Error('Unsupported V2 live fragment version');
+        if (frame.kind === LOG_V2_WIRE_KINDS.fragmentStart) {
+          if (frame.event !== 'v2_commit' || !Number.isSafeInteger(frame.parts) || frame.parts <= 0 || frame.parts > 4096
+              || !Number.isSafeInteger(frame.bytes) || frame.bytes < 0
+              || frame.bytes > LOG_V2_WIRE_LIMITS.maxFragmentedControlBytes
+              || fragments.size >= 2 || fragments.has(frame.id)) {
+            throw new Error('Invalid V2 live fragment header');
+          }
+          fragments.set(frame.id, { bytes: frame.bytes, parts: new Array(frame.parts) });
+        } else if (frame.kind === LOG_V2_WIRE_KINDS.fragmentPart) {
+          const pending = fragments.get(frame.id);
+          if (!pending || !Number.isSafeInteger(frame.index) || frame.index < 0
+              || frame.index >= pending.parts.length || pending.parts[frame.index] !== undefined
+              || typeof frame.data !== 'string') throw new Error('Invalid V2 live fragment part');
+          pending.parts[frame.index] = frame.data;
+        } else if (frame.kind === LOG_V2_WIRE_KINDS.fragmentEnd) {
+          const pending = fragments.get(frame.id);
+          if (!pending || pending.parts.some(part => typeof part !== 'string')) throw new Error('Incomplete V2 live fragment');
+          fragments.delete(frame.id);
+          const binary = globalThis.atob(pending.parts.join(''));
+          const bytes = Uint8Array.from(binary, char => char.charCodeAt(0));
+          if (bytes.byteLength !== pending.bytes) throw new Error('V2 live fragment byte length mismatch');
+          acceptCommit(JSON.parse(new TextDecoder().decode(bytes)));
+        } else {
+          throw new Error('Unknown V2 live fragment');
+        }
+      } catch (error) {
+        fragments.clear();
+        reportSwallowed('log-v2.live-fragment', error);
+        resetAfterBootstrap();
+      }
+    });
+    source.addEventListener('v2_reset', () => {
+      resetAfterBootstrap();
+    });
+    source.addEventListener('v2_error', (event) => {
+      try { reportSwallowed('log-v2.live-error', new Error(JSON.parse(event.data)?.message || 'V2 live error')); }
+      catch (error) { reportSwallowed('log-v2.live-error', error); }
+      resetAfterBootstrap();
+    });
+    source.onerror = () => {
+      fragments.clear();
+      source.close();
+      if (epoch !== this._v2Epoch || source !== this._v2LiveSource) return;
+      if (this._v2LiveRetryTimer) clearTimeout(this._v2LiveRetryTimer);
+      this._v2LiveRetryTimer = setTimeout(() => {
+        this._v2LiveRetryTimer = null;
+        if (!this._unmounted && epoch === this._v2Epoch && source === this._v2LiveSource) {
+          resetAfterBootstrap();
+        }
+      }, 500);
+    };
+  }
+
+  _queueV2Commit(commit, epoch = this._v2Epoch) {
+    const archive = this._v2Archive;
+    this._v2LiveChain = this._v2LiveChain.then(async () => {
+      if (!archive || epoch !== this._v2Epoch || archive !== this._v2Archive) return;
+      const seq = commit?.frame?.timeline?.seq;
+      if (Number.isSafeInteger(seq) && seq <= this._v2AppliedSeq) return;
+      if (!Number.isSafeInteger(seq) || seq !== this._v2AppliedSeq + 1) {
+        const error = new Error('V2 live sequence gap');
+        error.code = 'CXV_LOG_V2_WIRE_GAP';
+        throw error;
+      }
+      const row = archive.applyCommit(commit.frame, commit.summary);
+      let entry = row;
+      if (isV2ConversationCandidate(row)) {
+        const projected = await archive.projectConversation(row._v2RowHandle);
+        if (epoch !== this._v2Epoch || archive !== this._v2Archive) return;
+        entry = {
+          ...projected,
+          _v2RowHandle: row._v2RowHandle,
+          _v2Descriptor: row._v2Descriptor,
+          _classification: row._classification,
+        };
+      } else if (row) {
+        entry = { ...row, body: { ...(row.body || {}) } };
+      }
+      if (entry) this.handleEntryObject(entry);
+      this._v2AppliedSeq = seq;
+    }).catch(error => {
+      if (error?.name !== 'AbortError') {
+        reportSwallowed('log-v2.live-apply', error);
+        if (epoch === this._v2Epoch) this._resetV2Communication();
+      }
+    });
+  }
+
+  _resetV2Communication() {
+    this._v2Epoch++;
+    this._v2SnapshotController?.abort();
+    this._v2PageController?.abort();
+    this._v2PageController = null;
+    this._v2PendingPage = null;
+    this._v2SnapshotController = null;
+    this._abortColdIngest();
+    this._v2LiveSource?.close();
+    this._v2LiveSource = null;
+    if (this._v2LiveRetryTimer) { clearTimeout(this._v2LiveRetryTimer); this._v2LiveRetryTimer = null; }
+    this._v2Archive = null;
+    this._v2BootstrapReady = false;
+    this._v2LiveNeedsReset = false;
+    this._v2LiveBuffer = [];
+    this._v2AppliedSeq = 0;
+    this._v2LiveChain = Promise.resolve();
+    this._v2InitAttempted = false;
+    if (this._v2RetryTimer) { clearTimeout(this._v2RetryTimer); this._v2RetryTimer = null; }
+    if (this.eventSource) { this.eventSource.close(); this.eventSource = null; }
+    if (!this._unmounted) this.initSSE();
+  }
+
   initSSE() {
+    if (!this._v2InitAttempted) {
+      this._v2InitAttempted = true;
+      const pending = this._initV2Snapshot();
+      const epoch = this._v2Epoch;
+      pending.then((started) => {
+        if (this._unmounted || epoch !== this._v2Epoch) return;
+        if (started || this._v2Archive || this._v2Unavailable) {
+          // A 404 means this installation has no active V2 archive yet and may
+          // use the legacy stream. Any actual V2 protocol/corruption failure
+          // retries V2 instead of silently transmitting full legacy entries.
+          this._initLegacySSE();
+          return;
+        }
+        this.setState({ fileLoading: false, fileLoadingCount: 0 });
+        this._v2InitAttempted = false;
+        this._v2RetryTimer = setTimeout(() => {
+          this._v2RetryTimer = null;
+          if (!this._unmounted) this.initSSE();
+        }, 1000);
+      });
+      return;
+    }
+    this._initLegacySSE();
+  }
+
+  _initLegacySSE() {
     try {
       // 尝试使用缓存元数据进行增量加载
       let url = '/events';
       let hasCache = false;
-      if (isMobile) {
+      if (this._v2Archive) {
+        url = '/events?controlOnly=1';
+        hasCache = true;
+      }
+      if (!hasCache && isMobile) {
         const meta = getCacheMeta();
         if (meta && meta.lastTs && meta.count > 0) {
           url = `/events?since=${encodeURIComponent(meta.lastTs)}&cc=${meta.count}&project=${encodeURIComponent(meta.projectName || '')}`;
@@ -1352,13 +1716,7 @@ class AppBase extends React.Component {
       this.eventSource = new EventSource(apiUrl(url));
       // 每次收到任何 SSE 事件（包括心跳注释帧触发的隐式活动）都重置超时
       this.eventSource.onmessage = (event) => { this._resetSSETimeout(); this.handleEventMessage(event); };
-      this.eventSource.onopen = () => {
-        this._resetSSETimeout();
-        // 每次连上都补一次 pin GET 同步：浏览器原生 EventSource 自愈重连复用同一 EventSource、
-        // 不走 _reconnectSSE（不增 _sseReconnectCount），故不能只在 wasReconnect 时同步，否则原生重连
-        // 期间他端改的 pin 会一直 stale 到下次 session_pin 或切项目。GET 幂等，_applyingRemotePin 防回写。
-        this._hydratePin();
-      };
+      this.eventSource.onopen = () => { this._resetSSETimeout(); };
       // Live streaming overlay: 直接更新 streamingLatest state（不走 reconstructor / dedup）
       // rAF coalesce + startTransition：每个 SSE chunk 只在下一帧合并成一次 setState，
       // 并标记为低优先级渲染，避免阻塞用户输入。最终 chunk 经 entry path 交付而非
@@ -1499,8 +1857,8 @@ class AppBase extends React.Component {
           }
           const eKey = (e, i) => (e.timestamp && e.url) ? `${e.timestamp}|${e.url}` : `__nokey_c${i}`;
           const map = new Map();
-          this.state.requests.forEach((e, i) => map.set(eKey(e, i), e));
-          delta.forEach((e, i) => map.set((e.timestamp && e.url) ? `${e.timestamp}|${e.url}` : `__nokey_d${i}`, e));
+          this.state.requests.forEach((e, i) => setLatestMapValue(map, eKey(e, i), e));
+          delta.forEach((e, i) => setLatestMapValue(map, (e.timestamp && e.url) ? `${e.timestamp}|${e.url}` : `__nokey_d${i}`, e));
           // 注意：合并结果含 state.requests 的 live 引用 —— 分帧 slim/process 期间这些对象被
           // 原地变异（intern/_slimmed），让步间隙的 render 会看到中间态。旧同步代码同样原地
           // 变异（只是单任务内完成）；最终原子提交会以干净引用整体覆盖。
@@ -1573,11 +1931,10 @@ class AppBase extends React.Component {
           // 在切换后才提交、覆盖新项目数据（闸门缓冲属旧项目，直接丢弃不泄洪）
           this._abortColdIngest();
           this._rebuildRequestIndex([]);
-          // 切项目要连 _currentSessionId 一并清掉：否则 _maintainPinState 的 lazy-lock 兜底
-          // (getSessionStableId(null) || this._currentSessionId) 会拿旧项目的会话 id 误锁新项目，
-          // 在 hydrate GET 抢先返回前可能把旧 id POST 进新项目的 pin 文件。
+          // 切项目要连 _currentSessionId 一并清掉：否则 _maintainPinState 的
+          // fallback 会拿旧项目的会话 id 误锁新项目。
           this._currentSessionId = null;
-          this._setContextCompactionStorageScope(data.projectName || '', data.instanceId || null);
+          this._setContextCompactionStorageScope(data.projectName || '');
           // SSE workspace switch — rebind alias subscription to the new
           // project before writing the title so the title reflects the new
           // alias if one exists. _applyDocTitle handles the "no alias"
@@ -1586,6 +1943,9 @@ class AppBase extends React.Component {
           // initial mount path).
           this._resubscribeAlias(data.projectName || '');
           this._applyDocTitle(data.projectName || '');
+          // Invalidate the old archive immediately; do not wait for the
+          // server-side active-file poll while the new workspace UI is live.
+          if (this._v2Archive) this._resetV2Communication();
           // Reset isStreaming alongside streamingLatest — workspace switches happen
           // between user prompts and shouldn't leave streaming flags stuck. (turnEnd
           // false-fire on this transition is no longer a concern since we hook
@@ -1597,7 +1957,7 @@ class AppBase extends React.Component {
             cliMode: true,
             requests: [],
             mainAgentSessions: [],
-            // 切项目：清空旧项目 pin，由 App.componentDidUpdate 按新 projectName 重新 hydrate
+            // 切项目：清空旧项目的本地 pin，后续数据加载时自动跟随最新会话。
             pinnedSessionTs: null,
             selectedIndex: null,
             streamingLatest: null,
@@ -1665,24 +2025,6 @@ class AppBase extends React.Component {
         try {
           const cfg = JSON.parse(event?.data || '{}');
           if (typeof cfg.turnEndDebounceMs === 'number') setTurnEndCooldownMs(cfg.turnEndDebounceMs);
-        } catch { /* tolerate parse error */ }
-      });
-      // session_pin SSE — 本进程任一端改了「当前会话」pin 后广播，让同实例多端（电脑+手机）实时一致。
-      // 采纳服务端值时置 _applyingRemotePin，避免 _maintainPinState 把它当本地改动回 POST（防回环）。
-      // A broadcast value that mismatches the locally derived latest is rejected via
-      // resolveHydratedPin (another client may have derived a stale "latest"). No
-      // POST-back on reject — re-persisting inside the broadcast handler could
-      // ping-pong between clients; healing flows through _maintainPinState's
-      // normal persist path instead.
-      this.eventSource.addEventListener('session_pin', (event) => {
-        this._resetSSETimeout();
-        try {
-          const data = JSON.parse(event?.data || '{}');
-          const r = resolveHydratedPin(data.pinnedSessionId, this._derivedLatestId(), this._effectiveOnlyCurrentSession());
-          if (r.adopt && r.value !== this.state.pinnedSessionTs) {
-            this._applyingRemotePin = true;
-            this.setState({ pinnedSessionTs: r.value }, () => { this._applyingRemotePin = false; });
-          }
         } catch { /* tolerate parse error */ }
       });
       // turn_end SSE — broadcast by /api/turn-end-notify whenever Codex's Stop hook
@@ -1758,10 +2100,24 @@ class AppBase extends React.Component {
   }
 
   loadLocalLogFile(file) {
+    if (typeof file === 'string' && file.startsWith('v2/projects/') && file.endsWith('/timeline.jsonl')) {
+      this._loadLocalV2LogFile(file);
+      return;
+    }
     // 独立 SSE 链路加载历史日志：/api/local-log 返回 event-stream，
     // 与 /events (CLI 模式) 完全隔离，不会触发 terminal/workspace 等 CLI 行为
     this._isLocalLog = true;
     this._localLogFile = file;
+    if (this._sseTimeoutTimer) { clearTimeout(this._sseTimeoutTimer); this._sseTimeoutTimer = null; }
+    if (this._sseReconnectTimer) { clearTimeout(this._sseReconnectTimer); this._sseReconnectTimer = null; }
+    this._v2Epoch++;
+    this._v2SnapshotController?.abort();
+    this._v2PageController?.abort();
+    this._v2PageController = null;
+    this._v2PendingPage = null;
+    this._v2LiveSource?.close();
+    this._v2LiveSource = null;
+    this._v2Archive = null;
     // 全量加载，无分页：防御上一次状态残留
     this._hasMoreHistory = false;
     this._oldestTs = null;
@@ -1811,9 +2167,89 @@ class AppBase extends React.Component {
     };
   }
 
+  async _loadLocalV2LogFile(file) {
+    this._isLocalLog = true;
+    this._localLogFile = file;
+    if (this._sseTimeoutTimer) { clearTimeout(this._sseTimeoutTimer); this._sseTimeoutTimer = null; }
+    if (this._sseReconnectTimer) { clearTimeout(this._sseReconnectTimer); this._sseReconnectTimer = null; }
+    this._v2LiveSource?.close();
+    this._v2LiveSource = null;
+    if (this.eventSource) { this.eventSource.close(); this.eventSource = null; }
+    if (this._localLogES) { this._localLogES.close(); this._localLogES = null; }
+    const epoch = ++this._v2Epoch;
+    this._v2SnapshotController?.abort();
+    this._v2PageController?.abort();
+    this._v2PageController = null;
+    this._v2PendingPage = null;
+    const controller = new AbortController();
+    this._v2SnapshotController = controller;
+    this._abortColdIngest();
+    this.setState({ fileLoading: true, fileLoadingCount: 0, hasMoreHistory: false });
+    try {
+      const snapshotLimit = isMobile ? 200 : 400;
+      const cacheScope = `file:${file}:${snapshotLimit}`;
+      const cached = await loadV2CachedSnapshot(cacheScope);
+      if (epoch !== this._v2Epoch || this._unmounted || this._localLogFile !== file) return;
+      let response = await fetchLogV2Snapshot({
+        file,
+        readOnly: true,
+        limit: snapshotLimit,
+        knownCursor: cached?.end?.cursor,
+        signal: controller.signal,
+      });
+      let snapshot;
+      try {
+        snapshot = reconcileV2CachedSnapshot(cached, response);
+      } catch (error) {
+        if (!response.start.notModified) throw error;
+        response = await fetchLogV2Snapshot({
+          file, readOnly: true, limit: snapshotLimit, signal: controller.signal,
+        });
+        snapshot = response;
+      }
+      if (epoch !== this._v2Epoch || this._unmounted || this._localLogFile !== file) return;
+      let archive;
+      try {
+        archive = new LogV2Archive(snapshot);
+      } catch (error) {
+        if (!response.start.notModified) throw error;
+        response = await fetchLogV2Snapshot({
+          file, readOnly: true, limit: snapshotLimit, signal: controller.signal,
+        });
+        snapshot = response;
+        archive = new LogV2Archive(snapshot);
+      }
+      if (!response.start.notModified) saveV2CachedSnapshot(cacheScope, snapshot);
+      this._v2Archive = archive;
+      this._v2AppliedSeq = snapshot.end.cursor.throughSeq;
+      this._hasMoreHistory = archive.hasMore;
+      const entries = await this._projectV2Rows(archive.rows, archive, { signal: controller.signal, epoch });
+      await this._runSseColdIngest(entries, {
+        isIncremental: false,
+        unlockContextBar: false,
+        preSlimmed: true,
+      });
+    } catch (error) {
+      if (error?.name !== 'AbortError') {
+        reportSwallowed('log-v2.local-snapshot', error);
+        if (!this._unmounted) this.setState({ fileLoading: false, fileLoadingCount: 0 });
+      }
+    } finally {
+      if (this._v2SnapshotController === controller) this._v2SnapshotController = null;
+    }
+  }
+
   handleEventMessage(event) {
     try {
       const entry = JSON.parse(event.data);
+      this.handleEntryObject(entry);
+    } catch (error) {
+      console.error('处理事件消息失败:', error);
+    }
+  }
+
+  handleEntryObject(entry) {
+    try {
       // 冷启动分帧管线在途：live 条目入闸门缓冲，提交后统一泄洪（_commitColdIngest）。
       // 否则 live flush 会基于旧 prev.requests 合并、随后被管线的基线提交整体覆盖，
       // 且 _sseSlimmer/_sseReconstructor 会对错误基线初始化（sessionMerge 脆弱区）。
@@ -1838,11 +2274,13 @@ class AppBase extends React.Component {
 
     this.setState(prev => {
       const requests = [...prev.requests]; // one copy per frame, not per message
+      const selectedV2Handle = prev.selectedIndex == null
+        ? null
+        : visibleRequests(prev.requests, prev.showAll)[prev.selectedIndex]?._v2RowHandle || null;
 
       let mainAgentSessions = prev.mainAgentSessions;
       let shouldClearStreaming = false;  // 检测到最终 entry 时原子清除 Live overlay
-      // 本窗口实时新会话（/clear、/resume）时推进 pin —— 仅实时追加路径会跟随，
-      // 整体重载（_processEntries）不动 pin，于是多开时 [对话] 不被重载/他实例拖走。
+      // 本窗口实时新会话（/clear、/resume）时推进本地 pin。
       let _newPinTs = null;
 
       // P0 perf: lazy init 增量剪枝器
@@ -1875,8 +2313,20 @@ class AppBase extends React.Component {
 
         if (existingIndex !== undefined) {
           inheritToolSnapshotOnDedup(requests[existingIndex], entry);
-          requests[existingIndex] = entry;
-          if (this._sseSlimmer) this._sseSlimmer.onDedup(existingIndex);
+          if (entry._v2RowHandle) {
+            // V2 winner order follows the latest physical commit. Move a
+            // replacement to the tail instead of preserving the legacy slot.
+            requests.splice(existingIndex, 1);
+            requests.push(entry);
+            // Reordering invalidates the slimmer's positional state, but this
+            // is still the same live stream.  Clearing the reconstructor here
+            // makes the next item in this batch call `null.reconstruct()`.
+            this._rebuildRequestIndex(requests, { resetIncremental: false });
+            this._sseSlimmer = null;
+          } else {
+            requests[existingIndex] = entry;
+            if (this._sseSlimmer) this._sseSlimmer.onDedup(existingIndex);
+          }
         } else {
           const newIdx = requests.length;
           if (this._sseSlimmer) this._sseSlimmer.processEntry(entry, requests, newIdx);
@@ -1980,6 +2430,11 @@ class AppBase extends React.Component {
       }
 
       let selectedIndex = prev.selectedIndex;
+      if (selectedV2Handle) {
+        const nextIndex = visibleRequests(requests, prev.showAll)
+          .findIndex(entry => entry._v2RowHandle === selectedV2Handle);
+        selectedIndex = nextIndex >= 0 ? nextIndex : null;
+      }
 
       if (mainAgentSessions.length > MAX_SESSIONS) {
         mainAgentSessions = mainAgentSessions.slice(-MAX_SESSIONS);
@@ -1999,6 +2454,7 @@ class AppBase extends React.Component {
 
       return {
         requests, mainAgentSessions,
+        ...(selectedIndex !== prev.selectedIndex && { selectedIndex }),
         ...(shouldClearStreaming && { streamingLatest: null }),
         ...(_newPinTs != null && { pinnedSessionTs: _newPinTs }),
       };
@@ -2164,6 +2620,7 @@ class AppBase extends React.Component {
   // ─── 模式切换 ──────────────────────────────────────────
 
   handleWorkspaceLaunch = ({ projectName }) => {
+    const resumeCommunication = this._isLocalLog;
     this._isLocalLog = false;
     this._localLogFile = null;
     this._setContextCompactionStorageScope(projectName || '');
@@ -2175,11 +2632,14 @@ class AppBase extends React.Component {
     this.setState({
       workspaceMode: false,
       projectName,
+      pinnedSessionTs: null,
       viewMode: 'chat',
       cliMode: true,
       terminalVisible: false,
       contextBarLocked: false,
       contextBarOptimistic: false,
+    }, () => {
+      if (resumeCommunication && !this._unmounted) this._resetV2Communication();
     });
   };
 
@@ -2495,15 +2955,9 @@ class AppBase extends React.Component {
 
   // ─── 日志管理 ──────────────────────────────────────────
 
-  // 集中构造 /api/local-logs URL：「显示全部实例」开启时带 ?all=1。打开弹窗 / 刷新统计 /
-  // 合并·归档·删除后这几处 refetch 都经此 helper，开关一改即自动跟随（apiUrl 的 token 追加已正确处理已有 ?）。
-  _localLogsUrl() {
-    return apiUrl(this.state.logShowAllInstances ? '/api/local-logs?all=1' : '/api/local-logs');
-  }
-
   handleImportLocalLogs = () => {
     this.setState({ importModalVisible: true, localLogsLoading: true });
-    fetch(this._localLogsUrl())
+    fetch(apiUrl('/api/local-logs'))
       .then(res => res.json())
       .then(data => {
         const { _currentProject, ...logs } = data;
@@ -2512,11 +2966,6 @@ class AppBase extends React.Component {
       .catch(() => {
         this.setState({ localLogs: {}, localLogsLoading: false });
       });
-  };
-
-  // 「显示全部实例」开关：翻转后用新 scope 重新拉取列表（开关状态持久，不随弹窗关闭重置）。
-  handleToggleShowAllLogs = () => {
-    this.setState(prev => ({ logShowAllInstances: !prev.logShowAllInstances }), () => this.handleImportLocalLogs());
   };
 
   handleCloseImportModal = () => {
@@ -2529,7 +2978,7 @@ class AppBase extends React.Component {
       .then(res => res.json())
       .then(data => {
         if (!data.ok) throw new Error(data.error || 'refresh failed');
-        return fetch(this._localLogsUrl());
+        return fetch(apiUrl('/api/local-logs'));
       })
       .then(res => res.json())
       .then(data => {
@@ -2562,94 +3011,6 @@ class AppBase extends React.Component {
       if (checked) selectedLogs.add(file);
       else selectedLogs.delete(file);
       return { selectedLogs };
-    });
-  };
-
-  handleMergeLogs = () => {
-    const { selectedLogs, localLogs, currentProject } = this.state;
-    if (selectedLogs.size < 2) return;
-
-    const logs = localLogs[currentProject];
-    if (!logs) return;
-
-    const indices = [];
-    logs.forEach((log, i) => {
-      if (selectedLogs.has(log.file)) indices.push(i);
-    });
-    indices.sort((a, b) => a - b);
-
-    if (selectedLogs.has(logs[0].file)) {
-      message.warning(t('ui.mergeLatestNotAllowed'));
-      return;
-    }
-
-    for (let i = 1; i < indices.length; i++) {
-      if (indices[i] - indices[i - 1] !== 1) {
-        message.warning(t('ui.mergeNotConsecutive'));
-        return;
-      }
-    }
-
-    const totalSize = indices.reduce((sum, i) => sum + logs[i].size, 0);
-    if (totalSize > 400 * 1024 * 1024) {
-      message.warning(t('ui.mergeTooLarge'));
-      return;
-    }
-
-    const files = indices.map(i => logs[i].file).reverse();
-
-    fetch(apiUrl('/api/merge-logs'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ files }),
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.ok) {
-          message.success(t('ui.mergeSuccess'));
-          this.setState({ selectedLogs: new Set() });
-          this.handleImportLocalLogs();
-        } else {
-          message.error(data.error || 'Merge failed');
-        }
-      })
-      .catch(() => message.error('Merge failed'));
-  };
-
-  handleArchiveLogs = () => {
-    const { selectedLogs, localLogs, currentProject } = this.state;
-    if (selectedLogs.size === 0) return;
-    const logs = localLogs[currentProject];
-    if (!logs) return;
-    const latestFile = logs[0]?.file;
-    const candidates = [...selectedLogs].filter(f => f.endsWith('.jsonl') && f !== latestFile);
-    if (candidates.length === 0) {
-      message.warning(t('ui.mergeLatestNotAllowed'));
-      return;
-    }
-
-    Modal.confirm({
-      title: t('ui.archiveLogs'),
-      content: t('ui.archiveLogsConfirm', { count: candidates.length }),
-      okText: t('ui.archiveLogs'),
-      cancelText: t('ui.cancel'),
-      onOk: () => {
-        fetch(apiUrl('/api/archive-logs'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ files: candidates }),
-        })
-          .then(res => res.json())
-          .then(data => {
-            const archived = data.archived?.length || 0;
-            const failed = (data.failed?.length || 0) + (data.skipped?.length || 0);
-            if (archived > 0) message.success(t('ui.archiveSuccess', { count: archived }));
-            if (failed > 0) message.error(t('ui.archiveFailed', { count: failed }));
-            this.setState({ selectedLogs: new Set() });
-            this.handleImportLocalLogs();
-          })
-          .catch(() => message.error(t('ui.archiveFailed', { count: candidates.length })));
-      },
     });
   };
 
@@ -2846,10 +3207,31 @@ class AppBase extends React.Component {
       this._filteredRequests = visibleRequests(requests, showAll);
     }
     const filteredRequests = this._filteredRequests;
+    if (this._viewModelSource !== requests
+        || this._viewModelFiltered !== filteredRequests
+        || this._viewModelSelectedIndex !== selectedIndex) {
+      this._requestViewModels = buildLegacyRequestViewModels({
+        requests,
+        filteredRequests,
+        selectedIndex,
+      });
+      this._viewModelSource = requests;
+      this._viewModelFiltered = filteredRequests;
+      this._viewModelSelectedIndex = selectedIndex;
+    }
 
-    const selectedRequest = selectedIndex !== null ? filteredRequests[selectedIndex] : null;
-
-    return { filteredRequests, selectedRequest, fileLoading, fileLoadingCount, mainAgentSessions, viewMode };
+    return {
+      filteredRequests,
+      selectedRequest: this._requestViewModels.selectedRequest,
+      requestDescriptors: this._requestViewModels.requestDescriptors,
+      conversationProjection: this._requestViewModels.conversationProjection,
+      hydratedEntryStore: this._requestViewModels.hydratedEntryStore,
+      selectedRowHandle: this._requestViewModels.selectedRowHandle,
+      fileLoading,
+      fileLoadingCount,
+      mainAgentSessions,
+      viewMode,
+    };
   }
 
   /** 工作区选择器渲染（PC/Mobile 共用） */

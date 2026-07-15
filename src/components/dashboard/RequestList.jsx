@@ -79,7 +79,7 @@ class RequestList extends React.Component {
 
             const model = getModelShort(req.body?.model);
             const nextReq = index + 1 < requests.length ? requests[index + 1] : null;
-            const { type: reqType, subType } = classifyRequest(req, nextReq);
+            const { type: reqType, subType } = req._classification || classifyRequest(req, nextReq);
             const usage = req.response?.body?.usage;
             const inputTokens = usage ? (usage.input_tokens || 0) : null;
             const outputTokens = usage?.output_tokens || null;

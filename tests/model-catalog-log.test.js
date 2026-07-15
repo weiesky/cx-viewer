@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -11,7 +11,6 @@ import {
 } from '../lib/repeat-entry.js';
 import { readLogFile } from '../lib/log-watcher.js';
 import { readPagedEntries, streamRawEntriesAsync } from '../lib/log-stream.js';
-import { mergeLogFiles } from '../lib/log-management.js';
 
 function modelsEntry(timestamp, { inProgress = false, version = '0.144.1', bodyVersion = 1 } = {}) {
   return {
@@ -121,33 +120,6 @@ test('historical, raw streaming, and paged readers expand timestamp markers', as
     const paged = readPagedEntries(file, { before: '2026-07-12T02:00:00.000Z', limit: 10 });
     assert.equal(paged.entries.length, 2);
     assert.equal(JSON.parse(paged.entries[1]).url, base.url);
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
-});
-
-test('merging log segments preserves model catalog compaction', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'cxv-model-merge-'));
-  const projectDir = join(dir, 'project');
-  const firstFile = join(projectDir, 'first.jsonl');
-  const secondFile = join(projectDir, 'second.jsonl');
-  try {
-    mkdirSync(projectDir, { recursive: true });
-    const base = modelsEntry('2026-07-12T01:00:00.000Z');
-    writeEntries(firstFile, [base, marker('2026-07-12T01:03:00.000Z')]);
-    writeEntries(secondFile, [
-      modelsEntry('2026-07-12T01:06:00.000Z'),
-      marker('2026-07-12T01:09:00.000Z'),
-    ]);
-    mergeLogFiles(dir, ['project/first.jsonl', 'project/second.jsonl']);
-    const merged = readFileSync(firstFile, 'utf8').split('\n---\n').filter(Boolean).map(JSON.parse);
-    assert.equal(merged.length, 4);
-    assert.equal(merged[0].url, base.url);
-    assert.deepEqual(merged.slice(1), [
-      marker('2026-07-12T01:03:00.000Z'),
-      marker('2026-07-12T01:06:00.000Z'),
-      marker('2026-07-12T01:09:00.000Z'),
-    ]);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

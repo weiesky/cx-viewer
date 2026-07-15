@@ -1,6 +1,6 @@
 import React from 'react';
 import { ConfigProvider, Spin, Button, Badge, Switch, Select, Modal, message, Radio, Tooltip } from 'antd';
-import { BranchesOutlined, DownloadOutlined, DeleteOutlined, RollbackOutlined, ReloadOutlined, UploadOutlined, FileZipOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { BranchesOutlined, DownloadOutlined, DeleteOutlined, RollbackOutlined, ReloadOutlined, UploadOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import AppBase, { styles, OPTIMISTIC_CLEAR_PERCENT } from './AppBase';
 import { isIOS, isPad, setViewMode } from './env';
 import { isMainAgent, classifyUserContent, extractDisplayText } from './utils/contentFilter';
@@ -40,9 +40,9 @@ import * as SeqLoaders from './utils/seqResourceLoaders';
 // tight and aliasing on mobile is less common. Cross-tab / same-tab updates
 // still propagate here via the hook so a desktop alias edit reflects on
 // mobile without reload.
-function MobileCtxLabelText({ projectName, instanceId }) {
+function MobileCtxLabelText({ projectName }) {
   const alias = useProjectAlias(projectName);
-  const base = `${t('ui.liveMonitoring')}${projectName ? `: ${projectName}` : ''}${instanceId ? `(${instanceId})` : ''}`;
+  const base = `${t('ui.liveMonitoring')}${projectName ? `: ${projectName}` : ''}`;
   return <>{base}{alias ? ` (${alias})` : ''}</>;
 }
 
@@ -636,7 +636,7 @@ class Mobile extends AppBase {
                 >
                   <span className={styles.mobileCtxTagFill} style={{ width: `${contextPercent}%`, backgroundColor: ctxColor }} />
                   <span className={styles.mobileCtxTagContent}>
-                    <MobileCtxLabelText projectName={this.state.projectName} instanceId={this.state.instanceId} />
+                    <MobileCtxLabelText projectName={this.state.projectName} />
                   </span>
                 </span>
               );
@@ -799,8 +799,7 @@ class Mobile extends AppBase {
           )}
         </div>
         <div className={styles.mobileCLIBody}>
-          {!mobileIsLocalLog && (
-            <>
+          <>
               {fileLoading && (
                 <div className={styles.mobileLoadingOverlay}>
                   <div className={styles.mobileLoadingSpinner} />
@@ -855,8 +854,7 @@ class Mobile extends AppBase {
                     onUserMessageSent={this.handleUserMessageSent}
                   />
                 </div>
-            </>
-          )}
+          </>
           {!mobileIsLocalLog && (
             <div className={`${styles.mobileChatOverlay} ${this.state.mobileTerminalVisible ? styles.mobileChatOverlayVisible : ''}`}>
               <TerminalPanel
@@ -994,24 +992,6 @@ class Mobile extends AppBase {
             <div className={styles.mobileLogMgmtActions}>
               <Button
                 size="small"
-                type={this.state.selectedLogs.size >= 2 && ![...this.state.selectedLogs].some(f => f.endsWith('.jsonl.zip')) ? 'primary' : 'default'}
-                disabled={this.state.selectedLogs.size < 2 || [...this.state.selectedLogs].some(f => f.endsWith('.jsonl.zip'))}
-                onClick={this.handleMergeLogs}
-                style={this.state.selectedLogs.size < 2 || [...this.state.selectedLogs].some(f => f.endsWith('.jsonl.zip')) ? { color: 'var(--text-muted)', borderColor: 'var(--border-light)' } : undefined}
-              >
-                {t('ui.mergeLogs')}
-              </Button>
-              <Button
-                size="small"
-                icon={<FileZipOutlined />}
-                disabled={![...this.state.selectedLogs].some(f => f.endsWith('.jsonl'))}
-                onClick={this.handleArchiveLogs}
-                style={![...this.state.selectedLogs].some(f => f.endsWith('.jsonl')) ? { color: 'var(--text-muted)', borderColor: 'var(--border-light)' } : undefined}
-              >
-                {t('ui.archiveLogs')}
-              </Button>
-              <Button
-                size="small"
                 icon={<DeleteOutlined />}
                 disabled={this.state.selectedLogs.size === 0}
                 onClick={this.handleDeleteLogs}
@@ -1027,10 +1007,6 @@ class Mobile extends AppBase {
               >
                 {t('ui.refreshStats')}
               </Button>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginLeft: 'auto' }}>
-                <Switch size="small" checked={this.state.logShowAllInstances} onChange={this.handleToggleShowAllLogs} />
-                {t('ui.showAllInstanceLogs')}
-              </span>
             </div>
             <div className={styles.mobileLogMgmtBody}>
               {this.state.localLogsLoading ? (

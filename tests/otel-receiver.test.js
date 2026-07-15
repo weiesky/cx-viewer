@@ -10,6 +10,7 @@ function attr(key, value) {
 test('OTel prompt mirrors are supplemental while API usage remains MainAgent data', () => {
   const entries = parseOtlpTraces({
     resourceSpans: [{
+      resource: { attributes: [attr('service.instance.id', 'otel-session-1')] },
       scopeSpans: [{
         spans: [{
           name: 'request',
@@ -30,4 +31,6 @@ test('OTel prompt mirrors are supplemental while API usage remains MainAgent dat
   assert.equal(api.mainAgent, true);
   assert.equal(prompt.mainAgent, false);
   assert.equal(prompt.subAgent, false);
+  assert.equal(api._otelSessionId, 'otel-session-1');
+  assert.equal(prompt._otelSessionId, 'otel-session-1');
 });

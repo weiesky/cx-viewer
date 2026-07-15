@@ -111,7 +111,48 @@ class DetailPanel extends React.Component {
       rawKey: '',
       rawTruncated: false,
       rawMatched: 0,
+      hydratedRequest: null,
+      hydrateLoading: false,
+      hydrateError: '',
+      hydratedHandle: null,
     };
+  }
+
+  componentDidMount() {
+    this.hydrateSelectedRequest(this.props);
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.request !== this.props.request || prevProps.hydrateRequest !== this.props.hydrateRequest) {
+      this.hydrateSelectedRequest(this.props);
+    }
+  }
+
+  componentWillUnmount() {
+    this._hydrateController?.abort();
+  }
+
+  hydrateSelectedRequest(props) {
+    this._hydrateController?.abort();
+    this._hydrateSeq = (this._hydrateSeq || 0) + 1;
+    const handle = props.request?._v2RowHandle;
+    if (!handle || typeof props.hydrateRequest !== 'function') {
+      if (this.state.hydratedRequest || this.state.hydrateLoading || this.state.hydratedHandle) {
+        this.setState({ hydratedRequest: null, hydrateLoading: false, hydrateError: '', hydratedHandle: null });
+      }
+      return;
+    }
+    const controller = new AbortController();
+    this._hydrateController = controller;
+    const seq = this._hydrateSeq;
+    this.setState({ hydrateLoading: true, hydrateError: '', hydratedRequest: null, hydratedHandle: handle });
+    props.hydrateRequest(handle, { signal: controller.signal }).then((entry) => {
+      if (controller.signal.aborted || this._hydrateSeq !== seq) return;
+      this.setState({ hydratedRequest: entry, hydrateLoading: false, hydrateError: '' });
+    }).catch((error) => {
+      if (controller.signal.aborted || this._hydrateSeq !== seq) return;
+      this.setState({ hydratedRequest: null, hydrateLoading: false, hydrateError: error.message || 'Failed to load request details' });
+    });
   }
 
   shouldComponentUpdate(nextProps, nextState) {
@@ -150,12 +191,19 @@ class DetailPanel extends React.Component {
       nextState.rawKey !== this.state.rawKey ||
       nextState.rawTruncated !== this.state.rawTruncated ||
       nextState.rawMatched !== this.state.rawMatched
+      || nextState.hydratedRequest !== this.state.hydratedRequest
+      || nextState.hydrateLoading !== this.state.hydrateLoading
+      || nextState.hydrateError !== this.state.hydrateError
+      || nextState.hydratedHandle !== this.state.hydratedHandle
     );
   }
 
   getCurrentRequest() {
     const { request, allRequests, requests } = this.props;
     if (!request) return null;
+    if (request._v2RowHandle) {
+      return this.state.hydratedHandle === request._v2RowHandle ? this.state.hydratedRequest : null;
+    }
     return request._slimmed ? restoreSlimmedEntry(request, allRequests || requests || []) : request;
   }
 
@@ -600,7 +648,7 @@ class DetailPanel extends React.Component {
     if (!request) {
       return (
         <div className={styles.emptyState}>
-          <Empty description="选择一个请求查看详情" />
+          <Empty description={this.state.hydrateLoading ? 'Loading request details…' : (this.state.hydrateError || '选择一个请求查看详情')} />
         </div>
       );
     }

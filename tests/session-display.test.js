@@ -2,11 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  didFinishConversationHydration,
   getConversationGroupStartTs,
   getCurrentConversationStartIndex,
+  getCurrentConversationWindowStartIndex,
   getImmediateFragmentUpperBound,
 } from '../src/utils/sessionDisplay.js';
-import { getLatestSessionByActivity } from '../src/utils/sessionManager.js';
+import { getLatestSessionByActivity, resolveDisplaySessions } from '../src/utils/sessionManager.js';
 
 test('same-conversation fragments share a divider group but keep immediate chronology bounds', () => {
   const sessions = [
@@ -41,4 +43,40 @@ test('current-only can anchor latest activity when insertion-order tail is stale
   ];
   const active = getLatestSessionByActivity(sessions);
   assert.equal(getCurrentConversationStartIndex(sessions, active), 0);
+});
+
+test('compact live window keeps exactly the previous session above the current one', () => {
+  const sessions = [
+    { sessionId: 'oldest' },
+    { sessionId: 'previous' },
+    { sessionId: 'current' },
+  ];
+
+  assert.equal(getCurrentConversationWindowStartIndex(sessions), 1);
+  assert.equal(getCurrentConversationWindowStartIndex(sessions, sessions[1]), 0);
+  assert.equal(getCurrentConversationWindowStartIndex([sessions[0]]), 0);
+});
+
+test('conversation hydration finishes only on a non-empty loading falling edge', () => {
+  const sessions = [{ sessionId: 'current' }];
+  assert.equal(didFinishConversationHydration(true, false, sessions), true);
+  assert.equal(didFinishConversationHydration(false, false, sessions), false);
+  assert.equal(didFinishConversationHydration(true, true, sessions), false);
+  assert.equal(didFinishConversationHydration(true, false, []), false);
+});
+
+test('local current-session pin slices older sessions without remote instance state', () => {
+  const sessions = [
+    { sessionId: 'old', entryTimestamp: '2026-01-01T00:01:00Z', messages: [] },
+    { sessionId: 'current', entryTimestamp: '2026-01-01T00:03:00Z', messages: [] },
+    { sessionId: 'stale-tail', entryTimestamp: '2026-01-01T00:02:00Z', messages: [] },
+  ];
+
+  const currentOnly = resolveDisplaySessions(sessions, 'current', true);
+  assert.deepEqual(currentOnly.sessions, sessions.slice(0, 2));
+  assert.equal(currentOnly.upperBoundTs, null);
+
+  const unfiltered = resolveDisplaySessions(sessions, 'old', false);
+  assert.equal(unfiltered.sessions, sessions);
+  assert.equal(unfiltered.upperBoundTs, null);
 });

@@ -1,6 +1,6 @@
 import React from 'react';
 import { ConfigProvider, Layout, theme, Modal, Button, Checkbox, Spin, Alert, message, Tooltip } from 'antd';
-import { UploadOutlined, DeleteOutlined, ReloadOutlined, FileZipOutlined } from '@ant-design/icons';
+import { UploadOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
 import AppBase, { styles } from './AppBase';
 import { isMobile, isElectron, setViewMode } from './env';
 import AppHeader from './components/dashboard/AppHeader';
@@ -351,7 +351,6 @@ class App extends AppBase {
               isLocalLog={!!this._isLocalLog}
               localLogFile={this._localLogFile}
               projectName={this.state.projectName}
-              instanceId={this.state.instanceId}
               filterIrrelevant={!this.state.showAll}
               onFilterIrrelevantChange={this.handleFilterIrrelevantChange}
               logDir={this.state.logDir}
@@ -467,6 +466,7 @@ class App extends AppBase {
                     onTabChange={this.handleTabChange}
                     onViewInChat={this.handleViewInChat}
                     expandDiff={prefs.expandDiff}
+                    hydrateRequest={this._v2Archive ? this.hydrateV2Request : null}
                   />
                 </div>
               </div>
@@ -573,24 +573,6 @@ class App extends AppBase {
             </Button>
             <Button
               size="small"
-              type={this.state.selectedLogs.size > 1 && ![...this.state.selectedLogs].some(f => f.endsWith('.jsonl.zip')) ? 'primary' : 'default'}
-              disabled={this.state.selectedLogs.size < 2 || [...this.state.selectedLogs].some(f => f.endsWith('.jsonl.zip'))}
-              onClick={this.handleMergeLogs}
-              className={styles.btnMarginLeft}
-            >
-              {t('ui.mergeLogs')}
-            </Button>
-            <Button
-              size="small"
-              icon={<FileZipOutlined />}
-              disabled={![...this.state.selectedLogs].some(f => f.endsWith('.jsonl'))}
-              onClick={this.handleArchiveLogs}
-              className={styles.btnMarginLeft}
-            >
-              {t('ui.archiveLogs')}
-            </Button>
-            <Button
-              size="small"
               danger
               icon={<DeleteOutlined />}
               disabled={this.state.selectedLogs.size === 0}
@@ -608,13 +590,6 @@ class App extends AppBase {
             >
               {t('ui.refreshStats')}
             </Button>
-            <Checkbox
-              className={styles.btnMarginLeft}
-              checked={this.state.logShowAllInstances}
-              onChange={this.handleToggleShowAllLogs}
-            >
-              {t('ui.showAllInstanceLogs')}
-            </Checkbox>
           </div>
           {this.state.localLogsLoading ? (
             <div className={styles.spinCenter}><Spin /></div>

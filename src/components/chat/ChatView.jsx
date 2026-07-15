@@ -30,8 +30,10 @@ import { ASK_TOOL_NAMES, CODEX_PLAN_TOOL_NAME, PLAN_TOOL_NAMES, isPlanToolName }
 import { refreshResolvedModelInfo, healUnresolvedTeammateEntries, needsFullReqRescan } from '../../utils/identityHeal';
 import { getLatestSessionByActivity, isSessionDividerBoundary, resolveBubbleProducerTs } from '../../utils/sessionManager';
 import {
+  didFinishConversationHydration,
   getConversationGroupStartTs,
   getCurrentConversationStartIndex,
+  getCurrentConversationWindowStartIndex,
   getImmediateFragmentUpperBound,
 } from '../../utils/sessionDisplay';
 import { TeamButton, TeamModal } from '../dashboard/TeamSessionPanel';
@@ -335,6 +337,10 @@ class ChatView extends React.Component {
     this._mobileSliceOffset = 0;
     this._totalItemCount = 0;
     this._autoFillRafId = null; // logfile 只读模式自动渐进扩窗的 rAF 句柄（_maybeScheduleLocalLogAutoFill）
+    // Cold history hydration can update sessions and the local current-session
+    // anchor in adjacent React commits. Rebuild once on the following frame so
+    // the final hydrated props always win over an earlier empty render.
+    this._historyHydrationRafId = null;
 
     // PTY plan modal 触发：用 lastPendingPlanId（plan tool_use id）作权威信号源（与 inline 卡片同源）。
     // _currentLastPendingPlanId 由 buildAllItems 末尾镜像；componentDidUpdate 派生 pendingPtyPlan。
@@ -884,6 +890,24 @@ class ChatView extends React.Component {
       const allItems = this._applyMobileSlice(rawItems);
       this.setState({ allItems, visibleCount: allItems.length });
     }
+    // A page refresh loads the historical baseline asynchronously. The same
+    // completion also advances the local session pin, so React may coalesce or
+    // closely sequence two parent commits. The identity-based branches above
+    // normally rebuild immediately; this one-shot next-frame reconciliation
+    // guarantees that the settled hydrated sessions render even when an empty
+    // mount render or the pin commit otherwise wins the race. Live updates do
+    // not toggle fileLoading and therefore do not pay this extra rebuild.
+    if (didFinishConversationHydration(
+      prevProps.fileLoading,
+      this.props.fileLoading,
+      this.props.mainAgentSessions,
+    )) {
+      if (this._historyHydrationRafId) cancelAnimationFrame(this._historyHydrationRafId);
+      this._historyHydrationRafId = requestAnimationFrame(() => {
+        this._historyHydrationRafId = null;
+        if (!this._unmounted) this.startRender();
+      });
+    }
     // localAskAnswers 变化时重建消息，使交互表单切换到已回答的静态视图
     if (prevState.localAskAnswers !== this.state.localAskAnswers &&
         prevProps.mainAgentSessions === this.props.mainAgentSessions &&
@@ -961,6 +985,7 @@ class ChatView extends React.Component {
     } catch {}
     if (this._queueTimer) clearTimeout(this._queueTimer);
     if (this._autoFillRafId) { cancelAnimationFrame(this._autoFillRafId); this._autoFillRafId = null; }
+    if (this._historyHydrationRafId) { cancelAnimationFrame(this._historyHydrationRafId); this._historyHydrationRafId = null; }
     this._ptyPrompt.dispose();
     this._toolFileMonitor.dispose();
     if (this._wsReconnectTimer) clearTimeout(this._wsReconnectTimer);
@@ -1720,15 +1745,18 @@ class ChatView extends React.Component {
     }
 
     let subIdx = 0;
-    // 仅展示当前会话：跳过更早 session 的 SubAgent entries，避免它们 bleed 进当前 session 顶部
-    //（下方 forEach 对更早 session 直接 return，不会推进 subIdx，故这里先把游标快进到当前 session 起点）。
+    // 紧凑模式默认保留“上一轮 + 当前轮”。先把 SubAgent 游标快进到这个两轮窗口的起点，
+    // 避免更早会话的条目渗入上一轮顶部。
     const currentOnlyAnchor = onlyCurrentSession
       ? (this.props.sessionUpperBoundTs != null
         ? mainAgentSessions[mainAgentSessions.length - 1]
         : getLatestSessionByActivity(mainAgentSessions))
       : null;
-    const startSi = onlyCurrentSession
+    const currentSi = onlyCurrentSession
       ? getCurrentConversationStartIndex(mainAgentSessions, currentOnlyAnchor)
+      : 0;
+    const startSi = onlyCurrentSession
+      ? getCurrentConversationWindowStartIndex(mainAgentSessions, currentOnlyAnchor)
       : 0;
     if (onlyCurrentSession && startSi > 0) {
       // A visible conversation may begin with a cold placeholder followed by a
@@ -1744,8 +1772,8 @@ class ChatView extends React.Component {
     let buildLpid = null;
 
     mainAgentSessions.forEach((session, si) => {
-      // 仅展示当前会话：跳过当前(最末)session 之前的全部 session（含其冷占位「加载」按钮，见下方 _cold 分支）。
-      if (onlyCurrentSession ? si !== startSi : si < startSi) return;
+      // 紧凑模式只展示上一轮和当前轮；传入列表已由 pin 截到当前轮结尾。
+      if (si < startSi || (onlyCurrentSession && si > currentSi)) return;
       if (si > startSi && isSessionDividerBoundary(mainAgentSessions[si - 1], session)) {
         allItems.push(
           <Divider key={`session-div-${si}`} className={styles.sessionDivider}>
@@ -1929,7 +1957,9 @@ class ChatView extends React.Component {
         // divider identity is deliberately separate: same-conversation
         // fragments hide the divider but must not pull later SubAgent rows
         // ahead of the next fragment's MainAgent messages.
-        const nextSessionStart = onlyCurrentSession ? null : getImmediateFragmentUpperBound(mainAgentSessions, si);
+        const nextSessionStart = onlyCurrentSession
+          ? (si < currentSi ? getImmediateFragmentUpperBound(mainAgentSessions, si) : null)
+          : getImmediateFragmentUpperBound(mainAgentSessions, si);
         // pin 锁在更早会话时，传入的会话已被切到「以 pin 会话结尾」，nextSessionStart 失效（无 si+1），
         // 改用 sessionUpperBoundTs（= 下一个未展示会话的起点）截断，避免更晚会话的 sub-agent 渗入。
         const bound = nextSessionStart || this.props.sessionUpperBoundTs;

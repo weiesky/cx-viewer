@@ -8,7 +8,6 @@ import {
   clearRawSidecarsForLog,
   deleteLogFiles,
   listRawSidecarsForLog,
-  mergeLogFiles,
   readRawSidecarFramePage,
   readRawSidecarFrames,
 } from '../lib/log-management.js';
@@ -126,29 +125,6 @@ test('deleting business logs prunes only raw streams no longer referenced by sib
 
     assert.deepEqual(deleteLogFiles(root, ['project/two.jsonl']), [{ file: 'project/two.jsonl', ok: true }]);
     assert.equal(existsSync(sidecar), false);
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-});
-
-test('merge preserves raw references while removing delta-only digest metadata', () => {
-  const root = mkdtempSync(join(tmpdir(), 'cxv-raw-merge-'));
-  const project = join(root, 'project');
-  const raw = join(project, 'raw');
-  try {
-    mkdirSync(raw, { recursive: true });
-    const protocolFields = { _inputDigest: 'input', _baseInputDigest: 'base', _baseMessageCount: 0 };
-    writeEntries(join(project, 'one.jsonl'), [entry('2026-01-01T00:00:00Z', rawRef('stream-a', 1, 1), protocolFields)]);
-    writeEntries(join(project, 'two.jsonl'), [entry('2026-01-02T00:00:00Z', rawRef('stream-b', 1, 1), protocolFields)]);
-    writeFileSync(join(raw, 'thread-a.jsonl'), [frame('stream-a', 1), frame('stream-b', 1), ''].join('\n'));
-
-    mergeLogFiles(root, ['project/one.jsonl', 'project/two.jsonl']);
-    const merged = readFileSync(join(project, 'one.jsonl'), 'utf8').split('\n---\n').filter(Boolean).map(JSON.parse);
-    assert.deepEqual(merged.map(value => value._codexRaw.streamId), ['stream-a', 'stream-b']);
-    assert.equal(merged.every(value => value._inputDigest === undefined
-      && value._baseInputDigest === undefined && value._baseMessageCount === undefined), true);
-    assert.equal(existsSync(join(project, 'two.jsonl')), false);
-    assert.equal(readRawSidecarFrames(root, 'project/one.jsonl', rawRef('stream-b', 1, 1)).length, 1);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

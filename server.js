@@ -34,7 +34,7 @@ function execWithStdin(cmd, args, input, options) {
     child.stdin.end();
   });
 }
-import { LOG_FILE, _initPromise, _resumeState, resolveResumeChoice, _projectName, _logDir, _cachedApiKey, _cachedAuthHeader, initForWorkspace, resetWorkspace, streamingState, resetStreamingState, _loadProxyProfile, PROFILE_PATH, _defaultConfig, appendLogEntry } from './interceptor.js';
+import { LOG_FILE, _initPromise, _resumeState, resolveResumeChoice, _projectName, _logDir, _cachedApiKey, _cachedAuthHeader, initForWorkspace, resetWorkspace, streamingState, resetStreamingState, _loadProxyProfile, PROFILE_PATH, _defaultConfig, appendLogEntry, getLogV2RuntimeStatus } from './interceptor.js';
 import { parseOtlpTraces } from './lib/otel-receiver.js';
 import { LOG_DIR, setLogDir } from './findcx.js';
 import { t, detectLanguage } from './i18n.js';
@@ -52,10 +52,20 @@ import { isMainAgentEntry } from './lib/main-agent-entry.js';
 import {
   listLocalLogs,
   deleteLogFiles,
-  mergeLogFiles,
   clearRawSidecarsForLog,
 } from './lib/log-management.js';
 import { countLogEntries, streamRawEntriesAsync, readPagedEntries } from './lib/log-stream.js';
+import {
+  countV2LogEntries,
+  findActiveV2SessionFile,
+  isV2SessionFile,
+  listV2LocalLogs,
+  readV2PagedEntriesAsync,
+  readV2WirePageAsync,
+  readV2WireSnapshotAsync,
+  resolveV2SessionFile,
+  streamV2LogEntries,
+} from './lib/log-v2/materializer.js';
 import { listSkills, toggleSkill, deleteSkill, importSkillUpload, imSkillRoots, imSkillImportRoot } from './lib/skills-api.js';
 import { readCodexGlobalConfig, updateCodexGlobalConfig } from './lib/codex-config.js';
 import {
@@ -89,6 +99,7 @@ import {
   buildCodexAutoResolutionAnswers,
   projectCodexAnswersForConversation,
 } from './lib/codex-request-user-input.js';
+import { serveLogV2Live, serveLogV2Objects, serveLogV2Page, serveLogV2Snapshot } from './server/lib/log-v2-routes.js';
 
 
 let _codexApprovalsReviewerUpdater = null;
@@ -96,6 +107,39 @@ let _runtimeApprovalsReviewer = null;
 let _codexNativeReviewerAvailable = false;
 let _codexRequestUserInputBridge = null;
 const pendingCodexAsks = new Map();
+const _logV2ReadMode = getLogV2RuntimeStatus().config.readMode;
+
+function activeV2SessionFile() {
+  if (_logV2ReadMode !== 'v2' || !LOG_FILE) return null;
+  const runtime = getLogV2RuntimeStatus();
+  const canonicalCwd = process.env.CXV_PROJECT_DIR || process.cwd();
+  const legacyFile = relative(LOG_DIR, LOG_FILE).split(sep).join('/');
+  return findActiveV2SessionFile(LOG_DIR, {
+    runtime,
+    projectId: _projectName || null,
+    canonicalCwd,
+    legacyLogFile: legacyFile,
+  });
+}
+
+function countCurrentLogEntries() {
+  const v2File = activeV2SessionFile();
+  return v2File ? countV2LogEntries(LOG_DIR, v2File) : countLogEntries(LOG_FILE);
+}
+
+function streamCurrentLogEntries(onRawEntry, opts = {}) {
+  const v2File = activeV2SessionFile();
+  return v2File
+    ? streamV2LogEntries(LOG_DIR, v2File, onRawEntry, opts)
+    : streamRawEntriesAsync(LOG_FILE, onRawEntry, opts);
+}
+
+async function readCurrentPagedEntries(options) {
+  const v2File = activeV2SessionFile();
+  return v2File
+    ? readV2PagedEntriesAsync(LOG_DIR, v2File, options)
+    : readPagedEntries(LOG_FILE, options);
+}
 
 export function getApprovalsReviewerPreference() {
   const value = readPreferences().approvalsReviewer;
@@ -506,22 +550,6 @@ const _maskProfiles = (data) => {
   return { ...data, profiles: data.profiles.map(p => p.apiKey ? { ...p, apiKey: _maskApiKey(p.apiKey) } : p) };
 };
 const _isMasked = (k) => typeof k === 'string' && /^\*{4}.{0,4}$/.test(k);
-
-// 获取 Codex 进程 PID（CLI 模式下从 pty-manager 获取）
-let _getPtyPidFn = null;
-function getCodexPid() {
-  if (!isCliMode) return process.pid;
-  if (_getPtyPidFn) return _getPtyPidFn();
-  // lazy load 尚未完成，尝试同步获取（pty-manager 可能已被其他路径加载）
-  return null;
-}
-if (isCliMode) {
-  import('./pty-manager.js').then(m => {
-    _getPtyPidFn = m.getPtyPid;
-  }).catch(err => {
-    console.error('[CX Viewer] Failed to load pty-manager for PID tracking:', err.message);
-  });
-}
 
 // 统一的文件/目录忽略规则（仅隐藏系统和版本控制目录）
 const IGNORED_PATTERNS = new Set([
@@ -1004,7 +1032,6 @@ function _logWatcherOpts(logFile) {
   return {
     logFile: logFile || LOG_FILE,
     clients,
-    getCodexPid,
     runParallelHook,
     notifyStatsWorker,
     getLogFile: () => LOG_FILE,
@@ -1201,7 +1228,13 @@ async function handleRequest(req, res) {
       const otlpData = validateOtlpTracePayload(await readOtelJsonBody(req));
       const entries = parseOtlpTraces(otlpData);
       if (entries.length > 0 && LOG_FILE) {
-        for (const entry of entries.flat().filter(Boolean)) appendLogEntry(entry);
+        for (const entry of entries.flat().filter(Boolean)) appendLogEntry(entry, {
+          source: 'otel',
+          cwd: process.env.CXV_PROJECT_DIR || process.cwd(),
+          projectId: entry.project,
+          sessionId: entry._otelSessionId || null,
+          threadId: entry._otelTraceId || null,
+        });
       }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end('{}');
@@ -1680,16 +1713,17 @@ async function handleRequest(req, res) {
           } catch { }
         });
         // 流式分段广播 full_reload，避免全量加载 OOM
-        const reloadTotal = countLogEntries(LOG_FILE);
-        clients.forEach(client => {
+        const legacyReloadClients = clients.filter(client => !client.cxvControlOnly);
+        const reloadTotal = countCurrentLogEntries();
+        legacyReloadClients.forEach(client => {
           try { client.write(`event: load_start\ndata: ${JSON.stringify({ total: reloadTotal, incremental: false })}\n\n`); } catch { }
         });
-        await streamRawEntriesAsync(LOG_FILE, (raw) => {
-          clients.forEach(client => {
+        await streamCurrentLogEntries((raw) => {
+          legacyReloadClients.forEach(client => {
             try { client.write('event: load_chunk\ndata: ['); client.write(raw.replace(/\n/g, '')); client.write(']\n\n'); } catch { }
           });
         });
-        clients.forEach(client => {
+        legacyReloadClients.forEach(client => {
           try { client.write(`event: load_end\ndata: {}\n\n`); } catch { }
         });
         res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -1805,16 +1839,17 @@ async function handleRequest(req, res) {
         });
 
         // 流式分段广播以刷新会话区域，避免全量加载 OOM
-        const wsReloadTotal = countLogEntries(LOG_FILE);
-        clients.forEach(client => {
+        const legacyReloadClients = clients.filter(client => !client.cxvControlOnly);
+        const wsReloadTotal = countCurrentLogEntries();
+        legacyReloadClients.forEach(client => {
           try { client.write(`event: load_start\ndata: ${JSON.stringify({ total: wsReloadTotal, incremental: false })}\n\n`); } catch {}
         });
-        await streamRawEntriesAsync(LOG_FILE, (raw) => {
-          clients.forEach(client => {
+        await streamCurrentLogEntries((raw) => {
+          legacyReloadClients.forEach(client => {
             try { client.write('event: load_chunk\ndata: ['); client.write(raw.replace(/\n/g, '')); client.write(']\n\n'); } catch {}
           });
         });
-        clients.forEach(client => {
+        legacyReloadClients.forEach(client => {
           try { client.write(`event: load_end\ndata: {}\n\n`); } catch {}
         });
 
@@ -1895,6 +1930,83 @@ async function handleRequest(req, res) {
   }
 
   // SSE endpoint
+  if (url === '/api/log-v2/snapshot' && method === 'GET') {
+    const limit = Math.min(Math.max(parseInt(parsedUrl.searchParams.get('limit'), 10) || 0, 0), 5000);
+    const requestedFile = parsedUrl.searchParams.get('file');
+    const file = requestedFile || activeV2SessionFile();
+    const readOnly = !!requestedFile || parsedUrl.searchParams.get('mode') === 'readonly';
+    const knownThroughSeq = Number(parsedUrl.searchParams.get('knownThroughSeq'));
+    const knownTimelineBytes = Number(parsedUrl.searchParams.get('knownTimelineBytes'));
+    const knownGeneration = parsedUrl.searchParams.get('knownGeneration');
+    const knownCursor = knownGeneration
+      && Number.isSafeInteger(knownThroughSeq) && knownThroughSeq >= 0
+      && Number.isSafeInteger(knownTimelineBytes) && knownTimelineBytes >= 0
+      ? {
+          archive: {
+            projectId: parsedUrl.searchParams.get('knownProjectId') || '',
+            sessionId: parsedUrl.searchParams.get('knownSessionId') || '',
+            generation: knownGeneration,
+          },
+          throughSeq: knownThroughSeq,
+          timelineBytes: knownTimelineBytes,
+          fileId: parsedUrl.searchParams.get('knownFileId') || '',
+          tailHash: parsedUrl.searchParams.get('knownTailHash') || '',
+        }
+      : null;
+    await serveLogV2Snapshot(req, res, {
+      logDir: LOG_DIR,
+      file,
+      limit,
+      readSnapshot: readV2WireSnapshotAsync,
+      readOnly,
+      knownCursor,
+    });
+    return;
+  }
+
+  if (url === '/api/log-v2/page' && method === 'POST') {
+    try {
+      const body = await readJsonBody(req, 64 * 1024);
+      await serveLogV2Page(req, res, { logDir: LOG_DIR, body, readPage: readV2WirePageAsync });
+    } catch (error) {
+      if (!res.headersSent) {
+        res.writeHead(error.status || 400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: error.message }));
+      }
+    }
+    return;
+  }
+
+  if (url === '/api/log-v2/objects' && method === 'POST') {
+    try {
+      const body = await readJsonBody(req, 64 * 1024);
+      await serveLogV2Objects(req, res, { logDir: LOG_DIR, body });
+    } catch (error) {
+      if (!res.headersSent) {
+        res.writeHead(error.status || 400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: error.message }));
+      }
+    }
+    return;
+  }
+
+  if (url === '/api/log-v2/live' && method === 'GET') {
+    const generation = parsedUrl.searchParams.get('generation') || '';
+    let afterSeq = Math.max(parseInt(parsedUrl.searchParams.get('afterSeq'), 10) || 0, 0);
+    const lastEventId = typeof req.headers['last-event-id'] === 'string' ? req.headers['last-event-id'] : '';
+    const lastEventMatch = lastEventId.match(/^([a-f0-9]{64}):(\d+)$/);
+    if (lastEventMatch?.[1] === generation) afterSeq = Math.max(afterSeq, Number(lastEventMatch[2]));
+    await serveLogV2Live(req, res, {
+      logDir: LOG_DIR,
+      file: activeV2SessionFile(),
+      getActiveFile: activeV2SessionFile,
+      afterSeq,
+      generation,
+      objectHandle: parsedUrl.searchParams.get('handle') || '',
+    });
+    return;
+  }
+
   if (url === '/events' && method === 'GET') {
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
@@ -1918,6 +2030,20 @@ async function handleRequest(req, res) {
       res.write(`event: resume_prompt\ndata: ${JSON.stringify({ recentFileName: _resumeState.recentFileName })}\n\n`);
     }
 
+    // The V2 client has already consumed a frozen reference snapshot. Keep
+    // this EventSource for control/live events without rebuilding and sending
+    // the same historical full entries again.
+    if (parsedUrl.searchParams.get('controlOnly') === '1') {
+      res.cxvControlOnly = true;
+      clients.push(res);
+      req.on('close', () => {
+        clearInterval(pingTimer);
+        const idx = clients.indexOf(res);
+        if (idx !== -1) clients.splice(idx, 1);
+      });
+      return;
+    }
+
     // 增量加载参数：移动端带 since/cc/project 请求增量数据
     const sinceParam = parsedUrl.searchParams.get('since');
     const ccParam = parseInt(parsedUrl.searchParams.get('cc'), 10) || 0;
@@ -1933,7 +2059,7 @@ async function handleRequest(req, res) {
     let latestContextWindow = null;
     let pushedContextWindow = false;
 
-    await streamRawEntriesAsync(LOG_FILE, (raw) => {
+    await streamCurrentLogEntries((raw) => {
       // 直接发送原始 JSON 字符串，不做 parse/reconstruct/stringify
       // SSE data 字段不允许裸换行，去除 pretty-printed JSON 的换行
       res.write('event: load_chunk\ndata: [');
@@ -2020,7 +2146,7 @@ async function handleRequest(req, res) {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.write('[');
     let first = true;
-    await streamRawEntriesAsync(LOG_FILE, (raw) => {
+    await streamCurrentLogEntries((raw) => {
       if (!first) res.write(',');
       res.write(raw);
       first = false;
@@ -2040,7 +2166,7 @@ async function handleRequest(req, res) {
       return;
     }
     try {
-      const result = readPagedEntries(LOG_FILE, { before, limit: limitVal });
+      const result = await readCurrentPagedEntries({ before, limit: limitVal });
       // entries 是原始 JSON 字符串数组，parse 后返回给客户端
       const entries = result.entries.map(raw => {
         try { return JSON.parse(raw); } catch { return null; }
@@ -2864,7 +2990,13 @@ async function handleRequest(req, res) {
   // === Editor session API (for $EDITOR intercept) ===
 
   if (url === '/api/open-log-dir' && method === 'POST') {
-    const dir = LOG_FILE ? dirname(LOG_FILE) : LOG_DIR;
+    // The history dialog lists materialized V2 session archives, so reveal the
+    // V2 project root instead of the legacy JSONL directory while V2 is active.
+    // Keep the old target for installations that still read V1 logs.
+    const dir = _logV2ReadMode === 'v2'
+      ? join(LOG_DIR, 'v2', 'projects')
+      : (LOG_FILE ? dirname(LOG_FILE) : LOG_DIR);
+    if (_logV2ReadMode === 'v2' && !existsSync(dir)) mkdirSync(dir, { recursive: true });
     const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'explorer' : 'xdg-open';
     execFile(cmd, [dir], () => {});
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -3607,9 +3739,16 @@ async function handleRequest(req, res) {
   }
 
   // 列出本地日志文件（按项目分组，遍历项目子目录）
+  if (url === '/api/log-v2/status' && method === 'GET') {
+    sendJson(res, 200, getLogV2RuntimeStatus());
+    return;
+  }
+
   if (url === '/api/local-logs' && method === 'GET') {
     try {
-      const result = listLocalLogs(LOG_DIR, _projectName);
+      const result = _logV2ReadMode === 'v2'
+        ? listV2LocalLogs(LOG_DIR, _projectName)
+        : listLocalLogs(LOG_DIR, _projectName);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(result));
     } catch (err) {
@@ -3695,6 +3834,18 @@ async function handleRequest(req, res) {
         });
         const stream = createReadStream(realPath);
         stream.pipe(res);
+      } else if (isV2SessionFile(file)) {
+        resolveV2SessionFile(LOG_DIR, file);
+        res.writeHead(200, {
+          'Content-Type': 'application/octet-stream',
+          'Content-Disposition': `attachment; filename="${encodeURIComponent(`session-${fileName}`)}"`,
+          'Transfer-Encoding': 'chunked',
+        });
+        await streamV2LogEntries(LOG_DIR, file, (raw) => {
+          res.write(raw);
+          res.write('\n---\n');
+        });
+        res.end();
       } else {
         // 流式下载原始条目（不重建，保持 delta 格式），避免 OOM
         res.writeHead(200, {
@@ -3733,9 +3884,21 @@ async function handleRequest(req, res) {
 
     try {
       // 独立 SSE 流：直接向请求方返回 event-stream，不走 /events 广播
+      const v2 = isV2SessionFile(file);
+      if (v2) {
+        res.writeHead(409, {
+          'Content-Type': 'application/json',
+          'X-CX-Log-Protocol': 'log-v2-wire/2',
+        });
+        res.end(JSON.stringify({
+          error: 'V2 history requires the reference transport',
+          code: 'CXV_LOG_V2_PROTOCOL_REQUIRED',
+        }));
+        return;
+      }
+      const filePath = join(LOG_DIR, file);
       const { validateLogPath } = await import('./lib/log-management.js');
       validateLogPath(LOG_DIR, file);
-      const filePath = join(LOG_DIR, file);
       const total = countLogEntries(filePath);
 
       res.writeHead(200, {
@@ -3745,7 +3908,8 @@ async function handleRequest(req, res) {
       });
 
       res.write(`event: load_start\ndata: ${JSON.stringify({ total, incremental: false })}\n\n`);
-      await streamRawEntriesAsync(filePath, (raw) => {
+      const stream = (callback) => streamRawEntriesAsync(filePath, callback);
+      await stream((raw) => {
         res.write('event: load_chunk\ndata: [');
         res.write(raw.includes('\n') ? raw.replace(/\n/g, '') : raw);
         res.write(']\n\n');
@@ -3804,25 +3968,6 @@ async function handleRequest(req, res) {
       } catch {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Invalid JSON' }));
-      }
-    });
-    return;
-  }
-
-  // 合并日志文件
-  if (url === '/api/merge-logs' && method === 'POST') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; if (body.length > MAX_POST_BODY) req.destroy(); });
-    req.on('end', () => {
-      try {
-        const { files } = JSON.parse(body);
-        const merged = mergeLogFiles(LOG_DIR, files);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ ok: true, merged }));
-      } catch (err) {
-        const status = err.code === 'NOT_FOUND' ? 404 : err.code === 'INVALID_INPUT' ? 400 : 500;
-        res.writeHead(status, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: err.message }));
       }
     });
     return;
@@ -4609,7 +4754,13 @@ async function _doStop() {
 export function pushSdkEntry(entry) {
   if (entry && LOG_FILE) {
     try {
-      appendLogEntry(entry);
+      appendLogEntry(entry, {
+        source: 'sdk',
+        cwd: entry.body?.metadata?.cwd || entry.body?._cwd || process.env.CXV_PROJECT_DIR || process.cwd(),
+        projectId: entry.project,
+        sessionId: entry.body?.metadata?.thread_id || entry.body?._threadId || null,
+        threadId: entry.body?.metadata?.thread_id || entry.body?._threadId || null,
+      });
       notifyStatsWorker(LOG_FILE);
     } catch {}
   }

@@ -118,7 +118,7 @@ function _seqGuardCheck(entry, st) {
 /**
  * 标记乱序条目并尽量就地补偿：accumulated 已包含更新的真值时，用其前缀
  * （= 截至该条目声称长度的最新内容）回填 body.input，避免裸 delta 切片
- * 残留在请求详情面板 / mergeLogFiles 落盘产物中。
+ * 残留在请求详情面板或其他持久化产物中。
  * 返回 true 表示已补偿（input 为一致全量），false 表示需后续 checkpoint 补偿。
  */
 function _markStaleEntry(entry, accumulated) {
@@ -172,7 +172,7 @@ function _integrityCheck(entry, accumulated, st) {
  * 2. 真值前缀 —— stale 就地补偿、超长 slice 修复（_staleReorder 置位，merge 跳过）；
  * 3. 裸 delta 切片待补偿 —— stale 就地补偿失败 / poisoned 冻结（_staleReorder 或
  *    _reconstructBroken 置位）：由第二遍 checkpoint 补偿回填，无第二遍的路径靠
- *    isMergeBlockedEntry 阻断 merge、mergeLogFiles 丢弃兜底。
+ *    isMergeBlockedEntry 阻断合并，持久化调用方负责丢弃兜底。
  *
  * @param {object} entry - 单条日志条目（原地修改）
  * @param {{accumulated: Array, intState: {baselineSeen: boolean, poisoned: boolean},
@@ -266,7 +266,7 @@ export function reconstructEntries(entries) {
 
 /**
  * 用候选全量条目（checkpoint/全量，排除 teammate）补偿一条断裂条目。
- * 内容已是真值前缀，清除标记让批量 merge / mergeLogFiles 正常消费。
+ * 内容已是真值前缀，清除标记让批量合并和持久化调用方正常消费。
  * @returns {boolean} true = 已补偿
  */
 function _tryRepairFromCandidate(brokenEntry, expectedCount, candidate) {

@@ -178,6 +178,12 @@ export function isMainAgent(req) {
 function _isMainAgentImpl(req) {
   if (!req) return false;
 
+  // Persisted producer identity is authoritative. Main-agent instructions can
+  // legitimately describe subagents/teammates; textual heuristics must not
+  // override an explicit root marker. Explicit subAgent/teammate markers still
+  // win for legacy captures that accidentally carried mainAgent:true.
+  if (req.mainAgent === true && req.subAgent !== true && !req.teammate) return true;
+
   // Teammate 子进程的请求不是 MainAgent，避免污染主会话视图
   if (isTeammate(req)) return false;
 

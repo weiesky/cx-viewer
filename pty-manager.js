@@ -414,10 +414,6 @@ export function onPtyExit(cb) {
   };
 }
 
-export function getPtyPid() {
-  return ptyProcess ? ptyProcess.pid : null;
-}
-
 export function getPtyState() {
   return {
     running: !!ptyProcess,

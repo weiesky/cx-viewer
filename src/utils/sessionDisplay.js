@@ -21,6 +21,25 @@ export function getCurrentConversationStartIndex(sessions, anchorSession = null)
 }
 
 /**
+ * Start index for the compact live window: the current logical session plus
+ * the immediately preceding one. Keeping this separate from
+ * getCurrentConversationStartIndex lets callers still identify the true live
+ * session for streaming and chronology boundaries.
+ */
+export function getCurrentConversationWindowStartIndex(sessions, anchorSession = null) {
+  const currentIndex = getCurrentConversationStartIndex(sessions, anchorSession);
+  return Math.max(0, currentIndex - 1);
+}
+
+/** True on the one parent-prop transition that finishes a non-empty history load. */
+export function didFinishConversationHydration(prevFileLoading, fileLoading, sessions) {
+  return prevFileLoading === true
+    && fileLoading === false
+    && Array.isArray(sessions)
+    && sessions.length > 0;
+}
+
+/**
  * Find the earliest usable timestamp in one visible conversation group. Cold
  * placeholders expose `firstTs`; hot fragments expose messages[0]._timestamp.
  */

@@ -82,12 +82,11 @@ export function buildAuthShareUrl(localUrl, authState) {
 // Bridges the useProjectAlias hook into AppHeader (class component). Renders
 // `${liveMonitoringPrefix}${projectName}${alias ? ` (${alias})` : ''}` followed
 // by the inline pencil editor (hidden when isLocalLog / no projectName).
-function HeaderProjectLabel({ projectName, isLocalLog, instanceId }) {
+function HeaderProjectLabel({ projectName, isLocalLog }) {
   const alias = useProjectAlias(projectName);
   return (
     <span className={styles.headerProjectName}>
       {t('ui.liveMonitoring')}{projectName ? `:${projectName}` : ''}
-      {instanceId ? `(${instanceId})` : ''}
       {alias ? ` (${alias})` : ''}
       <ProjectAliasEditor projectName={projectName} isLocalLog={isLocalLog} />
     </span>
@@ -382,8 +381,7 @@ class AppHeader extends React.Component {
     this._pushHeaderModel();
     // Workspace 切换：projectName 变了 → 旧的 _fsSkills 属于旧项目，直接作废。
     // 递增 seq 防止正在途中的 reload 回包把脏数据塞回 state。
-    const authContextChanged = prevProps.projectName !== this.props.projectName
-      || prevProps.instanceId !== this.props.instanceId;
+    const authContextChanged = prevProps.projectName !== this.props.projectName;
     if (authContextChanged) this.reloadAuthState();
 
     if (prevProps.projectName !== this.props.projectName) {
@@ -455,7 +453,6 @@ class AppHeader extends React.Component {
   postAuthConfig = async (body) => {
     if (this.state._authSaving) return;
     const requestProjectName = this.props.projectName;
-    const requestInstanceId = this.props.instanceId;
     this.setState({ _authSaving: true });
     try {
       const post = async (b) => {
@@ -468,7 +465,7 @@ class AppHeader extends React.Component {
         return r.json();
       };
       const data = await post(body);
-      if (requestProjectName !== this.props.projectName || requestInstanceId !== this.props.instanceId) {
+      if (requestProjectName !== this.props.projectName) {
         await this.reloadAuthState();
         return;
       }
@@ -727,7 +724,6 @@ class AppHeader extends React.Component {
       nextProps.isLocalLog !== this.props.isLocalLog ||
       nextProps.localLogFile !== this.props.localLogFile ||
       nextProps.projectName !== this.props.projectName ||
-      nextProps.instanceId !== this.props.instanceId ||
       nextProps.filterIrrelevant !== this.props.filterIrrelevant ||
       nextProps.logDir !== this.props.logDir ||
       nextProps.cliMode !== this.props.cliMode ||
@@ -1526,7 +1522,7 @@ class AppHeader extends React.Component {
               </Tag>
             ) : null;
           })()}
-          <HeaderProjectLabel projectName={projectName} isLocalLog={isLocalLog} instanceId={this.props.instanceId} />
+          <HeaderProjectLabel projectName={projectName} isLocalLog={isLocalLog} />
           {this.renderContextBarPortal()}
         </Space>
 

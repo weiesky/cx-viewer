@@ -15,6 +15,10 @@ import { assembleOpenAiResponseMessage, assembleStreamMessage, cleanupTempFiles,
 import { MAX_LOG_SIZE as _MAX_LOG_SIZE } from './lib/constants.js';
 import { createModelCatalogLogCompactor } from './lib/model-catalog-log.js';
 import { createMainAgentDeltaCompactor } from './lib/main-agent-delta.js';
+import { resolveLogV2Config } from './lib/log-v2/config.js';
+import { dispatchLogWrite, LogV2WriteCoordinator } from './lib/log-v2/dual-write.js';
+import { loadC1GateFile } from './lib/log-v2/gate.js';
+import { loadLogV2RuntimeConfig } from './lib/log-v2/runtime-config.js';
 
 
 
@@ -226,6 +230,30 @@ const _modelCatalogLogCompactor = createModelCatalogLogCompactor();
 let _modelCatalogCompactorLogFile = '';
 const _mainAgentDeltaCompactor = createMainAgentDeltaCompactor();
 let _mainAgentDeltaLogFile = '';
+const _logV2Config = resolveLogV2Config(process.env, loadLogV2RuntimeConfig(LOG_DIR));
+if (_logV2Config.writeMode === 'v2' && _logV2Config.readMode !== 'v2') {
+  throw new Error('CXV_LOG_WRITE_MODE=v2 requires CXV_LOG_READ_MODE=v2 for restart-safe primary reads');
+}
+const _logV2Gate = _logV2Config.writeMode === 'v2'
+  ? loadC1GateFile(_logV2Config.gateFile, { logDir: LOG_DIR })
+  : null;
+const _logV2Coordinator = new LogV2WriteCoordinator({
+  rootDir: LOG_DIR,
+  debug: !!process.env.CXV_DEBUG,
+  minFreeBytes: _logV2Config.minFreeBytes,
+  minFreePercent: _logV2Config.minFreePercent,
+  failureLimit: _logV2Config.failureLimit,
+  durability: _logV2Config.writeMode === 'v2' ? 'durable' : 'buffered',
+  allowedProjectIds: _logV2Gate?.approvedProjects || null,
+  authority: _logV2Config.writeMode === 'v2' ? 'primary' : 'shadow',
+});
+const _logV1ProjectionStats = {
+  attempted: 0,
+  written: 0,
+  compacted: 0,
+  failed: 0,
+  lastError: null,
+};
 
 function generateRotationLogFilePath() {
   const now = new Date();
@@ -275,8 +303,8 @@ function stampRawLogFile(entry) {
   };
 }
 
-/** Serialize and append one complete JSONL record through the shared rotator. */
-export function appendLogEntry(entry) {
+/** Serialize and append one complete V1 JSONL record through the shared rotator. */
+function appendV1LogEntry(entry) {
   if (!entry || !LOG_FILE) return { written: false, logFile: LOG_FILE };
   try {
     if (_mainAgentDeltaLogFile !== LOG_FILE) {
@@ -307,13 +335,79 @@ export function appendLogEntry(entry) {
       line = JSON.stringify(storedEntry) + '\n---\n';
       bytes = Buffer.byteLength(line);
     }
+    const offset = existsSync(LOG_FILE) ? statSync(LOG_FILE).size : 0;
     appendFileSync(LOG_FILE, line);
     _mainAgentDeltaCompactor.commit(entry);
-    return { written: true, logFile: LOG_FILE, bytes };
+    return { written: true, logFile: LOG_FILE, offset, bytes };
   } catch (err) {
     if (process.env.CXV_DEBUG) console.warn('[CX-Viewer] Log write error:', err.message);
     return { written: false, logFile: LOG_FILE, error: err };
   }
+}
+
+/**
+ * Dispatches one original full entry according to startup-only log mode.
+ * During `dual`, V1 is authoritative and completes before V2 shadow
+ * persistence is attempted for every supported ingestion source.
+ */
+export function appendLogEntry(entry, context = {}) {
+  if (!entry) return { written: false, logFile: LOG_FILE };
+  const source = context?.source
+    || (entry._sdkSource || entry.body?.metadata?.sdk === 'openai-codex-sdk' ? 'sdk' : null)
+    || (entry._otelSource ? 'otel' : 'proxy');
+  const cwd = context?.cwd
+    || entry.body?.metadata?.cwd
+    || entry.body?._cwd
+    || process.env.CXV_PROJECT_DIR
+    || process.cwd();
+  const writeContext = {
+    ...context,
+    source,
+    cwd,
+    projectId: context?.projectId || entry.project || basename(cwd) || 'codex',
+  };
+  if (_logV2Config.writeMode === 'v2') {
+    try {
+      const primary = _logV2Coordinator.writeEntry(entry, writeContext, null);
+      if (!_logV2Config.projectV1) return primary;
+      _logV1ProjectionStats.attempted += 1;
+      const projectionV1 = appendV1LogEntry(entry);
+      if (projectionV1.written) _logV1ProjectionStats.written += 1;
+      else if (projectionV1.compacted) _logV1ProjectionStats.compacted += 1;
+      else {
+        _logV1ProjectionStats.failed += 1;
+        _logV1ProjectionStats.lastError = projectionV1.error?.message || 'V1 projection was not written';
+      }
+      return { ...primary, projectionV1 };
+    } catch (error) {
+      return { written: false, store: 'v2', error };
+    }
+  }
+  return dispatchLogWrite({
+    mode: _logV2Config.writeMode,
+    writeV1: () => appendV1LogEntry(entry),
+    writeV2: (legacyResult) => _logV2Coordinator.writeEntry(entry, writeContext, legacyResult),
+  });
+}
+
+export function getLogV2RuntimeStatus() {
+  return Object.freeze({
+    config: Object.freeze({
+      ..._logV2Config,
+      gateFile: _logV2Config.gateFile ? '[configured]' : null,
+    }),
+    gate: _logV2Gate ? Object.freeze({
+      createdAt: _logV2Gate.createdAt,
+      expiresAt: _logV2Gate.expiresAt,
+      approvedProjects: _logV2Gate.approvedProjects,
+      evidenceDigest: _logV2Gate.evidenceDigest,
+    }) : null,
+    writer: _logV2Coordinator.snapshot(),
+    projectionV1: Object.freeze({
+      enabled: _logV2Config.writeMode === 'v2' && _logV2Config.projectV1,
+      ..._logV1ProjectionStats,
+    }),
+  });
 }
 
 // 匹配 OpenAI API 主机名（默认 api.openai.com 及 OPENAI_BASE_URL 自定义主机）

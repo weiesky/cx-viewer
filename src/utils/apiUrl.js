@@ -1,5 +1,7 @@
 // 从 URL 中提取 LAN 访问 token，附加到所有 API 请求 / WebSocket 握手
-const _urlToken = new URLSearchParams(window.location.search).get('token');
+const _urlToken = typeof window !== 'undefined'
+  ? new URLSearchParams(window.location.search).get('token')
+  : null;
 
 // 反向代理子路径部署: 从 <base> 标签或 SSR 注入的全局变量读取 base path，
 // 使 API/WebSocket 等动态请求也能正确路由到代理后端。

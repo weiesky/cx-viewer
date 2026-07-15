@@ -85,7 +85,7 @@ Enable logger mode:
 cxv -logger
 ```
 
-When the console cannot print the specific port, the default first port is 127.0.0.1:7008. Multiple instances use sequential ports like 7009, 7010.
+When the console cannot print the specific port, the default first port is 127.0.0.1:7008. Multiple CX Viewer processes use sequential ports like 7009, 7010.
 
 This command automatically detects how Codex is installed locally (NPM or Native Install) and adapts accordingly.
 
