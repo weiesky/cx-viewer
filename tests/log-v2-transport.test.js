@@ -113,14 +113,29 @@ test('wire transport rebuilds correctness-critical summaries from canonical meta
     writer.append({
       timestamp: '2026-07-15T00:00:00.000Z', url: 'codex://one', method: 'POST', mainAgent: true,
       body: { model: 'gpt-test', input: [{ role: 'user', content: 'large private prompt' }] },
-      response: { status: 200, body: { output: 'large private result' } },
+      response: {
+        status: 200,
+        headers: {
+          'x-codex-plan-type': 'prolite',
+          'x-codex-primary-used-percent': '19',
+          'x-codex-primary-window-minutes': '10080',
+          authorization: 'Bearer private-token',
+        },
+        body: { output: 'large private result' },
+      },
     }, identity);
     unlinkSync(join(writer.sessionDir, 'request-summaries.jsonl'));
     const file = relative(root, join(writer.sessionDir, 'timeline.jsonl')).split('\\').join('/');
     const snapshot = readV2WireSnapshot(root, file);
     assert.equal(snapshot.summaries[0].root.mainAgent, true);
     assert.equal(snapshot.summaries[0].root.url, 'codex://one');
+    assert.deepEqual(snapshot.summaries[0].response.headers, {
+      'x-codex-plan-type': 'prolite',
+      'x-codex-primary-used-percent': '19',
+      'x-codex-primary-window-minutes': '10080',
+    });
     assert.equal(JSON.stringify(snapshot.summaries).includes('large private prompt'), false);
+    assert.equal(JSON.stringify(snapshot.summaries).includes('private-token'), false);
     const replay = readV2WireCommitsAfter(root, file, { afterSeq: 0, generation: snapshot.start.archive.generation });
     assert.equal(replay.commits[0].summary.root.mainAgent, true);
     assert.equal(JSON.stringify(replay.commits[0].summary).includes('large private result'), false);

@@ -46,8 +46,8 @@ test('dry-run inspects every valid archive without invoking the write API', asyn
       assert.deepEqual(options, { projectId: 'project-a' });
       return {
         archives: [
-          { sessionDir: '/tmp/log-root/v2/projects/p/sessions/current.cxvsession' },
-          { sessionDir: '/tmp/log-root/v2/projects/p/sessions/stale.cxvsession' },
+          { sessionDir: '/tmp/log-root/project/20260715_current.cxvsession' },
+          { sessionDir: '/tmp/log-root/project/20260715_stale.cxvsession' },
         ],
         errors: [],
       };
@@ -75,11 +75,11 @@ test('write mode rebuilds stale summaries under the core lock and continues afte
     discover() {
       return {
         archives: [
-          { sessionDir: '/tmp/log-root/v2/projects/p/sessions/one.cxvsession' },
-          { sessionDir: '/tmp/log-root/v2/projects/p/sessions/two.cxvsession' },
-          { sessionDir: '/tmp/log-root/v2/projects/p/sessions/three.cxvsession' },
+          { sessionDir: '/tmp/log-root/project/20260715_one.cxvsession' },
+          { sessionDir: '/tmp/log-root/project/20260715_two.cxvsession' },
+          { sessionDir: '/tmp/log-root/project/20260715_three.cxvsession' },
         ],
-        errors: [{ path: 'v2/projects/bad/session.cxvsession', error: 'prompt must not escape' }],
+        errors: [{ path: 'bad/20260715_session.cxvsession', error: 'prompt must not escape' }],
       };
     },
     inspect() {
@@ -106,9 +106,9 @@ test('write mode rebuilds stale summaries under the core lock and continues afte
     updated: 1,
     unchanged: 1,
     errors: [
-      { path: 'v2/projects/bad/session.cxvsession', error: 'archive discovery failed' },
+      { path: 'bad/20260715_session.cxvsession', error: 'archive discovery failed' },
       {
-        path: 'v2/projects/p/sessions/two.cxvsession',
+        path: 'project/20260715_two.cxvsession',
         error: 'summary rebuild failed (CXV_LOG_V2_SUMMARY_WRITE)',
       },
     ],

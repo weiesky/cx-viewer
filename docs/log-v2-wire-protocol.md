@@ -109,9 +109,12 @@ canonical V2 parts in the reader worker and must match the descriptor identity.
 - `POST /api/log-v2/objects`: capability-scoped raw canonical objects;
 - `GET /api/log-v2/live`: active archive only.
 
-An explicit `file=v2/projects/.../timeline.jsonl` snapshot creates a readonly
-handle. It supports paging and object hydration but is rejected by the live
-endpoint. V2 local history never falls back to `/api/local-log` or `/events`.
+An explicit
+`file=<encoded-project-id>/YYYYMMDD_<encoded-session-id>.cxvsession/timeline.jsonl`
+snapshot creates a readonly handle. It supports paging and object hydration but
+is rejected by the live endpoint. Project and session components use the same
+reversible portable-ASCII encoding as the on-disk layout; the date is UTC. V2
+local history never falls back to `/api/local-log` or `/events`.
 
 The browser persists the last reference-only checkpoint and small decoded CAS
 objects in IndexedDB. On reload it sends the cached cursor identity with the

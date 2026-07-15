@@ -125,7 +125,7 @@
   --avatar-bg-8:  #059669; --avatar-bg-9:  #e11d48; --avatar-bg-10: #0284c7; --avatar-bg-11: #dc2626;
   --avatar-bg-12: #65a30d; --avatar-bg-13: #ca8a04; --avatar-bg-14: #9333ea; --avatar-bg-15: #db2777;
   --avatar-bg-16: #6b7280; --avatar-bg-17: #1d4ed8; --avatar-bg-18: #b45309; --avatar-bg-19: #047857;
-  /* 单色 logo（GLM/Kimi/MiniMax）随主题反转：dark=白、light=黑 */
+  /* 单色 logo（OpenAI/GLM/Kimi/MiniMax）随主题反转：dark=白、light=黑 */
   --model-logo-mono: #fff;
   /* Input bar / sticky */
   --bg-input-bar: rgba(0, 0, 0, 0.5);

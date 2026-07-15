@@ -5,7 +5,6 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
-  readdirSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -14,7 +13,11 @@ import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { resolveAppServerThreadIdentity } from '../lib/log-v2/identity.js';
+import {
+  projectArchiveDirectoryName,
+  resolveAppServerThreadIdentity,
+  sessionArchiveDirectoryName,
+} from '../lib/log-v2/identity.js';
 import {
   SESSION_SUMMARY_FILE,
   applyRootInputSnapshot,
@@ -302,10 +305,14 @@ test('a hard process death cannot leave a fresh-looking undersized summary', () 
     const killed = spawnSync(process.execPath, ['--input-type=module', '-e', script]);
     assert.equal(killed.signal, 'SIGKILL');
 
-    const sessionRoot = join(root, 'v2', 'projects');
-    const projectDir = readdirSync(sessionRoot).map(name => join(sessionRoot, name))[0];
-    const sessionsRoot = join(projectDir, 'sessions', '2026', '07', '15');
-    const sessionDir = readdirSync(sessionsRoot).map(name => join(sessionsRoot, name))[0];
+    const sessionDir = join(
+      root,
+      projectArchiveDirectoryName('summary-project'),
+      sessionArchiveDirectoryName({
+        sessionId: 'summary-session',
+        createdAt: '2026-07-15T08:00:00.000Z',
+      }),
+    );
     assert.equal(readSessionSummary(sessionDir), null);
 
     const restarted = LogV2Writer.open(writerOptions(root));

@@ -10,7 +10,8 @@
 // Codex 当前源码解析的默认 header family：
 //   - x-codex-primary-used-percent / x-codex-primary-window-minutes / x-codex-primary-reset-at
 //   - x-codex-secondary-used-percent / x-codex-secondary-window-minutes / x-codex-secondary-reset-at
-// 也可能出现 x-{limit-id}-primary-* 的多 limit family。普通 OpenAI API 还可能返回
+// 也可能出现 x-{limit-id}-primary-* 的多 limit family（例如 codex_bengalfox），以及
+// active-limit / plan-type / reset-after-seconds 等补充字段。普通 OpenAI API 还可能返回
 // x-ratelimit-* headers。解析必须容忍缺失/多余 key。
 
 const LEGACY_PREFIX = 'anthropic-ratelimit-unified-';
@@ -35,7 +36,21 @@ function toEpochMillis(value) {
   return n == null ? null : n * 1000;
 }
 
-function openAiResetToMillis(value) {
+function toBool(value) {
+  if (value == null || value === '') return null;
+  const normalized = String(value).trim().toLowerCase();
+  if (normalized === 'true' || normalized === '1') return true;
+  if (normalized === 'false' || normalized === '0') return false;
+  return null;
+}
+
+function toText(value) {
+  if (value == null) return null;
+  const normalized = String(value).trim();
+  return normalized || null;
+}
+
+function openAiResetToMillis(value, observedAt) {
   if (value == null || value === '') return null;
   const raw = String(value).trim().toLowerCase();
   const epoch = toNum(raw);
@@ -45,7 +60,7 @@ function openAiResetToMillis(value) {
   const n = Number(match[1]);
   const unit = match[2];
   const mult = unit === 'ms' ? 1 : unit === 's' ? 1000 : unit === 'm' ? 60000 : unit === 'h' ? 3600000 : 86400000;
-  return Date.now() + n * mult;
+  return observedAt + n * mult;
 }
 
 function normalizeLimitId(name) {
@@ -89,41 +104,56 @@ function parseLegacyRateLimitHeaders(map) {
   };
 }
 
-function parseCodexWindow(map, limitPrefix, slot, id, label) {
+function parseCodexWindow(map, limitPrefix, slot, id, label, observedAt) {
   const usedPercent = toNum(map[`${limitPrefix}-${slot}-used-percent`]);
   const windowMinutes = toNum(map[`${limitPrefix}-${slot}-window-minutes`]);
-  const resetAt = toEpochMillis(map[`${limitPrefix}-${slot}-reset-at`]);
-  if (usedPercent == null && windowMinutes == null && resetAt == null) return null;
+  const explicitResetAt = toEpochMillis(map[`${limitPrefix}-${slot}-reset-at`]);
+  const resetAfterSeconds = toNum(map[`${limitPrefix}-${slot}-reset-after-seconds`]);
+  if (usedPercent == null && windowMinutes == null && explicitResetAt == null && resetAfterSeconds == null) return null;
+  const resetAt = explicitResetAt ?? (resetAfterSeconds != null && resetAfterSeconds > 0
+    ? observedAt + resetAfterSeconds * 1000
+    : null);
+
+  // Codex 官方解析器同样会忽略「0% + 0 分钟 + 无重置时间」的空窗口。
+  // 新响应会显式下发这样的 secondary 占位，不能把它渲染成一条真实额度。
+  if (usedPercent === 0 && (!windowMinutes || windowMinutes === 0) && resetAt == null) return null;
   return {
     id,
     label,
+    slot,
     utilization: usedPercent == null ? null : usedPercent / 100,
     status: null,
     resetAt,
+    resetAfterSeconds,
     windowMinutes,
+    primaryOverSecondaryLimitPercent: slot === 'primary'
+      ? toNum(map[`${limitPrefix}-primary-over-secondary-limit-percent`])
+      : null,
   };
 }
 
 function headerNameToCodexLimitId(headerName) {
-  const suffix = '-primary-used-percent';
-  if (!headerName.startsWith('x-') || !headerName.endsWith(suffix)) return null;
-  return normalizeLimitId(headerName.slice(2, -suffix.length));
+  if (!headerName.startsWith('x-')) return null;
+  const match = headerName.match(/-(?:primary|secondary)-(?:used-percent|window-minutes|reset-at|reset-after-seconds)$/);
+  if (!match) return null;
+  return normalizeLimitId(headerName.slice(2, match.index));
 }
 
-function parseCodexRateLimitHeaders(map) {
-  const limitIds = new Set(['codex']);
+function parseCodexRateLimitHeaders(map, observedAt) {
+  const discoveredLimitIds = new Set();
   for (const key of Object.keys(map)) {
     const limitId = headerNameToCodexLimitId(key);
-    if (limitId) limitIds.add(limitId);
+    if (limitId && limitId !== 'codex') discoveredLimitIds.add(limitId);
   }
+  const limitIds = ['codex', ...Array.from(discoveredLimitIds).sort()];
 
   const windows = [];
   let limitName = null;
   for (const limitId of limitIds) {
     const limitPrefix = `x-${limitId.replace(/_/g, '-')}`;
     const name = map[`${limitPrefix}-limit-name`] || (limitId === 'codex' ? 'Codex' : limitId);
-    const primary = parseCodexWindow(map, limitPrefix, 'primary', `${limitId}:primary`, `${name} primary`);
-    const secondary = parseCodexWindow(map, limitPrefix, 'secondary', `${limitId}:secondary`, `${name} secondary`);
+    const primary = parseCodexWindow(map, limitPrefix, 'primary', `${limitId}:primary`, `${name} primary`, observedAt);
+    const secondary = parseCodexWindow(map, limitPrefix, 'secondary', `${limitId}:secondary`, `${name} secondary`, observedAt);
     if (primary) windows.push(primary);
     if (secondary) windows.push(secondary);
     if ((primary || secondary) && !limitName) limitName = name;
@@ -139,24 +169,30 @@ function parseCodexRateLimitHeaders(map) {
     source: 'codex',
     windows,
     overallStatus: map[`${CODEX_PREFIX}rate-limit-reached-type`] || null,
-    representativeClaim: limitName,
+    representativeClaim: toText(map[`${CODEX_PREFIX}active-limit`]) || limitName,
+    activeLimit: toText(map[`${CODEX_PREFIX}active-limit`]),
+    planType: toText(map[`${CODEX_PREFIX}plan-type`]),
     overage: {
       status: null,
       disabledReason: null,
     },
     fallbackPercentage: null,
     credits: hasCredits ? {
-      hasCredits: map[`${CODEX_PREFIX}credits-has-credits`] ?? null,
-      unlimited: map[`${CODEX_PREFIX}credits-unlimited`] ?? null,
-      balance: map[`${CODEX_PREFIX}credits-balance`] ?? null,
+      hasCredits: toBool(map[`${CODEX_PREFIX}credits-has-credits`]),
+      unlimited: toBool(map[`${CODEX_PREFIX}credits-unlimited`]),
+      balance: toText(map[`${CODEX_PREFIX}credits-balance`]),
     } : null,
+    safetyBuffering: {
+      enabled: toBool(map[`${CODEX_PREFIX}safety-buffering-enabled`]),
+      fasterModel: toText(map[`${CODEX_PREFIX}safety-buffering-faster-model`]),
+    },
   };
 }
 
-function parseOpenAiWindow(map, id, label, limitKey, remainingKey, resetKey) {
+function parseOpenAiWindow(map, id, label, limitKey, remainingKey, resetKey, observedAt) {
   const limit = toNum(map[limitKey]);
   const remaining = toNum(map[remainingKey]);
-  const resetAt = openAiResetToMillis(map[resetKey]);
+  const resetAt = openAiResetToMillis(map[resetKey], observedAt);
   if (limit == null && remaining == null && resetAt == null) return null;
   const utilization = limit != null && limit > 0 && remaining != null
     ? Math.max(0, Math.min(1, (limit - remaining) / limit))
@@ -172,10 +208,10 @@ function parseOpenAiWindow(map, id, label, limitKey, remainingKey, resetKey) {
   };
 }
 
-function parseOpenAiRateLimitHeaders(map) {
+function parseOpenAiRateLimitHeaders(map, observedAt) {
   const windows = [
-    parseOpenAiWindow(map, 'requests', 'Requests', 'x-ratelimit-limit-requests', 'x-ratelimit-remaining-requests', 'x-ratelimit-reset-requests'),
-    parseOpenAiWindow(map, 'tokens', 'Tokens', 'x-ratelimit-limit-tokens', 'x-ratelimit-remaining-tokens', 'x-ratelimit-reset-tokens'),
+    parseOpenAiWindow(map, 'requests', 'Requests', 'x-ratelimit-limit-requests', 'x-ratelimit-remaining-requests', 'x-ratelimit-reset-requests', observedAt),
+    parseOpenAiWindow(map, 'tokens', 'Tokens', 'x-ratelimit-limit-tokens', 'x-ratelimit-remaining-tokens', 'x-ratelimit-reset-tokens', observedAt),
   ].filter(Boolean);
   if (windows.length === 0) return null;
   return {
@@ -204,11 +240,12 @@ function parseOpenAiRateLimitHeaders(map) {
  * }}
  * 无任何 unified header 时返回 null（调用方据此决定不渲染套餐用量）。
  */
-export function parseRateLimitHeaders(headers) {
+export function parseRateLimitHeaders(headers, { observedAt = Date.now() } = {}) {
   if (!headers || typeof headers !== 'object') return null;
   const map = lowerKeyMap(headers);
-  return parseCodexRateLimitHeaders(map)
-    || parseOpenAiRateLimitHeaders(map)
+  const anchor = Number.isFinite(observedAt) ? observedAt : Date.now();
+  return parseCodexRateLimitHeaders(map, anchor)
+    || parseOpenAiRateLimitHeaders(map, anchor)
     || parseLegacyRateLimitHeaders(map);
 }
 
@@ -224,7 +261,10 @@ export function extractLatestPlanUsage(requests) {
   for (let i = requests.length - 1; i >= 0; i--) {
     const headers = requests[i] && requests[i].response && requests[i].response.headers;
     if (!headers) continue;
-    const pu = parseRateLimitHeaders(headers);
+    const timestamp = requests[i]?.response?.timestamp ?? requests[i]?.timestamp;
+    const parsedTimestamp = typeof timestamp === 'number' ? timestamp : Date.parse(timestamp);
+    const observedAt = Number.isFinite(parsedTimestamp) ? parsedTimestamp : Date.now();
+    const pu = parseRateLimitHeaders(headers, { observedAt });
     if (pu) return pu;
   }
   return null;

@@ -20,6 +20,7 @@ function RoleFilterBar({ roles, selectedRoles, onToggle, style }) {
             ) : null}
             <div className={styles.roleAvatar}
               style={{ background: r.color || 'rgba(255,255,255,0.1)', display: r.avatarImg ? 'none' : '' }}
+              data-model-monochrome={r.avatarMonochrome ? 'true' : undefined}
               data-role-avatar-fallback=""
               dangerouslySetInnerHTML={{ __html: r.avatarSvg || getSvgAvatar(r.avatarType) }}
             />

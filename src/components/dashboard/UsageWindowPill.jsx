@@ -16,6 +16,22 @@ function fmtPct(u) {
   return u == null ? '—' : `${Math.round(u * 100)}%`;
 }
 
+function displayLimitMeta(value) {
+  if (!value) return '';
+  const normalized = String(value).trim().toLowerCase();
+  const known = {
+    prolite: 'Pro Lite',
+    pro: 'Pro',
+    plus: 'Plus',
+    premium: 'Premium',
+    business: 'Business',
+    enterprise: 'Enterprise',
+    team: 'Team',
+  };
+  if (known[normalized]) return known[normalized];
+  return String(value).trim().replace(/[_-]+/g, ' ');
+}
+
 // resetAt(毫秒) → "Resets in 2h 13m" / "Resets in 45m" / "Resetting…"。无 resetAt 返回空串。
 function resetText(resetAt) {
   if (resetAt == null) return '';
@@ -87,6 +103,10 @@ function localizedWindowName(w, short = false) {
 function UsageWindowPill({ planUsage, authType }) {
   const windows = Array.isArray(planUsage?.windows) ? planUsage.windows : [];
   const summaryWindow = useMemo(() => windows[0] || null, [windows]);
+  const planMeta = useMemo(() => {
+    const values = [displayLimitMeta(planUsage?.planType), displayLimitMeta(planUsage?.activeLimit)].filter(Boolean);
+    return Array.from(new Set(values)).join(' · ');
+  }, [planUsage?.activeLimit, planUsage?.planType]);
 
   // 状态栏只展示第一项，完整窗口列表留在 hover 详情里。
   const triggerStyle = useMemo(() => {
@@ -121,7 +141,10 @@ function UsageWindowPill({ planUsage, authType }) {
 
   const popContent = (
     <div className={styles.pop}>
-      <div className={styles.popTitle}>{t('ui.usage.title')}</div>
+      <div className={styles.popHeading}>
+        <div className={styles.popTitle}>{t('ui.usage.title')}</div>
+        {planMeta && <div className={styles.popMeta}>{planMeta}</div>}
+      </div>
       {/* 无边框 table 让「窗口名 / 血条 / 重置时间」三列对齐;百分比用 50px 血条 + 数字叠加展示。 */}
       <table className={styles.popTable}>
         <tbody>

@@ -68,9 +68,22 @@
   color: var(--text-primary);
 }
 
+.popHeading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
 .popTitle {
   font-weight: 600;
-  margin-bottom: 6px;
+}
+
+.popMeta {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  white-space: nowrap;
 }
 
 /* 无边框 table:三列(窗口名 / 血条 / 重置时间)按列对齐。 */

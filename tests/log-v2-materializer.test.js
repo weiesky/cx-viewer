@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { appendFileSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { appendFileSync, copyFileSync, mkdtempSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative, sep } from 'node:path';
 
@@ -11,7 +11,6 @@ import {
   countV2LogEntries,
   findActiveV2SessionFile,
   findLatestV2SessionFile,
-  findV2SessionFileBySessionId,
   listV2LocalLogs,
   materializeSessionArchive,
   readV2LogEntries,
@@ -315,25 +314,88 @@ test('active V2 selector falls back to V1 instead of choosing an auxiliary legac
   }
 });
 
-test('runtime V2 session lookup isolates projects with the same id and session id by cwd', () => {
-  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-cwd-isolation-'));
+test('the same readable project id fails fast when it is already bound to another cwd', () => {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-project-identity-'));
   try {
-    const make = (canonicalCwd, createdAt) => {
-      const writer = LogV2Writer.open({ ...options(root), canonicalCwd, createdAt });
-      writer.append(
-        entry(createdAt, [{ type: 'message', text: canonicalCwd }], canonicalCwd),
-        resolveAppServerThreadIdentity({ id: 'session-root', sessionId: 'session-root' }),
-      );
-      return relative(root, join(writer.sessionDir, 'timeline.jsonl')).split(sep).join('/');
+    const writer = LogV2Writer.open({ ...options(root), canonicalCwd: '/workspace/one' });
+    writer.append(
+      entry('2026-07-14T08:00:00.000Z', [{ type: 'message', text: 'one' }], 'one'),
+      resolveAppServerThreadIdentity({ id: 'session-root', sessionId: 'session-root' }),
+    );
+    assert.throws(() => LogV2Writer.open({ ...options(root), canonicalCwd: '/workspace/two' }), (error) => {
+      assert.equal(error.code, 'CXV_LOG_PROJECT_ID_COLLISION');
+      return /project id collision/.test(error.message);
+    });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('V2 readers reject symlinked authoritative metadata', (t) => {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-symlink-metadata-'));
+  try {
+    const writer = LogV2Writer.open(options(root));
+    writer.append(
+      entry('2026-07-14T08:00:00.000Z', [{ type: 'message', text: 'one' }], 'one'),
+      resolveAppServerThreadIdentity({ id: 'session-root', sessionId: 'session-root' }),
+    );
+    const manifestPath = join(writer.sessionDir, 'manifest.json');
+    const externalManifest = join(root, 'external-manifest.json');
+    writeFileSync(externalManifest, readFileSync(manifestPath));
+    rmSync(manifestPath);
+    try {
+      symlinkSync(externalManifest, manifestPath);
+    } catch (error) {
+      if (error?.code === 'EPERM' || error?.code === 'EACCES') {
+        t.skip('symbolic links are unavailable in this environment');
+        return;
+      }
+      throw error;
+    }
+    assert.throws(() => readV2LogEntries(
+      root,
+      relative(root, join(writer.sessionDir, 'timeline.jsonl')).split(sep).join('/'),
+    ), /Access denied|unsafe V2 JSON file/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('V2 readers reject symlinked thread records and content objects', (t) => {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-symlink-content-'));
+  try {
+    const writer = LogV2Writer.open(options(root));
+    writer.append(
+      entry('2026-07-14T08:00:00.000Z', [{ type: 'message', text: 'one' }], 'one'),
+      resolveAppServerThreadIdentity({ id: 'session-root', sessionId: 'session-root' }),
+    );
+    const locator = relative(root, join(writer.sessionDir, 'timeline.jsonl')).split(sep).join('/');
+    const token = threadStoreToken('session-root');
+    const entriesPath = join(writer.sessionDir, 'threads', token, 'entries.jsonl');
+    const entryRecord = JSON.parse(readFileSync(entriesPath, 'utf8').trim());
+    const objectPath = join(writer.sessionDir, Object.values(entryRecord.set)[0].path);
+
+    const assertSymlinkRejected = (target, label) => {
+      const external = join(root, `external-${label}`);
+      copyFileSync(target, external);
+      rmSync(target);
+      try {
+        symlinkSync(external, target);
+      } catch (error) {
+        if (error?.code === 'EPERM' || error?.code === 'EACCES') {
+          t.skip('symbolic links are unavailable in this environment');
+          return false;
+        }
+        throw error;
+      }
+      assert.throws(() => readV2LogEntries(root, locator), /unsafe V2 file|ELOOP/);
+      rmSync(target);
+      copyFileSync(external, target);
+      return true;
     };
-    const first = make('/workspace/one', '2026-07-14T08:00:00.000Z');
-    const second = make('/workspace/two', '2026-07-14T09:00:00.000Z');
-    assert.equal(findV2SessionFileBySessionId(root, 'session-root', {
-      projectId: 'project', canonicalCwd: '/workspace/one',
-    }), first);
-    assert.equal(findV2SessionFileBySessionId(root, 'session-root', {
-      projectId: 'project', canonicalCwd: '/workspace/two',
-    }), second);
+
+    if (!assertSymlinkRejected(objectPath, 'object.json')) return;
+    assertSymlinkRejected(entriesPath, 'entries.jsonl');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

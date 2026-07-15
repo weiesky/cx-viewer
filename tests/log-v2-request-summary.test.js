@@ -39,3 +39,50 @@ test('request summary persists classification without retaining its prompt evide
   assert.deepEqual(summary.classification, { type: 'Synthetic', subType: 'Title' });
   assert.equal(JSON.stringify(summary).includes(titlePrompt), false);
 });
+
+test('request summary keeps only usage response headers for lightweight usage display', () => {
+  const summary = buildRequestSummary({
+    timestamp: '2026-07-16T00:00:00.000Z',
+    url: 'https://example.test/v1/responses',
+    response: {
+      status: 200,
+      headers: {
+        'X-Codex-Active-Limit': 'premium',
+        'x-codex-plan-type': 'prolite',
+        'x-codex-primary-used-percent': '19',
+        'x-codex-primary-window-minutes': '10080',
+        'x-codex-primary-reset-at': '1784505600',
+        'x-codex-bengalfox-limit-name': 'GPT-5.3-Codex-Spark',
+        'x-codex-bengalfox-primary-used-percent': '0',
+        'x-ratelimit-remaining-tokens': '1234',
+        'anthropic-ratelimit-unified-5h-utilization': '0.25',
+        'anthropic-ratelimit-unified-private-auth-token': 'private-prefix-secret',
+        'anthropic-ratelimit-unified-status': 'x'.repeat(513),
+        'x-codex-credits-balance': { secret: 'nested-secret' },
+        authorization: 'Bearer secret',
+        'set-cookie': 'session=secret',
+        'x-codex-turn-metadata': 'private-metadata',
+        'x-codex-installation-id': 'private-installation',
+      },
+    },
+  }, {
+    seq: 1, eventId: 'event', entryKey: 'entry', entryRevision: 1, threadId: 'thread', phase: 'completed',
+  });
+
+  assert.deepEqual(summary.response.headers, {
+    'x-codex-active-limit': 'premium',
+    'x-codex-plan-type': 'prolite',
+    'x-codex-primary-used-percent': '19',
+    'x-codex-primary-window-minutes': '10080',
+    'x-codex-primary-reset-at': '1784505600',
+    'x-codex-bengalfox-limit-name': 'GPT-5.3-Codex-Spark',
+    'x-codex-bengalfox-primary-used-percent': '0',
+    'x-ratelimit-remaining-tokens': '1234',
+    'anthropic-ratelimit-unified-5h-utilization': '0.25',
+  });
+  assert.equal(JSON.stringify(summary).includes('secret'), false);
+  assert.equal(JSON.stringify(summary).includes('private-metadata'), false);
+  assert.equal(JSON.stringify(summary).includes('private-installation'), false);
+  assert.equal(JSON.stringify(summary).includes('private-prefix-secret'), false);
+  assert.equal(JSON.stringify(summary).includes('nested-secret'), false);
+});

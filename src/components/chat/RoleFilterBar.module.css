@@ -44,6 +44,9 @@
   width: 10px;
   height: 10px;
 }
+.roleAvatar[data-model-monochrome="true"] {
+  color: var(--model-logo-mono);
+}
 .roleAvatarImg {
   width: 16px;
   height: 16px;

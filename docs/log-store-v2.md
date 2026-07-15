@@ -9,16 +9,18 @@ the observation gate; a passing gate is never inferred from tests or fixtures.
 CX Viewer V2 uses this hierarchy:
 
 ```text
-ProjectArchive
-└── SessionArchive (authoritative boundary: Codex Thread.sessionId)
-    ├── manifest.json
-    ├── summary.json
-    ├── timeline.jsonl
-    ├── threads/
-    │   └── <hashed-thread-id>/
-    │       ├── entries.jsonl
-    │       └── input.jsonl
-    └── objects/<fixed-hash-buckets>/...
+$CXV_LOG_DIR/
+└── <encoded-project-id>/
+    ├── project.json
+    └── YYYYMMDD_<encoded-session-id>.cxvsession/
+        ├── manifest.json
+        ├── summary.json
+        ├── timeline.jsonl
+        ├── threads/
+        │   └── <hashed-thread-id>/
+        │       ├── entries.jsonl
+        │       └── input.jsonl
+        └── objects/<fixed-hash-buckets>/...
 ```
 
 A session archive is the intentional lifecycle boundary. For Codex App Server,
@@ -30,7 +32,9 @@ Compaction remains inside the same thread and session archive.
 There is no byte-size or clock-based rotation inside a session. This avoids an
 arbitrary split that cannot be explained in terms of user activity. Project
 discovery is bounded: the project manifest stores only sequence/latest pointers,
-while session manifests are found beneath UTC date directories.
+while session manifests are immediate children of the project directory. The
+eight-digit filename prefix is the session creation date in UTC; it is metadata
+for humans and sorting, not another directory hierarchy.
 
 ## Storage contract
 
@@ -38,8 +42,17 @@ while session manifests are found beneath UTC date directories.
 record points to a committed entry revision and its input revision. Per-thread
 entry streams hold non-input request/header/body deltas. Per-thread input streams
 store input items once and append sequence/revision operations. Large immutable
-values are content-addressed in the session object store. External IDs are never
-used as path components; paths use SHA-256 storage tokens.
+values are content-addressed in the session object store. Project and session
+IDs are represented by a reversible, collision-free portable-ASCII encoding,
+so their directory names preserve identity without introducing separators,
+reserved platform names, or traversal. Encoded path segments are capped at 230
+bytes. Thread IDs remain SHA-256 storage tokens because thread stores are an
+internal implementation detail rather than user-facing archive boundaries.
+Project IDs must be unique within one log root. If two different canonical
+working directories supply the same readable project ID, the second writer
+fails with `CXV_LOG_PROJECT_ID_COLLISION` instead of mixing their logs or
+silently adding a hash suffix. Layout-control roots such as `v2`, `runtime`,
+and `plugins` are reserved.
 
 New timeline records keep both the event `timestamp` and a writer-generated
 `committedAt`. Observation epochs use `committedAt`, so a historical App Server
@@ -82,6 +95,38 @@ The fixed-point serializer accounts for the summary's own byte length. Directory
 entries, symbolic links, append lock files, and temporary atomic-write files are
 excluded. This is a persistent logical byte count, not allocated filesystem
 blocks (`du`) and not merely the size of `timeline.jsonl`.
+
+## Portable ZIP exchange
+
+The history picker continues to use a session's `timeline.jsonl` path as an
+internal locator, but that file is not a complete V2 log. Downloading a V2 row
+exports the locator's parent `YYYYMMDD_<encoded-session-id>.cxvsession/`
+directory as a ZIP with exactly that one top-level directory. The ZIP retains
+the manifest, timeline,
+thread revision streams, content-addressed objects, and derived metadata. Lock
+files, atomic-write temporary files, and Finder metadata are excluded;
+symbolic links and other non-regular filesystem entries reject the export.
+
+Active sessions are copied while their append lock is held, then validated and
+compressed after the lock is released. This gives the download one committed,
+internally consistent snapshot without holding up writers for the duration of
+the network transfer.
+
+The desktop **Upload and parse log ZIP** action accepts one ZIP up to 64 MiB
+(up to 128 MiB expanded, with per-entry, entry-count, path, and expansion-ratio
+limits). Only one ZIP import/export job runs at a time; overlapping requests get
+an explicit busy response.
+It is a portable, read-only viewer operation: the server extracts into an
+isolated temporary directory, validates the single-root archive and every V2
+reference, streams the final winning entries to the browser, and removes the
+temporary directory. It does not install the uploaded session into `LOG_DIR`
+or turn it into a writable session. Unsafe paths, symbolic/special entries,
+colliding normalized paths, multiple session roots, expansion bombs, missing
+references, and incomplete/corrupt timelines are rejected.
+
+V1 storage is still a JSONL file and its legacy download response is unchanged.
+The ZIP upload action intentionally targets the current V2 directory format;
+it does not accept legacy JSONL files.
 
 ## Startup configuration
 
@@ -288,6 +333,52 @@ V2 commits are durable and authoritative. V1 projection remains a best-effort
 rollback buffer. To roll back while projection is enabled, restart with both
 modes set to `v1`; events committed only while projection was disabled are not
 present in V1.
+
+#### One-time V2 directory-layout migration
+
+The temporary migration command flattens the former
+`v2/projects/<hash>/sessions/YYYY/MM/DD/<hash>.cxvsession` hierarchy into the
+shallow layout documented above. Stop every CX Viewer and Codex process that
+can write this log root, then run the default read-only preflight:
+
+```sh
+node scripts/migrate-log-v2-layout.mjs --root "$CXV_LOG_DIR"
+```
+
+Preflight performs all source and target structure, identity, lock, archive,
+tree-digest, and materialized-digest checks before it creates a receipt,
+staging directory, marker, project, or session. Its JSON result reports the
+number of projects and sessions, bytes that require staging, sessions that can
+be deduplicated, and missing-manifest directories that must be quarantined.
+Run it again after resolving any reported identity or divergent-content
+conflict; conflicts never enter the publishing phase.
+
+A missing `manifest.json` does not provide enough identity to invent a safe new
+session name. Such a directory is not installed in the shallow layout. It is
+reported under `quarantine` and retained byte-for-byte inside the timestamped
+old-layout backup. This is deliberate preservation, not silent deletion.
+When the same session already exists in the shallow layout, migration compares
+both its complete tree digest and final materialized-entry digest. An exact
+match is deduplicated; any difference aborts preflight for manual inspection.
+
+After reviewing the dry-run report, apply with the explicit stopped-process
+confirmation:
+
+```sh
+node scripts/migrate-log-v2-layout.mjs --root "$CXV_LOG_DIR" \
+  --apply --confirm-stopped
+```
+
+The script stages verified copies on the log-root filesystem, rebuilds each
+project manifest across old and already-present shallow sessions (including a
+non-reused `nextSessionSeq` and a valid latest pointer), publishes with durable
+renames, and retains the old `v2/projects` tree as
+`v2/projects.layout-v1-backup-<timestamp>-<nonce>`. Its versioned receipt uses
+portable POSIX relative paths and is updated atomically after each recoverable
+step. Copied files and affected directories are fsynced before the receipt can
+advance. Re-running the same apply command resumes an interrupted migration or
+returns the completed receipt without duplicating data. Keep the backup until
+the shallow archives and every quarantine item have been inspected.
 
 The C2 importer reconstructs legacy repeat markers and MainAgent deltas, writes
 a deterministic durable V2 archive, verifies normalized content digests, and

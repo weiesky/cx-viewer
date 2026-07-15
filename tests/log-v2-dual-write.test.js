@@ -13,7 +13,7 @@ import {
   _writeAppServerEntryForTests,
 } from '../lib/appserver-bridge.js';
 import { dispatchLogWrite, LogV2WriteCoordinator } from '../lib/log-v2/dual-write.js';
-import { hashStorageId } from '../lib/log-v2/identity.js';
+import { projectArchiveDirectoryName } from '../lib/log-v2/identity.js';
 import { inspectSessionArchive } from '../lib/log-v2/inspect.js';
 import { findActiveV2SessionFile, findLatestV2SessionFile, listV2LocalLogs, materializeSessionArchive, resolveV2SessionFile } from '../lib/log-v2/materializer.js';
 import { LogV2Writer } from '../lib/log-v2/writer.js';
@@ -106,9 +106,7 @@ test('V2 coordinator advances the durable latest-session pointer when activity r
     assert.equal(coordinator.snapshot().lastConversationLocator.source, 'app-server');
     const projectManifest = JSON.parse(readFileSync(join(
       root,
-      'v2',
-      'projects',
-      hashStorageId('project\u0000/workspace/project', 'p_'),
+      projectArchiveDirectoryName('project'),
       'project.json',
     ), 'utf8'));
     assert.equal(projectManifest.latestSessionId, 'session-one');
@@ -132,7 +130,7 @@ test('V2 project pointer remains authoritative across independent coordinators',
       thread: { id: sessionId, sessionId },
     });
     const projectManifestPath = join(
-      root, 'v2', 'projects', hashStorageId('project\u0000/workspace/project', 'p_'), 'project.json',
+      root, projectArchiveDirectoryName('project'), 'project.json',
     );
     const latest = () => JSON.parse(readFileSync(projectManifestPath, 'utf8')).latestSessionId;
 

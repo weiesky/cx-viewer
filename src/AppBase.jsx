@@ -2100,7 +2100,10 @@ class AppBase extends React.Component {
   }
 
   loadLocalLogFile(file) {
-    if (typeof file === 'string' && file.startsWith('v2/projects/') && file.endsWith('/timeline.jsonl')) {
+    const locatorParts = typeof file === 'string' ? file.split('/') : [];
+    if (locatorParts.length === 3
+        && /^\d{8}_[a-z0-9._~-]+\.cxvsession$/.test(locatorParts[1])
+        && locatorParts[2] === 'timeline.jsonl') {
       this._loadLocalV2LogFile(file);
       return;
     }

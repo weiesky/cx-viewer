@@ -3127,7 +3127,7 @@ class ChatView extends React.Component {
         }
       } else if (role === 'assistant') {
         if (!collectedRolesMap.has('assistant')) {
-          collectedRolesMap.set('assistant', { key: 'assistant', name: modelInfo?.short || modelInfo?.name || 'Codex', avatarType: 'agent', color: modelInfo?.color || 'rgba(255,255,255,0.1)', avatarSvg: modelInfo?.svg || null });
+          collectedRolesMap.set('assistant', { key: 'assistant', name: modelInfo?.short || modelInfo?.name || 'Codex', avatarType: 'agent', color: modelInfo?.color || 'rgba(255,255,255,0.1)', avatarSvg: modelInfo?.svg || null, avatarMonochrome: modelInfo?.monochrome === true });
         }
       } else if (role === 'sub-agent-chat') {
         const label = item.props.label || 'SubAgent';

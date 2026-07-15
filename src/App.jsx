@@ -21,6 +21,7 @@ import { classifyRequest } from './utils/requestType';
 import { apiUrl } from './utils/apiUrl';
 import { BLUR_MASK_STYLE } from './utils/modalMask';
 import { getLatestSessionByActivity } from './utils/sessionManager';
+import { uploadLogArchive } from './utils/logArchiveUpload';
 
 class App extends AppBase {
   constructor(props) {
@@ -245,41 +246,27 @@ class App extends AppBase {
 
   // ─── 文件处理 & 拖拽 ────────────────────────────────────
 
-  handleLoadLocalJsonlFile = () => {
+  handleLoadLocalLogArchive = () => {
+    if (this.state.fileLoading) return;
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.jsonl';
-    input.multiple = true;
-    input.onchange = (e) => {
-      const files = Array.from(e.target.files);
-      if (files.length === 0) return;
-      const totalSize = files.reduce((s, f) => s + f.size, 0);
-      if (totalSize > 500 * 1024 * 1024) {
-        message.error(t('ui.fileTooLarge'));
-        return;
-      }
+    input.accept = '.zip,application/zip';
+    input.multiple = false;
+    input.onchange = async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
       this.setState({ fileLoading: true, fileLoadingCount: 0 });
-      let readCount = 0;
-      const allEntries = [];
-      const fileNames = [];
-      files.forEach(file => {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          try {
-            const content = ev.target.result;
-            const entries = content.split('\n---\n').filter(line => line.trim()).map(entry => {
-              try { return JSON.parse(entry); } catch { return null; }
-            }).filter(Boolean);
-            allEntries.push(...entries);
-            fileNames.push(file.name);
-          } catch {}
-          readCount++;
-          if (readCount === files.length) {
-            this._finishLocalLoad(allEntries, fileNames);
-          }
-        };
-        reader.readAsText(file);
-      });
+      try {
+        const entries = await uploadLogArchive(file, {
+          onProgress: count => this.setState({ fileLoadingCount: count }),
+        });
+        this._finishLocalLoad(entries, [file.name]);
+      } catch (error) {
+        this.setState({ fileLoading: false, fileLoadingCount: 0 });
+        message.error(t('ui.logArchiveParseFailed', { reason: error?.message || 'unknown error' }));
+      } finally {
+        input.value = '';
+      }
     };
     input.click();
   };
@@ -568,8 +555,8 @@ class App extends AppBase {
           styles={{ body: { overflow: 'hidden' }, mask: BLUR_MASK_STYLE }}
         >
           <div className={styles.modalActions}>
-            <Button size="small" icon={<UploadOutlined />} onClick={this.handleLoadLocalJsonlFile}>
-              {t('ui.loadLocalJsonl')}
+            <Button size="small" icon={<UploadOutlined />} onClick={this.handleLoadLocalLogArchive}>
+              {t('ui.loadLocalLogArchive')}
             </Button>
             <Button
               size="small"

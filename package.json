@@ -1,6 +1,6 @@
 {
   "name": "cx-viewer",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Codex Logger visualization management tool",
   "license": "MIT",
   "main": "server.js",
@@ -75,7 +75,8 @@
     "plugins/",
     "pty-manager.js",
     "workspace-registry.js",
-    "concepts/"
+    "concepts/",
+    "docs/"
   ],
   "devDependencies": {
     "@ant-design/icons": "^5.6.1",

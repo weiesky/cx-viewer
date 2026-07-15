@@ -53,6 +53,7 @@ import {
   listLocalLogs,
   deleteLogFiles,
   clearRawSidecarsForLog,
+  validateLogPath,
 } from './lib/log-management.js';
 import { countLogEntries, streamRawEntriesAsync, readPagedEntries } from './lib/log-stream.js';
 import {
@@ -66,6 +67,11 @@ import {
   resolveV2SessionFile,
   streamV2LogEntries,
 } from './lib/log-v2/materializer.js';
+import {
+  createV2SessionEntryStream,
+  createV2SessionZip,
+  LOG_ARCHIVE_LIMITS,
+} from './lib/log-v2/archive-zip.js';
 import { listSkills, toggleSkill, deleteSkill, importSkillUpload, imSkillRoots, imSkillImportRoot } from './lib/skills-api.js';
 import { readCodexGlobalConfig, updateCodexGlobalConfig } from './lib/codex-config.js';
 import {
@@ -291,6 +297,41 @@ function sendJson(res, status, data) {
   res.end(JSON.stringify(data));
 }
 
+let activeLogArchiveJobs = 0;
+function acquireLogArchiveJob() {
+  if (activeLogArchiveJobs >= 1) {
+    throw Object.assign(new Error('Another log archive operation is already running'), {
+      status: 429,
+      code: 'CXV_LOG_ARCHIVE_BUSY',
+    });
+  }
+  activeLogArchiveJobs++;
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    activeLogArchiveJobs--;
+  };
+}
+
+function writeResponseChunk(res, chunk) {
+  if (res.destroyed) return Promise.reject(new Error('Response closed'));
+  if (res.write(chunk)) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const cleanup = () => {
+      res.off('drain', onDrain);
+      res.off('close', onClose);
+      res.off('error', onError);
+    };
+    const onDrain = () => { cleanup(); resolve(); };
+    const onClose = () => { cleanup(); reject(new Error('Response closed')); };
+    const onError = (error) => { cleanup(); reject(error); };
+    res.once('drain', onDrain);
+    res.once('close', onClose);
+    res.once('error', onError);
+  });
+}
+
 function sendApiError(res, err, fallback = 'Request failed') {
   const status = Number.isInteger(err?.status) ? err.status : 500;
   sendJson(res, status, {
@@ -399,7 +440,8 @@ function readMultipartUpload(req, maxSize = MAX_UPLOAD_SIZE) {
         const bodyStart = headerEnd + 4;
         const closingBoundary = Buffer.from('\r\n--' + boundary);
         const bodyEnd = buf.indexOf(closingBoundary, bodyStart);
-        const data = bodyEnd !== -1 ? buf.slice(bodyStart, bodyEnd) : buf.slice(bodyStart);
+        if (bodyEnd === -1) throw Object.assign(new Error('Malformed multipart'), { status: 400 });
+        const data = buf.slice(bodyStart, bodyEnd);
         resolve({ filename, data });
       } catch (err) {
         reject(err);
@@ -2990,11 +3032,10 @@ async function handleRequest(req, res) {
   // === Editor session API (for $EDITOR intercept) ===
 
   if (url === '/api/open-log-dir' && method === 'POST') {
-    // The history dialog lists materialized V2 session archives, so reveal the
-    // V2 project root instead of the legacy JSONL directory while V2 is active.
-    // Keep the old target for installations that still read V1 logs.
+    // V2 projects now live directly under the log root beside legacy project
+    // directories, so reveal that shallow common root.
     const dir = _logV2ReadMode === 'v2'
-      ? join(LOG_DIR, 'v2', 'projects')
+      ? LOG_DIR
       : (LOG_FILE ? dirname(LOG_FILE) : LOG_DIR);
     if (_logV2ReadMode === 'v2' && !existsSync(dir)) mkdirSync(dir, { recursive: true });
     const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'explorer' : 'xdg-open';
@@ -3795,10 +3836,39 @@ async function handleRequest(req, res) {
     return;
   }
 
-  // 下载指定本地日志文件（原始 JSONL 格式）
+  // 解析上传的 V2 session ZIP，仅用于当前浏览器查看，不写入 LOG_DIR。
+  if (url === '/api/parse-log-archive' && method === 'POST') {
+    let releaseJob = null;
+    let parsed = null;
+    try {
+      releaseJob = acquireLogArchiveJob();
+      // Allow multipart framing beyond the logical ZIP payload limit.
+      const upload = await readMultipartUpload(req, LOG_ARCHIVE_LIMITS.compressedBytes + 1024 * 1024);
+      parsed = await createV2SessionEntryStream(upload.data, { filename: upload.filename });
+      res.writeHead(200, {
+        'Content-Type': 'application/x-cxv-log-entries; charset=utf-8',
+        'Cache-Control': 'no-store',
+        'Content-Length': parsed.size,
+      });
+      for await (const chunk of parsed.stream) {
+        await writeResponseChunk(res, chunk);
+      }
+      res.end();
+    } catch (err) {
+      if (res.headersSent) res.destroy(err);
+      else sendApiError(res, err, 'Failed to parse log archive');
+    } finally {
+      parsed?.dispose();
+      releaseJob?.();
+    }
+    return;
+  }
+
+  // 下载指定本地日志。V2 的交换边界是完整 .cxvsession 目录；V1 保持 JSONL。
   if (url === '/api/download-log' && method === 'GET') {
     const file = parsedUrl.searchParams.get('file');
-    if (!file || file.includes('..')) {
+    const v2File = isV2SessionFile(file);
+    if (!file || (!v2File && file.includes('..'))) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Invalid file name' }));
       return;
@@ -3808,20 +3878,49 @@ async function handleRequest(req, res) {
       res.end(JSON.stringify({ error: 'Invalid file type' }));
       return;
     }
-    const filePath = join(LOG_DIR, file);
+    let releaseJob = null;
     try {
-      if (!existsSync(filePath)) {
-        res.writeHead(404, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'File not found' }));
+      if (v2File) {
+        releaseJob = acquireLogArchiveJob();
+        const archive = await createV2SessionZip(LOG_DIR, file);
+        if (req.aborted || res.destroyed) {
+          archive.dispose();
+          releaseJob();
+          return;
+        }
+        const encodedName = encodeURIComponent(archive.fileName);
+        let cleaned = false;
+        const cleanup = () => {
+          if (cleaned) return;
+          cleaned = true;
+          archive.dispose();
+          releaseJob();
+        };
+        archive.stream.once('error', (error) => {
+          cleanup();
+          if (res.headersSent) res.destroy(error);
+          else sendApiError(res, error, 'Failed to create log archive');
+        });
+        req.once('aborted', () => {
+          archive.stream.destroy();
+          cleanup();
+        });
+        archive.stream.once('end', cleanup);
+        res.once('close', () => {
+          if (!res.writableEnded) archive.stream.destroy();
+          cleanup();
+        });
+        res.writeHead(200, {
+          'Content-Type': 'application/zip',
+          'Content-Disposition': `attachment; filename="${archive.fileName}"; filename*=UTF-8''${encodedName}`,
+          'X-Content-Type-Options': 'nosniff',
+          'Cache-Control': 'no-store',
+          'Content-Length': archive.size,
+        });
+        archive.stream.pipe(res);
         return;
       }
-      const realPath = realpathSync(filePath);
-      const realLogDir = realpathSync(LOG_DIR);
-      if (!realPath.startsWith(realLogDir)) {
-        res.writeHead(403, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Access denied' }));
-        return;
-      }
+      const realPath = validateLogPath(LOG_DIR, file);
       const fileName = file.split('/').pop();
       const format = parsedUrl.searchParams.get('format');
       // Delta storage: format=raw 下载原始文件；默认下载重建后的全量格式
@@ -3834,18 +3933,6 @@ async function handleRequest(req, res) {
         });
         const stream = createReadStream(realPath);
         stream.pipe(res);
-      } else if (isV2SessionFile(file)) {
-        resolveV2SessionFile(LOG_DIR, file);
-        res.writeHead(200, {
-          'Content-Type': 'application/octet-stream',
-          'Content-Disposition': `attachment; filename="${encodeURIComponent(`session-${fileName}`)}"`,
-          'Transfer-Encoding': 'chunked',
-        });
-        await streamV2LogEntries(LOG_DIR, file, (raw) => {
-          res.write(raw);
-          res.write('\n---\n');
-        });
-        res.end();
       } else {
         // 流式下载原始条目（不重建，保持 delta 格式），避免 OOM
         res.writeHead(200, {
@@ -3860,8 +3947,13 @@ async function handleRequest(req, res) {
         res.end();
       }
     } catch (err) {
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: err.message }));
+      releaseJob?.();
+      if (res.headersSent) res.destroy(err);
+      else {
+        const status = err?.status
+          || (err?.code === 'NOT_FOUND' ? 404 : err?.code === 'ACCESS_DENIED' ? 403 : 500);
+        sendApiError(res, Object.assign(err, { status }), 'Failed to download log');
+      }
     }
     return;
   }
@@ -3896,9 +3988,7 @@ async function handleRequest(req, res) {
         }));
         return;
       }
-      const filePath = join(LOG_DIR, file);
-      const { validateLogPath } = await import('./lib/log-management.js');
-      validateLogPath(LOG_DIR, file);
+      const filePath = validateLogPath(LOG_DIR, file);
       const total = countLogEntries(filePath);
 
       res.writeHead(200, {

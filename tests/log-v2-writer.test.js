@@ -284,3 +284,40 @@ test('two writer instances serialize session commits and refresh stale in-memory
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('writer rechecks the migration marker after acquiring the append lock', () => {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-marker-race-'));
+  let injectMarker = false;
+  try {
+    const writer = LogV2Writer.open(writerOptions(root, {
+      faultInjector(stage) {
+        if (injectMarker && stage === 'append-lock-acquired') {
+          writeFileSync(join(root, '.log-v2-layout-migration.active'), JSON.stringify({ pid: process.pid }));
+        }
+      },
+    }));
+    injectMarker = true;
+    assert.throws(
+      () => writer.append(entry([], []), rootIdentity),
+      error => error.code === 'CXV_LOG_LAYOUT_MIGRATING',
+    );
+    assert.equal(inspectSessionArchive(writer.sessionDir).committedEvents, 0);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('writer rechecks the migration marker after acquiring the project lock', () => {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-project-marker-race-'));
+  try {
+    assert.throws(() => LogV2Writer.open(writerOptions(root, {
+      faultInjector(stage) {
+        if (stage === 'project-lock-acquired') {
+          writeFileSync(join(root, '.log-v2-layout-migration.active'), JSON.stringify({ pid: process.pid }));
+        }
+      },
+    })), error => error.code === 'CXV_LOG_LAYOUT_MIGRATING');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

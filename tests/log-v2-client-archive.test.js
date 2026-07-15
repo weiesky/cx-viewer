@@ -8,6 +8,7 @@ import { LOG_V2_WIRE_KINDS, LOG_V2_WIRE_VERSION } from '../lib/log-v2/wire-schem
 import { batchLogV2ObjectRefs } from '../src/utils/logV2ObjectStore.js';
 import { fetchLogV2Page, fetchLogV2Snapshot, readNdjsonResponse } from '../src/utils/logV2Transport.js';
 import { encodeV2ControlFragments } from '../server/lib/log-v2-routes.js';
+import { extractLatestPlanUsage } from '../src/utils/rateLimitParser.js';
 
 const archiveIdentity = { projectId: 'project', sessionId: 'session', generation: 'generation' };
 const ref = (char, value) => ({ ref: { hash: char.repeat(64), bytes: JSON.stringify(value).length }, value });
@@ -51,6 +52,39 @@ test('client archive exposes lightweight rows and hydrates exact detail objects 
   });
   await archive.hydrate(archive.rows[0]._v2RowHandle);
   assert.equal(fetches, 1);
+});
+
+test('client archive exposes usage headers from lightweight summaries without hydration', () => {
+  const state = createWireArchiveState(archiveIdentity);
+  applyWireCommit(state, {
+    kind: LOG_V2_WIRE_KINDS.commit, version: LOG_V2_WIRE_VERSION, archive: archiveIdentity, timelineBytes: 100,
+    timeline: { seq: 1, eventId: 'event', txnId: 'txn', timestamp: '2026-07-16T00:00:00.000Z', threadId: 'thread', entryKey: 'entry', entryRevision: 1, inputRevision: null, phase: 'completed' },
+    entry: { entryKey: 'entry', revision: 1, baseRevision: 0, set: {}, delete: [] },
+  });
+  const snapshot = {
+    start: { kind: LOG_V2_WIRE_KINDS.start, version: LOG_V2_WIRE_VERSION, archive: archiveIdentity, objectHandle: 'handle' },
+    checkpoint: checkpointWireArchiveState(state),
+    summaries: [{
+      seq: 1,
+      root: { timestamp: '2026-07-16T00:00:00.000Z' },
+      body: {},
+      request: null,
+      response: { headers: {
+        'x-codex-active-limit': 'premium',
+        'x-codex-plan-type': 'prolite',
+        'x-codex-primary-used-percent': '19',
+        'x-codex-primary-window-minutes': '10080',
+        'x-codex-primary-reset-at': '1784505600',
+      } },
+    }],
+    end: { kind: LOG_V2_WIRE_KINDS.end, version: LOG_V2_WIRE_VERSION, archive: archiveIdentity },
+  };
+
+  const archive = new LogV2Archive(snapshot);
+  const usage = extractLatestPlanUsage(archive.rows);
+  assert.equal(usage.source, 'codex');
+  assert.equal(usage.planType, 'prolite');
+  assert.equal(usage.windows[0].utilization, 0.19);
 });
 
 test('object hydration batches by count and declared bytes while streaming one oversized object alone', () => {
@@ -102,7 +136,7 @@ test('readonly V2 history snapshot sends the validated locator through the refer
     { kind: LOG_V2_WIRE_KINDS.end, version: LOG_V2_WIRE_VERSION, archive: archiveIdentity, cursor: { archive: archiveIdentity, throughSeq: 0, timelineBytes: 0 } },
   ];
   await fetchLogV2Snapshot({
-    file: 'v2/projects/p/sessions/2026/07/15/s.cxvsession/timeline.jsonl',
+    file: 'project/20260715_session.cxvsession/timeline.jsonl',
     readOnly: true,
     fetchImpl: async (url) => {
       requested = url;
@@ -110,7 +144,7 @@ test('readonly V2 history snapshot sends the validated locator through the refer
     },
   });
   assert.match(requested, /\/api\/log-v2\/snapshot\?/);
-  assert.match(requested, /file=v2%2Fprojects%2F/);
+  assert.match(requested, /file=project%2F20260715_session\.cxvsession%2Ftimeline\.jsonl/);
   assert.match(requested, /mode=readonly/);
 });
 

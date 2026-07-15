@@ -2,7 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  decodeLogStorageSegment,
+  encodeLogStorageSegment,
   hashStorageId,
+  projectArchiveDirectoryName,
   resolveAppServerThreadIdentity,
   resolveIngestionSourceIdentity,
   resolveLegacyEntryIdentity,
@@ -123,15 +126,70 @@ test('auxiliary identity preserves App Server underscore thread metadata', () =>
   assert.equal(identity.agentRole, 'subagent');
 });
 
-test('archive paths hash external ids and use a deterministic UTC date boundary', () => {
-  const unsafeId = '../../a/user-visible-session';
+test('archive paths reversibly encode external ids and use a deterministic UTC date boundary', () => {
+  const unsafeId = '../../A/user visible/会话';
   const relative = sessionArchiveRelativePath({
     sessionId: unsafeId,
     createdAt: '2026-07-14T23:30:00-08:00',
   });
-  assert.match(relative, /^sessions\/2026\/07\/15\/s_[a-f0-9]{64}\.cxvsession$/);
+  assert.match(relative, /^20260715_[a-z0-9._~-]+\.cxvsession$/);
   assert.equal(relative.includes(unsafeId), false);
-  assert.equal(relative.includes('..'), false);
+  assert.equal(relative.includes('/'), false);
+  const encodedSessionId = relative.slice('20260715_'.length, -'.cxvsession'.length);
+  assert.equal(decodeLogStorageSegment(encodedSessionId, 'sessionId'), unsafeId);
   assert.match(threadStoreToken(unsafeId), /^t_[a-f0-9]{64}$/);
   assert.equal(hashStorageId('same'), hashStorageId('same'));
+});
+
+test('project and session storage names preserve identity without hash aliases', () => {
+  const projectId = 'My Project/上海';
+  const encodedProject = projectArchiveDirectoryName(projectId);
+  assert.equal(decodeLogStorageSegment(encodedProject, 'projectId'), projectId);
+  assert.equal(encodedProject.includes('/'), false);
+  assert.equal(encodedProject.startsWith('p_'), false);
+  assert.equal(sessionArchiveRelativePath({
+    sessionId: 'session-123',
+    createdAt: '2026-07-15T00:00:00.000Z',
+  }), '20260715_session-123.cxvsession');
+});
+
+test('storage segment encoding handles traversal, reserved names, and canonical round trips', () => {
+  for (const value of ['../escape', 'a/b\\c', 'CON', 'con', 'trailing.', 'emoji-🚀']) {
+    const encoded = encodeLogStorageSegment(value);
+    assert.equal(encoded.includes('/'), false);
+    assert.equal(encoded.includes('\\'), false);
+    assert.equal(decodeLogStorageSegment(encoded), value);
+  }
+  assert.throws(() => decodeLogStorageSegment('~2F'), /invalid storage identity storage segment/);
+  assert.throws(() => decodeLogStorageSegment('~61'), /non-canonical storage identity storage segment/);
+});
+
+test('storage names reject identities that exceed the portable segment limit', () => {
+  assert.throws(
+    () => projectArchiveDirectoryName('x'.repeat(231)),
+    /exceeds the 230-byte storage name limit/,
+  );
+  assert.doesNotThrow(
+    () => sessionArchiveRelativePath({ sessionId: '会'.repeat(25), createdAt: '2026-07-15T00:00:00Z' }),
+  );
+  assert.throws(
+    () => sessionArchiveRelativePath({ sessionId: '会'.repeat(26), createdAt: '2026-07-15T00:00:00Z' }),
+    /exceeds the 230-byte storage name limit/,
+  );
+});
+
+test('project storage names reject layout-control namespaces without changing normal names', () => {
+  assert.equal(projectArchiveDirectoryName('normal-project'), 'normal-project');
+  for (const projectId of [
+    'v2',
+    'runtime',
+    'plugins',
+    '.log-v2-layout-migration.active',
+    '.log-v2-layout-migration.staging',
+    '.log-v2-layout-migration.receipt.json',
+    '.log-v2-layout-migration.future',
+    'projects.layout-v1-backup-20260716T000000Z-deadbeef',
+  ]) {
+    assert.throws(() => projectArchiveDirectoryName(projectId), /reserved log layout name/);
+  }
 });

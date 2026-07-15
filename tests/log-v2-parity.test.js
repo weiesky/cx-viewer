@@ -84,11 +84,11 @@ test('V2 session locators delete the validated archive rather than only its time
       rootDir: root,
       projectId: 'project',
       canonicalCwd: '/workspace/project',
-      sessionId: 'session-delete',
-      rootThreadId: 'session-delete',
+      sessionId: 'session..delete',
+      rootThreadId: 'session..delete',
       createdAt: '2026-07-14T08:00:00.000Z',
     });
-    const identity = resolveAppServerThreadIdentity({ id: 'session-delete', sessionId: 'session-delete' });
+    const identity = resolveAppServerThreadIdentity({ id: 'session..delete', sessionId: 'session..delete' });
     writer.append(wireEntry('2026-07-14T08:01:00.000Z', [], 'done'), identity);
     const file = listV2LocalLogs(root).project[0].file;
     assert.deepEqual(deleteLogFiles(root, [file]), [{ file, ok: true }]);
