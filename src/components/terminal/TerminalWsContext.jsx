@@ -15,8 +15,8 @@ import { appendToken, getBasePath } from '../../utils/apiUrl';
  * - 内部封装重连(2s 退避),消费者无感
  * - `addMessageHandler` 把单条 onmessage 派发给所有注册者(各自 switch type)
  * - `addStateListener` 通知 open/close,TerminalPanel 用它在 onopen 后立即 sendResize
- * - 只缓存 state；PTY 字节不在 Provider 中积累。晚挂载的 TerminalPanel 通过
- *   resync-request 获取服务端有界 TUI 快照，避免把历史对话再次回放进终端/ChatView
+ * - 只缓存 state；PTY 字节不在 Provider 或服务端积累。晚挂载的 TerminalPanel
+ *   从 state 携带的当前序号开始接收实时输出
  *
  * 默认值是 no-op,纯 web 模式 / 未包 Provider 时调用不报错。
  */
@@ -94,13 +94,13 @@ export class TerminalWsProvider extends React.Component {
       let msg;
       try { msg = JSON.parse(ev.data); } catch {
         // 整条消息丢弃 = 数据流中间挖洞且无路径补发（概率极低：ws 帧不会截断 JSON）
-        // → 请求权威快照，并通知协议消费者立即暂停，不能等下一条 seq 才发现洞。
-        let snapshotRequested = false;
+        // → 跳到服务端当前游标，并通知协议消费者立即暂停。
+        let syncRequested = false;
         try {
           ws.send(JSON.stringify({ type: 'resync-request', reason: 'parse-error' }));
-          snapshotRequested = true;
+          syncRequested = true;
         } catch {}
-        const gap = { type: 'transport-gap', reason: 'parse-error', snapshotRequested };
+        const gap = { type: 'transport-gap', reason: 'parse-error', syncRequested };
         for (const h of this.messageHandlers) {
           try { h(gap); } catch (e) { console.warn('[TerminalWsProvider] handler error:', e); }
         }

@@ -24,9 +24,8 @@ import { clipboardKeyAction, copyTextToClipboard, planPasteSend } from '../../ut
 import CustomUltraplanEditModal from './CustomUltraplanEditModal';
 import UltraplanExpertManagerModal from './UltraplanExpertManagerModal';
 import { visibleExpertKeys } from '../../utils/ultraplanExperts';
-import { TerminalWriteQueue } from '../../utils/terminalWriteQueue';
+import { INBAND_RESET, TerminalWriteQueue } from '../../utils/terminalWriteQueue';
 import { sendTerminalSocketMessage, TerminalStreamController } from '../../utils/terminalStreamController';
-import { replayTerminalSnapshot } from '../../utils/terminalSnapshotReplay';
 import { installTermDiag, diagCount } from '../../utils/termDiag';
 import { downscaleForRetina } from '../../utils/imageDownscale';
 import { buildPresetShortcutsPayload } from '../../utils/presetShortcuts';
@@ -219,10 +218,9 @@ class TerminalPanel extends React.Component {
     this._unsubWsHandler = null;
     this._unsubWsState = null;
     this._terminalProtocol = new TerminalStreamController({
-      maxHeldBytes: (isMobile && !isPad) ? 512 * 1024 : 1024 * 1024,
       onData: ({ data }) => this._throttledWrite(data),
       onGeometry: (geometry) => this._applyTerminalGeometry(geometry),
-      onSnapshot: (snapshot) => this._applyTerminalSnapshot(snapshot),
+      onSync: () => this._applyTerminalSync(),
       onResync: (request) => this._requestResync(request),
     });
     this._initialGeometryReady = false;
@@ -434,7 +432,7 @@ class TerminalPanel extends React.Component {
     }
     // Provider may already be open when this panel mounts. Do not request at
     // xterm's default 80x24: the first fit/mobile measurement runs next frame.
-    // That frame performs one ordered resize -> snapshot request bootstrap.
+    // The cached state frame establishes the current live-stream cursor.
     if (this.context && this.context.isOpen && this.context.isOpen()) {
       this._terminalBootstrapReason = 'mount';
     }
@@ -650,9 +648,7 @@ class TerminalPanel extends React.Component {
       {
         ...((isMobile && !isPad) ? { highWaterBytes: 1024 * 1024, trimTargetBytes: 256 * 1024 } : null),
         ...(isWindows ? { initialChunkBytes: 16 * 1024 } : null),
-        // Renderer loss invalidates the incremental baseline. Pause subsequent
-        // seq frames until an authoritative canonical snapshot arrives.
-        onTrim: () => this._terminalProtocol.requestSnapshot('congestion'),
+        onTrim: () => this._terminalProtocol.requestSync('congestion'),
       }
     );
 
@@ -678,7 +674,7 @@ class TerminalPanel extends React.Component {
         document.fonts.ready.then(() => {
           if (!this.terminal) return;
           // If fonts win the race against the first rAF, that rAF will measure
-          // them. Avoid opening a geometry/snapshot cycle before bootstrap.
+          // them. Avoid opening a geometry/sync cycle before bootstrap.
           if (!this._initialGeometryReady) return;
           const beforeCols = this.terminal.cols;
           const beforeRows = this.terminal.rows;
@@ -946,13 +942,17 @@ class TerminalPanel extends React.Component {
         this._settleSequentialInput(msg.seq, msg.ok === true);
       } else if (msg.type === 'data') {
         this._terminalProtocol.acceptData(msg);
-      } else if (msg.type === 'data-resync') {
-        this._terminalProtocol.acceptSnapshot(msg);
+      } else if (msg.type === 'stream-sync') {
+        this._terminalProtocol.acceptSync(msg);
+      } else if (msg.type === 'screen-snapshot') {
+        if (this._terminalProtocol.acceptSync(msg) === 'applied') {
+          this._writeQ?.push(msg.data || '');
+        }
       } else if (msg.type === 'geometry') {
         this._terminalProtocol.acceptGeometry(msg);
       } else if (msg.type === 'transport-gap') {
-        if (msg.snapshotRequested) this._terminalProtocol.expectSnapshot();
-        else this._terminalProtocol.requestSnapshot(msg.reason || 'transport-gap');
+        if (msg.syncRequested) this._terminalProtocol.expectSync();
+        else this._terminalProtocol.requestSync(msg.reason || 'transport-gap');
       } else if (msg.type === 'exit') {
         if (!this._acceptTerminalControlMessage(msg)) return;
         this._flushWrite();
@@ -963,7 +963,7 @@ class TerminalPanel extends React.Component {
           this.props.onEditorOpen(msg.sessionId, msg.filePath);
         }
       } else if (msg.type === 'state') {
-        if (!this._acceptTerminalControlMessage(msg)) return;
+        if (this._terminalProtocol.acceptSync(msg) !== 'applied') return;
         if (!msg.running && msg.exitCode !== null) {
           this._flushWrite();
           this.terminal.write(`\x1b[33m${t('ui.terminal.exited', { code: msg.exitCode })}\x1b[0m\r\n`);
@@ -979,12 +979,6 @@ class TerminalPanel extends React.Component {
   _acceptTerminalControlMessage = (msg) => {
     if (!Number.isSafeInteger(msg?.streamId)) return true;
     const relation = this._terminalProtocol.observeStream(msg.streamId);
-    if (relation === 'new') {
-      // State is emitted before the new stream snapshot. Stop parsing bytes
-      // owned by the replaced PTY now; the visible screen is cleared exactly
-      // once when that snapshot reaches the in-band replay boundary.
-      this._writeQ?.reset();
-    }
     return relation !== 'stale' && relation !== 'invalid';
   };
 
@@ -992,10 +986,6 @@ class TerminalPanel extends React.Component {
     const terminal = this.terminal;
     if (!terminal) return false;
     try {
-      // Every queued byte predates this acknowledged PTY grid. It will be
-      // covered by the generation-matched snapshot, so do not spend renderer
-      // time parsing it at the wrong width while that snapshot is in flight.
-      this._writeQ?.reset();
       if (terminal.cols !== cols || terminal.rows !== rows) terminal.resize(cols, rows);
       return true;
     } catch {
@@ -1003,14 +993,12 @@ class TerminalPanel extends React.Component {
     }
   };
 
-  _applyTerminalSnapshot = (snapshot) => {
-    const applied = replayTerminalSnapshot({
-      terminal: this.terminal,
-      writeQueue: this._writeQ,
-      snapshot,
-    });
-    if (applied) diagCount('resyncCount');
-    return applied;
+  _applyTerminalSync = () => {
+    if (!this.terminal || !this._writeQ) return false;
+    this._writeQ.reset();
+    this._writeQ.push(INBAND_RESET);
+    diagCount('resyncCount');
+    return true;
   };
 
   // ws 状态变更:open 时 sendResize(原 onopen 行为);close 时 reset xterm(避免残留半截 ANSI)。
@@ -1022,8 +1010,7 @@ class TerminalPanel extends React.Component {
     } else if (state === 'close') {
       this._failPendingSequentialInputs();
       this._terminalProtocol.resetConnection();
-      // Stop queued stale bytes. Reconnect remains blank until its canonical
-      // snapshot supplies the sole in-band reset/replay boundary.
+      // Stop queued bytes owned by the closed transport.
       this._writeQ?.reset();
     }
   };
@@ -1033,16 +1020,12 @@ class TerminalPanel extends React.Component {
       this._terminalBootstrapReason = reason;
       return false;
     }
-    // WebSocket message order establishes the PTY grid before the worker's
-    // snapshot barrier. This avoids a throwaway default-geometry replay.
     if (!this.sendResize()) return false;
     this._terminalBootstrapReason = null;
-    this._terminalProtocol.requestSnapshot(reason);
+    this._terminalProtocol.requestSync(reason);
     return true;
   };
 
-  // Controller owns single-flight semantics; no wall-clock cooldown here, as a
-  // snapshot rejected for a newer geometry must be retried immediately.
   _requestResync(request = {}) {
     const payload = typeof request === 'string' ? { reason: request } : request;
     return sendTerminalSocketMessage(

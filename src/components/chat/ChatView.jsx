@@ -480,20 +480,15 @@ class ChatView extends React.Component {
       scrollToBottom: () => this.scrollToBottom(),
       now: () => Date.now(),
     });
-    // Prompt detection consumes the same accepted stream as xterm. Raw frames
-    // received before the first snapshot, across a seq gap, or for stale
-    // geometry must never reach the 4KB prompt tail independently of the
-    // terminal renderer.
+    // Prompt detection consumes the same accepted raw stream as xterm.
     this._ptyProtocol = new TerminalStreamController({
       onData: ({ data }) => this._ptyPrompt.appendData(data),
-      onSnapshot: ({ data }) => this._ptyPrompt.replaceSnapshot(data),
+      onSync: () => this._ptyPrompt.resetStream(),
       onGeometry: () => true,
       onResync: ({ reason }) => this.context?.send?.({
         type: 'resync-request',
         reason: reason || 'requested',
       }) !== false,
-      maxHeldBytes: 256 * 1024,
-      maxHeldMessages: 1024,
     });
   }
 
@@ -2339,20 +2334,19 @@ class ChatView extends React.Component {
         this._settleBracketPasteSequential(msg.seq, msg.ok === true);
       } else if (msg.type === 'data') {
         this._ptyProtocol.acceptData(msg);
-      } else if (msg.type === 'data-resync') {
-        // Replace only the prompt detector's 4KB rolling tail. This snapshot
-        // never enters ChatView conversation rendering/mainAgentSessions.
-        this._ptyProtocol.acceptSnapshot(msg);
+      } else if (msg.type === 'stream-sync') {
+        this._ptyProtocol.acceptSync(msg);
+      } else if (msg.type === 'screen-snapshot') {
+        if (this._ptyProtocol.acceptSync(msg) === 'applied') {
+          this._ptyPrompt.replaceSnapshot(msg.data || '');
+        }
       } else if (msg.type === 'geometry') {
         this._ptyProtocol.acceptGeometry(msg);
       } else if (msg.type === 'transport-gap') {
-        if (msg.snapshotRequested) this._ptyProtocol.expectSnapshot();
-        else this._ptyProtocol.requestSnapshot(msg.reason || 'transport-gap');
+        if (msg.syncRequested) this._ptyProtocol.expectSync();
+        else this._ptyProtocol.requestSync(msg.reason || 'transport-gap');
       } else if (msg.type === 'state') {
-        const relation = this._ptyProtocol.observeStream(msg.streamId);
-        if (relation === 'new') {
-          this._ptyPrompt.resetStream();
-        }
+        this._ptyProtocol.acceptSync(msg);
       } else if (msg.type === 'exit') {
           this._ptyPrompt.clearPrompt();
         } else if (msg.type === 'sdk-plan-pending') {

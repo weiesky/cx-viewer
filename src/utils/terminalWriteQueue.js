@@ -47,9 +47,8 @@
  *     中止半截转义 + \x1b[?2026l 退出可能被撕裂配对的同步输出模式），依赖洪泛流
  *     自带的全屏重绘自愈，
  *     不调 term.reset()（保 scrollback、避免 WebGL 重建抖动）。
- *   - 会话历史不属于本队列：服务端只允许有界 TUI 恢复快照进入终端；
- *     结构化历史由旁边的 ChatView 独立水合。
- *   - reset()：清空队列但保持可用（服务端 data-resync 对齐时用，区别于 dispose 终态）；
+ *   - 会话历史不属于本队列；结构化历史由旁边的 ChatView 独立水合。
+ *   - reset()：清空队列但保持可用（流游标重同步时使用，区别于 dispose 终态）；
  *     同时把 chunk 复位到构造初值（平台保守初值，慢机由 AIMD 再收敛）并取消在途 rAF。
  */
 
@@ -76,13 +75,13 @@ const TRIM_NOTICE = '\x18\x1b[?2026l\r\n\x1b[33m[cx-viewer] output trimmed (rend
 // WriteBuffer 里已 write 未解析的字节会在 reset **之后**继续解析——它们的起点是解析暂停点
 // （可能在序列正中间），ground state 下半截序列按字面渲染成 `0;134m` 类残片并永久留在
 // scrollback 里。改为把复位作为字节流推进写队列，按序排在残留内容之后，解析器状态全程连续。
-// 各字节职责（关键：组合内**无任何序列清 scrollback**，重连/resync 后历史可上拉）：
+// 各字节职责（关键：组合内**无任何序列清 scrollback**）：
 //   \x07 BEL    —— 若解析器停在 OSC payload 中，终结之（ground 态下是无声 bell，无害）
 //   \x18 CAN    —— 若停在 CSI/ESC 中，中止之 → GROUND（零残片防线**全靠这两字节**，非靠 RIS）
-//   \x1b[?2026l —— 强制退出同步输出，防旧流在 begin/end 中间断开后冻结 replay
-//   \x1b[?1049l —— 强制回 normal buffer，canonical serializer 再显式恢复 source buffer
+//   \x1b[?2026l —— 强制退出同步输出，防旧流在 begin/end 中间断开后冻结渲染
+//   \x1b[?1049l —— 强制回 normal buffer
 //   \x1b[2J ED2 —— 仅清可视区（scrollOnEraseInDisplay 默认 false=就地擦除，不滚入历史），
-//                  给重连/反压 resync 的快照一块干净视口，避免与陈旧当前帧重叠重复
+//                  给重连/反压后的实时流一块干净视口，避免与陈旧当前帧重叠
 //   \x1b[H CUP  —— 光标归位视口左上（替代 RIS 的光标复位）
 //   \x1b[!p DECSTR —— 软复位 SGR/modes/charset（替代 RIS 的属性复位），不动任何 buffer
 // 历史曾用 \x1bc RIS（= Terminal.reset()，新建 Buffer 连 scrollback 一起清空）——已弃：
@@ -342,10 +341,10 @@ export class TerminalWriteQueue {
   }
 
   /**
-   * 清空队列但保持可用（服务端 data-resync 对齐时用，区别于 dispose 的终态）。
+   * 清空队列但保持可用（服务端原始字节重放时用，区别于 dispose 的终态）。
    * epoch++ 丢弃在途旧 write callback（terminal.reset 不清 xterm WriteBuffer）；
    * chunk 复位到构造初值（保留平台保守初值：Windows 16KB / 其余 32KB——
-   * 快机 resync 后快照重放不必从 4KB 爬坡，慢机由 AIMD 重新收敛）；取消在途 rAF。
+   * 快机重放后不必从 4KB 爬坡，慢机由 AIMD 重新收敛）；取消在途 rAF。
    */
   reset() {
     if (this._unmounted) return;

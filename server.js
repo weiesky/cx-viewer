@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 import { createServer as createHttpsServer } from 'node:https';
 import { createConnection } from 'node:net';
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
-import { constants as fsConstants, readFileSync, writeFileSync, existsSync, watchFile, unwatchFile, statSync, fstatSync, readdirSync, renameSync, unlinkSync, rmSync, openSync, readSync, closeSync, realpathSync, mkdirSync, createReadStream, cpSync, copyFileSync, appendFileSync } from 'node:fs';
+import { constants as fsConstants, promises as fsPromises, readFileSync, writeFileSync, existsSync, watchFile, unwatchFile, statSync, fstatSync, readdirSync, renameSync, unlinkSync, rmSync, openSync, readSync, closeSync, realpathSync, mkdirSync, createReadStream, cpSync, copyFileSync, appendFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, extname, resolve, basename, relative, sep } from 'node:path';
 import { homedir, platform, networkInterfaces } from 'node:os';
@@ -34,7 +34,7 @@ function execWithStdin(cmd, args, input, options) {
     child.stdin.end();
   });
 }
-import { LOG_FILE, _initPromise, _resumeState, resolveResumeChoice, _projectName, _logDir, _cachedApiKey, _cachedAuthHeader, initForWorkspace, resetWorkspace, streamingState, resetStreamingState, _loadProxyProfile, PROFILE_PATH, _defaultConfig, appendLogEntry, getLogV2RuntimeStatus } from './interceptor.js';
+import { LOG_FILE, _initPromise, _resumeState, resolveResumeChoice, _projectName, _logDir, _cachedApiKey, _cachedAuthHeader, initForWorkspace, resetWorkspace, streamingState, resetStreamingState, _loadProxyProfile, PROFILE_PATH, _defaultConfig, appendLogEntry, closeLogV2Writes, getLogV2RuntimeStatus } from './interceptor.js';
 import { parseOtlpTraces } from './lib/otel-receiver.js';
 import { LOG_DIR, setLogDir } from './findcx.js';
 import { t, detectLanguage } from './i18n.js';
@@ -60,6 +60,7 @@ import { countLogEntries, streamRawEntriesAsync, readPagedEntries } from './lib/
 import {
   countV2LogEntries,
   findActiveV2SessionFile,
+  findActiveV2SessionFileAsync,
   isV2SessionFile,
   listV2LocalLogs,
   readV2PagedEntriesAsync,
@@ -123,6 +124,19 @@ function activeV2SessionFile() {
   const canonicalCwd = process.env.CXV_PROJECT_DIR || process.cwd();
   const legacyFile = relative(LOG_DIR, LOG_FILE).split(sep).join('/');
   return findActiveV2SessionFile(LOG_DIR, {
+    runtime,
+    projectId: _projectName || null,
+    canonicalCwd,
+    legacyLogFile: legacyFile,
+  });
+}
+
+function activeV2SessionFileAsync() {
+  if (_logV2ReadMode !== 'v2' || !LOG_FILE) return Promise.resolve(null);
+  const runtime = getLogV2RuntimeStatus();
+  const canonicalCwd = process.env.CXV_PROJECT_DIR || process.cwd();
+  const legacyFile = relative(LOG_DIR, LOG_FILE).split(sep).join('/');
+  return findActiveV2SessionFileAsync(LOG_DIR, {
     runtime,
     projectId: _projectName || null,
     canonicalCwd,
@@ -639,7 +653,7 @@ let _launchCallback = null;
 export function setLaunchCallback(fn) { _launchCallback = fn; }
 export function setWorkspaceLaunched(v) { _workspaceLaunched = v; }
 export function initPostLaunch() {
-  watchLogFile(_logWatcherOpts(LOG_FILE));
+  if (_logV2ReadMode !== 'v2') watchLogFile(_logWatcherOpts(LOG_FILE));
   if (!statsWorker) startStatsWorker();
   startStreamingStatusTimer();
 }
@@ -1353,7 +1367,7 @@ async function handleRequest(req, res) {
       }
       chunks.push(chunk);
     });
-    req.on('end', () => {
+    req.on('end', async () => {
       if (aborted) return;
       try {
         const buf = Buffer.concat(chunks);
@@ -1370,7 +1384,7 @@ async function handleRequest(req, res) {
         const bodyEnd = buf.indexOf(closingBoundary, bodyStart);
         const fileData = bodyEnd !== -1 ? buf.slice(bodyStart, bodyEnd) : buf.slice(bodyStart);
         const uploadDir = UPLOAD_DIR;
-        mkdirSync(uploadDir, { recursive: true });
+        await fsPromises.mkdir(uploadDir, { recursive: true });
         // Unique filename: prepend timestamp to avoid silent overwrite
         const ts = Date.now();
         const dotIdx = originalName.lastIndexOf('.');
@@ -1378,15 +1392,15 @@ async function handleRequest(req, res) {
           ? `${originalName.slice(0, dotIdx)}-${ts}${originalName.slice(dotIdx)}`
           : `${originalName}-${ts}`;
         const savePath = join(uploadDir, uniqueName);
-        writeFileSync(savePath, fileData);
+        await fsPromises.writeFile(savePath, fileData);
         // 持久化副本到 ~/.codex/cx-viewer/${project}/images/，避免 /tmp 清理后丢失
         let persistPath = null;
         try {
           const pName = _projectName || 'default';
           const persistDir = join(homedir(), '.codex', 'cx-viewer', pName, 'images');
-          mkdirSync(persistDir, { recursive: true });
+          await fsPromises.mkdir(persistDir, { recursive: true });
           persistPath = join(persistDir, uniqueName);
-          writeFileSync(persistPath, fileData);
+          await fsPromises.copyFile(savePath, persistPath);
         } catch { }
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true, path: savePath, persistPath }));
@@ -1715,7 +1729,7 @@ async function handleRequest(req, res) {
       try {
         const { logFile } = JSON.parse(body);
         if (logFile && typeof logFile === 'string' && logFile.startsWith(LOG_DIR) && existsSync(logFile)) {
-          watchLogFile(_logWatcherOpts(logFile));
+          if (_logV2ReadMode !== 'v2') watchLogFile(_logWatcherOpts(logFile));
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ ok: true }));
         } else {
@@ -1749,7 +1763,7 @@ async function handleRequest(req, res) {
           return;
         }
         // 重新 watch 最终的日志文件
-        watchLogFile(_logWatcherOpts(result.logFile));
+        if (_logV2ReadMode !== 'v2') watchLogFile(_logWatcherOpts(result.logFile));
         // 广播 resume_resolved + full_reload
         const resolvedData = JSON.stringify({ logFile: result.logFile });
         clients.forEach(client => {
@@ -1860,7 +1874,7 @@ async function handleRequest(req, res) {
         process.env.CXV_PROJECT_DIR = wsPath;
 
         // 启动日志监听
-        watchLogFile(_logWatcherOpts(LOG_FILE));
+        if (_logV2ReadMode !== 'v2') watchLogFile(_logWatcherOpts(LOG_FILE));
 
         // 启动 stats worker（如果尚未启动）
         if (!statsWorker) startStatsWorker();
@@ -1982,7 +1996,7 @@ async function handleRequest(req, res) {
   if (url === '/api/log-v2/snapshot' && method === 'GET') {
     const limit = Math.min(Math.max(parseInt(parsedUrl.searchParams.get('limit'), 10) || 0, 0), 5000);
     const requestedFile = parsedUrl.searchParams.get('file');
-    const file = requestedFile || activeV2SessionFile();
+    const file = requestedFile || await activeV2SessionFileAsync();
     const readOnly = !!requestedFile || parsedUrl.searchParams.get('mode') === 'readonly';
     const knownThroughSeq = Number(parsedUrl.searchParams.get('knownThroughSeq'));
     const knownTimelineBytes = Number(parsedUrl.searchParams.get('knownTimelineBytes'));
@@ -2045,10 +2059,11 @@ async function handleRequest(req, res) {
     const lastEventId = typeof req.headers['last-event-id'] === 'string' ? req.headers['last-event-id'] : '';
     const lastEventMatch = lastEventId.match(/^([a-f0-9]{64}):(\d+)$/);
     if (lastEventMatch?.[1] === generation) afterSeq = Math.max(afterSeq, Number(lastEventMatch[2]));
+    const liveFile = await activeV2SessionFileAsync();
     await serveLogV2Live(req, res, {
       logDir: LOG_DIR,
-      file: activeV2SessionFile(),
-      getActiveFile: activeV2SessionFile,
+      file: liveFile,
+      getActiveFile: activeV2SessionFileAsync,
       afterSeq,
       generation,
       objectHandle: parsedUrl.searchParams.get('handle') || '',
@@ -2250,25 +2265,18 @@ async function handleRequest(req, res) {
   }
 
   if (url === '/api/terminal-recovery' && method === 'GET') {
-    const { getPtyState, getReconnectSnapshot, requestPtySnapshot } = await import('./pty-manager.js');
-    // Do not let the diagnostic endpoint bypass the resume privacy boundary.
-    // Outside recovery it still refreshes to a current canonical cut; during
-    // recovery it returns only the exact baseline already approved for a new
-    // renderer connection.
-    if (!getPtyState().recovering) await requestPtySnapshot();
+    const { getPtyState, getTerminalSync } = await import('./pty-manager.js');
     const state = getPtyState();
-    const snapshot = getReconnectSnapshot();
-    const available = snapshot.reconnectSafe === true;
-    res.writeHead(available ? 200 : 409, {
+    const sync = getTerminalSync();
+    res.writeHead(200, {
       'Content-Type': 'application/json',
       'Cache-Control': 'private, no-store',
       'X-Content-Type-Options': 'nosniff',
     });
     res.end(JSON.stringify({
       ...state,
-      ...snapshot,
-      available,
-      ...(available ? {} : { error: 'terminal-recovery-not-ready' }),
+      ...sync,
+      available: true,
     }));
     return;
   }
@@ -2478,7 +2486,7 @@ async function handleRequest(req, res) {
     const cwd = process.env.CXV_PROJECT_DIR || process.cwd();
     const targetDir = join(cwd, reqPath);
     try {
-      const entries = readdirSync(targetDir, { withFileTypes: true });
+      const entries = await fsPromises.readdir(targetDir, { withFileTypes: true });
       const items = entries
         .filter(e => !IGNORED_PATTERNS.has(e.name))
         .map(e => ({ name: e.name, type: e.isDirectory() ? 'directory' : 'file' }))
@@ -4386,7 +4394,7 @@ export async function startViewer() {
           }
           // 工作区模式下延迟到选择工作区后再启动监听
           if (!isWorkspaceMode) {
-            startWatching(_logWatcherOpts(LOG_FILE));
+            if (_logV2ReadMode !== 'v2') startWatching(_logWatcherOpts(LOG_FILE));
             startStatsWorker();
             startStreamingStatusTimer();
           }
@@ -4417,7 +4425,7 @@ export async function startViewer() {
 async function setupTerminalWebSocket(httpServer) {
   try {
     const { WebSocketServer } = await import('ws');
-    const { writeToPty, writeToPtySequential, resizePty, onPtyData, onPtyRawData, onPtyGeometry, onPtyState, onPtyExit, getPtyState, getReconnectSnapshot, getCurrentWorkspace, requestPtySnapshot, spawnShell } = await import('./pty-manager.js');
+    const { writeToPty, writeToPtySequential, resizePty, onPtyData, onPtyRawData, onPtyGeometry, onPtyState, onPtyExit, getPtyState, getTerminalSync, getTerminalScreen, getCurrentWorkspace, spawnShell } = await import('./pty-manager.js');
     _onPtyData = (cb) => onPtyRawData(event => cb(event.data, event));
     const wss = new WebSocketServer({ noServer: true, maxPayload: 2 * 1024 * 1024 });
     const scratchWss = new WebSocketServer({ noServer: true, maxPayload: 1024 * 1024 });
@@ -4425,6 +4433,7 @@ async function setupTerminalWebSocket(httpServer) {
     scratchTerminalWss = scratchWss;
     const DATA_HIGH_WATER = 2 * 1024 * 1024;
     const DATA_LOW_WATER = 512 * 1024;
+    const MAX_SCREEN_SUFFIX_BYTES = 1024 * 1024;
     const BEHIND_RETRY_MIN_MS = 50;
     const BEHIND_RETRY_MAX_MS = 1000;
     const MAX_TERMINAL_CONNECTIONS = 32;
@@ -4433,9 +4442,7 @@ async function setupTerminalWebSocket(httpServer) {
     const terminalConnectionsByIp = new Map();
     const RESYNC_REASONS = new Set([
       'initial', 'requested', 'mount', 'congestion', 'parse-error', 'behind',
-      'process-exit', 'resume-quiet', 'resume-absolute', 'resume-process-exit',
-      'resume-input-progress',
-      'resume-exit-diagnostic', 'resume-worker-failure', 'resume-unsafe',
+      'process-exit',
     ]);
     const publishedWireCache = new WeakMap();
     _writeToPty = writeToPty;
@@ -4592,7 +4599,7 @@ async function setupTerminalWebSocket(httpServer) {
       removeData = session.onData(data => safeSend({ type: 'data', data }));
       removeExit = session.onExit(exitCode => safeSend({ type: 'exit', exitCode }));
       safeSend({ type: 'state', running: !session.exited, shellBasename: session.shellBasename });
-      safeSend({ type: 'data-resync', data: session.replay });
+      safeSend({ type: 'data-replay', data: session.replay });
 
       let rateWindowStartedAt = Date.now();
       let messageCount = 0;
@@ -4625,7 +4632,7 @@ async function setupTerminalWebSocket(httpServer) {
               || !Number.isSafeInteger(msg.rows) || msg.rows < 1 || msg.rows > 300) return;
             session.resize(msg.cols, msg.rows);
           } else if (msg.type === 'resync-request') {
-            safeSend({ type: 'data-resync', data: session.replay });
+            safeSend({ type: 'data-replay', data: session.replay });
           } else if (msg.type === 'kill') {
             killScratchPty(scratchId);
           }
@@ -4645,13 +4652,11 @@ async function setupTerminalWebSocket(httpServer) {
       let behind = false;
       let behindTimer = null;
       let behindRetryDelayMs = BEHIND_RETRY_MIN_MS;
-      // Resync is connection-owned state. While it is pending this connection
-      // receives no incremental data; the shared canonical snapshot advances
-      // through every suppressed sequence before live delivery resumes.
-      let pendingResyncReason = null;
-      let snapshotInFlight = false;
-      let resyncGeneration = 0;
-      let initialSnapshotTimer = null;
+      let screenInFlight = false;
+      let screenBuffer = [];
+      let screenBufferBytes = 0;
+      let screenBufferOverflow = false;
+      let screenGeometry = null;
       const sequentialCancels = new Set();
       let rateWindowStartedAt = Date.now();
       const rateCounters = { messages: 0, wireBytes: 0, inputBytes: 0, resize: 0, resync: 0 };
@@ -4684,18 +4689,6 @@ async function setupTerminalWebSocket(httpServer) {
         }
       };
 
-      function terminateResyncIntent() {
-        pendingResyncReason = null;
-        snapshotInFlight = false;
-        resyncGeneration++;
-      }
-
-      function completeResyncIntent() {
-        // This is called only after safeSend accepted the one authoritative
-        // data-resync frame for the pending intent.
-        terminateResyncIntent();
-      }
-
       function scheduleBehindRecovery(delayOverride = null) {
         if (behindTimer || ws.readyState !== 1) return;
         const delay = delayOverride == null ? behindRetryDelayMs : delayOverride;
@@ -4711,7 +4704,7 @@ async function setupTerminalWebSocket(httpServer) {
           }
           behind = false;
           behindRetryDelayMs = BEHIND_RETRY_MIN_MS;
-          driveResyncIntent();
+          void sendTerminalScreen('behind');
         }, delay);
         behindTimer.unref?.();
       }
@@ -4723,214 +4716,151 @@ async function setupTerminalWebSocket(httpServer) {
         scheduleBehindRecovery(0);
       }
 
-      const snapshotFrame = (snapshot, reason) => ({
-        type: 'data-resync',
+      const syncFrame = (sync, reason) => ({
+        type: 'stream-sync',
         reason: normalizeResyncReason(reason),
-        streamId: snapshot.streamId,
-        throughSeq: snapshot.throughSeq,
-        resizeGeneration: snapshot.resizeGeneration,
-        cols: snapshot.cols,
-        rows: snapshot.rows,
-        data: snapshot.data || '',
-        ...(snapshot.fallback ? { degraded: true } : {}),
+        streamId: sync.streamId,
+        throughSeq: sync.throughSeq,
+        resizeGeneration: sync.resizeGeneration,
+        cols: sync.cols,
+        rows: sync.rows,
       });
 
-      const encodeSnapshotFrame = (snapshot, reason) => {
-        const payload = JSON.stringify(snapshotFrame(snapshot, reason));
+      const encodeSyncFrame = (sync, reason) => {
+        const payload = JSON.stringify(syncFrame(sync, reason));
         return { payload, bytes: Buffer.byteLength(payload) };
       };
 
-      const snapshotCanResync = snapshot => Boolean(
-        snapshot?.reconnectSafe && (snapshot.authoritative || snapshot.fallback),
-      );
-
-      const degradedResyncSnapshot = snapshot => ({
-        ...snapshot,
-        authoritative: false,
-        fallback: true,
-        reconnectSafe: true,
-        data: '\x1bc\r\n[CX Viewer] terminal state could not be replayed exactly; live output continues\r\n',
-      });
-
-      function sendPendingSnapshot(snapshot) {
-        if (!pendingResyncReason || !snapshotCanResync(snapshot)) return false;
-        const frame = encodeSnapshotFrame(snapshot, pendingResyncReason);
-        if (behind || ws.bufferedAmount + frame.bytes > DATA_HIGH_WATER) {
+      function sendTerminalSync(reason = 'requested') {
+        if (ws.readyState !== 1) return false;
+        const frame = encodeSyncFrame(getTerminalSync(), reason);
+        if (behind || ws.bufferedAmount > DATA_LOW_WATER) {
           behind = true;
           scheduleBehindRecovery();
           return false;
         }
-        const sent = safeSend(frame.payload);
-        if (sent) completeResyncIntent();
-        else if (ws.readyState !== 1) terminateResyncIntent();
-        return sent;
+        return safeSend(frame.payload);
       }
 
-      function beginSnapshotAttempt() {
-        if (!pendingResyncReason || snapshotInFlight) return;
-        snapshotInFlight = true;
-        const generation = resyncGeneration;
-        let snapshotPromise;
+      async function sendTerminalScreen(reason = 'requested') {
+        if (ws.readyState !== 1 || screenInFlight) return false;
+        if (getPtyState().recovering) return false;
+        screenInFlight = true;
         try {
-          snapshotPromise = requestPtySnapshot();
-        } catch {
-          snapshotInFlight = false;
-          return;
-        }
-        const settle = (success) => {
-          if (generation !== resyncGeneration) return;
-          snapshotInFlight = false;
-          if (!pendingResyncReason || ws.readyState !== 1) return;
-          const snapshot = getReconnectSnapshot();
-          if ((success || snapshot.fallback) && sendPendingSnapshot(snapshot)) return;
-          if (!success && getPtyState().running) {
-            sendPendingSnapshot(degradedResyncSnapshot(snapshot));
-            return;
+          screenBuffer = [];
+          screenBufferBytes = 0;
+          screenBufferOverflow = false;
+          screenGeometry = null;
+          let screen = await getTerminalScreen();
+          // A resize is an ordered terminal-state mutation. Recut once at the
+          // new geometry instead of publishing an older snapshot after the
+          // client has already observed that geometry.
+          if (screenGeometry
+            && screenGeometry.resizeGeneration > screen.resizeGeneration
+            && !screenBufferOverflow) {
+            screenBuffer = [];
+            screenBufferBytes = 0;
+            screenGeometry = null;
+            screen = await getTerminalScreen();
           }
-          if (!getPtyState().running && !snapshotCanResync(snapshot)) {
-            terminateResyncIntent();
-            return;
+          if (!screen?.safe || screenBufferOverflow) {
+            const sent = safeSend({
+              type: 'screen-unavailable',
+              reason: screenBufferOverflow ? 'suffix-overflow' : 'unsafe-parser-state',
+              details: Array.isArray(screen?.reasons) ? screen.reasons.slice(0, 8) : [],
+            });
+            behind = true;
+            scheduleBehindRecovery();
+            return sent;
           }
-          // No immediate retry loop: a failed/unsafe cut sleeps until a later
-          // PTY output or geometry event provides a genuinely newer boundary.
-        };
-        void Promise.resolve(snapshotPromise).then(
-          success => settle(success === true),
-          () => settle(false),
-        );
-      }
+          if (!safeSend({
+            type: 'screen-snapshot',
+            reason: normalizeResyncReason(reason),
+            ...screen,
+          })) return false;
 
-      function driveResyncIntent() {
-        if (!pendingResyncReason) return false;
-        if (ws.readyState !== 1) {
-          terminateResyncIntent();
-          return false;
-        }
-        const snapshot = getReconnectSnapshot();
-        if (snapshotCanResync(snapshot)) {
-          return sendPendingSnapshot(snapshot);
-        }
-        if (!getPtyState().running) {
-          terminateResyncIntent();
-          return false;
-        }
-        if (behind || ws.bufferedAmount > DATA_HIGH_WATER) {
+          if (screenGeometry && screenGeometry.resizeGeneration > screen.resizeGeneration) {
+            safeSend({ type: 'geometry', ...screenGeometry });
+          }
+          let expected = screen.throughSeq + 1;
+          for (const frame of screenBuffer) {
+            if (frame.meta.streamId !== screen.streamId || frame.meta.seq <= screen.throughSeq) continue;
+            if (frame.meta.seq !== expected) {
+              safeSend({ type: 'screen-unavailable', reason: 'suffix-gap' });
+              return false;
+            }
+            safeSend(encodePublishedFrame(frame.data, frame.meta).payload);
+            expected++;
+          }
+          return true;
+        } catch (error) {
+          if (process.env.CXV_DEBUG) console.warn('[CX Viewer] terminal screen unavailable:', error.message);
           behind = true;
           scheduleBehindRecovery();
-          return false;
+          return safeSend({ type: 'screen-unavailable', reason: 'renderer-failed' });
+        } finally {
+          screenBuffer = [];
+          screenBufferBytes = 0;
+          screenBufferOverflow = false;
+          screenGeometry = null;
+          screenInFlight = false;
         }
-        // Resume owns its privacy gate. Until that gate has explicitly
-        // published a reconnect-safe baseline, never serialize or expose a
-        // merely cached snapshot of the suppressed history.
-        if (snapshot.recovering) return false;
-        beginSnapshotAttempt();
-        return false;
       }
-
-      function wakeResyncIntent() {
-        if (pendingResyncReason) driveResyncIntent();
-      }
-
-      function queueResyncIntent(reason) {
-        if (initialSnapshotTimer) {
-          clearTimeout(initialSnapshotTimer);
-          initialSnapshotTimer = null;
-        }
-        // Coalesce duplicate requests into one reset. The first reason belongs
-        // to the unresolved intent and cannot be overwritten by congestion or
-        // a later retry from another source.
-        if (!pendingResyncReason) {
-          pendingResyncReason = normalizeResyncReason(reason);
-        }
-        return driveResyncIntent();
-      }
-
-      const sendTerminalSnapshot = reason => (
-        ws.readyState === 1 ? queueResyncIntent(reason) : false
-      );
 
       // 发送当前 PTY 状态
       const state = getPtyState();
-      let connectionStreamId = state.streamId;
       safeSend({ type: 'state', ...state });
-      // Give modern clients one short handshake window to send their measured
-      // grid and explicit resync. Legacy/native clients still receive one
-      // initial snapshot, but the browser no longer deterministically replays
-      // a throwaway 120x30 baseline before its first resize.
-      initialSnapshotTimer = setTimeout(() => {
-        initialSnapshotTimer = null;
-        sendTerminalSnapshot('initial');
-      }, 25);
-      initialSnapshotTimer.unref?.();
 
       // PTY 输出 → WebSocket
       const removeDataListener = onPtyData((data, meta = {}) => {
         if (ws.readyState !== 1) return;
-        if (meta.snapshot) {
-          // Resume may remain privacy-gated after publishing a bounded visible
-          // screen. Forward that exact snapshot directly; do not fetch another
-          // snapshot through getOutputSnapshot(), whose recovering flag remains
-          // true until an explicit input/output boundary or process exit.
-          const reason = pendingResyncReason || meta.reason;
-          const frame = encodeSnapshotFrame({ ...meta, data }, reason);
-          if (behind || ws.bufferedAmount + frame.bytes > DATA_HIGH_WATER) {
-            behind = true;
-            queueResyncIntent('behind');
-            scheduleBehindRecovery();
-            return;
+        if (screenInFlight) {
+          const bytes = Buffer.byteLength(data, 'utf8');
+          if (screenBufferBytes + bytes > MAX_SCREEN_SUFFIX_BYTES) {
+            screenBufferOverflow = true;
+            screenBuffer = [];
+            screenBufferBytes = 0;
+          } else if (!screenBufferOverflow) {
+            screenBuffer.push({ data, meta });
+            screenBufferBytes += bytes;
           }
-          const sent = safeSend(frame.payload);
-          if (sent && pendingResyncReason) completeResyncIntent();
           return;
         }
-
-        // Never mix deltas into a connection that is waiting for a baseline.
-        // The pty-manager snapshot capture appends these exact sequences and
-        // publishes throughSeq at the current cut.
-        if (pendingResyncReason) {
-          wakeResyncIntent();
-          return;
-        }
-
         const frame = encodePublishedFrame(data, meta);
         if (behind || ws.bufferedAmount + frame.bytes > DATA_HIGH_WATER) {
           behind = true;
-          queueResyncIntent('behind');
           scheduleBehindRecovery();
           return;
         }
         safeSend(frame.payload);
       });
 
-      // A real client-driven PTY resize advances the canonical model's
-      // generation. Broadcast geometry immediately and wake dormant unsafe
-      // resync intents; recovery itself never calls proc.resize().
       const removeGeometryListener = onPtyGeometry((geometry) => {
         if (ws.readyState !== 1) return;
+        if (screenInFlight) {
+          screenGeometry = geometry;
+          return;
+        }
         safeSend({ type: 'geometry', ...geometry });
-        wakeResyncIntent();
       });
 
       // Process replacement is a protocol boundary even when the new PTY is
-      // initially silent. Cancel any old-stream intent, publish state first,
-      // then request an empty/current canonical snapshot for the new stream so
-      // the browser cannot retain the previous screen indefinitely.
+      // initially silent. State establishes the new live-stream cursor.
       const removeStateListener = onPtyState((nextState) => {
         if (ws.readyState !== 1) return;
-        const isNewRunningStream = nextState.running
-          && nextState.streamId !== connectionStreamId;
-        connectionStreamId = nextState.streamId;
-        terminateResyncIntent();
         safeSend({
           type: 'state',
           ...nextState,
         });
-        if (isNewRunningStream) queueResyncIntent('initial');
+        if (nextState.reason === 'resume-ready'
+          || nextState.reason === 'resume-timeout'
+          || nextState.reason === 'resume-input') {
+          void sendTerminalScreen(nextState.reason);
+        }
       });
 
       // PTY 退出 → WebSocket
       const removeExitListener = onPtyExit((exitCode, meta = {}) => {
-        terminateResyncIntent();
         if (behindTimer) clearTimeout(behindTimer);
         behindTimer = null;
         behind = false;
@@ -5198,11 +5128,7 @@ async function setupTerminalWebSocket(httpServer) {
             }
           } else if (msg.type === 'resync-request') {
             if (!consumeRate('resync', 1, 12)) return;
-            // Never time-drop a protocol recovery request. The retained
-            // per-connection intent already coalesces duplicates while a
-            // snapshot is in flight; after completion a rejected/stale
-            // snapshot must be allowed to trigger another one immediately.
-            sendTerminalSnapshot(normalizeResyncReason(msg.reason));
+            void sendTerminalScreen(normalizeResyncReason(msg.reason));
           }
         } catch {}
       });
@@ -5217,11 +5143,8 @@ async function setupTerminalWebSocket(httpServer) {
         const remainingForIp = (terminalConnectionsByIp.get(connectionIp) || 1) - 1;
         if (remainingForIp > 0) terminalConnectionsByIp.set(connectionIp, remainingForIp);
         else terminalConnectionsByIp.delete(connectionIp);
-        if (initialSnapshotTimer) clearTimeout(initialSnapshotTimer);
-        initialSnapshotTimer = null;
         if (behindTimer) clearTimeout(behindTimer);
         behindTimer = null;
-        terminateResyncIntent();
         for (const cancel of sequentialCancels) {
           try { cancel(); } catch {}
         }
@@ -5356,6 +5279,9 @@ async function _doStop() {
     _streamingStatusTimer = null;
   }
   resetStreamingState();
+  try { await closeLogV2Writes(); } catch (error) {
+    console.warn('[CX Viewer] Log V2 durable shutdown failed:', error.message);
+  }
   try { unwatchFile(PROFILE_PATH); } catch {} // 清理 interceptor 的 StatWatcher
 }
 

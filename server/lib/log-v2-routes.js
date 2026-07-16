@@ -532,7 +532,7 @@ export async function serveLogV2Live(req, res, {
     if (res.write(payload)) return true;
     return waitForDrain(req, res);
   };
-  const send = async (event, value, id = null) => {
+  const sendNow = async (event, value, id = null) => {
     const encoded = encodeV2ControlFragments(value, { id: `s${nextFragmentId++}`, event });
     if (!encoded.frames) return sendRaw(event, encoded.json, id);
     for (let index = 0; index < encoded.frames.length; index++) {
@@ -540,6 +540,14 @@ export async function serveLogV2Live(req, res, {
       if (!await sendRaw('v2_fragment', JSON.stringify(encoded.frames[index]), resumeId)) return false;
     }
     return true;
+  };
+  // Every frame for one SSE response shares one output chain. In particular a
+  // reset or heartbeat cannot be inserted between fragments of a commit.
+  let sendChain = Promise.resolve(true);
+  const send = (event, value, id = null) => {
+    const result = sendChain.then(() => sendNow(event, value, id));
+    sendChain = result.catch(() => false);
+    return result;
   };
   const stopWatch = watchV2Timeline({
     logDir,
@@ -560,11 +568,23 @@ export async function serveLogV2Live(req, res, {
       if (!res.writableEnded) res.end();
     },
   });
-  const heartbeat = setInterval(() => { send('ping', {}); }, 15_000);
+  const heartbeat = setInterval(() => { void send('ping', {}).catch(() => {}); }, 15_000);
+  let activeCheckRunning = false;
   const activeCheck = setInterval(async () => {
-    if (getActiveFile() !== file) {
-      await send('v2_reset', { code: 'CXV_LOG_V2_ARCHIVE_CHANGED' });
-      res.end();
+    if (activeCheckRunning || stopped) return;
+    activeCheckRunning = true;
+    try {
+      if (await getActiveFile() !== file) {
+        await send('v2_reset', { code: 'CXV_LOG_V2_ARCHIVE_CHANGED' });
+        res.end();
+      }
+    } catch (error) {
+      await send('v2_reset', {
+        code: error.code || 'CXV_LOG_V2_ACTIVE_CHECK_FAILED', message: error.message,
+      });
+      if (!res.writableEnded) res.end();
+    } finally {
+      activeCheckRunning = false;
     }
   }, 1000);
   const close = () => {

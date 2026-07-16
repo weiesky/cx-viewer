@@ -10,7 +10,9 @@ import { isMainAgent } from '../src/utils/contentFilter.js';
 import {
   countV2LogEntries,
   findActiveV2SessionFile,
+  findActiveV2SessionFileAsync,
   findLatestV2SessionFile,
+  getActiveV2SessionLookupStats,
   listV2LocalLogs,
   materializeSessionArchive,
   readV2LogEntries,
@@ -309,6 +311,31 @@ test('active V2 selector falls back to V1 instead of choosing an auxiliary legac
       canonicalCwd: '/workspace/project',
       legacyLogFile: 'project/legacy.jsonl',
     }), null);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('concurrent active V2 discovery shares one worker scan and caches the result', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-active-singleflight-'));
+  try {
+    const writer = LogV2Writer.open(options(root));
+    writer.append(
+      entry('2026-07-14T08:00:00.000Z', [{ type: 'message', text: 'one' }], 'one'),
+      resolveAppServerThreadIdentity({ id: 'session-root', sessionId: 'session-root' }),
+    );
+    const lookupOptions = { projectId: 'project', canonicalCwd: '/workspace/project' };
+    const before = getActiveV2SessionLookupStats();
+    const values = await Promise.all(Array.from(
+      { length: 12 },
+      () => findActiveV2SessionFileAsync(root, lookupOptions),
+    ));
+    const after = getActiveV2SessionLookupStats();
+    assert.equal(new Set(values).size, 1);
+    assert.equal(after.started - before.started, 1);
+    assert.equal(after.reused - before.reused, 11);
+    assert.equal(await findActiveV2SessionFileAsync(root, lookupOptions), values[0]);
+    assert.equal(getActiveV2SessionLookupStats().started, after.started);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

@@ -41,7 +41,7 @@ class ScratchTerminal extends React.Component {
     this._closing = false;
   }
 
-  // write-queue 积压丢弃后请求服务端快照对齐（服务端回 data-resync）。
+  // write-queue 积压丢弃后请求服务端重放原始 PTY 字节。
   // 持续过载期 _maybeTrim 每次 push 都可能触发——2s 节流防请求风暴（服务端另有冷却兜底）。
   _requestResync() {
     const nowTs = Date.now();
@@ -244,12 +244,11 @@ class ScratchTerminal extends React.Component {
         const msg = JSON.parse(event.data);
         if (msg.type === 'data') {
           this._throttledWrite(msg.data);
-        } else if (msg.type === 'data-resync') {
-          // 服务端反压恢复:丢弃积压、带内重置、写快照对齐(reset 清 scrollback 的取舍 +
-          // 带内 INBAND_RESET 防 WriteBuffer 残留撕裂,见 TerminalPanel 同分支注释)
+        } else if (msg.type === 'data-replay') {
+          // 丢弃积压并从服务端的原始 PTY 字节窗口重新开始。
           diagCount('resyncCount');
           this._writeQ.reset();
-          this._writeQ.push(INBAND_RESET + '\x1b[33m[cx-viewer] output skipped during congestion\x1b[0m\r\n');
+          this._writeQ.push(INBAND_RESET);
           if (msg.data) this._writeQ.push(msg.data);
         } else if (msg.type === 'state') {
           // 后端首条 state 消息携带 shellBasename，给父组件渲染 tab 标签

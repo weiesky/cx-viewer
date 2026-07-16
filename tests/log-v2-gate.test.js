@@ -203,3 +203,66 @@ test('V2 primary startup requires a gate and writes durable V2 before rollback p
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('production V2 queue reports admission before durable completion', () => {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-production-queue-'));
+  const logs = join(root, 'logs');
+  const project = join(root, 'project');
+  const gateFile = join(root, 'gate.json');
+  try {
+    mkdirSync(logs, { recursive: true });
+    mkdirSync(project, { recursive: true });
+    writeC1GateFile(gateFile, passingReport(), { logDir: logs, maxAgeHours: 24 });
+    const interceptorUrl = pathToFileURL(fileURLToPath(new URL('../interceptor.js', import.meta.url))).href;
+    const script = `
+      const mod = await import(${JSON.stringify(interceptorUrl)});
+      await mod._initPromise;
+      const result = mod.appendLogEntry({
+        timestamp: new Date().toISOString(), project: 'project', url: 'codex://queued-primary',
+        method: 'POST', headers: {}, body: { value: 1 },
+        response: { status: 200, headers: {}, body: { ok: true } }, mainAgent: false,
+      }, { source: 'proxy', cwd: ${JSON.stringify(project)}, projectId: 'project' });
+      const admitted = {
+        written: result.written,
+        accepted: result.accepted,
+        durable: result.durable,
+        queued: result.queued,
+      };
+      const completion = await result.completion;
+      await mod.closeLogV2Writes();
+      console.log(JSON.stringify({ admitted, completion }));
+      process.exit(0);
+    `;
+    const child = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
+      cwd: project,
+      env: {
+        ...process.env,
+        CXV_TEST: '',
+        CXV_LOG_DIR: logs,
+        CXV_LOG_WRITE_MODE: 'v2',
+        CXV_LOG_READ_MODE: 'v2',
+        CXV_LOG_V2_GATE_FILE: gateFile,
+        CXV_LOG_V2_PROJECT_V1: '0',
+        CXV_LOG_V2_MIN_FREE_BYTES: '0',
+        CXV_LOG_V2_MIN_FREE_PERCENT: '0',
+        CXV_WORKSPACE_MODE: '0',
+      },
+      encoding: 'utf8',
+      timeout: 20_000,
+    });
+    assert.equal(child.status, 0, child.stderr);
+    const output = JSON.parse(child.stdout.trim().split('\n').at(-1));
+    assert.deepEqual(output.admitted, {
+      written: false,
+      accepted: true,
+      durable: false,
+      queued: true,
+    });
+    assert.equal(output.completion.written, true);
+    assert.equal(output.completion.accepted, true);
+    assert.equal(output.completion.durable, true);
+    assert.equal(existsSync(join(output.completion.sessionDir, 'timeline.jsonl')), true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

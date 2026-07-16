@@ -127,6 +127,79 @@ test('each business entry references only raw frames captured since the previous
   }
 });
 
+test('accepted async writes release raw ranges only after durable completion', async () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'cxv-appserver-raw-durable-'));
+  const seen = [];
+  let resolveCompletion;
+  const completion = new Promise(resolve => { resolveCompletion = resolve; });
+  try {
+    _resetAppServerBridgeForTests({
+      logFile: join(tmp, 'bridge.jsonl'),
+      writeLogEntry: entry => {
+        seen.push(entry);
+        if (seen.length === 1) {
+          return { written: false, accepted: true, durable: false, completion };
+        }
+        return { written: true, accepted: true, durable: true };
+      },
+    });
+    server('raw/first', { threadId: 'thread-durable', value: 1 });
+    const admitted = _writeAppServerEntryForTests({ body: { metadata: { thread_id: 'thread-durable' } } });
+    assert.equal(admitted.written, false);
+    assert.equal(admitted.accepted, true);
+    assert.equal(admitted.durable, false);
+
+    resolveCompletion({ written: true, accepted: true, durable: true });
+    assert.equal((await admitted.completion).durable, true);
+    await new Promise(resolve => setImmediate(resolve));
+
+    server('raw/second', { threadId: 'thread-durable', value: 2 });
+    _writeAppServerEntryForTests({ body: { metadata: { thread_id: 'thread-durable' } } });
+    assert.deepEqual(
+      seen.map(entry => [entry._codexRaw.fromSeq, entry._codexRaw.toSeq]),
+      [[1, 1], [2, 2]],
+    );
+  } finally {
+    _resetAppServerBridgeForTests();
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('failed async writes preserve raw ranges for the next durable entry', async () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'cxv-appserver-raw-failed-'));
+  const seen = [];
+  try {
+    _resetAppServerBridgeForTests({
+      logFile: join(tmp, 'bridge.jsonl'),
+      writeLogEntry: entry => {
+        seen.push(entry);
+        if (seen.length === 1) {
+          return {
+            written: false,
+            accepted: true,
+            durable: false,
+            completion: Promise.reject(Object.assign(new Error('disk failed'), { code: 'ENOSPC' })),
+          };
+        }
+        return { written: true, accepted: true, durable: true };
+      },
+    });
+    server('raw/first', { threadId: 'thread-failed', value: 1 });
+    _writeAppServerEntryForTests({ body: { metadata: { thread_id: 'thread-failed' } } });
+    await new Promise(resolve => setImmediate(resolve));
+
+    server('raw/second', { threadId: 'thread-failed', value: 2 });
+    _writeAppServerEntryForTests({ body: { metadata: { thread_id: 'thread-failed' } } });
+    assert.deepEqual(
+      seen.map(entry => [entry._codexRaw.fromSeq, entry._codexRaw.toSeq]),
+      [[1, 1], [1, 2]],
+    );
+  } finally {
+    _resetAppServerBridgeForTests();
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
 test('raw capture boundary discards pending frames and starts a new stream', () => {
   const tmp = mkdtempSync(join(tmpdir(), 'cxv-appserver-raw-boundary-'));
   const seen = [];

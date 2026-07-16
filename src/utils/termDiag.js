@@ -10,7 +10,7 @@
  *
  * 指标：
  *   trimCount        writeQueue 积压丢弃次数（2MB 高水位触发）
- *   resyncCount      服务端 data-resync 次数（behind→resume 振荡的标尺）
+ *   resyncCount      服务端原始字节重放次数
  *   longtaskCount    主线程 ≥50ms 长任务数（PerformanceObserver，仅计数不降级）
  *   writeQPendingBytes / chunkSize / cbLatencyEwma   喂入闭环水位（P2 自适应接线）
  *   detect*          promptDetect 耗时统计（>50ms 计 overrun——仅监测计数，无熔断降级）

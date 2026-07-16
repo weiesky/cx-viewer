@@ -95,10 +95,7 @@ async function launch({ path: projectPath, extraArgs = [], codexPath, isNpmVersi
   serverMod.initPostLaunch();
 
   // 8. Spawn Codex PTY before reporting the tab ready. spawnCodexRequest resolves
-  // once the process and its listeners exist; terminal readiness is then driven
-  // by the canonical headless-terminal snapshot flow instead of raw PTY bytes. In
-  // particular, resume history may intentionally be suppressed, so waiting for
-  // its first byte would delay the whole desktop tab without making it usable.
+  // once the process and its raw-byte listeners exist.
   const { spawnCodexRequest, killPty, onPtyExit } = await importAbs(runtimeFile('pty-manager.js'));
   killPtyFn = killPty;
 
@@ -122,7 +119,7 @@ async function launch({ path: projectPath, extraArgs = [], codexPath, isNpmVersi
   }
 
   // 9. Notify parent immediately after a successful spawn. The web terminal can
-  // connect while resume history is being parsed and receive its safe snapshot.
+  // connect at any point and continue from the current live-stream cursor.
   const token = serverMod.getAccessToken();
   console.log('[worker] sending ready:', port, result.projectName);
   process.send({

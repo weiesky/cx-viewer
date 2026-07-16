@@ -19,6 +19,7 @@ import { resolveLogV2Config } from './lib/log-v2/config.js';
 import { dispatchLogWrite, LogV2WriteCoordinator } from './lib/log-v2/dual-write.js';
 import { loadC1GateFile } from './lib/log-v2/gate.js';
 import { loadLogV2RuntimeConfig } from './lib/log-v2/runtime-config.js';
+import { LogV2WriteQueue } from './lib/log-v2/write-queue.js';
 
 
 
@@ -247,6 +248,24 @@ const _logV2Coordinator = new LogV2WriteCoordinator({
   allowedProjectIds: _logV2Gate?.approvedProjects || null,
   authority: _logV2Config.writeMode === 'v2' ? 'primary' : 'shadow',
 });
+// Durable V2 commits contain several fsync-backed files. In production they
+// belong to one ordered worker so proxy/app-server/OTel traffic cannot stall
+// the HTTP and terminal event loop. Tests that assert immediate on-disk state
+// retain the direct coordinator and exercise the queue separately.
+const _logV2WriteQueue = _logV2Config.writeMode === 'v2'
+  && !_logV2Config.projectV1
+  && process.env.CXV_TEST !== '1'
+  ? new LogV2WriteQueue({
+      rootDir: LOG_DIR,
+      debug: !!process.env.CXV_DEBUG,
+      minFreeBytes: _logV2Config.minFreeBytes,
+      minFreePercent: _logV2Config.minFreePercent,
+      failureLimit: _logV2Config.failureLimit,
+      durability: 'durable',
+      allowedProjectIds: _logV2Gate?.approvedProjects || null,
+      authority: 'primary',
+    })
+  : null;
 const _logV1ProjectionStats = {
   attempted: 0,
   written: 0,
@@ -368,6 +387,20 @@ export function appendLogEntry(entry, context = {}) {
   };
   if (_logV2Config.writeMode === 'v2') {
     try {
+      if (_logV2WriteQueue) {
+        const completion = _logV2WriteQueue.enqueue(entry, writeContext);
+        return {
+          // Admission and durability are separate. Callers that own source
+          // data can retain it until completion resolves with durable:true.
+          written: false,
+          accepted: true,
+          durable: false,
+          completion,
+          store: 'v2',
+          queued: true,
+          pendingWrites: _logV2WriteQueue.snapshot().pendingWrites,
+        };
+      }
       const primary = _logV2Coordinator.writeEntry(entry, writeContext, null);
       if (!_logV2Config.projectV1) return primary;
       _logV1ProjectionStats.attempted += 1;
@@ -380,7 +413,7 @@ export function appendLogEntry(entry, context = {}) {
       }
       return { ...primary, projectionV1 };
     } catch (error) {
-      return { written: false, store: 'v2', error };
+      return { written: false, accepted: false, durable: false, store: 'v2', error };
     }
   }
   return dispatchLogWrite({
@@ -402,12 +435,22 @@ export function getLogV2RuntimeStatus() {
       approvedProjects: _logV2Gate.approvedProjects,
       evidenceDigest: _logV2Gate.evidenceDigest,
     }) : null,
-    writer: _logV2Coordinator.snapshot(),
+    writer: _logV2WriteQueue ? _logV2WriteQueue.snapshot() : _logV2Coordinator.snapshot(),
     projectionV1: Object.freeze({
       enabled: _logV2Config.writeMode === 'v2' && _logV2Config.projectV1,
       ..._logV1ProjectionStats,
     }),
   });
+}
+
+export async function flushLogV2Writes() {
+  if (!_logV2WriteQueue) return _logV2Coordinator.snapshot();
+  return _logV2WriteQueue.flush();
+}
+
+export async function closeLogV2Writes() {
+  if (!_logV2WriteQueue) return _logV2Coordinator.snapshot();
+  return _logV2WriteQueue.close();
 }
 
 // 匹配 OpenAI API 主机名（默认 api.openai.com 及 OPENAI_BASE_URL 自定义主机）

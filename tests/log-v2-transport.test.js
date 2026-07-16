@@ -6,7 +6,7 @@ import test from 'node:test';
 
 import { applyWireCommit, restoreWireArchiveState, materializeWireDescriptor } from '../lib/log-v2/reducer.js';
 import { readV2WireCommitsAfter, readV2WireCommitsFromCursor, readV2WirePage, readV2WireSnapshot } from '../lib/log-v2/transport.js';
-import { readV2WireSnapshotAsync } from '../lib/log-v2/materializer.js';
+import { createV2WireLiveReader, readV2WireSnapshotAsync } from '../lib/log-v2/materializer.js';
 import { readContentObjectSync } from '../lib/log-v2/storage.js';
 import { closeIdleV2TimelinePublishers, getV2TimelineWatcherStats, watchV2Timeline } from '../lib/log-v2/timeline-watcher.js';
 import { LogV2Writer } from '../lib/log-v2/writer.js';
@@ -81,6 +81,56 @@ test('wire live replay resumes strictly after the snapshot sequence', () => {
     }), error => error.code === 'CXV_LOG_V2_WIRE_RESET_REQUIRED');
   } finally {
     rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('stateful live reader retains reducer state across incremental reads', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-wire-stateful-live-'));
+  let reader = null;
+  try {
+    const writer = LogV2Writer.open(options(root));
+    const identity = { sessionId: 'session', rootThreadId: 'session', threadId: 'session', agentRole: 'main', isRoot: true };
+    const entry = (timestamp, model) => ({
+      timestamp, url: 'codex://stateful', mainAgent: true,
+      body: { model, input: [] }, response: { status: 200 },
+    });
+    writer.append(entry('2026-07-15T00:00:00.000Z', 'one'), identity);
+    const timelinePath = join(writer.sessionDir, 'timeline.jsonl');
+    const file = relative(root, timelinePath).split('\\').join('/');
+    const snapshot = readV2WireSnapshot(root, file);
+    reader = createV2WireLiveReader({
+      logDir: root, file, timelinePath, checkpoint: snapshot.liveCheckpoint,
+    });
+
+    writer.append(entry('2026-07-15T00:00:01.000Z', 'two'), identity);
+    const first = await reader.read(snapshot.end.cursor);
+    assert.deepEqual(first.commits.map(commit => commit.frame.timeline.seq), [2]);
+    assert.equal('checkpoint' in first, false, 'full reducer state must not return to the main thread');
+
+    writer.append(entry('2026-07-15T00:00:02.000Z', 'three'), identity);
+    const second = await reader.read(first.cursor);
+    assert.deepEqual(second.commits.map(commit => commit.frame.timeline.seq), [3]);
+    assert.equal(second.commits[0].frame.entry.upsert, true);
+  } finally {
+    reader?.close();
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('stateful live reader rejects initialization failure instead of hanging ready', async () => {
+  const reader = createV2WireLiveReader({
+    logDir: '/nonexistent',
+    file: 'missing/timeline.jsonl',
+    timelinePath: '/nonexistent/timeline.jsonl',
+    checkpoint: { invalid: true },
+  });
+  try {
+    await assert.rejects(
+      reader.read({}),
+      error => /checkpoint|wire/i.test(error.message),
+    );
+  } finally {
+    reader.close();
   }
 });
 
