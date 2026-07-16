@@ -18,7 +18,9 @@ process.env.HTTPS_PROXY = 'http://proxy.invalid';
 
 let server;
 let ptyManager;
+let scratchManager;
 let fakeProc;
+let scratchProc;
 let terminalModel;
 let port;
 const spawnCalls = [];
@@ -125,16 +127,16 @@ function createFakeProcess() {
     onExit(cb) { this._onExit = cb; },
     write(data) { this.writes.push(data); },
     resize(cols, rows) { this.resizeCalls.push({ cols, rows }); },
-    kill() {},
+    kill() { this.killed = true; },
     emitData(data) { this._onData?.(data); },
     emitExit(exitCode) { this._onExit?.({ exitCode }); },
   };
 }
 
-async function openTerminalClient() {
+async function openTerminalClient(path = '/ws/terminal') {
   const messages = [];
   const waiters = [];
-  const socket = new WebSocket(`ws://127.0.0.1:${port}/ws/terminal`, {
+  const socket = new WebSocket(`ws://127.0.0.1:${port}${path}`, {
     headers: { Origin: `http://127.0.0.1:${port}` },
   });
 
@@ -198,6 +200,13 @@ async function consumeInitial(client) {
 
 before(async () => {
   ptyManager = await import('../pty-manager.js');
+  scratchManager = await import('../scratch-pty-manager.js');
+  scratchManager._setScratchPtyLoaderForTests(async () => ({
+    spawn() {
+      scratchProc = createFakeProcess();
+      return scratchProc;
+    },
+  }));
   ptyManager._resetPtyManagerForTests();
   ptyManager._setTerminalStateFactoryForTests((options) => {
     terminalModel = new ControlledTerminalStateModel(options);
@@ -221,6 +230,7 @@ before(async () => {
 
 after(async () => {
   await server?.stopViewer();
+  scratchManager?._resetScratchPtysForTests();
   ptyManager?._resetPtyManagerForTests();
   rmSync(temp, { recursive: true, force: true });
 });
@@ -555,6 +565,36 @@ test('terminal websocket rejects payloads above maxPayload without stopping the 
   assert.equal((await getResponse('/api/terminal-recovery')).statusCode, 200);
 });
 
+test('scratch terminal route creates, reuses, resizes, replays, and kills its shell', async () => {
+  const scratchId = 'scratch-test-1';
+  const first = await openTerminalClient(`/ws/terminal-scratch?id=${scratchId}`);
+  const state = await first.receive('state');
+  assert.equal(state.running, true);
+  assert.ok(state.shellBasename);
+  assert.deepEqual(await first.receive('data-resync'), { type: 'data-resync', data: '' });
+
+  first.socket.send(JSON.stringify({ type: 'resize', cols: 91, rows: 27 }));
+  first.socket.send(JSON.stringify({ type: 'input', data: 'echo scratch\r' }));
+  await waitFor(() => scratchProc.resizeCalls.length === 1 && scratchProc.writes.length === 1);
+  assert.deepEqual(scratchProc.resizeCalls[0], { cols: 91, rows: 27 });
+  assert.equal(scratchProc.writes[0], 'echo scratch\r');
+
+  scratchProc.emitData('scratch-ready\r\n');
+  assert.equal((await first.receive('data')).data, 'scratch-ready\r\n');
+  const originalProc = scratchProc;
+  await first.close();
+
+  const second = await openTerminalClient(`/ws/terminal-scratch?id=${scratchId}`);
+  await second.receive('state');
+  const replay = await second.receive('data-resync');
+  assert.equal(replay.data, 'scratch-ready\r\n');
+  assert.equal(scratchProc, originalProc, 'reconnect must reuse the tab shell');
+
+  second.socket.send(JSON.stringify({ type: 'kill' }));
+  await waitFor(() => originalProc.killed === true);
+  await second.close();
+});
+
 test('PTY exit terminates a pending intent before its snapshot resolves', async () => {
   const client = await openTerminalClient();
   await consumeInitial(client);
@@ -571,4 +611,69 @@ test('PTY exit terminates a pending intent before its snapshot resolves', async 
   terminalModel.resolveHeldSnapshot();
   await assert.rejects(client.receive('data-resync', 150), /timed out/);
   await client.close();
+});
+
+test('resume establishes one snapshot boundary then preserves smooth live rendering', async () => {
+  const clients = [];
+  ptyManager._setResumeGateTimingsForTests({ quietMs: 5, absoluteTimeoutMs: 5000 });
+  await ptyManager.spawnCodex(null, temp, ['resume', '--last'], '/bin/codex-fake', false, port);
+  const resumeProc = fakeProc;
+  const unavailableRecovery = await getResponse('/api/terminal-recovery');
+  assert.equal(unavailableRecovery.statusCode, 409);
+  assert.equal(unavailableRecovery.body.available, false);
+  assert.equal(unavailableRecovery.body.error, 'terminal-recovery-not-ready');
+  assert.equal(unavailableRecovery.body.throughSeq, 0);
+
+  resumeProc.emitData('APPROVED-RESUME-SCREEN');
+  await waitFor(() => ptyManager.getPtyState().recovering === false);
+  assert.equal(ptyManager.getReconnectSnapshot().reconnectSafe, true);
+
+  try {
+    const firstStartedAt = performance.now();
+    const first = await openTerminalClient();
+    clients.push(first);
+    const firstState = await first.receive('state');
+    const firstSnapshot = await first.receive('data-resync', 750);
+    assert.equal(firstState.recovering, false);
+    assert.ok(performance.now() - firstStartedAt < 750,
+      'a late connection must not wait for the 5 second absolute recovery timer');
+    assert.match(firstSnapshot.data, /APPROVED-RESUME-SCREEN/);
+
+    // Once the boundary is established, normal Codex output must stay on the
+    // incremental data path instead of periodic full-screen snapshots.
+    resumeProc.emitData('LIVE-STREAM-ONE');
+    const live = await first.receive('data', 750);
+    assert.equal(live.data, 'LIVE-STREAM-ONE');
+
+    const second = await openTerminalClient();
+    clients.push(second);
+    await second.receive('state');
+    const currentSnapshot = await second.receive('data-resync', 750);
+    assert.match(currentSnapshot.data, /LIVE-STREAM-ONE/);
+    const recoveryEndpoint = await getResponse('/api/terminal-recovery');
+    assert.equal(recoveryEndpoint.statusCode, 200);
+    assert.equal(recoveryEndpoint.body.available, true);
+    assert.equal(recoveryEndpoint.body.reconnectSafe, true);
+    assert.match(recoveryEndpoint.body.data, /LIVE-STREAM-ONE/);
+
+    // After the gate is gone, resize uses the ordinary resync machinery and
+    // cannot strand the connection waiting for a recovery-only wake-up.
+    assert.equal(ptyManager.resizePty(133, 42), true);
+    await second.receive('geometry');
+    second.socket.send(JSON.stringify({ type: 'resync-request', reason: 'requested' }));
+    const resizedSnapshot = await second.receive('data-resync', 750);
+    assert.equal(resizedSnapshot.resizeGeneration, currentSnapshot.resizeGeneration + 1);
+    assert.equal(resizedSnapshot.cols, 133);
+    assert.equal(resizedSnapshot.rows, 42);
+
+    ptyManager.writeToPty('USER-INPUT');
+    resumeProc.emitData('POST-INPUT-OUTPUT');
+    const liveEcho = await second.receive('data', 750);
+    assert.equal(liveEcho.data, 'POST-INPUT-OUTPUT');
+    resumeProc.emitData('NEXT-KEY-ECHO');
+    const nextEcho = await second.receive('data', 750);
+    assert.equal(nextEcho.data, 'NEXT-KEY-ECHO');
+  } finally {
+    for (const client of clients) await client.close();
+  }
 });

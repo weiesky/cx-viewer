@@ -249,3 +249,16 @@ export function buildBracketPasteSubmitChunks(content) {
   if (typeof content !== 'string' || content.length === 0) return [];
   return [`\x1b[200~${sanitizeBracketPasteText(content)}\x1b[201~`, ENTER];
 }
+
+/** Build the correlated websocket request required by input-sequential. */
+export function buildBracketPasteSequentialRequest(content, seq) {
+  if (typeof seq !== 'string' || seq.length === 0) return null;
+  const chunks = buildBracketPasteSubmitChunks(content);
+  if (chunks.length === 0) return null;
+  return {
+    type: 'input-sequential',
+    seq,
+    chunks,
+    settleMs: BRACKET_PASTE_SUBMIT_SETTLE_MS,
+  };
+}

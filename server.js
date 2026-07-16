@@ -107,6 +107,7 @@ import {
   projectCodexAnswersForConversation,
 } from './lib/codex-request-user-input.js';
 import { serveLogV2Live, serveLogV2Objects, serveLogV2Page, serveLogV2Snapshot } from './server/lib/log-v2-routes.js';
+import { openScratchPty, killScratchPty, shutdownScratchPtys } from './scratch-pty-manager.js';
 
 
 let _codexApprovalsReviewerUpdater = null;
@@ -624,6 +625,7 @@ const _editorCleanupTimer = setInterval(() => {
 }, 60000);
 _editorCleanupTimer.unref(); // Don't keep process alive for cleanup
 let terminalWss = null; // WebSocketServer reference for broadcasting
+let scratchTerminalWss = null;
 let _writeToPty = null; // PTY write function reference (set by setupTerminalWebSocket)
 let _onPtyData = null;  // PTY data listener registration (set by setupTerminalWebSocket)
 export function setWorkspaceCodexArgs(args) {
@@ -2248,14 +2250,26 @@ async function handleRequest(req, res) {
   }
 
   if (url === '/api/terminal-recovery' && method === 'GET') {
-    const { getPtyState, getOutputSnapshot, requestPtySnapshot } = await import('./pty-manager.js');
-    await requestPtySnapshot();
-    res.writeHead(200, {
+    const { getPtyState, getReconnectSnapshot, requestPtySnapshot } = await import('./pty-manager.js');
+    // Do not let the diagnostic endpoint bypass the resume privacy boundary.
+    // Outside recovery it still refreshes to a current canonical cut; during
+    // recovery it returns only the exact baseline already approved for a new
+    // renderer connection.
+    if (!getPtyState().recovering) await requestPtySnapshot();
+    const state = getPtyState();
+    const snapshot = getReconnectSnapshot();
+    const available = snapshot.reconnectSafe === true;
+    res.writeHead(available ? 200 : 409, {
       'Content-Type': 'application/json',
       'Cache-Control': 'private, no-store',
       'X-Content-Type-Options': 'nosniff',
     });
-    res.end(JSON.stringify({ ...getPtyState(), ...getOutputSnapshot() }));
+    res.end(JSON.stringify({
+      ...state,
+      ...snapshot,
+      available,
+      ...(available ? {} : { error: 'terminal-recovery-not-ready' }),
+    }));
     return;
   }
 
@@ -4403,10 +4417,12 @@ export async function startViewer() {
 async function setupTerminalWebSocket(httpServer) {
   try {
     const { WebSocketServer } = await import('ws');
-    const { writeToPty, writeToPtySequential, resizePty, onPtyData, onPtyRawData, onPtyGeometry, onPtyState, onPtyExit, getPtyState, getOutputSnapshot, getCurrentWorkspace, requestPtySnapshot, spawnShell } = await import('./pty-manager.js');
+    const { writeToPty, writeToPtySequential, resizePty, onPtyData, onPtyRawData, onPtyGeometry, onPtyState, onPtyExit, getPtyState, getReconnectSnapshot, getCurrentWorkspace, requestPtySnapshot, spawnShell } = await import('./pty-manager.js');
     _onPtyData = (cb) => onPtyRawData(event => cb(event.data, event));
     const wss = new WebSocketServer({ noServer: true, maxPayload: 2 * 1024 * 1024 });
+    const scratchWss = new WebSocketServer({ noServer: true, maxPayload: 1024 * 1024 });
     terminalWss = wss;
+    scratchTerminalWss = scratchWss;
     const DATA_HIGH_WATER = 2 * 1024 * 1024;
     const DATA_LOW_WATER = 512 * 1024;
     const BEHIND_RETRY_MIN_MS = 50;
@@ -4418,6 +4434,7 @@ async function setupTerminalWebSocket(httpServer) {
     const RESYNC_REASONS = new Set([
       'initial', 'requested', 'mount', 'congestion', 'parse-error', 'behind',
       'process-exit', 'resume-quiet', 'resume-absolute', 'resume-process-exit',
+      'resume-input-progress',
       'resume-exit-diagnostic', 'resume-worker-failure', 'resume-unsafe',
     ]);
     const publishedWireCache = new WeakMap();
@@ -4496,16 +4513,124 @@ async function setupTerminalWebSocket(httpServer) {
         return;
       }
       if (pathname === '/ws/terminal') {
-        if (wss.clients.size >= MAX_TERMINAL_CONNECTIONS) {
+        if (wss.clients.size + scratchWss.clients.size >= MAX_TERMINAL_CONNECTIONS) {
           socket.destroy();
           return;
         }
         wss.handleUpgrade(req, socket, head, (ws) => {
           wss.emit('connection', ws, req);
         });
+      } else if (pathname === '/ws/terminal-scratch') {
+        const scratchId = wsUrl.searchParams.get('id') || '';
+        if (!/^[A-Za-z0-9_-]{1,64}$/.test(scratchId)
+          || wss.clients.size + scratchWss.clients.size >= MAX_TERMINAL_CONNECTIONS) {
+          socket.destroy();
+          return;
+        }
+        scratchWss.handleUpgrade(req, socket, head, (ws) => {
+          scratchWss.emit('connection', ws, req);
+        });
       } else {
         socket.destroy();
       }
+    });
+
+    scratchWss.on('connection', async (ws, req) => {
+      const connectionIp = req.socket.remoteAddress || 'unknown';
+      const ipConnections = (terminalConnectionsByIp.get(connectionIp) || 0) + 1;
+      terminalConnectionsByIp.set(connectionIp, ipConnections);
+      if (ipConnections > MAX_TERMINAL_CONNECTIONS_PER_IP) {
+        terminalConnectionsByIp.set(connectionIp, ipConnections - 1);
+        ws.close(1013, 'too many terminal connections');
+        return;
+      }
+
+      let cleaned = false;
+      let session = null;
+      let removeData = null;
+      let removeExit = null;
+      const cleanup = () => {
+        if (cleaned) return;
+        cleaned = true;
+        try { removeData?.(); } catch {}
+        try { removeExit?.(); } catch {}
+        session?.detach();
+        const remaining = (terminalConnectionsByIp.get(connectionIp) || 1) - 1;
+        if (remaining > 0) terminalConnectionsByIp.set(connectionIp, remaining);
+        else terminalConnectionsByIp.delete(connectionIp);
+      };
+      const safeSend = message => {
+        if (ws.readyState !== 1) return false;
+        try { ws.send(JSON.stringify(message)); return true; } catch { return false; }
+      };
+      ws.once('close', cleanup);
+      ws.on('error', () => {});
+
+      const scratchUrl = new URL(req.url, `${serverProtocol}://${req.headers.host}`);
+      const scratchId = scratchUrl.searchParams.get('id') || '';
+      try {
+        session = await openScratchPty(scratchId, {
+          cwd: getCurrentWorkspace().cwd || process.cwd(),
+        });
+      } catch (error) {
+        if (process.env.CXV_DEBUG) console.warn('[CX Viewer] scratch PTY spawn failed:', error.message);
+        if (ws.readyState === 1) ws.close(1011, 'scratch shell unavailable');
+        cleanup();
+        return;
+      }
+      if (!session) {
+        if (ws.readyState === 1) ws.close(1008, 'invalid scratch id');
+        cleanup();
+        return;
+      }
+      session.attach();
+      if (cleaned || ws.readyState !== 1) {
+        session.detach();
+        return;
+      }
+
+      removeData = session.onData(data => safeSend({ type: 'data', data }));
+      removeExit = session.onExit(exitCode => safeSend({ type: 'exit', exitCode }));
+      safeSend({ type: 'state', running: !session.exited, shellBasename: session.shellBasename });
+      safeSend({ type: 'data-resync', data: session.replay });
+
+      let rateWindowStartedAt = Date.now();
+      let messageCount = 0;
+      let inputBytes = 0;
+      ws.on('message', raw => {
+        try {
+          const now = Date.now();
+          if (now - rateWindowStartedAt >= TERMINAL_RATE_WINDOW_MS) {
+            rateWindowStartedAt = now;
+            messageCount = 0;
+            inputBytes = 0;
+          }
+          if (++messageCount > 240) {
+            ws.close(1008, 'scratch message rate exceeded');
+            return;
+          }
+          const msg = JSON.parse(raw.toString());
+          if (!msg || typeof msg !== 'object' || Array.isArray(msg)) return;
+          if (msg.type === 'input') {
+            if (typeof msg.data !== 'string') return;
+            const bytes = Buffer.byteLength(msg.data, 'utf8');
+            inputBytes += bytes;
+            if (bytes > 1024 * 1024 || inputBytes > 2 * 1024 * 1024) {
+              ws.close(1008, 'scratch input rate exceeded');
+              return;
+            }
+            session.write(msg.data);
+          } else if (msg.type === 'resize') {
+            if (!Number.isSafeInteger(msg.cols) || msg.cols < 2 || msg.cols > 500
+              || !Number.isSafeInteger(msg.rows) || msg.rows < 1 || msg.rows > 300) return;
+            session.resize(msg.cols, msg.rows);
+          } else if (msg.type === 'resync-request') {
+            safeSend({ type: 'data-resync', data: session.replay });
+          } else if (msg.type === 'kill') {
+            killScratchPty(scratchId);
+          }
+        } catch {}
+      });
     });
 
     wss.on('connection', (ws, req) => {
@@ -4616,18 +4741,19 @@ async function setupTerminalWebSocket(httpServer) {
       };
 
       const snapshotCanResync = snapshot => Boolean(
-        snapshot?.authoritative || snapshot?.fallback,
+        snapshot?.reconnectSafe && (snapshot.authoritative || snapshot.fallback),
       );
 
       const degradedResyncSnapshot = snapshot => ({
         ...snapshot,
         authoritative: false,
         fallback: true,
+        reconnectSafe: true,
         data: '\x1bc\r\n[CX Viewer] terminal state could not be replayed exactly; live output continues\r\n',
       });
 
       function sendPendingSnapshot(snapshot) {
-        if (!pendingResyncReason || !snapshotCanResync(snapshot) || snapshot.recovering) return false;
+        if (!pendingResyncReason || !snapshotCanResync(snapshot)) return false;
         const frame = encodeSnapshotFrame(snapshot, pendingResyncReason);
         if (behind || ws.bufferedAmount + frame.bytes > DATA_HIGH_WATER) {
           behind = true;
@@ -4655,7 +4781,7 @@ async function setupTerminalWebSocket(httpServer) {
           if (generation !== resyncGeneration) return;
           snapshotInFlight = false;
           if (!pendingResyncReason || ws.readyState !== 1) return;
-          const snapshot = getOutputSnapshot();
+          const snapshot = getReconnectSnapshot();
           if ((success || snapshot.fallback) && sendPendingSnapshot(snapshot)) return;
           if (!success && getPtyState().running) {
             sendPendingSnapshot(degradedResyncSnapshot(snapshot));
@@ -4680,8 +4806,8 @@ async function setupTerminalWebSocket(httpServer) {
           terminateResyncIntent();
           return false;
         }
-        const snapshot = getOutputSnapshot();
-        if (snapshotCanResync(snapshot) && !snapshot.recovering) {
+        const snapshot = getReconnectSnapshot();
+        if (snapshotCanResync(snapshot)) {
           return sendPendingSnapshot(snapshot);
         }
         if (!getPtyState().running) {
@@ -4693,9 +4819,9 @@ async function setupTerminalWebSocket(httpServer) {
           scheduleBehindRecovery();
           return false;
         }
-        // Resume owns its privacy gate. Its eventual canonical snapshot event
-        // wakes this intent; serializing the suppressed history here would
-        // leak it to reconnecting browsers.
+        // Resume owns its privacy gate. Until that gate has explicitly
+        // published a reconnect-safe baseline, never serialize or expose a
+        // merely cached snapshot of the suppressed history.
         if (snapshot.recovering) return false;
         beginSnapshotAttempt();
         return false;
@@ -5185,6 +5311,13 @@ async function _doStop() {
     if (pending.timer) clearTimeout(pending.timer);
   }
   pendingCodexAsks.clear();
+  shutdownScratchPtys();
+  if (scratchTerminalWss) {
+    for (const client of scratchTerminalWss.clients) {
+      try { client.close(1001, 'server stopping'); } catch {}
+    }
+    scratchTerminalWss = null;
+  }
   _codexRequestUserInputBridge = null;
   // 如果用户未做选择，将临时文件转为正式文件
   if (_resumeState && _resumeState.tempFile) {

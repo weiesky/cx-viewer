@@ -19,7 +19,7 @@ import styles from './TerminalPanel.module.css';
 import { BUILTIN_PRESETS } from '../../utils/builtinPresets.js';
 import { buildLocalUltraplan } from '../../utils/ultraplanTemplates';
 import { UltraplanController } from '../../utils/ultraplanController';
-import { buildBracketPasteSubmitChunks, BRACKET_PASTE_SUBMIT_SETTLE_MS, sanitizeBracketPasteText } from '../../utils/ptyChunkBuilder';
+import { buildBracketPasteSequentialRequest, sanitizeBracketPasteText } from '../../utils/ptyChunkBuilder';
 import { clipboardKeyAction, copyTextToClipboard, planPasteSend } from '../../utils/terminalClipboard';
 import CustomUltraplanEditModal from './CustomUltraplanEditModal';
 import UltraplanExpertManagerModal from './UltraplanExpertManagerModal';
@@ -227,6 +227,8 @@ class TerminalPanel extends React.Component {
     });
     this._initialGeometryReady = false;
     this._terminalBootstrapReason = null;
+    this._sequentialInputSeq = 0;
+    this._pendingSequentialInputs = new Map();
     this.resizeObserver = null;
     this.state = {
       terminalFocused: false,
@@ -538,6 +540,7 @@ class TerminalPanel extends React.Component {
 
   componentWillUnmount() {
     this._qmHover.cancel();
+    this._failPendingSequentialInputs(false);
     // mid-drag 卸载兜底：恢复 body 样式，标记终止
     if (this._scratchDragging) {
       document.body.style.cursor = '';
@@ -939,7 +942,9 @@ class TerminalPanel extends React.Component {
   // (原 hook/sdk-* 类消息在合并 ws 后也会进来,但这里不识别 → try/catch 之外也无作用,自然忽略。)
   _onTerminalWsMessage = (msg) => {
     try {
-      if (msg.type === 'data') {
+      if (msg.type === 'input-sequential-done') {
+        this._settleSequentialInput(msg.seq, msg.ok === true);
+      } else if (msg.type === 'data') {
         this._terminalProtocol.acceptData(msg);
       } else if (msg.type === 'data-resync') {
         this._terminalProtocol.acceptSnapshot(msg);
@@ -1015,6 +1020,7 @@ class TerminalPanel extends React.Component {
       if (this._initialGeometryReady) this._bootstrapTerminalStream('connect');
       else this._terminalBootstrapReason = 'connect';
     } else if (state === 'close') {
+      this._failPendingSequentialInputs();
       this._terminalProtocol.resetConnection();
       // Stop queued stale bytes. Reconnect remains blank until its canonical
       // snapshot supplies the sole in-band reset/replay boundary.
@@ -1538,25 +1544,17 @@ class TerminalPanel extends React.Component {
   handlePresetSend = (description) => {
     if (!description) return;
     this.setState({ quickSettingsOpen: false, quickSettingsExpanded: null });
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({
-        type: 'input-sequential',
-        chunks: buildBracketPasteSubmitChunks(description),
-        settleMs: BRACKET_PASTE_SUBMIT_SETTLE_MS,
-      }));
-    }
+    this._sendSequentialTerminalInput(description, {
+      onFailure: this._notifySequentialInputFailure,
+    });
     if ((!isMobile || isPad) && this.terminal) this.terminal.focus();
   };
 
   handleClearContext = () => {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({
-        type: 'input-sequential',
-        chunks: buildBracketPasteSubmitChunks('/clear'),
-        settleMs: BRACKET_PASTE_SUBMIT_SETTLE_MS,
-      }));
-      this.props.onClearContextOptimistic?.();
-    }
+    this._sendSequentialTerminalInput('/clear', {
+      onSuccess: () => this.props.onClearContextOptimistic?.(),
+      onFailure: this._notifySequentialInputFailure,
+    });
     if ((!isMobile || isPad) && this.terminal) this.terminal.focus();
   };
 
@@ -1577,15 +1575,72 @@ class TerminalPanel extends React.Component {
     }
     // 先校验再重置，避免空模板导致用户输入被静默清空
     if (!assembled) return;
-    this.setState({ ultraplanOpen: false, ultraplanPrompt: '', ultraplanVariant: 'codeExpert', ultraplanFiles: [] });
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({
-        type: 'input-sequential',
-        chunks: buildBracketPasteSubmitChunks(assembled),
-        settleMs: BRACKET_PASTE_SUBMIT_SETTLE_MS,
-      }));
-    }
+    if (!this._sendSequentialTerminalInput(assembled, {
+      onSuccess: () => this.setState({
+        ultraplanPrompt: '',
+        ultraplanVariant: 'codeExpert',
+        ultraplanFiles: [],
+      }),
+      onFailure: () => {
+        this.setState({ ultraplanOpen: true });
+        this._notifySequentialInputFailure();
+      },
+    })) return;
+    // Hide the editor while the correlated operation is pending, but retain
+    // its draft until the server confirms that every chunk reached the PTY.
+    this.setState({ ultraplanOpen: false });
     if ((!isMobile || isPad) && this.terminal) this.terminal.focus();
+  };
+
+  _sendSequentialTerminalInput = (content, { onSuccess, onFailure } = {}) => {
+    const seq = this._nextSequentialInputSeq();
+    const request = buildBracketPasteSequentialRequest(
+      content,
+      seq,
+    );
+    if (!request) return false;
+    const operation = {
+      onSuccess,
+      onFailure,
+      timer: setTimeout(() => this._settleSequentialInput(seq, false), 30000),
+    };
+    this._pendingSequentialInputs.set(seq, operation);
+    const sent = sendTerminalSocketMessage(
+      this.ws,
+      request,
+      WebSocket.OPEN,
+    );
+    if (!sent) this._settleSequentialInput(seq, false);
+    return sent;
+  };
+
+  _settleSequentialInput = (seq, ok) => {
+    const operation = this._pendingSequentialInputs.get(seq);
+    if (!operation) return false;
+    this._pendingSequentialInputs.delete(seq);
+    clearTimeout(operation.timer);
+    try {
+      if (ok) operation.onSuccess?.();
+      else operation.onFailure?.();
+    } catch {}
+    return true;
+  };
+
+  _failPendingSequentialInputs = (notify = true) => {
+    for (const [seq, operation] of [...this._pendingSequentialInputs.entries()]) {
+      if (notify) this._settleSequentialInput(seq, false);
+      else {
+        this._pendingSequentialInputs.delete(seq);
+        clearTimeout(operation.timer);
+      }
+    }
+  };
+
+  _notifySequentialInputFailure = () => message.error(t('ui.sendFailed'));
+
+  _nextSequentialInputSeq = () => {
+    this._sequentialInputSeq = (this._sequentialInputSeq + 1) % Number.MAX_SAFE_INTEGER;
+    return `terminal-${Date.now().toString(36)}-${this._sequentialInputSeq.toString(36)}`;
   };
 
   openCustomUltraplanEditor = (item) => {

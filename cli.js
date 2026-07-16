@@ -13,7 +13,6 @@ import { INJECT_IMPORT, resolveCliPath, resolveNativePath, resolveNpmCodexPath, 
 import { appendCxvFinalConfigArgs, getDefaultModeRequestUserInputConfigArgs, normalizeCodexArgs, hasBypassPermissions, getReasoningSummaryConfigArgs, parseCodexInvocation } from './lib/cli-args.js';
 import { ensureHooks } from './lib/ensure-hooks.js';
 import { APPROVALS_REVIEWER_DEFAULT } from './lib/approval-reviewer.js';
-import { inspectCodexRequestUserInputSupport } from './lib/codex-appserver-capabilities.js';
 import { appendOtelTraceExporterConfigArgsOnce, getOtelTraceExporterConfigArgs, OTEL_TRACE_HEADERS_ENV, stripLegacyOtelConfigBlock, withOtelTraceAuthHeader } from './lib/otel-config.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -264,13 +263,6 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
 
   const workingDir = cwd || process.cwd();
 
-  const askProtocol = inspectCodexRequestUserInputSupport(codexPath);
-  if (askProtocol.verified) {
-    console.log(`[CX Viewer] Codex request_user_input protocol verified (${askProtocol.version}: ${askProtocol.methods.join(', ')})`);
-  } else {
-    console.warn(`[CX Viewer] Could not verify native request_user_input interception${askProtocol.version ? ` for ${askProtocol.version}` : ''}: ${askProtocol.error}`);
-  }
-
   // 注册工作区
   const { registerWorkspace } = await import('./workspace-registry.js');
   registerWorkspace(workingDir);
@@ -296,24 +288,11 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
   serverMod.setWorkspaceCodexPath(codexPath, isNpmVersion);
   await serverMod.startViewer();
 
-  // 等待服务器启动完成
-  await new Promise(resolve => {
-    const check = () => {
-      const port = serverMod.getPort();
-      if (port) resolve(port);
-      else setTimeout(check, 100);
-    };
-    setTimeout(check, 200);
-  });
-
   const port = serverMod.getPort();
   const protocol = serverMod.getProtocol();
 
   // 标记工作区已启动（跳过前端工作区选择器）
   serverMod.setWorkspaceLaunched(true);
-
-  // 启动日志监听和统计（startViewer 在 workspace 模式下跳过了这些）
-  serverMod.initPostLaunch();
 
   // Keep the temporary exporter process-local. Adding another [otel] table to
   // config.toml makes Codex reject an otherwise valid user configuration.
@@ -448,6 +427,10 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
         subcommandIndex: parseCodexInvocation(tuiArgs).subcommandIndex,
       },
     });
+    // The Codex TUI is the critical path. Log watching/statistics can attach
+    // after the PTY exists; watchLogFile starts at the current EOF and the
+    // regular history endpoints own older conversation loading.
+    serverMod.initPostLaunch();
   } catch (err) {
     console.error('[CX Viewer] Failed to spawn Codex:', err.message);
     if (_bridge) _bridge.stop();

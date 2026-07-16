@@ -556,33 +556,74 @@ function publishResumeSnapshot(gate, reason) {
   if (!resumeGateIsCurrent(gate)) return false;
   const published = publishCachedSnapshot(gate.state, reason);
   if (published) {
+    // Keep the exact payload that crossed the resume privacy boundary. A
+    // reconnecting client may replay this object while the gate remains active;
+    // it must never substitute a newer merely-cached snapshot.
+    gate.approvedReconnectSnapshot = gate.state.cachedSnapshot;
     gate.lastPublishedThroughSeq = gate.state.cachedSnapshot.throughSeq;
     gate.lastPublishedResizeGeneration = gate.state.cachedSnapshot.resizeGeneration;
   }
   return published;
 }
 
-function settleResumeGate(gate, reason, activityVersion, force = false) {
+function settleResumeGate(
+  gate,
+  reason,
+  activityVersion,
+  force = false,
+  publishWhileActive = false,
+) {
   if (!resumeGateIsCurrent(gate)) return;
   if (gate.snapshotInFlight) {
+    const sameActivity = gate.pendingFinal?.activityVersion === activityVersion;
     gate.pendingFinal = {
       reason,
       activityVersion,
-      force: force || gate.pendingFinal?.force === true,
+      // An absolute/quiet decision belongs to one activity version. Never
+      // carry it across newer output, or fresh bytes could inherit permission
+      // to release the privacy gate without reaching their own boundary.
+      force: force || (sameActivity && gate.pendingFinal?.force === true),
+      publishWhileActive: publishWhileActive
+        || (sameActivity && gate.pendingFinal?.publishWhileActive === true),
     };
     return;
   }
   gate.snapshotInFlight = true;
 
+  const drainPendingDecision = () => {
+    const pendingFinal = gate.pendingFinal;
+    gate.pendingFinal = null;
+    if (!pendingFinal || !resumeGateIsCurrent(gate)) return;
+    settleResumeGate(
+      gate,
+      pendingFinal.reason,
+      pendingFinal.activityVersion,
+      pendingFinal.force,
+      pendingFinal.publishWhileActive,
+    );
+  };
+
   void requestPtySnapshot().then(success => {
     gate.snapshotInFlight = false;
     if (!resumeGateIsCurrent(gate)) return;
-    const stillQuiet = force || (activityVersion === gate.activityVersion
+    const activityStable = activityVersion === gate.activityVersion;
+    const stillQuiet = force || (activityStable
       && gate.quietTimer === null);
     if (success) {
-      if (stillQuiet) {
-        const release = gate.releaseRequested
-          && activityVersion > gate.releaseAfterVersion;
+      // Explicit input is the recovery boundary the user asked for. Once one
+      // canonical cut has absorbed the first post-input output, release the
+      // gate immediately: subsequent keyboard echo must use ordinary deltas,
+      // not repeated full-screen snapshots or another quiet-period wait.
+      const releaseAfterInput = publishWhileActive
+        && gate.releaseRequested
+        && gate.activityVersion > gate.releaseAfterVersion;
+      if (stillQuiet || releaseAfterInput) {
+        // A successful quiet/absolute canonical cut is the recovery boundary.
+        // Keeping the gate alive after that point turns ordinary Codex output
+        // into periodic full-screen replays and destroys streaming smoothness.
+        // Input may establish the same boundary earlier, but neither path may
+        // keep normal rendering on the snapshot transport afterwards.
+        const release = stillQuiet || releaseAfterInput;
         if (release ? completeResumeGate(gate, reason) : publishResumeSnapshot(gate, reason)) {
           if (release) return;
         }
@@ -592,22 +633,16 @@ function settleResumeGate(gate, reason, activityVersion, force = false) {
         reason: gate.state.modelError ? 'resume-worker-failure' : 'resume-unsafe',
       });
     }
-    const pendingFinal = gate.pendingFinal;
-    gate.pendingFinal = null;
-    if (pendingFinal) {
-      settleResumeGate(
-        gate,
-        pendingFinal.reason,
-        pendingFinal.activityVersion,
-        pendingFinal.force,
-      );
-    }
+    drainPendingDecision();
   }, () => {
     gate.snapshotInFlight = false;
     if (!resumeGateIsCurrent(gate)) return;
     if (force || (activityVersion === gate.activityVersion && gate.quietTimer === null)) {
       publishResumeDiagnosticFallback(gate, { reason: 'resume-worker-failure' });
     }
+    // A quiet/absolute/input decision may have arrived while this request was
+    // in flight. Rejection must not consume its only wake-up edge.
+    drainPendingDecision();
   });
 }
 
@@ -624,6 +659,18 @@ function noteResumeOutput(gate, data) {
     },
     resumeGateTimings.quietMs,
   );
+  // The first canonical post-input cut establishes one safe stream boundary.
+  // settleResumeGate then releases the gate immediately so all later keyboard
+  // echo follows the normal low-latency delta path.
+  if (gate.releaseRequested && gate.activityVersion > gate.releaseAfterVersion) {
+    settleResumeGate(
+      gate,
+      'resume-input-progress',
+      gate.activityVersion,
+      false,
+      true,
+    );
+  }
 }
 
 function startResumeGate(proc, state) {
@@ -638,6 +685,7 @@ function startResumeGate(proc, state) {
     noConversationDetected: false,
     releaseRequested: false,
     releaseAfterVersion: Number.POSITIVE_INFINITY,
+    approvedReconnectSnapshot: null,
     lastPublishedThroughSeq: null,
     lastPublishedResizeGeneration: null,
     quietTimer: null,
@@ -661,7 +709,9 @@ function publishResumeDiagnosticFallback(gate, { exitCode = null, reason = 'resu
     : `[process exited with code ${exitCode}]`;
   const data = `\x1bc\r\n${status}\r\n`;
   installDegradedSnapshot(state, data);
-  return publishDegradedSnapshot(state, reason);
+  const published = publishDegradedSnapshot(state, reason);
+  if (published) gate.approvedReconnectSnapshot = state.degradedSnapshot;
+  return published;
 }
 
 async function finalizeResumeExit(gate, exitCode, notifyExit) {
@@ -1084,6 +1134,8 @@ export function resizePty(cols, rows) {
   if (!proc || !isCurrentState(state)) return false;
   if (cols === state.cols && rows === state.rows) return true;
 
+  const gate = resumeGate?.proc === proc && resumeGate.state === state
+    && resumeGateIsCurrent(resumeGate) ? resumeGate : null;
   flushBatch();
   if (!isCurrentProcess(proc, state)) return false;
   try {
@@ -1096,6 +1148,10 @@ export function resizePty(cols, rows) {
   // old-geometry output. Anything arriving later follows the resize event.
   flushBatch();
   if (!isCurrentProcess(proc, state)) return false;
+  const canReapproveAfterResize = Boolean(gate?.approvedReconnectSnapshot
+    && gate.approvedReconnectSnapshot.streamId === state.streamId
+    && gate.approvedReconnectSnapshot.throughSeq === state.outputSeq
+    && gate.approvedReconnectSnapshot.resizeGeneration === state.resizeGeneration);
   state.cols = cols;
   state.rows = rows;
   state.resizeGeneration++;
@@ -1110,6 +1166,13 @@ export function resizePty(cols, rows) {
     resetDegradedSnapshot(state, state.modelError || 'terminal geometry changed during degraded recovery');
   }
   emitGeometry(state);
+  // A browser bootstrap resize invalidates an old-grid approved baseline. If
+  // no hidden output followed that baseline, rebuild it for the new geometry
+  // immediately; otherwise the existing quiet boundary remains responsible.
+  // This prevents a silent PTY from leaving reconnect intents pending forever.
+  if (canReapproveAfterResize && resumeGateIsCurrent(gate)) {
+    settleResumeGate(gate, 'resume-resize', gate.activityVersion, true);
+  }
   return true;
 }
 
@@ -1191,6 +1254,55 @@ export function getOutputSnapshot() {
     recovering: resumeGate !== null,
     authoritative,
     fallback,
+    data: selected?.data ?? '',
+    bytes: selected?.bytes ?? 0,
+    truncated: false,
+    modelHealthy: Boolean(state && !state.modelError),
+  };
+}
+
+/**
+ * Return only a baseline that is safe to replay to a newly connected renderer.
+ *
+ * During resume/fork recovery, requestPtySnapshot() may populate cachedSnapshot
+ * before the quiet/privacy boundary approves it. The websocket path therefore
+ * cannot use getOutputSnapshot() directly. It may replay only the exact object
+ * previously published by the active gate. An older approved sequence remains
+ * useful while later private output is suppressed, but geometry must still
+ * match so the browser never restores a snapshot for another grid.
+ */
+export function getReconnectSnapshot() {
+  const state = terminalState;
+  const gate = resumeGate;
+  if (!gate || gate.state !== state || !resumeGateIsCurrent(gate)) {
+    const snapshot = getOutputSnapshot();
+    return {
+      ...snapshot,
+      reconnectSafe: snapshot.authoritative || snapshot.fallback,
+    };
+  }
+
+  const approved = gate.approvedReconnectSnapshot;
+  const geometryMatches = Boolean(approved
+    && isCurrentState(state)
+    && approved.streamId === state.streamId
+    && approved.resizeGeneration === state.resizeGeneration
+    && approved.cols === state.cols
+    && approved.rows === state.rows);
+  const selected = geometryMatches ? approved : null;
+  return {
+    streamId: state?.streamId ?? terminalStreamId,
+    // With no approved payload there is no snapshot watermark. Exposing the
+    // hidden current outputSeq beside empty data can make legacy consumers skip
+    // bytes they never received.
+    throughSeq: selected?.throughSeq ?? 0,
+    resizeGeneration: state?.resizeGeneration ?? 0,
+    cols: state?.cols ?? lastPtyCols,
+    rows: state?.rows ?? lastPtyRows,
+    recovering: true,
+    authoritative: selected?.authoritative === true,
+    fallback: selected?.fallback === true,
+    reconnectSafe: Boolean(selected),
     data: selected?.data ?? '',
     bytes: selected?.bytes ?? 0,
     truncated: false,

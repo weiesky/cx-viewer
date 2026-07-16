@@ -11,6 +11,7 @@ import {
   _setTerminalStateFactoryForTests,
   getOutputSnapshot,
   getPtyState,
+  getReconnectSnapshot,
   killPty,
   onPtyData,
   onPtyExit,
@@ -267,6 +268,7 @@ test('resume feeds history to Worker, suppresses renderer fanout, and input neve
     assert.equal(events[0].meta.snapshot, true);
     assert.equal(events[0].meta.throughSeq, 3);
     assert.equal(events[0].data, 'VISIBLE-SCREENRESPONSE-SUFFIX');
+    await waitFor(() => getPtyState().recovering === false);
     assert.equal(getPtyState().recovering, false);
     assert.deepEqual(proc.resizeCalls, []);
     remove();
@@ -276,7 +278,7 @@ test('resume feeds history to Worker, suppresses renderer fanout, and input neve
   }
 });
 
-test('resume remains gated across quiet history bursts until post-input output is canonicalized', async () => {
+test('resume releases after one quiet canonical boundary and keeps later output incremental', async () => {
   const tmp = mkdtempSync(join(tmpdir(), 'cxv-resume-bursts-'));
   try {
     setupFakes();
@@ -288,20 +290,108 @@ test('resume remains gated across quiet history bursts until post-input output i
     proc.emitData('PRIVATE-HISTORY-ONE');
     await waitFor(() => events.length === 1);
     assert.equal(events[0].meta.snapshot, true);
-    assert.equal(getPtyState().recovering, true);
+    assert.equal(getPtyState().recovering, false);
 
     await new Promise(resolve => setTimeout(resolve, 20));
-    proc.emitData('PRIVATE-HISTORY-TWO');
+    proc.emitData('LIVE-STREAM-TWO');
     await waitFor(() => events.length === 2);
-    assert.equal(events.every(event => event.meta.snapshot === true), true);
-    assert.equal(events.some(event => event.meta.snapshot === false), false);
-    assert.equal(getPtyState().recovering, true);
+    assert.equal(events[1].meta.snapshot, false);
+    assert.equal(events[1].data, 'LIVE-STREAM-TWO');
 
     writeToPty('USER-INPUT');
     proc.emitData('POST-INPUT-OUTPUT');
     await waitFor(() => events.length === 3);
-    assert.equal(events[2].meta.snapshot, true);
+    assert.equal(events[2].meta.snapshot, false);
+    remove();
+  } finally {
+    _resetPtyManagerForTests();
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('resume uses one canonical input boundary then restores low-latency deltas', async () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'cxv-resume-input-progress-'));
+  try {
+    setupFakes();
+    _setResumeGateTimingsForTests({ quietMs: 80, absoluteTimeoutMs: 1000 });
+    const proc = await spawnCodex(null, tmp, ['resume', '--last'], '/bin/codex-fake');
+    const events = [];
+    const remove = onPtyData((data, meta) => events.push({ data, meta }));
+
+    proc.emitData('RESTORED-SCREEN');
+    assert.equal(getPtyState().recovering, true);
+
+    writeToPty('a');
+    proc.emitData('ECHO-a');
+    await waitFor(() => events.length === 1);
+    assert.equal(events[0].meta.snapshot, true);
+    assert.equal(events[0].meta.reason, 'resume-input-progress');
+    assert.match(events[0].data, /ECHO-a/);
+    assert.equal(getPtyState().recovering, false,
+      'explicit input releases recovery after one canonical boundary');
+    assert.equal(events.some(event => event.meta.snapshot === false), false);
+
+    proc.emitData('ECHO-b');
+    await waitFor(() => events.length === 2);
+    assert.equal(events[1].meta.snapshot, false,
+      'subsequent keyboard echo must use the ordinary incremental path');
+    assert.equal(events[1].data, 'ECHO-b');
+    remove();
+  } finally {
+    _resetPtyManagerForTests();
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('resize after the recovery boundary can build a current reconnect baseline', async () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'cxv-resume-silent-resize-'));
+  try {
+    setupFakes();
+    _setResumeGateTimingsForTests({ quietMs: 3, absoluteTimeoutMs: 500 });
+    const proc = await spawnCodex(null, tmp, ['resume', '--last'], '/bin/codex-fake');
+
+    proc.emitData('APPROVED-SCREEN');
+    await waitFor(() => getReconnectSnapshot().reconnectSafe === true);
+    const approved = getReconnectSnapshot();
     assert.equal(getPtyState().recovering, false);
+
+    assert.equal(resizePty(137, 43), true);
+    assert.equal(await requestPtySnapshot(), true);
+    const resized = getReconnectSnapshot();
+    assert.equal(resized.recovering, false);
+    assert.equal(resized.cols, 137);
+    assert.equal(resized.rows, 43);
+    assert.match(resized.data, /APPROVED-SCREEN/);
+  } finally {
+    _resetPtyManagerForTests();
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('resume reconnect snapshot becomes ordinary current state after the first boundary', async () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'cxv-resume-reconnect-safe-'));
+  try {
+    setupFakes();
+    _setResumeGateTimingsForTests({ quietMs: 3, absoluteTimeoutMs: 500 });
+    const proc = await spawnCodex(null, tmp, ['resume', '--last'], '/bin/codex-fake');
+    const events = [];
+    const remove = onPtyData((data, meta) => events.push({ data, meta }));
+
+    proc.emitData('APPROVED-HISTORY');
+    await waitFor(() => events.length === 1);
+    const approved = getReconnectSnapshot();
+    assert.equal(approved.recovering, false);
+    assert.equal(approved.reconnectSafe, true);
+    assert.equal(approved.authoritative, true);
+    assert.match(approved.data, /APPROVED-HISTORY/);
+
+    proc.emitData('LATER-LIVE-OUTPUT');
+    await tick();
+    assert.equal(await requestPtySnapshot(), true);
+    const current = getReconnectSnapshot();
+    assert.equal(current.reconnectSafe, true);
+    assert.ok(current.throughSeq > approved.throughSeq);
+    assert.match(current.data, /LATER-LIVE-OUTPUT/);
     remove();
   } finally {
     _resetPtyManagerForTests();
@@ -320,7 +410,7 @@ test('fork loads history through the same privacy gate without resume fallback s
     proc.emitData('FORK-HISTORY');
     await waitFor(() => events.length === 1);
     assert.equal(events[0].meta.snapshot, true);
-    assert.equal(getPtyState().recovering, true);
+    assert.equal(getPtyState().recovering, false);
     proc.emitData('No conversation found\n');
     proc.emitExit(1);
     await tick();
@@ -464,10 +554,16 @@ test('resume Worker failure publishes only a fixed degraded baseline and keeps h
     assert.match(events[0].data, /terminal recovery unavailable/);
     assert.doesNotMatch(events[0].data, /HISTORY-AT-FAILURE/);
     assert.equal(getPtyState().recovering, true);
+    const approvedFallback = getReconnectSnapshot();
+    assert.equal(approvedFallback.reconnectSafe, true);
+    assert.equal(approvedFallback.fallback, true);
+    assert.equal(approvedFallback.data, events[0].data);
 
     proc.emitData('LIVE-AFTER-FAILURE');
     await tick();
     assert.equal(events.length, 1, 'unknown output remains private after model failure');
+    assert.equal(getReconnectSnapshot().data, approvedFallback.data);
+    assert.doesNotMatch(getReconnectSnapshot().data, /LIVE-AFTER-FAILURE/);
     remove();
   } finally {
     _resetPtyManagerForTests();
@@ -475,7 +571,7 @@ test('resume Worker failure publishes only a fixed degraded baseline and keeps h
   }
 });
 
-test('zero-output resume publishes a canonical baseline but keeps the privacy gate', async () => {
+test('zero-output resume releases after the absolute canonical boundary', async () => {
   const tmp = mkdtempSync(join(tmpdir(), 'cxv-canonical-resume-deadline-'));
   try {
     setupFakes();
@@ -488,7 +584,7 @@ test('zero-output resume publishes a canonical baseline but keeps the privacy ga
     assert.equal(events[0].meta.snapshot, true);
     assert.equal(events[0].meta.reason, 'resume-absolute');
     assert.equal(events[0].meta.throughSeq, 0);
-    assert.equal(getPtyState().recovering, true);
+    assert.equal(getPtyState().recovering, false);
     remove();
   } finally {
     _resetPtyManagerForTests();

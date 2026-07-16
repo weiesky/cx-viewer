@@ -19,7 +19,7 @@ import { isSystemText, classifyUserContent, isMainAgent, isTeammate, resolveTeam
 import { classifyRequest, formatRequestTag, formatTeammateLabel } from '../../utils/requestType';
 import { shouldExcludeFromConversation } from '../../utils/conversationEntryNormalize';
 import { playEvent as playVoiceEvent } from '../../utils/voicePackPlayer';
-import { buildChunksForAnswer, buildBracketPasteSubmitChunks, BRACKET_PASTE_SUBMIT_SETTLE_MS } from '../../utils/ptyChunkBuilder';
+import { buildChunksForAnswer, buildBracketPasteSequentialRequest } from '../../utils/ptyChunkBuilder';
 import { isPlanApprovalPrompt, isDangerousOperationPrompt, pickPlanApproveOptionNumber } from '../../utils/promptClassifier';
 import { reportSwallowed } from '../../utils/errorReport';
 import { isImageFile } from '../../utils/commandValidator';
@@ -218,6 +218,8 @@ class ChatView extends React.Component {
     this._modelResolutionRevision = 0;
     this._lastPendingPermissionModelName = null;
     this._pendingInputSeq = 0;
+    this._sequentialInputSeq = 0;
+    this._pendingSequentialInputs = new Map();
 
     // buildAllItems session 级缓存
     // 每项: { session, msgsLen, subCount, items, tsEntries, lastPendingAskId, lastPendingPlanId }
@@ -517,6 +519,49 @@ class ChatView extends React.Component {
     requestCursor: Array.isArray(this.props.requests) ? this.props.requests.length : 0,
     renderedItems: this.state.allItems,
   });
+
+  _nextSequentialInputSeq = () => {
+    this._sequentialInputSeq = (this._sequentialInputSeq + 1) % Number.MAX_SAFE_INTEGER;
+    return `chat-${Date.now().toString(36)}-${this._sequentialInputSeq.toString(36)}`;
+  };
+
+  _sendBracketPasteSequential = (content, { onSuccess, onFailure } = {}) => {
+    const seq = this._nextSequentialInputSeq();
+    const request = buildBracketPasteSequentialRequest(content, seq);
+    if (!request) return false;
+    const operation = {
+      onSuccess,
+      onFailure,
+      timer: setTimeout(() => this._settleBracketPasteSequential(seq, false), 30000),
+    };
+    this._pendingSequentialInputs.set(seq, operation);
+    let sent = false;
+    try { sent = this.context?.send?.(request) === true; } catch {}
+    if (!sent) this._settleBracketPasteSequential(seq, false);
+    return sent;
+  };
+
+  _settleBracketPasteSequential = (seq, ok) => {
+    const operation = this._pendingSequentialInputs.get(seq);
+    if (!operation) return false;
+    this._pendingSequentialInputs.delete(seq);
+    clearTimeout(operation.timer);
+    try {
+      if (ok) operation.onSuccess?.();
+      else operation.onFailure?.();
+    } catch {}
+    return true;
+  };
+
+  _failPendingSequentialInputs = (notify = true) => {
+    for (const [seq, operation] of [...this._pendingSequentialInputs.entries()]) {
+      if (notify) this._settleBracketPasteSequential(seq, false);
+      else {
+        this._pendingSequentialInputs.delete(seq);
+        clearTimeout(operation.timer);
+      }
+    }
+  };
 
   componentDidMount() {
     this.startRender();
@@ -969,6 +1014,7 @@ class ChatView extends React.Component {
 
   componentWillUnmount() {
     this._unmounted = true;
+    this._failPendingSequentialInputs(false);
     this._splitDrag.dispose();
     if (this._planAutoTimer) { clearInterval(this._planAutoTimer); this._planAutoTimer = null; }
     // 缓发超时 timer + 残留上传占位的 objectURL 清扫(卸载中 drain/超时回调已各自 _unmounted 守卫)。
@@ -2139,16 +2185,18 @@ class ChatView extends React.Component {
     } else if (this._inputWs && this._inputWs.readyState === WebSocket.OPEN) {
       // 终端模式下没有 textarea，直接通过 PTY 发送。
       // 用 bracket-paste 包裹避免 description 含 `/` `!` `\t` 等被 Ink TUI 当特殊键解析。
-      this._inputWs.send(JSON.stringify({
-        type: 'input-sequential',
-        chunks: buildBracketPasteSubmitChunks(description),
-        settleMs: BRACKET_PASTE_SUBMIT_SETTLE_MS,
-      }));
+      this._sendBracketPasteSequential(description, {
+        onFailure: () => message.error(t('ui.sendFailed')),
+      });
     }
   };
 
   // ─── UltraPlan handlers ─────────────────────────────────
   _handleUltraplanSend = () => {
+    const originalPrompt = this.state.ultraplanPrompt;
+    const originalFiles = this.state.ultraplanFiles;
+    const originalModalOpen = this.state.ultraplanModalOpen;
+    const originalPopoverOpen = this.state.ultraplanPopoverOpen;
     const trimmed = this.state.ultraplanPrompt.trim();
     if (!trimmed && this.state.ultraplanFiles.length === 0) return;
     const filePaths = this.state.ultraplanFiles.map(f => `"${f.path}"`).join(' ');
@@ -2201,11 +2249,19 @@ class ChatView extends React.Component {
       if (this.props.sdkMode) {
         this._inputWs.send(JSON.stringify({ type: 'sdk-user-message', text: assembled }));
       } else {
-        this._inputWs.send(JSON.stringify({
-          type: 'input-sequential',
-          chunks: buildBracketPasteSubmitChunks(assembled),
-          settleMs: BRACKET_PASTE_SUBMIT_SETTLE_MS,
-        }));
+        this._sendBracketPasteSequential(assembled, {
+          onFailure: () => {
+            this.setState(prev => ({
+              ultraplanModalOpen: originalModalOpen,
+              ultraplanPopoverOpen: originalPopoverOpen,
+              ultraplanPrompt: originalPrompt,
+              ultraplanVariant: variant,
+              ultraplanFiles: originalFiles,
+              pendingInputs: removePendingInputsById(prev.pendingInputs, [pendingRecord.id]),
+            }));
+            message.error(t('ui.sendFailed'));
+          },
+        });
       }
       this.scrollToBottom();
     });
@@ -2279,7 +2335,9 @@ class ChatView extends React.Component {
     try {
       // ask / sdk-ask 类消息交给 AskFlowController；返回 true 表示已处理 → 短路。
       if (this._askFlow.handleWsMessage(msg)) return;
-      if (msg.type === 'data') {
+      if (msg.type === 'input-sequential-done') {
+        this._settleBracketPasteSequential(msg.seq, msg.ok === true);
+      } else if (msg.type === 'data') {
         this._ptyProtocol.acceptData(msg);
       } else if (msg.type === 'data-resync') {
         // Replace only the prompt detector's 4KB rolling tail. This snapshot
@@ -2361,6 +2419,7 @@ class ChatView extends React.Component {
       return;
     }
     if (state !== 'close') return;
+    this._failPendingSequentialInputs();
     this._ptyProtocol.resetConnection();
     this._ptyPrompt.resetStream();
     if (this.state.pendingPtyPlan?.id) {
