@@ -24,9 +24,36 @@ function mockResponse() {
   response.headers = {};
   response.body = '';
   response.writeHead = (status, headers = {}) => { response.status = status; response.headers = headers; };
-  response.write = (value) => { response.body += value; return true; };
+  response.write = (value) => {
+    response.body += value;
+    response.emit('body-write');
+    return true;
+  };
   response.end = (value = '') => { response.body += value; response.writableEnded = true; };
   return response;
+}
+
+function waitForBody(response, pattern, timeoutMs = 2000) {
+  if (pattern.test(response.body)) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const cleanup = () => {
+      clearTimeout(timer);
+      response.off('body-write', onWrite);
+    };
+    const onWrite = () => {
+      if (!pattern.test(response.body)) return;
+      cleanup();
+      resolve();
+    };
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error(`timed out waiting for response body to match ${pattern}`));
+    }, timeoutMs);
+    timer.unref?.();
+    response.on('body-write', onWrite);
+    // Close the check/listener registration race.
+    onWrite();
+  });
 }
 
 test('object hydration is archive-scoped, reference-whitelisted and returns verified raw JSON', async () => {
@@ -128,7 +155,7 @@ test('live handle can replay from an acknowledged cursor behind the last socket 
       generation: snapshot.start.archive.generation,
       objectHandle: handle,
     });
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await waitForBody(response, /event: v2_commit/);
     assert.equal(response.status, 200);
     assert.match(response.body, /event: v2_commit/);
   } finally {
