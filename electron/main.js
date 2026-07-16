@@ -15,11 +15,19 @@ import { fork, execSync } from 'child_process';
 import { realpathSync, existsSync, readFileSync, writeFileSync, watch, mkdirSync, createWriteStream, readdirSync, statSync, unlinkSync } from 'fs';
 import { initDiag, appendDiag, attachDiagListeners, diagFlush } from './diag.js';
 import { buildMenuModel, serializeMenuModel } from './menu-model.js';
+import { electronRuntimePath, resolveElectronRuntimeRoot } from './runtime-paths.js';
 import { loadState, saveState, validateState } from './window-state.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const rootDir = join(__dirname, '..');
+const runtimeRoot = resolveElectronRuntimeRoot({
+  electronDir: __dirname,
+  resourcesPath: app.isPackaged ? process.resourcesPath : null,
+  // Only tab-worker consumes the parent-provided override. The main process
+  // resolves its own installation so a stale shell variable cannot mix builds.
+  explicitRoot: null,
+});
+const runtimeFile = (...segments) => electronRuntimePath(runtimeRoot, ...segments);
 
 // ─── 主进程防阻塞：console.* 守卫 ───────────────────────────
 // Windows 上写控制台是同步内核调用：从终端启动 + 用户在黑窗口里点选文字（QuickEdit
@@ -33,9 +41,9 @@ const devWarn = (...a) => { if (_isDev) console.warn(...a); };
 const devError = (...a) => { if (_isDev) console.error(...a); };
 // Windows 下 import(绝对路径) 会被 Node 把 'c:' 当 URL scheme 拒绝 (ERR_UNSUPPORTED_ESM_URL_SCHEME)。
 // pathToFileURL(p).href 在 POSIX 产出 file:///abs/.. 在 Windows 产出 file:///C:/.. —— 两平台 ESM 等价。
-const { t, setLang } = await import(pathToFileURL(join(rootDir, 'server', 'i18n.js')).href);
-const { getCodexConfigDir, LOG_DIR } = await import(pathToFileURL(join(rootDir, 'findcx.js')).href);
-const { isStaleLocalCodexBaseUrl } = await import(pathToFileURL(join(rootDir, 'lib', 'codex-config.js')).href);
+const { t, setLang } = await import(pathToFileURL(runtimeFile('i18n.js')).href);
+const { getCodexConfigDir, LOG_DIR } = await import(pathToFileURL(runtimeFile('findcx.js')).href);
+const { isStaleLocalCodexBaseUrl } = await import(pathToFileURL(runtimeFile('lib', 'codex-config.js')).href);
 
 // 白屏诊断日志（实现在 electron/diag.js）。
 initDiag(LOG_DIR);
@@ -106,7 +114,7 @@ if (process.versions.electron) {
   } catch { _nodePath = process.platform === 'win32' ? 'node' : '/usr/local/bin/node'; }
 }
 
-const { resolveNpmCodexPath, resolveNativePath } = await import(pathToFileURL(join(rootDir, 'findcx.js')).href);
+const { resolveNpmCodexPath, resolveNativePath } = await import(pathToFileURL(runtimeFile('findcx.js')).href);
 let codexPath = resolveNpmCodexPath();
 let isNpmVersion = !!codexPath;
 if (!codexPath) codexPath = resolveNativePath();
@@ -158,10 +166,10 @@ function killChildEscalating(child, escalateMs = 3000) {
 
 async function startMgmtServer() {
   try {
-    const { startProxy } = await import(pathToFileURL(join(rootDir, 'server', 'proxy.js')).href);
+    const { startProxy } = await import(pathToFileURL(runtimeFile('proxy.js')).href);
     const proxyPort = await startProxy();
     process.env.CXV_PROXY_PORT = String(proxyPort);
-    mgmtServerMod = await import(pathToFileURL(join(rootDir, 'server', 'server.js')).href);
+    mgmtServerMod = await import(pathToFileURL(runtimeFile('server.js')).href);
     await mgmtServerMod.startViewer();
     mgmtPort = mgmtServerMod.getPort();
     if (!mgmtPort) {
@@ -567,6 +575,7 @@ function createTab(projectPath, extraArgs = []) {
   // Legacy cc-viewer env may still be present in a user's shell; keep clearing it.
   delete childEnv.ANTHROPIC_BASE_URL;
   childEnv.CXV_PROJECT_DIR = realPath;
+  childEnv.CXV_RUNTIME_ROOT = runtimeRoot;
 
   // worker stdio：默认 inherit（行为与原版一致，零 IO 开销）；
   // CXV_DEBUG_WORKER_LOGS=1 时切到 pipe + 写文件（便于排查打包后从 Finder 启动的问题）
@@ -593,7 +602,7 @@ function createTab(projectPath, extraArgs = []) {
   // stdio 策略：debug 模式 pipe 到文件日志；dev 模式 inherit 方便终端观察；
   // 打包版一律 ignore——worker 若继承控制台句柄，从终端启动 + QuickEdit 点选黑窗口时
   // 写 stdout 的 worker 会被内核级无限期阻塞（单 tab 永久卡死面），且打包版输出本就无处可看。
-  const child = fork(join(__dirname, 'tab-worker.js'), [], {
+  const child = fork(runtimeFile('electron', 'tab-worker.js'), [], {
     execPath: _nodePath,
     cwd: realPath,
     env: childEnv,

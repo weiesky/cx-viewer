@@ -125,9 +125,11 @@ export function buildOtherChunks(answer, prompt, isMultiQuestion = false) {
   // "Type something" 选项：直接输入文字，不需要 Enter 激活
   // inquirer 在光标停在此选项时接受直接键入文字
   const text = answer.text || '';
-  for (const ch of text) {
-    chunks.push(ch);
-  }
+  // PTY preserves byte order within one write. Splitting free text into one
+  // chunk per code point made the server insert an 80ms delay after every
+  // character (500 chars = 40 seconds and 500 timers) without adding an ACK
+  // boundary. Keep text atomic and delay only at the semantic Enter boundary.
+  if (text) chunks.push(text);
   chunks.push(ENTER); // Confirm text and submit
 
   // Multi-question last question: Enter above auto-advances to Submit tab,
@@ -159,9 +161,7 @@ export function buildMultiSelectOtherChunks(answer, prompt, isMultiQuestion = fa
   // Type text directly into the "Type something" field
   // Typing auto-checks the checkbox — no Space/Enter needed
   const text = answer.text || '';
-  for (const ch of text) {
-    chunks.push(ch);
-  }
+  if (text) chunks.push(text);
 
   // Sacrifice char: ↑/↓ drops exactly one character when exiting text input mode.
   // Append ONE duplicate of the last char so the exit key drops the sacrifice, not the real text.

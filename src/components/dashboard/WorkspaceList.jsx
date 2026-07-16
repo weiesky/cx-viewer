@@ -4,6 +4,7 @@ import { FolderOpenOutlined, FolderOutlined, DeleteOutlined, PlusOutlined, Rocke
 import { t } from '../../i18n';
 import { apiUrl } from '../../utils/apiUrl';
 import { formatSize } from '../../utils/formatters';
+import { buildWorkspaceCodexArgs } from '../../../lib/cli-args.js';
 import styles from './WorkspaceList.module.css';
 
 const { Text, Title } = Typography;
@@ -258,9 +259,10 @@ export default function WorkspaceList({ onLaunch }) {
 
   const handleLaunch = (workspace, dangerousMode = false) => {
     setLaunching(workspace.id);
-    const extraArgs = [];
-    if (dangerousMode) extraArgs.push('--dangerously-skip-permissions');
-    if (workspace.logCount > 0) extraArgs.push('-c');
+    const extraArgs = buildWorkspaceCodexArgs({
+      dangerousMode,
+      resumeLast: workspace.logCount > 0,
+    });
     // Electron multi-tab mode: launch via IPC instead of server API
     if (window.electronAPI?.launchWorkspace) {
       window.electronAPI.launchWorkspace(workspace.path, extraArgs);

@@ -61,6 +61,7 @@ import { PermissionController } from './controllers/permissionController';
 import { ToolFileChangeController } from './controllers/toolFileChangeController';
 import { SplitDragController, TERMINAL_WIDTH_STORAGE_KEY, SIDEBAR_WIDTH_STORAGE_KEY } from './controllers/splitDragController';
 import { PtyPromptController } from './controllers/ptyPromptController';
+import { TerminalStreamController } from '../../utils/terminalStreamController';
 import { createPendingInputRecord, getPendingInputDisplayText, reconcilePendingInputs, removePendingInputsById } from '../../utils/pendingInputEcho';
 import { TERMINAL_CHAR_WIDTH, RESIZER_WIDTH_PX } from '../../utils/splitDragCalc';
 import { isMobile, isIOS, isPad } from '../../env';
@@ -476,6 +477,21 @@ class ChatView extends React.Component {
       isAskSubmitting: () => this._askFlow._askSubmitting,
       scrollToBottom: () => this.scrollToBottom(),
       now: () => Date.now(),
+    });
+    // Prompt detection consumes the same accepted stream as xterm. Raw frames
+    // received before the first snapshot, across a seq gap, or for stale
+    // geometry must never reach the 4KB prompt tail independently of the
+    // terminal renderer.
+    this._ptyProtocol = new TerminalStreamController({
+      onData: ({ data }) => this._ptyPrompt.appendData(data),
+      onSnapshot: ({ data }) => this._ptyPrompt.replaceSnapshot(data),
+      onGeometry: () => true,
+      onResync: ({ reason }) => this.context?.send?.({
+        type: 'resync-request',
+        reason: reason || 'requested',
+      }) !== false,
+      maxHeldBytes: 256 * 1024,
+      maxHeldMessages: 1024,
     });
   }
 
@@ -2263,10 +2279,22 @@ class ChatView extends React.Component {
     try {
       // ask / sdk-ask 类消息交给 AskFlowController；返回 true 表示已处理 → 短路。
       if (this._askFlow.handleWsMessage(msg)) return;
-      if (msg.type === 'data' || msg.type === 'data-resync') {
-        // data-resync(反压恢复快照)同样喂给 prompt 检测:洪泛窗口内出现的交互
-        // prompt 仍在快照末尾,控制器内部 buffer 自身 4KB 滚动封顶,无内存风险
-        this._ptyPrompt.appendData(msg.data);
+      if (msg.type === 'data') {
+        this._ptyProtocol.acceptData(msg);
+      } else if (msg.type === 'data-resync') {
+        // Replace only the prompt detector's 4KB rolling tail. This snapshot
+        // never enters ChatView conversation rendering/mainAgentSessions.
+        this._ptyProtocol.acceptSnapshot(msg);
+      } else if (msg.type === 'geometry') {
+        this._ptyProtocol.acceptGeometry(msg);
+      } else if (msg.type === 'transport-gap') {
+        if (msg.snapshotRequested) this._ptyProtocol.expectSnapshot();
+        else this._ptyProtocol.requestSnapshot(msg.reason || 'transport-gap');
+      } else if (msg.type === 'state') {
+        const relation = this._ptyProtocol.observeStream(msg.streamId);
+        if (relation === 'new') {
+          this._ptyPrompt.resetStream();
+        }
       } else if (msg.type === 'exit') {
           this._ptyPrompt.clearPrompt();
         } else if (msg.type === 'sdk-plan-pending') {
@@ -2333,6 +2361,8 @@ class ChatView extends React.Component {
       return;
     }
     if (state !== 'close') return;
+    this._ptyProtocol.resetConnection();
+    this._ptyPrompt.resetStream();
     if (this.state.pendingPtyPlan?.id) {
       this._resolvedPlanIds.add(this.state.pendingPtyPlan.id);
     }

@@ -15,6 +15,8 @@ import { appendToken, getBasePath } from '../../utils/apiUrl';
  * - 内部封装重连(2s 退避),消费者无感
  * - `addMessageHandler` 把单条 onmessage 派发给所有注册者(各自 switch type)
  * - `addStateListener` 通知 open/close,TerminalPanel 用它在 onopen 后立即 sendResize
+ * - 只缓存 state；PTY 字节不在 Provider 中积累。晚挂载的 TerminalPanel 通过
+ *   resync-request 获取服务端有界 TUI 快照，避免把历史对话再次回放进终端/ChatView
  *
  * 默认值是 no-op,纯 web 模式 / 未包 Provider 时调用不报错。
  */
@@ -26,9 +28,6 @@ export const TerminalWsContext = createContext({
 });
 
 const RECONNECT_DELAY_MS = 2000;
-const REPLAY_MAX_CHUNKS = 512;
-const REPLAY_MAX_BYTES = 2 * 1024 * 1024;
-
 export class TerminalWsProvider extends React.Component {
   constructor(props) {
     super(props);
@@ -37,8 +36,6 @@ export class TerminalWsProvider extends React.Component {
     this.stateListeners = new Set();
     this.reconnectTimer = null;
     this.lastStateMessage = null;
-    this.replayMessages = [];
-    this.replayBytes = 0;
     this._unmounted = false;
     this._ctxValue = {
       send: this.send,
@@ -85,18 +82,28 @@ export class TerminalWsProvider extends React.Component {
       return;
     }
     this.ws = ws;
-    this._resetReplayCache();
+    this._resetStateCache();
 
     ws.onopen = () => {
+      if (this.ws !== ws) return;
       this._notifyState('open');
     };
 
     ws.onmessage = (ev) => {
+      if (this.ws !== ws) return;
       let msg;
       try { msg = JSON.parse(ev.data); } catch {
         // 整条消息丢弃 = 数据流中间挖洞且无路径补发（概率极低：ws 帧不会截断 JSON）
-        // → 请求权威快照对齐兜底（服务端有冷却，不会风暴）
-        try { ws.send(JSON.stringify({ type: 'resync-request' })); } catch {}
+        // → 请求权威快照，并通知协议消费者立即暂停，不能等下一条 seq 才发现洞。
+        let snapshotRequested = false;
+        try {
+          ws.send(JSON.stringify({ type: 'resync-request', reason: 'parse-error' }));
+          snapshotRequested = true;
+        } catch {}
+        const gap = { type: 'transport-gap', reason: 'parse-error', snapshotRequested };
+        for (const h of this.messageHandlers) {
+          try { h(gap); } catch (e) { console.warn('[TerminalWsProvider] handler error:', e); }
+        }
         return;
       }
       this._rememberMessage(msg);
@@ -107,11 +114,13 @@ export class TerminalWsProvider extends React.Component {
     };
 
     ws.onerror = () => {
+      if (this.ws !== ws) return;
       this._notifyState('error');
     };
 
     ws.onclose = () => {
-      if (this.ws === ws) this.ws = null;
+      if (this.ws !== ws) return;
+      this.ws = null;
       this._notifyState('close');
       // 仅当 props.open 仍为 true 且未 unmount,才安排重连。
       if (!this._unmounted && this.props.open) this._scheduleReconnect();
@@ -126,49 +135,29 @@ export class TerminalWsProvider extends React.Component {
     if (this.ws) {
       const ws = this.ws;
       this.ws = null;
+      try { ws.onopen = null; } catch {}
+      try { ws.onmessage = null; } catch {}
+      try { ws.onerror = null; } catch {}
       try { ws.onclose = null; } catch {}
       try { ws.close(); } catch {}
+      if (!this._unmounted) this._notifyState('close');
     }
   };
 
-  _resetReplayCache = () => {
+  _resetStateCache = () => {
     this.lastStateMessage = null;
-    this.replayMessages = [];
-    this.replayBytes = 0;
   };
-
-  _messageBytes = (msg) => (
-    typeof msg?.data === 'string' ? msg.data.length : 0
-  );
 
   _rememberMessage = (msg) => {
     if (!msg || typeof msg.type !== 'string') return;
     if (msg.type === 'state') {
       this.lastStateMessage = msg;
-      return;
-    }
-    if (msg.type !== 'data' && msg.type !== 'data-resync' && msg.type !== 'exit') return;
-    const bytes = this._messageBytes(msg);
-    // data-resync 是服务端权威快照；保留它之前的增量会让新挂载终端重复渲染旧状态。
-    if (msg.type === 'data-resync') {
-      this.replayMessages = [msg];
-      this.replayBytes = bytes;
-    } else {
-      this.replayMessages.push(msg);
-      this.replayBytes += bytes;
-    }
-    while (this.replayMessages.length > REPLAY_MAX_CHUNKS || this.replayBytes > REPLAY_MAX_BYTES) {
-      const dropped = this.replayMessages.shift();
-      this.replayBytes -= this._messageBytes(dropped);
     }
   };
 
   _replayToHandler = (fn) => {
     if (this.lastStateMessage) {
       try { fn(this.lastStateMessage); } catch (e) { console.warn('[TerminalWsProvider] replay state handler error:', e); }
-    }
-    for (const msg of this.replayMessages) {
-      try { fn(msg); } catch (e) { console.warn('[TerminalWsProvider] replay handler error:', e); }
     }
   };
 

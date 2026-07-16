@@ -3,10 +3,10 @@
  *
  * 设计目标（仅一个核心优化 + 防回归）：
  *   1) 解决原实现 `_writeBuffer = _writeBuffer.slice(N)` 的 O(n²) 字符串切片
- *      —— 大流量（/resume 1MB+）下每帧复制整个剩余 buffer，导致 794ms self
+ *      —— 大流量下每帧复制整个剩余 buffer，导致 794ms self
  *      + GC +56%。改用「string[] queue + offset 指针」算法，整体 O(n)。
  *   2) 每帧仅 write 一个 chunk，节奏与原实现等价：
- *      - 不做 single-frame multi-chunk drain（会让 /resume 滚动从平滑变跳顿）
+ *      - 不做 single-frame multi-chunk drain（避免任意实时输出阻塞主线程）
  *      - 不设 MAX_BYTES_PER_FRAME（tab 切回时主线程暴吃 200ms）
  *
  * 消化力自适应（AIMD，Windows DOM 渲染器洪泛掉帧治理）：
@@ -47,8 +47,8 @@
  *     中止半截转义 + \x1b[?2026l 退出可能被撕裂配对的同步输出模式），依赖洪泛流
  *     自带的全屏重绘自愈，
  *     不调 term.reset()（保 scrollback、避免 WebGL 重建抖动）。
- *   - 单次 /resume 1MB+ push 低于水位不会误触；每帧节奏不变
- *     （不踩 tab 切回暴吃 / /resume 跳顿坑）。
+ *   - 会话历史不属于本队列：服务端只允许有界 TUI 恢复快照进入终端；
+ *     结构化历史由旁边的 ChatView 独立水合。
  *   - reset()：清空队列但保持可用（服务端 data-resync 对齐时用，区别于 dispose 终态）；
  *     同时把 chunk 复位到构造初值（平台保守初值，慢机由 AIMD 再收敛）并取消在途 rAF。
  */
@@ -79,6 +79,8 @@ const TRIM_NOTICE = '\x18\x1b[?2026l\r\n\x1b[33m[cx-viewer] output trimmed (rend
 // 各字节职责（关键：组合内**无任何序列清 scrollback**，重连/resync 后历史可上拉）：
 //   \x07 BEL    —— 若解析器停在 OSC payload 中，终结之（ground 态下是无声 bell，无害）
 //   \x18 CAN    —— 若停在 CSI/ESC 中，中止之 → GROUND（零残片防线**全靠这两字节**，非靠 RIS）
+//   \x1b[?2026l —— 强制退出同步输出，防旧流在 begin/end 中间断开后冻结 replay
+//   \x1b[?1049l —— 强制回 normal buffer，canonical serializer 再显式恢复 source buffer
 //   \x1b[2J ED2 —— 仅清可视区（scrollOnEraseInDisplay 默认 false=就地擦除，不滚入历史），
 //                  给重连/反压 resync 的快照一块干净视口，避免与陈旧当前帧重叠重复
 //   \x1b[H CUP  —— 光标归位视口左上（替代 RIS 的光标复位）
@@ -86,7 +88,7 @@ const TRIM_NOTICE = '\x18\x1b[?2026l\r\n\x1b[33m[cx-viewer] output trimmed (rend
 // 历史曾用 \x1bc RIS（= Terminal.reset()，新建 Buffer 连 scrollback 一起清空）——已弃：
 // 它让每次 ws 重连 / 反压 resync 都把用户历史清成只剩一屏、上拉不到。已用真实 xterm 6.0
 // headless 验证：本组合保留 scrollback 且对半截序列零残片（test/terminal-pipeline-oracle）。
-export const INBAND_RESET = '\x07\x18\x1b[2J\x1b[H\x1b[!p';
+export const INBAND_RESET = '\x07\x18\x1b[?2026l\x1b[?1049l\x1b[2J\x1b[H\x1b[!p';
 
 export class TerminalWriteQueue {
   /**
@@ -165,10 +167,10 @@ export class TerminalWriteQueue {
     let pending = this._pendingBytes();
     diagSet('writeQPendingBytes', pending);
     if (pending <= this._highWater) return;
-    // 单项超大（如 >2MB /resume 快照）时下方循环一项都不会丢——此时不得置
+    // 单项超大（如异常的 >2MB PTY burst）时下方循环一项都不会丢——此时不得置
     // trim 标记/计数，否则会给用户写假的 "output trimmed" 黄字（数据其实完整交付）
     const headBefore = this._head;
-    // length-1：最新一项永不丢（单项超大如 /resume 快照时整段保留，终端必须呈现最新状态）
+    // length-1：最新一项永不丢；服务端快照上限应保证正常路径不会产生超大单项
     while (this._head < this._queue.length - 1 && pending > this._trimTarget) {
       pending -= this._queue[this._head].length - this._offset;
       this._head++;

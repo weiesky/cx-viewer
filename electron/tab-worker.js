@@ -7,12 +7,14 @@
  * Then manually: startViewer() → initForWorkspace() → spawnCodex().
  * This mirrors the workspace-launch flow behind /api/workspaces/launch (cf. cli.js runCliMode).
  */
-import { dirname, join } from 'path';
+import { dirname } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
+import { electronRuntimePath, resolveElectronRuntimeRoot } from './runtime-paths.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const rootDir = join(__dirname, '..');
+const runtimeRoot = resolveElectronRuntimeRoot({ electronDir: __dirname });
+const runtimeFile = (...segments) => electronRuntimePath(runtimeRoot, ...segments);
 // Windows 下 import(绝对路径) 会被拒 (ERR_UNSUPPORTED_ESM_URL_SCHEME)；统一走 pathToFileURL。
 // POSIX 下等价 —— pathToFileURL('/abs/foo.js').href === 'file:///abs/foo.js'，Node ESM 对两种形式行为等价。
 const importAbs = (p) => import(pathToFileURL(p).href);
@@ -25,10 +27,6 @@ process.env.CXV_CLI_MODE = '1';
 process.env.CXV_WORKSPACE_MODE = '1';
 process.env.CXV_START_PORT = process.env.CXV_START_PORT || '7048';
 process.env.CXV_MAX_PORT = process.env.CXV_MAX_PORT || '7099';
-
-// 等首条 codex PTY 数据落入 outputBuffer 的兜底超时——超过仍 send ready 让前端开始加载。
-// codex TUI 启动通常 200-400ms 出首帧；600ms 留足空间又不至于让用户感受到明显延迟。
-const CODEX_STARTUP_TIMEOUT_MS = 600;
 
 // Receive launch command from parent
 process.on('message', async (msg) => {
@@ -55,18 +53,22 @@ let killPtyFn = null;
 
 async function launch({ path: projectPath, extraArgs = [], codexPath, isNpmVersion }) {
   console.log('[worker] launch:', projectPath, 'codex:', codexPath, 'npm:', isNpmVersion);
+  const { normalizeCodexArgs } = await importAbs(runtimeFile('lib', 'cli-args.js'));
+  const normalized = normalizeCodexArgs(Array.isArray(extraArgs) ? extraArgs : []);
+  const codexArgs = normalized.codexArgs;
+
   // 1. Register hooks (idempotent)
-  const { ensureHooks } = await importAbs(join(rootDir, 'server', 'lib', 'ensure-hooks.js'));
+  const { ensureHooks } = await importAbs(runtimeFile('lib', 'ensure-hooks.js'));
   ensureHooks();
 
   // 2. Start proxy
-  const { startProxy } = await importAbs(join(rootDir, 'server', 'proxy.js'));
+  const { startProxy } = await importAbs(runtimeFile('proxy.js'));
   const proxyPort = await startProxy();
   process.env.CXV_PROXY_PORT = String(proxyPort);
   process.env.CXV_PROJECT_DIR = projectPath;
 
   // 3. Import server.js (workspace mode → skips auto-start)
-  serverMod = await importAbs(join(rootDir, 'server', 'server.js'));
+  serverMod = await importAbs(runtimeFile('server.js'));
 
   // 4. Manually start server
   await serverMod.startViewer();
@@ -77,13 +79,13 @@ async function launch({ path: projectPath, extraArgs = [], codexPath, isNpmVersi
 
   // 6. Store Codex path/args for potential later use by server APIs
   if (codexPath) {
-    serverMod.setWorkspaceCodexArgs(extraArgs);
+    serverMod.setWorkspaceCodexArgs(codexArgs);
     serverMod.setWorkspaceCodexPath(codexPath, isNpmVersion);
   }
 
   // 7. Initialize workspace log directory (sets LOG_FILE, _projectName, _logDir)
   //    forceNew: false — 复用最近的日志文件以保留历史数据
-  const { initForWorkspace } = await importAbs(join(rootDir, 'server', 'interceptor.js'));
+  const { initForWorkspace } = await importAbs(runtimeFile('interceptor.js'));
   const result = initForWorkspace(projectPath, { forceNew: false });
 
   // 7b. Mark workspace as launched so React app shows chat view instead of workspace selector
@@ -92,11 +94,12 @@ async function launch({ path: projectPath, extraArgs = [], codexPath, isNpmVersi
   // 7c. Start log watcher, stats worker, streaming status (mirrors /api/workspaces/launch logic)
   serverMod.initPostLaunch();
 
-  // 8. Spawn Codex PTY FIRST so its initial TUI lands in outputBuffer
-  // 之前是先 send ready 再 spawnCodex；那种顺序下前端 ws 可能在 PTY 启动前就连上，
-  // outputBuffer 为空 + codex 等待输入不再重绘 → 主 TerminalPanel 黑屏。
-  // 现在等 spawnCodex 完成且首条 PTY 数据落地（或 600ms 兜底超时）后再 send ready。
-  const { spawnCodex, killPty, onPtyExit, onPtyData } = await importAbs(join(rootDir, 'server', 'pty-manager.js'));
+  // 8. Spawn Codex PTY before reporting the tab ready. spawnCodexRequest resolves
+  // once the process and its listeners exist; terminal readiness is then driven
+  // by the canonical headless-terminal snapshot flow instead of raw PTY bytes. In
+  // particular, resume history may intentionally be suppressed, so waiting for
+  // its first byte would delay the whole desktop tab without making it usable.
+  const { spawnCodexRequest, killPty, onPtyExit } = await importAbs(runtimeFile('pty-manager.js'));
   killPtyFn = killPty;
 
   onPtyExit((code) => {
@@ -106,13 +109,9 @@ async function launch({ path: projectPath, extraArgs = [], codexPath, isNpmVersi
   if (codexPath) {
     try {
       console.log('[worker] spawnCodex proxyPort:', proxyPort, 'serverPort:', port, 'path:', projectPath);
-      await spawnCodex(proxyPort, projectPath, extraArgs, codexPath, isNpmVersion, port, serverMod.getProtocol(), serverMod.getInternalToken());
-      // 等首条 PTY 数据 或 超时兜底（codex TUI 启动通常 200-400ms 内首帧）
-      await new Promise((resolve) => {
-        let done = false;
-        const finish = () => { if (done) return; done = true; clearTimeout(timer); remove(); resolve(); };
-        const timer = setTimeout(finish, CODEX_STARTUP_TIMEOUT_MS);
-        const remove = onPtyData(() => finish());
+      await spawnCodexRequest({
+        proxyPort, cwd: projectPath, args: codexArgs, codexPath, isNpmVersion,
+        serverPort: port, invocation: normalized.invocation,
       });
     } catch (err) {
       try { process.send({ type: 'pty-error', message: err.message }); } catch {}
@@ -122,7 +121,8 @@ async function launch({ path: projectPath, extraArgs = [], codexPath, isNpmVersi
     }
   }
 
-  // 9. Notify parent — view will load with outputBuffer already populated
+  // 9. Notify parent immediately after a successful spawn. The web terminal can
+  // connect while resume history is being parsed and receive its safe snapshot.
   const token = serverMod.getAccessToken();
   console.log('[worker] sending ready:', port, result.projectName);
   process.send({

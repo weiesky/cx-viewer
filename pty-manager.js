@@ -1,443 +1,1199 @@
-import { resolveNativePath, BINARY_NAME } from './findcx.js';
-import { fileURLToPath } from 'node:url';
-import { join, dirname, basename } from 'node:path';
-import { chmodSync, statSync, mkdirSync, appendFileSync, readFileSync } from 'node:fs';
-import { platform, arch, homedir } from 'node:os';
 import { execSync } from 'node:child_process';
+import { chmodSync, statSync } from 'node:fs';
+import { arch, platform } from 'node:os';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import { BINARY_NAME, resolveNativePath } from './findcx.js';
+import { parseCodexInvocation, stripResumeInvocation } from './lib/cli-args.js';
+import { TerminalStateModel } from './lib/terminal-state-model.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+const LIVE_FRAME_CHARS = 64 * 1024;
+const BATCH_FLUSH_CHARS = 256 * 1024;
+const MAX_SNAPSHOT_SUFFIX_BYTES = 32 * 1024;
+const MIN_MAX_SNAPSHOT_BYTES = 256 * 1024;
+const MAX_SNAPSHOT_BYTES = 1536 * 1024;
+const MAX_SNAPSHOT_ATTEMPTS = 2;
+const MAX_DEGRADED_SNAPSHOT_BYTES = 128 * 1024;
+const MAX_SEQUENTIAL_JOBS = 64;
+const NO_CONVERSATION_MESSAGE = 'No conversation found';
+const DEFAULT_RESUME_GATE_TIMINGS = Object.freeze({
+  quietMs: 50,
+  absoluteTimeoutMs: 5000,
+});
+
 let ptyProcess = null;
+let terminalState = null;
 let dataListeners = [];
+let rawDataListeners = [];
+let geometryListeners = [];
+let stateListeners = [];
 let exitListeners = [];
 let lastExitCode = null;
-let outputBuffer = '';
 let currentWorkspacePath = null;
-let lastWorkspacePath = null; // 进程退出后保留，用于 respawn shell
+let lastWorkspacePath = null;
 let lastPtyCols = 120;
 let lastPtyRows = 30;
-const MAX_BUFFER = 200000;
-let batchBuffer = '';
-let batchScheduled = false;
+let batchChunks = [];
+let batchChars = 0;
+let batchImmediate = null;
+let terminalStreamId = 0;
+let lifecycleGeneration = 0;
+let spawnQueue = Promise.resolve();
+let resumeGate = null;
+let sequentialJobs = [];
+let sequentialActive = null;
+let resumeGateTimings = { ...DEFAULT_RESUME_GATE_TIMINGS };
 let _ptyImportForTests = null;
-let outputHistoryPath = null;
+let _terminalStateFactoryForTests = null;
 
-function ensureOutputHistory({ reset = false } = {}) {
-  const historyDir = process.env.CXV_RUNTIME_DIR || join(homedir(), '.codex', 'cx-viewer', 'runtime');
-  mkdirSync(historyDir, { recursive: true });
-  if (reset || !outputHistoryPath) {
-    outputHistoryPath = join(historyDir, `terminal-history-${Date.now()}.log`);
-    appendFileSync(outputHistoryPath, '', 'utf8');
+function withSpawnLock(task) {
+  const run = spawnQueue.catch(() => {}).then(task);
+  spawnQueue = run.catch(() => {});
+  return run;
+}
+
+function isCurrentState(state) {
+  return terminalState === state && state?.streamId === terminalStreamId && !state.disposed;
+}
+
+function isCurrentProcess(proc, state) {
+  return ptyProcess === proc && isCurrentState(state);
+}
+
+function finishSequentialJob(job, ok) {
+  if (!job || job.finished) return;
+  job.finished = true;
+  if (job.timer) clearTimeout(job.timer);
+  job.timer = null;
+  if (sequentialActive === job) sequentialActive = null;
+  const index = sequentialJobs.indexOf(job);
+  if (index >= 0) sequentialJobs.splice(index, 1);
+  try { job.onComplete?.(ok); } catch { }
+  if (!sequentialActive && sequentialJobs.length > 0) setImmediate(pumpSequentialJobs);
+}
+
+function cancelSequentialJobs() {
+  const jobs = [...sequentialJobs];
+  if (sequentialActive && !jobs.includes(sequentialActive)) jobs.unshift(sequentialActive);
+  sequentialJobs = [];
+  sequentialActive = null;
+  for (const job of jobs) {
+    if (job.timer) clearTimeout(job.timer);
+    job.timer = null;
+    if (job.finished) continue;
+    job.finished = true;
+    try { job.onComplete?.(false); } catch { }
   }
 }
 
-export function _setPtyImportForTests(fn) {
-  _ptyImportForTests = fn;
-}
-
-export function _resetPtyManagerForTests() {
-  killPty();
-  dataListeners = [];
-  exitListeners = [];
-  lastExitCode = null;
-  outputBuffer = '';
-  currentWorkspacePath = null;
-  lastWorkspacePath = null;
-  lastPtyCols = 120;
-  lastPtyRows = 30;
-  batchBuffer = '';
-  batchScheduled = false;
-  _ptyImportForTests = null;
-  outputHistoryPath = null;
-}
-
-async function getPty() {
-  if (typeof _ptyImportForTests === 'function') {
-    return _ptyImportForTests();
-  }
-  const ptyMod = await import('node-pty');
-  return ptyMod.default || ptyMod;
-}
-
-/**
- * 在 outputBuffer 截断时，找到安全的截断位置，
- * 避免从 ANSI 转义序列中间开始导致终端状态紊乱。
- * 策略：从截断点向后扫描，跳过可能被截断的不完整转义序列。
- */
-function findSafeSliceStart(buf, rawStart) {
-  // 从 rawStart 开始，向后最多扫描 64 字节寻找安全起点
-  const scanLimit = Math.min(rawStart + 64, buf.length);
-  let i = rawStart;
-  while (i < scanLimit) {
-    const ch = buf.charCodeAt(i);
-    // 如果当前字符是 ESC (0x1b)，可能是新转义序列的开头，
-    // 但也可能是被截断的序列的中间部分，跳过整个序列
-    if (ch === 0x1b) {
-      // 找到 ESC，向后寻找序列结束符（字母字符）
-      let j = i + 1;
-      while (j < scanLimit && !((buf.charCodeAt(j) >= 0x40 && buf.charCodeAt(j) <= 0x7e) && j > i + 1)) {
-        j++;
-      }
-      if (j < scanLimit) {
-        // 找到完整序列末尾，从下一个字符开始是安全的
-        return j + 1;
-      }
-      // 序列不完整，继续扫描
-      i = j;
+function pumpSequentialJobs() {
+  if (sequentialActive) return;
+  while (sequentialJobs.length > 0) {
+    const job = sequentialJobs[0];
+    if (job.finished) {
+      sequentialJobs.shift();
       continue;
     }
-    // 如果字符是 CSI 参数字符 (0x30-0x3f) 或中间字符 (0x20-0x2f)，
-    // 说明我们在转义序列中间，继续向后
-    if ((ch >= 0x20 && ch <= 0x3f)) {
-      i++;
+    if (!isCurrentProcess(job.proc, job.state)) {
+      finishSequentialJob(job, false);
       continue;
     }
-    // 普通可见字符或控制字符（非转义相关），这是安全位置
+    sequentialActive = job;
     break;
   }
-  return i < buf.length ? i : rawStart;
-}
+  const job = sequentialActive;
+  if (!job) return;
 
-function flushBatch() {
-  batchScheduled = false;
-  if (!batchBuffer) return;
-  const chunk = batchBuffer;
-  batchBuffer = '';
-  if (outputHistoryPath) {
-    try { appendFileSync(outputHistoryPath, chunk, 'utf8'); } catch { }
-  }
-  for (const cb of dataListeners) {
-    try { cb(chunk); } catch { }
-  }
-}
-
-function fixSpawnHelperPermissions() {
-  try {
-    const os = platform();
-    const cpu = arch();
-    const helperPath = join(__dirname, 'node_modules', 'node-pty', 'prebuilds', `${os}-${cpu}`, 'spawn-helper');
-    const stat = statSync(helperPath);
-    if (!(stat.mode & 0o111)) {
-      chmodSync(helperPath, stat.mode | 0o755);
+  const sendNext = () => {
+    job.timer = null;
+    if (job.finished || sequentialActive !== job) return;
+    if (!isCurrentProcess(job.proc, job.state)) {
+      finishSequentialJob(job, false);
+      return;
     }
+    if (job.index >= job.chunks.length) {
+      finishSequentialJob(job, true);
+      return;
+    }
+    const chunk = job.chunks[job.index++];
+    try {
+      requestResumeGateRelease(job.proc, job.state);
+      job.proc.write(chunk);
+    } catch {
+      finishSequentialJob(job, false);
+      return;
+    }
+    const semanticBoundary = chunk === ' ' || chunk === '\r'
+      || chunk === '\x1b[C' || chunk === '\x1b[A' || chunk === '\x1b[B'
+      || chunk.endsWith('\x1b[201~');
+    const delay = semanticBoundary ? job.settleMs : Math.min(80, job.settleMs);
+    job.timer = setTimeout(sendNext, delay);
+  };
+  sendNext();
+}
+
+function createStateModel(options) {
+  if (typeof _terminalStateFactoryForTests === 'function') {
+    return _terminalStateFactoryForTests(options);
+  }
+  return new TerminalStateModel(options);
+}
+
+function safeFailureMessage(error) {
+  return String(error?.message || error || 'unknown Worker failure')
+    .replace(/[\x00-\x1f\x7f]/g, ' ')
+    .slice(0, 240);
+}
+
+function resetDegradedSnapshot(state, reason = state.modelError) {
+  if (!state) return;
+  const message = safeFailureMessage(reason);
+  const data = `\x1bc\r\n\x1b[31m[CX Viewer] terminal recovery unavailable: ${message}\x1b[0m\r\n`;
+  installDegradedSnapshot(state, data);
+}
+
+function installDegradedSnapshot(state, data) {
+  state.degradedSnapshot = {
+    streamId: state.streamId,
+    throughSeq: state.outputSeq,
+    resizeGeneration: state.resizeGeneration,
+    cols: state.cols,
+    rows: state.rows,
+    data: String(data || ''),
+    bytes: Buffer.byteLength(String(data || ''), 'utf8'),
+    truncated: false,
+    fallback: true,
+  };
+}
+
+function markStateModelFailed(state, error) {
+  if (!state || state.modelError) return;
+  state.modelError = error instanceof Error ? error : new Error(String(error));
+  resetDegradedSnapshot(state);
+}
+
+function appendDegradedFrame(state, seq, data) {
+  let fallback = state.degradedSnapshot;
+  if (!fallback) return;
+  let text = data;
+  let bytes = Buffer.byteLength(text, 'utf8');
+  if (fallback.bytes + bytes > MAX_DEGRADED_SNAPSHOT_BYTES) {
+    resetDegradedSnapshot(state, 'degraded output window restarted after 128 KiB');
+    fallback = state.degradedSnapshot;
+  }
+  const remaining = MAX_DEGRADED_SNAPSHOT_BYTES - fallback.bytes;
+  if (bytes > remaining) {
+    const encoded = Buffer.from(text, 'utf8');
+    let start = encoded.length - remaining;
+    while (start < encoded.length && (encoded[start] & 0xc0) === 0x80) start++;
+    text = encoded.subarray(start).toString('utf8');
+    bytes = Buffer.byteLength(text, 'utf8');
+    fallback.truncated = true;
+  }
+  fallback.data += text;
+  fallback.bytes += bytes;
+  fallback.throughSeq = seq;
+}
+
+function disposeState(state) {
+  if (!state || state.disposed) return;
+  state.disposed = true;
+  state.snapshotCapture = null;
+  state.cachedSnapshot = null;
+  try {
+    const result = state.model?.dispose?.();
+    if (result?.catch) void result.catch(() => {});
   } catch { }
 }
 
-/**
- * 从用户 shell 中提取 codex 命令的代理环境变量。
- * 用户可能在 .zshrc/.bashrc 中通过 shell function 为 codex 设置代理，例如：
- *   codex() { HTTPS_PROXY=http://... HTTP_PROXY=http://... command codex "$@" }
- * cxv 通过 pty.spawn 直接执行 codex 二进制，会绕过这个 shell function，
- * 导致代理环境变量丢失，引发网络问题。
- * 此函数检测并提取这些内联代理设置。
- */
-function extractShellProxyEnv() {
-  const shell = process.env.SHELL || '/bin/zsh';
-  try {
-    // 用交互模式获取 shell function 定义（-ic 加载 .zshrc/.bashrc）
-    const funcBody = execSync(
-      `${shell} -ic 'declare -f ${BINARY_NAME} 2>/dev/null || type ${BINARY_NAME} 2>/dev/null'`,
-      { encoding: 'utf-8', timeout: 5000, stdio: ['pipe', 'pipe', 'pipe'] }
-    );
-    // 匹配内联代理设置：HTTPS_PROXY=... HTTP_PROXY=... 等
-    const proxyVars = {};
-    const proxyRe = /\b(HTTPS?_PROXY|https?_proxy|ALL_PROXY|all_proxy|NO_PROXY|no_proxy)=(\S+)/g;
-    let m;
-    while ((m = proxyRe.exec(funcBody)) !== null) {
-      proxyVars[m[1]] = m[2];
-    }
-    return proxyVars;
-  } catch {
-    return {};
-  }
-}
+function beginTerminalStream() {
+  cancelSequentialJobs();
+  cancelResumeGate();
+  flushBatch();
+  disposeState(terminalState);
+  terminalStreamId++;
+  clearBatch();
 
-export async function spawnCodex(proxyPort, cwd, extraArgs = [], codexPath = null, isNpmVersion = false, serverPort = null) {
-  if (ptyProcess) {
-    killPty();
-  }
-
-  const pty = await getPty();
-
-  fixSpawnHelperPermissions();
-
-  // 如果没有提供 codexPath，尝试自动查找
-  if (!codexPath) {
-    codexPath = resolveNativePath();
-    if (!codexPath) {
-      throw new Error('codex not found');
-    }
-  }
-
-  const env = { ...process.env };
-
-  // 从用户 shell function 中提取代理设置（解决 cxv 绕过 shell function 的问题）
-  if (!env.HTTPS_PROXY && !env.HTTP_PROXY && !env.https_proxy && !env.http_proxy) {
-    const shellProxy = extractShellProxyEnv();
-    Object.assign(env, shellProxy);
-  }
-
-  // 仅在 proxyPort 指定时设置代理环境变量（直接模式不设置）
-  if (proxyPort) {
-    env.OPENAI_BASE_URL = `http://127.0.0.1:${proxyPort}`;
-  }
-  // 不再设置 CXV_PROXY_MODE，拦截器已禁用
-
-  // Resolve real Node.js path (Electron's process.execPath is the Electron binary)
-  let nodePath = process.execPath;
-  if (process.versions.electron) {
-    const { execSync } = await import('node:child_process');
-    try {
-      nodePath = execSync(process.platform === 'win32' ? 'where node' : 'which node', { encoding: 'utf-8' }).trim();
-      if (process.platform === 'win32') nodePath = nodePath.split('\n')[0].trim();
-    } catch {
-      nodePath = process.platform === 'win32' ? 'node' : '/usr/local/bin/node';
-    }
-  }
-
-  // Override EDITOR/VISUAL to use built-in FileContentView
-  if (serverPort) {
-    const editorScript = join(__dirname, 'lib', 'cxv-editor.js');
-    env.EDITOR = `${nodePath} ${editorScript}`;
-    env.VISUAL = env.EDITOR;
-    env.CXV_EDITOR_PORT = String(serverPort);
-    env.CXVIEWER_PORT = String(serverPort); // For ask-hook bridge
-  }
-
-  let command = codexPath;
-  let args = [...extraArgs];
-
-  // 如果是 npm 版本（cli.js），需要使用 node 来运行
-  if (isNpmVersion && codexPath.endsWith('.js')) {
-    command = nodePath;
-    args = [codexPath, ...extraArgs];
-  }
-
-  lastExitCode = null;
-  outputBuffer = '';
-  ensureOutputHistory({ reset: true });
-  currentWorkspacePath = cwd || process.cwd();
-  lastWorkspacePath = currentWorkspacePath;
-
-  ptyProcess = pty.spawn(command, args, {
-    name: 'xterm-256color',
+  const model = createStateModel({
     cols: lastPtyCols,
     rows: lastPtyRows,
-    cwd: currentWorkspacePath,
-    env,
+    scrollback: 1000,
+    // Conversation history belongs to ChatView. A reconnect snapshot contains
+    // the canonical visible terminal only, which keeps renderer work bounded.
+    snapshotScrollback: 0,
+    generation: `terminal-stream-${terminalStreamId}`,
   });
+  const state = {
+    streamId: terminalStreamId,
+    model,
+    outputSeq: 0,
+    resizeGeneration: 0,
+    cols: lastPtyCols,
+    rows: lastPtyRows,
+    cachedSnapshot: null,
+    degradedSnapshot: null,
+    snapshotRefresh: null,
+    snapshotCapture: null,
+    modelError: null,
+    disposed: false,
+  };
+  terminalState = state;
 
-  ptyProcess.onData((data) => {
-    outputBuffer += data;
-    if (outputBuffer.length > MAX_BUFFER) {
-      const rawStart = outputBuffer.length - MAX_BUFFER;
-      const safeStart = findSafeSliceStart(outputBuffer, rawStart);
-      outputBuffer = outputBuffer.slice(safeStart);
-    }
-    batchBuffer += data;
-    if (!batchScheduled) {
-      batchScheduled = true;
-      setImmediate(flushBatch);
-    }
-  });
-
-  ptyProcess.onExit(({ exitCode }) => {
-    flushBatch();
-    lastExitCode = exitCode;
-    ptyProcess = null;
-
-    // Auto-retry without -c/--continue if "No conversation found"
-    const hasContinue = extraArgs.includes('-c') || extraArgs.includes('--continue');
-    if (hasContinue && exitCode !== 0 && outputBuffer.includes('No conversation found')) {
-      console.error('[CX Viewer] -c failed (no conversation), retrying without -c');
-      const retryArgs = extraArgs.filter(a => a !== '-c' && a !== '--continue');
-      spawnCodex(proxyPort, cwd, retryArgs, codexPath, isNpmVersion, serverPort);
-      return;
-    }
-
-    // 保留 lastWorkspacePath，不清除，用于 respawn
-    currentWorkspacePath = null;
-    for (const cb of exitListeners) {
-      try { cb(exitCode); } catch { }
-    }
-  });
-
-  return ptyProcess;
+  if (model?.ready?.catch) {
+    void model.ready.catch(error => {
+      if (isCurrentState(state)) markStateModelFailed(state, error);
+    });
+  }
+  return state;
 }
 
-export function writeToPty(data) {
-  if (ptyProcess) {
-    ptyProcess.write(data);
+function clearBatch() {
+  batchChunks = [];
+  batchChars = 0;
+  if (batchImmediate) clearImmediate(batchImmediate);
+  batchImmediate = null;
+}
+
+function splitLiveFrames(data) {
+  if (data.length <= LIVE_FRAME_CHARS) return [data];
+  const frames = [];
+  for (let offset = 0; offset < data.length; offset += LIVE_FRAME_CHARS) {
+    frames.push(data.slice(offset, offset + LIVE_FRAME_CHARS));
+  }
+  return frames;
+}
+
+function appendSnapshotSuffix(state, seq, data) {
+  const capture = state.snapshotCapture;
+  if (!capture || seq <= capture.targetSeq) return;
+  if (capture.overflow) return;
+  const bytes = Buffer.byteLength(data, 'utf8');
+  if (capture.suffixBytes + bytes > MAX_SNAPSHOT_SUFFIX_BYTES) {
+    capture.overflow = true;
+    capture.suffix = [];
+    capture.suffixBytes = 0;
+    return;
+  }
+  capture.suffix.push({ seq, data });
+  capture.suffixBytes += bytes;
+}
+
+function publishLiveFrame(data, meta) {
+  for (const cb of dataListeners) {
+    try { cb(data, meta); } catch { }
+  }
+}
+
+function commitTerminalFrame(state, data) {
+  if (!data || !isCurrentState(state)) return;
+  const seq = ++state.outputSeq;
+  if (!state.modelError) {
+    try {
+      state.model.enqueue(data);
+    } catch (error) {
+      markStateModelFailed(state, error);
+    }
+  }
+  appendSnapshotSuffix(state, seq, data);
+
+  const gate = resumeGate;
+  if (gate && gate.state === state && gate.proc === ptyProcess) return;
+  appendDegradedFrame(state, seq, data);
+  publishLiveFrame(data, {
+    streamId: state.streamId,
+    seq,
+    snapshot: false,
+    reason: null,
+  });
+}
+
+function flushBatch() {
+  if (batchImmediate) clearImmediate(batchImmediate);
+  batchImmediate = null;
+  if (batchChunks.length === 0) return;
+  const state = terminalState;
+  const data = batchChunks.length === 1 ? batchChunks[0] : batchChunks.join('');
+  batchChunks = [];
+  batchChars = 0;
+  if (!isCurrentState(state)) return;
+  for (const frame of splitLiveFrames(data)) commitTerminalFrame(state, frame);
+}
+
+function queueTerminalData(state, data) {
+  if (!isCurrentState(state) || !data) return;
+  batchChunks.push(data);
+  batchChars += data.length;
+  if (batchChars >= BATCH_FLUSH_CHARS) {
+    flushBatch();
+  } else if (!batchImmediate) {
+    batchImmediate = setImmediate(flushBatch);
+  }
+}
+
+function snapshotIsCurrent(state, snapshot = state?.cachedSnapshot) {
+  return Boolean(snapshot
+    && isCurrentState(state)
+    && snapshot.streamId === state.streamId
+    && snapshot.throughSeq === state.outputSeq
+    && snapshot.resizeGeneration === state.resizeGeneration
+    && snapshot.cols === state.cols
+    && snapshot.rows === state.rows);
+}
+
+function degradedSnapshotIsCurrent(state, snapshot = state?.degradedSnapshot) {
+  return Boolean(snapshot
+    && isCurrentState(state)
+    && snapshot.streamId === state.streamId
+    && snapshot.throughSeq === state.outputSeq
+    && snapshot.resizeGeneration === state.resizeGeneration
+    && snapshot.cols === state.cols
+    && snapshot.rows === state.rows);
+}
+
+function captureSuffixIsContiguous(capture, throughSeq) {
+  let expected = capture.targetSeq + 1;
+  for (const frame of capture.suffix) {
+    if (frame.seq !== expected) return false;
+    expected++;
+  }
+  return expected - 1 === throughSeq;
+}
+
+function snapshotByteLimit(cols, rows) {
+  // Large but valid grids need more than the historical fixed 256 KiB cap.
+  // Keep the browser/server envelope bounded while scaling for multibyte cells
+  // and the VT attributes needed to reproduce the visible screen.
+  return Math.min(
+    MAX_SNAPSHOT_BYTES,
+    Math.max(MIN_MAX_SNAPSHOT_BYTES, cols * rows * 12),
+  );
+}
+
+async function refreshCanonicalSnapshot(state) {
+  for (let attempt = 0; attempt < MAX_SNAPSHOT_ATTEMPTS; attempt++) {
+    if (!isCurrentState(state) || state.modelError) return false;
+    flushBatch();
+
+    const capture = {
+      targetSeq: state.outputSeq,
+      modelSeq: state.model.seq,
+      resizeGeneration: state.resizeGeneration,
+      cols: state.cols,
+      rows: state.rows,
+      suffix: [],
+      suffixBytes: 0,
+      overflow: false,
+    };
+    state.snapshotCapture = capture;
+
+    let base;
+    try {
+      base = await state.model.requestSnapshot();
+    } catch (error) {
+      if (state.snapshotCapture === capture) state.snapshotCapture = null;
+      markStateModelFailed(state, error);
+      return false;
+    }
+
+    // PTY output can reach Node while the Worker serializes. Commit that
+    // pending batch into both the model and this exact raw suffix before the
+    // snapshot cut is published.
+    flushBatch();
+    if (state.snapshotCapture === capture) state.snapshotCapture = null;
+    if (!isCurrentState(state)) return false;
+
+    if (!base?.safe) {
+      // A write that arrived during serialization may have completed a split
+      // CSI/OSC/Unicode sequence. Retry at the newer parser-ground boundary;
+      // otherwise wait for the next output event instead of timer polling.
+      if (state.outputSeq > capture.targetSeq) continue;
+      return false;
+    }
+
+    if (base.generation != null && base.generation !== state.model.generation) return false;
+    if (base.seq !== capture.modelSeq) continue;
+    if (base.cols !== capture.cols || base.rows !== capture.rows) continue;
+
+    if (capture.resizeGeneration !== state.resizeGeneration
+      || capture.cols !== state.cols || capture.rows !== state.rows
+      || capture.overflow) {
+      continue;
+    }
+    if (!captureSuffixIsContiguous(capture, state.outputSeq)) continue;
+
+    const suffix = capture.suffix.map(frame => frame.data).join('');
+    const data = (base.data || '') + suffix;
+    const bytes = Buffer.byteLength(data, 'utf8');
+    if (bytes > snapshotByteLimit(state.cols, state.rows)) return false;
+
+    state.cachedSnapshot = {
+      streamId: state.streamId,
+      throughSeq: state.outputSeq,
+      resizeGeneration: state.resizeGeneration,
+      cols: state.cols,
+      rows: state.rows,
+      data,
+      bytes,
+      truncated: false,
+      authoritative: true,
+      history: base.history,
+    };
+    state.degradedSnapshot = null;
     return true;
   }
   return false;
 }
 
 /**
- * Send chunks sequentially to PTY, waiting for PTY output between each.
- * Designed for programmatic input (multi-select, paste, etc.) where
- * the target application (e.g. inquirer) needs time to process each chunk.
- * @param {string[]} chunks - array of input strings to send in order
- * @param {Function} [onComplete] - called when all chunks are sent or on error
- * @param {object} [opts] - { timeoutMs: per-chunk timeout (default 4000), settleMs: delay after ACK (default 150) }
+ * Build one canonical reconnect snapshot in the headless terminal Worker.
+ * Concurrent callers share the same barrier and serialization. This function
+ * never resizes the PTY and never participates in the input path.
  */
-export function writeToPtySequential(chunks, onComplete, opts = {}) {
-  const timeoutMs = opts.timeoutMs || 4000;
-  const settleMs = opts.settleMs || 150;
+export function requestPtySnapshot() {
+  const state = terminalState;
+  if (!isCurrentState(state)) return Promise.resolve(false);
+  flushBatch();
+  if (snapshotIsCurrent(state)) return Promise.resolve(true);
+  if (state.snapshotRefresh) return state.snapshotRefresh;
 
-  if (!ptyProcess || !chunks || chunks.length === 0) {
-    if (onComplete) onComplete(false);
+  const promise = refreshCanonicalSnapshot(state).finally(() => {
+    if (state.snapshotRefresh === promise) state.snapshotRefresh = null;
+  });
+  state.snapshotRefresh = promise;
+  return promise;
+}
+
+function clearResumeGateTimers(gate) {
+  for (const name of ['quietTimer', 'absoluteTimer']) {
+    if (gate?.[name]) clearTimeout(gate[name]);
+    if (gate) gate[name] = null;
+  }
+}
+
+function cancelResumeGate() {
+  const gate = resumeGate;
+  resumeGate = null;
+  clearResumeGateTimers(gate);
+}
+
+function resumeGateIsCurrent(gate) {
+  return resumeGate === gate
+    && (ptyProcess === gate.proc || ptyProcess === null)
+    && isCurrentState(gate.state);
+}
+
+function normalizeResumeDiagnosticText(data) {
+  return String(data || '')
+    .replace(/\x1b\][^\x07]*(?:\x07|\x1b\\)/g, '')
+    .replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, '')
+    .replace(/\r\n?/g, '\n')
+    .replace(/[^\x09\x0a\x20-\x7e]/g, '');
+}
+
+function observeResumeFailure(gate, data) {
+  const value = gate.noConversationCarry + normalizeResumeDiagnosticText(data);
+  const lines = value.split('\n');
+  gate.noConversationCarry = lines.pop().slice(-512);
+  if (lines.some(line => line.trim() === NO_CONVERSATION_MESSAGE)) {
+    gate.noConversationDetected = true;
+  }
+}
+
+function resumeTargetMissing(gate) {
+  return Boolean(gate?.noConversationDetected
+    || gate?.noConversationCarry?.trim() === NO_CONVERSATION_MESSAGE);
+}
+
+function publishCachedSnapshot(state, reason) {
+  const snapshot = state.cachedSnapshot;
+  if (!snapshotIsCurrent(state, snapshot)) return false;
+  publishLiveFrame(snapshot.data, {
+    streamId: snapshot.streamId,
+    snapshot: true,
+    reason,
+    throughSeq: snapshot.throughSeq,
+    resizeGeneration: snapshot.resizeGeneration,
+    cols: snapshot.cols,
+    rows: snapshot.rows,
+    authoritative: true,
+  });
+  return true;
+}
+
+function publishDegradedSnapshot(state, reason) {
+  const snapshot = state.degradedSnapshot;
+  if (!degradedSnapshotIsCurrent(state, snapshot)) return false;
+  publishLiveFrame(snapshot.data, {
+    streamId: snapshot.streamId,
+    snapshot: true,
+    reason,
+    throughSeq: snapshot.throughSeq,
+    resizeGeneration: snapshot.resizeGeneration,
+    cols: snapshot.cols,
+    rows: snapshot.rows,
+    authoritative: false,
+    fallback: true,
+  });
+  return true;
+}
+
+function completeResumeGate(gate, reason) {
+  if (!resumeGateIsCurrent(gate)) return false;
+  const snapshot = gate.state.cachedSnapshot;
+  const alreadyPublished = snapshotIsCurrent(gate.state, snapshot)
+    && gate.lastPublishedThroughSeq === snapshot.throughSeq
+    && gate.lastPublishedResizeGeneration === snapshot.resizeGeneration;
+  resumeGate = null;
+  clearResumeGateTimers(gate);
+  return alreadyPublished || publishCachedSnapshot(gate.state, reason);
+}
+
+function publishResumeSnapshot(gate, reason) {
+  if (!resumeGateIsCurrent(gate)) return false;
+  const published = publishCachedSnapshot(gate.state, reason);
+  if (published) {
+    gate.lastPublishedThroughSeq = gate.state.cachedSnapshot.throughSeq;
+    gate.lastPublishedResizeGeneration = gate.state.cachedSnapshot.resizeGeneration;
+  }
+  return published;
+}
+
+function settleResumeGate(gate, reason, activityVersion, force = false) {
+  if (!resumeGateIsCurrent(gate)) return;
+  if (gate.snapshotInFlight) {
+    gate.pendingFinal = {
+      reason,
+      activityVersion,
+      force: force || gate.pendingFinal?.force === true,
+    };
     return;
   }
+  gate.snapshotInFlight = true;
 
-  let idx = 0;
-  let dataListener = null;
-
-  const cleanup = () => {
-    if (dataListener) {
-      dataListeners = dataListeners.filter(l => l !== dataListener);
-      dataListener = null;
+  void requestPtySnapshot().then(success => {
+    gate.snapshotInFlight = false;
+    if (!resumeGateIsCurrent(gate)) return;
+    const stillQuiet = force || (activityVersion === gate.activityVersion
+      && gate.quietTimer === null);
+    if (success) {
+      if (stillQuiet) {
+        const release = gate.releaseRequested
+          && activityVersion > gate.releaseAfterVersion;
+        if (release ? completeResumeGate(gate, reason) : publishResumeSnapshot(gate, reason)) {
+          if (release) return;
+        }
+      }
+    } else if (stillQuiet) {
+      publishResumeDiagnosticFallback(gate, {
+        reason: gate.state.modelError ? 'resume-worker-failure' : 'resume-unsafe',
+      });
     }
-  };
+    const pendingFinal = gate.pendingFinal;
+    gate.pendingFinal = null;
+    if (pendingFinal) {
+      settleResumeGate(
+        gate,
+        pendingFinal.reason,
+        pendingFinal.activityVersion,
+        pendingFinal.force,
+      );
+    }
+  }, () => {
+    gate.snapshotInFlight = false;
+    if (!resumeGateIsCurrent(gate)) return;
+    if (force || (activityVersion === gate.activityVersion && gate.quietTimer === null)) {
+      publishResumeDiagnosticFallback(gate, { reason: 'resume-worker-failure' });
+    }
+  });
+}
 
-  const sendNext = () => {
-    if (idx >= chunks.length || !ptyProcess) {
-      cleanup();
-      if (onComplete) onComplete(true);
+function noteResumeOutput(gate, data) {
+  if (!resumeGateIsCurrent(gate)) return;
+  gate.sawOutput = true;
+  gate.activityVersion++;
+  observeResumeFailure(gate, data);
+  if (gate.quietTimer) clearTimeout(gate.quietTimer);
+  gate.quietTimer = setTimeout(
+    () => {
+      gate.quietTimer = null;
+      settleResumeGate(gate, 'resume-quiet', gate.activityVersion);
+    },
+    resumeGateTimings.quietMs,
+  );
+}
+
+function startResumeGate(proc, state) {
+  const gate = {
+    proc,
+    state,
+    sawOutput: false,
+    activityVersion: 0,
+    snapshotInFlight: false,
+    pendingFinal: null,
+    noConversationCarry: '',
+    noConversationDetected: false,
+    releaseRequested: false,
+    releaseAfterVersion: Number.POSITIVE_INFINITY,
+    lastPublishedThroughSeq: null,
+    lastPublishedResizeGeneration: null,
+    quietTimer: null,
+    absoluteTimer: null,
+  };
+  resumeGate = gate;
+  gate.absoluteTimer = setTimeout(() => {
+    gate.absoluteTimer = null;
+    settleResumeGate(gate, 'resume-absolute', gate.activityVersion, true);
+  }, resumeGateTimings.absoluteTimeoutMs);
+  return gate;
+}
+
+function publishResumeDiagnosticFallback(gate, { exitCode = null, reason = 'resume-unsafe' } = {}) {
+  if (!resumeGateIsCurrent(gate)) return false;
+  const state = gate.state;
+  const status = exitCode == null
+    ? (reason === 'resume-worker-failure'
+      ? '[CX Viewer] terminal recovery unavailable; restart the session to restore terminal output'
+      : '[CX Viewer] waiting for a safe terminal recovery boundary')
+    : `[process exited with code ${exitCode}]`;
+  const data = `\x1bc\r\n${status}\r\n`;
+  installDegradedSnapshot(state, data);
+  return publishDegradedSnapshot(state, reason);
+}
+
+async function finalizeResumeExit(gate, exitCode, notifyExit) {
+  const success = await requestPtySnapshot();
+  // A quiet/max settle can share this same snapshot Promise and clear the gate
+  // in its earlier .then callback. Exit delivery belongs to the process/state,
+  // not to ownership of that gate, so it must still run exactly once.
+  if (resumeGateIsCurrent(gate)) {
+    if (success) completeResumeGate(gate, 'resume-process-exit');
+    else {
+      publishResumeDiagnosticFallback(gate, { exitCode, reason: 'resume-exit-diagnostic' });
+      resumeGate = null;
+      clearResumeGateTimers(gate);
+    }
+  }
+  notifyExit();
+}
+
+function emitPtyExit(exitCode, meta) {
+  for (const cb of exitListeners) {
+    try { cb(exitCode, meta); } catch { }
+  }
+}
+
+function emitPtyState(reason) {
+  const state = { ...getPtyState(), reason };
+  for (const cb of stateListeners) {
+    try { cb(state); } catch { }
+  }
+}
+
+function emitGeometry(state) {
+  const geometry = {
+    streamId: state.streamId,
+    resizeGeneration: state.resizeGeneration,
+    cols: state.cols,
+    rows: state.rows,
+  };
+  for (const cb of geometryListeners) {
+    try { cb(geometry); } catch { }
+  }
+}
+
+function attachPtyData(proc, state) {
+  proc.onData(data => {
+    if (!isCurrentProcess(proc, state)) return;
+    const text = String(data ?? '');
+    // Establish model/resize order before invoking extension listeners. A raw
+    // listener is allowed to synchronously resize or replace the PTY; the bytes
+    // that arrived first must remain on the old side of that boundary.
+    queueTerminalData(state, text);
+    if (!isCurrentProcess(proc, state)) return;
+    const rawEvent = {
+      streamId: state.streamId,
+      data: text,
+      timestamp: Date.now(),
+    };
+    for (const cb of rawDataListeners) {
+      try { cb(rawEvent); } catch { }
+    }
+    if (!isCurrentState(state)) return;
+    if (resumeGate?.proc === proc && resumeGate.state === state) {
+      noteResumeOutput(resumeGate, text);
+    }
+  });
+}
+
+export function _setPtyImportForTests(fn) {
+  _ptyImportForTests = fn;
+}
+
+export function _setTerminalStateFactoryForTests(fn) {
+  _terminalStateFactoryForTests = fn;
+}
+
+export function _setResumeGateTimingsForTests(options = {}) {
+  const next = { ...resumeGateTimings };
+  for (const key of Object.keys(DEFAULT_RESUME_GATE_TIMINGS)) {
+    if (Number.isFinite(options[key])) next[key] = Math.max(0, options[key]);
+  }
+  resumeGateTimings = next;
+}
+
+export function _resetPtyManagerForTests() {
+  killPty();
+  dataListeners = [];
+  rawDataListeners = [];
+  geometryListeners = [];
+  stateListeners = [];
+  exitListeners = [];
+  lastExitCode = null;
+  currentWorkspacePath = null;
+  lastWorkspacePath = null;
+  lastPtyCols = 120;
+  lastPtyRows = 30;
+  clearBatch();
+  terminalStreamId = 0;
+  lifecycleGeneration = 0;
+  spawnQueue = Promise.resolve();
+  cancelSequentialJobs();
+  resumeGateTimings = { ...DEFAULT_RESUME_GATE_TIMINGS };
+  _ptyImportForTests = null;
+  _terminalStateFactoryForTests = null;
+}
+
+async function getPty() {
+  if (typeof _ptyImportForTests === 'function') return _ptyImportForTests();
+  const ptyMod = await import('node-pty');
+  return ptyMod.default || ptyMod;
+}
+
+function fixSpawnHelperPermissions() {
+  try {
+    const helperPath = join(
+      __dirname,
+      'node_modules',
+      'node-pty',
+      'prebuilds',
+      `${platform()}-${arch()}`,
+      'spawn-helper',
+    );
+    const stat = statSync(helperPath);
+    if (!(stat.mode & 0o111)) chmodSync(helperPath, stat.mode | 0o755);
+  } catch { }
+}
+
+function extractShellProxyEnv() {
+  const shell = process.env.SHELL || '/bin/zsh';
+  try {
+    const funcBody = execSync(
+      `${shell} -ic 'declare -f ${BINARY_NAME} 2>/dev/null || type ${BINARY_NAME} 2>/dev/null'`,
+      { encoding: 'utf-8', timeout: 5000, stdio: ['pipe', 'pipe', 'pipe'] },
+    );
+    const proxyVars = {};
+    const proxyRe = /\b(HTTPS?_PROXY|https?_proxy|ALL_PROXY|all_proxy|NO_PROXY|no_proxy)=(\S+)/g;
+    let match;
+    while ((match = proxyRe.exec(funcBody)) !== null) proxyVars[match[1]] = match[2];
+    return proxyVars;
+  } catch {
+    return {};
+  }
+}
+
+async function spawnCodexUnlocked(requestId, {
+  proxyPort = null,
+  cwd,
+  args: extraArgs = [],
+  codexPath = null,
+  isNpmVersion = false,
+  serverPort = null,
+  invocation = parseCodexInvocation(extraArgs),
+  noResumeFallback = false,
+} = {}) {
+  if (requestId !== lifecycleGeneration) return null;
+  if (ptyProcess) killPty({ invalidatePending: false, reason: 'replaced' });
+
+  const pty = await getPty();
+  if (requestId !== lifecycleGeneration) return null;
+  fixSpawnHelperPermissions();
+
+  if (!codexPath) {
+    codexPath = resolveNativePath();
+    if (!codexPath) throw new Error('codex not found');
+  }
+
+  const env = { ...process.env };
+  if (!env.HTTPS_PROXY && !env.HTTP_PROXY && !env.https_proxy && !env.http_proxy) {
+    Object.assign(env, extractShellProxyEnv());
+  }
+  if (proxyPort) env.OPENAI_BASE_URL = `http://127.0.0.1:${proxyPort}`;
+
+  let nodePath = process.execPath;
+  if (process.versions.electron) {
+    try {
+      nodePath = execSync(process.platform === 'win32' ? 'where node' : 'which node', {
+        encoding: 'utf-8',
+      }).trim();
+      if (process.platform === 'win32') nodePath = nodePath.split('\n')[0].trim();
+    } catch {
+      nodePath = process.platform === 'win32' ? 'node' : '/usr/local/bin/node';
+    }
+  }
+
+  if (serverPort) {
+    const editorScript = join(__dirname, 'lib', 'cxv-editor.js');
+    env.EDITOR = `${nodePath} ${editorScript}`;
+    env.VISUAL = env.EDITOR;
+    env.CXV_EDITOR_PORT = String(serverPort);
+    env.CXVIEWER_PORT = String(serverPort);
+  }
+
+  let command = codexPath;
+  let args = [...extraArgs];
+  if (isNpmVersion && codexPath.endsWith('.js')) {
+    command = nodePath;
+    args = [codexPath, ...extraArgs];
+  }
+
+  lastExitCode = null;
+  const state = beginTerminalStream();
+  currentWorkspacePath = cwd || process.cwd();
+  lastWorkspacePath = currentWorkspacePath;
+
+  let proc;
+  try {
+    proc = pty.spawn(command, args, {
+      name: 'xterm-256color',
+      cols: state.cols,
+      rows: state.rows,
+      cwd: currentWorkspacePath,
+      env,
+    });
+  } catch (error) {
+    disposeState(state);
+    if (terminalState === state) terminalState = null;
+    currentWorkspacePath = null;
+    lastExitCode = -1;
+    throw error;
+  }
+
+  ptyProcess = proc;
+  const resumeInvocation = invocation?.kind === 'resume';
+  const historyLoadingInvocation = resumeInvocation || invocation?.kind === 'fork';
+  if (historyLoadingInvocation) startResumeGate(proc, state);
+  attachPtyData(proc, state);
+  emitPtyState('spawn');
+
+  proc.onExit(({ exitCode }) => {
+    if (!isCurrentProcess(proc, state)) return;
+    flushBatch();
+    const gate = resumeGate?.proc === proc && resumeGate.state === state ? resumeGate : null;
+    const shouldRetryFresh = !noResumeFallback
+      && resumeInvocation
+      && exitCode !== 0
+      && resumeTargetMissing(gate);
+
+    lastExitCode = exitCode;
+    ptyProcess = null;
+    currentWorkspacePath = null;
+    cancelSequentialJobs();
+
+    if (shouldRetryFresh) {
+      cancelResumeGate();
+      console.error('[CX Viewer] resume failed (no conversation), retrying with a fresh session');
+      const retryArgs = stripResumeInvocation(extraArgs, parseCodexInvocation(extraArgs));
+      const fallback = spawnCodexRequest({
+        proxyPort,
+        cwd,
+        args: retryArgs,
+        codexPath,
+        isNpmVersion,
+        serverPort,
+        invocation: { kind: 'new', subcommandIndex: null },
+        noResumeFallback: true,
+      });
+      const fallbackLifecycle = lifecycleGeneration;
+      void fallback.catch(error => {
+        console.error('[CX Viewer] fresh-session fallback failed:', error.message);
+        if (lifecycleGeneration !== fallbackLifecycle || ptyProcess) return;
+        const failedState = terminalState;
+        if (failedState) disposeState(failedState);
+        terminalState = null;
+        currentWorkspacePath = null;
+        lastExitCode = exitCode;
+        emitPtyState('resume-fallback-failed');
+        emitPtyExit(exitCode, {
+          streamId: failedState?.streamId ?? state.streamId,
+          reason: 'resume-fallback-failed',
+        });
+      });
       return;
     }
 
-    const chunk = chunks[idx];
-    idx++;
+    const notifyExit = () => {
+      if (!isCurrentState(state)) return;
+      emitPtyExit(exitCode, { streamId: state.streamId, reason: 'process-exit' });
+    };
+    if (gate) void finalizeResumeExit(gate, exitCode, notifyExit);
+    else notifyExit();
+  });
 
-    ptyProcess.write(chunk);
-
-    // Space, Enter, arrows need more time for inquirer to re-render
-    const isToggleOrSubmit = chunk === ' ' || chunk === '\r'
-      || chunk === '\x1b[C' || chunk === '\x1b[A' || chunk === '\x1b[B';
-    const delay = isToggleOrSubmit ? settleMs : 80;
-    setTimeout(sendNext, delay);
-  };
-
-  sendNext();
+  return proc;
 }
 
-/**
- * 进程退出后，自动 spawn 一个交互式 shell，让终端恢复可用。
- * 返回 true 表示成功 spawn，false 表示无需或失败。
- */
-export async function spawnShell() {
-  if (ptyProcess) return false; // 已有进程在运行
+export function spawnCodexRequest(request) {
+  const requestId = ++lifecycleGeneration;
+  return withSpawnLock(() => spawnCodexUnlocked(requestId, request));
+}
+
+/** @deprecated Prefer spawnCodexRequest({ ... }) so launch intent is explicit. */
+export function spawnCodex(
+  proxyPort,
+  cwd,
+  extraArgs = [],
+  codexPath = null,
+  isNpmVersion = false,
+  serverPort = null,
+  launchOptions = {},
+) {
+  return spawnCodexRequest({
+    proxyPort,
+    cwd,
+    args: extraArgs,
+    codexPath,
+    isNpmVersion,
+    serverPort,
+    invocation: launchOptions.invocation || parseCodexInvocation(extraArgs),
+    noResumeFallback: launchOptions.noResumeFallback === true,
+  });
+}
+
+export function writeToPty(data) {
+  const proc = ptyProcess;
+  if (!proc) return false;
+  // Input is latency critical: write synchronously and let the canonical model
+  // consume response bytes later. No snapshot or Worker promise is awaited,
+  // and input must not cut a resume snapshot ahead of a still-arriving history
+  // burst (that would turn megabytes of raw suffix into renderer work).
+  requestResumeGateRelease(proc, terminalState);
+  proc.write(data);
+  return true;
+}
+
+function requestResumeGateRelease(proc, state) {
+  const gate = resumeGate;
+  if (!gate || gate.proc !== proc || gate.state !== state || !resumeGateIsCurrent(gate)) return;
+  if (!gate.releaseRequested) {
+    gate.releaseRequested = true;
+    gate.releaseAfterVersion = gate.activityVersion;
+  }
+}
+
+export function writeToPtySequential(chunks, onComplete, opts = {}) {
+  if (!ptyProcess || !isCurrentState(terminalState)
+    || !Array.isArray(chunks) || chunks.length === 0
+    || chunks.some(chunk => typeof chunk !== 'string')) {
+    onComplete?.(false);
+    return null;
+  }
+  if (sequentialJobs.length >= MAX_SEQUENTIAL_JOBS) {
+    onComplete?.(false);
+    return null;
+  }
+  const requestedSettle = Number(opts.settleMs ?? 150);
+  const settleMs = Number.isFinite(requestedSettle)
+    ? Math.max(0, Math.min(2000, requestedSettle))
+    : 150;
+  const job = {
+    proc: ptyProcess,
+    state: terminalState,
+    chunks: [...chunks],
+    index: 0,
+    settleMs,
+    onComplete,
+    timer: null,
+    finished: false,
+  };
+  sequentialJobs.push(job);
+  pumpSequentialJobs();
+  return () => finishSequentialJob(job, false);
+}
+
+async function spawnShellUnlocked(requestId) {
+  if (requestId !== lifecycleGeneration || ptyProcess) return false;
   const cwd = lastWorkspacePath || process.cwd();
-
   const pty = await getPty();
-
+  if (requestId !== lifecycleGeneration || ptyProcess) return false;
   fixSpawnHelperPermissions();
 
-  const shell = process.env.SHELL || '/bin/sh';
-
-  lastExitCode = null;
-  currentWorkspacePath = cwd;
-  ensureOutputHistory();
-
-  // Clean env: remove cx-viewer specific vars so child shells don't inherit them
-  // (prevents CXVIEWER_PORT leaking to non-cx-viewer Codex instances)
+  const state = beginTerminalStream();
   const shellEnv = { ...process.env };
   delete shellEnv.CXVIEWER_PORT;
   delete shellEnv.CXV_EDITOR_PORT;
+  lastExitCode = null;
+  currentWorkspacePath = cwd;
 
-  ptyProcess = pty.spawn(shell, [], {
-    name: 'xterm-256color',
-    cols: lastPtyCols,
-    rows: lastPtyRows,
-    cwd,
-    env: shellEnv,
-  });
+  let proc;
+  try {
+    proc = pty.spawn(process.env.SHELL || '/bin/sh', [], {
+      name: 'xterm-256color',
+      cols: state.cols,
+      rows: state.rows,
+      cwd,
+      env: shellEnv,
+    });
+  } catch (error) {
+    disposeState(state);
+    if (terminalState === state) terminalState = null;
+    currentWorkspacePath = null;
+    throw error;
+  }
 
-  ptyProcess.onData((data) => {
-    outputBuffer += data;
-    if (outputBuffer.length > MAX_BUFFER) {
-      const rawStart = outputBuffer.length - MAX_BUFFER;
-      const safeStart = findSafeSliceStart(outputBuffer, rawStart);
-      outputBuffer = outputBuffer.slice(safeStart);
-    }
-    batchBuffer += data;
-    if (!batchScheduled) {
-      batchScheduled = true;
-      setImmediate(flushBatch);
-    }
-  });
-
-  ptyProcess.onExit(({ exitCode }) => {
+  ptyProcess = proc;
+  attachPtyData(proc, state);
+  emitPtyState('spawn-shell');
+  proc.onExit(({ exitCode }) => {
+    if (!isCurrentProcess(proc, state)) return;
     flushBatch();
     lastExitCode = exitCode;
     ptyProcess = null;
     currentWorkspacePath = null;
-    for (const cb of exitListeners) {
-      try { cb(exitCode); } catch { }
-    }
+    cancelSequentialJobs();
+    emitPtyExit(exitCode, { streamId: state.streamId, reason: 'process-exit' });
   });
-
   return true;
 }
 
-export function resizePty(cols, rows) {
-  lastPtyCols = cols;
-  lastPtyRows = rows;
-  if (ptyProcess) {
-    try { ptyProcess.resize(cols, rows); } catch { }
-  }
+export function spawnShell() {
+  const requestId = lifecycleGeneration;
+  return withSpawnLock(() => spawnShellUnlocked(requestId));
 }
 
-export function killPty() {
-  if (ptyProcess) {
-    flushBatch();
-    batchBuffer = '';
-    batchScheduled = false;
-    try { ptyProcess.kill(); } catch { }
-    ptyProcess = null;
+export function resizePty(cols, rows) {
+  if (!Number.isSafeInteger(cols) || cols < 2
+    || !Number.isSafeInteger(rows) || rows < 1) return false;
+  lastPtyCols = cols;
+  lastPtyRows = rows;
+  const proc = ptyProcess;
+  const state = terminalState;
+  if (!proc || !isCurrentState(state)) return false;
+  if (cols === state.cols && rows === state.rows) return true;
+
+  flushBatch();
+  if (!isCurrentProcess(proc, state)) return false;
+  try {
+    proc.resize(cols, rows);
+  } catch {
+    return false;
   }
+  if (!isCurrentProcess(proc, state)) return false;
+  // Preserve a synchronous onData callback fired from inside native resize as
+  // old-geometry output. Anything arriving later follows the resize event.
+  flushBatch();
+  if (!isCurrentProcess(proc, state)) return false;
+  state.cols = cols;
+  state.rows = rows;
+  state.resizeGeneration++;
+  if (!state.modelError) {
+    try {
+      state.model.resize(cols, rows);
+    } catch (error) {
+      markStateModelFailed(state, error);
+    }
+  }
+  if (state.degradedSnapshot) {
+    resetDegradedSnapshot(state, state.modelError || 'terminal geometry changed during degraded recovery');
+  }
+  emitGeometry(state);
+  return true;
+}
+
+export function killPty({ invalidatePending = true, reason = 'killed' } = {}) {
+  if (invalidatePending) lifecycleGeneration++;
+  flushBatch();
+  cancelSequentialJobs();
+  cancelResumeGate();
+  const proc = ptyProcess;
+  const state = terminalState;
+  ptyProcess = null;
+  terminalState = null;
+  currentWorkspacePath = null;
+  clearBatch();
+  disposeState(state);
+  if (!proc) return;
+  try { proc.kill(); } catch { }
+  emitPtyState(reason);
+  emitPtyExit(null, { streamId: state?.streamId ?? terminalStreamId, reason });
 }
 
 export function onPtyData(cb) {
   dataListeners.push(cb);
-  return () => {
-    dataListeners = dataListeners.filter(l => l !== cb);
-  };
+  return () => { dataListeners = dataListeners.filter(listener => listener !== cb); };
+}
+
+export function onPtyRawData(cb) {
+  rawDataListeners.push(cb);
+  return () => { rawDataListeners = rawDataListeners.filter(listener => listener !== cb); };
+}
+
+export function onPtyGeometry(cb) {
+  geometryListeners.push(cb);
+  return () => { geometryListeners = geometryListeners.filter(listener => listener !== cb); };
+}
+
+export function onPtyState(cb) {
+  stateListeners.push(cb);
+  return () => { stateListeners = stateListeners.filter(listener => listener !== cb); };
 }
 
 export function onPtyExit(cb) {
   exitListeners.push(cb);
-  return () => {
-    exitListeners = exitListeners.filter(l => l !== cb);
-  };
+  return () => { exitListeners = exitListeners.filter(listener => listener !== cb); };
 }
 
 export function getPtyState() {
   return {
-    running: !!ptyProcess,
+    running: Boolean(ptyProcess),
     exitCode: lastExitCode,
+    streamId: terminalState?.streamId ?? terminalStreamId,
+    recovering: resumeGate !== null,
+    resizeGeneration: terminalState?.resizeGeneration ?? 0,
+    cols: terminalState?.cols ?? lastPtyCols,
+    rows: terminalState?.rows ?? lastPtyRows,
   };
 }
 
 export function getCurrentWorkspace() {
   return {
-    running: !!ptyProcess,
+    running: Boolean(ptyProcess),
     exitCode: lastExitCode,
     cwd: currentWorkspacePath,
   };
 }
 
-export function getOutputBuffer() {
-  if (outputHistoryPath) {
-    try {
-      return readFileSync(outputHistoryPath, 'utf8');
-    } catch { }
-  }
-  return outputBuffer;
-}
-
-export function getOutputHistoryId() {
-  return outputHistoryPath ? basename(outputHistoryPath) : null;
+export function getOutputSnapshot() {
+  const state = terminalState;
+  const snapshot = state?.cachedSnapshot;
+  const authoritative = snapshotIsCurrent(state, snapshot);
+  const fallback = !authoritative && degradedSnapshotIsCurrent(state);
+  const selected = authoritative ? snapshot : (fallback ? state.degradedSnapshot : null);
+  return {
+    streamId: state?.streamId ?? terminalStreamId,
+    throughSeq: selected?.throughSeq ?? state?.outputSeq ?? 0,
+    resizeGeneration: state?.resizeGeneration ?? 0,
+    cols: state?.cols ?? lastPtyCols,
+    rows: state?.rows ?? lastPtyRows,
+    recovering: resumeGate !== null,
+    authoritative,
+    fallback,
+    data: selected?.data ?? '',
+    bytes: selected?.bytes ?? 0,
+    truncated: false,
+    modelHealthy: Boolean(state && !state.modelError),
+  };
 }

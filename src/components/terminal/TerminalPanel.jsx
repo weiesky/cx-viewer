@@ -24,7 +24,9 @@ import { clipboardKeyAction, copyTextToClipboard, planPasteSend } from '../../ut
 import CustomUltraplanEditModal from './CustomUltraplanEditModal';
 import UltraplanExpertManagerModal from './UltraplanExpertManagerModal';
 import { visibleExpertKeys } from '../../utils/ultraplanExperts';
-import { TerminalWriteQueue, INBAND_RESET } from '../../utils/terminalWriteQueue';
+import { TerminalWriteQueue } from '../../utils/terminalWriteQueue';
+import { sendTerminalSocketMessage, TerminalStreamController } from '../../utils/terminalStreamController';
+import { replayTerminalSnapshot } from '../../utils/terminalSnapshotReplay';
 import { installTermDiag, diagCount } from '../../utils/termDiag';
 import { downscaleForRetina } from '../../utils/imageDownscale';
 import { buildPresetShortcutsPayload } from '../../utils/presetShortcuts';
@@ -67,7 +69,6 @@ const SCRATCH_HEIGHT_MAX = 600;
 const SCRATCH_HEIGHT_DEFAULT = 200;
 const SCRATCH_TAB_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 const SCRATCH_TAB_MAX = 8;
-
 function readScratchOpen() {
   try { return localStorage.getItem(SCRATCH_OPEN_KEY) === 'true'; } catch { return false; }
 }
@@ -217,6 +218,15 @@ class TerminalPanel extends React.Component {
     // ws 现在是 getter(挂在原型),不在 constructor 上设字段,避免覆盖 getter
     this._unsubWsHandler = null;
     this._unsubWsState = null;
+    this._terminalProtocol = new TerminalStreamController({
+      maxHeldBytes: (isMobile && !isPad) ? 512 * 1024 : 1024 * 1024,
+      onData: ({ data }) => this._throttledWrite(data),
+      onGeometry: (geometry) => this._applyTerminalGeometry(geometry),
+      onSnapshot: (snapshot) => this._applyTerminalSnapshot(snapshot),
+      onResync: (request) => this._requestResync(request),
+    });
+    this._initialGeometryReady = false;
+    this._terminalBootstrapReason = null;
     this.resizeObserver = null;
     this.state = {
       terminalFocused: false,
@@ -420,9 +430,11 @@ class TerminalPanel extends React.Component {
     if (this.context && this.context.addStateListener) {
       this._unsubWsState = this.context.addStateListener(this._onTerminalWsState);
     }
-    // 若 ws 已 OPEN(本组件 mount 较 Provider 晚的常见场景),立即 sendResize 让 PTY 用当前 cols/rows。
+    // Provider may already be open when this panel mounts. Do not request at
+    // xterm's default 80x24: the first fit/mobile measurement runs next frame.
+    // That frame performs one ordered resize -> snapshot request bootstrap.
     if (this.context && this.context.isOpen && this.context.isOpen()) {
-      this.sendResize();
+      this._terminalBootstrapReason = 'mount';
     }
     this.setupResizeObserver();
     // 定时强制刷新,按渲染器分流:
@@ -635,8 +647,9 @@ class TerminalPanel extends React.Component {
       {
         ...((isMobile && !isPad) ? { highWaterBytes: 1024 * 1024, trimTargetBytes: 256 * 1024 } : null),
         ...(isWindows ? { initialChunkBytes: 16 * 1024 } : null),
-        // 积压丢弃后向服务端请求权威快照对齐（整项丢弃的中段对增量输出流不会自愈）
-        onTrim: () => this._requestResync(),
+        // Renderer loss invalidates the incremental baseline. Pause subsequent
+        // seq frames until an authoritative canonical snapshot arrives.
+        onTrim: () => this._terminalProtocol.requestSnapshot('congestion'),
       }
     );
 
@@ -651,16 +664,24 @@ class TerminalPanel extends React.Component {
       this._initRafId = requestAnimationFrame(() => {
         this._initRafId = 0;
         if (!this.terminal || !this.fitAddon) return; // unmount 竞态：fit/focus 作用于尸体会抛
-        this.fitAddon.fit();
+        if (!this._fitPreservingScroll()) return;
         this.terminal.focus();
+        this._initialGeometryReady = true;
+        this._bootstrapTerminalStream(this._terminalBootstrapReason || 'initial-fit');
       });
       // 字体异步就绪后重 fit + 重绘：初始 fit 可能基于回退字体的 cell 测量，
       // 字体加载完成后宽度变化会造成错位（Windows CJK 场景尤甚）。
       if (typeof document !== 'undefined' && document.fonts?.ready?.then) {
         document.fonts.ready.then(() => {
           if (!this.terminal) return;
-          this._fitPreservingScroll();
+          // If fonts win the race against the first rAF, that rAF will measure
+          // them. Avoid opening a geometry/snapshot cycle before bootstrap.
+          if (!this._initialGeometryReady) return;
+          const beforeCols = this.terminal.cols;
+          const beforeRows = this.terminal.rows;
+          if (!this._fitPreservingScroll()) return;
           try { this.terminal.refresh(0, this.terminal.rows - 1); } catch { /* noop */ }
+          if (this.terminal.cols !== beforeCols || this.terminal.rows !== beforeRows) this.sendResize();
         });
       }
     }
@@ -919,21 +940,16 @@ class TerminalPanel extends React.Component {
   _onTerminalWsMessage = (msg) => {
     try {
       if (msg.type === 'data') {
-        this._throttledWrite(msg.data);
+        this._terminalProtocol.acceptData(msg);
       } else if (msg.type === 'data-resync') {
-        // 服务端反压恢复:丢弃本地积压、重置 xterm、写快照一步对齐到服务端当前末态
-        // (与 ws close→重连全量 replay 的既有恢复惯例同款;TUI 重绘由服务端 SIGWINCH/resize 抖动驱动)。
-        // 有意取舍:全量重置会连洪泛前的 scrollback 一起清掉——保留 scrollback 改写
-        // 分隔条+追加快照的方案会让快照开头与已渲染内容重叠重复,且洪泛流的半截转义残留可能
-        // 卡坏 ANSI 状态机;reset 换取干净对齐,黄字提示已向用户明示发生过跳过。
-        // 重置必须走带内 INBAND_RESET 而非带外 terminal.reset()——后者不清 xterm 内部
-        // WriteBuffer,残留字节在 reset 后以 ground state 续解析,半截序列按字面渲染成
-        // `0;134m` 类残片且永久留在新 scrollback(见 terminalWriteQueue.INBAND_RESET doc)。
-        diagCount('resyncCount');
-        this._writeQ.reset();
-        this._writeQ.push(INBAND_RESET + '\x1b[33m[cx-viewer] output skipped during congestion\x1b[0m\r\n');
-        if (msg.data) this._writeQ.push(msg.data);
+        this._terminalProtocol.acceptSnapshot(msg);
+      } else if (msg.type === 'geometry') {
+        this._terminalProtocol.acceptGeometry(msg);
+      } else if (msg.type === 'transport-gap') {
+        if (msg.snapshotRequested) this._terminalProtocol.expectSnapshot();
+        else this._terminalProtocol.requestSnapshot(msg.reason || 'transport-gap');
       } else if (msg.type === 'exit') {
+        if (!this._acceptTerminalControlMessage(msg)) return;
         this._flushWrite();
         this.terminal.write(`\r\n\x1b[33m${t('ui.terminal.exited', { code: msg.exitCode ?? '?' })}\x1b[0m\r\n`);
         this.terminal.write(`\x1b[90m${t('ui.terminal.pressEnterForShell')}\x1b[0m\r\n`);
@@ -942,6 +958,7 @@ class TerminalPanel extends React.Component {
           this.props.onEditorOpen(msg.sessionId, msg.filePath);
         }
       } else if (msg.type === 'state') {
+        if (!this._acceptTerminalControlMessage(msg)) return;
         if (!msg.running && msg.exitCode !== null) {
           this._flushWrite();
           this.terminal.write(`\x1b[33m${t('ui.terminal.exited', { code: msg.exitCode })}\x1b[0m\r\n`);
@@ -954,41 +971,90 @@ class TerminalPanel extends React.Component {
     } catch {}
   };
 
+  _acceptTerminalControlMessage = (msg) => {
+    if (!Number.isSafeInteger(msg?.streamId)) return true;
+    const relation = this._terminalProtocol.observeStream(msg.streamId);
+    if (relation === 'new') {
+      // State is emitted before the new stream snapshot. Stop parsing bytes
+      // owned by the replaced PTY now; the visible screen is cleared exactly
+      // once when that snapshot reaches the in-band replay boundary.
+      this._writeQ?.reset();
+    }
+    return relation !== 'stale' && relation !== 'invalid';
+  };
+
+  _applyTerminalGeometry = ({ cols, rows }) => {
+    const terminal = this.terminal;
+    if (!terminal) return false;
+    try {
+      // Every queued byte predates this acknowledged PTY grid. It will be
+      // covered by the generation-matched snapshot, so do not spend renderer
+      // time parsing it at the wrong width while that snapshot is in flight.
+      this._writeQ?.reset();
+      if (terminal.cols !== cols || terminal.rows !== rows) terminal.resize(cols, rows);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  _applyTerminalSnapshot = (snapshot) => {
+    const applied = replayTerminalSnapshot({
+      terminal: this.terminal,
+      writeQueue: this._writeQ,
+      snapshot,
+    });
+    if (applied) diagCount('resyncCount');
+    return applied;
+  };
+
   // ws 状态变更:open 时 sendResize(原 onopen 行为);close 时 reset xterm(避免残留半截 ANSI)。
   // 重连本身由 Provider 内部 2s 退避完成,组件无感。
   _onTerminalWsState = (state) => {
     if (state === 'open') {
-      this.sendResize();
+      if (this._initialGeometryReady) this._bootstrapTerminalStream('connect');
+      else this._terminalBootstrapReason = 'connect';
     } else if (state === 'close') {
-      // writeQ 与 terminal 都要 reset（同 data-resync 分支）：close 时队列若有积压，
-      // 重连 replay 会把这些字节再发一遍 → 局部重复。只 reset xterm 漏了写队列。
-      // 重置走带内序列防 WriteBuffer 残留撕裂（同 data-resync 分支注释）。
+      this._terminalProtocol.resetConnection();
+      // Stop queued stale bytes. Reconnect remains blank until its canonical
+      // snapshot supplies the sole in-band reset/replay boundary.
       this._writeQ?.reset();
-      this._writeQ?.push(INBAND_RESET);
     }
   };
 
-  // write-queue 积压丢弃后请求服务端快照对齐（服务端回 data-resync，见上方分支）。
-  // 持续过载期 _maybeTrim 每次 push 都可能触发——2s 节流防请求风暴（服务端另有冷却兜底）。
-  _requestResync() {
-    const nowTs = Date.now();
-    if (nowTs - (this._lastResyncReqAt || 0) < 2000) return;
-    this._lastResyncReqAt = nowTs;
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      try { this.ws.send(JSON.stringify({ type: 'resync-request' })); } catch {}
+  _bootstrapTerminalStream = (reason) => {
+    if (!this._initialGeometryReady || !this.context?.isOpen?.()) {
+      this._terminalBootstrapReason = reason;
+      return false;
     }
+    // WebSocket message order establishes the PTY grid before the worker's
+    // snapshot barrier. This avoids a throwaway default-geometry replay.
+    if (!this.sendResize()) return false;
+    this._terminalBootstrapReason = null;
+    this._terminalProtocol.requestSnapshot(reason);
+    return true;
+  };
+
+  // Controller owns single-flight semantics; no wall-clock cooldown here, as a
+  // snapshot rejected for a newer geometry must be retried immediately.
+  _requestResync(request = {}) {
+    const payload = typeof request === 'string' ? { reason: request } : request;
+    return sendTerminalSocketMessage(
+      this.ws,
+      { type: 'resync-request', ...payload },
+      WebSocket.OPEN,
+    );
   }
 
   sendResize() {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN && this.terminal) {
-      const msg = {
-        type: 'resize',
-        cols: this.terminal.cols,
-        rows: this.terminal.rows,
-      };
-      if (isMobile) msg.mobile = true;
-      this.ws.send(JSON.stringify(msg));
-    }
+    if (!this.terminal) return false;
+    const msg = {
+      type: 'resize',
+      cols: this.terminal.cols,
+      rows: this.terminal.rows,
+    };
+    if (isMobile) msg.mobile = true;
+    return sendTerminalSocketMessage(this.ws, msg, WebSocket.OPEN);
   }
 
   // Android 定时渲染维护：走 xterm 官方 escape hatch，不通过改 DOM 高度骗 fit() 重建渲染层。
@@ -1002,8 +1068,7 @@ class TerminalPanel extends React.Component {
     // 调 fit() 会把固定列覆盖成按容器算的动态列,破坏移动端契约。
     const canFit = !isMobile || isPad;
     if (canFit) {
-      this._fitPreservingScroll();
-      this.sendResize();
+      if (this._fitPreservingScroll()) this.sendResize();
     }
   };
 
@@ -1011,12 +1076,12 @@ class TerminalPanel extends React.Component {
   // scrollTop 默认会被重置。贴底时直接贴底,其他情况按 prev/new scrollHeight 比例换算。
   // ResizeObserver 路径和 Android 60s 自动维护都走它,行为统一。
   _fitPreservingScroll = () => {
-    if (!this.fitAddon || !this.containerRef.current) return;
+    if (!this.fitAddon || !this.containerRef.current) return false;
     // 0/极小尺寸守卫（同 ScratchTerminal）：容器可见但高度≈0 时 FitAddon 会算出 2×1
     // (MINIMUM_COLS=2/ROWS=1) 并经 sendResize 发给 PTY → ConPTY 全屏 reflow 崩坏 +
     // 恢复时二次重绘。尺寸无效时跳过 fit，等容器恢复后 ResizeObserver 再触发。
     const el = this.containerRef.current;
-    if (el.offsetWidth <= 0 || el.offsetHeight <= 0) return;
+    if (el.offsetWidth <= 0 || el.offsetHeight <= 0) return false;
     try {
       const vp = this.containerRef.current.querySelector('.xterm-viewport');
       const prevScrollTop = vp?.scrollTop ?? 0;
@@ -1031,7 +1096,10 @@ class TerminalPanel extends React.Component {
           vp.scrollTop = ratio * vp.scrollHeight;
         }
       }
-    } catch {}
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   setupResizeObserver() {
@@ -1042,8 +1110,7 @@ class TerminalPanel extends React.Component {
       if (this._resizeDebounceTimer) clearTimeout(this._resizeDebounceTimer);
       this._resizeDebounceTimer = setTimeout(() => {
         this._resizeDebounceTimer = null;
-        this._fitPreservingScroll();
-        this.sendResize();
+        if (this._fitPreservingScroll()) this.sendResize();
       }, 150);
     });
     if (this.containerRef.current) {
@@ -1169,7 +1236,8 @@ class TerminalPanel extends React.Component {
       const rows = Math.max(5, Math.min(Math.floor(availableHeight / lineHeight), 100));
 
       this.terminal.resize(MOBILE_COLS, rows);
-      this.sendResize();
+      this._initialGeometryReady = true;
+      this._bootstrapTerminalStream(this._terminalBootstrapReason || 'initial-fit');
     });
   }
 

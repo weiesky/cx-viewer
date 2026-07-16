@@ -61,6 +61,38 @@ export class PtyPromptController {
     this._debounceTimer = setTimeout(() => this._detectPrompt(), DETECT_DEBOUNCE_MS);
   }
 
+  /** Replace byte-stream carry with a bounded terminal recovery snapshot. */
+  replaceSnapshot(raw) {
+    this._buffer = '';
+    this._ansiCarry = '';
+    this.clearDebounce();
+    // Only the current tail can represent an interactive prompt. Older TUI
+    // redraws are terminal recovery data, not conversation history.
+    this.appendData(typeof raw === 'string' ? raw.slice(-PTY_BUFFER_MAX * 4) : '');
+  }
+
+  /** A new PTY stream must not inherit prompt/carry state from the old one. */
+  resetStream() {
+    this._buffer = '';
+    this._ansiCarry = '';
+    this._current = null;
+    this.clearDebounce();
+    this.host.setState(state => {
+      const next = {
+        ptyPrompt: null,
+        pendingPtyPlan: null,
+        ptyPromptHistory: (state.ptyPromptHistory || []).map(prompt => (
+          prompt.status === 'active' ? { ...prompt, status: 'dismissed' } : prompt
+        )),
+      };
+      if (state.pendingPermission?.source === 'pty') {
+        next.pendingPermission = state.permissionQueue?.[0] || null;
+        next.permissionQueue = state.permissionQueue?.slice(1) || [];
+      }
+      return next;
+    });
+  }
+
   /** Reset after a prompt answer was submitted: drop the buffer and any armed detection. */
   resetBufferAfterSubmit() {
     this._buffer = '';

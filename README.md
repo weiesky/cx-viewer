@@ -250,6 +250,53 @@ CX-Viewer supports 18 languages, automatically switching based on system locale:
 
 简体中文 | English | 繁體中文 | 한국어 | Deutsch | Español | Français | Italiano | Dansk | 日本語 | Polski | Русский | العربية | Norsk | Português (Brasil) | ไทย | Türkçe | Українська
 
+### Conversation and terminal recovery
+
+The Conversation view and the terminal are separate GUI components. Structured
+session history is loaded into the Conversation view; the adjacent terminal
+receives live PTY output plus a canonical visible-screen snapshot. CX-Viewer
+does not create new `terminal-history-*.log` transcript files.
+
+PTY bytes and successful client resizes are mirrored, in order, into a dedicated
+Node Worker running `@xterm/headless`. Resume history is parsed there but is not
+replayed into the browser. At an ANSI parser-ground boundary, the Worker
+serializes only the current screen and terminal modes. Recovery never resizes the
+real PTY and never injects keys or marker text into Codex.
+
+Every live frame has a monotonic sequence number. A snapshot declares the exact
+sequence and resize generation it covers; the browser pauses on a gap, applies
+the snapshot at its source geometry, and then accepts only a contiguous suffix.
+Partial control strings, open synchronized output, incomplete Unicode, and other
+states that cannot be replayed exactly are explicitly non-authoritative.
+
+User input is always written directly to the PTY without awaiting the Worker or a
+snapshot. During resume startup, browser rendering is released at the next quiet
+canonical boundary so megabytes of replayed history do not become renderer work.
+
+The terminal benchmark starts the real HTTP/WebSocket server and headless Worker
+with a fake PTY, streams multi-megabyte resume history, sends concurrent HTTP and
+terminal input, and verifies sequence continuity and zero recovery resizes:
+
+```bash
+npm run benchmark:terminal-resume
+# Optional: npm run benchmark:terminal-resume -- --total-mib=8
+# Optional: npm run benchmark:terminal-resume -- --chunk-bytes=256
+```
+
+Older releases may have left terminal transcripts under
+`~/.codex/cx-viewer/runtime`. They can contain sensitive terminal content. To
+inventory the exact regular files without changing anything, run:
+
+```bash
+cxv cleanup-terminal-history
+```
+
+Review the dry-run list, then add `--delete` only if you want those legacy files
+removed. The cleanup rejects symlinks, hard links, non-matching names, and
+atomically stages each entry for metadata revalidation immediately before
+deletion. As with any same-user filesystem cleanup, stop other processes that
+may be rewriting the runtime directory before confirming deletion.
+
 ## NPM Release Preparation
 
 The npm package name is `cx-viewer`. The project is configured to publish to the public npm registry through `publishConfig.registry`.
@@ -267,7 +314,16 @@ Run the local release checks before changing the version:
 npm run release:check
 ```
 
-This command runs tests, builds the frontend, and previews the package contents with `npm pack --dry-run`. It does not publish anything. The dry-run wrapper uses a temporary npm cache so the check is not blocked by stale root-owned files in `~/.npm`. Review the dry-run file list before release; `prepublishOnly` also runs `npm run build` during the real publish step, and the `files` whitelist in `package.json` controls what gets included.
+This command runs tests, the deterministic terminal-resume integration benchmark,
+the frontend build, and an `npm pack --dry-run` package preview. The benchmark
+always enforces protocol/sequence/geometry invariants; machine-sensitive latency
+targets are reported but do not block a release. Run
+`npm run benchmark:terminal-resume -- --enforce-performance` on a controlled
+machine when enforcing those latency targets. The release check does not publish
+anything. The dry-run wrapper uses a temporary npm cache so the check is not
+blocked by stale root-owned files in `~/.npm`. Review the dry-run file list before
+release; `prepublishOnly` also runs `npm run build` during the real publish step,
+and the `files` whitelist in `package.json` controls what gets included.
 
 For an actual release, bump the package version first, commit the release, push to GitHub, then publish manually:
 

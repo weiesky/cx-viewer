@@ -10,7 +10,7 @@ import { homedir } from 'node:os';
 import { spawn } from 'node:child_process';
 import { t } from './i18n.js';
 import { INJECT_IMPORT, resolveCliPath, resolveNativePath, resolveNpmCodexPath, buildShellCandidates } from './findcx.js';
-import { appendCxvFinalConfigArgs, getDefaultModeRequestUserInputConfigArgs, normalizeCodexArgs, hasBypassPermissions, getReasoningSummaryConfigArgs } from './lib/cli-args.js';
+import { appendCxvFinalConfigArgs, getDefaultModeRequestUserInputConfigArgs, normalizeCodexArgs, hasBypassPermissions, getReasoningSummaryConfigArgs, parseCodexInvocation } from './lib/cli-args.js';
 import { ensureHooks } from './lib/ensure-hooks.js';
 import { APPROVALS_REVIEWER_DEFAULT } from './lib/approval-reviewer.js';
 import { inspectCodexRequestUserInputSupport } from './lib/codex-appserver-capabilities.js';
@@ -246,7 +246,7 @@ async function runProxyCommand(args) {
 
 // ensureHooks() extracted to lib/ensure-hooks.js (shared with electron/tab-worker.js)
 
-async function runCliMode(extraCodexArgs = [], cwd) {
+async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCodexInvocation(extraCodexArgs)) {
   // 首先尝试 npm 版本（包括 nvm 安装），找不到再尝试 native 版本
   let codexPath = resolveNpmCodexPath();
   let isNpmVersion = !!codexPath;
@@ -420,7 +420,7 @@ async function runCliMode(extraCodexArgs = [], cwd) {
   }
 
   // 启动 PTY 中的 codex TUI
-  const { spawnCodex, killPty } = await import('./pty-manager.js');
+  const { spawnCodexRequest, killPty } = await import('./pty-manager.js');
   const savedApprovalsReviewer = serverMod.getApprovalsReviewerPreference() || APPROVALS_REVIEWER_DEFAULT;
   const reviewerArgs = savedApprovalsReviewer
     ? ['-c', `approvals_reviewer="${savedApprovalsReviewer}"`]
@@ -436,7 +436,18 @@ async function runCliMode(extraCodexArgs = [], cwd) {
       ),
       otelConfigArgs,
     );
-    await spawnCodex(null, workingDir, tuiArgs, codexPath, isNpmVersion, port);
+    await spawnCodexRequest({
+      proxyPort: null,
+      cwd: workingDir,
+      args: tuiArgs,
+      codexPath,
+      isNpmVersion,
+      serverPort: port,
+      invocation: {
+        ...launchInvocation,
+        subcommandIndex: parseCodexInvocation(tuiArgs).subcommandIndex,
+      },
+    });
   } catch (err) {
     console.error('[CX Viewer] Failed to spawn Codex:', err.message);
     if (_bridge) _bridge.stop();
@@ -676,6 +687,23 @@ if (isVersion) {
   process.exit(0);
 }
 
+if (args[0] === 'cleanup-terminal-history') {
+  const { inventoryLegacyTerminalHistory, deleteLegacyTerminalHistory } = await import('./lib/legacy-terminal-history.js');
+  const plan = inventoryLegacyTerminalHistory();
+  const mib = (plan.totalBytes / (1024 * 1024)).toFixed(1);
+  console.log(`[CX Viewer] Legacy terminal transcripts: ${plan.files.length} file(s), ${mib} MiB`);
+  for (const file of plan.files) console.log(`  ${file.path} (${file.size} bytes)`);
+  for (const item of plan.skipped) console.warn(`  skipped: ${item.path} (${item.reason})`);
+  if (!args.includes('--delete')) {
+    console.log('[CX Viewer] Dry run only. Re-run with --delete to remove exactly the files listed above.');
+    process.exit(0);
+  }
+  const result = deleteLegacyTerminalHistory(plan, { confirm: true });
+  console.log(`[CX Viewer] Deleted ${result.deleted.length} file(s), ${(result.totalBytes / (1024 * 1024)).toFixed(1)} MiB.`);
+  for (const item of result.skipped) console.warn(`  not deleted: ${item.path} (${item.reason})`);
+  process.exit(result.skipped.length > 0 ? 1 : 0);
+}
+
 if (isUninstall) {
   const cliResult = removeCliJsInjection();
   const shellResult = removeShellHook();
@@ -827,9 +855,9 @@ if (args[0] === 'run') {
   });
 } else {
   // PTY 模式（默认）
-  const { codexArgs } = normalizeCodexArgs(args);
+  const { codexArgs, invocation } = normalizeCodexArgs(args);
 
-  runCliMode(codexArgs, process.cwd()).catch(err => {
+  runCliMode(codexArgs, process.cwd(), invocation).catch(err => {
     console.error('CLI mode error:', err);
     process.exit(1);
   });

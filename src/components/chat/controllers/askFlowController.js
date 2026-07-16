@@ -39,6 +39,14 @@ export const ASK_KIND = { HOOK: 'hook', SDK: 'sdk' };
 // Keep this controller browser-global-free so its state machine remains testable
 // on every supported Node.js runtime.
 const WS_OPEN = 1;
+const SEQUENTIAL_ACK_TIMEOUT_MS = 15000;
+let sequentialOperationCounter = 0;
+
+function nextSequentialOperationId() {
+  sequentialOperationCounter = (sequentialOperationCounter + 1) % Number.MAX_SAFE_INTEGER;
+  if (sequentialOperationCounter === 0) sequentialOperationCounter = 1;
+  return `cv-${Date.now()}-${sequentialOperationCounter}`;
+}
 
 /**
  * Build both answer shapes during the legacy transition period:
@@ -117,6 +125,18 @@ export class AskFlowController {
     this._askWsRetries = 0;           // 等 WS open 的重试计数
     this._waitForWsTimer = null;
     this._waitForPtyTimer = null;
+    // Exactly one correlated programmatic-input operation may own the PTY ask
+    // submission at a time. Its timeout and temporary WS subscription live
+    // and die with the same operation, so an old watchdog can never complete a
+    // later ask.
+    this._sequentialOperation = null; // { seq, timeout, unsub }
+    this._nextSequentialTimer = null;
+    this._setOperationTimeout = typeof host.setTimeout === 'function'
+      ? host.setTimeout
+      : setTimeout;
+    this._clearOperationTimeout = typeof host.clearTimeout === 'function'
+      ? host.clearTimeout
+      : clearTimeout;
     this._lastClearedPendingAsk = null; // PTY 路径 abort 回滚面包屑
     this._lastAskSubmitIds = [];
     this._pendingCancelIds = null;    // Map<askId, reason>：WS 不可用时缓存的 cancel，reopen 时重发
@@ -335,7 +355,9 @@ export class AskFlowController {
    * PTY 路径 abort：清提交中状态、回滚 handleAskQuestionSubmit 入口乐观写入的
    * pendingAsk + localAskAnswers，让用户重试。
    */
-  _abortAskSubmitWithRollback(reason) {
+  _abortAskSubmitWithRollback(reason, { warn = true } = {}) {
+    this._clearSequentialOperation();
+    this._clearNextSequentialTimer();
     this._askSubmitting = false;
     this._askAnswerQueue = [];
     if (this._lastClearedPendingAsk) {
@@ -353,7 +375,40 @@ export class AskFlowController {
       });
     }
     // 用户可见提示（antd Modal + i18n 文案 + JSX）留在 ChatView，经 host 调用 — 保持本控制器纯净可单测。
-    this.host.warnSubmitRetry(reason);
+    if (warn && !this.host.isUnmounted?.()) this.host.warnSubmitRetry?.(reason);
+  }
+
+  _clearSequentialOperation(operation = this._sequentialOperation) {
+    if (!operation || this._sequentialOperation !== operation) return false;
+    this._sequentialOperation = null;
+    if (operation.timeout != null) {
+      try { this._clearOperationTimeout(operation.timeout); } catch {}
+      operation.timeout = null;
+    }
+    if (operation.unsub) {
+      try { operation.unsub(); } catch {}
+      operation.unsub = null;
+    }
+    return true;
+  }
+
+  _clearNextSequentialTimer() {
+    if (this._nextSequentialTimer == null) return false;
+    try { this._clearOperationTimeout(this._nextSequentialTimer); } catch {}
+    this._nextSequentialTimer = null;
+    return true;
+  }
+
+  _failSequentialOperation(operation, reason, options) {
+    if (!this._clearSequentialOperation(operation)) return false;
+    this._abortAskSubmitWithRollback(reason, options);
+    return true;
+  }
+
+  _finishSequentialOperation(operation) {
+    if (!this._clearSequentialOperation(operation)) return false;
+    this._finishCurrentAskAnswer();
+    return true;
   }
 
   /**
@@ -406,31 +461,62 @@ export class AskFlowController {
     const chunks = buildChunksForAnswer(answer, effectivePrompt, isMultiQuestion);
     const settleMs = opts.settleMs || 300;
 
-    // 用 seq 区分本 ws 上的多发送方，handler 严格按 seq 匹配
-    const seq = `cv-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-
-    // 先 send,只有发送成功才挂 handler
-    const sent = this.host.ctxSend({ type: 'input-sequential', chunks, settleMs, seq });
-    if (!sent) {
-      this._abortAskSubmitWithRollback('ws-send-failed');
+    // The ask flow is serial. Reaching this branch with an older live
+    // operation means state ownership was already lost; fail it explicitly
+    // instead of allowing two watchdogs/subscriptions to race.
+    if (this._sequentialOperation) {
+      this._failSequentialOperation(
+        this._sequentialOperation,
+        'input-sequential-superseded',
+      );
       return;
     }
 
-    let unsub = null;
-    const onceMsg = (msg) => {
-      if (msg && msg.type === 'input-sequential-done' && msg.seq === seq) {
-        if (unsub) { try { unsub(); } catch {} unsub = null; }
-        this._finishCurrentAskAnswer();
-      }
+    const operation = {
+      seq: nextSequentialOperationId(),
+      timeout: null,
+      unsub: null,
     };
-    unsub = this.host.addMessageHandler(onceMsg);
+    this._sequentialOperation = operation;
 
-    setTimeout(() => {
-      if (unsub) { try { unsub(); } catch {} unsub = null; }
-      if (this._askSubmitting) {
-        this._finishCurrentAskAnswer();
-      }
-    }, 15000);
+    const onceMsg = (msg) => {
+      if (!msg || msg.type !== 'input-sequential-done' || msg.seq !== operation.seq) return;
+      if (msg.ok === true) this._finishSequentialOperation(operation);
+      else this._failSequentialOperation(operation, 'input-sequential-failed');
+    };
+
+    try {
+      const unsub = this.host.addMessageHandler(onceMsg);
+      // A host is allowed to synchronously replay cached control messages
+      // while subscribing. If that settled the operation, dispose the newly
+      // returned subscription immediately instead of leaking it.
+      if (this._sequentialOperation === operation) operation.unsub = unsub;
+      else if (typeof unsub === 'function') unsub();
+    } catch {
+      this._failSequentialOperation(operation, 'input-sequential-subscribe-failed');
+      return;
+    }
+
+    let sent = false;
+    try {
+      sent = this.host.ctxSend({
+        type: 'input-sequential',
+        chunks,
+        settleMs,
+        seq: operation.seq,
+      }) === true;
+    } catch {}
+    if (!sent) {
+      this._failSequentialOperation(operation, 'ws-send-failed');
+      return;
+    }
+
+    // ctxSend normally cannot synchronously receive a browser WS reply, but
+    // retain the guard for deterministic adapters/tests and future transports.
+    if (this._sequentialOperation !== operation) return;
+    operation.timeout = this._setOperationTimeout(() => {
+      this._failSequentialOperation(operation, 'input-sequential-timeout');
+    }, SEQUENTIAL_ACK_TIMEOUT_MS);
   }
 
   _finishCurrentAskAnswer() {
@@ -454,9 +540,13 @@ export class AskFlowController {
 
     // Wait for next prompt to appear (multi-question scenario)
     if (this._askAnswerQueue && this._askAnswerQueue.length > 0) {
-      setTimeout(() => {
+      this._clearNextSequentialTimer();
+      const timer = this._setOperationTimeout(() => {
+        if (this._nextSequentialTimer !== timer) return;
+        this._nextSequentialTimer = null;
         this._processNextAskAnswer();
       }, 500);
+      this._nextSequentialTimer = timer;
     } else {
       this._askSubmitting = false;
     }
@@ -878,6 +968,15 @@ export class AskFlowController {
 
   /** WS close：只 reset 控制器实例 flag（不调 setState — ask 的 state 键由 ChatView close 分支合并清）。 */
   resetAskFlagsOnClose() {
+    if (this._sequentialOperation) {
+      this._failSequentialOperation(
+        this._sequentialOperation,
+        'input-sequential-disconnected',
+        { warn: false },
+      );
+    } else if (this._nextSequentialTimer != null) {
+      this._abortAskSubmitWithRollback('input-sequential-disconnected', { warn: false });
+    }
     this._sdkAskId = null;
     this._askHookActive = false;
     this._askHookQuestions = null;
@@ -885,6 +984,15 @@ export class AskFlowController {
 
   /** componentWillUnmount 调：清 ask 计时器 + buffered answers / cancel ids。 */
   dispose() {
+    if (this._sequentialOperation) {
+      this._failSequentialOperation(
+        this._sequentialOperation,
+        'input-sequential-disposed',
+        { warn: false },
+      );
+    } else if (this._nextSequentialTimer != null) {
+      this._abortAskSubmitWithRollback('input-sequential-disposed', { warn: false });
+    }
     if (this._hookWaitTimer) clearTimeout(this._hookWaitTimer);
     if (this._waitForWsTimer) clearTimeout(this._waitForWsTimer);
     if (this._waitForPtyTimer) clearTimeout(this._waitForPtyTimer);
