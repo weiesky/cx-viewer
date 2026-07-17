@@ -379,7 +379,17 @@ export function createIncrementalReconstructor() {
           const msgs = entry.body?.input;
           if (Array.isArray(msgs)) {
             const ctx = _getContext(ctxByConversation, entry);
-            entry.body.input = [...ctx.accumulated, ...msgs];
+            const total = entry._totalMessageCount;
+            if (total && ctx.accumulated.length + msgs.length !== total) {
+              // 基线与该请求声称的总长不一致（watcher 中途附着、倒置窗口等）：
+              // 拼接产物必然错段/重复。inProgress 没有 completed 路径的
+              // _integrityCheck 兜底，且 live 端不拦 inProgress 直接进 merge，
+              // 所以这里必须标记 broken 让 isMergeBlockedEntry 阻断——宁可这一帧
+              // 不出提问气泡（completed 紧随其后），也不能把错位 transcript 渲染出去。
+              entry._reconstructBroken = true;
+            } else {
+              entry.body.input = [...ctx.accumulated, ...msgs];
+            }
           }
         }
         return entry;
