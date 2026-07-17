@@ -49,7 +49,7 @@ import UltraplanExpertManagerModal from '../terminal/UltraplanExpertManagerModal
 import { visibleExpertKeys } from '../../utils/ultraplanExperts';
 import { TerminalWsContext } from '../terminal/TerminalWsContext';
 import CustomUltraplanEditModal from '../terminal/CustomUltraplanEditModal';
-import { buildLocalUltraplan } from '../../utils/ultraplanTemplates';
+import { buildLocalUltraplan, parseUltraplanPrompt } from '../../utils/ultraplanTemplates';
 import { Virtuoso } from 'react-virtuoso';
 import { StickyBottomController } from '../../utils/stickyBottomController';
 import { AskFlowController, ASK_KIND, LEGACY_ASK_PLACEHOLDER_ID } from './controllers/askFlowController';
@@ -506,13 +506,14 @@ class ChatView extends React.Component {
     }
   }
 
-  _createPendingInputRecord = (wireText, displayText = wireText) => createPendingInputRecord({
+  _createPendingInputRecord = (wireText, displayText = wireText, kind = null) => createPendingInputRecord({
     id: `pending-input-${++this._pendingInputSeq}`,
     wireText,
     displayText,
     createdAt: new Date().toISOString(),
     requestCursor: Array.isArray(this.props.requests) ? this.props.requests.length : 0,
     renderedItems: this.state.allItems,
+    kind,
   });
 
   _nextSequentialInputSeq = () => {
@@ -1455,9 +1456,10 @@ class ChatView extends React.Component {
             }
             // 渲染普通用户文本块
             for (let ti = 0; ti < textBlocks.length; ti++) {
-              const isPlan = /Implement the following plan:/i.test(textBlocks[ti].text || '');
+              const isUltraplan = textBlocks[ti].isUltraplan === true;
+              const isPlan = !isUltraplan && /Implement the following plan:/i.test(textBlocks[ti].text || '');
               renderedMessages.push(
-                <ChatMessage key={`${keyPrefix}-user-${mi}-${ti}`} role={isPlan ? 'plan-prompt' : 'user'} text={textBlocks[ti].text} lang={this.props.lang} timestamp={ts} userProfile={userProfile} modelInfo={modelInfo} requestIndex={hasViewRequest ? reqIdx : undefined} onViewRequest={hasViewRequest ? onViewRequest : undefined} isHistoryLog={isHistoryLog} />
+                <ChatMessage key={`${keyPrefix}-user-${mi}-${ti}`} role={isPlan ? 'plan-prompt' : 'user'} text={textBlocks[ti].text} isUltraplan={isUltraplan} lang={this.props.lang} timestamp={ts} userProfile={userProfile} modelInfo={modelInfo} requestIndex={hasViewRequest ? reqIdx : undefined} onViewRequest={hasViewRequest ? onViewRequest : undefined} isHistoryLog={isHistoryLog} />
               );
             }
             // 渲染 teammate-message 块
@@ -1514,11 +1516,13 @@ class ChatView extends React.Component {
               );
             }
           } else {
-            const dispText = extractDisplayText(content);
+            const parsedUltraplan = parseUltraplanPrompt(content);
+            const dispText = parsedUltraplan?.displayText || extractDisplayText(content);
             if (dispText) {
-              const isPlan = /Implement the following plan:/i.test(dispText);
+              const isUltraplan = parsedUltraplan !== null;
+              const isPlan = !isUltraplan && /Implement the following plan:/i.test(dispText);
               renderedMessages.push(
-                <ChatMessage key={`${keyPrefix}-user-${mi}`} role={isPlan ? 'plan-prompt' : 'user'} text={dispText} lang={this.props.lang} timestamp={ts} userProfile={userProfile} modelInfo={modelInfo} requestIndex={hasViewRequest ? reqIdx : undefined} onViewRequest={hasViewRequest ? onViewRequest : undefined} isHistoryLog={isHistoryLog} />
+                <ChatMessage key={`${keyPrefix}-user-${mi}`} role={isPlan ? 'plan-prompt' : 'user'} text={dispText} isUltraplan={isUltraplan} lang={this.props.lang} timestamp={ts} userProfile={userProfile} modelInfo={modelInfo} requestIndex={hasViewRequest ? reqIdx : undefined} onViewRequest={hasViewRequest ? onViewRequest : undefined} isHistoryLog={isHistoryLog} />
               );
             }
           }
@@ -2231,7 +2235,7 @@ class ChatView extends React.Component {
       return;
     }
 
-    const pendingRecord = this._createPendingInputRecord(assembled, userInput);
+    const pendingRecord = this._createPendingInputRecord(assembled, userInput, 'ultraplan');
     this.setState(prev => ({
       ultraplanModalOpen: false,
       ultraplanPopoverOpen: false,
@@ -3332,6 +3336,7 @@ class ChatView extends React.Component {
         lang={this.props.lang}
         timestamp={record.createdAt}
         userProfile={this.props.userProfile}
+        isUltraplan={record.kind === 'ultraplan'}
         isHistoryLog={false}
       />
     )) : null;

@@ -59,6 +59,7 @@ export function createPendingInputRecord({
   createdAt = new Date().toISOString(),
   requestCursor = 0,
   renderedItems = [],
+  kind = null,
 } = {}) {
   return {
     id: String(id || `pending-${createdAt}`),
@@ -67,6 +68,7 @@ export function createPendingInputRecord({
     createdAt,
     requestCursor: Number.isInteger(requestCursor) && requestCursor >= 0 ? requestCursor : 0,
     baselineIds: persistedUserRows(renderedItems).map(row => row.identity),
+    kind: typeof kind === 'string' && kind ? kind : null,
   };
 }
 

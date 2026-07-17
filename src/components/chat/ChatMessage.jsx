@@ -171,6 +171,7 @@ class ChatMessage extends React.Component {
       p.activePlanPrompt !== n.activePlanPrompt || p.activeDangerousPrompt !== n.activeDangerousPrompt ||
       p.activePtyPlanId !== n.activePtyPlanId ||
       p.requestIndex !== n.requestIndex || p.label !== n.label || p.isTeammate !== n.isTeammate ||
+      p.isUltraplan !== n.isUltraplan ||
       p.animateAvatar !== n.animateAvatar ||
       p.isHistoryLog !== n.isHistoryLog ||
       p.userProfile !== n.userProfile || p.modelInfo !== n.modelInfo || p.imSenderMap !== n.imSenderMap || p.imAgent !== n.imAgent ||
@@ -888,6 +889,11 @@ class ChatMessage extends React.Component {
     const timeStr = this.formatTime(timestamp);
     const userName = this.getUserName(senderProfile);
     const imBadge = this.renderImSourceBadge(imSource);
+    const ultraplanBadge = this.props.isUltraplan ? (
+      <span className={styles.ultraplanPromptBadge}>
+        <span aria-hidden="true">◇</span> {t('ui.ultraplan')}
+      </span>
+    ) : null;
 
     // 检测 /compact 消息
     const isCompact = text && text.includes('This session is being continued from a previous conversation that ran out of context');
@@ -936,14 +942,17 @@ class ChatMessage extends React.Component {
           <div className={styles.labelRow}>
             {timeStr && <Text className={styles.timeTextNoMargin}>{timeStr}</Text>}
             {this.renderViewRequestBtn()}
-            {imBadge
-              ? (
-                <span className={styles.imSourceNameGroup}>
-                  {imBadge}
-                  <Text type="secondary" className={styles.imSourceName}>{userName}</Text>
-                </span>
-              )
-              : <Text type="secondary" className={styles.labelTextRight}>{userName}</Text>}
+            <span className={styles.userIdentityGroup}>
+              {ultraplanBadge}
+              {imBadge
+                ? (
+                  <span className={styles.imSourceInlineGroup}>
+                    {imBadge}
+                    <Text type="secondary" className={styles.imSourceName}>{userName}</Text>
+                  </span>
+                )
+                : <Text type="secondary" className={styles.labelText}>{userName}</Text>}
+            </span>
           </div>
           {this.renderHighlightBubble(styles.bubbleUser, bubbleContent)}
         </div>

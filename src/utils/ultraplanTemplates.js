@@ -112,6 +112,55 @@ Your final deliverable must include:
 
 };
 
+const ULTRAPLAN_OPEN = '<user_instructions>';
+const ULTRAPLAN_CLOSE = '</user_instructions>';
+const ULTRAPLAN_SEED_HEADER = 'Here is a draft plan to refine:';
+
+/**
+ * Recognize a prompt assembled by buildLocalUltraplan and return only the
+ * user-visible material outside its instruction scaffold. Detection is strict:
+ * arbitrary <user_instructions> blocks remain system chrome and are never
+ * exposed as user messages.
+ */
+export function parseUltraplanPrompt(value) {
+  if (typeof value !== 'string' || !value) return null;
+  const lower = value.toLowerCase();
+  const plausibleOpens = [];
+  let searchFrom = 0;
+  while (searchFrom < lower.length) {
+    const open = lower.indexOf(ULTRAPLAN_OPEN, searchFrom);
+    if (open < 0) break;
+    const head = value.slice(open + ULTRAPLAN_OPEN.length, open + ULTRAPLAN_OPEN.length + 64);
+    if (/^\s*\[SCOPED INSTRUCTION\]/i.test(head)) {
+      plausibleOpens.push(open);
+      if (plausibleOpens.length > 1) return null;
+    }
+    searchFrom = open + ULTRAPLAN_OPEN.length;
+  }
+  // A literal tag mentioned by the user's task is harmless. Two actual scoped
+  // scaffolds are ambiguous and stay hidden instead of risking instruction leak.
+  if (plausibleOpens.length !== 1) return null;
+  const [open] = plausibleOpens;
+  const close = lower.indexOf(ULTRAPLAN_CLOSE, open + ULTRAPLAN_OPEN.length);
+  if (close < 0) return null;
+  const inner = value.slice(open + ULTRAPLAN_OPEN.length, close);
+  const hasScopedMarker = /^\s*\[SCOPED INSTRUCTION\][\s\S]*?next\s+1-3\s+interactions/i.test(inner);
+  const hasRequiredTools = /\brequest_user_input\b/i.test(inner)
+    && /\bupdate_plan\b/i.test(inner)
+    && /\bmulti_agent_v(?:\$\{verson\}|\d+)/i.test(inner);
+  if (!hasScopedMarker || !hasRequiredTools) return null;
+
+  const prefixText = value.slice(0, open).trim();
+  if (prefixText && !prefixText.startsWith(ULTRAPLAN_SEED_HEADER)) return null;
+
+  const suffixText = value.slice(close + ULTRAPLAN_CLOSE.length).trim();
+  // The seed is planning context, while the suffix is the user prompt. Keep
+  // historical rendering consistent with the optimistic bubble created at send.
+  const displayText = suffixText;
+  if (!displayText) return null;
+  return { displayText, prefixText, suffixText, isUltraplan: true };
+}
+
 /**
  * Wrap user-authored custom instruction body with the same scoped-instruction
  * preamble used by the built-in variants. Produces a full <user_instructions>

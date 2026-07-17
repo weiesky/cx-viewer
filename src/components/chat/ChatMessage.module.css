@@ -142,12 +142,29 @@
   margin-left: auto;
 }
 
-/* IM-source icon + username grouped together, kept right-aligned as a unit. */
-.imSourceNameGroup {
+.userIdentityGroup,
+.imSourceInlineGroup {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  min-width: 0;
+}
+
+.userIdentityGroup {
   margin-left: auto;
+}
+
+.ultraplanPromptBadge {
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding: 1px 5px;
+  border: 1px solid color-mix(in srgb, var(--color-info-light) 55%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-info-light) 12%, transparent);
+  color: var(--color-info-light);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 .imSourceName {

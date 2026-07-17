@@ -13,6 +13,7 @@ import {
   getResponseTools,
 } from '../../lib/openai-body.js';
 import { getEntryUpstreamLane } from './clearCheckpoint.js';
+import { parseUltraplanPrompt } from './ultraplanTemplates.js';
 export { getInstructionsText };
 
 const SUBAGENT_INSTRUCTIONS_RE = /command execution specialist|file search specialist|planning specialist|general-purpose agent|security monitor|performing a web search/i;
@@ -353,6 +354,8 @@ export function isSystemText(text) {
 // 注意：用户手打未闭合 <user_instructions>（无配对）仍判系统文本而隐藏——沿用当前行为，本函数不改变它。
 export function extractDisplayText(str) {
   if (typeof str !== 'string' || !str.trim()) return '';
+  const ultraplan = parseUltraplanPrompt(str);
+  if (ultraplan) return ultraplan.displayText;
   if (!isSystemText(str)) return str;                  // Pass1：已是用户文本，原样
   const recovered = stripSystemTags(str);               // Pass2：二次回收
   return (recovered && !isSystemText(recovered)) ? recovered : '';
@@ -475,15 +478,28 @@ export function classifyUserContent(content) {
     }
   }
 
-  // 过滤出非系统文本块
-  let textBlocks = content.filter(b => b.type === 'text' && !isSystemText(b.text));
+  // UltraPlan must be recognized before the generic system-text pass. Seeded
+  // prompts start with ordinary prose, so isSystemText() would otherwise admit
+  // the entire instruction scaffold as a normal user bubble.
+  const ultraplanBlocks = new Set();
+  const textBlocks = [];
+  for (const b of content) {
+    if (b.type !== 'text') continue;
+    const parsed = parseUltraplanPrompt(b.text);
+    if (parsed) {
+      ultraplanBlocks.add(b);
+      textBlocks.push({ ...b, text: parsed.displayText, isUltraplan: true });
+    } else if (!isSystemText(b.text)) {
+      textBlocks.push(b);
+    }
+  }
 
   // 二次提取：从被过滤的系统块中提取嵌入的用户文本
   // (e.g., /ultraplan 将 skill 指令和用户输入合并在同一 <user_instructions> 块中)
   // stripSystemTags 后再过一次 isSystemText —— 避免对 [Request interrupted ...] 这种纯标记
   // 文本（无可剥离 XML）误回收成用户气泡
   for (const b of content) {
-    if (b.type !== 'text' || !isSystemText(b.text)) continue;
+    if (b.type !== 'text' || ultraplanBlocks.has(b) || !isSystemText(b.text)) continue;
     const userText = stripSystemTags(b.text);
     if (userText && !isSystemText(userText)) {
       textBlocks.push({ ...b, text: userText });

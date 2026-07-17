@@ -60,10 +60,29 @@ test('wire and display text are both accepted for transformed prompts', () => {
     displayText: 'goal',
     createdAt: '2026-07-13T06:00:00.000Z',
     requestCursor: 2,
+    kind: 'ultraplan',
   });
+  assert.equal(record.kind, 'ultraplan');
   assert.equal(getPendingInputDisplayText(record), 'goal');
   const echoed = [row('goal', 'goal', '2026-07-13T06:00:01.000Z', 2)];
   assert.equal(reconcilePendingInputs([record], echoed).length, 0);
+});
+
+test('pending reconciliation clones preserve the UltraPlan source kind', () => {
+  const first = pending('p1', 'first');
+  const second = createPendingInputRecord({
+    id: 'p2',
+    wireText: '<ultraplan>second</ultraplan>',
+    displayText: 'second',
+    kind: 'ultraplan',
+    createdAt: '2026-07-13T06:00:00.000Z',
+    requestCursor: 2,
+  });
+  const rows = [row('first', 'first', '2026-07-13T06:00:01.000Z', 1)];
+  const remaining = reconcilePendingInputs([first, second], rows);
+  assert.equal(remaining.length, 1);
+  assert.equal(remaining[0].kind, 'ultraplan');
+  assert.notEqual(remaining[0], second);
 });
 
 test('line endings and surrounding whitespace are normalized', () => {
