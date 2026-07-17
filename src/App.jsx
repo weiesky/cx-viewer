@@ -13,7 +13,7 @@ import PanelResizer from './components/common/PanelResizer';
 import OpenFolderIcon from './components/common/OpenFolderIcon';
 import CountryFlag from './components/common/CountryFlag';
 import UsageWindowPill from './components/dashboard/UsageWindowPill';
-import { extractLatestPlanUsage } from './utils/rateLimitParser';
+import { getPlanUsageSourceKey, shouldDisplayPlanUsage, transitionPlanUsage } from './utils/planUsageDisplay';
 import { t } from './i18n';
 import { filterRelevantRequests, visibleRequests, findPrevMainAgentTimestamp } from './utils/helpers';
 import { isMainAgent } from './utils/contentFilter';
@@ -32,7 +32,7 @@ class App extends AppBase {
       terminalVisible: true,
       currentTab: 'context',
       contextBarSlot: null, // DOM slot registered by TerminalPanel toolbar / ChatInputBar bottom button area; AppHeader renders the usage pill bar there via createPortal
-      planUsage: null, // Plan usage snapshot (OAuth only): auto-follows the latest response, updates only when requests reference changes and the parsed value differs (see componentDidUpdate)
+      planUsage: null, // Plan usage snapshot from the latest response headers (live or imported history).
       installMethod: null, // 'electron' | 'brew' | 'npm': fetched on demand when opening the version-info modal, for precise upgrade command matching
     });
     this.appHeaderRef = React.createRef();
@@ -86,24 +86,25 @@ class App extends AppBase {
       .catch(() => { /* 拉取失败 → 保持 null，渲染端按 npm 默认兜底 */ });
   };
 
-  // 套餐用量：从响应头里的 plan/rate-limit 信息提取，SSE 已把最新响应
-  // 喂进 requests，故无需独立请求/手动刷新——pill 自动跟随最新响应。仅在「有新响应」(requests 引用变化)
-  // 时重算;解析值未变则不 setState，避免流式期间多余重渲染。
-  // 注意:开关以「响应里是否解析出套餐用量」为准,不再用首请求的 authType 卡死——unified 头本身即证明是订阅账号,
-  // 避免第一条请求碰巧未带 Authorization(走 x-api-key/Unknown) 时永久压住 pill。
+  // 套餐用量来自 response.headers。V2 使用 usage-only header 摘要，legacy
+  // requests 使用捕获的响应头；数据源切换时隔离旧快照，避免额度串到另一个项目/日志。
   componentDidUpdate(prevProps, prevState) {
     if (super.componentDidUpdate) super.componentDidUpdate(prevProps, prevState);
-    if (this._isLocalLog) return;
     const reqs = this.state.requests;
-    if (!reqs || reqs.length === 0) return;
-    // 无新响应且已有快照 → 跳过(extractLatestPlanUsage 从尾部命中，通常 O(1))。
-    if (prevState && prevState.requests === reqs && this.state.planUsage) return;
-    const pu = extractLatestPlanUsage(reqs);
-    if (!pu) return;
-    const sig = JSON.stringify(pu);
-    if (sig === this._planUsageSig) return; // 值未变，避免重复 setState/重渲染
-    this._planUsageSig = sig;
-    this.setState({ planUsage: pu });
+    const sourceKey = getPlanUsageSourceKey({
+      isLocalLog: this._isLocalLog,
+      localLogFile: this._localLogFile,
+      projectName: this.state.projectName,
+    });
+    const requestsChanged = !prevState || prevState.requests !== reqs;
+    const next = transitionPlanUsage({
+      sourceKey: this._planUsageSourceKey,
+      signature: this._planUsageSig,
+      planUsage: this.state.planUsage,
+    }, { sourceKey, requestsChanged, requests: reqs });
+    this._planUsageSourceKey = next.sourceKey;
+    this._planUsageSig = next.signature;
+    if (next.shouldSetState) this.setState({ planUsage: next.planUsage });
   }
 
   componentDidMount() {
@@ -465,9 +466,8 @@ class App extends AppBase {
           </Layout.Content>
           <div className={styles.footer}>
             <CountryFlag />
-            {/* 套餐用量:额度搭车在常规响应头上，自动跟随最新响应更新(仅有新响应时重算)。
-                开关以「已解析出套餐用量」为准,authType==='OAuth' 仅作无数据时的占位兜底。 */}
-            {!this._isLocalLog && (this.state.planUsage || this.state.defaultConfig?.authType === 'OAuth') && (
+            {/* 本地日志只展示已记录的历史快照；实时 OAuth 无数据时保留 waiting 占位。 */}
+            {shouldDisplayPlanUsage({ planUsage: this.state.planUsage, isLocalLog: this._isLocalLog, authType: this.state.defaultConfig?.authType }) && (
               <UsageWindowPill
                 planUsage={this.state.planUsage}
                 authType={this.state.defaultConfig?.authType}

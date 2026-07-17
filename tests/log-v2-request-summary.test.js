@@ -86,3 +86,22 @@ test('request summary keeps only usage response headers for lightweight usage di
   assert.equal(JSON.stringify(summary).includes('private-prefix-secret'), false);
   assert.equal(JSON.stringify(summary).includes('nested-secret'), false);
 });
+
+test('request summary validation rejects non-usage or non-normalized response headers', () => {
+  const base = buildRequestSummary({
+    timestamp: '2026-07-16T00:00:00.000Z',
+    url: 'https://example.test/v1/responses',
+    response: { status: 200, headers: { 'x-codex-primary-used-percent': '19' } },
+  }, {
+    seq: 1, eventId: 'event', entryKey: 'entry', entryRevision: 1, threadId: 'thread', phase: 'completed',
+  });
+  assert.equal(validateRequestSummary(base).ok, true);
+  assert.equal(validateRequestSummary({
+    ...base,
+    response: { ...base.response, headers: { ...base.response.headers, authorization: 'Bearer secret' } },
+  }).ok, false);
+  assert.equal(validateRequestSummary({
+    ...base,
+    response: { ...base.response, headers: { 'X-Codex-Primary-Used-Percent': '19' } },
+  }).ok, false);
+});

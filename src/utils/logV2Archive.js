@@ -2,6 +2,7 @@ import { applyWireCommit, resolveWireInputRefs, restoreWireArchiveState } from '
 import { LogV2ObjectStore } from './logV2ObjectStore.js';
 import { projectLogV2ConversationEntry } from './logV2ConversationProjection.js';
 import { classifyRequest } from './requestType.js';
+import { selectUsageHeaders } from '../../lib/log-v2/request-summary.js';
 
 function summaryEntry(summary, descriptor, handle) {
   const responseSummary = summary.response;
@@ -104,10 +105,26 @@ export class LogV2Archive {
     if (!descriptor || descriptor.archive.generation !== this.start.archive.generation) {
       throw new Error('Unknown V2 descriptor');
     }
-    return projectLogV2ConversationEntry(this.objectStore, descriptor, {
+    const projected = await projectLogV2ConversationEntry(this.objectStore, descriptor, {
       ...options,
       inputRefs: descriptor.input ? resolveWireInputRefs(this.state, descriptor.input) : [],
     });
+    // Conversation projection deliberately keeps full response headers lazy.
+    // Request summaries already carry a small usage-only allowlist, so restore
+    // only that subset for the footer quota display without hydrating secrets.
+    const summaryHeaders = selectUsageHeaders(this.summaries.get(descriptor.seq)?.response?.headers);
+    if (!summaryHeaders) return projected;
+    const projectedResponse = projected?.response && typeof projected.response === 'object'
+      ? projected.response
+      : {};
+    const projectedHeaders = selectUsageHeaders(projectedResponse.headers) || {};
+    return {
+      ...projected,
+      response: {
+        ...projectedResponse,
+        headers: { ...summaryHeaders, ...projectedHeaders },
+      },
+    };
   }
 
   applyCommit(frame, summary = null) {

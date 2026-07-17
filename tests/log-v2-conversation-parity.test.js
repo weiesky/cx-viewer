@@ -5,6 +5,7 @@ import { applyWireCommit, checkpointWireArchiveState, createWireArchiveState } f
 import { LOG_V2_WIRE_KINDS, LOG_V2_WIRE_VERSION } from '../lib/log-v2/wire-schema.js';
 import { isV2ConversationCandidate, LogV2Archive } from '../src/utils/logV2Archive.js';
 import { normalizeConversationEntry } from '../src/utils/conversationEntryNormalize.js';
+import { extractLatestPlanUsage } from '../src/utils/rateLimitParser.js';
 import { isColdIngestMergeBlockedEntry, mergeMainAgentSessions } from '../src/utils/sessionMerge.js';
 
 const identity = { projectId: 'project', sessionId: 'session', generation: 'generation' };
@@ -13,19 +14,20 @@ test('V2 conversation projection skips network-only parts while preserving norma
   const values = [
     ['a', { timestamp: '2026-07-15T00:00:00.000Z', url: 'codex://main', mainAgent: true }],
     ['b', { model: 'gpt-test', instructions: 'Codex', tools: [{ name: 'shell_command' }] }],
-    ['c', { status: 200 }],
+    ['c', { status: 200, headers: { authorization: 'must-not-project', 'x-codex-plan-type': 'projected' } }],
     ['d', { content: [{ type: 'text', text: 'answer' }], usage: { output_tokens: 1 } }],
     ['e', { authorization: '[REDACTED]' }],
     ['f', { role: 'user', content: 'hello' }],
+    ['7', { authorization: '[REDACTED]', 'x-codex-primary-used-percent': '99' }],
   ].map(([char, value]) => ({ ref: { hash: char.repeat(64), bytes: JSON.stringify(value).length }, value }));
-  const [meta, body, responseMeta, responseBody, headers, input] = values;
+  const [meta, body, responseMeta, responseBody, headers, input, responseHeaders] = values;
   const state = createWireArchiveState(identity);
   applyWireCommit(state, {
     kind: LOG_V2_WIRE_KINDS.commit, version: LOG_V2_WIRE_VERSION, archive: identity, timelineBytes: 100,
     timeline: { seq: 1, eventId: 'event', txnId: 'txn', timestamp: '2026-07-15T00:00:00.000Z', threadId: 'thread', entryKey: 'entry', entryRevision: 1, inputRevision: 1, phase: 'completed' },
     entry: {
       entryKey: 'entry', revision: 1, baseRevision: 0,
-      set: { 'root.meta': meta.ref, 'root.body': body.ref, 'root.headers': headers.ref, 'response.meta': responseMeta.ref, 'response.body': responseBody.ref },
+      set: { 'root.meta': meta.ref, 'root.body': body.ref, 'root.headers': headers.ref, 'response.meta': responseMeta.ref, 'response.headers': responseHeaders.ref, 'response.body': responseBody.ref },
       delete: [], inputBinding: { revision: 1, path: 'root.body.input', changed: true },
     },
     input: { revision: 1, baseRevision: 0, path: 'root.body.input', retain: 0, remove: 0, append: [input.ref] },
@@ -41,7 +43,23 @@ test('V2 conversation projection skips network-only parts while preserving norma
   const snapshot = {
     start: { kind: LOG_V2_WIRE_KINDS.start, version: LOG_V2_WIRE_VERSION, archive: identity, objectHandle: 'handle' },
     checkpoint: checkpointWireArchiveState(state),
-    summaries: [{ seq: 1, root: meta.value, body: { model: 'gpt-test' }, response: { status: 200, usage: { output_tokens: 1 } }, request: null }],
+    summaries: [{
+      seq: 1,
+      root: meta.value,
+      body: { model: 'gpt-test' },
+      response: {
+        status: 200,
+        usage: { output_tokens: 1 },
+        headers: {
+          'x-codex-plan-type': 'prolite',
+          'x-codex-primary-used-percent': '19',
+          'x-codex-primary-window-minutes': '10080',
+          authorization: 'Bearer must-not-project',
+          'content-type': 'text/event-stream',
+        },
+      },
+      request: null,
+    }],
     end: { kind: LOG_V2_WIRE_KINDS.end, version: LOG_V2_WIRE_VERSION, archive: identity },
   };
   const archive = new LogV2Archive(snapshot, { fetchImpl });
@@ -54,13 +72,62 @@ test('V2 conversation projection skips network-only parts while preserving norma
     response: { ...responseMeta.value, body: responseBody.value },
   };
 
+  assert.deepEqual(projected.response.headers, {
+    'x-codex-plan-type': 'projected',
+    'x-codex-primary-used-percent': '19',
+    'x-codex-primary-window-minutes': '10080',
+  });
+  assert.equal(extractLatestPlanUsage([projected]).windows[0].utilization, 0.19);
   const projectedConversation = normalizeConversationEntry(projected);
   const fullConversation = normalizeConversationEntry(full);
+  delete projectedConversation.response.headers;
+  delete fullConversation.response.headers;
   delete fullConversation.headers;
   assert.deepEqual(projectedConversation, fullConversation);
   assert.equal(projected.headers, undefined);
   assert.equal(requested.includes(headers.ref.hash), false);
+  assert.equal(requested.includes(responseHeaders.ref.hash), false);
   assert.deepEqual(new Set(requested), new Set([meta.ref.hash, body.ref.hash, responseMeta.ref.hash, responseBody.ref.hash, input.ref.hash]));
+
+  const liveRow = archive.applyCommit({
+    kind: LOG_V2_WIRE_KINDS.commit,
+    version: LOG_V2_WIRE_VERSION,
+    archive: identity,
+    timelineBytes: 100,
+    timeline: {
+      seq: 2,
+      eventId: 'event-2',
+      txnId: 'txn-2',
+      timestamp: '2026-07-15T00:00:01.000Z',
+      threadId: 'thread',
+      entryKey: 'entry',
+      entryRevision: 2,
+      inputRevision: null,
+      phase: 'completed',
+    },
+    entry: {
+      entryKey: 'entry',
+      revision: 2,
+      baseRevision: 1,
+      set: { 'response.meta': responseMeta.ref },
+      delete: [],
+    },
+  }, {
+    seq: 2,
+    root: meta.value,
+    body: { model: 'gpt-test' },
+    response: {
+      status: 200,
+      headers: {
+        'x-codex-primary-used-percent': '41',
+        'x-codex-primary-window-minutes': '10080',
+      },
+    },
+    request: null,
+  });
+  const liveProjected = await archive.projectConversation(liveRow._v2RowHandle);
+  assert.equal(extractLatestPlanUsage([liveProjected]).windows[0].utilization, 0.41);
+  assert.equal(requested.includes(responseHeaders.ref.hash), false);
 });
 
 test('canonical agent role keeps conversation projection eligible without derived capture flags', () => {
