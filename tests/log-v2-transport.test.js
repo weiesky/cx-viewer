@@ -3,10 +3,11 @@ import { appendFileSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFil
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import test from 'node:test';
+import { Worker } from 'node:worker_threads';
 
 import { applyWireCommit, restoreWireArchiveState, materializeWireDescriptor } from '../lib/log-v2/reducer.js';
-import { readV2WireCommitsAfter, readV2WireCommitsFromCursor, readV2WirePage, readV2WireSnapshot } from '../lib/log-v2/transport.js';
-import { createV2WireLiveReader, readV2WireSnapshotAsync } from '../lib/log-v2/materializer.js';
+import { getV2RequestSummaryReadStats, readV2WireCommitsAfter, readV2WireCommitsFromCursor, readV2WirePage, readV2WirePageFromIndex, readV2WireSnapshot, readV2WireSummariesForWinners } from '../lib/log-v2/transport.js';
+import { createV2WireLiveReader, readV2WireSnapshotAsync, readV2WireSummariesAsync } from '../lib/log-v2/materializer.js';
 import { readContentObjectSync } from '../lib/log-v2/storage.js';
 import { closeIdleV2TimelinePublishers, getV2TimelineWatcherStats, watchV2Timeline } from '../lib/log-v2/timeline-watcher.js';
 import { LogV2Writer } from '../lib/log-v2/writer.js';
@@ -18,6 +19,37 @@ function options(root) {
     sessionId: 'session', rootThreadId: 'session', source: 'app-server', startReason: 'startup',
     durability: 'buffered',
   };
+}
+
+function readSummariesInFreshInstrumentedWorker(logDir, file, winners) {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(`
+      const { parentPort, workerData } = require('node:worker_threads');
+      import(workerData.module).then((transport) => {
+        const before = transport.getV2RequestSummaryReadStats();
+        const values = transport.readV2WireSummariesForWinners(
+          workerData.logDir, workerData.file, workerData.winners,
+        );
+        const after = transport.getV2RequestSummaryReadStats();
+        parentPort.postMessage({
+          seqs: values.map(value => value.seq),
+          indexedRecords: after.indexedRecords - before.indexedRecords,
+          selectedRecords: after.selectedRecords - before.selectedRecords,
+        });
+      }).catch(error => { throw error; });
+    `, {
+      eval: true,
+      workerData: {
+        module: new URL('../lib/log-v2/transport.js', import.meta.url).href,
+        logDir,
+        file,
+        winners,
+      },
+    });
+    worker.once('message', resolve);
+    worker.once('error', reject);
+    worker.once('exit', code => { if (code !== 0) reject(new Error(`summary worker exited ${code}`)); });
+  });
 }
 
 test('wire snapshot carries only refs and summaries while exact client assembly matches source entries', async () => {
@@ -79,6 +111,49 @@ test('wire live replay resumes strictly after the snapshot sequence', () => {
     assert.throws(() => readV2WireCommitsAfter(root, file, {
       afterSeq: 1, generation: 'other',
     }), error => error.code === 'CXV_LOG_V2_WIRE_RESET_REQUIRED');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('long-history suffix readers decode summaries only for newly committed sequences', () => {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-wire-live-summary-suffix-'));
+  try {
+    const writer = LogV2Writer.open(options(root));
+    const identity = { sessionId: 'session', rootThreadId: 'session', threadId: 'session', agentRole: 'main', isRoot: true };
+    const append = (index) => writer.append({
+      timestamp: new Date(Date.UTC(2026, 6, 15, 0, 0, index)).toISOString(),
+      url: `codex://summary-suffix/${index}`,
+      mainAgent: true,
+      body: { model: `model-${index}`, input: [] },
+      response: { status: 200 },
+    }, identity);
+    for (let index = 0; index < 200; index++) append(index);
+    const file = relative(root, join(writer.sessionDir, 'timeline.jsonl')).split('\\').join('/');
+    const snapshot = readV2WireSnapshot(root, file, { limit: 200 });
+
+    append(200);
+    let before = getV2RequestSummaryReadStats();
+    const first = readV2WireCommitsFromCursor(root, file, { cursor: snapshot.end.cursor });
+    let after = getV2RequestSummaryReadStats();
+    assert.equal(first.commits.length, 1);
+    assert.equal(after.selectedRecords - before.selectedRecords, 1);
+
+    append(201);
+    before = getV2RequestSummaryReadStats();
+    const second = readV2WireCommitsFromCursor(root, file, { cursor: first.cursor });
+    after = getV2RequestSummaryReadStats();
+    assert.equal(second.commits.length, 1);
+    assert.equal(after.selectedRecords - before.selectedRecords, 1);
+
+    before = getV2RequestSummaryReadStats();
+    const replay = readV2WireCommitsAfter(root, file, {
+      afterSeq: snapshot.end.cursor.throughSeq,
+      generation: snapshot.start.archive.generation,
+    });
+    after = getV2RequestSummaryReadStats();
+    assert.deepEqual(replay.commits.map(value => value.frame.timeline.seq), [201, 202]);
+    assert.equal(after.selectedRecords - before.selectedRecords, 2);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -189,6 +264,128 @@ test('wire transport rebuilds correctness-critical summaries from canonical meta
     const replay = readV2WireCommitsAfter(root, file, { afterSeq: 0, generation: snapshot.start.archive.generation });
     assert.equal(replay.commits[0].summary.root.mainAgent, true);
     assert.equal(JSON.stringify(replay.commits[0].summary).includes('large private result'), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('wire snapshot rebuilds summaries only for the selected window and pages older summaries lazily', () => {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-wire-selected-summary-'));
+  try {
+    const writer = LogV2Writer.open(options(root));
+    const identity = { sessionId: 'session', rootThreadId: 'session', threadId: 'session', agentRole: 'main', isRoot: true };
+    for (let index = 1; index <= 3; index++) {
+      writer.append({
+        timestamp: `2026-07-15T00:00:0${index}.000Z`,
+        url: `codex://${index}`,
+        mainAgent: true,
+        body: { model: `model-${index}`, input: [] },
+        response: { status: 200 },
+      }, identity);
+    }
+    const file = relative(root, join(writer.sessionDir, 'timeline.jsonl')).split('\\').join('/');
+    const seeded = readV2WireSnapshot(root, file, { limit: 3 });
+    const oldest = seeded.pageIndex.values[0].winner.descriptor;
+    const oldestRoot = oldest.parts['root.meta'];
+    unlinkSync(join(writer.sessionDir, 'request-summaries.jsonl'));
+    // If snapshot still rebuilt every winner, this deliberately unavailable
+    // object from outside the selected window would make the request fail.
+    unlinkSync(join(writer.sessionDir, `objects/${oldestRoot.hash.slice(0, 2)}/${oldestRoot.hash.slice(2, 4)}/${oldestRoot.hash}.json`));
+
+    const snapshot = readV2WireSnapshot(root, file, { limit: 1 });
+    assert.equal(snapshot.summaries.length, 1);
+    assert.equal(snapshot.summaries[0].root.url, 'codex://3');
+    assert.equal(snapshot.pageIndex.values.length, 3);
+    assert.equal('summary' in snapshot.pageIndex.values[0], false);
+
+    const page = readV2WirePageFromIndex(snapshot.pageIndex, {
+      cursor: snapshot.end.cursor,
+      beforeSeq: 3,
+      limit: 1,
+    });
+    assert.equal(page.summaries.length, 1);
+    assert.equal(page.summaries[0].root.url, 'codex://2');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('bounded winner summary reader validates archive identity and reads only requested sequences', () => {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-wire-winner-summaries-'));
+  try {
+    const writer = LogV2Writer.open(options(root));
+    const identity = { sessionId: 'session', rootThreadId: 'session', threadId: 'session', agentRole: 'main', isRoot: true };
+    for (let index = 1; index <= 5; index++) {
+      writer.append({
+        timestamp: `2026-07-15T00:00:0${index}.000Z`, url: `codex://${index}`,
+        mainAgent: true, body: { model: `model-${index}`, input: [] }, response: { status: 200 },
+      }, identity);
+    }
+    const file = relative(root, join(writer.sessionDir, 'timeline.jsonl')).split('\\').join('/');
+    const snapshot = readV2WireSnapshot(root, file, { limit: 2 });
+    const winners = snapshot.checkpoint.winners;
+    const before = getV2RequestSummaryReadStats();
+    const summaries = readV2WireSummariesForWinners(root, file, winners);
+    const after = getV2RequestSummaryReadStats();
+    assert.deepEqual(summaries.map(value => value.seq), [4, 5]);
+    assert.equal(after.selectedRecords - before.selectedRecords, 2);
+    assert.throws(() => readV2WireSummariesForWinners(root, file, [{
+      ...winners[0], descriptor: { ...winners[0].descriptor, archive: { ...winners[0].descriptor.archive, generation: 'other' } },
+    }]), error => error.code === 'CXV_LOG_V2_WIRE_RESET_REQUIRED');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('fresh page workers pread snapshot locators without rescanning long summary history', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-wire-page-summary-locators-'));
+  try {
+    const writer = LogV2Writer.open(options(root));
+    const identity = { sessionId: 'session', rootThreadId: 'session', threadId: 'session', agentRole: 'main', isRoot: true };
+    for (let index = 1; index <= 120; index++) {
+      writer.append({
+        timestamp: new Date(Date.UTC(2026, 6, 15, 0, 0, index)).toISOString(),
+        url: `codex://locator/${index}`, mainAgent: true,
+        body: { model: `model-${index}`, input: [] }, response: { status: 200 },
+      }, identity);
+    }
+    const file = relative(root, join(writer.sessionDir, 'timeline.jsonl')).split('\\').join('/');
+    const snapshot = await readV2WireSnapshotAsync(root, file, { limit: 20 });
+    assert.equal(snapshot.pageIndex.values.every(value => (
+      value.summaryLocator === null
+      || (Number.isSafeInteger(value.summaryLocator?.offset)
+        && Number.isSafeInteger(value.summaryLocator?.length))
+    )), true);
+
+    const firstPage = readV2WirePageFromIndex(snapshot.pageIndex, {
+      cursor: snapshot.end.cursor, beforeSeq: 101, limit: 20, deferSummaries: true,
+    });
+    const secondPage = readV2WirePageFromIndex(snapshot.pageIndex, {
+      cursor: snapshot.end.cursor, beforeSeq: 81, limit: 20, deferSummaries: true,
+    });
+    assert.deepEqual(firstPage.checkpoint.winners.map(value => value.descriptor.seq),
+      Array.from({ length: 20 }, (_, index) => index + 81));
+    assert.deepEqual(secondPage.checkpoint.winners.map(value => value.descriptor.seq),
+      Array.from({ length: 20 }, (_, index) => index + 61));
+
+    // Exercise the production reader-worker operation as well as two entirely
+    // fresh instrumented workers. A process-local cache cannot make these
+    // assertions pass: locator pread must index zero historical records.
+    const productionValues = await readV2WireSummariesAsync(root, file, firstPage.summaryWinners);
+    assert.deepEqual(productionValues.map(value => value.seq),
+      Array.from({ length: 20 }, (_, index) => index + 81));
+    const firstStats = await readSummariesInFreshInstrumentedWorker(root, file, firstPage.summaryWinners);
+    const secondStats = await readSummariesInFreshInstrumentedWorker(root, file, secondPage.summaryWinners);
+    assert.deepEqual(firstStats, {
+      seqs: Array.from({ length: 20 }, (_, index) => index + 81),
+      indexedRecords: 0,
+      selectedRecords: 20,
+    });
+    assert.deepEqual(secondStats, {
+      seqs: Array.from({ length: 20 }, (_, index) => index + 61),
+      indexedRecords: 0,
+      selectedRecords: 20,
+    });
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

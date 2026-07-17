@@ -20,6 +20,80 @@ const MAX_FROZEN_PAGE_INDEXES = 16;
 const objectHandles = new Map();
 const frozenPageIndexes = new Map();
 let activeObjectRequests = 0;
+const ACTIVE_SNAPSHOT_RECOVERY_CODES = new Set([
+  'CXV_LOG_V2_CORRUPT',
+  'CXV_LOG_V2_WIRE_RESET_REQUIRED',
+]);
+const TRANSIENT_SNAPSHOT_ERROR_CODES = new Set([
+  'EAGAIN', 'EBUSY', 'EMFILE', 'ENFILE', 'ENOMEM', 'ETIMEDOUT',
+]);
+
+export function classifyActiveSnapshotError(error) {
+  if (!error || ACTIVE_SNAPSHOT_RECOVERY_CODES.has(error.code)
+      || TRANSIENT_SNAPSHOT_ERROR_CODES.has(error.code)) return error;
+  const stack = typeof error.stack === 'string' ? error.stack : '';
+  const message = typeof error.message === 'string' ? error.message : '';
+  const canonicalObjectFailure = error.code === 'ENOENT'
+    || /content object/i.test(message)
+    || /(?:readContentObjectSync|readWireObjectRef|rebuildRequestSummary)/.test(stack);
+  if (canonicalObjectFailure) error.code = 'CXV_LOG_V2_CORRUPT';
+  return error;
+}
+
+export function isRecoverableActiveSnapshotError(error) {
+  return ACTIVE_SNAPSHOT_RECOVERY_CODES.has(error?.code);
+}
+
+/** Keep an accepted fallback scoped to one rejected canonical file identity. */
+export function createActiveV2RecoveryState({
+  identityForFile,
+  now = Date.now,
+  ttlMs = 30_000,
+} = {}) {
+  if (typeof identityForFile !== 'function') throw new TypeError('identityForFile is required');
+  let accepted = null;
+  let epoch = 0;
+  const clear = () => { accepted = null; epoch++; };
+  const identity = (file) => {
+    try { return identityForFile(file); } catch { return null; }
+  };
+  return Object.freeze({
+    apply(file) {
+      if (!accepted) return file;
+      if (file !== accepted.rejectedFile
+          || now() >= accepted.expiresAt
+          || identity(file) !== accepted.rejectedIdentity) {
+        clear();
+        return file;
+      }
+      return accepted.fallbackFile;
+    },
+    prepare(rejectedFile, error) {
+      if (!isRecoverableActiveSnapshotError(error)) return null;
+      const rejectedIdentity = identity(rejectedFile);
+      if (!rejectedIdentity) return null;
+      const preparedEpoch = ++epoch;
+      let used = false;
+      return Object.freeze({
+        accept(fallbackFile) {
+          if (used || preparedEpoch !== epoch
+              || !fallbackFile || fallbackFile === rejectedFile) return false;
+          used = true;
+          if (identity(rejectedFile) !== rejectedIdentity) return false;
+          accepted = Object.freeze({
+            rejectedFile,
+            rejectedIdentity,
+            fallbackFile,
+            expiresAt: now() + ttlMs,
+          });
+          return true;
+        },
+      });
+    },
+    clear,
+    snapshot() { return accepted ? Object.freeze({ ...accepted }) : null; },
+  });
+}
 
 function collectCheckpointRefs(checkpoint) {
   const refs = new Map();
@@ -307,6 +381,7 @@ export async function serveLogV2Snapshot(req, res, {
   readSnapshot,
   readOnly = false,
   knownCursor = null,
+  recoverActiveFile = null,
 }) {
   if (!file) {
     res.writeHead(404, { 'Content-Type': 'application/json' });
@@ -315,8 +390,34 @@ export async function serveLogV2Snapshot(req, res, {
   }
   try {
     if (typeof readSnapshot !== 'function') throw new TypeError('V2 snapshot reader is required');
-    const snapshot = await readSnapshot(logDir, file, { limit });
-    const objectHandle = registerV2ObjectHandle(file, snapshot, { readOnly });
+    let selectedFile = file;
+    let snapshot;
+    try {
+      snapshot = await readSnapshot(logDir, selectedFile, { limit });
+    } catch (error) {
+      classifyActiveSnapshotError(error);
+      if (readOnly || typeof recoverActiveFile !== 'function'
+          || !isRecoverableActiveSnapshotError(error)) throw error;
+      let recovery;
+      try {
+        recovery = await recoverActiveFile(selectedFile, error);
+      } catch (recoveryError) {
+        if (recoveryError && recoveryError.cause == null) recoveryError.cause = error;
+        throw recoveryError;
+      }
+      const fallbackFile = typeof recovery === 'string' ? recovery : recovery?.file;
+      if (!fallbackFile || fallbackFile === selectedFile) throw error;
+      const rejectedFile = selectedFile;
+      selectedFile = fallbackFile;
+      try {
+        snapshot = await readSnapshot(logDir, selectedFile, { limit });
+        recovery?.accept?.({ rejectedFile, fallbackFile });
+      } catch (fallbackError) {
+        if (fallbackError && fallbackError.cause == null) fallbackError.cause = error;
+        throw fallbackError;
+      }
+    }
+    const objectHandle = registerV2ObjectHandle(selectedFile, snapshot, { readOnly });
     const cursor = snapshot.end.cursor;
     const notModified = !!knownCursor
       && sameWireArchive(knownCursor.archive, cursor.archive)
@@ -362,7 +463,7 @@ export async function serveLogV2Snapshot(req, res, {
   }
 }
 
-export async function serveLogV2Page(req, res, { logDir, body, readPage }) {
+export async function serveLogV2Page(req, res, { logDir, body, readPage, readSummaries = null }) {
   let pageRegistration = null;
   let pageLease = false;
   try {
@@ -400,12 +501,25 @@ export async function serveLogV2Page(req, res, { logDir, body, readPage }) {
             cursor: registration.frozenCursor,
             beforeSeq: registration.nextBeforeSeq,
             limit,
+            deferSummaries: typeof readSummaries === 'function',
           })
         : await readPage(logDir, registration.file, {
             cursor: registration.frozenCursor,
             beforeSeq: registration.nextBeforeSeq,
             limit,
           });
+      if (registration.pageIndex && typeof readSummaries === 'function'
+          && page.checkpoint.winners.length > 0) {
+        // The frozen winner slice is cheap and synchronous. All summary-file
+        // indexing, reads, validation and canonical rebuilds stay in a Reader
+        // Worker so a first history page cannot block unrelated HTTP APIs.
+        const summaries = await readSummaries(
+          logDir,
+          registration.file,
+          page.summaryWinners || page.checkpoint.winners,
+        );
+        page = Object.freeze({ ...page, summaries: Object.freeze(summaries) });
+      }
       pageToken = randomBytes(18).toString('base64url');
       registration.pendingPage = {
         token: pageToken,

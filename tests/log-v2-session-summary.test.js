@@ -167,6 +167,30 @@ test('distinct turns preserve identical prompts when only system input changes',
   }
 });
 
+test('root auxiliary prompt projection is stable across live summary and rebuild', () => {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-summary-root-aux-'));
+  try {
+    const writer = LogV2Writer.open(writerOptions(root));
+    writer.append(
+      entry('2026-07-15T08:01:00.000Z', [user('auxiliary root prompt')], 'turn-aux'),
+      {
+        sessionId: 'summary-session',
+        threadId: 'summary-session',
+        isRoot: true,
+        agentRole: 'auxiliary',
+      },
+    );
+    const live = readSessionSummary(writer.sessionDir);
+    assert.equal(live.rootMainEvents, 0);
+    const rebuilt = rebuildSessionSummary(writer.sessionDir);
+    assert.equal(rebuilt.rootMainEvents, 0);
+    assert.deepEqual(rebuilt.userPrompts, live.userPrompts);
+    assert.deepEqual(rebuilt.activeRootInput, live.activeRootInput);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('rebuild writes root-thread prompts and an exact fixed-point logical directory size', () => {
   const root = mkdtempSync(join(tmpdir(), 'cxv-v2-summary-rebuild-'));
   try {
@@ -195,6 +219,11 @@ test('rebuild writes root-thread prompts and an exact fixed-point logical direct
 
     const live = readSessionSummary(writer.sessionDir);
     assert.equal(live.throughSeq, 2);
+    assert.equal(live.rootMainEvents, 1);
+    assert.equal(live.lastRootMainActivity, '2026-07-15T08:01:00.000Z');
+    assert.match(live.timelineFileId, /^\d+:\d+$/);
+    assert.match(live.timelineFileVersion, /^\d+:\d+$/);
+    assert.match(live.timelineTailHash, /^[a-f0-9]{64}$/);
     assert.equal(live.userPrompts.some(prompt => prompt.text === 'root request'), true);
     assert.equal(live.userPrompts.some(prompt => prompt.text === 'child instruction'), false);
     assert.equal(live.archiveBytes, directoryLogicalBytes(writer.sessionDir));
@@ -203,6 +232,8 @@ test('rebuild writes root-thread prompts and an exact fixed-point logical direct
     const persisted = readSessionSummary(writer.sessionDir);
     assert.deepEqual(persisted, rebuilt);
     assert.equal(persisted.throughSeq, 2);
+    assert.equal(persisted.rootMainEvents, 1);
+    assert.equal(persisted.lastRootMainActivity, '2026-07-15T08:01:00.000Z');
     assert.equal(persisted.userPrompts.some(prompt => prompt.text === 'root request'), true);
     assert.equal(persisted.userPrompts.some(prompt => prompt.text === 'child instruction'), false);
     assert.equal(JSON.stringify(persisted).includes(secretImage), false);
@@ -249,6 +280,40 @@ test('readSessionSummary distinguishes a missing cache from malformed or invalid
       rootInputFingerprints: [],
     }));
     assert.throws(() => readSessionSummary(missing));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('readSessionSummary remains compatible with summaries written before root identity fields', () => {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-summary-compat-'));
+  try {
+    const writer = LogV2Writer.open(writerOptions(root));
+    writer.append(
+      entry('2026-07-15T08:01:00.000Z', [user('legacy summary')], 'turn-old'),
+      resolveAppServerThreadIdentity({ id: 'summary-session', sessionId: 'summary-session' }),
+    );
+    const current = readSessionSummary(writer.sessionDir);
+    const legacy = { ...current };
+    for (const field of [
+      'rootMainEvents', 'lastRootMainActivity',
+      'timelineFileId', 'timelineFileVersion', 'timelineTailHash',
+    ]) delete legacy[field];
+    const baseBytes = current.archiveBytes - current.summaryBytes;
+    let serialized = '';
+    let summaryBytes = 0;
+    for (let iteration = 0; iteration < 16; iteration++) {
+      const candidate = { ...legacy, summaryBytes, archiveBytes: baseBytes + summaryBytes };
+      serialized = `${JSON.stringify(candidate)}\n`;
+      const next = Buffer.byteLength(serialized);
+      if (next === summaryBytes) break;
+      summaryBytes = next;
+    }
+    writeFileSync(join(writer.sessionDir, SESSION_SUMMARY_FILE), serialized);
+    const read = readSessionSummary(writer.sessionDir);
+    assert.equal(read.rootMainEvents, undefined);
+    assert.equal(read.timelineFileId, undefined);
+    assert.equal(read.throughSeq, 1);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

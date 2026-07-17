@@ -13,6 +13,7 @@ import {
   findActiveV2SessionFileAsync,
   findLatestV2SessionFile,
   getActiveV2SessionLookupStats,
+  getActiveV2SessionSelectionStats,
   listV2LocalLogs,
   materializeSessionArchive,
   readV2LogEntries,
@@ -22,6 +23,12 @@ import {
   summarizeV2SessionArchive,
 } from '../lib/log-v2/materializer.js';
 import { LogV2Writer } from '../lib/log-v2/writer.js';
+import {
+  readSessionSummary,
+  rebuildSessionSummary,
+  summaryBaseBytes,
+  writeSessionSummary,
+} from '../lib/log-v2/session-summary.js';
 
 function options(rootDir) {
   return {
@@ -277,9 +284,205 @@ test('V2 cold-start lookup restores the durable latest session before any new wr
       updatedAt: '2026-07-14T12:01:00.000Z',
     })}\n`);
 
+    const before = getActiveV2SessionSelectionStats();
     const selected = findLatestV2SessionFile(root, { projectId: 'project', canonicalCwd: '/workspace/project' });
+    const after = getActiveV2SessionSelectionStats();
     assert.equal(selected, relative(root, join(second.sessionDir, 'timeline.jsonl')).split(sep).join('/'));
     assert.equal(readV2LogEntries(root, selected).some(isMainAgent), true);
+    assert.equal(after.latestPointerHits - before.latestPointerHits, 0);
+    assert.equal(after.slowFallbacks - before.slowFallbacks, 1);
+    assert.equal(after.rootActivityScans - before.rootActivityScans, 0,
+      'native app-server manifests provide the root-lane proof');
+    assert.ok(after.materializedHealthScans > before.materializedHealthScans);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('active V2 selector trusts the runtime conversation locator without scanning its timeline', () => {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-active-runtime-pointer-'));
+  try {
+    const writer = LogV2Writer.open(options(root));
+    writer.append(
+      entry('2026-07-14T08:00:00.000Z', [{ type: 'message', text: 'one' }], 'one'),
+      resolveAppServerThreadIdentity({ id: 'session-root', sessionId: 'session-root' }),
+    );
+    writer.markProjectLatest({ source: 'app-server' });
+    const before = getActiveV2SessionSelectionStats();
+    const selected = findActiveV2SessionFile(root, {
+      runtime: {
+        config: { writeMode: 'v2' },
+        writer: { lastConversationLocator: { sessionId: 'session-root' } },
+      },
+      projectId: 'project',
+      canonicalCwd: '/workspace/project',
+    });
+    const after = getActiveV2SessionSelectionStats();
+    assert.equal(selected, relative(root, join(writer.sessionDir, 'timeline.jsonl')).split(sep).join('/'));
+    assert.equal(after.runtimePointerHits - before.runtimePointerHits, 1);
+    assert.equal(after.rootActivityScans - before.rootActivityScans, 0);
+    assert.equal(after.materializedHealthScans - before.materializedHealthScans, 0);
+    assert.equal(after.slowFallbacks - before.slowFallbacks, 0);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('durable latest pointer caches its root-main proof without a full health scan', () => {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-active-latest-pointer-'));
+  try {
+    const writer = LogV2Writer.open(options(root));
+    writer.append(
+      entry('2026-07-14T08:00:00.000Z', [{ type: 'message', text: 'one' }], 'one'),
+      resolveAppServerThreadIdentity({ id: 'session-root', sessionId: 'session-root' }),
+    );
+    writer.markProjectLatest({ source: 'app-server' });
+    const before = getActiveV2SessionSelectionStats();
+    const selected = findLatestV2SessionFile(root, {
+      projectId: 'project', canonicalCwd: '/workspace/project',
+    });
+    const after = getActiveV2SessionSelectionStats();
+    assert.equal(selected, relative(root, join(writer.sessionDir, 'timeline.jsonl')).split(sep).join('/'));
+    assert.equal(after.latestPointerHits - before.latestPointerHits, 1);
+    assert.equal(after.rootActivityScans - before.rootActivityScans, 0);
+    assert.equal(after.materializedHealthScans - before.materializedHealthScans, 0);
+    assert.equal(after.slowFallbacks - before.slowFallbacks, 0);
+    const cachedBefore = getActiveV2SessionSelectionStats();
+    assert.equal(findLatestV2SessionFile(root, {
+      projectId: 'project', canonicalCwd: '/workspace/project',
+    }), selected);
+    const cachedAfter = getActiveV2SessionSelectionStats();
+    assert.equal(cachedAfter.rootActivityScans - cachedBefore.rootActivityScans, 0);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('durable root proof cache invalidates when a derived summary is repaired', () => {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-active-summary-repair-'));
+  try {
+    const writer = LogV2Writer.open(options(root));
+    writer.append(
+      entry('2026-07-14T08:00:00.000Z', [{ type: 'message', text: 'root' }], 'root'),
+      resolveAppServerThreadIdentity({ id: 'session-root', sessionId: 'session-root' }),
+    );
+    writer.markProjectLatest({ source: 'app-server' });
+    const summary = readSessionSummary(writer.sessionDir);
+    writeSessionSummary(writer.sessionDir, {
+      ...summary,
+      rootMainEvents: 0,
+      lastRootMainActivity: null,
+    }, { baseBytes: summaryBaseBytes(summary) });
+    assert.equal(findLatestV2SessionFile(root, {
+      projectId: 'project', canonicalCwd: '/workspace/project',
+    }), null);
+    rebuildSessionSummary(writer.sessionDir);
+    assert.equal(findLatestV2SessionFile(root, {
+      projectId: 'project', canonicalCwd: '/workspace/project',
+    }), relative(root, join(writer.sessionDir, 'timeline.jsonl')).split(sep).join('/'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('durable latest pointer cannot silently select an auxiliary-only non-global archive', () => {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-active-aux-pointer-'));
+  try {
+    const healthy = LogV2Writer.open({
+      ...options(root), sessionId: 'healthy-root', rootThreadId: 'healthy-root',
+    });
+    healthy.append(
+      entry('2026-07-14T08:00:00.000Z', [{ type: 'message', text: 'healthy' }], 'healthy'),
+      resolveAppServerThreadIdentity({ id: 'healthy-root', sessionId: 'healthy-root' }),
+    );
+    const auxiliary = LogV2Writer.open({
+      ...options(root), sessionId: 'aux-only', rootThreadId: 'aux-only', source: 'app-server',
+      createdAt: '2026-07-14T09:00:00.000Z',
+    });
+    auxiliary.append(
+      { ...entry('2026-07-14T09:01:00.000Z', [], 'aux'), mainAgent: false },
+      { sessionId: 'aux-only', threadId: 'aux-only', isRoot: true, agentRole: 'auxiliary' },
+    );
+    const project = JSON.parse(readFileSync(auxiliary.projectManifestPath, 'utf8'));
+    writeFileSync(auxiliary.projectManifestPath, `${JSON.stringify({
+      ...project,
+      latestSessionId: 'aux-only',
+      updatedAt: '2026-07-14T09:01:00.000Z',
+    })}\n`);
+    assert.equal(findLatestV2SessionFile(root, {
+      projectId: 'project', canonicalCwd: '/workspace/project',
+    }), relative(root, join(healthy.sessionDir, 'timeline.jsonl')).split(sep).join('/'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('durable fallback orders sessions by the last root-main activity from summary', () => {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-active-summary-activity-'));
+  try {
+    const resumed = LogV2Writer.open({
+      ...options(root), sessionId: 'older-resumed', rootThreadId: 'older-resumed',
+      createdAt: '2026-07-14T08:00:00.000Z',
+    });
+    resumed.append(
+      entry('2026-07-14T10:00:00.000Z', [{ type: 'message', text: 'latest activity' }], 'latest'),
+      resolveAppServerThreadIdentity({ id: 'older-resumed', sessionId: 'older-resumed' }),
+    );
+    const newer = LogV2Writer.open({
+      ...options(root), sessionId: 'newer-idle', rootThreadId: 'newer-idle',
+      createdAt: '2026-07-14T09:00:00.000Z',
+    });
+    newer.append(
+      entry('2026-07-14T09:01:00.000Z', [{ type: 'message', text: 'older activity' }], 'older'),
+      resolveAppServerThreadIdentity({ id: 'newer-idle', sessionId: 'newer-idle' }),
+    );
+    assert.equal(findLatestV2SessionFile(root, {
+      projectId: 'project', canonicalCwd: '/workspace/project',
+    }), relative(root, join(resumed.sessionDir, 'timeline.jsonl')).split(sep).join('/'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('strong durable proof rejects an equal-size timeline rewrite before forced recovery', () => {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-active-corrupt-pointer-'));
+  try {
+    const healthy = LogV2Writer.open({
+      ...options(root), sessionId: 'healthy-session', rootThreadId: 'healthy-session',
+    });
+    healthy.append(
+      entry('2026-07-14T08:00:00.000Z', [{ type: 'message', text: 'healthy' }], 'healthy'),
+      resolveAppServerThreadIdentity({ id: 'healthy-session', sessionId: 'healthy-session' }),
+    );
+    const broken = LogV2Writer.open({
+      ...options(root), sessionId: 'broken-session', rootThreadId: 'broken-session',
+      createdAt: '2026-07-14T09:00:00.000Z',
+    });
+    const brokenIdentity = resolveAppServerThreadIdentity({ id: 'broken-session', sessionId: 'broken-session' });
+    for (let index = 0; index < 3; index++) {
+      broken.append(
+        entry(`2026-07-14T09:0${index}:00.000Z`, [{ type: 'message', text: `broken-${index}` }], `broken-${index}`),
+        brokenIdentity,
+      );
+    }
+    broken.markProjectLatest({ source: 'app-server' });
+    const healthyFile = relative(root, join(healthy.sessionDir, 'timeline.jsonl')).split(sep).join('/');
+    const timelinePath = join(broken.sessionDir, 'timeline.jsonl');
+    const lines = readFileSync(timelinePath, 'utf8').trimEnd().split('\n');
+    lines[1] = '{"broken":true}'.padEnd(lines[1].length, ' ');
+    writeFileSync(timelinePath, `${lines.join('\n')}\n`);
+
+    assert.equal(findLatestV2SessionFile(root, {
+      projectId: 'project', canonicalCwd: '/workspace/project',
+    }), healthyFile, 'strong summary identity must reject the rewritten timeline');
+    const before = getActiveV2SessionSelectionStats();
+    assert.equal(findActiveV2SessionFile(root, {
+      projectId: 'project', canonicalCwd: '/workspace/project', forceHealthyScan: true,
+    }), healthyFile);
+    const after = getActiveV2SessionSelectionStats();
+    assert.equal(after.slowFallbacks - before.slowFallbacks, 1);
+    assert.ok(after.rootActivityScans > before.rootActivityScans);
+    assert.ok(after.materializedHealthScans > before.materializedHealthScans);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

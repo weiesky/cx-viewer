@@ -40,27 +40,69 @@ function key(generation, hash) {
 }
 
 export async function loadV2CachedObject(generation, hash) {
+  const values = await loadV2CachedObjects(generation, [{ hash }]);
+  return values.get(hash) || null;
+}
+
+/** Read many object keys through one IndexedDB transaction. */
+export function readV2CachedObjectBatch(db, generation, refs) {
+  const hashes = [...new Set((refs || []).map(ref => ref?.hash).filter(Boolean))];
+  if (!db || !generation || hashes.length === 0) return Promise.resolve(new Map());
+  return new Promise((resolve) => {
+    const values = new Map();
+    let tx;
+    try {
+      tx = db.transaction(OBJECT_STORE, 'readonly');
+      const store = tx.objectStore(OBJECT_STORE);
+      for (const hash of hashes) {
+        const request = store.get(key(generation, hash));
+        request.onsuccess = () => {
+          if (request.result) {
+            values.set(hash, {
+              hit: true,
+              value: request.result.value,
+              bytes: request.result.bytes,
+            });
+          }
+        };
+      }
+      tx.oncomplete = () => resolve(values);
+      tx.onerror = () => resolve(values);
+      tx.onabort = () => resolve(values);
+    } catch {
+      resolve(values);
+    }
+  });
+}
+
+export async function loadV2CachedObjects(generation, refs) {
   try {
     const db = await openDb();
-    if (!db) return null;
-    return await new Promise((resolve) => {
-      const request = db.transaction(OBJECT_STORE, 'readonly').objectStore(OBJECT_STORE).get(key(generation, hash));
-      request.onsuccess = () => resolve(request.result
-        ? { hit: true, value: request.result.value, bytes: request.result.bytes }
-        : null);
-      request.onerror = () => resolve(null);
-    });
-  } catch { return null; }
+    if (!db) return new Map();
+    return await readV2CachedObjectBatch(db, generation, refs);
+  } catch { return new Map(); }
 }
 
 export async function saveV2CachedObject(generation, hash, bytes, value) {
-  if (!generation || !hash || !Number.isSafeInteger(bytes) || bytes > MAX_PERSISTED_OBJECT_BYTES) return;
+  return saveV2CachedObjects(generation, [{ hash, bytes, value }]);
+}
+
+export async function saveV2CachedObjects(generation, values) {
+  const cacheable = [...new Map((values || [])
+    .filter(item => generation && item?.hash && Number.isSafeInteger(item.bytes)
+      && item.bytes <= MAX_PERSISTED_OBJECT_BYTES)
+    .map(item => [item.hash, item])).values()];
+  if (cacheable.length === 0) return;
   try {
     const db = await openDb();
     if (!db) return;
     await new Promise((resolve) => {
       const tx = db.transaction(OBJECT_STORE, 'readwrite');
-      tx.objectStore(OBJECT_STORE).put({ value, bytes, touchedAt: Date.now() }, key(generation, hash));
+      const store = tx.objectStore(OBJECT_STORE);
+      const touchedAt = Date.now();
+      for (const item of cacheable) {
+        store.put({ value: item.value, bytes: item.bytes, touchedAt }, key(generation, item.hash));
+      }
       tx.oncomplete = () => resolve();
       tx.onerror = () => resolve();
       tx.onabort = () => resolve();

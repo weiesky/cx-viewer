@@ -14,6 +14,7 @@ import styles from './PresetExpertPickerModal.module.css';
 export default function PresetExpertPickerModal({ open, onLoad, onClose }) {
   const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
   const lang = getLang();
 
@@ -22,18 +23,25 @@ export default function PresetExpertPickerModal({ open, onLoad, onClose }) {
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
+    const controller = new AbortController();
     setLoading(true);
+    setLoadError(false);
     setSelectedId(null);
+    setAgents([]);
     (async () => {
       try {
-        const res = await fetch(apiUrl('/api/ultra-agents'));
-        const data = res.ok ? await res.json() : null;
+        const res = await fetch(apiUrl('/api/ultra-agents'), { signal: controller.signal });
+        if (!res.ok) throw new Error(`preset request failed (${res.status})`);
+        const data = await res.json();
+        if (!Array.isArray(data?.agents)) throw new Error('invalid preset response');
         if (cancelled) return;
-        const list = Array.isArray(data?.agents) ? data.agents : [];
+        const list = data.agents;
+        setLoadError(false);
         setAgents(list);
         if (list.length) setSelectedId(list[0].id);
-      } catch (_) {
-        if (!cancelled) {
+      } catch (error) {
+        if (!cancelled && error?.name !== 'AbortError') {
+          setLoadError(true);
           setAgents([]);
           message.error(t('ui.ultraplan.presetLoadError'));
         }
@@ -41,7 +49,10 @@ export default function PresetExpertPickerModal({ open, onLoad, onClose }) {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, [open]);
 
   const selected = agents.find(a => a.id === selectedId) || null;
@@ -81,7 +92,7 @@ export default function PresetExpertPickerModal({ open, onLoad, onClose }) {
         <div className={styles.loading}><Spin /></div>
       ) : agents.length === 0 ? (
         <div className={styles.loading}>
-          <Empty description={t('ui.ultraplan.presetEmpty')} />
+          <Empty description={t(loadError ? 'ui.ultraplan.presetLoadError' : 'ui.ultraplan.presetEmpty')} />
         </div>
       ) : (
         <div className={styles.split}>

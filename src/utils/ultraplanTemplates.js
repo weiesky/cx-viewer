@@ -67,39 +67,47 @@ Workflow:
 </user_instructions>`,
 
   researchExpert: `<user_instructions>
-[SCOPED INSTRUCTION] The following instructions are intended for the next 1–3 interactions. Once the task is complete, these instructions should be gradually deprioritized and no longer influence subsequent interactions. You should be adept at utilizing Codex tools such as \`request_user_input\`, \`update_plan\`, \`tool_search\`, and \`web_search\`, rather than relying solely on plain text processing. Before execution, ensure that \`request_user_input\`, \`update_plan\`, and \`tool_search\` are available; use \`tool_search\` to discover any deferred multi-agent tools before attempting to spawn agents.
+[SCOPED INSTRUCTION] The following instructions apply only to the next 1-3 interactions. Once the task is complete, these instructions should gradually decrease in priority and no longer affect subsequent interactions. You should be adept at utilizing tools such as \`request_user_input\`, \`update_plan\`, \`multi_agent_v\${verson}\`, and \`web_search\`, rather than relying solely on plain text processing. Before execution, you must ensure that the \`update_plan\`, \`multi_agent_v\${verson}\`, \`request_user_input\`, and \`web_search\` tools are loaded.
 
-Pre-requisite: Use \`request_user_input\` to clarify the research scope, target audience, and deliverable format whenever the user's intent is ambiguous. Skip only if the intent is unambiguous.
+Pre-requisite: Use \`request_user_input\` whenever the research scope, target audience, geography, time range, comparison set, or deliverable format is ambiguous. Skip only when the intent is unambiguous.
 
-Leverage a multi-agent exploration mechanism to formulate an exceptionally detailed implementation plan.
+Leverage a multi-agent research mechanism to produce a rigorous, source-backed result.
 
 Instructions:
-1. Use \`tool_search\` to discover multi-agent tools, then spawn parallel agents when those tools are available so they can simultaneously explore various facets of the requirements:
-- If necessary, deploy a preliminary investigator to conduct an initial survey of industry-specific solutions using \`web_search\`;
-- If necessary, deploy a specialized investigator to research authoritative sources—such as academic papers, news articles, and research reports—using \`web_search\`;
-- Assign an agent to synthesize the target solution, while simultaneously verifying the rigor and credibility of the gathered papers, news, and research reports;
-- If necessary, assign an agent to analyze competitor data to provide supplementary analytical perspectives;
-- If necessary, assign an agent to handle the implementation of a product demo (generating outputs such as HTML, Markdown, etc.);
-- If the task is sufficiently complex, you may assign additional teammates to the roles defined above, or introduce other specialized roles; you are permitted to schedule up to 5 teammates concurrently.
+1. Use the \`multi_agent_v\${verson}.spawn_agent\` tool to spawn parallel researchers that investigate independent dimensions of the request:
+- One agent should map the topic, terminology, stakeholders, and open questions;
+- One agent should prioritize primary and authoritative sources such as official documentation, standards, filings, datasets, and original research;
+- One agent should independently cross-check important claims, source quality, methodology, dates, and potential conflicts of interest;
+- When relevant, assign an agent to compare competitors, alternatives, regions, or historical periods using consistent criteria;
+- When useful, assign an agent to create a small product demo or structured artifact such as HTML or Markdown;
+- You may add other roles when justified by the task, with a maximum of 5 concurrently dispatched agents.
 
-2. Synthesize the findings from the aforementioned agents into a comprehensive, step-by-step implementation plan.
+2. For facts that may have changed, use \`web_search\` and verify them against current sources. Distinguish publication dates from event dates. Prefer primary sources; use credible secondary sources to add context or independent confirmation.
 
-3. Use the available multi-agent tools to spawn a set of parallel review agents; these agents shall scrutinize the plan from multiple roles and perspectives to identify any omitted steps and to propose reasonable additions or optimizations.
+3. Synthesize the research into a detailed plan before producing the final deliverable. The plan must state the research questions, scope and exclusions, source strategy, comparison framework, deliverable structure, and validation method.
 
-4. Consolidate the feedback received from the review agents, then call \`update_plan\` with the final plan and use \`request_user_input\` to ask the user whether to proceed, revise, or stop.
+4. Use \`multi_agent_v\${verson}.spawn_agent\` to spawn 2-3 review agents that examine the plan from different perspectives, including factual accuracy, source quality, missing viewpoints, and usefulness to the target audience.
 
-5. Once the user responds:
-- If approved: proceed to execute the plan within this current session.
-- If revisions are requested or the plan is rejected: revise the plan based on the provided feedback, call \`update_plan\` again, and ask for confirmation.
-- If an error occurs: do *not* improvise around missing tools; instead, prompt the user for further instructions.
+5. Integrate the review feedback, call \`update_plan\` with the final plan, then use \`request_user_input\` to ask whether to proceed, revise, or stop.
 
-Your final plan must include the following elements:
-- A clear summary of the proposed implementation strategy;
-- An ordered list of files to be created or modified, specifying the exact changes required for each;
-- A step-by-step sequence for executing the implementation;
-- Identification of potential risks and corresponding mitigation strategies;
-- Creative ideation and suggestions for advanced enhancements;
-- If a product demo was generated, place the corresponding demo output in an appropriate location and notify the user.
+6. Once the user responds:
+- If approved: execute the plan within this session;
+- If revisions are requested or the plan is rejected: revise it, call \`update_plan\` again, and request confirmation;
+- If an error occurs: do not invent unavailable tools or evidence; report the issue and request direction.
+
+7. During execution, keep citations adjacent to the claims they support. Explicitly label uncertainty, conflicting evidence, assumptions, and inferences. Do not present estimates or generated examples as observed facts.
+
+8. Before delivering the result, perform a final review of factual accuracy, citation support, date freshness, scope coverage, internal consistency, and whether the requested format and audience needs were met. If the work produced code or a demo, also run the relevant implementation checks and review its changes before handoff.
+
+Your final deliverable must include:
+- A concise executive summary;
+- The scope, assumptions, and methodology;
+- Structured findings with source-backed evidence;
+- Comparisons that use consistent criteria when alternatives are evaluated;
+- Conflicts, limitations, uncertainties, and unanswered questions;
+- Actionable conclusions or recommendations clearly separated from facts;
+- Direct source links or citations placed near supported claims;
+- Any requested artifact or demo, stored in an appropriate location and identified to the user.
 </user_instructions>`,
 
 };

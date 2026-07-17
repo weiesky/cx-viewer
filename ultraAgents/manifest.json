@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "agents": [
+    {
+      "id": "code-expert",
+      "variant": "codeExpert",
+      "version": 1,
+      "title": {
+        "zh": "代码专家", "en": "Code Expert", "zh-TW": "程式碼專家",
+        "ko": "코드 전문가", "ja": "コードエキスパート", "de": "Code-Experte",
+        "es": "Experto en código", "fr": "Expert code", "it": "Esperto di codice",
+        "da": "Kodeekspert", "pl": "Ekspert kodu", "ru": "Эксперт по коду",
+        "ar": "خبير الكود", "no": "Kodeekspert", "pt-BR": "Especialista em código",
+        "th": "ผู้เชี่ยวชาญโค้ด", "tr": "Kod uzmanı", "uk": "Експерт з коду"
+      },
+      "description": {
+        "zh": "资深工程师：多智能体探索、计划评审与高质量实现，专注代码审查、重构、性能与可维护性。",
+        "en": "Senior engineer: multi-agent exploration, plan review, and high-quality implementation for code review, refactoring, performance, and maintainability.",
+        "zh-TW": "資深工程師：多智能體探索、計畫評審與高品質實作，專注程式碼審查、重構、效能與可維護性。",
+        "ko": "시니어 엔지니어: 멀티 에이전트 탐색, 계획 검토, 고품질 구현을 통해 코드 리뷰, 리팩터링, 성능 및 유지보수성을 다룹니다.",
+        "ja": "シニアエンジニア：マルチエージェント探索、計画レビュー、高品質な実装により、コードレビュー、リファクタリング、性能、保守性を扱います。",
+        "de": "Senior-Ingenieur: Multi-Agent-Exploration, Planprüfung und hochwertige Umsetzung für Code-Review, Refactoring, Performance und Wartbarkeit.",
+        "es": "Ingeniero sénior: exploración multiagente, revisión del plan e implementación de alta calidad para revisión de código, refactorización, rendimiento y mantenibilidad.",
+        "fr": "Ingénieur senior : exploration multi-agents, revue du plan et implémentation de qualité pour la revue de code, le refactoring, les performances et la maintenabilité.",
+        "it": "Ingegnere senior: esplorazione multi-agente, revisione del piano e implementazione di qualità per code review, refactoring, prestazioni e manutenibilità.",
+        "da": "Senioringeniør: multi-agent-udforskning, plangennemgang og implementering af høj kvalitet til kodegennemgang, refaktorering, ydeevne og vedligeholdelse.",
+        "pl": "Starszy inżynier: eksploracja wieloagentowa, przegląd planu i wysokiej jakości implementacja dla przeglądu kodu, refaktoryzacji, wydajności i utrzymania.",
+        "ru": "Старший инженер: многоагентное исследование, ревью плана и качественная реализация для проверки кода, рефакторинга, производительности и сопровождаемости.",
+        "ar": "مهندس أول: استكشاف متعدد الوكلاء ومراجعة للخطة وتنفيذ عالي الجودة لمراجعة الشيفرة وإعادة الهيكلة والأداء وقابلية الصيانة.",
+        "no": "Senioringeniør: multiagent-utforsking, plangjennomgang og implementering av høy kvalitet for kodegjennomgang, refaktorering, ytelse og vedlikeholdbarhet.",
+        "pt-BR": "Engenheiro sênior: exploração multiagente, revisão do plano e implementação de qualidade para revisão de código, refatoração, desempenho e manutenibilidade.",
+        "th": "วิศวกรอาวุโส: การสำรวจแบบหลายเอเจนต์ การทบทวนแผน และการพัฒนาคุณภาพสูงสำหรับการรีวิวโค้ด รีแฟกเตอร์ ประสิทธิภาพ และการบำรุงรักษา",
+        "tr": "Kıdemli mühendis: kod inceleme, yeniden düzenleme, performans ve sürdürülebilirlik için çoklu ajan keşfi, plan incelemesi ve yüksek kaliteli uygulama.",
+        "uk": "Senior-інженер: багатоагентне дослідження, рев’ю плану та якісна реалізація для перевірки коду, рефакторингу, продуктивності й супроводу."
+      }
+    },
+    {
+      "id": "research-expert",
+      "variant": "researchExpert",
+      "version": 1,
+      "title": {
+        "zh": "调研专家", "en": "Research Expert", "zh-TW": "調研專家",
+        "ko": "리서치 전문가", "ja": "リサーチエキスパート", "de": "Recherche-Experte",
+        "es": "Experto en investigación", "fr": "Expert recherche", "it": "Esperto di ricerca",
+        "da": "Forskningsekspert", "pl": "Ekspert badawczy", "ru": "Эксперт по исследованиям",
+        "ar": "خبير الأبحاث", "no": "Forskningsekspert", "pt-BR": "Especialista em pesquisa",
+        "th": "ผู้เชี่ยวชาญวิจัย", "tr": "Araştırma uzmanı", "uk": "Експерт з досліджень"
+      },
+      "description": {
+        "zh": "资深调研分析师：多源检索、交叉求证与结构化产出，适合行业调研、竞品分析和可信报告。",
+        "en": "Senior research analyst: multi-source research, cross-verification, and structured deliverables for industry studies, competitive analysis, and credible reports.",
+        "zh-TW": "資深調研分析師：多源檢索、交叉求證與結構化產出，適合行業調研、競品分析和可信報告。",
+        "ko": "시니어 리서치 분석가: 산업 조사, 경쟁 분석 및 신뢰할 수 있는 보고서를 위한 다중 출처 조사, 교차 검증, 구조화된 결과물.",
+        "ja": "シニアリサーチアナリスト：業界調査、競合分析、信頼できるレポートのための多源調査、クロス検証、構造化された成果物。",
+        "de": "Senior-Research-Analyst: Multi-Quellen-Recherche, Kreuzverifizierung und strukturierte Ergebnisse für Branchenstudien, Wettbewerbsanalysen und belastbare Berichte.",
+        "es": "Analista de investigación sénior: investigación multifuente, verificación cruzada y entregables estructurados para estudios de mercado, análisis competitivo e informes fiables.",
+        "fr": "Analyste de recherche senior : recherche multi-sources, vérification croisée et livrables structurés pour les études de marché, l’analyse concurrentielle et les rapports fiables.",
+        "it": "Analista di ricerca senior: ricerca multi-fonte, verifica incrociata e risultati strutturati per studi di settore, analisi competitiva e report affidabili.",
+        "da": "Senior researchanalytiker: multikilde-research, krydsverificering og strukturerede leverancer til brancheundersøgelser, konkurrentanalyse og troværdige rapporter.",
+        "pl": "Starszy analityk badawczy: badania wieloźródłowe, weryfikacja krzyżowa i ustrukturyzowane wyniki dla analiz branżowych, konkurencyjnych i wiarygodnych raportów.",
+        "ru": "Старший аналитик-исследователь: многоисточниковый поиск, перекрёстная проверка и структурированные результаты для отраслевых исследований, анализа конкурентов и достоверных отчётов.",
+        "ar": "محلل أبحاث أول: بحث متعدد المصادر وتحقق متقاطع ومخرجات منظمة لدراسات السوق والتحليل التنافسي والتقارير الموثوقة.",
+        "no": "Senior researchanalytiker: flerkilde-research, kryssverifisering og strukturerte leveranser for bransjestudier, konkurrentanalyse og troverdige rapporter.",
+        "pt-BR": "Analista de pesquisa sênior: pesquisa multifonte, verificação cruzada e entregáveis estruturados para estudos de mercado, análise competitiva e relatórios confiáveis.",
+        "th": "นักวิเคราะห์วิจัยอาวุโส: การค้นคว้าหลายแหล่ง การตรวจสอบไขว้ และผลงานเชิงโครงสร้างสำหรับงานวิจัยอุตสาหกรรม การวิเคราะห์คู่แข่ง และรายงานที่น่าเชื่อถือ",
+        "tr": "Kıdemli araştırma analisti: sektör araştırmaları, rekabet analizi ve güvenilir raporlar için çok kaynaklı araştırma, çapraz doğrulama ve yapılandırılmış çıktılar.",
+        "uk": "Senior-аналітик досліджень: багатоджерельний пошук, перехресна перевірка та структуровані результати для галузевих досліджень, аналізу конкурентів і надійних звітів."
+      }
+    }
+  ]
+}

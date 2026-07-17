@@ -6,9 +6,11 @@ import { join, relative } from 'node:path';
 import test from 'node:test';
 
 import { LogV2Writer } from '../lib/log-v2/writer.js';
-import { readV2WireCommitsFromCursor, readV2WireSnapshot } from '../lib/log-v2/transport.js';
+import { readV2WireCommitsFromCursor, readV2WireSnapshot, readV2WireSummariesForWinners } from '../lib/log-v2/transport.js';
 import { closeIdleV2TimelinePublishers } from '../lib/log-v2/timeline-watcher.js';
 import {
+  classifyActiveSnapshotError,
+  createActiveV2RecoveryState,
   extendV2ObjectHandle,
   registerV2ObjectHandle,
   resolveV2ObjectBatch,
@@ -128,6 +130,135 @@ test('snapshot validation refreshes the handle without retransmitting an unchang
   }
 });
 
+test('active snapshot retries one healthy fallback after the fast-selected archive fails', async () => {
+  const response = mockResponse();
+  const fallbackSnapshot = {
+    start: { kind: 'cx-viewer.log-v2-wire.start', version: 2, archive: { projectId: 'p', sessionId: 'healthy', generation: 'g' }, total: 0, windowCount: 0, hasMore: false },
+    checkpoint: { kind: 'cx-viewer.log-v2-wire.checkpoint', version: 2, archive: { projectId: 'p', sessionId: 'healthy', generation: 'g' }, throughSeq: 0, timelineBytes: 0, entries: [], threads: [], winners: [] },
+    summaries: [],
+    end: { kind: 'cx-viewer.log-v2-wire.end', version: 2, archive: { projectId: 'p', sessionId: 'healthy', generation: 'g' }, cursor: { archive: { projectId: 'p', sessionId: 'healthy', generation: 'g' }, throughSeq: 0, timelineBytes: 0 } },
+    pageIndex: null,
+    liveCheckpoint: null,
+  };
+  const reads = [];
+  const recoveries = [];
+  await serveLogV2Snapshot(new EventEmitter(), response, {
+    logDir: '/unused',
+    file: 'broken/timeline.jsonl',
+    readSnapshot: async (_logDir, file) => {
+      reads.push(file);
+      if (file === 'broken/timeline.jsonl') {
+        throw new Error('content object checksum mismatch');
+      }
+      return fallbackSnapshot;
+    },
+    recoverActiveFile: async (file, error) => {
+      recoveries.push([file, error.message]);
+      return 'healthy/timeline.jsonl';
+    },
+  });
+  assert.deepEqual(reads, ['broken/timeline.jsonl', 'healthy/timeline.jsonl']);
+  assert.deepEqual(recoveries, [['broken/timeline.jsonl', 'content object checksum mismatch']]);
+  assert.equal(response.status, 200);
+  assert.match(response.body, /"sessionId":"healthy"/);
+});
+
+test('snapshot fallback retries only once and retains the original reader failure as cause', async () => {
+  const response = mockResponse();
+  const primary = new Error('primary corrupt timeline');
+  primary.code = 'CXV_LOG_V2_CORRUPT';
+  const fallback = new Error('fallback also failed');
+  let recoveryCalls = 0;
+  let readCalls = 0;
+  await serveLogV2Snapshot(new EventEmitter(), response, {
+    logDir: '/unused',
+    file: 'broken/timeline.jsonl',
+    readSnapshot: async () => {
+      readCalls++;
+      if (readCalls === 1) throw primary;
+      throw fallback;
+    },
+    recoverActiveFile: async () => {
+      recoveryCalls++;
+      return 'fallback/timeline.jsonl';
+    },
+  });
+  assert.equal(readCalls, 2);
+  assert.equal(recoveryCalls, 1);
+  assert.equal(fallback.cause, primary);
+  assert.equal(response.status, 500);
+  assert.match(response.body, /fallback also failed/);
+});
+
+test('active snapshot does not recover or stick on a transient reader failure', async () => {
+  const response = mockResponse();
+  let recoveryCalls = 0;
+  await serveLogV2Snapshot(new EventEmitter(), response, {
+    logDir: '/unused',
+    file: 'active/timeline.jsonl',
+    readSnapshot: async () => {
+      const error = new Error('reader temporarily busy');
+      error.code = 'CXV_LOG_V2_PAGE_BUSY';
+      throw error;
+    },
+    recoverActiveFile: async () => {
+      recoveryCalls++;
+      return 'fallback/timeline.jsonl';
+    },
+  });
+  assert.equal(recoveryCalls, 0);
+  assert.equal(response.status, 500);
+  assert.match(response.body, /reader temporarily busy/);
+});
+
+test('accepted active recovery expires and is invalidated by file identity or session changes', () => {
+  let clock = 1_000;
+  const identities = new Map([['broken', 'inode-a']]);
+  const state = createActiveV2RecoveryState({
+    identityForFile: file => identities.get(file) || null,
+    now: () => clock,
+    ttlMs: 100,
+  });
+  const corrupt = Object.assign(new Error('corrupt'), { code: 'CXV_LOG_V2_CORRUPT' });
+  const prepared = state.prepare('broken', corrupt);
+  assert.equal(prepared.accept('healthy'), true);
+  assert.equal(state.apply('broken'), 'healthy');
+
+  identities.set('broken', 'inode-b');
+  assert.equal(state.apply('broken'), 'broken');
+  assert.equal(state.snapshot(), null);
+
+  identities.set('broken', 'inode-c');
+  state.prepare('broken', corrupt).accept('healthy');
+  assert.equal(state.apply('new-session'), 'new-session');
+  assert.equal(state.snapshot(), null);
+
+  state.prepare('broken', corrupt).accept('healthy');
+  clock += 100;
+  assert.equal(state.apply('broken'), 'broken');
+  assert.equal(state.snapshot(), null);
+  assert.equal(state.prepare('broken', Object.assign(new Error('busy'), {
+    code: 'CXV_LOG_V2_PAGE_BUSY',
+  })), null);
+});
+
+test('active recovery rejects an out-of-order accept from an older prepare epoch', () => {
+  const state = createActiveV2RecoveryState({ identityForFile: () => 'same-inode' });
+  const corrupt = Object.assign(new Error('corrupt'), { code: 'CXV_LOG_V2_CORRUPT' });
+  const older = state.prepare('broken', corrupt);
+  const newer = state.prepare('broken', corrupt);
+  assert.equal(newer.accept('newer-fallback'), true);
+  assert.equal(older.accept('older-fallback'), false);
+  assert.equal(state.apply('broken'), 'newer-fallback');
+});
+
+test('snapshot error classification maps canonical object failures but preserves transient codes', () => {
+  const objectFailure = new Error('content object checksum mismatch');
+  assert.equal(classifyActiveSnapshotError(objectFailure).code, 'CXV_LOG_V2_CORRUPT');
+  const transient = Object.assign(new Error('too many open files'), { code: 'EMFILE' });
+  assert.equal(classifyActiveSnapshotError(transient).code, 'EMFILE');
+});
+
 test('live handle can replay from an acknowledged cursor behind the last socket write', async () => {
   const root = mkdtempSync(join(tmpdir(), 'cxv-v2-live-resume-'));
   const req = new EventEmitter();
@@ -179,13 +310,20 @@ test('readonly historical handles can page and hydrate but can never subscribe l
     const file = relative(root, join(writer.sessionDir, 'timeline.jsonl')).split('\\').join('/');
     const snapshot = readV2WireSnapshot(root, file, { limit: 1 });
     const handle = registerV2ObjectHandle(file, snapshot, { readOnly: true });
+    let summaryWorkerCalls = 0;
 
     const pageResponse = mockResponse();
     await serveLogV2Page(new EventEmitter(), pageResponse, {
       logDir: root,
       body: { handle, archive: snapshot.start.archive, limit: 1 },
       readPage: () => { throw new Error('frozen handle must not replay the archive'); },
+      readSummaries: async (nextRoot, nextFile, winners) => {
+        summaryWorkerCalls++;
+        await new Promise(resolve => setImmediate(resolve));
+        return readV2WireSummariesForWinners(nextRoot, nextFile, winners);
+      },
     });
+    assert.equal(summaryWorkerCalls, 1);
     assert.equal(pageResponse.status, 200);
     assert.match(pageResponse.body, /"page":true/);
     assert.match(pageResponse.body, /"windowCount":1/);

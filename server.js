@@ -66,6 +66,7 @@ import {
   readV2PagedEntriesAsync,
   readV2WirePageAsync,
   readV2WireSnapshotAsync,
+  readV2WireSummariesAsync,
   resolveV2SessionFile,
   streamV2LogEntries,
 } from './lib/log-v2/materializer.js';
@@ -107,7 +108,14 @@ import {
   buildCodexAutoResolutionAnswers,
   projectCodexAnswersForConversation,
 } from './lib/codex-request-user-input.js';
-import { serveLogV2Live, serveLogV2Objects, serveLogV2Page, serveLogV2Snapshot } from './server/lib/log-v2-routes.js';
+import {
+  createActiveV2RecoveryState,
+  serveLogV2Live,
+  serveLogV2Objects,
+  serveLogV2Page,
+  serveLogV2Snapshot,
+} from './server/lib/log-v2-routes.js';
+import { handleUltraAgentsRequest } from './server/lib/ultra-agents-api.js';
 import { openScratchPty, killScratchPty, shutdownScratchPtys } from './scratch-pty-manager.js';
 
 
@@ -118,29 +126,52 @@ let _codexRequestUserInputBridge = null;
 const pendingCodexAsks = new Map();
 const _logV2ReadMode = getLogV2RuntimeStatus().config.readMode;
 
-function activeV2SessionFile() {
-  if (_logV2ReadMode !== 'v2' || !LOG_FILE) return null;
-  const runtime = getLogV2RuntimeStatus();
-  const canonicalCwd = process.env.CXV_PROJECT_DIR || process.cwd();
-  const legacyFile = relative(LOG_DIR, LOG_FILE).split(sep).join('/');
-  return findActiveV2SessionFile(LOG_DIR, {
-    runtime,
-    projectId: _projectName || null,
-    canonicalCwd,
-    legacyLogFile: legacyFile,
-  });
+function activeV2TimelineIdentity(file) {
+  const { timelinePath } = resolveV2SessionFile(LOG_DIR, file);
+  const stat = statSync(timelinePath, { bigint: true });
+  return `${stat.dev}:${stat.ino}:${stat.size}:${stat.mtimeNs}:${stat.ctimeNs}`;
 }
 
-function activeV2SessionFileAsync() {
-  if (_logV2ReadMode !== 'v2' || !LOG_FILE) return Promise.resolve(null);
+const _activeV2Recovery = createActiveV2RecoveryState({
+  identityForFile: activeV2TimelineIdentity,
+});
+
+function activeV2LookupOptions({ forceHealthyScan = false } = {}) {
   const runtime = getLogV2RuntimeStatus();
   const canonicalCwd = process.env.CXV_PROJECT_DIR || process.cwd();
   const legacyFile = relative(LOG_DIR, LOG_FILE).split(sep).join('/');
-  return findActiveV2SessionFileAsync(LOG_DIR, {
+  return {
     runtime,
     projectId: _projectName || null,
     canonicalCwd,
     legacyLogFile: legacyFile,
+    forceHealthyScan,
+  };
+}
+
+function applyActiveV2Recovery(file) {
+  return _activeV2Recovery.apply(file);
+}
+
+function activeV2SessionFile() {
+  if (_logV2ReadMode !== 'v2' || !LOG_FILE) return null;
+  return applyActiveV2Recovery(findActiveV2SessionFile(LOG_DIR, activeV2LookupOptions()));
+}
+
+async function activeV2SessionFileAsync() {
+  if (_logV2ReadMode !== 'v2' || !LOG_FILE) return Promise.resolve(null);
+  return applyActiveV2Recovery(await findActiveV2SessionFileAsync(LOG_DIR, activeV2LookupOptions()));
+}
+
+async function recoverActiveV2SessionFile(rejectedFile, error) {
+  if (_logV2ReadMode !== 'v2' || !LOG_FILE) return null;
+  const recovery = _activeV2Recovery.prepare(rejectedFile, error);
+  if (!recovery) return null;
+  const fallbackFile = await findActiveV2SessionFileAsync(LOG_DIR, activeV2LookupOptions({ forceHealthyScan: true }));
+  if (!fallbackFile || fallbackFile === rejectedFile) return null;
+  return Object.freeze({
+    file: fallbackFile,
+    accept() { recovery.accept(fallbackFile); },
   });
 }
 
@@ -1259,6 +1290,11 @@ async function handleRequest(req, res) {
     return;
   }
 
+  if (url === '/api/ultra-agents' && method === 'GET') {
+    handleUltraAgentsRequest(req, res);
+    return;
+  }
+
   if (url === '/api/search' && method === 'POST') {
     try {
       await handleCodeSearch(req, res);
@@ -2023,6 +2059,7 @@ async function handleRequest(req, res) {
       readSnapshot: readV2WireSnapshotAsync,
       readOnly,
       knownCursor,
+      recoverActiveFile: readOnly ? null : recoverActiveV2SessionFile,
     });
     return;
   }
@@ -2030,7 +2067,12 @@ async function handleRequest(req, res) {
   if (url === '/api/log-v2/page' && method === 'POST') {
     try {
       const body = await readJsonBody(req, 64 * 1024);
-      await serveLogV2Page(req, res, { logDir: LOG_DIR, body, readPage: readV2WirePageAsync });
+      await serveLogV2Page(req, res, {
+        logDir: LOG_DIR,
+        body,
+        readPage: readV2WirePageAsync,
+        readSummaries: readV2WireSummariesAsync,
+      });
     } catch (error) {
       if (!res.headersSent) {
         res.writeHead(error.status || 400, { 'Content-Type': 'application/json' });
