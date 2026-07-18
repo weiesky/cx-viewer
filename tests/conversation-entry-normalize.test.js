@@ -300,6 +300,137 @@ test('same Codex tool id replaces partial arguments instead of duplicating the t
   assert.equal(sessions[0].messages[1].content[0].input.command, 'pwd');
 });
 
+test('live V2 subAgents cannot overwrite the MainAgent fallback prefix baseline after refresh', () => {
+  const normalize = createConversationEntryNormalizer();
+  const mainUser = codexMessage('main-user', 'user', 'delegate the search');
+  const mainBase = cumulativeEntry('2026-07-10T00:35:00.000Z', [mainUser], null, null);
+  // Reproduce the collision path: without a thread/session id both agents fall
+  // back to the same user|url projection key.
+  // The root intentionally carries a stale false flag: AppBase's authoritative
+  // classifier still recognizes its ChatGPT Codex upstream lane.
+  mainBase.mainAgent = false;
+  mainBase.body.metadata = { user_id: 'shared-user' };
+  assert.equal(isMainAgent(mainBase), true);
+
+  const partial = normalize({
+    ...mainBase,
+    _v2RowHandle: 'generation:main-entry',
+    _v2Descriptor: { agentRole: 'main' },
+    response: { body: { content: [
+      { type: 'tool_use', id: 'spawn-1', name: 'spawn_agent', input: { message: 'sea' } },
+    ] } },
+  }, { commit: isMainAgent(mainBase) });
+
+  const makeSubAgentEntry = (suffix) => ({
+    ...cumulativeEntry(
+      `2026-07-10T00:35:00.${suffix}Z`,
+      [codexMessage(`sub-user-${suffix}`, 'user', 'search the codebase')],
+      null,
+      null,
+    ),
+    // No persisted role flags: this exercises AppBase's instructions-based
+    // classification rather than the normalizer's field-only fallback.
+    mainAgent: undefined,
+    subAgent: undefined,
+    _v2RowHandle: `generation:sub-entry-${suffix}`,
+    _v2Descriptor: { agentRole: 'subagent' },
+    body: {
+      input: [codexMessage(`sub-user-${suffix}`, 'user', 'search the codebase')],
+      metadata: { user_id: 'shared-user' },
+      instructions: 'You are a general-purpose agent. Search the codebase.',
+    },
+    response: { body: { content: [{ type: 'text', text: 'found it' }] } },
+  });
+  const subAgentEntries = [makeSubAgentEntry('250'), makeSubAgentEntry('500')];
+  const projectedSubAgents = subAgentEntries.map((entry) => {
+    assert.equal(isMainAgent(entry), false);
+    return normalize(entry, { commit: isMainAgent(entry) });
+  });
+
+  const completedEntry = {
+    ...mainBase,
+    _v2RowHandle: 'generation:main-entry',
+    _v2Descriptor: { agentRole: 'main' },
+    timestamp: '2026-07-10T00:35:01.000Z',
+    response: { body: { content: [
+      { type: 'tool_use', id: 'spawn-1', name: 'spawn_agent', input: { message: 'search' } },
+    ] } },
+  };
+  const completed = normalize(completedEntry, { commit: isMainAgent(completedEntry) });
+
+  assert.equal(projectedSubAgents.every(entry => entry._codexConversationProjection === true), true,
+    'subAgents remain projectable');
+  assert.equal(completed._inPlaceReplaceDetected, true, 'MainAgent tail revision keeps its prefix state');
+
+  let sessions = mergeMainAgentSessions([], partial);
+  sessions = mergeMainAgentSessions(sessions, completed);
+  assert.equal(sessions.length, 1);
+  assert.equal(sessions[0].messages.length, 2, 'live merge must not append a duplicate transcript');
+  assert.equal(
+    sessions[0].messages.filter(message => message.role === 'user'
+      && message.content?.[0]?.text === 'delegate the search').length,
+    1,
+    'the real partial -> subAgent -> final chain is unique before any next request',
+  );
+  assert.equal(sessions[0].messages[0].content[0].text, 'delegate the search');
+  assert.equal(sessions[0].messages[1].content[0].input.message, 'search');
+
+  // Refresh/cold rebuild sees the final winner without the transient subAgent
+  // projections. Its transcript must be identical to the live incremental view.
+  const coldNormalize = createConversationEntryNormalizer();
+  const coldCompleted = coldNormalize(completedEntry, { commit: isMainAgent(completedEntry) });
+  const coldSessions = mergeMainAgentSessions([], coldCompleted);
+  assert.deepEqual(
+    sessions[0].messages.map(messageFingerprint),
+    coldSessions[0].messages.map(messageFingerprint),
+  );
+});
+
+test('normalizer role fallback and explicit commit override preserve the MainAgent baseline', () => {
+  const mainUser = codexMessage('fallback-user', 'user', 'inspect');
+  const mainBase = cumulativeEntry('2026-07-10T00:36:00.000Z', [mainUser], null, null);
+  mainBase.body.metadata = { user_id: 'fallback-shared' };
+
+  for (const blockedRole of [
+    { mainAgent: false },
+    { mainAgent: true, subAgent: true },
+    { mainAgent: true, teammate: 'worker' },
+  ]) {
+    const normalize = createConversationEntryNormalizer();
+    normalize({
+      ...mainBase,
+      response: { body: { content: [{ type: 'text', text: 'partial' }] } },
+    });
+    normalize({
+      ...mainBase,
+      ...blockedRole,
+      body: {
+        input: [codexMessage('foreign-user', 'user', 'foreign')],
+        metadata: { user_id: 'fallback-shared' },
+      },
+      response: { body: { content: [{ type: 'text', text: 'foreign answer' }] } },
+    });
+    const completed = normalize({
+      ...mainBase,
+      response: { body: { content: [{ type: 'text', text: 'final' }] } },
+    });
+    assert.equal(completed._inPlaceReplaceDetected, true);
+  }
+
+  const normalizeOverride = createConversationEntryNormalizer();
+  const staleRoot = { ...mainBase, mainAgent: false };
+  normalizeOverride({
+    ...staleRoot,
+    response: { body: { content: [{ type: 'text', text: 'partial' }] } },
+  }, { commit: true });
+  const completedOverride = normalizeOverride({
+    ...staleRoot,
+    response: { body: { content: [{ type: 'text', text: 'final' }] } },
+  }, { commit: true });
+  assert.equal(completedOverride._inPlaceReplaceDetected, true,
+    'an explicit authoritative commit overrides stale persisted role fields');
+});
+
 test('SDK entries expose the current assistant response immediately without changing the raw entry', () => {
   const entry = {
     _sdkSource: true,
@@ -500,6 +631,131 @@ test('stateful Codex projection emits only an overlap anchor plus each cumulativ
   assert.deepEqual(sessions[0].messages.map(message => message.content[0].text), [
     'one', 'answer one', 'two', 'answer two', 'three', 'answer three',
   ]);
+});
+
+test('short authoritative revisions splice into a long user-id-less session without duplicating the prompt', () => {
+  const normalize = createConversationEntryNormalizer();
+  const history = [];
+  for (let i = 0; i < 105; i++) {
+    history.push(
+      codexMessage(`history-user-${i}`, 'user', `history task ${i}`),
+      codexMessage(`history-assistant-${i}`, 'assistant', `history answer ${i}`),
+    );
+  }
+
+  const p1 = codexMessage('prompt-p1', 'user', 'P1');
+  const partialRaw = cumulativeEntry(
+    '2026-07-18T19:23:38.046Z',
+    [...history, p1],
+    'assistant-p1',
+    'partial P1 answer',
+    'thread-long-projection',
+  );
+  delete partialRaw.body.metadata.user_id;
+  const partial = normalize(partialRaw, { commit: true });
+  partial._v2Descriptor = { seq: 1, entryKey: 'p1-generation', agentRole: 'main' };
+
+  const finalRaw = cumulativeEntry(
+    '2026-07-18T19:23:38.046Z',
+    [...history, p1],
+    'assistant-p1',
+    'final P1 answer',
+    'thread-long-projection',
+  );
+  delete finalRaw.body.metadata.user_id;
+  const final = normalize(finalRaw, { commit: true });
+  // Materialize the short V2 projection observed in the production log. The
+  // merge protocol must remain correct even when the optional replace hint is
+  // absent and only the authoritative logical window metadata survives.
+  final._conversationWindowStart = 210;
+  final._conversationMessageCount = 212;
+  final._codexConversationDelta = true;
+  final._v2Descriptor = { seq: 2, entryKey: 'p1-generation', agentRole: 'main' };
+  final.body = { ...final.body, input: final.body.input.slice(210) };
+  delete final._inPlaceReplaceDetected;
+
+  assert.equal(partial.body.input.length, 212);
+  assert.equal(final.body.input.length, 2, 'the final revision is a physical tail window');
+  assert.equal(final._conversationWindowStart, 210);
+  assert.equal(final._conversationMessageCount, 212, 'logical transcript length remains complete');
+
+  let sessions = mergeMainAgentSessions([], partial, { skipTransientFilter: true });
+  sessions = mergeMainAgentSessions(sessions, final, { skipTransientFilter: true });
+  const p1CountBeforeNextRequest = sessions
+    .flatMap(session => session.messages)
+    .filter(message => message.role === 'user' && message.content?.[0]?.text === 'P1')
+    .length;
+  assert.equal(sessions.length, 1, 'a short projection is not a second session');
+  assert.equal(sessions[0].messages.length, 212, 'the preceding long history is preserved');
+  assert.equal(p1CountBeforeNextRequest, 1, 'P1 is already unique before P2 can self-heal the view');
+  assert.equal(sessions[0].messages.at(-1).content[0].text, 'final P1 answer');
+
+  const latePartial = {
+    ...partial,
+    _conversationWindowStart: 210,
+    _conversationMessageCount: 212,
+    _codexConversationDelta: true,
+    body: { ...partial.body, input: partial.body.input.slice(210) },
+  };
+  const afterFinal = sessions;
+  sessions = mergeMainAgentSessions(sessions, latePartial, { skipTransientFilter: true });
+  assert.equal(sessions, afterFinal, 'an older equal-length partial cannot overwrite the final revision');
+  assert.equal(sessions[0].messages.at(-1).content[0].text, 'final P1 answer');
+
+  const p2 = codexMessage('prompt-p2', 'user', 'P2');
+  const finalAssistantInput = codexMessage('assistant-p1', 'assistant', 'final P1 answer');
+  const p2Raw = cumulativeEntry(
+    '2026-07-18T19:24:12.000Z',
+    [...history, p1, finalAssistantInput, p2],
+    'assistant-p2',
+    'final P2 answer',
+    'thread-long-projection',
+  );
+  delete p2Raw.body.metadata.user_id;
+  const p2Final = normalize(p2Raw, { commit: true });
+  p2Final._v2Descriptor = { seq: 3, entryKey: 'p2-generation', agentRole: 'main' };
+  sessions = mergeMainAgentSessions(sessions, p2Final, { skipTransientFilter: true });
+  const userTexts = sessions[0].messages
+    .filter(message => message.role === 'user')
+    .map(message => message.content?.[0]?.text);
+  assert.equal(userTexts.filter(text => text === 'P1').length, 1);
+  assert.equal(userTexts.filter(text => text === 'P2').length, 1);
+  assert.equal(sessions[0].messages.length, 214);
+
+  const afterP2 = sessions;
+  sessions = mergeMainAgentSessions(sessions, final, { skipTransientFilter: true });
+  assert.equal(sessions, afterP2, 'a late P1 revision cannot roll back the already committed P2 turn');
+});
+
+test('logical projection splice preserves the anonymous-to-identified user boundary', () => {
+  const anonymousRaw = cumulativeEntry(
+    '2026-07-18T20:00:00.000Z',
+    [codexMessage('anonymous-user', 'user', 'anonymous task')],
+    'anonymous-assistant',
+    'anonymous answer',
+    'shared-thread',
+  );
+  delete anonymousRaw.body.metadata.user_id;
+  const anonymous = normalizeConversationEntry(anonymousRaw);
+
+  const identifiedRaw = cumulativeEntry(
+    '2026-07-18T20:00:01.000Z',
+    [codexMessage('identified-user', 'user', 'identified task')],
+    'identified-assistant',
+    'identified answer',
+    'shared-thread',
+  );
+  identifiedRaw.body.metadata.user_id = 'identified-user-id';
+  const identified = normalizeConversationEntry(identifiedRaw);
+  identified._conversationWindowStart = 1;
+  identified._conversationMessageCount = 2;
+  identified.body = { ...identified.body, input: identified.body.input.slice(1) };
+
+  let sessions = mergeMainAgentSessions([], anonymous, { skipTransientFilter: true });
+  sessions = mergeMainAgentSessions(sessions, identified, { skipTransientFilter: true });
+  assert.equal(sessions.length, 2, 'projection metadata cannot bypass the user authorization boundary');
+  assert.equal(sessions[0].userId, null);
+  assert.equal(sessions[1].userId, 'identified-user-id');
 });
 
 test('stateful Codex projection resets its input epoch after compact and isolates threads', () => {

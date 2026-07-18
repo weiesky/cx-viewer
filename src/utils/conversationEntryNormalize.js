@@ -463,11 +463,30 @@ export function createConversationEntryNormalizer() {
       return projected;
     }
 
+    // Only MainAgent entries may advance the cumulative projection baseline.
+    // SubAgent/Teammate requests can share the same user + URL fallback key when
+    // their thread metadata is absent. Letting them commit here overwrites the
+    // MainAgent prefix even though they never enter mainAgentSessions; the next
+    // MainAgent partial -> final revision then loses its in-place signal and the
+    // session merger can append the whole transcript. AppBase also passes an
+    // explicit commit=false for entries rejected by its stronger classifier;
+    // the field guard below is only a fallback for direct callers with persisted
+    // role markers, not a replacement for that classifier.
+    const ownsMainAgentBaselineByFields = entry?.mainAgent !== false
+      && entry?.subAgent !== true
+      && !entry?.teammate;
     // Stale/broken/in-progress batch entries are visible as raw requests but do
     // not enter the conversation merge. They must not advance the prefix base,
     // otherwise the next valid checkpoint would emit only a tail against data
     // the renderer never received.
-    if (options.commit === false) return projected;
+    // A caller such as AppBase has the stronger isMainAgent classifier and its
+    // explicit decision is authoritative. The field-only fallback exists for
+    // direct callers that omit the option; it must not veto legacy MainAgent
+    // rows whose persisted boolean is weaker than their upstream identity.
+    const shouldCommit = Object.hasOwn(options, 'commit')
+      ? options.commit === true
+      : ownsMainAgentBaselineByFields;
+    if (!shouldCommit) return projected;
 
     const key = conversationProjectionKey(entry);
     const rawIds = rawInput.map(rawItemIdentity);

@@ -1,5 +1,5 @@
 // Wire format 协议详见 docs/WIRE_FORMAT.md（服务端 entry 形态 / 关键字段 / 已知特殊窗口）
-import { conversationIdsConflict, getEntryUserId, getMainAgentConversationId, isPostClearCheckpoint, getMainAgentSessionKey } from './clearCheckpoint.js';
+import { conversationIdsConflict, getEntryUserId, getMainAgentConversationId, isCompactContinuation, isPostClearCheckpoint, getMainAgentSessionKey } from './clearCheckpoint.js';
 import { getEffectiveModelName } from './modelIdentity.js';
 
 /**
@@ -176,11 +176,14 @@ export function mergeMainAgentSessions(prevSessions, entry, options = {}) {
   const sessionId = entry._sessionId || null;
   const conversationId = getMainAgentConversationId(entry);
   const modelName = getEffectiveModelName(entry);
+  const v2Seq = Number.isSafeInteger(entry?._v2Descriptor?.seq)
+    ? entry._v2Descriptor.seq
+    : null;
 
   const entryTimestamp = entry.timestamp || null;
 
   if (prevSessions.length === 0) {
-    return [{ userId, sessionKey, sessionId, conversationId, modelName, messages: newMessages, response: newResponse, entryTimestamp }];
+    return [{ userId, sessionKey, sessionId, conversationId, modelName, messages: newMessages, response: newResponse, entryTimestamp, _lastV2Seq: v2Seq }];
   }
 
   const lastSession = prevSessions[prevSessions.length - 1];
@@ -190,8 +193,24 @@ export function mergeMainAgentSessions(prevSessions, entry, options = {}) {
   const differentUser = !!(userId && lastSession.userId && userId !== lastSession.userId);
 
   const prevMsgCount = lastSession.messages ? lastSession.messages.length : 0;
-  const isNewConversation = prevMsgCount > 0 && newMessages.length < prevMsgCount * 0.5 && (prevMsgCount - newMessages.length) > 4;
+  // Stateful Codex normalization deliberately projects a small overlap window
+  // instead of the complete cumulative transcript. Treating that physical
+  // window length as the conversation length makes a long, user-id-less
+  // session look like a new short session; partial -> final revisions then get
+  // appended as authoritative duplicates until the next request rebuilds it.
+  // Boundary inference must use the logical count, while the merge algorithm
+  // below must keep using the physical window length for anchor/tail offsets.
+  const stampedConversationCount = entry._conversationMessageCount;
+  const logicalNewLen = Number.isInteger(stampedConversationCount) && stampedConversationCount >= 0
+    ? stampedConversationCount
+    : newMessages.length;
+  const compactLike = entry._compactContinuation === true || isCompactContinuation(entry);
+  const isNewConversation = !compactLike
+    && prevMsgCount > 0
+    && logicalNewLen < prevMsgCount * 0.5
+    && (prevMsgCount - logicalNewLen) > 4;
   const sameUser = userId !== null && userId === lastSession.userId;
+  const canMergeByUser = sameUser || (userId === lastSession.userId && !isNewConversation);
 
   // /clear 后的首个 checkpoint：始终是新会话起点。
   // 同 device 下 sameUser 永远 true，否则会被下面的 same-session 分支吞掉；
@@ -200,7 +219,7 @@ export function mergeMainAgentSessions(prevSessions, entry, options = {}) {
     for (let i = 0; i < newMessages.length; i++) {
       if (!newMessages[i]._timestamp) newMessages[i]._timestamp = entryTimestamp;
     }
-    return [...prevSessions, { userId, sessionKey, sessionId, conversationId, modelName, messages: newMessages, response: newResponse, entryTimestamp }];
+    return [...prevSessions, { userId, sessionKey, sessionId, conversationId, modelName, messages: newMessages, response: newResponse, entryTimestamp, _lastV2Seq: v2Seq }];
   }
 
   // User identity is an authorization boundary, not a transient-history hint.
@@ -210,7 +229,7 @@ export function mergeMainAgentSessions(prevSessions, entry, options = {}) {
     for (let i = 0; i < newMessages.length; i++) {
       if (!newMessages[i]._timestamp) newMessages[i]._timestamp = entryTimestamp;
     }
-    return [...prevSessions, { userId, sessionKey, sessionId, conversationId, modelName, messages: newMessages, response: newResponse, entryTimestamp }];
+    return [...prevSessions, { userId, sessionKey, sessionId, conversationId, modelName, messages: newMessages, response: newResponse, entryTimestamp, _lastV2Seq: v2Seq }];
   }
 
   // A native Responses `compaction` is an authoritative transcript rewrite.
@@ -226,6 +245,54 @@ export function mergeMainAgentSessions(prevSessions, entry, options = {}) {
     lastSession.messages = newMessages;
     lastSession.response = newResponse;
     lastSession.entryTimestamp = entryTimestamp;
+    if (v2Seq !== null) lastSession._lastV2Seq = v2Seq;
+    if (modelName) lastSession.modelName = modelName;
+    if (sessionKey && !lastSession.sessionKey) lastSession.sessionKey = sessionKey;
+    if (sessionId && !lastSession.sessionId) lastSession.sessionId = sessionId;
+    if (conversationId && !lastSession.conversationId) lastSession.conversationId = conversationId;
+    return [...prevSessions];
+  }
+
+  // A stateful projection carries an explicit logical splice position. Consume
+  // that protocol before the generic length/anchor heuristics: a two-message
+  // physical window can represent the tail of a 200-message conversation, not
+  // a compact or a new Plan window. Replacing exactly that suffix makes
+  // partial/final revisions idempotent even if an asynchronous side lane made
+  // the optional `_inPlaceReplaceDetected` hint unavailable.
+  const conversationWindowStart = entry._conversationWindowStart;
+  const trustedProjectionWindow = entry._codexConversationProjection === true
+    && entry._codexConversationDelta === true;
+  const hasCompleteProjectionWindow = trustedProjectionWindow
+    && Number.isInteger(conversationWindowStart)
+    && conversationWindowStart > 0
+    && conversationWindowStart <= prevMsgCount
+    && logicalNewLen === conversationWindowStart + newMessages.length
+    && canMergeByUser;
+  if (hasCompleteProjectionWindow) {
+    // A completed newer turn owns the longer logical transcript. A delayed
+    // older tail revision must not splice it away (P2 committed before a late
+    // P1-final is a normal completion-order race under parallel agents).
+    if (logicalNewLen < prevMsgCount) return prevSessions;
+    const lastV2Seq = Number.isSafeInteger(lastSession._lastV2Seq)
+      ? lastSession._lastV2Seq
+      : null;
+    const incomingTime = Date.parse(entryTimestamp);
+    const currentTime = Date.parse(lastSession.entryTimestamp);
+    const isOlderSameLengthRevision = logicalNewLen === prevMsgCount && (
+      (v2Seq !== null && lastV2Seq !== null && v2Seq <= lastV2Seq)
+      || (Number.isFinite(incomingTime) && Number.isFinite(currentTime) && incomingTime < currentTime)
+    );
+    if (isOlderSameLengthRevision) return prevSessions;
+    for (let i = 0; i < newMessages.length; i++) {
+      if (!newMessages[i]._timestamp) newMessages[i]._timestamp = entryTimestamp;
+    }
+    lastSession.messages = [
+      ...lastSession.messages.slice(0, conversationWindowStart),
+      ...newMessages,
+    ];
+    lastSession.response = newResponse;
+    lastSession.entryTimestamp = entryTimestamp;
+    if (v2Seq !== null) lastSession._lastV2Seq = v2Seq;
     if (modelName) lastSession.modelName = modelName;
     if (sessionKey && !lastSession.sessionKey) lastSession.sessionKey = sessionKey;
     if (sessionId && !lastSession.sessionId) lastSession.sessionId = sessionId;
@@ -237,7 +304,7 @@ export function mergeMainAgentSessions(prevSessions, entry, options = {}) {
     return prevSessions;
   }
 
-  if (sameUser || (userId === lastSession.userId && !isNewConversation)) {
+  if (canMergeByUser) {
     const curLen = prevMsgCount;
     const newLen = newMessages.length;
     if (!lastSession.messages) lastSession.messages = [];
@@ -253,6 +320,7 @@ export function mergeMainAgentSessions(prevSessions, entry, options = {}) {
       lastSession.messages = [...lastSession.messages.slice(0, -1), replacement];
       lastSession.response = newResponse;
       lastSession.entryTimestamp = entryTimestamp;
+      if (v2Seq !== null) lastSession._lastV2Seq = v2Seq;
       if (modelName) lastSession.modelName = modelName;
       if (sessionKey && !lastSession.sessionKey) lastSession.sessionKey = sessionKey;
       if (sessionId && !lastSession.sessionId) lastSession.sessionId = sessionId;
@@ -330,6 +398,7 @@ export function mergeMainAgentSessions(prevSessions, entry, options = {}) {
 
     lastSession.response = newResponse;
     lastSession.entryTimestamp = entryTimestamp;
+    if (v2Seq !== null) lastSession._lastV2Seq = v2Seq;
     // Model-less transport/checkpoint frames must not erase the last
     // authoritative identity known for this logical session.
     if (modelName) lastSession.modelName = modelName;
@@ -338,6 +407,6 @@ export function mergeMainAgentSessions(prevSessions, entry, options = {}) {
     if (conversationId && !lastSession.conversationId) lastSession.conversationId = conversationId;
     return [...prevSessions];
   } else {
-    return [...prevSessions, { userId, sessionKey, sessionId, conversationId, modelName, messages: newMessages, response: newResponse, entryTimestamp }];
+    return [...prevSessions, { userId, sessionKey, sessionId, conversationId, modelName, messages: newMessages, response: newResponse, entryTimestamp, _lastV2Seq: v2Seq }];
   }
 }

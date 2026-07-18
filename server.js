@@ -3923,6 +3923,12 @@ async function handleRequest(req, res) {
       for await (const chunk of parsed.stream) {
         await writeResponseChunk(res, chunk);
       }
+      // The archive job is complete once every response chunk has been written.
+      // Release before res.end(): a client can observe the response end and issue
+      // its next request before this handler reaches finally, which otherwise
+      // exposes a spurious CXV_LOG_ARCHIVE_BUSY (429) between sequential jobs.
+      releaseJob();
+      releaseJob = null;
       res.end();
     } catch (err) {
       if (res.headersSent) res.destroy(err);

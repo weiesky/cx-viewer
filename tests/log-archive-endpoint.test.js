@@ -129,6 +129,23 @@ describe('V2 log archive HTTP round trip', { concurrency: false }, () => {
     const entries = response.body.toString('utf8').split('\n---\n').filter(Boolean).map(JSON.parse);
     assert.equal(entries.length, 1);
     assert.equal(entries[0].response.body.content[0].text, 'round trip');
+
+    // The first response's end event is the public completion boundary. An
+    // immediately sequential local parse must not observe the previous job's
+    // lock as CXV_LOG_ARCHIVE_BUSY; this performs no external network request.
+    const secondResponse = await request(port, '/api/parse-log-archive', {
+      method: 'POST',
+      headers: {
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+        'Content-Length': body.length,
+      },
+      body,
+    });
+    assert.equal(secondResponse.status, 200);
+    assert.notEqual(
+      JSON.parse(secondResponse.body.toString('utf8').split('\n---\n').filter(Boolean)[0]).code,
+      'CXV_LOG_ARCHIVE_BUSY',
+    );
   });
 
   it('maps missing V2 archives to 404 and preserves legacy JSONL downloads', async () => {

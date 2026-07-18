@@ -532,9 +532,13 @@ class AppBase extends React.Component {
   _processOneEntry(entry, i, st) {
     const mergeBlocked = isColdIngestMergeBlockedEntry(entry);
     const conversationExcluded = shouldExcludeFromConversation(entry);
+    // SubAgent/Teammate rows remain projectable for their auxiliary transcript,
+    // but must never advance the stateful MainAgent prefix normalizer. Missing
+    // thread metadata otherwise collapses both roles onto the same user|url key.
+    const commitsConversationBaseline = !mergeBlocked && isMainAgent(entry);
     const conversationEntry = conversationExcluded
       ? entry
-      : st.conversationNormalizer(entry, { commit: !mergeBlocked });
+      : st.conversationNormalizer(entry, { commit: commitsConversationBaseline });
 
     // Rotation-context sentinel (first frame of a post-rotation segment):
     // capture the carry-forward payload, seed the teammate-name registry, and
@@ -2345,13 +2349,15 @@ class AppBase extends React.Component {
 
         // 合并 mainAgent sessions（跳过被剪枝的 entry，其 input 已被清空；
         // 跳过重建层标记的乱序/断裂条目，防完成序倒置翻倍，见 isMergeBlockedEntry JSDoc）
-        // KEEP IN SYNC: test/delta-reorder.test.js clientMergeSse 镜像本块守卫顺序
+        // KEEP IN SYNC: tests/sse-reconstructor-lifecycle.test.js locks this live wiring;
+        // tests/main-agent-delta.test.js covers the reconstructed ordering invariants.
         // （mainAgent 形态 → teammate/blocked → applyInPlaceLastMsgReplace → merge），改动需同步
         const mergeBlocked = isMergeBlockedEntry(entry);
         const conversationExcluded = shouldExcludeFromConversation(entry);
+        const commitsConversationBaseline = !mergeBlocked && isMainAgent(entry);
         const conversationEntry = conversationExcluded
           ? entry
-          : this._liveConversationNormalizer(entry, { commit: !mergeBlocked });
+          : this._liveConversationNormalizer(entry, { commit: commitsConversationBaseline });
         if (!conversationExcluded && isMainAgent(conversationEntry) && conversationEntry.body && Array.isArray(conversationEntry.body.input) && !conversationEntry._slimmed && !mergeBlocked) {
           this._observeSuccessfulContextClear(conversationEntry);
           const timestamp = conversationEntry.timestamp || new Date().toISOString();
