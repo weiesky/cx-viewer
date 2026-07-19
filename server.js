@@ -3915,6 +3915,13 @@ async function handleRequest(req, res) {
       // Allow multipart framing beyond the logical ZIP payload limit.
       const upload = await readMultipartUpload(req, LOG_ARCHIVE_LIMITS.compressedBytes + 1024 * 1024);
       parsed = await createV2SessionEntryStream(upload.data, { filename: upload.filename });
+      // The global job limit protects archive materialization, not delivery of
+      // the already-materialized private response stream. With Content-Length,
+      // a client can observe its final byte before the server-side iterator
+      // reaches its cleanup turn; holding the lock through streaming therefore
+      // makes a sequential request spuriously see CXV_LOG_ARCHIVE_BUSY.
+      releaseJob();
+      releaseJob = null;
       res.writeHead(200, {
         'Content-Type': 'application/x-cxv-log-entries; charset=utf-8',
         'Cache-Control': 'no-store',
@@ -3923,12 +3930,6 @@ async function handleRequest(req, res) {
       for await (const chunk of parsed.stream) {
         await writeResponseChunk(res, chunk);
       }
-      // The archive job is complete once every response chunk has been written.
-      // Release before res.end(): a client can observe the response end and issue
-      // its next request before this handler reaches finally, which otherwise
-      // exposes a spurious CXV_LOG_ARCHIVE_BUSY (429) between sequential jobs.
-      releaseJob();
-      releaseJob = null;
       res.end();
     } catch (err) {
       if (res.headersSent) res.destroy(err);
@@ -3959,9 +3960,13 @@ async function handleRequest(req, res) {
       if (v2File) {
         releaseJob = acquireLogArchiveJob();
         const archive = await createV2SessionZip(LOG_DIR, file);
+        // ZIP construction is complete. The returned stream owns an isolated
+        // temp artifact, so response delivery need not hold the global builder
+        // slot and block the client's next sequential archive operation.
+        releaseJob();
+        releaseJob = null;
         if (req.aborted || res.destroyed) {
           archive.dispose();
-          releaseJob();
           return;
         }
         const encodedName = encodeURIComponent(archive.fileName);
@@ -3970,7 +3975,6 @@ async function handleRequest(req, res) {
           if (cleaned) return;
           cleaned = true;
           archive.dispose();
-          releaseJob();
         };
         archive.stream.once('error', (error) => {
           cleanup();
