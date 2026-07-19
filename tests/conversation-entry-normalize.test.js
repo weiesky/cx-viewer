@@ -458,6 +458,7 @@ test('SDK entries expose the current assistant response immediately without chan
 });
 
 test('projects Codex image tool outputs into the viewer image result contract', () => {
+  const generatedImageBase64 = 'a'.repeat(2_360_628);
   const messages = codexItemsToViewerMessages([
     { type: 'function_call', call_id: 'call_image', name: 'view_image', arguments: '{"path":"a.png"}' },
     {
@@ -465,15 +466,18 @@ test('projects Codex image tool outputs into the viewer image result contract', 
       call_id: 'call_image',
       output: [
         { type: 'input_text', text: 'opened' },
-        { type: 'input_image', image_url: 'data:image/png;base64,aGVsbG8=' },
+        { type: 'input_image', image_url: `data:image/png;base64,${generatedImageBase64}` },
+        { type: 'input_text', text: 'saved' },
       ],
     },
   ]);
 
-  assert.deepEqual(messages[1].content[0].content, [
-    { type: 'text', text: 'opened' },
-    { type: 'image', source: { type: 'base64', media_type: 'image/png', data: 'aGVsbG8=' } },
-  ]);
+  const projected = messages[1].content[0].content;
+  assert.deepEqual(projected.map(part => part.type), ['text', 'image', 'text']);
+  assert.equal(projected[0].text, 'opened');
+  assert.equal(projected[1].source.media_type, 'image/png');
+  assert.equal(projected[1].source.data.length, 2_360_628);
+  assert.equal(projected[2].text, 'saved');
 });
 
 test('recognizes an image-only Responses request and appends its current response', () => {

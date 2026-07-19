@@ -4,6 +4,7 @@ import { t } from '../../i18n';
 import { renderMarkdown } from '../../utils/markdown';
 import { escapeHtml } from '../../utils/helpers';
 import WorkflowPanel from './WorkflowPanel';
+import ImageLightbox from '../common/ImageLightbox';
 import styles from './ToolResultView.module.css';
 
 const { Text } = Typography;
@@ -22,6 +23,50 @@ const EXT_LANG = {
 
 // Tools whose results are typically code/file content
 const CODE_TOOLS = ['shell_command', 'apply_patch', 'read_mcp_resource'];
+
+function ToolResultImage({ image, index }) {
+  const [failed, setFailed] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  useEffect(() => {
+    setFailed(false);
+    setLightboxOpen(false);
+  }, [image.src, image.oversized]);
+  const format = (image.mediaType || '').replace('image/', '') || 'image';
+  const sizeKb = Math.max(1, Math.round((image.sizeBytes || 0) / 1024));
+  if (image.oversized) {
+    const key = image.unavailableReason === 'session_budget'
+      ? 'ui.toolImageEvicted'
+      : 'ui.toolImageTooLarge';
+    return <div className={styles.imagePlaceholder}>{t(key, { format, size: sizeKb })}</div>;
+  }
+  if (failed) {
+    return <div className={styles.imagePlaceholder}>{t('ui.toolImageLoadFailed')}</div>;
+  }
+  const label = t('ui.toolImagePreview', { index: index + 1 });
+  return (
+    <>
+      <button
+        type="button"
+        className={styles.imageButton}
+        aria-label={label}
+        onClick={() => setLightboxOpen(true)}
+      >
+        <img
+          src={image.src}
+          alt={label}
+          className={styles.imageItem}
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onError={() => setFailed(true)}
+        />
+      </button>
+      {lightboxOpen && (
+        <ImageLightbox src={image.src} alt={label} onClose={() => setLightboxOpen(false)} />
+      )}
+    </>
+  );
+}
 
 function detectLang(toolName, toolInput, resultText) {
   if (!toolInput) return null;
@@ -289,15 +334,7 @@ function ToolResultView({ toolName, toolInput, resultText, images, workflow, def
   const hasImages = Array.isArray(images) && images.length > 0;
   const imageBlock = hasImages ? (
     <div className={styles.imageBlock}>
-      {images.map((img, idx) => (
-        img.oversized ? (
-          <div key={`img-${idx}`} className={styles.imagePlaceholder}>
-            {`[image ${(img.mediaType || '').replace('image/', '')} · ${Math.round(img.sizeBytes / 1024)} KB · too large to preview]`}
-          </div>
-        ) : (
-          <img key={`img-${idx}`} src={img.src} alt={img.mediaType || 'image'} className={styles.imageItem} loading="lazy" />
-        )
-      ))}
+      {images.map((img, idx) => <ToolResultImage key={`img-${idx}`} image={img} index={idx} />)}
     </div>
   ) : null;
 
@@ -325,9 +362,8 @@ function ToolResultView({ toolName, toolInput, resultText, images, workflow, def
     );
   }
 
-  // 4 个文本分支(Task / non-code / code / 兜底)都需要 "imageBlock 在 textBody 之前"
-  // 的折叠展开,抽出 helper 避免重复 `{!collapsed && imageBlock}{!collapsed && body}` 模式
-  const renderBodyWithImages = (textBody) => collapsed ? null : (<>{imageBlock}{textBody}</>);
+  // 图片是工具结果本身，始终保留在对话中；折叠只控制可能很长的伴随文本。
+  const renderBodyWithImages = (textBody) => (<>{imageBlock}{collapsed ? null : textBody}</>);
 
   if (!isCodeTool) {
     // Task tool: render as markdown
@@ -340,7 +376,7 @@ function ToolResultView({ toolName, toolInput, resultText, images, workflow, def
               className={styles.codeToggle}
               onClick={() => setCollapsed(c => !c)}
             >
-              {collapsed ? t('ui.expand') : t('ui.collapse')}
+              {collapsed ? t('ui.expandText') : t('ui.collapseText')}
             </Text>
           </div>
           {renderBodyWithImages(
@@ -358,7 +394,7 @@ function ToolResultView({ toolName, toolInput, resultText, images, workflow, def
             className={styles.codeToggle}
             onClick={() => setCollapsed(c => !c)}
           >
-            {collapsed ? t('ui.expand') : t('ui.collapse')}
+            {collapsed ? t('ui.expandText') : t('ui.collapseText')}
           </Text>
         </div>
         {renderBodyWithImages(<pre className={styles.plainPre}>{displayText}</pre>)}
@@ -376,7 +412,7 @@ function ToolResultView({ toolName, toolInput, resultText, images, workflow, def
           className={styles.codeToggle}
           onClick={() => setCollapsed(c => !c)}
         >
-          {collapsed ? t('ui.expand') : t('ui.collapse')}
+          {collapsed ? t('ui.expandText') : t('ui.collapseText')}
         </Text>
       </div>
       {renderBodyWithImages(

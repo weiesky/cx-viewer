@@ -7,7 +7,7 @@
  * path and are rendered directly by ChatMessage.
  */
 
-import { t } from '../i18n';
+import { t } from '../i18n.js';
 import { parseAskAnswerText } from './askAnswerParser.js';
 import { buildSingleToolResultCore } from './toolResultCore.js';
 import { isAskToolName, isPlanToolName } from './toolNameAliases.js';
@@ -47,6 +47,9 @@ export function createEmptyToolState() {
     latestPlanFilePath: null,
     _fileState: {},
     _editOrder: [],
+    _imageEntryIds: [],
+    _imageCharsById: {},
+    _retainedImageBase64Chars: 0,
   };
 }
 
@@ -92,33 +95,80 @@ export function buildGlobalToolResultIndex(requests) {
   return state.index;
 }
 
-// 同一 session 内并发持有的 base64 image 上限:更早入索引的 entry 一旦超过此数,
-// 其 images 字段被改成 oversized 占位,释放 base64 字节(单图 2MB × N = 几十 MB
-// 常驻内存的隐患)。32 张覆盖大多数实际会话;若超过,旧图回退为占位,新图保留。
-const MAX_LIVE_IMAGE_ENTRIES = 32;
+// Limit derived preview data URLs by their retained base64 character count.
+// Raw request history may still own the original payload; this budget prevents
+// the local/global result indexes and mounted previews from multiplying it.
+export const MAX_RETAINED_TOOL_IMAGE_BASE64_CHARS = 24 * 1024 * 1024;
 
 /**
  * 增量索引 state:供 ChatView / TeamModal 在 requests 增量到达时复用,避免每次全量扫描。
  *   index           : { [tool_use_id]: entry } (出参,共享给调用方)
  *   _useMap         : 已扫到的 tool_use 块 (Pass 1 累积,Pass 2 查 label)
- *   _imageEntryIds  : FIFO 队列,跟踪持有 base64 image 的 entry id,超 MAX 时驱逐最早
+ *   _imageEntryIds  : FIFO 队列,跟踪持有 base64 image 的 entry id,超总字符预算时驱逐最早
  */
 export function createEmptyGlobalIndexState() {
-  return { index: {}, _useMap: {}, _imageEntryIds: [] };
+  return {
+    index: {},
+    _useMap: {},
+    _imageEntryIds: [],
+    _imageCharsById: {},
+    _retainedImageBase64Chars: 0,
+  };
 }
 
-// 把超出 LRU 上限的最早 image entry 降级为 oversized 占位,释放 base64 字符串。
-function _enforceImageBudget(state) {
-  const { index, _imageEntryIds } = state;
-  while (_imageEntryIds.length > MAX_LIVE_IMAGE_ENTRIES) {
-    const evictId = _imageEntryIds.shift();
-    const entry = index[evictId];
+function retainedBase64Chars(entry) {
+  if (!Array.isArray(entry?.images)) return 0;
+  return entry.images.reduce((total, image) => {
+    if (!image?.src || image.sourceType === 'remote') return total;
+    if (Number.isFinite(image.base64Chars)) return total + image.base64Chars;
+    const comma = image.src.indexOf(',');
+    return total + (comma >= 0 ? image.src.length - comma - 1 : 0);
+  }, 0);
+}
+
+function evictPreviewImages(entry) {
+  if (!Array.isArray(entry?.images)) return;
+  entry.images = entry.images.map(image => (
+    image?.src && image.sourceType !== 'remote'
+      ? {
+        oversized: true,
+        unavailableReason: 'session_budget',
+        sourceType: 'data',
+        mediaType: image.mediaType,
+        base64Chars: image.base64Chars,
+        sizeBytes: image.sizeBytes,
+      }
+      : image
+  ));
+}
+
+/** Apply the same FIFO character budget to local and global result indexes. */
+export function retainToolResultImagesWithinBudget(state, entries, id, entry) {
+  if (!state || !entries || !id || !entry) return;
+  const previousChars = state._imageCharsById[id] || 0;
+  if (previousChars) {
+    state._retainedImageBase64Chars -= previousChars;
+    delete state._imageCharsById[id];
+    const previousIndex = state._imageEntryIds.indexOf(id);
+    if (previousIndex >= 0) state._imageEntryIds.splice(previousIndex, 1);
+  }
+
+  const chars = retainedBase64Chars(entry);
+  if (chars > 0) {
+    state._imageCharsById[id] = chars;
+    state._imageEntryIds.push(id);
+    state._retainedImageBase64Chars += chars;
+  }
+
+  while (state._retainedImageBase64Chars > MAX_RETAINED_TOOL_IMAGE_BASE64_CHARS) {
+    const evictId = state._imageEntryIds.shift();
+    if (!evictId) break;
+    const evictChars = state._imageCharsById[evictId] || 0;
+    delete state._imageCharsById[evictId];
+    state._retainedImageBase64Chars = Math.max(0, state._retainedImageBase64Chars - evictChars);
+    const entry = entries[evictId];
     if (!entry || !Array.isArray(entry.images)) continue;
-    entry.images = entry.images.map(img => (
-      img && img.src && !img.oversized
-        ? { oversized: true, mediaType: img.mediaType, sizeBytes: img.src.length }
-        : img
-    ));
+    evictPreviewImages(entry);
   }
 }
 
@@ -128,7 +178,7 @@ function _enforceImageBudget(state) {
  */
 export function appendToGlobalToolResultIndex(state, requests, startIndex) {
   if (!Array.isArray(requests)) return;
-  const { index, _useMap, _imageEntryIds } = state;
+  const { index, _useMap } = state;
   for (let i = startIndex; i < requests.length; i++) {
     const r = requests[i];
     if (!r) continue;
@@ -159,14 +209,11 @@ export function appendToGlobalToolResultIndex(state, requests, startIndex) {
         if (b?.type === 'tool_result' && b.tool_use_id && !(b.tool_use_id in index)) {
           const entry = buildSingleToolResult(b, _useMap[b.tool_use_id]);
           index[b.tool_use_id] = entry;
-          if (Array.isArray(entry.images) && entry.images.some(img => img && img.src)) {
-            _imageEntryIds.push(b.tool_use_id);
-          }
+          retainToolResultImagesWithinBudget(state, index, b.tool_use_id, entry);
         }
       }
     }
   }
-  _enforceImageBudget(state);
 }
 
 /**
@@ -231,6 +278,7 @@ export function appendToolResultMap(state, messages, startIndex) {
           const entry = buildSingleToolResult(block, matchedTool);
           const { resultText, isPermissionDenied, isUltraplan } = entry;
           toolResultMap[block.tool_use_id] = entry;
+          retainToolResultImagesWithinBudget(state, toolResultMap, block.tool_use_id, entry);
           if (matchedTool && isAskToolName(matchedTool.name)) {
             // Codex native function_call_output keys answers by the stable
             // question id. Resolve that id through the matching tool input for

@@ -4,7 +4,7 @@ import { Collapse, Typography, Radio, Checkbox, Input, Button, Tooltip, Popover,
 import { SearchOutlined } from '@ant-design/icons';
 import { escapeHtml, truncateText, getSvgAvatar } from '../../utils/helpers';
 import { formatHms, formatMonthDayTime } from '../../utils/formatters';
-import { compactResultPreview } from '../../utils/toolResultCore.js';
+import { compactResultPreview, hasInlineToolResultImage } from '../../utils/toolResultCore.js';
 import { extractWebResultGroups } from '../../utils/webResultGrouping';
 import { mergeThinkingBlocks } from '../../utils/thinkingMerge';
 import WebResultsView from '../viewers/WebResultsView';
@@ -997,12 +997,16 @@ class ChatMessage extends React.Component {
     // destroyTooltipOnHide 配合 hover 关闭后释放 DOM,避免 detached node 持有图片字节。
     const renderContent = () => {
       const preview = compactResultPreview(tr);
+      // Base64 图片已经在消息流内联展示；Popover 只保留调用参数和伴随文本，
+      // 避免同一大图被再次挂载、解码。远程图片仍维持原有按需预览行为。
+      const previewImages = hasInlineToolResultImage(tr) ? [] : (preview?.images || []);
+      const hasPreview = !!preview && (!!preview.text || previewImages.length > 0);
       return (
         <div className={styles.simplifiedToolPopoverContent}>
           {this.renderToolCall(tu)}
-          {preview && (
+          {hasPreview && (
             <div className={styles.simplifiedToolResultPreview}>
-              {preview.images && preview.images.map((img, idx) => (
+              {previewImages.map((img, idx) => (
                 img.oversized ? (
                   <div key={`img-${idx}`} className={styles.simplifiedToolResultImagePlaceholder}>
                     {`[image ${(img.mediaType || '').replace('image/', '')} · ${Math.round(img.sizeBytes / 1024)} KB · too large to preview]`}
@@ -1132,7 +1136,7 @@ class ChatMessage extends React.Component {
     );
     // Workflow 工具的结果是工作流面板（phases/agents，含运行中逐帧），始终完整渲染，
     // 不随简化模式隐藏。
-    const alwaysFullResult = tu.name === 'Workflow';
+    const alwaysFullResult = tu.name === 'Workflow' || hasInlineToolResultImage(tr);
     if (simplify && !alwaysFullResult) {
       // 简化模式：仅显示权限拒绝，隐藏其他 tool_result
       return tr.isPermissionDenied ? deniedNode : null;
@@ -1180,8 +1184,8 @@ class ChatMessage extends React.Component {
     const simplify = !this.props.showFullToolContent;
     let simplifiedLabelAdded = false;
     toolUseBlocks.forEach((tu, tuIdx) => {
-      const isFullDisplayTool = tu.name === 'apply_patch' || this._getToolPatchOperations(tu).length > 0 || isPlanToolName(tu.name) || isAskToolName(tu.name) || tu.name === 'Workflow';
       const tr = toolResultMap[tu.id];
+      const isFullDisplayTool = tu.name === 'apply_patch' || this._getToolPatchOperations(tu).length > 0 || isPlanToolName(tu.name) || isAskToolName(tu.name) || tu.name === 'Workflow';
       if (simplify && !isFullDisplayTool) {
         // 简化模式：首个标签前加 "使用工具: " 标签
         if (!simplifiedLabelAdded) {
@@ -1280,8 +1284,8 @@ class ChatMessage extends React.Component {
       if (block.type === 'tool_use') {
         const tu = block;
         const tuIdxInList = toolUseGlobalIndices.indexOf(i);
-        const isFullDisplayTool = tu.name === 'apply_patch' || this._getToolPatchOperations(tu).length > 0 || isPlanToolName(tu.name) || isAskToolName(tu.name) || tu.name === 'Workflow';
         const tr = toolResultMap[tu.id];
+        const isFullDisplayTool = tu.name === 'apply_patch' || this._getToolPatchOperations(tu).length > 0 || isPlanToolName(tu.name) || isAskToolName(tu.name) || tu.name === 'Workflow';
         if (simplify && !isFullDisplayTool) {
           if (!simplifiedLabelAdded) {
             simplifiedLabelAdded = true;

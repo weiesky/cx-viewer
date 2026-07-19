@@ -14,6 +14,126 @@ import {
   _writeAppServerEntryForTests,
   resetRawCaptureBoundary,
 } from '../lib/appserver-bridge.js';
+import { buildSingleToolResultCore } from '../src/utils/toolResultCore.js';
+
+test('app-server bridge preserves structured image tool outputs for conversation rendering', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'cxv-appserver-image-output-'));
+  const logFile = join(tmp, 'bridge.jsonl');
+  try {
+    _resetAppServerBridgeForTests({ logFile, cwd: tmp, project: 'bridge-project', model: 'gpt-test' });
+    _parseAppServerClientMessageForTests({
+      id: 1,
+      method: 'thread/start',
+      params: { cwd: tmp, developerInstructions: 'You are Codex' },
+    });
+    server('thread/started', { thread: { id: 'image-thread', cwd: tmp } });
+    client('turn/start', {
+      threadId: 'image-thread',
+      model: 'gpt-test',
+      cwd: tmp,
+      input: [{ type: 'text', text: 'generate an image' }],
+    });
+    server('turn/started', { threadId: 'image-thread', turn: { id: 'image-turn', status: 'inProgress' } });
+    server('item/completed', {
+      threadId: 'image-thread',
+      item: { type: 'function_call', id: 'fc-1', call_id: 'call-image', name: 'imagegen', arguments: '{}' },
+    });
+    server('item/completed', {
+      threadId: 'image-thread',
+      item: {
+        type: 'function_call_output',
+        id: 'fco-1',
+        call_id: 'call-image',
+        output: [
+          { type: 'input_text', text: 'created' },
+          { type: 'input_image', image_url: 'data:image/png;base64,aA==' },
+        ],
+      },
+    });
+    server('item/completed', { threadId: 'image-thread', item: { id: 'answer', type: 'agentMessage', text: 'done' } });
+    server('turn/completed', {
+      threadId: 'image-thread',
+      turn: { id: 'image-turn', threadId: 'image-thread', status: 'completed' },
+    });
+
+    const entry = readEntries(logFile).find(row => row.body?.metadata?.thread_id === 'image-thread');
+    const block = entry.body.input
+      .flatMap(message => Array.isArray(message.content) ? message.content : [])
+      .find(part => part.type === 'tool_result');
+    assert.deepEqual(block.content.map(part => part.type), ['input_text', 'input_image']);
+    const rendered = buildSingleToolResultCore(block, { name: 'imagegen', input: {} });
+    assert.equal(rendered.resultText, 'created');
+    assert.equal(rendered.images[0].src, 'data:image/png;base64,aA==');
+  } finally {
+    _resetAppServerBridgeForTests();
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('app-server bridge keeps non-image array tool outputs as visible JSON text', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'cxv-appserver-array-output-'));
+  const logFile = join(tmp, 'bridge.jsonl');
+  try {
+    _resetAppServerBridgeForTests({ logFile, cwd: tmp, project: 'bridge-project', model: 'gpt-test' });
+    _parseAppServerClientMessageForTests({
+      id: 1,
+      method: 'thread/start',
+      params: { cwd: tmp, developerInstructions: 'You are Codex' },
+    });
+    server('thread/started', { thread: { id: 'array-thread', cwd: tmp } });
+    client('turn/start', {
+      threadId: 'array-thread',
+      model: 'gpt-test',
+      cwd: tmp,
+      input: [{ type: 'text', text: 'return an array' }],
+    });
+    server('turn/started', { threadId: 'array-thread', turn: { id: 'array-turn', status: 'inProgress' } });
+    server('item/completed', {
+      threadId: 'array-thread',
+      item: { type: 'function_call', id: 'fc-array', call_id: 'call-array', name: 'test_tool', arguments: '{}' },
+    });
+    server('item/completed', {
+      threadId: 'array-thread',
+      item: { type: 'function_call_output', id: 'fco-array', call_id: 'call-array', output: [{ foo: 'bar' }, 2] },
+    });
+    server('item/completed', {
+      threadId: 'array-thread',
+      item: { type: 'function_call', id: 'fc-bad-image', call_id: 'call-bad-image', name: 'test_tool', arguments: '{}' },
+    });
+    const malformedImageOutput = [{ type: 'input_image', image_url: 'data:image/png;base64,abc' }];
+    server('item/completed', {
+      threadId: 'array-thread',
+      item: {
+        type: 'function_call_output',
+        id: 'fco-bad-image',
+        call_id: 'call-bad-image',
+        output: malformedImageOutput,
+      },
+    });
+    server('item/completed', {
+      threadId: 'array-thread',
+      item: { id: 'array-answer', type: 'agentMessage', text: 'done' },
+    });
+    server('turn/completed', {
+      threadId: 'array-thread',
+      turn: { id: 'array-turn', threadId: 'array-thread', status: 'completed' },
+    });
+
+    const entry = readEntries(logFile).find(row => row.body?.metadata?.thread_id === 'array-thread');
+    const block = entry.body.input
+      .flatMap(message => Array.isArray(message.content) ? message.content : [])
+      .find(part => part.type === 'tool_result');
+    assert.equal(block.content, '[{"foo":"bar"},2]');
+    assert.equal(buildSingleToolResultCore(block, { name: 'test_tool', input: {} }).resultText, '[{"foo":"bar"},2]');
+    const malformedBlock = entry.body.input
+      .flatMap(message => Array.isArray(message.content) ? message.content : [])
+      .find(part => part.type === 'tool_result' && part.tool_use_id === 'call-bad-image');
+    assert.equal(malformedBlock.content, JSON.stringify(malformedImageOutput));
+  } finally {
+    _resetAppServerBridgeForTests();
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
 
 test('app-server bridge delegates log writes to the shared rotating writer', () => {
   const seen = [];

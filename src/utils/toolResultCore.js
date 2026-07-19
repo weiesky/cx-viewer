@@ -6,26 +6,36 @@
 
 import { internToolResult } from './readResultPool.js';
 import { classifyToolResultError } from './toolResultClassifier.js';
+import { parseSupportedToolResultImage } from '../../lib/tool-result-image-protocol.js';
 
 export function extractToolResultText(toolResult) {
   if (!toolResult.content) return String(toolResult.content ?? '');
   if (typeof toolResult.content === 'string') return toolResult.content;
   if (Array.isArray(toolResult.content)) {
     return toolResult.content
-      .filter(b => b.type === 'text')
-      .map(b => b.text)
+      .map((b) => {
+        if (typeof b === 'string') return b;
+        if (!b || typeof b !== 'object') return null;
+        for (const field of ['text', 'input_text', 'output_text']) {
+          if (typeof b[field] === 'string') return b[field];
+        }
+        if (parseSupportedToolResultImage(b)) return null;
+        try { return JSON.stringify(b); } catch { return String(b); }
+      })
+      .filter(text => typeof text === 'string')
       .join('\n');
   }
   return JSON.stringify(toolResult.content);
 }
 
-// 白名单防恶意 JSONL 拼任意 MIME(svg+xml 在某些浏览器可嵌入脚本;text/html 应被
-// <img> 拒绝但日志污染仍可避免)。
-const SAFE_IMAGE_MIME = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
+// 单图 base64 字符上限。4 MiB 可覆盖当前图片生成结果，同时继续拒绝异常大图；
+// 会话内多个预览的累计驻留另由 toolResultBuilder 的总字符预算控制。
+export const MAX_TOOL_RESULT_IMAGE_BASE64_CHARS = 4 * 1024 * 1024;
 
-// base64 字符串长度上限(2MB ≈ 1.5MB 原图)。超限不渲染 <img>,降级为文字提示,
-// 避免每次 Popover 重渲染都构造几 MB src 字符串导致 React diff / 浏览器解码卡顿。
-const MAX_IMAGE_BASE64_LEN = 2 * 1024 * 1024;
+function decodedBase64Bytes(data) {
+  const padding = data.endsWith('==') ? 2 : (data.endsWith('=') ? 1 : 0);
+  return Math.max(0, Math.floor(data.length * 3 / 4) - padding);
+}
 
 /**
  * 提取 tool_result 内嵌的 image 块为可直接渲染的 src 列表(或大图占位)。
@@ -34,26 +44,46 @@ const MAX_IMAGE_BASE64_LEN = 2 * 1024 * 1024;
  *
  * 安全/性能:
  *   - media_type 必须在白名单内,否则跳过
- *   - base64 超过 MAX_IMAGE_BASE64_LEN 时,返回 { oversized: true, sizeBytes } 让 UI 降级显示
+ *   - base64 超过 MAX_TOOL_RESULT_IMAGE_BASE64_CHARS 时,返回占位元数据让 UI 降级显示
  */
 export function extractToolResultImages(toolResult) {
   if (!toolResult || !Array.isArray(toolResult.content)) return [];
   const out = [];
   for (const b of toolResult.content) {
-    if (!b || b.type !== 'image' || !b.source) continue;
-    const s = b.source;
+    const s = parseSupportedToolResultImage(b);
+    if (!s) continue;
     if (s.type === 'base64' && typeof s.data === 'string' && s.data.length > 0 && typeof s.media_type === 'string') {
-      if (!SAFE_IMAGE_MIME.has(s.media_type)) continue;
-      if (s.data.length > MAX_IMAGE_BASE64_LEN) {
-        out.push({ oversized: true, mediaType: s.media_type, sizeBytes: Math.floor(s.data.length * 0.75) });
+      const sizeBytes = decodedBase64Bytes(s.data);
+      if (s.data.length > MAX_TOOL_RESULT_IMAGE_BASE64_CHARS) {
+        out.push({
+          oversized: true,
+          sourceType: 'data',
+          mediaType: s.media_type,
+          base64Chars: s.data.length,
+          sizeBytes,
+        });
         continue;
       }
-      out.push({ src: `data:${s.media_type};base64,${s.data}`, mediaType: s.media_type });
+      out.push({
+        src: `data:${s.media_type};base64,${s.data}`,
+        sourceType: 'data',
+        mediaType: s.media_type,
+        base64Chars: s.data.length,
+        sizeBytes,
+      });
     } else if (s.type === 'url' && typeof s.url === 'string' && /^https?:\/\//.test(s.url)) {
-      out.push({ src: s.url, mediaType: 'image/url' });
+      out.push({ src: s.url, sourceType: 'remote', mediaType: 'image/url' });
     }
   }
   return out;
+}
+
+/** Inline only trusted raster data results; remote URLs retain opt-in behavior. */
+export function hasInlineToolResultImage(result) {
+  return Array.isArray(result?.images) && result.images.some(image => (
+    image?.sourceType === 'data'
+    || (typeof image?.src === 'string' && image.src.startsWith('data:image/'))
+  ));
 }
 
 // Workflow tool_result 文本固定以此句开头（后台启动即时返回，完成走单独的 task-notification）。

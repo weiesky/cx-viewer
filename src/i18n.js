@@ -2690,6 +2690,30 @@ const i18nData = {
     "tr": "{name} sonucu",
     "uk": "Результат {name}"
   },
+  "ui.toolImagePreview": {
+    "zh": "查看工具返回图片 {index}",
+    "en": "View tool result image {index}"
+  },
+  "ui.toolImageLoadFailed": {
+    "zh": "图片无法加载，数据可能已损坏",
+    "en": "The image could not be loaded; its data may be damaged"
+  },
+  "ui.toolImageTooLarge": {
+    "zh": "图片 {format} · {size} KB · 超出预览上限",
+    "en": "Image {format} · {size} KB · too large to preview"
+  },
+  "ui.toolImageEvicted": {
+    "zh": "图片 {format} · {size} KB · 已释放预览以控制内存",
+    "en": "Image {format} · {size} KB · preview released to limit memory"
+  },
+  "ui.expandText": {
+    "zh": "展开文本",
+    "en": "Expand text"
+  },
+  "ui.collapseText": {
+    "zh": "收起文本",
+    "en": "Collapse text"
+  },
   "ui.webSearchQuery": {
     "zh": "网络搜索：{query}",
     "en": "Web search: {query}",
