@@ -26,6 +26,7 @@ import { buildChunksForAnswer, buildBracketPasteSequentialRequest } from '../../
 import { isPlanApprovalPrompt, isDangerousOperationPrompt, pickPlanApproveOptionNumber } from '../../utils/promptClassifier';
 import { reportSwallowed } from '../../utils/errorReport';
 import { isImageFile } from '../../utils/commandValidator';
+import { projectUserPromptItem } from '../../utils/userPromptContent.js';
 import { loadExpandedPaths, saveExpandedPaths } from '../../utils/fileExpandedPathsStorage';
 import { createEmptyToolState, appendToolResultMap, cachedBuildToolResultMap, getToolResultCache, setToolResultCache, buildSubAgentResultMap, createEmptyGlobalIndexState, appendToGlobalToolResultIndex } from '../../utils/toolResultBuilder';
 import { refreshCachedItemProp } from '../../utils/refreshCachedItemProp';
@@ -1458,7 +1459,15 @@ class ChatView extends React.Component {
           if (suggestionText && toolResults.length > 0) {
             // request_user_input 的用户回复：跳过渲染（答案已在 assistant 侧问卷卡片上显示）
           } else {
-            const { commands, textBlocks, skillBlocks, teammateBlocks, taskNotificationBlocks } = classifyUserContent(content);
+            const { commands, textBlocks: classifiedTextBlocks, skillBlocks, teammateBlocks, taskNotificationBlocks } = classifyUserContent(content);
+            const projectedUserPrompt = projectUserPromptItem({ type: 'message', role: 'user', content });
+            const userImages = (projectedUserPrompt?.segments || []).filter(segment => segment.type === 'image');
+            // Codex image uploads wrap the real input_image block with textual
+            // <image ...> / </image> transport markers. Once the structured
+            // image is available, keep those markers out of the visible chat.
+            const textBlocks = userImages.length > 0
+              ? classifiedTextBlocks.filter(block => !/^\s*(?:<image\b[^>]*>|<\/image>)\s*$/i.test(block.text || ''))
+              : classifiedTextBlocks;
             // 渲染 slash command 作为独立用户输入
             for (let ci = 0; ci < commands.length; ci++) {
               renderedMessages.push(
@@ -1478,7 +1487,12 @@ class ChatView extends React.Component {
               const isUltraplan = textBlocks[ti].isUltraplan === true;
               const isPlan = !isUltraplan && /Implement the following plan:/i.test(textBlocks[ti].text || '');
               renderedMessages.push(
-                <ChatMessage key={`${keyPrefix}-user-${mi}-${ti}`} role={isPlan ? 'plan-prompt' : 'user'} text={textBlocks[ti].text} isUltraplan={isUltraplan} lang={this.props.lang} timestamp={ts} userProfile={userProfile} modelInfo={modelInfo} requestIndex={hasViewRequest ? reqIdx : undefined} onViewRequest={hasViewRequest ? onViewRequest : undefined} isHistoryLog={isHistoryLog} />
+                <ChatMessage key={`${keyPrefix}-user-${mi}-${ti}`} role={isPlan ? 'plan-prompt' : 'user'} text={textBlocks[ti].text} images={ti === textBlocks.length - 1 ? userImages : undefined} isUltraplan={isUltraplan} lang={this.props.lang} timestamp={ts} userProfile={userProfile} modelInfo={modelInfo} requestIndex={hasViewRequest ? reqIdx : undefined} onViewRequest={hasViewRequest ? onViewRequest : undefined} isHistoryLog={isHistoryLog} />
+              );
+            }
+            if (textBlocks.length === 0 && userImages.length > 0) {
+              renderedMessages.push(
+                <ChatMessage key={`${keyPrefix}-user-image-${mi}`} role="user" text="" images={userImages} lang={this.props.lang} timestamp={ts} userProfile={userProfile} modelInfo={modelInfo} requestIndex={hasViewRequest ? reqIdx : undefined} onViewRequest={hasViewRequest ? onViewRequest : undefined} isHistoryLog={isHistoryLog} />
               );
             }
             // 渲染 teammate-message 块

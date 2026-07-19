@@ -76,6 +76,7 @@ function ChatImage({ src, alt, fallbackText }) {
         className={styles.chatImageImg}
         loading="lazy"
         decoding="async"
+        referrerPolicy="no-referrer"
         onClick={() => setLightboxOpen(true)}
         onError={() => setFailed(true)}
       />
@@ -157,7 +158,7 @@ class ChatMessage extends React.Component {
     if (this.state !== nextState) return true;
     const p = this.props, n = nextProps;
     // 逐字段浅比较核心 prop，避免 inline {} 和 computed values 导致的无效重渲染
-    return p.role !== n.role || p.content !== n.content || p.text !== n.text ||
+    return p.role !== n.role || p.content !== n.content || p.text !== n.text || p.images !== n.images ||
       p.timestamp !== n.timestamp || p.displayTs !== n.displayTs || p.highlight !== n.highlight ||
       p.collapseToolResults !== n.collapseToolResults || p.expandThinking !== n.expandThinking || p.showFullToolContent !== n.showFullToolContent ||
       p.showTrailingCursor !== n.showTrailingCursor ||
@@ -928,13 +929,19 @@ class ChatMessage extends React.Component {
     const slashLabel = getSlashCommandLabel(text);
     // Tooltip 只显裸命令(`/model` 而非 `/model <args>`),避免 /login 等带敏感
     // 参数的命令在 hover/移动端长按时把 token 暴露给旁观者。
+    const structuredImages = this.renderStructuredUserImages();
     const bubbleContent = slashLabel != null
       ? (
         <Tooltip title={getSlashCommandTooltip(text)} mouseEnterDelay={0.3} placement="top">
           <span className={styles.slashCommandLabel}>{slashLabel}</span>
         </Tooltip>
       )
-      : this.renderUserTextWithImages(text);
+      : (
+        <>
+          {structuredImages}
+          {this.renderUserTextWithImages(text)}
+        </>
+      );
 
     return (
       <div className={styles.messageRowEnd}>
@@ -959,6 +966,28 @@ class ChatMessage extends React.Component {
         {this.renderUserAvatar('#1e40af', senderProfile)}
       </div>
     );
+  }
+
+  renderStructuredUserImages() {
+    const images = Array.isArray(this.props.images) ? this.props.images : [];
+    if (images.length === 0) return null;
+    return images.map((image, index) => {
+      const fallback = image?.alt || `[Image ${index + 1}]`;
+      if (!image?.source || image.sourceType === 'unavailable') {
+        return <span key={`structured-image-${index}`} className={styles.chatImageFallback}>{fallback}</span>;
+      }
+      const src = image.sourceType === 'file'
+        ? apiUrl(`/api/file-raw?path=${encodeURIComponent(image.source)}`)
+        : image.source;
+      return (
+        <ChatImage
+          key={`structured-image-${index}`}
+          src={src}
+          alt={image.alt || `User image ${index + 1}`}
+          fallbackText={fallback}
+        />
+      );
+    });
   }
 
   renderUserTextWithImages(text) {

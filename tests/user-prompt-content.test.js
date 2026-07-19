@@ -46,6 +46,24 @@ test('projects only user-authored text and image blocks in order', () => {
   }]);
 });
 
+test('projects Codex uploaded-image envelopes with their structured data image', () => {
+  const prompt = projectUserPromptItem({
+    type: 'message',
+    role: 'user',
+    content: [
+      { type: 'input_text', text: '<image name=[Image #1] path="/tmp/cx-viewer-uploads/example.png">' },
+      { type: 'input_image', image_url: 'data:image/png;base64,aGVsbG8=' },
+      { type: 'input_text', text: '</image>' },
+      { type: 'input_text', text: '请去掉这个动画。[Image #1]' },
+    ],
+  });
+
+  assert.deepEqual(prompt.segments.map(segment => segment.type), ['image', 'text', 'text']);
+  assert.equal(prompt.segments[0].sourceType, 'data');
+  assert.equal(prompt.segments[0].source, 'data:image/png;base64,aGVsbG8=');
+  assert.equal(prompt.segments[2].text, '请去掉这个动画。[Image #1]');
+});
+
 test('keeps duplicate prompts and honors the exclusive compaction boundary', () => {
   const input = [
     { role: 'user', content: 'same' },

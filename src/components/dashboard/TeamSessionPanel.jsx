@@ -177,8 +177,6 @@ function TeamButton({ requests, onOpenSession, navBtnClass }) {
       })}
     </div>
   );
-  // spinner 只看 parser 态（不等 runtime 回包就能显示）
-  const hasActiveTeam = teamSessions.some(s => !s.endTime || isWeakEnd(s));
   return (
     <Popover
       content={<div style={{ maxHeight: 'calc(100vh - 48px)', overflowY: 'auto', overflowX: 'hidden' }}>{content}</div>}
@@ -189,14 +187,13 @@ function TeamButton({ requests, onOpenSession, navBtnClass }) {
       align={{ overflow: { adjustX: true, shiftY: true } }}
       onOpenChange={setPopoverOpen}
       overlayInnerStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-light)', padding: 0 }}>
-      <button className={`${navBtnClass || ''} ${styles.teamBtnRelative}`} title={t('ui.teamSessions')}>
+      <button className={navBtnClass || ''} title={t('ui.teamSessions')}>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
           <circle cx="9" cy="7" r="4"/>
           <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
           <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
         </svg>
-        {hasActiveTeam && <span className={styles.teamActiveSpinner} />}
       </button>
     </Popover>
   );

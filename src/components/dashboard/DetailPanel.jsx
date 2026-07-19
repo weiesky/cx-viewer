@@ -8,7 +8,8 @@ import { apiUrl } from '../../utils/apiUrl';
 import { formatTokenCount, stripPrivateKeys, hasCodexMdReminder, isCodexMdReminder, hasSkillsReminder, isSkillsReminder } from '../../utils/helpers';
 import { getResponseTools } from '../../../lib/openai-body.js';
 import { getInputCacheUsage } from '../../../lib/token-usage.js';
-import { classifyRequest, getCodexMcpToolUseName, getCodexToolUseName } from '../../utils/requestType';
+import { classifyRequest } from '../../utils/requestType';
+import { requestHidesContextTab, resolveDetailTabForRequest } from '../../utils/detailTabSelection.js';
 import { isMainAgent } from '../../utils/contentFilter';
 import { restoreSlimmedEntry } from '../../utils/entry-slim.js';
 import ContextTab from './ContextTab';
@@ -122,9 +123,16 @@ class DetailPanel extends React.Component {
     this.hydrateSelectedRequest(this.props);
   }
 
-  componentDidUpdate(prevProps) {
+  componentDidUpdate(prevProps, prevState) {
     if (prevProps.request !== this.props.request || prevProps.hydrateRequest !== this.props.hydrateRequest) {
       this.hydrateSelectedRequest(this.props);
+    }
+    if (prevProps.request !== this.props.request
+      || prevProps.currentTab !== this.props.currentTab
+      || prevState.hydratedRequest !== this.state.hydratedRequest) {
+      const request = this.getCurrentRequest();
+      const nextTab = request ? resolveDetailTabForRequest(this.props.currentTab, request) : this.props.currentTab;
+      if (nextTab !== this.props.currentTab) this.props.onTabChange?.(nextTab);
     }
   }
 
@@ -657,8 +665,8 @@ class DetailPanel extends React.Component {
     const statusOk = request.response && request.response.status < 400;
     const nextReq = this.props.requests && this.props.selectedIndex != null ? this.props.requests[this.props.selectedIndex + 1] : null;
     const requestClass = classifyRequest(request, nextReq);
-    const hideContextForToolUse = getCodexToolUseName(request) !== null
-      || getCodexMcpToolUseName(request) !== null;
+    const hideContextForToolUse = requestHidesContextTab(request);
+    const activeTab = resolveDetailTabForRequest(currentTab, request);
     const metadataOverview = requestClass.type === 'Metadata' && requestClass.subType === 'Models'
       ? this.renderMetadataOverview(request)
       : null;
@@ -862,7 +870,7 @@ class DetailPanel extends React.Component {
       }] : []),
     ];
 
-    if (request._codexRaw || currentTab === 'raw') {
+    if (request._codexRaw) {
       const rawRef = request._codexRaw;
       tabItems.push({
         key: 'raw',
@@ -956,7 +964,7 @@ class DetailPanel extends React.Component {
         </div>
 
         <Tabs
-          activeKey={hideContextForToolUse && currentTab === 'context' ? 'request' : currentTab}
+          activeKey={activeTab}
           onChange={(key) => {
             if (key === 'raw') this.loadRawFrames(request);
             if (onTabChange) onTabChange(key);
