@@ -1,12 +1,12 @@
 import { getSlashCommandLabel } from './slashCommandLabels.js';
 import { isSessionDividerBoundary } from './sessionManager.js';
 
-// buildPromptNavItems：从「当前可见项」与权威的 mainAgentSessions 计算用户 Prompt 导航的数据项。
+// buildPromptNavItems：从「当前可见项」与权威的 mainAgentSessions 计算用户 Prompt / compaction 导航项。
 // 纯函数（无 React/DOM），渲染留在 ChatView——便于单测覆盖会话边界标记、去重与无 ts 容错。
 //
 // @param {Array<{props?:{role?:string,text?:string,timestamp?:string|null}}>} visible 当前渲染项
 // @param {Array<{messages?:Array<{_timestamp?:string}>}>} mainAgentSessions 权威会话数组
-// @returns {Array<{display:string, visibleIdx:number, timestamp:string|null, sessionIdx:number|null, newSession?:boolean}>}
+// @returns {Array<{kind:'prompt'|'compaction', display:string|null, visibleIdx:number, timestamp:string|null, sessionIdx:number|null, newSession?:boolean}>}
 export function buildPromptNavItems(visible, mainAgentSessions) {
   if (!Array.isArray(visible) || visible.length === 0) return [];
 
@@ -29,7 +29,22 @@ export function buildPromptNavItems(visible, mainAgentSessions) {
   const seen = new Set();
   for (let i = 0; i < visible.length; i++) {
     const props = visible[i] && visible[i].props;
-    if (!props || props.role !== 'user') continue;
+    if (!props) continue;
+    const sessionIdx = (props.timestamp != null && tsToSession.has(props.timestamp))
+      ? tsToSession.get(props.timestamp) : null;
+    if (props.role === 'context-compaction') {
+      // Compaction is a structural navigation target. Never inspect or expose
+      // its descriptor/record prompts in the navigation popover.
+      prompts.push({
+        kind: 'compaction',
+        display: null,
+        visibleIdx: i,
+        timestamp: props.timestamp || null,
+        sessionIdx,
+      });
+      continue;
+    }
+    if (props.role !== 'user') continue;
     const raw = props.text || '';
     if (!raw) continue;
     // 清理图片标记，只保留文字部分用于导航列表显示
@@ -46,9 +61,7 @@ export function buildPromptNavItems(visible, mainAgentSessions) {
     seen.add(key);
     const display = text.length > 80 ? text.substring(0, 80) + '...' : text;
     // 使用 visible 索引作为定位标识（兼容无 timestamp 的遗留消息）
-    const sessionIdx = (props.timestamp != null && tsToSession.has(props.timestamp))
-      ? tsToSession.get(props.timestamp) : null;
-    prompts.push({ display, visibleIdx: i, timestamp: props.timestamp || null, sessionIdx });
+    prompts.push({ kind: 'prompt', display, visibleIdx: i, timestamp: props.timestamp || null, sessionIdx });
   }
 
   // 标记跨 session 的 prompt（其前插入会话分隔线）。session 未知（无 ts）的 prompt 不打断链路。

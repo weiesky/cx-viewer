@@ -12,6 +12,7 @@ import {
   getResponseInstructions,
   getResponseTools,
 } from '../../lib/openai-body.js';
+import { isOpenAiResponsesMasterEntry } from '../../lib/openai-responses-url.js';
 import { getEntryUpstreamLane } from './clearCheckpoint.js';
 import { parseUltraplanPrompt } from './ultraplanTemplates.js';
 export { getInstructionsText };
@@ -178,6 +179,10 @@ export function isMainAgent(req) {
 
 function _isMainAgentImpl(req) {
   if (!req) return false;
+
+  // Direct OpenAI Responses requests are neutral Master records. This veto is
+  // intentionally before persisted flags and body heuristics for old logs.
+  if (isOpenAiResponsesMasterEntry(req)) return false;
 
   // Persisted producer identity is authoritative. Main-agent instructions can
   // legitimately describe subagents/teammates; textual heuristics must not
@@ -658,7 +663,7 @@ export function resolveTeammateNames(requests) {
   // Map.set overwrites, so a re-scan is idempotent anyway.
   for (const req of requests) {
     if (_registryScanned.has(req)) continue;
-    if (!req.mainAgent) { _registryScanned.add(req); continue; }
+    if (!isMainAgent(req)) { _registryScanned.add(req); continue; }
     const content = req.response?.body?.content;
     if (!req.response) continue;
     if (Array.isArray(content)) {

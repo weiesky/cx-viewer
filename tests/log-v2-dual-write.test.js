@@ -522,6 +522,8 @@ test('App Server collaboration activity supplies child Session context before a 
     assert.equal(childRecord?.parentThreadId, 'root-session');
     assert.equal(childRecord?.agentRole, 'subagent');
     assert.equal(materialized.entries[childIndex]?.url, 'codex://warning/warning');
+    assert.equal(materialized.entries[childIndex]?.subAgent, false);
+    assert.equal(materialized.entries[childIndex]?.subAgentName, undefined);
     assert.deepEqual(coordinator.snapshot().sources, { 'app-server': 2 });
   } finally {
     _resetAppServerBridgeForTests();

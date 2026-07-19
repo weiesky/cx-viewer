@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef, useId } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Popover, Button, Alert, Modal, Tooltip, Dropdown, Space, message } from 'antd';
 import { ReloadOutlined, PlusOutlined, FolderOpenOutlined, FileZipOutlined, FileMarkdownOutlined, SettingOutlined } from '@ant-design/icons';
 import { parseToolXmlList, extractLoadedSkills } from '../../utils/helpers';
@@ -14,7 +14,7 @@ import ToolsHelp from '../common/ToolsHelp';
 import OpenFolderIcon from '../common/OpenFolderIcon';
 import { parseMemoryLink } from '../../utils/memoryLinkParser';
 import { extractCurrentContextCompaction, extractCurrentContextCompactionRecord } from '../../utils/contextCompaction';
-import CompactionPromptHistory from './CompactionPromptHistory';
+import ContextCompactionDisclosure from './ContextCompactionDisclosure';
 import styles from './CachePopoverContent.module.css';
 import sharedChrome from '../common/sharedChrome.module.css';
 
@@ -124,9 +124,6 @@ export default function CachePopoverContent({
   };
   // 手机端 chip 描述 Modal 的当前条目；null = 关。{ title, description } 形态由 chip render 函数填入。
   const [chipModal, setChipModal] = useState(null);
-  const [expandedCompactionKey, setExpandedCompactionKey] = useState(null);
-  const compactionPromptRegionId = useId();
-
   const lastToolsRef = useRef(null);
   const lastParsedTools = useRef(null);
   const lastSkillsRef = useRef(null);
@@ -147,29 +144,6 @@ export default function CachePopoverContent({
     }),
     [contextCompactionRequests, requests, contextCompactionSuppressed, contextCompactionExcludedEpoch, contextCompactionAnchorEpoch],
   );
-  const compactionDescriptorKey = contextCompaction.sourceKey
-    || `${contextCompactionAnchorEpoch || 'current'}:${contextCompaction.count}`;
-  const compactionResolutionRequested = contextCompaction.present && expandedCompactionKey !== null;
-  const contextCompactionRecord = useMemo(
-    () => (compactionResolutionRequested
-      ? extractCurrentContextCompactionRecord(contextCompactionRequests || requests, {
-        suppressed: contextCompactionSuppressed,
-        excludedEpoch: contextCompactionExcludedEpoch,
-        anchorEpoch: contextCompactionAnchorEpoch,
-      })
-      : null),
-    [compactionResolutionRequested, contextCompactionRequests, requests, contextCompactionSuppressed, contextCompactionExcludedEpoch, contextCompactionAnchorEpoch],
-  );
-  const resolvedCompactionDisclosureKey = contextCompactionRecord?.sourceKey || compactionDescriptorKey;
-  const compactionPromptsExpanded = contextCompaction.present
-    && expandedCompactionKey === resolvedCompactionDisclosureKey;
-  useEffect(() => {
-    if (expandedCompactionKey !== null && contextCompactionRecord?.sourceKey
-        && expandedCompactionKey !== resolvedCompactionDisclosureKey) {
-      setExpandedCompactionKey(null);
-    }
-  }, [expandedCompactionKey, contextCompactionRecord?.sourceKey, resolvedCompactionDisclosureKey]);
-
   // 血条弹层展示当前 MainAgent 会话已载入的工具；缺失声明的 delta 使用滚动快照。
   const toolsArr = loadedTools.length > 0
     ? loadedTools
@@ -430,61 +404,18 @@ export default function CachePopoverContent({
       </div>
       <div className={inDrawer ? styles.cacheScrollAreaInDrawer : styles.cacheScrollArea}>
         {contextCompaction.present && (
-          <div className={`${styles.cacheSection} ${styles.cacheSectionBordered} ${styles.compactionSection}`}>
-            <div className={styles.compactionRow}>
-              <div className={`${styles.cacheSectionLabel} ${styles.compactionLabel}`}>
-                {t('ui.contextCompaction')}
-              </div>
-              {contextCompaction.summary && (
-                <Tooltip
-                  title={<div className={styles.compactionSummaryTooltip} dir="auto">{contextCompaction.summary}</div>}
-                  trigger={['hover', 'focus', 'click']}
-                  placement="bottom"
-                  styles={{ root: { maxWidth: 560 } }}
-                >
-                  <button type="button" className={styles.compactionSummaryButton} dir="auto">
-                    <span className={styles.compactionSummaryText}>{contextCompaction.summary}</span>
-                  </button>
-                </Tooltip>
-              )}
-              {contextCompaction.truncated && (
-                <span className={styles.compactionTruncated} title={t('ui.contextCompactionSummaryTruncated')}>
-                  {t('ui.contextCompactionSummaryTruncated')}
-                </span>
-              )}
-              <button
-                type="button"
-                className={styles.compactionPromptToggle}
-                aria-expanded={compactionPromptsExpanded}
-                aria-controls={compactionPromptRegionId}
-                onClick={() => {
-                  if (compactionPromptsExpanded) {
-                    setExpandedCompactionKey(null);
-                    return;
-                  }
-                  const record = contextCompactionRecord || extractCurrentContextCompactionRecord(
-                    contextCompactionRequests || requests,
-                    {
-                      suppressed: contextCompactionSuppressed,
-                      excludedEpoch: contextCompactionExcludedEpoch,
-                      anchorEpoch: contextCompactionAnchorEpoch,
-                    },
-                  );
-                  setExpandedCompactionKey(record?.sourceKey || compactionDescriptorKey);
-                }}
-              >
-                [{t(compactionPromptsExpanded ? 'ui.contextCompactionHidePrompts' : 'ui.contextCompactionShowPrompts')}]
-              </button>
-            </div>
-            {compactionPromptsExpanded && (
-              <CompactionPromptHistory
-                id={compactionPromptRegionId}
-                prompts={contextCompactionRecord?.prompts}
-                recordKey={contextCompactionRecord?.sourceKey || resolvedCompactionDisclosureKey}
-                inDrawer={inDrawer}
-              />
+          <ContextCompactionDisclosure
+            descriptor={contextCompaction}
+            inDrawer={inDrawer}
+            resolveRecord={() => extractCurrentContextCompactionRecord(
+              contextCompactionRequests || requests,
+              {
+                suppressed: contextCompactionSuppressed,
+                excludedEpoch: contextCompactionExcludedEpoch,
+                anchorEpoch: contextCompactionAnchorEpoch,
+              },
             )}
-          </div>
+          />
         )}
         {hasBuiltin && (
           <div className={`${styles.cacheSection} ${styles.cacheSectionBordered}`}>

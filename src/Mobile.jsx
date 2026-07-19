@@ -1,6 +1,6 @@
 import React from 'react';
 import { ConfigProvider, Spin, Button, Badge, Switch, Select, Modal, message, Radio, Tooltip } from 'antd';
-import { BranchesOutlined, DownloadOutlined, DeleteOutlined, RollbackOutlined, ReloadOutlined, UploadOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { BranchesOutlined, DownloadOutlined, DeleteOutlined, RollbackOutlined, ReloadOutlined, UploadOutlined, QuestionCircleOutlined, FileTextOutlined, MessageOutlined } from '@ant-design/icons';
 import AppBase, { styles, OPTIMISTIC_CLEAR_PERCENT } from './AppBase';
 import { isIOS, isPad, setViewMode } from './env';
 import { isMainAgent, classifyUserContent, extractDisplayText } from './utils/contentFilter';
@@ -703,12 +703,7 @@ class Mobile extends AppBase {
                   className={styles.mobileMenuItem}
                   onClick={() => { this.setState({ ...this._closeAllMobileOverlays(), mobileLogMgmtVisible: true }); this.handleImportLocalLogs(); }}
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <polyline points="14 2 14 8 20 8" />
-                    <line x1="16" y1="13" x2="8" y2="13" />
-                    <line x1="16" y1="17" x2="8" y2="17" />
-                  </svg>
+                  <FileTextOutlined aria-hidden="true" style={{ fontSize: 16, flexShrink: 0 }} />
                   {t('ui.logManagement')}
                 </button>
                 {/* 3. 用户 Prompt — 对应 PC 「查看用户 Prompt」 */}
@@ -716,13 +711,7 @@ class Mobile extends AppBase {
                   className={styles.mobileMenuItem}
                   onClick={() => { this.setState({ ...this._closeAllMobileOverlays(), mobilePromptVisible: true }); }}
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <polyline points="14 2 14 8 20 8" />
-                    <line x1="12" y1="18" x2="12" y2="12" />
-                    <line x1="12" y1="12" x2="9" y2="15" />
-                    <line x1="12" y1="12" x2="15" y2="15" />
-                  </svg>
+                  <MessageOutlined aria-hidden="true" style={{ fontSize: 16, flexShrink: 0 }} />
                   {t('ui.userPrompt')}
                 </button>
                 {/* 4. 插件管理 — 与 PC AppHeader.jsx:1342 同 i18n key */}

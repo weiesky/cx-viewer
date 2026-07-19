@@ -43,7 +43,7 @@ test('interceptor-core recognizes Codex Responses API main and sub-agent request
   );
   assert.deepEqual(
     classifyAgentRequest('https://api.openai.com/v1/responses', rootBody),
-    { mainAgent: true, subAgent: false, subAgentName: null },
+    { mainAgent: false, subAgent: false, subAgentName: null },
   );
 
   const subBody = {
@@ -68,12 +68,34 @@ test('interceptor-core recognizes Codex Responses API main and sub-agent request
   assert.equal(isMainAgentRequest(subBody), false);
   assert.deepEqual(
     classifyAgentRequest('https://api.openai.com/v1/responses', subBody),
-    { mainAgent: false, subAgent: true, subAgentName: 'researcher' },
+    { mainAgent: false, subAgent: false, subAgentName: null },
   );
   assert.deepEqual(
     classifyAgentRequest('https://chatgpt.com/backend-api/codex/responses', subBody),
     { mainAgent: false, subAgent: true, subAgentName: 'researcher' },
   );
+});
+
+test('interceptor-core limits Master classification to the direct Responses create endpoint', () => {
+  const body = {
+    model: 'gpt-test', stream: true,
+    instructions: 'You are Codex, a coding agent.',
+    tools: [{ name: 'apply_patch' }],
+    input: [{ role: 'user', content: 'inspect' }],
+  };
+  for (const url of [
+    'https://api.openai.com/v1/responses',
+    'https://api.openai.com/v1/responses/',
+    'https://api.openai.com/v1/responses?trace=1',
+  ]) {
+    assert.deepEqual(classifyAgentRequest(url, body), {
+      mainAgent: false, subAgent: false, subAgentName: null,
+    });
+  }
+  assert.equal(classifyAgentRequest('https://api.openai.com/v1/responses/resp_123', body).mainAgent, true);
+  assert.equal(classifyAgentRequest('https://api.openai.com.evil/v1/responses', body).mainAgent, true);
+  assert.equal(classifyAgentRequest('https://proxy.example/v1/responses', body).mainAgent, true);
+  assert.equal(classifyAgentRequest('http://api.openai.com/v1/responses', body).mainAgent, true);
 });
 
 test('parseRequestBodyForLog decodes compressed JSON request bodies', () => {

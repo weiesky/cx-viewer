@@ -40,6 +40,20 @@ test('request summary persists classification without retaining its prompt evide
   assert.equal(JSON.stringify(summary).includes(titlePrompt), false);
 });
 
+test('request summary persists direct OpenAI Responses as Master', () => {
+  const summary = buildRequestSummary({
+    timestamp: '2026-07-15T00:00:00.000Z',
+    url: 'https://api.openai.com/v1/responses',
+    mainAgent: true,
+    subAgent: true,
+    teammate: 'legacy-reviewer',
+    body: { input: [] },
+  }, {
+    seq: 2, eventId: 'event-2', entryKey: 'entry-2', entryRevision: 1, threadId: 'thread', phase: 'completed',
+  });
+  assert.deepEqual(summary.classification, { type: 'Master', subType: null });
+});
+
 test('request summary keeps only usage response headers for lightweight usage display', () => {
   const summary = buildRequestSummary({
     timestamp: '2026-07-16T00:00:00.000Z',

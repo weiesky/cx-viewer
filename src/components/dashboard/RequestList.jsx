@@ -3,7 +3,7 @@ import { List, Tag, Empty } from 'antd';
 import { t } from '../../i18n';
 import { formatTokenCount, getModelShort } from '../../utils/helpers';
 import { getInputCacheUsage } from '../../utils/tokenUsage';
-import { classifyRequest, formatRequestTag } from '../../utils/requestType';
+import { classifyRequest, formatCodexInternalRequestTag, formatRequestTag } from '../../utils/requestType';
 import styles from './RequestList.module.css';
 
 class RequestList extends React.Component {
@@ -80,6 +80,11 @@ class RequestList extends React.Component {
             const model = getModelShort(req.body?.model);
             const nextReq = index + 1 < requests.length ? requests[index + 1] : null;
             const { type: reqType, subType } = req._classification || classifyRequest(req, nextReq);
+            // URL identity wins over stale persisted agent classification for
+            // concrete Codex tool-use rows in the network list.
+            const codexInternalTag = req.mainAgent === true
+              ? null
+              : formatCodexInternalRequestTag(req);
             const usage = req.response?.body?.usage;
             const inputTokens = usage ? (usage.input_tokens || 0) : null;
             const outputTokens = usage?.output_tokens || null;
@@ -103,7 +108,9 @@ class RequestList extends React.Component {
               >
                 <div className={styles.itemContent}>
                   <div className={styles.itemHeader}>
-                    {reqType === 'MainAgent'
+                    {codexInternalTag
+                      ? <Tag className={styles.tagNoMargin}>{codexInternalTag}</Tag>
+                      : reqType === 'MainAgent'
                       ? <Tag className={`${styles.tagNoMargin} ${styles.tagMainAgent}`}>MainAgent</Tag>
                       : reqType === 'Plan'
                         ? <Tag className={`${styles.tagNoMargin} ${styles.tagPlan}`}>{formatRequestTag(reqType, subType)}</Tag>

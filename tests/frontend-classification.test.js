@@ -38,7 +38,7 @@ test('frontend classification respects Codex root and subagent flags', () => {
 test('explicit MainAgent identity wins over subagent words in root instructions', () => {
   const root = {
     method: 'POST',
-    url: 'https://api.openai.com/v1/responses',
+    url: 'https://chatgpt.com/backend-api/codex/responses',
     mainAgent: true,
     subAgent: false,
     body: {
@@ -146,7 +146,7 @@ test('frontend classification rejects subagent-shaped main heuristics', () => {
   assert.deepEqual(classifyRequest(subLike), { type: 'SubAgent', subType: 'General' });
 });
 
-test('frontend classification treats Codex Responses root as MainAgent', () => {
+test('frontend classification keeps ChatGPT root as MainAgent and defines direct OpenAI Responses as Master', () => {
   const body = {
     instructions: 'You are Codex, a coding agent.',
     tools: [{ name: 'shell_command' }, { name: 'apply_patch' }, { name: 'tool_search' }, { name: 'web_search' }, { name: 'view_image' }, { name: 'update_plan' }],
@@ -170,8 +170,8 @@ test('frontend classification treats Codex Responses root as MainAgent', () => {
 
   assert.equal(isMainAgent(chatgpt), true);
   assert.deepEqual(classifyRequest(chatgpt), { type: 'MainAgent', subType: null });
-  assert.equal(isMainAgent(api), true);
-  assert.deepEqual(classifyRequest(api), { type: 'MainAgent', subType: null });
+  assert.equal(isMainAgent(api), false);
+  assert.deepEqual(classifyRequest(api), { type: 'Master', subType: null });
 });
 
 test('frontend classification keeps a native ChatGPT Responses subagent out of MainAgent', () => {
@@ -197,7 +197,7 @@ test('frontend classification keeps a native ChatGPT Responses subagent out of M
   assert.deepEqual(classifyRequest(subagent), { type: 'SubAgent', subType: 'researcher' });
 });
 
-test('frontend classification recovers current OpenAI Responses root logs mis-tagged as SubAgent', () => {
+test('frontend classification defines old OpenAI Responses transport labels as Master', () => {
   const apiRoot = {
     method: 'POST',
     url: 'https://api.openai.com/v1/responses',
@@ -211,8 +211,8 @@ test('frontend classification recovers current OpenAI Responses root logs mis-ta
     },
   };
 
-  assert.equal(isMainAgent(apiRoot), true);
-  assert.deepEqual(classifyRequest(apiRoot), { type: 'MainAgent', subType: null });
+  assert.equal(isMainAgent(apiRoot), false);
+  assert.deepEqual(classifyRequest(apiRoot), { type: 'Master', subType: null });
 });
 
 test('frontend classification keeps slimmed OpenAI Responses transport out of SubAgent', () => {
@@ -227,11 +227,12 @@ test('frontend classification keeps slimmed OpenAI Responses transport out of Su
   };
 
   assert.equal(isMainAgent(slimmedTransport), false);
-  assert.deepEqual(classifyRequest(slimmedTransport), { type: 'Responses', subType: 'OpenAI Responses' });
+  assert.deepEqual(classifyRequest(slimmedTransport), { type: 'Master', subType: null });
+  assert.equal(formatRequestTag('Master', null), 'Master');
   assert.equal(formatRequestTag('Responses', 'OpenAI Responses'), 'OpenAI Responses');
 });
 
-test('frontend classification treats current Codex snake_case tools as MainAgent without explicit flag', () => {
+test('frontend classification does not promote direct OpenAI Responses via Codex body heuristics', () => {
   const currentCodexRoot = {
     method: 'POST',
     url: 'https://api.openai.com/v1/responses',
@@ -253,8 +254,67 @@ test('frontend classification treats current Codex snake_case tools as MainAgent
     },
   };
 
-  assert.equal(isMainAgent(currentCodexRoot), true);
-  assert.deepEqual(classifyRequest(currentCodexRoot), { type: 'MainAgent', subType: null });
+  assert.equal(isMainAgent(currentCodexRoot), false);
+  assert.deepEqual(classifyRequest(currentCodexRoot), { type: 'Master', subType: null });
+});
+
+test('frontend Master classification overrides legacy identities at exact URL boundaries', () => {
+  const body = {
+    instructions: 'You are Codex, a coding agent.',
+    tools: [{ name: 'shell_command' }, { name: 'apply_patch' }, { name: 'tool_search' }],
+    input: [{ role: 'user', content: 'inspect' }],
+  };
+  const teammate = { url: 'https://api.openai.com/v1/responses', teammate: 'reviewer', mainAgent: true, body };
+  const delegated = {
+    url: 'https://api.openai.com/v1/responses', mainAgent: true,
+    subAgent: true, subAgentName: 'researcher',
+    body: { ...body, instructions: 'You are a general-purpose agent for a delegated Codex task.' },
+  };
+  assert.equal(isMainAgent(teammate), false);
+  assert.deepEqual(classifyRequest(teammate), { type: 'Master', subType: null });
+  assert.equal(isMainAgent(delegated), false);
+  assert.deepEqual(classifyRequest(delegated), { type: 'Master', subType: null });
+
+  for (const url of ['https://api.openai.com/v1/responses/', 'https://api.openai.com/v1/responses?trace=1']) {
+    const req = { url, mainAgent: true, subAgent: false, body };
+    assert.equal(isMainAgent(req), false);
+    assert.deepEqual(classifyRequest(req), { type: 'Master', subType: null });
+  }
+  for (const url of [
+    'https://api.openai.com/v1/responses/resp_123',
+    'https://api.openai.com.evil/v1/responses',
+    'https://proxy.example/v1/responses',
+    'http://api.openai.com/v1/responses',
+  ]) {
+    const req = { url, mainAgent: true, subAgent: false, body };
+    assert.equal(isMainAgent(req), true);
+    assert.deepEqual(classifyRequest(req), { type: 'MainAgent', subType: null });
+  }
+});
+
+test('Master request type follows the original URL rather than the proxy destination', () => {
+  const body = {
+    instructions: 'You are Codex, a coding agent.',
+    tools: [{ name: 'shell_command' }, { name: 'apply_patch' }, { name: 'tool_search' }],
+    input: [{ role: 'user', content: 'inspect' }],
+  };
+  const proxiedToOpenAi = {
+    url: 'https://chatgpt.com/backend-api/codex/responses',
+    proxyUrl: 'https://api.openai.com/v1/responses',
+    mainAgent: true,
+    body,
+  };
+  assert.equal(isMainAgent(proxiedToOpenAi), true);
+  assert.deepEqual(classifyRequest(proxiedToOpenAi), { type: 'MainAgent', subType: null });
+
+  const proxiedAwayFromOpenAi = {
+    url: 'https://api.openai.com/v1/responses',
+    proxyUrl: 'https://proxy.example/v1/responses',
+    mainAgent: true,
+    body,
+  };
+  assert.equal(isMainAgent(proxiedAwayFromOpenAi), false);
+  assert.deepEqual(classifyRequest(proxiedAwayFromOpenAi), { type: 'Master', subType: null });
 });
 
 test('frontend classification tags Codex internal prompts as synthetic before MainAgent', () => {

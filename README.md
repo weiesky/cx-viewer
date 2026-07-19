@@ -173,6 +173,8 @@ Fulfill your imagination of mobile programming. There's also a plugin mechanism 
 
 - Captures all API requests from Codex in real time, ensuring raw text — not redacted logs (this is important!!!)
 - Automatically identifies and labels Main Agent and Sub Agent requests (subtypes: Plan, Search, Shell)
+- Direct `POST https://api.openai.com/v1/responses` create requests are labeled `Master`. Master is a neutral network-request type: it is not treated as MainAgent, does not establish tool-diff baselines, and is excluded from MainAgent conversation/session statistics. The match uses the original captured HTTPS URL and accepts an optional trailing slash or query string, but not response resource URLs such as `/v1/responses/{id}`.
+- When a proxy rewrite targets the direct OpenAI Responses create endpoint, Conversation also excludes that effective transport. Request type still follows the original captured URL, so proxy routing does not silently rewrite request identity.
 - MainAgent requests support Body Diff JSON, showing collapsed differences from the previous MainAgent request (only changed/new fields)
 - Each request displays inline token usage statistics (input/output tokens)
 - Compatible with Codex Router (CCR) and other proxy scenarios — falls back to API path pattern matching
@@ -188,6 +190,7 @@ Click the "Conversation Mode" button in the top-right corner to parse the Main A
 - User messages are right-aligned (blue bubbles), Main Agent replies are left-aligned (dark bubbles)
 - `thinking` blocks are collapsed by default, rendered as Markdown — click to expand and view the thinking process; one-click translation is supported (feature is still unstable)
 - User selection messages (`request_user_input`) are displayed in Q&A format
+- Native Responses `compaction` markers replace the covered transcript with a green, expandable context-compaction row. It is expanded by default in Conversation and remains collapsed by default in the context popover; raw or encrypted compaction payloads are not rendered.
 - Bidirectional mode sync: switching to conversation mode auto-scrolls to the conversation corresponding to the selected request; switching back to raw mode auto-scrolls to the selected request
 - Settings panel: toggle default collapse state for tool results and thinking blocks
 - Mobile conversation browsing: in mobile CLI mode, tap the "Conversation Browse" button in the top bar to slide out a read-only conversation view for browsing the complete conversation history on mobile

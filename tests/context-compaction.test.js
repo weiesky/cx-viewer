@@ -5,6 +5,7 @@ import {
   CONTEXT_COMPACTION_SUMMARY_LIMIT,
   extractCurrentContextCompaction,
   extractCurrentContextCompactionRecord,
+  extractEntryContextCompactionRecord,
   loadExcludedContextCompactionEpoch,
   saveExcludedContextCompactionEpoch,
 } from '../src/utils/contextCompaction.js';
@@ -543,6 +544,41 @@ test('reads the safe marker preserved before a compaction entry is slimmed', () 
     truncated: false,
     sourceKey: null,
   });
+});
+
+test('ignores accessor-backed or damaged preserved compaction records', () => {
+  const accessorEntry = { body: { input: [] } };
+  Object.defineProperty(accessorEntry, '_contextCompaction', {
+    get() { throw new Error('must not invoke entry getter'); },
+  });
+  assert.equal(extractEntryContextCompactionRecord(accessorEntry).present, false);
+
+  const stored = { present: true, count: 1 };
+  for (const key of ['summary', 'truncated', 'sourceKey', 'prompts']) {
+    Object.defineProperty(stored, key, {
+      get() { throw new Error(`must not invoke ${key} getter`); },
+    });
+  }
+  const record = extractEntryContextCompactionRecord({
+    body: { input: [] },
+    _contextCompaction: stored,
+  });
+  assert.deepEqual(record, {
+    present: true,
+    count: 1,
+    summary: null,
+    truncated: false,
+    sourceKey: null,
+    prompts: [],
+  });
+
+  const damaged = new Proxy({}, {
+    getOwnPropertyDescriptor() { throw new Error('damaged record'); },
+  });
+  assert.equal(extractEntryContextCompactionRecord({
+    body: { input: [] },
+    _contextCompaction: damaged,
+  }).present, false);
 });
 
 test('falls back from an empty delta only within the same explicit session', () => {

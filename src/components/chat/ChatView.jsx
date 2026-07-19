@@ -7,6 +7,7 @@ import SearchPanel from '../search/SearchPanel';
 import FileContentView from '../files/FileContentView';
 import ImageViewer from '../viewers/ImageViewer';
 import ImageLightbox from '../common/ImageLightbox';
+import ContextCompactionDisclosure from '../dashboard/ContextCompactionDisclosure';
 import GitChanges from '../git/GitChanges';
 import GitDiffView from '../git/GitDiffView';
 import ToolApprovalPanel from '../approval/ToolApprovalPanel';
@@ -18,6 +19,8 @@ import { applyAvatarAnimationTargets } from '../../utils/avatarAnimationPostPass
 import { isSystemText, classifyUserContent, isMainAgent, isTeammate, resolveTeammateNames, extractDisplayText } from '../../utils/contentFilter';
 import { classifyRequest, formatRequestTag, formatTeammateLabel } from '../../utils/requestType';
 import { shouldExcludeFromConversation } from '../../utils/conversationEntryNormalize';
+import { isConversationItemVisibleForRoles } from '../../utils/conversationRoleFilter';
+import { resolveContextCompactionRecordBySourceKey } from '../../utils/contextCompaction';
 import { playEvent as playVoiceEvent } from '../../utils/voicePackPlayer';
 import { buildChunksForAnswer, buildBracketPasteSequentialRequest } from '../../utils/ptyChunkBuilder';
 import { isPlanApprovalPrompt, isDangerousOperationPrompt, pickPlanApproveOptionNumber } from '../../utils/promptClassifier';
@@ -1431,7 +1434,23 @@ class ChatView extends React.Component {
       const hasViewRequest = reqIdx != null && onViewRequest;
       const modelInfo = resolveModelInfo(ts, msg.role, msg);
 
-      if (msg.role === 'user') {
+      if (msg.role === 'context-compaction') {
+        const compactionDescriptor = msg._contextCompaction;
+        const compactionKey = compactionDescriptor?.sourceKey || msg.content || `marker-${mi}`;
+        const conversationRecord = Array.isArray(compactionDescriptor?.prompts)
+          ? compactionDescriptor
+          : resolveContextCompactionRecordBySourceKey(this.props.requests, compactionKey);
+        renderedMessages.push(
+          <ContextCompactionDisclosure
+            key={`${keyPrefix}-context-compaction-${mi}-${compactionKey}`}
+            role="context-compaction"
+            descriptor={compactionDescriptor}
+            record={conversationRecord}
+            inConversation
+            timestamp={ts}
+          />
+        );
+      } else if (msg.role === 'user') {
         if (Array.isArray(content)) {
           const suggestionText = content.find(b => b.type === 'text' && /^\[SUGGESTION MODE:/i.test((b.text || '').trim()));
           const toolResults = content.filter(b => b.type === 'tool_result');
@@ -1897,7 +1916,8 @@ class ChatView extends React.Component {
       const _localAskForSession = this.state.localAskAnswers || {};
       const mergedAskAnswerMap = this._getMergedAskAnswerMap(session.messages, `s${si}`, _localAskForSession);
 
-      if (sc && sc.session === session && sc.msgsLen === session.messages.length) {
+      if (sc && sc.session === session && sc.messagesRef === session.messages
+          && sc.msgsLen === session.messages.length) {
         // 完全命中：session 对象不变且消息数不变 → 直接复用。
         // 但 planApprovalMap / askAnswerMap 引用变化时（plan 审批落盘 / request_user_input 答完），
         // 刷新持有相应 tool_use 的旧 element 的 prop，避免 React 因 element 引用未变跳过 SCU 让卡片永远停在 pending 视图。
@@ -1912,7 +1932,8 @@ class ChatView extends React.Component {
         }
         lastPendingAskId = sc.lastPendingAskId;
         lastPendingPlanId = sc.lastPendingPlanId;
-      } else if (sc && sc.session === session && session.messages.length > sc.msgsLen) {
+      } else if (sc && sc.session === session && sc.messagesRef === session.messages
+          && session.messages.length > sc.msgsLen) {
         // 增量：session 对象不变但消息增长 → 只渲染新消息，拼接到缓存
         const result = this.renderSessionMessages(session.messages, `s${si}`, resolveModelInfo, tsToIndex, sc.msgsLen);
         // 旧段同样要刷新 planApprovalMap / askAnswerMap prop（同 FULL HIT 理由）
@@ -1980,7 +2001,7 @@ class ChatView extends React.Component {
 
       // 更新缓存。planApprovalMap / askAnswerMap 引用用于下轮 FULL HIT / INCREMENTAL prop 刷新判断。
       this._sessionItemCache[si] = {
-        session, msgsLen: session.messages.length,
+        session, messagesRef: session.messages, msgsLen: session.messages.length,
         items: msgs, lastPendingAskId, lastPendingPlanId,
         // 记下本轮 planApprovalMap / askAnswerMap 引用，下轮 FULL HIT / INCREMENTAL 据此判断是否要刷新旧 element 的 prop。
         planApprovalMap: mergedPlanApprovalMap,
@@ -3088,7 +3109,7 @@ class ChatView extends React.Component {
   }
 
   /**
-   * 构建用户 Prompt 导航列表（侧边栏 hover popover 内容）
+   * 构建用户 Prompt / 上下文压缩导航列表（侧边栏 hover popover 内容）
    * 基于 _currentVisible（当前可见 items），保证每一项都能精确定位和高亮
    */
   _buildUserPromptNav() {
@@ -3113,10 +3134,12 @@ class ChatView extends React.Component {
                 {p.newSession && (
                   <div className={styles.userPromptNavSessionSep}><span>{t('ui.session')}</span></div>
                 )}
-                <div className={styles.userPromptNavItem}
-                  onClick={() => this._scrollToUserPrompt(p.visibleIdx, p.timestamp)}>
+                <div className={`${styles.userPromptNavItem} ${p.kind === 'compaction' ? styles.userPromptNavItemCompaction : ''}`}
+                  onClick={() => this._scrollToPromptNavItem(p.visibleIdx, p.timestamp)}>
                   {timeStr && <span className={styles.userPromptNavTime}>{timeStr}</span>}
-                  <span className={styles.userPromptNavText}>{p.display}</span>
+                  <span className={styles.userPromptNavText}>
+                    {p.kind === 'compaction' ? t('ui.contextCompaction') : p.display}
+                  </span>
                 </div>
               </React.Fragment>
             );
@@ -3130,11 +3153,11 @@ class ChatView extends React.Component {
   }
 
   /**
-   * 滚动到指定用户消息，并触发蓝色虚线高亮动画。
+   * 滚动到指定 Prompt 或 compaction 导航目标，并触发高亮动画。
    * @param {number} visibleIdx — visible 数组中的索引（与 containerRef.children 一一对应）
    * @param {string|null} timestamp — 消息时间戳（用于高亮，遗留消息可能为 null）
    */
-  _scrollToUserPrompt(visibleIdx, timestamp) {
+  _scrollToPromptNavItem(visibleIdx, timestamp) {
     if (visibleIdx == null || visibleIdx < 0) return;
     // 触发高亮（有 timestamp 时显示蓝色虚线动画）
     if (timestamp) {
@@ -3242,14 +3265,11 @@ class ChatView extends React.Component {
     if (_selSize > 0 && _selSize < collectedRoles.length) {
       filteredItems = allItems.filter(item => {
         if (!item || !item.props) return true;
-        const role = item.props.role;
-        if (role === 'user' || role === 'plan-prompt') return this.state.roleFilterSelected.has('user');
-        if (role === 'assistant') return this.state.roleFilterSelected.has('assistant');
-        if (role === 'sub-agent-chat') {
-          const key = `sub:${item.props.label || 'SubAgent'}`;
-          return this.state.roleFilterSelected.has(key);
-        }
-        return false;
+        return isConversationItemVisibleForRoles(
+          item.props.role,
+          item.props.label,
+          this.state.roleFilterSelected,
+        );
       });
     }
 
@@ -3311,7 +3331,7 @@ class ChatView extends React.Component {
     const targetIdx = this._scrollTargetIdx;
     const { highlightTs, highlightFading, highlightVisibleIdx } = this.state;
     const visible = filteredItems.slice(0, _isFiltering ? filteredItems.length : visibleCount);
-    // 缓存 visible，供 _buildUserPromptNav / _scrollToUserPrompt 使用
+    // 缓存 visible，供 _buildUserPromptNav / _scrollToPromptNavItem 使用
     this._currentVisible = visible;
     // 优先使用精确的 visibleIdx（同一请求的多条消息共享 timestamp，findIndex 会匹配到第一条）
     // findIndex 用 displayTs ?? timestamp 作 key —— assistant bubble 的 props.timestamp 是 carrier

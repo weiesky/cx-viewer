@@ -451,7 +451,7 @@ function AccordionSection({ sectionKey, title, items, historyItems = [], onSelec
       <React.Fragment key={item.id}>
         <button
           type="button"
-          className={`${styles.item} ${depth > 0 ? styles.itemNested : ''} ${hasChildren ? styles.itemGroup : ''} ${active ? styles.itemActive : ''}`}
+          className={`${styles.item} ${depth > 0 ? styles.itemNested : ''} ${hasChildren ? styles.itemGroup : ''} ${!active && item.isCompactionHistory ? styles.itemCompaction : ''} ${active ? styles.itemActive : ''}`}
           onClick={() => {
             onSelect(item);
             if (hasChildren) {
@@ -651,6 +651,7 @@ export default function ContextTab({ body, prevTools }) {
       label: t('ui.context.historyTurnNoTime', { n: item.inputIndex + 1 }),
       time: item.timestamp ? formatTurnTime(item.timestamp) : null,
       sublabel: item.preview || item.type || undefined,
+      isCompactionHistory: item.type === 'compaction',
     });
     const toCurrentItem = (item) => ({
       ...item,

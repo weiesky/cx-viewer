@@ -1,7 +1,7 @@
 /**
  * 请求类型分类工具
  * classifyRequest(req, nextReq?) 返回 { type, subType }
- * type: 'MainAgent' | 'SubAgent' | 'Teammate' | 'Tool' | 'Responses' | 'Count' | 'Preflight' | 'Plan' | 'Synthetic' | 'Metadata'
+ * type: 'MainAgent' | 'Master' | 'SubAgent' | 'Teammate' | 'Tool' | 'Responses' | 'Count' | 'Preflight' | 'Plan' | 'Synthetic' | 'Metadata'
  *
  * Synthetic: Codex CLI 在主会话里合成的内部工具查询
  * （idle 返回 recap / 会话标题生成 / 压缩摘要等），HTTP 层 role=user 但并非用户手输。
@@ -13,6 +13,7 @@
 import { getInputItemText, getResponseConversationItems, getResponseInputItems, getResponseInstructions, getResponseTools } from '../../lib/openai-body.js';
 import { isMainAgent, isTeammate, getInstructionsText, getEntryUpstreamLane, extractTeammateName, SYNTHETIC_PROMPTS } from './contentFilter.js';
 import { isMetadataModelsEntry } from '../../lib/repeat-entry.js';
+import { isOpenAiResponsesMasterEntry } from '../../lib/openai-responses-url.js';
 
 function getMessageText(msg) {
   return getInputItemText(msg);
@@ -116,6 +117,49 @@ function getToolSubType(req) {
   }
 }
 
+/** Return the tool name only for concrete `codex://tool/*` tool-use events. */
+export function getCodexToolUseName(req) {
+  const url = typeof req?.url === 'string' ? req.url : '';
+  const match = url.match(/^codex:\/\/tool\/([^/?#]+)(?:[?#].*)?$/);
+  if (!match) return null;
+  try {
+    return decodeURIComponent(match[1]) || null;
+  } catch {
+    return match[1] || null;
+  }
+}
+
+/** Return the tool name only for concrete `codex://mcp_tool/*` calls. */
+export function getCodexMcpToolUseName(req) {
+  const url = typeof req?.url === 'string' ? req.url : '';
+  const match = url.match(/^codex:\/\/mcp_tool\/([^/?#]+)(?:[?#].*)?$/);
+  if (!match) return null;
+  try {
+    return decodeURIComponent(match[1]) || null;
+  } catch {
+    return match[1] || null;
+  }
+}
+
+/** Format a non-HTTP Codex event by its concrete URL behavior. */
+export function formatCodexInternalRequestTag(req) {
+  const toolName = getCodexToolUseName(req);
+  if (toolName) return `toolUse:${toolName}`;
+  const mcpToolName = getCodexMcpToolUseName(req);
+  if (mcpToolName) return `mcpToolUse:${mcpToolName}`;
+  const value = typeof req?.url === 'string' ? req.url : '';
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'codex:' || !url.hostname) return null;
+    const action = url.pathname.split('/').filter(Boolean).map(segment => {
+      try { return decodeURIComponent(segment); } catch { return segment; }
+    }).join('/');
+    return action ? `${url.hostname}:${action}` : url.hostname;
+  } catch {
+    return null;
+  }
+}
+
 export function isModelCatalogRequest(req) {
   return isMetadataModelsEntry(req);
 }
@@ -171,6 +215,10 @@ function isPreflightRequest(req, nextReq) {
  * @param {object} [nextReq] - 下一条请求（用于 Preflight 判断）
  */
 export function classifyRequest(req, nextReq) {
+  if (isOpenAiResponsesMasterEntry(req)) {
+    return { type: 'Master', subType: null };
+  }
+
   // Teammate 子进程的请求优先识别（收敛于 contentFilter.isTeammate）
   if (isTeammate(req)) {
     if (req.teammate) return { type: 'Teammate', subType: req.teammate };

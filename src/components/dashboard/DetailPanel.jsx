@@ -8,7 +8,7 @@ import { apiUrl } from '../../utils/apiUrl';
 import { formatTokenCount, stripPrivateKeys, hasCodexMdReminder, isCodexMdReminder, hasSkillsReminder, isSkillsReminder } from '../../utils/helpers';
 import { getResponseTools } from '../../../lib/openai-body.js';
 import { getInputCacheUsage } from '../../../lib/token-usage.js';
-import { classifyRequest } from '../../utils/requestType';
+import { classifyRequest, getCodexMcpToolUseName, getCodexToolUseName } from '../../utils/requestType';
 import { isMainAgent } from '../../utils/contentFilter';
 import { restoreSlimmedEntry } from '../../utils/entry-slim.js';
 import ContextTab from './ContextTab';
@@ -657,6 +657,8 @@ class DetailPanel extends React.Component {
     const statusOk = request.response && request.response.status < 400;
     const nextReq = this.props.requests && this.props.selectedIndex != null ? this.props.requests[this.props.selectedIndex + 1] : null;
     const requestClass = classifyRequest(request, nextReq);
+    const hideContextForToolUse = getCodexToolUseName(request) !== null
+      || getCodexMcpToolUseName(request) !== null;
     const metadataOverview = requestClass.type === 'Metadata' && requestClass.subType === 'Models'
       ? this.renderMetadataOverview(request)
       : null;
@@ -840,7 +842,7 @@ class DetailPanel extends React.Component {
           </div>
         ),
       },
-      {
+      ...(!hideContextForToolUse ? [{
         key: 'context',
         label: toolOverview ? 'Tool' : metadataOverview ? 'Content' : 'Context',
         children: (
@@ -849,12 +851,15 @@ class DetailPanel extends React.Component {
               <ContextTab
                 body={request.body}
                 response={request.response?.body}
-                prevTools={getResponseTools(prevMainAgent?.body)}
+                // `getResponseTools(undefined)` returns [], which looks like a
+                // real empty baseline and marks every tool as newly added.
+                // Master/non-MainAgent requests must have no diff baseline.
+                prevTools={prevMainAgent ? getResponseTools(prevMainAgent.body) : null}
               />
             )}
           </div>
         ),
-      },
+      }] : []),
     ];
 
     if (request._codexRaw || currentTab === 'raw') {
@@ -951,7 +956,7 @@ class DetailPanel extends React.Component {
         </div>
 
         <Tabs
-          activeKey={currentTab}
+          activeKey={hideContextForToolUse && currentTab === 'context' ? 'request' : currentTab}
           onChange={(key) => {
             if (key === 'raw') this.loadRawFrames(request);
             if (onTabChange) onTabChange(key);

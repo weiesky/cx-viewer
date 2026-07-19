@@ -3,6 +3,7 @@ import { LogV2ObjectStore } from './logV2ObjectStore.js';
 import { projectLogV2ConversationEntry } from './logV2ConversationProjection.js';
 import { classifyRequest } from './requestType.js';
 import { selectUsageHeaders } from '../../lib/log-v2/request-summary.js';
+import { isOpenAiResponsesMasterEntry } from '../../lib/openai-responses-url.js';
 
 function summaryEntry(summary, descriptor, handle) {
   const responseSummary = summary.response;
@@ -17,7 +18,9 @@ function summaryEntry(summary, descriptor, handle) {
     _v2RowHandle: handle,
     _v2Descriptor: descriptor,
   };
-  entry._classification = Object.freeze(summary.classification || classifyRequest(entry, null));
+  entry._classification = Object.freeze(isOpenAiResponsesMasterEntry(entry)
+    ? { type: 'Master', subType: null }
+    : (summary.classification || classifyRequest(entry, null)));
   return Object.freeze(entry);
 }
 
@@ -26,7 +29,9 @@ function rowHandle(descriptor) {
 }
 
 export function isV2ConversationCandidate(row) {
+  if (isOpenAiResponsesMasterEntry(row)) return false;
   const type = row?._classification?.type;
+  if (type === 'Master') return false;
   if (['MainAgent', 'SubAgent', 'Teammate', 'Tool', 'Synthetic'].includes(type)) return true;
   // Projection eligibility is correctness-critical and must not depend on a
   // lossy list label. Canonical writer identity survives missing old summaries.

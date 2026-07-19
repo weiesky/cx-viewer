@@ -12,6 +12,7 @@ import {
 import { mergeMainAgentSessions } from '../src/utils/sessionMerge.js';
 import { messageFingerprint } from '../src/utils/sessionMerge.js';
 import { applyBatchEntryTimestamps } from '../src/utils/sessionManager.js';
+import { resolveContextCompactionRecordBySourceKey } from '../src/utils/contextCompaction.js';
 
 test('normalizes older app-server messages shape for conversation rendering', () => {
   const entry = {
@@ -56,6 +57,15 @@ test('excludes api.openai.com Responses entries from conversation projection onl
   }), true);
   assert.equal(shouldExcludeFromConversation({
     url: 'https://chatgpt.com/backend-api/codex/responses',
+  }), false);
+  assert.equal(shouldExcludeFromConversation({
+    url: 'https://api.openai.com/v1/responses/',
+  }), true);
+  assert.equal(shouldExcludeFromConversation({
+    url: 'https://api.openai.com/v1/responses/resp_123',
+  }), false);
+  assert.equal(shouldExcludeFromConversation({
+    url: 'https://api.openai.com.evil/v1/responses',
   }), false);
 });
 
@@ -487,8 +497,8 @@ test('recognizes an image-only Responses request and appends its current respons
   assert.equal(projected.body.input[1]._codexCurrentResponse, true);
 });
 
-test('conversation projection keeps only the latest valid user prompt before compaction', () => {
-  const messages = codexItemsToViewerMessages([
+test('conversation projection replaces pre-compaction bubbles with one disclosure row', () => {
+  const rawInput = [
     { type: 'additional_tools', tools: [{ name: 'exec' }] },
     { type: 'message', role: 'system', content: 'system' },
     { type: 'message', role: 'user', id: 'old-1', content: [{ type: 'input_text', text: 'old task one' }] },
@@ -499,17 +509,31 @@ test('conversation projection keeps only the latest valid user prompt before com
     { type: 'function_call_output', call_id: 'call-2', output: 'workspace' },
     { type: 'compaction', encrypted_content: 'opaque' },
     { type: 'message', role: 'user', id: 'after', content: [{ type: 'input_text', text: 'new task after compact' }] },
-  ]);
+  ];
+  const messages = codexItemsToViewerMessages(rawInput);
 
   const visibleUserText = messages
     .filter(message => message.role === 'user')
     .flatMap(message => Array.isArray(message.content) ? message.content : [{ type: 'text', text: message.content }])
     .filter(block => block.type === 'text')
     .map(block => block.text);
-  assert.deepEqual(visibleUserText, ['latest task before compact', 'new task after compact']);
+  assert.deepEqual(visibleUserText, ['new task after compact']);
+  const disclosure = messages.find(message => message.role === 'context-compaction');
+  assert.ok(disclosure);
+  assert.equal(messages.filter(message => message.role === 'context-compaction').length, 1);
+  assert.equal(typeof disclosure.content, 'string');
+  assert.equal(disclosure.content.length > 0, true);
+  assert.equal(JSON.stringify(disclosure).includes('encrypted_content'), false);
+  assert.equal(Object.hasOwn(disclosure._contextCompaction, 'prompts'), false);
+  const record = resolveContextCompactionRecordBySourceKey(
+    [{ body: { input: rawInput } }],
+    disclosure.content,
+  );
+  assert.equal(JSON.stringify(record.prompts).includes('old task one'), true);
+  assert.equal(JSON.stringify(record.prompts).includes('latest task before compact'), true);
   assert.equal(messages.some(message => JSON.stringify(message).includes('orphaned old answer')), false);
   assert.equal(messages.some(message => JSON.stringify(message).includes('tool output')), false);
-  assert.equal(messages.some(message => JSON.stringify(message).includes('workspace')), true);
+  assert.equal(messages.some(message => JSON.stringify(message).includes('workspace')), false);
 });
 
 test('plain-string Responses messages are detected when a native compaction item is present', () => {
@@ -526,7 +550,58 @@ test('plain-string Responses messages are detected when a native compaction item
   };
   const projected = normalizeConversationEntry(entry);
   assert.notEqual(projected, entry);
-  assert.deepEqual(projected.body.input.map(message => message.content), ['latest prompt']);
+  assert.deepEqual(projected.body.input.map(message => message.role), ['context-compaction']);
+  assert.equal(Object.hasOwn(projected.body.input[0]._contextCompaction, 'prompts'), false);
+  const record = resolveContextCompactionRecordBySourceKey(
+    [entry],
+    projected.body.input[0].content,
+  );
+  assert.equal(JSON.stringify(record.prompts).includes('old prompt'), true);
+  assert.equal(JSON.stringify(record.prompts).includes('latest prompt'), true);
+  assert.equal(messageFingerprint(projected.body.input[0]).endsWith('|empty'), false);
+});
+
+test('collapsed conversation compaction rows do not retain a large prompt projection', () => {
+  const largePrompt = 'x'.repeat(1024 * 1024);
+  const entry = {
+    mainAgent: true,
+    body: {
+      client_metadata: { thread_id: 'thread-large-compaction' },
+      input: [
+        { type: 'message', role: 'user', content: largePrompt },
+        { type: 'compaction', id: 'compact-large' },
+      ],
+    },
+  };
+  const disclosure = normalizeConversationEntry(entry).body.input[0];
+  assert.equal(disclosure.role, 'context-compaction');
+  assert.equal(JSON.stringify(disclosure).length < 4096, true);
+  assert.equal(Object.hasOwn(disclosure._contextCompaction, 'prompts'), false);
+
+  const resolved = resolveContextCompactionRecordBySourceKey([entry], disclosure.content);
+  assert.equal(resolved.present, true);
+  assert.equal(resolved.prompts.length >= 1, true);
+  assert.equal(resolved.prompts[0].truncated, true);
+});
+
+test('distinct compaction disclosure rows have stable non-colliding fingerprints', () => {
+  const first = normalizeConversationEntry({
+    mainAgent: true,
+    body: {
+      client_metadata: { thread_id: 'thread-fingerprint' },
+      input: [{ type: 'compaction', id: 'compact-first' }],
+    },
+  }).body.input[0];
+  const second = normalizeConversationEntry({
+    mainAgent: true,
+    body: {
+      client_metadata: { thread_id: 'thread-fingerprint' },
+      input: [{ type: 'compaction', id: 'compact-second' }],
+    },
+  }).body.input[0];
+
+  assert.notEqual(first.content, second.content);
+  assert.notEqual(messageFingerprint(first), messageFingerprint(second));
 });
 
 test('repairs cache token details from raw_response in legacy Codex logs', () => {
@@ -816,25 +891,29 @@ test('native compaction is an authoritative stateful replacement in the producti
     null,
     null,
   ));
-  const compacted = normalize(cumulativeEntry(
+  const compactedSource = cumulativeEntry(
     '2026-07-10T02:10:01.000Z',
     [...raw, { type: 'compaction', id: 'compact-native' }],
     'assistant-after-native-compact',
     'continued after compact',
-  ));
+  );
+  const compacted = normalize(compactedSource);
 
   assert.equal(compacted._compactContinuation, true);
   assert.equal(compacted._authoritativeConversationReplace, true);
   let sessions = mergeMainAgentSessions([], before);
   sessions = mergeMainAgentSessions(sessions, compacted);
   assert.equal(sessions.length, 1);
-  assert.deepEqual(
-    sessions[0].messages
-      .filter(message => message.role === 'user')
-      .map(message => message.content[0].text),
-    ['task 6'],
+  assert.deepEqual(sessions[0].messages.filter(message => message.role === 'user'), []);
+  const disclosure = sessions[0].messages.find(message => message.role === 'context-compaction');
+  assert.ok(disclosure);
+  assert.equal(sessions[0].messages.filter(message => message.role === 'context-compaction').length, 1);
+  const record = resolveContextCompactionRecordBySourceKey(
+    [compactedSource],
+    disclosure.content,
   );
-  assert.equal(sessions[0].messages.some(message => JSON.stringify(message).includes('task 0')), false);
+  assert.equal(JSON.stringify(record.prompts).includes('task 0'), true);
+  assert.equal(JSON.stringify(record.prompts).includes('task 6'), true);
   assert.equal(sessions[0].messages.some(message => JSON.stringify(message).includes('continued after compact')), true);
 });
 
@@ -863,7 +942,12 @@ test('native compaction replacement tolerates a sparse frame without user_id', (
 
   assert.equal(sessions.length, 1);
   assert.equal(sessions[0].messages.some(message => JSON.stringify(message).includes('old task')), false);
-  assert.equal(sessions[0].messages.some(message => JSON.stringify(message).includes('new task')), true);
+  const ordinaryMessages = sessions[0].messages.filter(message => message.role !== 'context-compaction');
+  assert.equal(ordinaryMessages.some(message => JSON.stringify(message).includes('new task')), false);
+  const disclosure = sessions[0].messages.find(message => message.role === 'context-compaction');
+  const record = resolveContextCompactionRecordBySourceKey([sparseRaw], disclosure?.content);
+  assert.equal(JSON.stringify(record.prompts).includes('new task'), true);
+  assert.equal(ordinaryMessages.some(message => JSON.stringify(message).includes('new answer')), true);
 });
 
 test('batch timestamps use logical positions for Codex cumulative projection windows', () => {

@@ -1842,7 +1842,7 @@ class AppBase extends React.Component {
         let unlockContextBar = false;
         if (isIncremental && this.state.contextBarLocked) {
           const hasMainAgentTurn = delta.some(e => {
-            if (!e || !e.mainAgent) return false;
+            if (!e || !isMainAgent(e)) return false;
             const input = e.body?.input;
             return Array.isArray(input) && input.length > 0;
           });

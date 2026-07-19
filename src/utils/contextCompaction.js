@@ -100,6 +100,16 @@ function readOwnString(object, key) {
   }
 }
 
+function readOwnDataValue(object, key) {
+  if (!object || typeof object !== 'object') return undefined;
+  try {
+    const descriptor = Object.getOwnPropertyDescriptor(object, key);
+    return descriptor && Object.hasOwn(descriptor, 'value') ? descriptor.value : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function compactionSuffix(lastCompaction, count) {
   const itemId = readOwnString(lastCompaction?.item, 'id');
   if (itemId) return `id:${itemId}`;
@@ -387,20 +397,59 @@ export function extractDirectContextCompaction(entry) {
 }
 
 function readPreservedContextCompactionRecord(entry, includePrompts = true) {
-  const stored = entry?._contextCompaction;
-  if (!stored || stored.present !== true || !Number.isSafeInteger(stored.count) || stored.count < 1) {
+  const stored = readOwnDataValue(entry, '_contextCompaction');
+  const present = readOwnDataValue(stored, 'present');
+  const count = readOwnDataValue(stored, 'count');
+  if (present !== true || !Number.isSafeInteger(count) || count < 1) {
     return ABSENT_RECORD;
   }
   const summaryState = { chars: [], truncated: false };
-  if (typeof stored.summary === 'string' && stored.summary) appendBoundedText(summaryState, stored.summary);
+  const summary = readOwnDataValue(stored, 'summary');
+  if (typeof summary === 'string' && summary) appendBoundedText(summaryState, summary);
+  const sourceKey = readOwnDataValue(stored, 'sourceKey');
   return {
     present: true,
-    count: stored.count,
+    count,
     summary: summaryState.chars.join('') || null,
-    truncated: stored.truncated === true || summaryState.truncated,
-    sourceKey: typeof stored.sourceKey === 'string' && stored.sourceKey ? stored.sourceKey : null,
-    prompts: includePrompts ? sanitizeProjectedUserPrompts(stored.prompts) : [],
+    truncated: readOwnDataValue(stored, 'truncated') === true || summaryState.truncated,
+    sourceKey: typeof sourceKey === 'string' && sourceKey ? sourceKey : null,
+    prompts: includePrompts
+      ? sanitizeProjectedUserPrompts(readOwnDataValue(stored, 'prompts'))
+      : [],
   };
+}
+
+/**
+ * Resolve the compaction record owned by one entry without consulting the
+ * global/current request tail. Full frames use the direct marker (which also
+ * merges a preserved prompt projection); slimmed frames fall back to the
+ * sanitized record captured before their input was released.
+ */
+export function extractEntryContextCompactionRecord(entry) {
+  const direct = extractDirectContextCompactionRecord(entry);
+  if (direct?.present) return direct;
+  return readPreservedContextCompactionRecord(entry, true);
+}
+
+/** Resolve only the collapsed row descriptor; prompt payloads stay untouched. */
+export function extractEntryContextCompaction(entry) {
+  const direct = extractDirectContextCompaction(entry);
+  if (direct?.present) return direct;
+  return toDescriptor(readPreservedContextCompactionRecord(entry, false));
+}
+
+/** Resolve a historical disclosure on demand from the request collection. */
+export function resolveContextCompactionRecordBySourceKey(requests, sourceKey) {
+  if (!Array.isArray(requests) || typeof sourceKey !== 'string' || !sourceKey) {
+    return ABSENT_RECORD;
+  }
+  for (let index = requests.length - 1; index >= 0; index--) {
+    const descriptor = extractEntryContextCompaction(requests[index]);
+    if (!descriptor.present || descriptor.sourceKey !== sourceKey) continue;
+    const record = extractEntryContextCompactionRecord(requests[index]);
+    if (record.present && record.sourceKey === sourceKey) return record;
+  }
+  return ABSENT_RECORD;
 }
 
 export function getContextCompactionEpochKey(entry) {

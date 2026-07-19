@@ -299,6 +299,11 @@
   color: var(--text-white);
 }
 
+.userPromptNavItemCompaction {
+  color: var(--color-success-text);
+  background: var(--color-success-bg-light);
+}
+
 .userPromptNavItem:last-child {
   border-bottom: none;
 }

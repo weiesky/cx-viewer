@@ -756,7 +756,7 @@ test('app-server bridge hydrates completed thread turns from JSON-RPC responses'
   }
 });
 
-test('app-server bridge records tool-like items with root and subagent identity', () => {
+test('app-server bridge records tool-like items without persisting subagent labels on codex events', () => {
   const tmp = mkdtempSync(join(tmpdir(), 'cxv-appserver-tools-'));
   const logFile = join(tmp, 'bridge-tools.jsonl');
 
@@ -890,9 +890,11 @@ test('app-server bridge records tool-like items with root and subagent identity'
     const subTool = entries.find(entry => entry.body?.tool_name === 'docs.search');
     assert.equal(subTool?.method, 'TOOL');
     assert.equal(subTool?.mainAgent, false);
-    assert.equal(subTool?.subAgent, true);
-    assert.equal(subTool?.subAgentName, 'researcher');
-    assert.equal(subTool?.teamName, 'root-thread');
+    assert.equal(subTool?.subAgent, false);
+    assert.equal(subTool?.subAgentName, undefined);
+    assert.equal(subTool?.teamName, undefined);
+    assert.equal(subTool?._agentThreadId, 'sub-thread');
+    assert.equal(subTool?._parentThreadId, 'root-thread');
     assert.deepEqual(subTool?.body?.tool_input, { q: 'Codex' });
 
     const subTurn = entries.find(entry => entry.body?.metadata?.thread_id === 'sub-thread');

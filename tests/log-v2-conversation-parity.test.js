@@ -137,6 +137,22 @@ test('canonical agent role keeps conversation projection eligible without derive
   }), true);
 });
 
+test('Master rows never become V2 conversation candidates through writer-role fallback', () => {
+  assert.equal(isV2ConversationCandidate({
+    _classification: { type: 'Master', subType: null },
+    _v2Descriptor: { agentRole: 'main' },
+  }), false);
+  assert.equal(isV2ConversationCandidate({
+    url: 'https://api.openai.com/v1/responses',
+    _classification: { type: 'MainAgent', subType: null },
+    _v2Descriptor: { agentRole: 'main' },
+  }), false);
+  assert.equal(isV2ConversationCandidate({
+    _classification: { type: 'Metadata', subType: null },
+    _v2Descriptor: { agentRole: 'main' },
+  }), true);
+});
+
 test('cold ingest renders persisted V2 in-progress history without admitting legacy delta slices', () => {
   const user = {
     type: 'message', id: 'user_1', role: 'user',

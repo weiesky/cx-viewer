@@ -6,7 +6,9 @@
  */
 import { getEntryUserId, getMainAgentSessionKey } from './clearCheckpoint.js';
 import { messageFingerprint } from './sessionMerge.js';
-import { normalizeCodexUserText, projectUserPromptItem } from './userPromptContent.js';
+import { normalizeCodexUserText } from './userPromptContent.js';
+import { extractDirectContextCompaction, extractEntryContextCompaction } from './contextCompaction.js';
+import { hasOpenAiResponsesConversationTransport } from '../../lib/openai-responses-url.js';
 
 const CODEX_RESPONSE_ITEM_TYPES = new Set([
   'compaction',
@@ -26,16 +28,7 @@ const CODEX_RESPONSE_ITEM_TYPES = new Set([
 
 /** Keep OpenAI Responses transport entries inspectable, but out of chat projection. */
 export function shouldExcludeFromConversation(entry) {
-  return [entry?.proxyUrl, entry?.url].some(value => {
-    if (typeof value !== 'string' || !value) return false;
-    try {
-      const url = new URL(value);
-      return url.hostname === 'api.openai.com'
-        && /^\/v1\/responses(?:\/|$)/.test(url.pathname);
-    } catch {
-      return false;
-    }
-  });
+  return hasOpenAiResponsesConversationTransport(entry);
 }
 
 function cloneJson(value) {
@@ -205,25 +198,18 @@ export function isCodexResponsesInput(input) {
   });
 }
 
-export function codexItemsToViewerMessages(input, responseContent = null) {
+export function codexItemsToViewerMessages(input, responseContent = null, contextCompactionDescriptor = null) {
   const messages = [];
   let assistantBlocks = [];
   let latestCompactionIndex = -1;
   for (let i = 0; i < (input || []).length; i++) {
     if (input[i]?.type === 'compaction') latestCompactionIndex = i;
   }
-  let latestPromptBeforeCompaction = -1;
-  if (latestCompactionIndex >= 0) {
-    for (let i = latestCompactionIndex - 1; i >= 0; i--) {
-      if (projectUserPromptItem(input[i])) {
-        latestPromptBeforeCompaction = i;
-        break;
-      }
-    }
-  }
-  const compactHistoryCutoff = latestCompactionIndex < 0
-    ? -1
-    : (latestPromptBeforeCompaction >= 0 ? latestPromptBeforeCompaction : latestCompactionIndex);
+  const resolvedCompactionDescriptor = latestCompactionIndex >= 0
+    ? (contextCompactionDescriptor?.present
+      ? contextCompactionDescriptor
+      : extractDirectContextCompaction({ body: { input } }))
+    : null;
 
   const flushAssistant = () => {
     if (assistantBlocks.length === 0) return;
@@ -247,11 +233,21 @@ export function codexItemsToViewerMessages(input, responseContent = null) {
     const item = input[itemIndex];
     if (!item || typeof item !== 'object') continue;
 
-    // A native compaction replaces the transcript before its latest prompt.
-    // Retain that prompt and every causal item from it to the marker (assistant
-    // reasoning/tool calls/results), but do not leave earlier assistant/tool
-    // messages orphaned after their user prompt has been removed.
-    if (compactHistoryCutoff >= 0 && itemIndex < compactHistoryCutoff) continue;
+    // A native compaction replaces every ordinary transcript item before the
+    // latest marker. The covered prompts remain available only through the
+    // dedicated disclosure row; raw/encrypted marker payloads are never copied.
+    if (latestCompactionIndex >= 0 && itemIndex < latestCompactionIndex) continue;
+    if (itemIndex === latestCompactionIndex) {
+      flushAssistant();
+      const sourceKey = resolvedCompactionDescriptor?.sourceKey
+        || `compaction:${latestCompactionIndex}:${resolvedCompactionDescriptor?.count || 1}`;
+      messages.push({
+        role: 'context-compaction',
+        content: sourceKey,
+        _contextCompaction: resolvedCompactionDescriptor,
+      });
+      continue;
+    }
 
     if (item.type === 'message' || (!item.type && item.role)) {
       if (item.role === 'developer' || item.role === 'system') continue;
@@ -376,12 +372,15 @@ export function normalizeConversationEntry(entry) {
     const responseContent = entry.inProgress || !Array.isArray(responseBody?.content)
       ? null
       : normalizeResponseBlocks(responseBody.content, repairLegacySseDuplicates);
+    // Conversation rows retain only the collapsed descriptor. The potentially
+    // large prompt projection is resolved from the request collection on click.
+    const contextCompactionDescriptor = extractEntryContextCompaction(entry);
     return {
       ...entry,
       _codexConversationProjection: true,
       body: {
         ...body,
-        input: codexItemsToViewerMessages(body.input, responseContent),
+        input: codexItemsToViewerMessages(body.input, responseContent, contextCompactionDescriptor),
       },
     };
   }

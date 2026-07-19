@@ -42,9 +42,16 @@ describe('generated UltraPlan assets', () => {
 
   it('executable prompts use the CX Codex wrapper and no foreign-platform tools', () => {
     const combined = Object.values(ULTRAPLAN_VARIANTS).join('\n');
-    for (const required of ['<user_instructions>', 'request_user_input', 'update_plan', 'multi_agent_v${verson}']) {
+    for (const required of ['<user_instructions>', 'request_user_input', 'update_plan', 'tool_search']) {
       assert.ok(combined.includes(required), `missing ${required}`);
     }
+    assert.ok(ULTRAPLAN_VARIANTS.codeExpert.includes('tool_search'));
+    assert.ok(ULTRAPLAN_VARIANTS.codeExpert.includes('automated post-implementation gate'));
+    assert.equal(ULTRAPLAN_VARIANTS.codeExpert.includes('parellel'), false);
+    assert.equal(ULTRAPLAN_VARIANTS.codeExpert.includes('${verson}'), false);
+    assert.ok(ULTRAPLAN_VARIANTS.researchExpert.includes('You must use \`request_user_input\`'));
+    assert.ok(ULTRAPLAN_VARIANTS.researchExpert.includes('at most 3 concurrently active teammates'));
+    assert.equal(ULTRAPLAN_VARIANTS.researchExpert.includes('${verson}'), false);
     for (const forbidden of ['<system-reminder>', 'AskUserQuestion', 'EnterPlanMode', 'ExitPlanMode', 'TeamCreate', 'TeamDelete', 'Claude Code']) {
       assert.equal(combined.includes(forbidden), false, `foreign platform term found: ${forbidden}`);
     }

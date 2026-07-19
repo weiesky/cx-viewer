@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from 'antd';
-import { MessageOutlined } from '@ant-design/icons';
+import { CommentOutlined } from '@ant-design/icons';
 import { imTr as _tr } from '../../utils/imTr';
 import ImPlatformSettings from './ImPlatformSettings';
 import { IM_PLATFORMS } from './imPlatforms';
@@ -37,7 +37,7 @@ export default function MessagingModal({ open, onClose, initialTool }) {
       // active tab "拉出贴合下方面板" 的 Chrome 标签观感在明暗主题都成立(对照 UltraPlan)。
       // header 同步取 --bg-elevated,否则 light 下标题栏(antd 默认 #FFF)会与 body(#F9F9F9)错色。
       styles={{ content: { background: 'var(--bg-elevated)' }, header: { background: 'var(--bg-elevated)' }, mask: BLUR_MASK_STYLE }}
-      title={<span><MessageOutlined style={{ marginInlineEnd: 8 }} />{_tr('ui.messaging.title', null, 'Messaging Integrations')}</span>}
+      title={<span><CommentOutlined aria-hidden="true" style={{ marginInlineEnd: 8 }} />{_tr('ui.messaging.title', null, 'Messaging Integrations')}</span>}
     >
       <div className={styles.tabRow}>
         {TOOLS.map((tool) => {

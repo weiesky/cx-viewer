@@ -66,6 +66,30 @@ test('SDK identity uses its authoritative thread as the session boundary', () =>
   assert.equal(identity.agentRole, 'main');
 });
 
+test('legacy direct OpenAI Responses entries do not retain a main archive role', () => {
+  const identity = resolveIngestionSourceIdentity({
+    url: 'https://api.openai.com/v1/responses',
+    mainAgent: true,
+    body: { metadata: { session_id: 'api-session' } },
+  }, { source: 'proxy' }, { fallbackSessionId: 'synthetic' });
+  assert.equal(identity.agentRole, 'auxiliary');
+});
+
+test('Master identity overrides conflicting legacy subagent and teammate flags', () => {
+  for (const flags of [
+    { mainAgent: true, subAgent: true },
+    { mainAgent: true, teammate: 'reviewer' },
+    { mainAgent: true, subAgent: true, teammate: 'reviewer' },
+  ]) {
+    const identity = resolveIngestionSourceIdentity({
+      url: 'https://api.openai.com/v1/responses',
+      ...flags,
+      body: { metadata: { session_id: 'api-session' } },
+    }, { source: 'proxy' }, { fallbackSessionId: 'synthetic' });
+    assert.equal(identity.agentRole, 'auxiliary');
+  }
+});
+
 test('OTel identity uses resource session and trace-scoped thread', () => {
   const identity = resolveIngestionSourceIdentity({
     _otelSessionId: 'otel-process-1',

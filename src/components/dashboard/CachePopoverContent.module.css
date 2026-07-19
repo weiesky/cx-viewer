@@ -187,6 +187,16 @@
   padding: 4px 10px;
 }
 
+.compactionSectionInConversation {
+  min-width: 0;
+  margin: 8px clamp(8px, 3vw, 28px);
+  box-sizing: border-box;
+}
+
+.compactionSectionInDrawer {
+  min-width: 0;
+}
+
 .compactionRow {
   display: flex;
   align-items: center;
@@ -219,7 +229,7 @@
 }
 
 .compactionSummaryButton:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-success);
   outline-offset: 1px;
   border-radius: 2px;
 }
@@ -255,6 +265,7 @@
 
 .compactionPromptToggle {
   flex: 0 1 auto;
+  margin-inline-start: auto;
   min-width: 0;
   max-width: min(42%, 320px);
   appearance: none;
@@ -265,6 +276,7 @@
   font: inherit;
   font-size: 11px;
   line-height: 18px;
+  text-align: end;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -276,7 +288,7 @@
 }
 
 .compactionPromptToggle:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-success);
   outline-offset: 2px;
   border-radius: 2px;
 }
@@ -293,7 +305,7 @@
 }
 
 .compactionPromptList:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-success);
   outline-offset: -2px;
 }
 
@@ -337,7 +349,7 @@
 }
 
 .compactionPromptImageButton:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-success);
   outline-offset: 2px;
 }
 
@@ -392,7 +404,7 @@
 }
 
 .compactionPromptRemoteButton:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-success);
   outline-offset: 2px;
 }
 
@@ -422,12 +434,36 @@
 }
 
 .compactionPromptLoadMore:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-success);
   outline-offset: 2px;
 }
 
 .compactionPromptRegion {
   min-width: 0;
+}
+
+@media (max-width: 600px) {
+  .compactionSectionInConversation {
+    margin-inline: 8px;
+  }
+
+  .compactionSectionInConversation .compactionRow,
+  .compactionSectionInDrawer .compactionRow {
+    flex-wrap: wrap;
+  }
+
+  .compactionSectionInConversation .compactionSummaryButton,
+  .compactionSectionInDrawer .compactionSummaryButton {
+    flex: 1 1 180px;
+  }
+
+  .compactionSectionInConversation .compactionPromptToggle,
+  .compactionSectionInDrawer .compactionPromptToggle {
+    flex: 1 1 100%;
+    margin-inline-start: 0;
+    max-width: 100%;
+    text-align: end;
+  }
 }
 
 .skillCountBreakdown {
