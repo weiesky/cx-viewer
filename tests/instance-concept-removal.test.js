@@ -31,11 +31,9 @@ test('removed log-instance UI and protocol identifiers do not return', () => {
 
 test('live log delivery no longer adds a process identifier', () => {
   const server = source('server.js');
-  const watcher = source('lib/log-watcher.js');
   const ptyManager = source('pty-manager.js');
 
   assert.doesNotMatch(server, /\bgetCodexPid\b/);
-  assert.doesNotMatch(watcher, /\bgetCodexPid\b|parsed\.pid\s*=/);
   assert.doesNotMatch(ptyManager, /export function getPtyPid\b/);
 });
 

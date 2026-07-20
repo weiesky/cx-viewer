@@ -3,6 +3,8 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, statSync, readdirSy
 import { join, basename, resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { LOG_DIR } from './findcx.js';
+import { listV2LocalLogs } from './lib/log-v2/materializer.js';
+import { projectIdForCwd } from './lib/log-v2/project-id.js';
 
 // 动态获取（LOG_DIR 可能在运行时被 setLogDir 修改）
 function getWorkspacesFile() { return join(LOG_DIR, 'workspaces.json'); }
@@ -131,21 +133,12 @@ export function getWorkspaces() {
   const list = loadWorkspaces();
   return list
     .map(w => {
-      let logCount = 0;
-      let totalSize = 0;
-      const logDir = join(LOG_DIR, w.projectName);
+      let logs = [];
       try {
-        if (existsSync(logDir)) {
-          const files = readdirSync(logDir);
-          for (const f of files) {
-            if (f.endsWith('.jsonl')) {
-              logCount++;
-              try { totalSize += statSync(join(logDir, f)).size; } catch { }
-            }
-          }
-        }
+        const projectId = projectIdForCwd(w.path, w.projectName);
+        logs = listV2LocalLogs(LOG_DIR, projectId)[projectId] || [];
       } catch { }
-      return { ...w, logCount, totalSize };
+      return { ...w, logCount: logs.length, totalSize: logs.reduce((sum, log) => sum + (log.size || 0), 0) };
     })
     .sort((a, b) => new Date(b.lastUsed) - new Date(a.lastUsed));
 }

@@ -8,10 +8,10 @@ import {
   projectArchiveDirectoryName,
   resolveAppServerThreadIdentity,
   resolveIngestionSourceIdentity,
-  resolveLegacyEntryIdentity,
   sessionArchiveRelativePath,
   threadStoreToken,
 } from '../lib/log-v2/identity.js';
+import { projectIdForCwd, rawProjectDirectoryToken } from '../lib/log-v2/project-id.js';
 
 test('root App Server thread maps to its session archive', () => {
   assert.deepEqual(resolveAppServerThreadIdentity({ id: 'root-1', sessionId: 'root-1' }), {
@@ -42,18 +42,6 @@ test('App Server identity refuses to guess a missing session', () => {
   assert.throws(() => resolveAppServerThreadIdentity({ id: 'thread-only' }), /thread\.sessionId/);
 });
 
-test('legacy identity uses explicit metadata before scoped fallback', () => {
-  const explicit = resolveLegacyEntryIdentity({ metadata: { session_id: 's1', thread_id: 't1' } }, {
-    fallbackSessionId: 'fallback',
-  });
-  assert.equal(explicit.sessionId, 's1');
-  assert.equal(explicit.threadId, 't1');
-
-  const fallback = resolveLegacyEntryIdentity({}, { fallbackSessionId: 's2' });
-  assert.equal(fallback.sessionId, 's2');
-  assert.equal(fallback.threadId, 's2');
-});
-
 test('SDK identity uses its authoritative thread as the session boundary', () => {
   const identity = resolveIngestionSourceIdentity({
     mainAgent: true,
@@ -66,7 +54,7 @@ test('SDK identity uses its authoritative thread as the session boundary', () =>
   assert.equal(identity.agentRole, 'main');
 });
 
-test('legacy direct OpenAI Responses entries do not retain a main archive role', () => {
+test('direct OpenAI Responses entries do not retain a main archive role', () => {
   const identity = resolveIngestionSourceIdentity({
     url: 'https://api.openai.com/v1/responses',
     mainAgent: true,
@@ -75,7 +63,7 @@ test('legacy direct OpenAI Responses entries do not retain a main archive role',
   assert.equal(identity.agentRole, 'auxiliary');
 });
 
-test('Master identity overrides conflicting legacy subagent and teammate flags', () => {
+test('Master identity overrides conflicting subagent and teammate flags', () => {
   for (const flags of [
     { mainAgent: true, subAgent: true },
     { mainAgent: true, teammate: 'reviewer' },
@@ -175,6 +163,15 @@ test('project and session storage names preserve identity without hash aliases',
     sessionId: 'session-123',
     createdAt: '2026-07-15T00:00:00.000Z',
   }), '20260715_session-123.cxvsession');
+});
+
+test('runtime project identity is the readable project name without a cwd hash', () => {
+  const first = projectIdForCwd('/workspace/one/project', 'project');
+  const second = projectIdForCwd('/workspace/two/project', 'project');
+  assert.equal(first, 'project');
+  assert.equal(second, 'project');
+  assert.equal(projectIdForCwd('/workspace/one/project', first), first);
+  assert.equal(rawProjectDirectoryToken('project'), 'project');
 });
 
 test('storage segment encoding handles traversal, reserved names, and canonical round trips', () => {

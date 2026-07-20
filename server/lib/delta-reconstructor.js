@@ -16,10 +16,7 @@
  * 换写进程）则重置基线。重建结果与 `_totalMessageCount` 不符时做完整性修复 / 标记
  * `_reconstructBroken`，防脏条目把整段对话二次拼接（mainAgent 整段重复 bug 根因）。
  *
- * 提供三种 API：
- * - reconstructEntries(entries): 批量重建，用于 readLogFile() 和 readLocalLog()
- * - reconstructSegment(segment, nextCheckpoint): 段级重建，用于流式分段处理
- * - createIncrementalReconstructor(): 有状态的增量重建器，用于 watcher 逐条重建
+ * reconstructEntries(entries) 批量重建独立 IM worker 日志。
  */
 
 /**
@@ -29,7 +26,7 @@
  * 2. _isCheckpoint === true → 显式 checkpoint
  * 3. _totalMessageCount === body.input.length → 隐式 checkpoint（delta 长度 === 总长度）
  */
-export function isCheckpointEntry(entry) {
+function isCheckpointEntry(entry) {
   // 无 _deltaFormat：全量条目
   if (!entry._deltaFormat) return true;
   // 显式 checkpoint
@@ -45,7 +42,7 @@ export function isCheckpointEntry(entry) {
  * teammate 子进程的条目可能带 mainAgent:true 双标（instructions 含 "You are Codex"），
  * 必须显式排除，否则其 delta/checkpoint 会污染 leader 的累积状态。
  */
-export function isDeltaEntry(entry) {
+function isDeltaEntry(entry) {
   return entry._deltaFormat && entry.mainAgent && !entry.teammate;
 }
 
@@ -60,27 +57,19 @@ function _getConversationId(entry) {
   return entry?._conversationId || 'mainAgent';
 }
 
-function _createContext(seqState) {
+function _createContext() {
   return {
     accumulated: [],
     intState: { baselineSeen: false, poisoned: false },
-    seqState: seqState || { lastSeq: 0, lastEpoch: null },
+    seqState: { lastSeq: 0, lastEpoch: null },
   };
 }
 
-function _getContext(ctxByConversation, entry, sharedSeqStateByConversation = null) {
+function _getContext(ctxByConversation, entry) {
   const id = _getConversationId(entry);
   let ctx = ctxByConversation.get(id);
   if (!ctx) {
-    let seqState = null;
-    if (sharedSeqStateByConversation) {
-      seqState = sharedSeqStateByConversation.get(id);
-      if (!seqState) {
-        seqState = { lastSeq: 0, lastEpoch: null };
-        sharedSeqStateByConversation.set(id, seqState);
-      }
-    }
-    ctx = _createContext(seqState);
+    ctx = _createContext();
     ctxByConversation.set(id, ctx);
   }
   return ctx;
@@ -109,7 +98,7 @@ function _seqGuardCheck(entry, st) {
   // 按序 / epoch 切换（进程重启 seq 归零、IM worker 等第二写进程）：推进基线。
   // 注意 epoch 是盲信的——任何未见过的 epoch 都视同"进程重启"重置基线，没有
   // "哪个 epoch 拥有 mainAgent 流"的概念。双写进程 interleave 时基线会被来回
-  // rebase（短暂错误内容），由下一 checkpoint 自愈（≤CHECKPOINT_INTERVAL 条）。
+  // rebase（短暂错误内容），由下一 checkpoint 自愈。
   st.lastEpoch = epoch;
   st.lastSeq = seq;
   return 'ok';
@@ -160,11 +149,10 @@ function _integrityCheck(entry, accumulated, st) {
 }
 
 /**
- * 单条条目的重建状态机核心 — 三个 API（批量/段级/增量）共用。
+ * 单条条目的批量重建状态机核心。
  * KEEP IN SYNC: server/interceptor.js `_seq` 写入点。
  *
- * 调用方约定：inProgress 条目必须在调用前自行处理（批量/段级跳过、增量重建副本不进
- * 累积态）——placeholder 与 completed 共享同一 _seq，先于守卫排除防 completed 被
+ * 调用方约定：inProgress 条目必须在调用前跳过——placeholder 与 completed 共享同一 _seq，先于守卫排除防 completed 被
  * "同 seq 重发"规则误吞。
  *
  * 经过本函数后 entry.body.input 的三种终态：
@@ -179,7 +167,7 @@ function _integrityCheck(entry, accumulated, st) {
  *          seqState: {lastSeq: number, lastEpoch: string|null}}} ctx
  *   重建上下文；ctx.accumulated 由本函数重新赋值（调用方读 ctx 而非局部变量）。
  * @returns {boolean} true = 该条目断裂、需后续 checkpoint 第二遍补偿
- *   （批量/段级路径据此收集索引；增量路径无第二遍、忽略返回值）
+ *   （批量路径据此收集索引）
  */
 function _stepReconstruct(entry, ctx) {
   if (!isDeltaEntry(entry)) {
@@ -287,127 +275,18 @@ function _tryRepairFromCandidate(brokenEntry, expectedCount, candidate) {
 /**
  * 补偿修复：对断裂的 delta 条目，从后续最近的 checkpoint 中提取完整 input 回填。
  * checkpoint 包含截至该点的完整历史，可以据此反推之前条目的 input。
- * @param {object|null} [nextCheckpoint] - 数组内向后查找失败时的额外候选
- *   （段级调用方传入段外的下一 checkpoint，最后一段可为 null）
  */
-function _compensateBrokenEntries(entries, brokenIndices, nextCheckpoint = null) {
+function _compensateBrokenEntries(entries, brokenIndices) {
   for (const brokenIdx of brokenIndices) {
     const brokenEntry = entries[brokenIdx];
     const expectedCount = brokenEntry._totalMessageCount;
     if (!expectedCount) continue;
 
     // 向后查找最近的 checkpoint 或全量条目（排除 teammate）
-    let repaired = false;
     for (let j = brokenIdx + 1; j < entries.length; j++) {
       if (_tryRepairFromCandidate(brokenEntry, expectedCount, entries[j])) {
-        repaired = true;
         break;
       }
     }
-    if (!repaired && nextCheckpoint) {
-      _tryRepairFromCandidate(brokenEntry, expectedCount, nextCheckpoint);
-    }
   }
-}
-
-/**
- * 段级重建 — 用于流式分段处理。
- * 对一个 checkpoint 边界内的段进行正向重建，如有 broken 条目则用 nextCheckpoint 反向修复。
- * 段内条目数通常 ≤ CHECKPOINT_INTERVAL(10)，内存开销可控。
- *
- * @param {Array} segment - 段内条目数组（段首应为 checkpoint/全量条目）
- * @param {object|null} nextCheckpoint - 下一个 checkpoint 条目（用于反向修复），最后一段可为 null
- * @param {{lastSeq: number, lastEpoch: string|null}} [sharedSeqState] - 跨段共享的 seq 守卫状态。
- *   流式分段调用方（log-stream）必须按文件维度传入同一对象：乱序的 stale checkpoint 自己就是
- *   段边界，若每段独立建 seqState 它会以 fresh 基线被判 'ok' 漏检。不传时退化为段内独立状态
- *   （仅适合单段调用）。
- * @returns {Array} 重建后的段条目数组（原地修改）
- */
-export function reconstructSegment(segment, nextCheckpoint, sharedSeqState) {
-  const ctxByConversation = new Map();
-  const sharedSeqStateByConversation = sharedSeqState
-    ? (sharedSeqState.byConversation || (sharedSeqState.byConversation = new Map()))
-    : null;
-  const broken = [];
-
-  for (let i = 0; i < segment.length; i++) {
-    const entry = segment[i];
-    if (entry.inProgress) continue;
-    const ctx = _getContext(ctxByConversation, entry, sharedSeqStateByConversation);
-    if (_stepReconstruct(entry, ctx)) broken.push(i);
-  }
-
-  // 补偿修复：先在段内向后查找，再用 nextCheckpoint
-  if (broken.length > 0) {
-    _compensateBrokenEntries(segment, broken, nextCheckpoint);
-  }
-
-  return segment;
-}
-
-/**
- * 创建有状态的增量重建器 — 用于 watcher 逐条重建。
- * 每次调用 reconstruct(entry) 处理一条新条目。
- *
- * @returns {{ reconstruct: (entry: object) => object, reset: () => void }}
- */
-export function createIncrementalReconstructor() {
-  // accumulated：mainAgent 累积 input；
-  // baselineSeen：自创建/reset 后是否见过 checkpoint/全量条目；
-  // poisoned：accumulated 被 slice 修复过（基底不可信），冻结到下一 checkpoint
-  const ctxByConversation = new Map();
-
-  return {
-    /**
-     * 重建单条条目。
-     * - 非 delta 条目：如果是 mainAgent 全量格式，更新累积状态，原样返回
-     * - 乱序条目（_seq 守卫）：不进累积态，标 _staleReorder 后返回
-     * - checkpoint：重置累积状态，原样返回
-     * - delta：拼接重建 + 完整性校验，修改 body.input 后返回
-     *
-     * @param {object} entry - 单条日志条目
-     * @returns {object} 重建后的条目（同一引用）
-     */
-    reconstruct(entry) {
-      // inProgress 条目：用 accumulated 副本重建 input，但不更新 accumulated 本身，
-      // 也不参与 seq 守卫（placeholder 与 completed 共享同一 _seq，先于守卫跳过，
-      // 防 completed 被"同 seq 重发"规则误吞）。
-      // 这样客户端收到完整 input（避免 delta 闪烁），
-      // 而后续 completed 条目仍能基于正确的 accumulated 重建。
-      if (entry.inProgress) {
-        if (isDeltaEntry(entry) && !isCheckpointEntry(entry)) {
-          const msgs = entry.body?.input;
-          if (Array.isArray(msgs)) {
-            const ctx = _getContext(ctxByConversation, entry);
-            const total = entry._totalMessageCount;
-            if (total && ctx.accumulated.length + msgs.length !== total) {
-              // 基线与该请求声称的总长不一致（watcher 中途附着、倒置窗口等）：
-              // 拼接产物必然错段/重复。inProgress 没有 completed 路径的
-              // _integrityCheck 兜底，且 live 端不拦 inProgress 直接进 merge，
-              // 所以这里必须标记 broken 让 isMergeBlockedEntry 阻断——宁可这一帧
-              // 不出提问气泡（completed 紧随其后），也不能把错位 transcript 渲染出去。
-              entry._reconstructBroken = true;
-            } else {
-              entry.body.input = [...ctx.accumulated, ...msgs];
-            }
-          }
-        }
-        return entry;
-      }
-
-      // 忽略 needs-compensation 返回值：增量路径是实时流、无法回看后续 checkpoint
-      // 做第二遍补偿。stale 仅靠 _markStaleEntry 就地回填；未补偿条目带
-      // _staleReorder/_reconstructBroken 标记，由客户端 isMergeBlockedEntry 阻断 merge。
-      const ctx = _getContext(ctxByConversation, entry);
-      _stepReconstruct(entry, ctx);
-      return entry;
-    },
-
-    /**
-     * 重置累积状态（用于 full_reload 等场景）。
-     */
-    reset() {
-      ctxByConversation.clear();
-    }
-  };
 }

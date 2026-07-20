@@ -7,7 +7,7 @@ test('repeatable V2 benchmark measures size, append, recovery, materialization, 
   const report = benchmarkLogV2Writer({ events: 40, messageBytes: 512, durability: 'buffered' });
   assert.equal(report.events, 40);
   assert.equal(report.materializedEvents, 40);
-  assert.ok(report.v1Bytes > 0);
+  assert.ok(report.fullEntryBytes > 0);
   assert.ok(report.v2Bytes > 0);
   assert.ok(report.bytesPerEvent > 0);
   assert.ok(report.objectFiles > 0);

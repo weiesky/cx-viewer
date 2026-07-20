@@ -362,7 +362,6 @@ export function isRelevantRequest(request) {
   if (!request) return false;
   const url = request.url || '';
   return !(
-    request.cxvRotationContext ||  // rotation-context sentinel: metadata frame, never a renderable request
     request.isHeartbeat ||
     request.isCountTokens ||
     /\/api\/eval\/sdk-/.test(url) ||
@@ -382,15 +381,10 @@ export function filterRelevantRequests(requests) {
 
 /**
  * The single source of truth for the request list a user can SEE and that
- * selectedIndex indexes. showAll bypasses relevance filtering but must still
- * hide rotation-context sentinels (metadata frames kept inside state.requests
- * for positional-index integrity). Every selectedIndex-coupled call site must
- * use this helper — a sentinel-inclusive array desynchronizes the selection.
+ * selectedIndex indexes. Every selectedIndex-coupled call site must use this helper.
  */
 export function visibleRequests(requests, showAll) {
-  return showAll
-    ? requests.filter((r) => !r?.cxvRotationContext)
-    : filterRelevantRequests(requests);
+  return showAll ? requests : filterRelevantRequests(requests);
 }
 
 /**

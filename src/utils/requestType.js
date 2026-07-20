@@ -12,8 +12,22 @@
 // 形式判断（用于 RequestList 打 Synthetic tag）；isSystemText 走的是"纯文本起首匹配"（用于对话流隐藏）。
 import { getInputItemText, getResponseConversationItems, getResponseInputItems, getResponseInstructions, getResponseTools } from '../../lib/openai-body.js';
 import { isMainAgent, isTeammate, getInstructionsText, getEntryUpstreamLane, extractTeammateName, SYNTHETIC_PROMPTS } from './contentFilter.js';
-import { isMetadataModelsEntry } from '../../lib/repeat-entry.js';
 import { isOpenAiResponsesMasterEntry } from '../../lib/openai-responses-url.js';
+
+function isMetadataModelsEntry(entry) {
+  if (!entry || String(entry.method || 'GET').toUpperCase() !== 'GET') return false;
+  return [entry.proxyUrl, entry.url].some((value) => {
+    if (!value) return false;
+    try {
+      const pathname = new URL(value).pathname.replace(/\/+$/, '');
+      return pathname === '/backend-api/codex/models'
+        || pathname.endsWith('/codex/models')
+        || pathname === '/v1/models';
+    } catch {
+      return /\/(?:backend-api\/)?codex\/models(?:[?#]|$)|\/v1\/models(?:[?#]|$)/.test(String(value));
+    }
+  });
+}
 
 function getMessageText(msg) {
   return getInputItemText(msg);

@@ -78,7 +78,7 @@ Even better — you can even code from your mobile device!
 
 ⚠️ If you still prefer using the native codex tool or VS Code extension, use this mode.
 
-In this mode, launching `codex` or `codex --dangerously-skip-permissions` will automatically start a logging process that records request logs to ~/.codex/cx-viewer/*yourproject*/date.jsonl
+In this mode, launching `codex` or `codex --dangerously-skip-permissions` automatically records requests in `~/.codex/cx-viewer/<encoded-project-id>/YYYYMMDD_<encoded-session-id>.cxvsession/`.
 
 Enable logger mode:
 ```bash

@@ -34,9 +34,9 @@ function execWithStdin(cmd, args, input, options) {
     child.stdin.end();
   });
 }
-import { LOG_FILE, _initPromise, _resumeState, resolveResumeChoice, _projectName, _logDir, _cachedApiKey, _cachedAuthHeader, initForWorkspace, resetWorkspace, streamingState, resetStreamingState, _loadProxyProfile, PROFILE_PATH, _defaultConfig, appendLogEntry, closeLogV2Writes, getLogV2RuntimeStatus } from './interceptor.js';
+import { _initPromise, _projectName, _logDir, _cachedApiKey, _cachedAuthHeader, initForWorkspace, resetWorkspace, getActiveProjectContext, setLogV2CommitListener, streamingState, resetStreamingState, _loadProxyProfile, PROFILE_PATH, _defaultConfig, appendLogEntry, closeLogV2Writes, getLogV2RuntimeStatus } from './interceptor.js';
 import { parseOtlpTraces } from './lib/otel-receiver.js';
-import { LOG_DIR, setLogDir } from './findcx.js';
+import { LOG_DIR } from './findcx.js';
 import { t, detectLanguage } from './i18n.js';
 import { DEFAULT_START_PORT, DEFAULT_MAX_PORT, MAX_POST_BODY as _MAX_POST_BODY, MAX_UPLOAD_SIZE, SSE_HEARTBEAT_MS, HOOK_TIMEOUT_MS, EDITOR_SESSION_CLEANUP_MS, UPLOAD_DIR } from './lib/constants.js';
 import { checkAndUpdate } from './lib/updater.js';
@@ -48,27 +48,21 @@ import { getGitWorkingTreeLineStats } from './lib/git-change-stats.js';
 import { parseCodexInvocation } from './lib/cli-args.js';
 import { CONTEXT_WINDOW_FILE, buildContextWindowEvent } from './lib/context-watcher.js';
 import { CODEX_CONTEXT_WINDOW_TOKENS, sumUsageContextTokens } from './server/lib/context-rules.js';
-import { watchLogFile, startWatching, getWatchedFiles, sendEventToClients, sendToClients } from './lib/log-watcher.js';
 import { isMainAgentEntry } from './lib/main-agent-entry.js';
 import {
-  listLocalLogs,
   deleteLogFiles,
-  clearRawSidecarsForLog,
-  validateLogPath,
+  validateImLogPath,
 } from './lib/log-management.js';
-import { countLogEntries, streamRawEntriesAsync, readPagedEntries } from './lib/log-stream.js';
+import { countImLogEntries, streamImLogEntries } from './lib/im-log-stream.js';
 import {
-  countV2LogEntries,
   findActiveV2SessionFile,
   findActiveV2SessionFileAsync,
   isV2SessionFile,
   listV2LocalLogs,
-  readV2PagedEntriesAsync,
   readV2WirePageAsync,
   readV2WireSnapshotAsync,
   readV2WireSummariesAsync,
   resolveV2SessionFile,
-  streamV2LogEntries,
 } from './lib/log-v2/materializer.js';
 import {
   createV2SessionEntryStream,
@@ -103,7 +97,6 @@ import {
 } from './lib/auth.js';
 import { handleAuthRoute } from './lib/auth-routes.js';
 import { readPreferences, updatePreferences } from './lib/preferences.js';
-import { resetRawCaptureBoundary } from './lib/appserver-bridge.js';
 import {
   buildCodexAutoResolutionAnswers,
   projectCodexAnswersForConversation,
@@ -124,8 +117,6 @@ let _runtimeApprovalsReviewer = null;
 let _codexNativeReviewerAvailable = false;
 let _codexRequestUserInputBridge = null;
 const pendingCodexAsks = new Map();
-const _logV2ReadMode = getLogV2RuntimeStatus().config.readMode;
-
 function activeV2TimelineIdentity(file) {
   const { timelinePath } = resolveV2SessionFile(LOG_DIR, file);
   const stat = statSync(timelinePath, { bigint: true });
@@ -138,13 +129,12 @@ const _activeV2Recovery = createActiveV2RecoveryState({
 
 function activeV2LookupOptions({ forceHealthyScan = false } = {}) {
   const runtime = getLogV2RuntimeStatus();
-  const canonicalCwd = process.env.CXV_PROJECT_DIR || process.cwd();
-  const legacyFile = relative(LOG_DIR, LOG_FILE).split(sep).join('/');
+  const context = getActiveProjectContext();
+  const canonicalCwd = context.canonicalCwd || process.env.CXV_PROJECT_DIR || process.cwd();
   return {
     runtime,
-    projectId: _projectName || null,
+    projectId: context.projectId,
     canonicalCwd,
-    legacyLogFile: legacyFile,
     forceHealthyScan,
   };
 }
@@ -154,17 +144,14 @@ function applyActiveV2Recovery(file) {
 }
 
 function activeV2SessionFile() {
-  if (_logV2ReadMode !== 'v2' || !LOG_FILE) return null;
   return applyActiveV2Recovery(findActiveV2SessionFile(LOG_DIR, activeV2LookupOptions()));
 }
 
 async function activeV2SessionFileAsync() {
-  if (_logV2ReadMode !== 'v2' || !LOG_FILE) return Promise.resolve(null);
   return applyActiveV2Recovery(await findActiveV2SessionFileAsync(LOG_DIR, activeV2LookupOptions()));
 }
 
 async function recoverActiveV2SessionFile(rejectedFile, error) {
-  if (_logV2ReadMode !== 'v2' || !LOG_FILE) return null;
   const recovery = _activeV2Recovery.prepare(rejectedFile, error);
   if (!recovery) return null;
   const fallbackFile = await findActiveV2SessionFileAsync(LOG_DIR, activeV2LookupOptions({ forceHealthyScan: true }));
@@ -175,23 +162,10 @@ async function recoverActiveV2SessionFile(rejectedFile, error) {
   });
 }
 
-function countCurrentLogEntries() {
-  const v2File = activeV2SessionFile();
-  return v2File ? countV2LogEntries(LOG_DIR, v2File) : countLogEntries(LOG_FILE);
-}
-
-function streamCurrentLogEntries(onRawEntry, opts = {}) {
-  const v2File = activeV2SessionFile();
-  return v2File
-    ? streamV2LogEntries(LOG_DIR, v2File, onRawEntry, opts)
-    : streamRawEntriesAsync(LOG_FILE, onRawEntry, opts);
-}
-
-async function readCurrentPagedEntries(options) {
-  const v2File = activeV2SessionFile();
-  return v2File
-    ? readV2PagedEntriesAsync(LOG_DIR, v2File, options)
-    : readPagedEntries(LOG_FILE, options);
+function sendEventToClients(targets, eventName, data) {
+  for (const client of targets) {
+    try { client.write(`event: ${eventName}\ndata: ${JSON.stringify(data)}\n\n`); } catch {}
+  }
 }
 
 export function getApprovalsReviewerPreference() {
@@ -404,7 +378,7 @@ function readJsonBody(req, maxSize = MAX_POST_BODY) {
         req.destroy();
       }
     });
-    req.on('end', () => {
+    req.on('end', async () => {
       if (done) return;
       done = true;
       try { resolve(body ? JSON.parse(body) : {}); }
@@ -684,7 +658,6 @@ let _launchCallback = null;
 export function setLaunchCallback(fn) { _launchCallback = fn; }
 export function setWorkspaceLaunched(v) { _workspaceLaunched = v; }
 export function initPostLaunch() {
-  if (_logV2ReadMode !== 'v2') watchLogFile(_logWatcherOpts(LOG_FILE));
   if (!statsWorker) startStatsWorker();
   startStreamingStatusTimer();
 }
@@ -1036,12 +1009,22 @@ function readOtelJsonBody(req, maxSize = OTEL_PAYLOAD_LIMITS.bodyBytes) {
 }
 
 let clients = [];
+setLogV2CommitListener((entry, _result, context) => {
+  void runParallelHook('onNewEntry', entry).catch(() => {});
+  notifyStatsWorker(context?.projectId);
+  if (!isMainAgentEntry(entry)) return;
+  const usage = entry.response?.body?.usage;
+  const contextEvent = usage ? buildContextWindowEvent(usage) : null;
+  if (contextEvent) sendEventToClients(clients, 'context_window', contextEvent);
+});
 let server;
 let actualPort = 0;
 let serverProtocol = 'http';
 let pluginRoutes = [];
 // Stats Worker 实例
 let statsWorker = null;
+let statsUpdateTimer = null;
+const pendingStatsProjects = new Set();
 
 function registerPluginRoute(method, path, handler) {
   const normalizedMethod = String(method || 'GET').toUpperCase();
@@ -1091,18 +1074,27 @@ function startStatsWorker() {
       statsWorker = null;
     });
     // 初始化：全量扫描当前项目
-    if (_projectName && _logDir) {
-      statsWorker.postMessage({ type: 'init', logDir: LOG_DIR, projectName: _projectName });
+    const projectId = getActiveProjectContext().projectId;
+    if (projectId && _logDir) {
+      statsWorker.postMessage({ type: 'init', logDir: LOG_DIR, projectName: projectId });
     }
   } catch (err) {
     console.error('[CX Viewer] Failed to start stats worker:', err.message);
   }
 }
 
-function notifyStatsWorker(logFile) {
-  if (statsWorker && _projectName) {
-    statsWorker.postMessage({ type: 'update', logDir: LOG_DIR, projectName: _projectName, logFile });
-  }
+function notifyStatsWorker(projectName = getActiveProjectContext().projectId) {
+  if (!statsWorker || !projectName) return;
+  pendingStatsProjects.add(projectName);
+  if (statsUpdateTimer) return;
+  statsUpdateTimer = setTimeout(() => {
+    statsUpdateTimer = null;
+    const projects = [...pendingStatsProjects];
+    pendingStatsProjects.clear();
+    for (const pendingProject of projects) {
+      statsWorker?.postMessage({ type: 'update', logDir: LOG_DIR, projectName: pendingProject });
+    }
+  }, 250);
 }
 
 const MIME_TYPES = {
@@ -1116,17 +1108,6 @@ const MIME_TYPES = {
   '.woff': 'font/woff',
   '.woff2': 'font/woff2',
 };
-
-// Helper to build log-watcher options object
-function _logWatcherOpts(logFile) {
-  return {
-    logFile: logFile || LOG_FILE,
-    clients,
-    runParallelHook,
-    notifyStatsWorker,
-    getLogFile: () => LOG_FILE,
-  };
-}
 
 function getLocalIp() {
   const nets = networkInterfaces();
@@ -1322,7 +1303,7 @@ async function handleRequest(req, res) {
     try {
       const otlpData = validateOtlpTracePayload(await readOtelJsonBody(req));
       const entries = parseOtlpTraces(otlpData);
-      if (entries.length > 0 && LOG_FILE) {
+      if (entries.length > 0) {
         for (const entry of entries.flat().filter(Boolean)) appendLogEntry(entry, {
           source: 'otel',
           cwd: process.env.CXV_PROJECT_DIR || process.cwd(),
@@ -1566,12 +1547,15 @@ async function handleRequest(req, res) {
           }
           incoming.approvalsReviewer = normalizeApprovalsReviewer(incoming.approvalsReviewer);
         }
-        // 如果修改了日志目录，先切换再保存到新位置（新目录下生成 preferences.json）
+        // Writers bind their root at startup; changing only the reader root would split the log store.
         if (incoming.logDir && typeof incoming.logDir === 'string') {
-          setLogDir(incoming.logDir);
-          // LOG_DIR is part of the authentication/session context. Refresh now
-          // so this response cannot leave the old directory's config cached.
-          syncAuthProject();
+          const requested = resolve(incoming.logDir.startsWith('~/')
+            ? join(homedir(), incoming.logDir.slice(2))
+            : incoming.logDir);
+          if (requested !== LOG_DIR) {
+            sendJson(res, 409, { error: 'Changing the log directory requires a CX Viewer restart' });
+            return;
+          }
         }
         const prefs = updatePreferences(current => Object.assign(current, incoming));
         const reviewerState = Object.prototype.hasOwnProperty.call(incoming, 'approvalsReviewer')
@@ -1757,80 +1741,6 @@ async function handleRequest(req, res) {
     return;
   }
 
-  // 注册新的日志文件进行 watch（供新进程复用旧服务时调用）
-  if (url === '/api/register-log' && method === 'POST') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; if (body.length > MAX_POST_BODY) req.destroy(); });
-    req.on('end', () => {
-      try {
-        const { logFile } = JSON.parse(body);
-        if (logFile && typeof logFile === 'string' && logFile.startsWith(LOG_DIR) && existsSync(logFile)) {
-          if (_logV2ReadMode !== 'v2') watchLogFile(_logWatcherOpts(logFile));
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ ok: true }));
-        } else {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Invalid log file path' }));
-        }
-      } catch {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Invalid request body' }));
-      }
-    });
-    return;
-  }
-
-  // 用户选择继续/新开日志
-  if (url === '/api/resume-choice' && method === 'POST') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; if (body.length > MAX_POST_BODY) req.destroy(); });
-    req.on('end', async () => {
-      try {
-        const { choice } = JSON.parse(body);
-        if (choice !== 'continue' && choice !== 'new') {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Invalid choice' }));
-          return;
-        }
-        const result = resolveResumeChoice(choice);
-        if (!result) {
-          res.writeHead(409, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Already resolved' }));
-          return;
-        }
-        // 重新 watch 最终的日志文件
-        if (_logV2ReadMode !== 'v2') watchLogFile(_logWatcherOpts(result.logFile));
-        // 广播 resume_resolved + full_reload
-        const resolvedData = JSON.stringify({ logFile: result.logFile });
-        clients.forEach(client => {
-          try {
-            client.write(`event: resume_resolved\ndata: ${resolvedData}\n\n`);
-          } catch { }
-        });
-        // 流式分段广播 full_reload，避免全量加载 OOM
-        const legacyReloadClients = clients.filter(client => !client.cxvControlOnly);
-        const reloadTotal = countCurrentLogEntries();
-        legacyReloadClients.forEach(client => {
-          try { client.write(`event: load_start\ndata: ${JSON.stringify({ total: reloadTotal, incremental: false })}\n\n`); } catch { }
-        });
-        await streamCurrentLogEntries((raw) => {
-          legacyReloadClients.forEach(client => {
-            try { client.write('event: load_chunk\ndata: ['); client.write(raw.replace(/\n/g, '')); client.write(']\n\n'); } catch { }
-          });
-        });
-        legacyReloadClients.forEach(client => {
-          try { client.write(`event: load_end\ndata: {}\n\n`); } catch { }
-        });
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ ok: true, logFile: result.logFile }));
-      } catch {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Invalid request body' }));
-      }
-    });
-    return;
-  }
-
   // === Workspace API ===
 
   // 目录浏览器
@@ -1910,8 +1820,6 @@ async function handleRequest(req, res) {
         process.env.CXV_PROJECT_DIR = wsPath;
 
         // 启动日志监听
-        if (_logV2ReadMode !== 'v2') watchLogFile(_logWatcherOpts(LOG_FILE));
-
         // 启动 stats worker（如果尚未启动）
         if (!statsWorker) startStatsWorker();
         startStreamingStatusTimer();
@@ -1935,21 +1843,6 @@ async function handleRequest(req, res) {
           try {
             client.write(`event: workspace_started\ndata: ${JSON.stringify({ projectName: result.projectName, path: wsPath })}\n\n`);
           } catch {}
-        });
-
-        // 流式分段广播以刷新会话区域，避免全量加载 OOM
-        const legacyReloadClients = clients.filter(client => !client.cxvControlOnly);
-        const wsReloadTotal = countCurrentLogEntries();
-        legacyReloadClients.forEach(client => {
-          try { client.write(`event: load_start\ndata: ${JSON.stringify({ total: wsReloadTotal, incremental: false })}\n\n`); } catch {}
-        });
-        await streamCurrentLogEntries((raw) => {
-          legacyReloadClients.forEach(client => {
-            try { client.write('event: load_chunk\ndata: ['); client.write(raw.replace(/\n/g, '')); client.write(']\n\n'); } catch {}
-          });
-        });
-        legacyReloadClients.forEach(client => {
-          try { client.write(`event: load_end\ndata: {}\n\n`); } catch {}
         });
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -2001,12 +1894,6 @@ async function handleRequest(req, res) {
   if (url === '/api/workspaces/stop' && method === 'POST') {
     import('./pty-manager.js').then(({ killPty }) => {
       killPty();
-
-      // 停止日志监听
-      for (const logFile of getWatchedFiles().keys()) {
-        unwatchFile(logFile);
-      }
-      getWatchedFiles().clear();
 
       // 重置 interceptor 状态
       resetWorkspace();
@@ -2120,174 +2007,16 @@ async function handleRequest(req, res) {
       'Connection': 'keep-alive',
     });
 
-    // 注意：不要在此处 clients.push(res)！
-    // 必须等 load_end + context_window 全部发送完毕后再加入广播列表，
-    // 否则 streamRawEntriesAsync 的 setImmediate yield 间隙会让 watcher 的
-    // sendToClients 向该客户端推送 live entry，而 load_end 的 setState 会覆盖这些
-    // 已处理的 live entry，导致 对话条目"显示→消失→重现"闪烁。
-
-    // SSE 心跳保活：防止连接被 OS/代理/浏览器静默断开
     const pingTimer = setInterval(() => {
-      try { res.write('event: ping\ndata: {}\n\n'); } catch {}
+      try { res.write("event: ping\ndata: {}\n\n"); } catch {}
     }, SSE_HEARTBEAT_MS);
-
-    // 如果有待决的 resume 选择，发送 resume_prompt 事件
-    if (_resumeState) {
-      res.write(`event: resume_prompt\ndata: ${JSON.stringify({ recentFileName: _resumeState.recentFileName })}\n\n`);
-    }
-
-    // The V2 client has already consumed a frozen reference snapshot. Keep
-    // this EventSource for control/live events without rebuilding and sending
-    // the same historical full entries again.
-    if (parsedUrl.searchParams.get('controlOnly') === '1') {
-      res.cxvControlOnly = true;
-      clients.push(res);
-      req.on('close', () => {
-        clearInterval(pingTimer);
-        const idx = clients.indexOf(res);
-        if (idx !== -1) clients.splice(idx, 1);
-      });
-      return;
-    }
-
-    // 增量加载参数：移动端带 since/cc/project 请求增量数据
-    const sinceParam = parsedUrl.searchParams.get('since');
-    const ccParam = parseInt(parsedUrl.searchParams.get('cc'), 10) || 0;
-    const projectParam = parsedUrl.searchParams.get('project');
-    const projectMatch = !projectParam || projectParam === (_projectName || '');
-    const useIncremental = !!(sinceParam && ccParam > 0 && projectMatch && !isNaN(new Date(sinceParam).getTime()));
-
-    // 分页参数：移动端首次加载传 limit=200，与 since 互斥
-    const limitParam = parseInt(parsedUrl.searchParams.get('limit'), 10) || 0;
-    const useLimit = !useIncremental && limitParam > 0;
-
-    // context_window 追踪（扫描全量条目，不受 since 过滤影响）
-    let latestContextWindow = null;
-    let pushedContextWindow = false;
-
-    await streamCurrentLogEntries((raw) => {
-      // 直接发送原始 JSON 字符串，不做 parse/reconstruct/stringify
-      // SSE data 字段不允许裸换行，去除 pretty-printed JSON 的换行
-      res.write('event: load_chunk\ndata: [');
-      res.write(raw.includes('\n') ? raw.replace(/\n/g, '') : raw);
-      res.write(']\n\n');
-    }, {
-      since: useIncremental ? sinceParam : undefined,
-      limit: useLimit ? limitParam : undefined,
-      onScan: (raw) => {
-        // 轻量追踪最新 MainAgent 的 context_window。
-        // 新 Codex 日志可能缺失 mainAgent:true，只能通过 Codex instructions
-        // 与当前 snake_case 工具名回退识别。
-        if (
-          raw.includes('"mainAgent":true') ||
-          raw.includes('"mainAgent": true') ||
-          raw.includes('You are Codex') ||
-          raw.includes('"shell_command"') ||
-          raw.includes('"tool_search"')
-        ) {
-          try {
-            const entry = JSON.parse(raw);
-            if (isMainAgentEntry(entry)) {
-              const usage = entry.response?.body?.usage;
-              if (usage) {
-                const cw = buildContextWindowEvent(usage);
-                if (cw) latestContextWindow = cw;
-              }
-            }
-          } catch { }
-        }
-      },
-      onReady: ({ totalCount, hasMore, oldestTs }) => {
-        // Pass 1 完成、Pass 2 开始前：发送 load_start
-        // 增量模式下不显示 loading 遮罩，非增量模式显示进度
-        const loadStartData = { total: totalCount, incremental: !!useIncremental };
-        // 分页模式下附加 hasMore/oldestTs（增量模式由客户端从缓存自行判断）
-        if (useLimit) {
-          loadStartData.hasMore = !!hasMore;
-          loadStartData.oldestTs = oldestTs || '';
-        }
-        res.write(`event: load_start\ndata: ${JSON.stringify(loadStartData)}\n\n`);
-      },
-    });
-
-    res.write(`event: load_end\ndata: {}\n\n`);
-
-    // 发送最新 MainAgent 的 context_window
-    if (latestContextWindow) {
-      res.write(`event: context_window\ndata: ${JSON.stringify(latestContextWindow)}\n\n`);
-      pushedContextWindow = true;
-    }
-    // Fallback: no MainAgent in log (e.g. fresh session after -c), read context-window.json
-    if (!pushedContextWindow) {
-      try {
-        const cwRaw = readFileSync(CONTEXT_WINDOW_FILE, 'utf-8');
-        const cwFile = JSON.parse(cwRaw);
-        if (cwFile?.context_window) {
-          // Recalculate with the fixed Codex context size used by the blood bar.
-          const cw = cwFile.context_window;
-          const totalTokens = sumUsageContextTokens(cw.current_usage) || ((cw.total_input_tokens || 0) + (cw.total_output_tokens || 0));
-          const contextSize = CODEX_CONTEXT_WINDOW_TOKENS;
-          const usedPct = contextSize > 0 ? Math.round((totalTokens / contextSize) * 100) : 0;
-          const data = { ...cw, context_window_size: contextSize, used_percentage: usedPct, remaining_percentage: 100 - usedPct };
-          res.write(`event: context_window\ndata: ${JSON.stringify(data)}\n\n`);
-        }
-      } catch { }
-    }
-
-    // 历史数据 + context_window 全部发送完毕后，才将客户端加入广播列表。
-    // 这样 watcher 的 sendToClients 不会在 load 阶段向该客户端推送 live entry。
+    res.cxvControlOnly = true;
     clients.push(res);
-
-    req.on('close', () => {
+    req.on("close", () => {
       clearInterval(pingTimer);
       const idx = clients.indexOf(res);
       if (idx !== -1) clients.splice(idx, 1);
     });
-    return;
-  }
-
-  // API endpoint
-  if (url === '/api/requests' && method === 'GET') {
-    // 异步流式 JSON 数组输出，不做 reconstruct，发原始条目
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.write('[');
-    let first = true;
-    await streamCurrentLogEntries((raw) => {
-      if (!first) res.write(',');
-      res.write(raw);
-      first = false;
-    });
-    res.write(']');
-    res.end();
-    return;
-  }
-
-  // 分页历史条目端点：移动端"加载更多"按需拉取
-  if (url === '/api/entries/page' && method === 'GET') {
-    const before = parsedUrl.searchParams.get('before');
-    const limitVal = Math.min(parseInt(parsedUrl.searchParams.get('limit'), 10) || 100, 500);
-    if (!before || isNaN(new Date(before).getTime())) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'missing or invalid "before" parameter' }));
-      return;
-    }
-    try {
-      const result = await readCurrentPagedEntries({ before, limit: limitVal });
-      // entries 是原始 JSON 字符串数组，parse 后返回给客户端
-      const entries = result.entries.map(raw => {
-        try { return JSON.parse(raw); } catch { return null; }
-      }).filter(Boolean);
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({
-        entries,
-        hasMore: result.hasMore,
-        oldestTimestamp: result.oldestTimestamp,
-        count: entries.length,
-      }));
-    } catch (err) {
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: err.message }));
-    }
     return;
   }
 
@@ -2344,7 +2073,7 @@ async function handleRequest(req, res) {
         res.end(JSON.stringify({ error: 'No project name' }));
         return;
       }
-      const statsFile = join(LOG_DIR, _projectName, `${_projectName}.json`);
+      const statsFile = join(LOG_DIR, 'v2-stats', `${encodeURIComponent(getActiveProjectContext().projectId)}.json`);
       if (!existsSync(statsFile)) {
         res.writeHead(404, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Stats file not found' }));
@@ -2364,12 +2093,13 @@ async function handleRequest(req, res) {
   if (url === '/api/all-project-stats' && method === 'GET') {
     try {
       const allStats = {};
-      if (existsSync(LOG_DIR)) {
-        const entries = readdirSync(LOG_DIR, { withFileTypes: true });
+      const statsDir = join(LOG_DIR, 'v2-stats');
+      if (existsSync(statsDir)) {
+        const entries = readdirSync(statsDir, { withFileTypes: true });
         for (const entry of entries) {
-          if (!entry.isDirectory()) continue;
-          const project = entry.name;
-          const statsFile = join(LOG_DIR, project, `${project}.json`);
+          if (!entry.isFile() || !entry.name.endsWith('.json')) continue;
+          const project = decodeURIComponent(entry.name.slice(0, -5));
+          const statsFile = join(statsDir, entry.name);
           if (existsSync(statsFile)) {
             try {
               allStats[project] = JSON.parse(readFileSync(statsFile, 'utf-8'));
@@ -2402,6 +2132,11 @@ async function handleRequest(req, res) {
             statsWorker?.removeListener('message', onDone);
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ ok: true }));
+          } else if (m.type === 'error') {
+            clearTimeout(timeout);
+            statsWorker?.removeListener('message', onDone);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: m.message || 'Stats refresh failed' }));
           }
         };
         statsWorker.on('message', onDone);
@@ -3102,12 +2837,8 @@ async function handleRequest(req, res) {
   // === Editor session API (for $EDITOR intercept) ===
 
   if (url === '/api/open-log-dir' && method === 'POST') {
-    // V2 projects now live directly under the log root beside legacy project
-    // directories, so reveal that shallow common root.
-    const dir = _logV2ReadMode === 'v2'
-      ? LOG_DIR
-      : (LOG_FILE ? dirname(LOG_FILE) : LOG_DIR);
-    if (_logV2ReadMode === 'v2' && !existsSync(dir)) mkdirSync(dir, { recursive: true });
+    const dir = LOG_DIR;
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
     const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'explorer' : 'xdg-open';
     execFile(cmd, [dir], () => {});
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -3857,9 +3588,7 @@ async function handleRequest(req, res) {
 
   if (url === '/api/local-logs' && method === 'GET') {
     try {
-      const result = _logV2ReadMode === 'v2'
-        ? listV2LocalLogs(LOG_DIR, _projectName)
-        : listLocalLogs(LOG_DIR, _projectName);
+      const result = listV2LocalLogs(LOG_DIR, getActiveProjectContext().projectId);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(result));
     } catch (err) {
@@ -3873,7 +3602,7 @@ async function handleRequest(req, res) {
   // Access is granted only through a reference that is present in the selected log.
   if (url === '/api/raw-sidecars' && method === 'GET') {
     const requestedFile = parsedUrl.searchParams.get('file');
-    const file = requestedFile || (LOG_FILE ? relative(LOG_DIR, LOG_FILE).split(sep).join('/') : '');
+    const file = requestedFile || await activeV2SessionFileAsync() || '';
     if (!file || !file.endsWith('.jsonl')) {
       sendJson(res, 400, { error: 'Invalid or unavailable log file' });
       return;
@@ -3890,7 +3619,7 @@ async function handleRequest(req, res) {
   if (url === '/api/raw-sidecar/frames' && method === 'POST') {
     try {
       const { file: requestedFile, ref, limit } = await readJsonBody(req, 16 * 1024);
-      const file = requestedFile || (LOG_FILE ? relative(LOG_DIR, LOG_FILE).split(sep).join('/') : '');
+      const file = requestedFile || await activeV2SessionFileAsync() || '';
       if (!file || !file.endsWith('.jsonl') || !ref || typeof ref !== 'object'
           || typeof ref.streamId !== 'string' || typeof ref.sidecar !== 'string'
           || !Number.isSafeInteger(ref.fromSeq) || !Number.isSafeInteger(ref.toSeq)) {
@@ -3941,11 +3670,11 @@ async function handleRequest(req, res) {
     return;
   }
 
-  // 下载指定本地日志。V2 的交换边界是完整 .cxvsession 目录；V1 保持 JSONL。
+  // Download one portable V2 session archive.
   if (url === '/api/download-log' && method === 'GET') {
     const file = parsedUrl.searchParams.get('file');
     const v2File = isV2SessionFile(file);
-    if (!file || (!v2File && file.includes('..'))) {
+    if (!v2File) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Invalid file name' }));
       return;
@@ -3957,8 +3686,7 @@ async function handleRequest(req, res) {
     }
     let releaseJob = null;
     try {
-      if (v2File) {
-        releaseJob = acquireLogArchiveJob();
+      releaseJob = acquireLogArchiveJob();
         const archive = await createV2SessionZip(LOG_DIR, file);
         // ZIP construction is complete. The returned stream owns an isolated
         // temp artifact, so response delivery need not hold the global builder
@@ -3998,34 +3726,7 @@ async function handleRequest(req, res) {
           'Content-Length': archive.size,
         });
         archive.stream.pipe(res);
-        return;
-      }
-      const realPath = validateLogPath(LOG_DIR, file);
-      const fileName = file.split('/').pop();
-      const format = parsedUrl.searchParams.get('format');
-      // Delta storage: format=raw 下载原始文件；默认下载重建后的全量格式
-      if (format === 'raw') {
-        const stat = statSync(realPath);
-        res.writeHead(200, {
-          'Content-Type': 'application/octet-stream',
-          'Content-Disposition': `attachment; filename="${encodeURIComponent(fileName)}"`,
-          'Content-Length': stat.size,
-        });
-        const stream = createReadStream(realPath);
-        stream.pipe(res);
-      } else {
-        // 流式下载原始条目（不重建，保持 delta 格式），避免 OOM
-        res.writeHead(200, {
-          'Content-Type': 'application/octet-stream',
-          'Content-Disposition': `attachment; filename="${encodeURIComponent(fileName)}"`,
-          'Transfer-Encoding': 'chunked',
-        });
-        await streamRawEntriesAsync(realPath, (raw) => {
-          res.write(raw);
-          res.write('\n---\n');
-        });
-        res.end();
-      }
+      return;
     } catch (err) {
       releaseJob?.();
       if (res.headersSent) res.destroy(err);
@@ -4038,9 +3739,10 @@ async function handleRequest(req, res) {
     return;
   }
 
-  // 读取指定本地日志文件（支持 project/file 路径）
-  if (url === '/api/local-log' && method === 'GET') {
+  // Read the independent IM worker log; main CX Viewer history is V2-only.
+  if (url === '/api/im-log' && method === 'GET') {
     const file = parsedUrl.searchParams.get('file');
+    const platform = parsedUrl.searchParams.get('platform');
     if (!file || file.includes('..')) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Invalid file name' }));
@@ -4068,8 +3770,8 @@ async function handleRequest(req, res) {
         }));
         return;
       }
-      const filePath = validateLogPath(LOG_DIR, file);
-      const total = countLogEntries(filePath);
+      const filePath = validateImLogPath(LOG_DIR, platform, file);
+      const total = countImLogEntries(filePath);
 
       res.writeHead(200, {
         'Content-Type': 'text/event-stream',
@@ -4078,8 +3780,7 @@ async function handleRequest(req, res) {
       });
 
       res.write(`event: load_start\ndata: ${JSON.stringify({ total, incremental: false })}\n\n`);
-      const stream = (callback) => streamRawEntriesAsync(filePath, callback);
-      await stream((raw) => {
+      await streamImLogEntries(filePath, (raw) => {
         res.write('event: load_chunk\ndata: [');
         res.write(raw.includes('\n') ? raw.replace(/\n/g, '') : raw);
         res.write(']\n\n');
@@ -4099,32 +3800,10 @@ async function handleRequest(req, res) {
     return;
   }
 
-  // 删除日志文件
-  // 清除当前日志文件内容
-  if (url === '/api/clear-current-log' && method === 'POST') {
-    try {
-      if (LOG_FILE && existsSync(LOG_FILE)) {
-        const file = relative(LOG_DIR, LOG_FILE).split(sep).join('/');
-        const { previousStreamId } = resetRawCaptureBoundary();
-        clearRawSidecarsForLog(LOG_DIR, file, { additionalStreamIds: [previousStreamId] });
-        writeFileSync(LOG_FILE, '');
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ ok: true, file: LOG_FILE }));
-      } else {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ ok: true, file: null }));
-      }
-    } catch (err) {
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: err.message }));
-    }
-    return;
-  }
-
   if (url === '/api/delete-logs' && method === 'POST') {
     let body = '';
     req.on('data', chunk => { body += chunk; if (body.length > MAX_POST_BODY) req.destroy(); });
-    req.on('end', () => {
+    req.on('end', async () => {
       try {
         const { files } = JSON.parse(body);
         if (!Array.isArray(files) || files.length === 0) {
@@ -4132,7 +3811,17 @@ async function handleRequest(req, res) {
           res.end(JSON.stringify({ error: 'No files specified' }));
           return;
         }
-        const results = deleteLogFiles(LOG_DIR, files);
+        const affectedProjects = new Set();
+        for (const file of files) {
+          try {
+            const { sessionDir } = resolveV2SessionFile(LOG_DIR, file);
+            const manifest = JSON.parse(readFileSync(join(sessionDir, 'manifest.json'), 'utf8'));
+            if (manifest.projectId) affectedProjects.add(manifest.projectId);
+          } catch {}
+        }
+        const activeFile = await activeV2SessionFileAsync();
+        const results = deleteLogFiles(LOG_DIR, files, { protectedFiles: [activeFile] });
+        for (const projectId of affectedProjects) notifyStatsWorker(projectId);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ results }));
       } catch {
@@ -4446,7 +4135,6 @@ export async function startViewer() {
           }
           // 工作区模式下延迟到选择工作区后再启动监听
           if (!isWorkspaceMode) {
-            if (_logV2ReadMode !== 'v2') startWatching(_logWatcherOpts(LOG_FILE));
             startStatsWorker();
             startStreamingStatusTimer();
           }
@@ -5294,27 +4982,7 @@ async function _doStop() {
     scratchTerminalWss = null;
   }
   _codexRequestUserInputBridge = null;
-  // 如果用户未做选择，将临时文件转为正式文件
-  if (_resumeState && _resumeState.tempFile) {
-    try {
-      const { tempFile } = _resumeState;
-      if (existsSync(tempFile)) {
-        // 只有非空 temp 文件才 rename 为正式文件，空文件直接删除
-        const sz = statSync(tempFile).size;
-        if (sz > 0) {
-          const newPath = tempFile.replace('_temp.jsonl', '.jsonl');
-          renameSync(tempFile, newPath);
-        } else {
-          unlinkSync(tempFile);
-        }
-      }
-    } catch { }
-  }
-  for (const logFile of getWatchedFiles().keys()) {
-    unwatchFile(logFile);
-  }
   unwatchFile(CONTEXT_WINDOW_FILE);
-  getWatchedFiles().clear();
   clients.forEach(client => client.end());
   clients = [];
   if (server) {
@@ -5326,6 +4994,11 @@ async function _doStop() {
     statsWorker.terminate();
     statsWorker = null;
   }
+  if (statsUpdateTimer) {
+    clearTimeout(statsUpdateTimer);
+    statsUpdateTimer = null;
+  }
+  pendingStatsProjects.clear();
   if (_streamingStatusTimer) {
     clearInterval(_streamingStatusTimer);
     _streamingStatusTimer = null;
@@ -5339,9 +5012,9 @@ async function _doStop() {
 
 // ─── SDK Mode Exports ──────────────────────────────────────────
 
-/** Push a JSONL entry to the active log and all SSE clients (for SDK mode). */
+/** Persist one SDK entry through the canonical V2 writer. */
 export function pushSdkEntry(entry) {
-  if (entry && LOG_FILE) {
+  if (entry) {
     try {
       appendLogEntry(entry, {
         source: 'sdk',
@@ -5350,10 +5023,8 @@ export function pushSdkEntry(entry) {
         sessionId: entry.body?.metadata?.thread_id || entry.body?._threadId || null,
         threadId: entry.body?.metadata?.thread_id || entry.body?._threadId || null,
       });
-      notifyStatsWorker(LOG_FILE);
     } catch {}
   }
-  if (sendToClients) sendToClients(clients, entry);
 }
 
 /** Update streaming status (for SDK mode). */
@@ -5418,17 +5089,5 @@ if (!isWorkspaceMode) {
   });
 }
 
-// 进程退出时，将未决的临时文件转为正式文件
-function handleExit() {
-  if (_resumeState && _resumeState.tempFile) {
-    try {
-      if (existsSync(_resumeState.tempFile)) {
-        const newPath = _resumeState.tempFile.replace('_temp.jsonl', '.jsonl');
-        renameSync(_resumeState.tempFile, newPath);
-      }
-    } catch { }
-  }
-}
-process.on('exit', handleExit);
 process.on('SIGINT', () => { stopViewer().finally(() => process.exit()); });
 process.on('SIGTERM', () => { stopViewer().finally(() => process.exit()); });

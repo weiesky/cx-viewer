@@ -311,7 +311,6 @@ test('active V2 selector trusts the runtime conversation locator without scannin
     const before = getActiveV2SessionSelectionStats();
     const selected = findActiveV2SessionFile(root, {
       runtime: {
-        config: { writeMode: 'v2' },
         writer: { lastConversationLocator: { sessionId: 'session-root' } },
       },
       projectId: 'project',
@@ -483,37 +482,6 @@ test('strong durable proof rejects an equal-size timeline rewrite before forced 
     assert.equal(after.slowFallbacks - before.slowFallbacks, 1);
     assert.ok(after.rootActivityScans > before.rootActivityScans);
     assert.ok(after.materializedHealthScans > before.materializedHealthScans);
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-});
-
-test('active V2 selector falls back to V1 instead of choosing an auxiliary legacy-linked archive', () => {
-  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-active-aux-only-'));
-  try {
-    const writer = LogV2Writer.open({
-      ...options(root),
-      sessionId: 'synthetic-global-only',
-      rootThreadId: 'synthetic-global-only',
-      source: 'app-server-global',
-    });
-    writer.append(
-      { ...entry('2026-07-14T08:01:00.000Z', [], 'warning'), mainAgent: false },
-      { sessionId: 'synthetic-global-only', threadId: 'synthetic-global-only', isRoot: true, agentRole: 'auxiliary' },
-      { legacyRef: { logFile: 'project/legacy.jsonl', offset: 0, length: 100 } },
-    );
-    assert.equal(findActiveV2SessionFile(root, {
-      runtime: {
-        config: { writeMode: 'v2' },
-        writer: {
-          lastLocator: { sessionId: 'synthetic-global-only' },
-          lastConversationLocator: { sessionId: 'synthetic-global-only' },
-        },
-      },
-      projectId: 'project',
-      canonicalCwd: '/workspace/project',
-      legacyLogFile: 'project/legacy.jsonl',
-    }), null);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

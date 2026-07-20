@@ -1,5 +1,5 @@
 import React from 'react';
-import { Switch, Select, Radio, Tooltip } from 'antd';
+import { Switch, Select, Tooltip } from 'antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { t, LANG_OPTIONS } from '../../i18n';
 import { PLAN_AUTO_APPROVE_OPTIONS, autoApproveSelectOptions } from '../../utils/autoApproveOptions';
@@ -30,7 +30,6 @@ function Row({ label, help, children }) {
 export default function PreferencesForm({ values = {}, onPatch }) {
   const v = values || {};
   const am = (v.approvalModal && typeof v.approvalModal === 'object') ? v.approvalModal : {};
-  const resume = v.resumeAutoChoice;
   const patch = (p) => onPatch && onPatch(p);
 
   return (
@@ -64,20 +63,6 @@ export default function PreferencesForm({ values = {}, onPatch }) {
       <Row label={t('ui.onlyCurrentSession')} help={t('ui.onlyCurrentSession.help')}>
         <Switch checked={!!v.onlyCurrentSession} onChange={(c) => patch({ onlyCurrentSession: c })} />
       </Row>
-      <Row label={t('ui.resumeAutoChoice')}>
-        <Switch
-          checked={!!resume}
-          onChange={(c) => patch({ resumeAutoChoice: c ? (resume || 'continue') : null })}
-        />
-      </Row>
-      {resume && (
-        <Row>
-          <Radio.Group value={resume} size="small" onChange={(e) => patch({ resumeAutoChoice: e.target.value })}>
-            <Radio value="continue">{t('ui.resumeAutoChoice.continue')}</Radio>
-            <Radio value="new">{t('ui.resumeAutoChoice.new')}</Radio>
-          </Radio.Group>
-        </Row>
-      )}
       <Row label={t('ui.themeColor')}>
         <Select
           size="small"

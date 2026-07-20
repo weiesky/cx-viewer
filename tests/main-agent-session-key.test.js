@@ -10,7 +10,6 @@ import {
 } from '../src/utils/clearCheckpoint.js';
 import { applyBatchEntryTimestamps, applyInPlaceLastMsgReplace, getSessionBoundaryId, isSessionDividerBoundary } from '../src/utils/sessionManager.js';
 import { mergeMainAgentSessions } from '../src/utils/sessionMerge.js';
-import { reconstructEntries } from '../server/lib/delta-reconstructor.js';
 
 function msg(role, text) {
   return { role, content: [{ type: 'text', text }] };
@@ -292,41 +291,4 @@ test('batch timestamp state starts a new stable session id on upstream lane chan
   applyBatchEntryTimestamps(st, second);
   assert.equal(st.currentSessionId, second.timestamp);
   assert.equal(second.body.input[0]._timestamp, second.timestamp);
-});
-
-test('delta reconstructor keeps different conversation ids isolated', () => {
-  const first = mainEntry({
-    url: 'https://api.openai.com/v1/responses',
-    input: [msg('user', 'api-1')],
-    delta: {
-      _deltaFormat: 1,
-      _conversationId: 'mainAgent:lane:api',
-      _isCheckpoint: true,
-      _totalMessageCount: 1,
-    },
-  });
-  const second = mainEntry({
-    url: 'https://chatgpt.com/backend-api/codex/responses',
-    input: [msg('user', 'chatgpt-1')],
-    delta: {
-      _deltaFormat: 1,
-      _conversationId: 'mainAgent:lane:chatgpt',
-      _isCheckpoint: true,
-      _totalMessageCount: 1,
-    },
-  });
-  const firstDelta = mainEntry({
-    url: 'https://api.openai.com/v1/responses',
-    input: [msg('assistant', 'api-2')],
-    delta: {
-      _deltaFormat: 1,
-      _conversationId: 'mainAgent:lane:api',
-      _isCheckpoint: false,
-      _totalMessageCount: 2,
-    },
-  });
-
-  reconstructEntries([first, second, firstDelta]);
-
-  assert.deepEqual(firstDelta.body.input.map(m => m.content[0].text), ['api-1', 'api-2']);
 });

@@ -153,7 +153,7 @@ test('Master rows never become V2 conversation candidates through writer-role fa
   }), true);
 });
 
-test('cold ingest renders persisted V2 in-progress history without admitting legacy delta slices', () => {
+test('cold ingest renders persisted V2 in-progress history', () => {
   const user = {
     type: 'message', id: 'user_1', role: 'user',
     content: [{ type: 'input_text', text: 'run it' }],
@@ -183,8 +183,4 @@ test('cold ingest renders persisted V2 in-progress history without admitting leg
     { role: 'user', types: ['tool_result'] },
   ]);
 
-  assert.equal(isColdIngestMergeBlockedEntry({
-    inProgress: true,
-    body: { input: [result] },
-  }), true);
 });

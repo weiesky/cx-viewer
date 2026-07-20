@@ -6,20 +6,17 @@ const _cxvSkipArgs = ['--version', '-v', '--v', '--help', '-h', 'doctor', 'insta
 const _cxvSkip = _cxvSkipArgs.includes(process.argv[2]);
 
 import './lib/proxy-env.js';
-import { appendFileSync, mkdirSync, readFileSync, statSync, renameSync, unlinkSync, existsSync, watchFile } from 'node:fs';
+import { readFileSync, watchFile } from 'node:fs';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { dirname, join, basename, relative, sep } from 'node:path';
+import { dirname, join, basename, resolve } from 'node:path';
 import { LOG_DIR } from './findcx.js';
-import { assembleOpenAiResponseMessage, assembleStreamMessage, cleanupTempFiles, classifyAgentRequest, findRecentLog, isOpenAiApiPath, parseRequestBodyForLog, rotateLogFile } from './lib/interceptor-core.js';
-import { MAX_LOG_SIZE as _MAX_LOG_SIZE } from './lib/constants.js';
-import { createModelCatalogLogCompactor } from './lib/model-catalog-log.js';
-import { createMainAgentDeltaCompactor } from './lib/main-agent-delta.js';
+import { assembleOpenAiResponseMessage, assembleStreamMessage, classifyAgentRequest, isOpenAiApiPath, parseRequestBodyForLog } from './lib/interceptor-core.js';
 import { resolveLogV2Config } from './lib/log-v2/config.js';
-import { dispatchLogWrite, LogV2WriteCoordinator } from './lib/log-v2/dual-write.js';
-import { loadC1GateFile } from './lib/log-v2/gate.js';
+import { LogV2WriteCoordinator } from './lib/log-v2/coordinator.js';
 import { loadLogV2RuntimeConfig } from './lib/log-v2/runtime-config.js';
 import { LogV2WriteQueue } from './lib/log-v2/write-queue.js';
+import { projectIdForCwd } from './lib/log-v2/project-id.js';
 
 
 
@@ -67,65 +64,6 @@ try { watchFile(PROFILE_PATH, { interval: 1500 }, _loadProxyProfile); } catch { 
 
 export { _activeProfile, _defaultConfig, _loadProxyProfile, PROFILE_PATH };
 
-// 生成新的日志文件路径
-function generateNewLogFilePath() {
-  const now = new Date();
-  const ts = now.getFullYear().toString()
-    + String(now.getMonth() + 1).padStart(2, '0')
-    + String(now.getDate()).padStart(2, '0')
-    + '_'
-    + String(now.getHours()).padStart(2, '0')
-    + String(now.getMinutes()).padStart(2, '0')
-    + String(now.getSeconds()).padStart(2, '0');
-  let cwd;
-  try { cwd = process.cwd(); } catch { cwd = homedir(); }
-  const projectName = basename(cwd).replace(/[^a-zA-Z0-9_\-\.]/g, '_');
-  const dir = join(LOG_DIR, projectName);
-  try { mkdirSync(dir, { recursive: true }); } catch (err) { console.warn('[CX-Viewer] mkdirSync failed:', dir, err.message); }
-  return { filePath: join(dir, `${projectName}_${ts}.jsonl`), dir, projectName };
-}
-
-// Resume 状态（供 server.js 使用）
-let _resumeState = null;
-let _resolveChoice = null;
-const _choicePromise = new Promise(resolve => { _resolveChoice = resolve; });
-
-function resolveResumeChoice(choice) {
-  if (!_resumeState) return;
-  const { recentFile, tempFile } = _resumeState;
-  try {
-    if (choice === 'continue') {
-      // 将临时文件内容追加到旧日志
-      if (existsSync(tempFile)) {
-        const tempContent = readFileSync(tempFile, 'utf-8');
-        if (tempContent.trim()) {
-          appendFileSync(recentFile, tempContent);
-        }
-        unlinkSync(tempFile);
-      }
-      LOG_FILE = recentFile;
-    } else {
-      // new: 将临时文件 rename 为正式新日志文件名（空文件直接删除）
-      const newPath = tempFile.replace('_temp.jsonl', '.jsonl');
-      if (existsSync(tempFile)) {
-        const sz = statSync(tempFile).size;
-        if (sz > 0) {
-          renameSync(tempFile, newPath);
-        } else {
-          try { unlinkSync(tempFile); } catch { }
-        }
-      }
-      LOG_FILE = newPath;
-    }
-  } catch (err) {
-    console.error('[CX Viewer] resolveResumeChoice error:', err);
-  }
-  const result = { logFile: LOG_FILE };
-  _resumeState = null;
-  _resolveChoice(result);
-  return result;
-}
-
 // Teammate 子进程检测：--parent-session-id（旧模式）或 --agent-name（原生 team 模式）
 const _isTeammate = process.argv.includes('--parent-session-id') || process.argv.includes('--agent-name');
 // 提取 teammate 元数据（--agent-name worker-1 --team-name fix-ts-errors）
@@ -139,122 +77,50 @@ let _teamName = null;
   if (teamIdx !== -1 && teamIdx + 1 < args.length) _teamName = args[teamIdx + 1];
 }
 
-// 初始化日志文件路径（异步，支持用户交互）
-// 工作区模式下延迟到选择工作区后再初始化
-let _newLogFile, _logDir, _projectName;
-if (process.env.CXV_WORKSPACE_MODE === '1') {
-  _newLogFile = '';
-  _logDir = '';
-  _projectName = '';
-} else if (_isTeammate) {
-  // Teammate 子进程：只需 projectName 和 logDir 来查找 leader 日志，不生成新文件路径
-  let cwd;
-  try { cwd = process.cwd(); } catch { cwd = homedir(); }
-  _projectName = basename(cwd).replace(/[^a-zA-Z0-9_\-\.]/g, '_');
-  _logDir = join(LOG_DIR, _projectName);
-  const _leaderLog = findRecentLog(_logDir, _projectName);
-  _newLogFile = _leaderLog || ''; // 没有 leader 日志时不写入
-} else {
-  ({ filePath: _newLogFile, dir: _logDir, projectName: _projectName } = generateNewLogFilePath());
-  // 启动时清理残留临时文件
-  cleanupTempFiles(_logDir, _projectName);
-}
-let LOG_FILE = _newLogFile;
+let _projectPath = process.env.CXV_WORKSPACE_MODE === '1'
+  ? ''
+  : resolve(process.env.CXV_PROJECT_DIR || process.cwd());
+export let _projectName = _projectPath
+  ? basename(_projectPath).replace(/[^a-zA-Z0-9_\-\.]/g, '_')
+  : '';
+let _projectId = _projectPath ? projectIdForCwd(_projectPath, _projectName) : '';
+export let _logDir = _projectName ? join(LOG_DIR, _projectName) : '';
+export const _initPromise = Promise.resolve();
 
-const _initPromise = (async () => {
-  if (!_logDir || !_projectName) return; // 工作区模式下跳过
-  if (_isTeammate) return; // Teammate 已在上方同步初始化，跳过 async resume 流程
-  try {
-    const recentLog = findRecentLog(_logDir, _projectName);
-    if (recentLog) {
-      // Leader / 普通进程：走 resume 交互流程
-      const tempFile = _newLogFile.replace('.jsonl', '_temp.jsonl');
-      LOG_FILE = tempFile;
-      _resumeState = {
-        recentFile: recentLog,
-        recentFileName: basename(recentLog),
-        tempFile,
-      };
-    }
-  } catch (err) { console.warn('[CX-Viewer] Log init error:', err.message); }
-})();
-
-export { LOG_FILE, _initPromise, _resumeState, _choicePromise, resolveResumeChoice, _projectName, _logDir };
-
-// 工作区模式：动态初始化指定路径的日志文件
-// 如果有 1 小时内的最近日志，自动复用（与单目录模式行为一致）
-export function initForWorkspace(projectPath, { forceNew = false } = {}) {
-  const projectName = basename(projectPath).replace(/[^a-zA-Z0-9_\-\.]/g, '_');
-  const dir = join(LOG_DIR, projectName);
-  try { mkdirSync(dir, { recursive: true }); } catch (err) { console.warn('[CX-Viewer] mkdirSync failed:', dir, err.message); }
-
-  cleanupTempFiles(dir, projectName);
-
-  // 检查是否有最近的日志文件可以复用（始终复用最新日志）
-  // forceNew: Electron multi-tab 模式下强制创建新文件，避免与已有 cxv 实例共享日志
-  const recentLog = !forceNew && findRecentLog(dir, projectName);
-  if (recentLog) {
-    _projectName = projectName;
-    _logDir = dir;
-    LOG_FILE = recentLog;
-    return { filePath: recentLog, dir, projectName, resumed: true };
-  }
-
-  // 没有最近日志，创建新文件
-  const now = new Date();
-  const ts = now.getFullYear().toString()
-    + String(now.getMonth() + 1).padStart(2, '0')
-    + String(now.getDate()).padStart(2, '0')
-    + '_'
-    + String(now.getHours()).padStart(2, '0')
-    + String(now.getMinutes()).padStart(2, '0')
-    + String(now.getSeconds()).padStart(2, '0');
-
-  const filePath = join(dir, `${projectName}_${ts}.jsonl`);
-
+export function initForWorkspace(projectPath) {
+  const canonicalPath = resolve(projectPath);
+  const projectName = basename(canonicalPath).replace(/[^a-zA-Z0-9_\-\.]/g, '_');
+  _projectPath = canonicalPath;
   _projectName = projectName;
-  _logDir = dir;
-  LOG_FILE = filePath;
-
-  return { filePath, dir, projectName, resumed: false };
+  _projectId = projectIdForCwd(canonicalPath, projectName);
+  _logDir = join(LOG_DIR, projectName);
+  return { dir: _logDir, projectName };
 }
 
-// 工作区模式：重置日志状态（返回工作区列表时调用）
 export function resetWorkspace() {
+  _projectPath = '';
   _projectName = '';
+  _projectId = '';
   _logDir = '';
-  LOG_FILE = '';
 }
 
-const MAX_LOG_SIZE = _MAX_LOG_SIZE;
-const _modelCatalogLogCompactor = createModelCatalogLogCompactor();
-let _modelCatalogCompactorLogFile = '';
-const _mainAgentDeltaCompactor = createMainAgentDeltaCompactor();
-let _mainAgentDeltaLogFile = '';
-const _logV2Config = resolveLogV2Config(process.env, loadLogV2RuntimeConfig(LOG_DIR));
-if (_logV2Config.writeMode === 'v2' && _logV2Config.readMode !== 'v2') {
-  throw new Error('CXV_LOG_WRITE_MODE=v2 requires CXV_LOG_READ_MODE=v2 for restart-safe primary reads');
+export function getActiveProjectContext() {
+  return Object.freeze({ projectId: _projectId || null, projectName: _projectName || null, canonicalCwd: _projectPath || null });
 }
-const _logV2Gate = _logV2Config.writeMode === 'v2'
-  ? loadC1GateFile(_logV2Config.gateFile, { logDir: LOG_DIR })
-  : null;
+const _logV2Config = resolveLogV2Config(process.env, loadLogV2RuntimeConfig(LOG_DIR));
 const _logV2Coordinator = new LogV2WriteCoordinator({
   rootDir: LOG_DIR,
   debug: !!process.env.CXV_DEBUG,
   minFreeBytes: _logV2Config.minFreeBytes,
   minFreePercent: _logV2Config.minFreePercent,
   failureLimit: _logV2Config.failureLimit,
-  durability: _logV2Config.writeMode === 'v2' ? 'durable' : 'buffered',
-  allowedProjectIds: _logV2Gate?.approvedProjects || null,
-  authority: _logV2Config.writeMode === 'v2' ? 'primary' : 'shadow',
+  durability: 'durable',
 });
 // Durable V2 commits contain several fsync-backed files. In production they
 // belong to one ordered worker so proxy/app-server/OTel traffic cannot stall
 // the HTTP and terminal event loop. Tests that assert immediate on-disk state
 // retain the direct coordinator and exercise the queue separately.
-const _logV2WriteQueue = _logV2Config.writeMode === 'v2'
-  && !_logV2Config.projectV1
-  && process.env.CXV_TEST !== '1'
+const _logV2WriteQueue = process.env.CXV_TEST !== '1'
   ? new LogV2WriteQueue({
       rootDir: LOG_DIR,
       debug: !!process.env.CXV_DEBUG,
@@ -262,184 +128,87 @@ const _logV2WriteQueue = _logV2Config.writeMode === 'v2'
       minFreePercent: _logV2Config.minFreePercent,
       failureLimit: _logV2Config.failureLimit,
       durability: 'durable',
-      allowedProjectIds: _logV2Gate?.approvedProjects || null,
-      authority: 'primary',
     })
   : null;
-const _logV1ProjectionStats = {
-  attempted: 0,
-  written: 0,
-  compacted: 0,
-  failed: 0,
-  lastError: null,
-};
+let _onLogV2Commit = null;
 
-function generateRotationLogFilePath() {
-  const now = new Date();
-  const ts = now.getFullYear().toString()
-    + String(now.getMonth() + 1).padStart(2, '0')
-    + String(now.getDate()).padStart(2, '0')
-    + '_'
-    + String(now.getHours()).padStart(2, '0')
-    + String(now.getMinutes()).padStart(2, '0')
-    + String(now.getSeconds()).padStart(2, '0');
-  const dir = LOG_FILE ? dirname(LOG_FILE) : _logDir;
-  const projectName = _projectName || basename(process.cwd()).replace(/[^a-zA-Z0-9_\-\.]/g, '_');
-  let candidate = join(dir, `${projectName}_${ts}.jsonl`);
-  let part = 1;
-  while (candidate === LOG_FILE || existsSync(candidate)) {
-    candidate = join(dir, `${projectName}_${ts}_part${String(part++).padStart(2, '0')}.jsonl`);
+export function setLogV2CommitListener(listener) {
+  _onLogV2Commit = typeof listener === 'function' ? listener : null;
+}
+
+function isBackgroundOnlyEntry(entry, source, context) {
+  const url = typeof entry?.url === 'string' ? entry.url : '';
+  if (source === 'app-server' && url.startsWith('codex://warning/')) {
+    const thread = context?.thread;
+    const threadId = thread?.id || thread?.threadId || thread?.thread_id;
+    const sessionId = thread?.sessionId || thread?.session_id;
+    return !(threadId && sessionId);
   }
-  return candidate;
+  if (source !== 'proxy' || String(entry?.method || 'GET').toUpperCase() !== 'GET') return false;
+  return [entry?.proxyUrl, url].some(value => {
+    if (!value) return false;
+    try {
+      const pathname = new URL(value).pathname.replace(/\/+$/, '');
+      return pathname === '/backend-api/codex/models'
+        || pathname.endsWith('/codex/models')
+        || pathname === '/v1/models';
+    } catch {
+      return /\/(?:backend-api\/)?codex\/models(?:[?#]|$)|\/v1\/models(?:[?#]|$)/.test(String(value));
+    }
+  });
 }
 
-export function checkAndRotateLogFile(nextWriteBytes = 0) {
-  // Teammate 不做日志轮转，由 leader 负责
-  if (_isTeammate || !LOG_FILE) return false;
-  try {
-    if (!existsSync(LOG_FILE)) return false;
-  } catch { return false; }
-  const filePath = generateRotationLogFilePath();
-  const result = rotateLogFile(LOG_FILE, filePath, MAX_LOG_SIZE, nextWriteBytes);
-  if (result.rotated) {
-    LOG_FILE = result.newFile;
-    // 新 segment 不能引用旧文件里的 delta 基线。
-    _mainAgentDeltaCompactor.reset();
-    _mainAgentDeltaLogFile = LOG_FILE;
-    return true;
-  }
-  return false;
-}
-
-function stampRawLogFile(entry) {
-  if (!entry?._codexRaw) return entry;
-  return {
-    ...entry,
-    _codexRaw: {
-      ...entry._codexRaw,
-      logFile: relative(LOG_DIR, LOG_FILE).split(sep).join('/'),
-    },
-  };
-}
-
-/** Serialize and append one complete V1 JSONL record through the shared rotator. */
-function appendV1LogEntry(entry) {
-  if (!entry || !LOG_FILE) return { written: false, logFile: LOG_FILE };
-  try {
-    if (_mainAgentDeltaLogFile !== LOG_FILE) {
-      _mainAgentDeltaCompactor.reset();
-      _mainAgentDeltaLogFile = LOG_FILE;
-    }
-    if (_modelCatalogCompactorLogFile !== LOG_FILE) {
-      _modelCatalogLogCompactor.reset();
-      _modelCatalogCompactorLogFile = LOG_FILE;
-    }
-    let storedEntry = _mainAgentDeltaCompactor.process(entry);
-    storedEntry = _modelCatalogLogCompactor.process(storedEntry);
-    if (!storedEntry) {
-      return { written: false, compacted: true, logFile: LOG_FILE, bytes: 0 };
-    }
-    storedEntry = stampRawLogFile(storedEntry);
-    let line = JSON.stringify(storedEntry) + '\n---\n';
-    let bytes = Buffer.byteLength(line);
-    const rotated = checkAndRotateLogFile(bytes);
-    if (rotated) {
-      // A repeat marker cannot be the first record of a new segment because its
-      // base lives in the previous file. Reset and write this entry in full.
-      _modelCatalogLogCompactor.reset();
-      _modelCatalogCompactorLogFile = LOG_FILE;
-      storedEntry = _mainAgentDeltaCompactor.process(entry);
-      storedEntry = _modelCatalogLogCompactor.process(storedEntry);
-      storedEntry = stampRawLogFile(storedEntry);
-      line = JSON.stringify(storedEntry) + '\n---\n';
-      bytes = Buffer.byteLength(line);
-    }
-    const offset = existsSync(LOG_FILE) ? statSync(LOG_FILE).size : 0;
-    appendFileSync(LOG_FILE, line);
-    _mainAgentDeltaCompactor.commit(entry);
-    return { written: true, logFile: LOG_FILE, offset, bytes };
-  } catch (err) {
-    if (process.env.CXV_DEBUG) console.warn('[CX-Viewer] Log write error:', err.message);
-    return { written: false, logFile: LOG_FILE, error: err };
-  }
-}
-
-/**
- * Dispatches one original full entry according to startup-only log mode.
- * During `dual`, V1 is authoritative and completes before V2 shadow
- * persistence is attempted for every supported ingestion source.
- */
+/** Persist one original full entry through Log Store V2. */
 export function appendLogEntry(entry, context = {}) {
-  if (!entry) return { written: false, logFile: LOG_FILE };
+  if (!entry) return { written: false, store: 'v2' };
   const source = context?.source
     || (entry._sdkSource || entry.body?.metadata?.sdk === 'openai-codex-sdk' ? 'sdk' : null)
     || (entry._otelSource ? 'otel' : 'proxy');
-  const cwd = context?.cwd
+  if (isBackgroundOnlyEntry(entry, source, context)) {
+    return { written: false, accepted: true, durable: true, skipped: true, store: 'v2' };
+  }
+  const cwd = resolve(context?.cwd
     || entry.body?.metadata?.cwd
     || entry.body?._cwd
+    || _projectPath
     || process.env.CXV_PROJECT_DIR
-    || process.cwd();
+    || process.cwd());
   const writeContext = {
     ...context,
     source,
     cwd,
-    projectId: context?.projectId || entry.project || basename(cwd) || 'codex',
+    projectId: context?.projectId
+      || (cwd === _projectPath ? _projectId : null)
+      || projectIdForCwd(cwd, entry.project || basename(cwd) || 'codex'),
   };
-  if (_logV2Config.writeMode === 'v2') {
-    try {
-      if (_logV2WriteQueue) {
-        const completion = _logV2WriteQueue.enqueue(entry, writeContext);
-        return {
-          // Admission and durability are separate. Callers that own source
-          // data can retain it until completion resolves with durable:true.
-          written: false,
-          accepted: true,
-          durable: false,
-          completion,
-          store: 'v2',
-          queued: true,
-          pendingWrites: _logV2WriteQueue.snapshot().pendingWrites,
-        };
-      }
-      const primary = _logV2Coordinator.writeEntry(entry, writeContext, null);
-      if (!_logV2Config.projectV1) return primary;
-      _logV1ProjectionStats.attempted += 1;
-      const projectionV1 = appendV1LogEntry(entry);
-      if (projectionV1.written) _logV1ProjectionStats.written += 1;
-      else if (projectionV1.compacted) _logV1ProjectionStats.compacted += 1;
-      else {
-        _logV1ProjectionStats.failed += 1;
-        _logV1ProjectionStats.lastError = projectionV1.error?.message || 'V1 projection was not written';
-      }
-      return { ...primary, projectionV1 };
-    } catch (error) {
-      return { written: false, accepted: false, durable: false, store: 'v2', error };
+  const committedEntry = structuredClone(entry);
+  const committedContext = Object.freeze({ ...writeContext });
+  try {
+    if (_logV2WriteQueue) {
+      const completion = _logV2WriteQueue.enqueue(entry, writeContext);
+      void completion.then(result => _onLogV2Commit?.(committedEntry, result, committedContext), () => {});
+      return {
+        written: false,
+        accepted: true,
+        durable: false,
+        completion,
+        store: 'v2',
+        queued: true,
+        pendingWrites: _logV2WriteQueue.snapshot().pendingWrites,
+      };
     }
+    const result = _logV2Coordinator.writeEntry(entry, writeContext);
+    _onLogV2Commit?.(committedEntry, result, committedContext);
+    return result;
+  } catch (error) {
+    return { written: false, accepted: false, durable: false, store: 'v2', error };
   }
-  return dispatchLogWrite({
-    mode: _logV2Config.writeMode,
-    writeV1: () => appendV1LogEntry(entry),
-    writeV2: (legacyResult) => _logV2Coordinator.writeEntry(entry, writeContext, legacyResult),
-  });
 }
 
 export function getLogV2RuntimeStatus() {
   return Object.freeze({
-    config: Object.freeze({
-      ..._logV2Config,
-      gateFile: _logV2Config.gateFile ? '[configured]' : null,
-    }),
-    gate: _logV2Gate ? Object.freeze({
-      createdAt: _logV2Gate.createdAt,
-      expiresAt: _logV2Gate.expiresAt,
-      approvedProjects: _logV2Gate.approvedProjects,
-      evidenceDigest: _logV2Gate.evidenceDigest,
-    }) : null,
+    config: _logV2Config,
     writer: _logV2WriteQueue ? _logV2WriteQueue.snapshot() : _logV2Coordinator.snapshot(),
-    projectionV1: Object.freeze({
-      enabled: _logV2Config.writeMode === 'v2' && _logV2Config.projectV1,
-      ..._logV1ProjectionStats,
-    }),
   });
 }
 

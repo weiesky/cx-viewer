@@ -734,7 +734,6 @@ class AppHeader extends React.Component {
       nextProps.contextBarLocked !== this.props.contextBarLocked ||
       nextProps.contextCompactionExcludedEpoch !== this.props.contextCompactionExcludedEpoch ||
       nextProps.contextBarSlot !== this.props.contextBarSlot ||
-      nextProps.resumeAutoChoice !== this.props.resumeAutoChoice ||
       nextProps.themeColor !== this.props.themeColor ||
       nextProps.displayScale !== this.props.displayScale ||
       nextProps.approvalsReviewer !== this.props.approvalsReviewer ||
@@ -1379,7 +1378,7 @@ class AppHeader extends React.Component {
   }
 
   render() {
-    const { requestCount, requests = [], viewMode, onToggleViewMode, onImportLocalLogs, onLangChange, isLocalLog, localLogFile, projectName, filterIrrelevant, onFilterIrrelevantChange, logDir, onLogDirChange, cliMode, terminalVisible, onToggleTerminal, onReturnToWorkspaces, contextWindow, contextBarOptimistic, resumeAutoChoice, onResumeAutoChoiceToggle, onResumeAutoChoiceChange, themeColor, onThemeColorChange, displayScale, onDisplayScaleChange, approvalsReviewer, onApprovalsReviewerChange } = this.props;
+    const { requestCount, requests = [], viewMode, onToggleViewMode, onImportLocalLogs, onLangChange, isLocalLog, localLogFile, projectName, filterIrrelevant, onFilterIrrelevantChange, logDir, onLogDirChange, cliMode, terminalVisible, onToggleTerminal, onReturnToWorkspaces, contextWindow, contextBarOptimistic, themeColor, onThemeColorChange, displayScale, onDisplayScaleChange, approvalsReviewer, onApprovalsReviewerChange } = this.props;
     // 这 4 个偏好的唯一真相源是 SettingsContext（P0③）。AppHeader 已绑 SettingsContext，
     // 直接派生消费 + 调 updatePreferences，不再经 App 的 prop drilling。默认值与 AppBase._prefValues() 一致。
     const _prefs = (this.context && this.context.preferences) || {};
@@ -1848,28 +1847,6 @@ class AppHeader extends React.Component {
                   checked={!!onlyCurrentSession}
                   onChange={(checked) => this.context.updatePreferences({ onlyCurrentSession: checked })}
                 />
-              </div>
-            )}
-          </div>
-          <div className={styles.settingsGroupBox}>
-            <div className={styles.settingsGroupTitle}>{t('ui.logSettings')}</div>
-            <div className={styles.settingsItem}>
-              <span className={styles.settingsLabel}>{t('ui.resumeAutoChoice')}</span>
-              <Switch
-                checked={!!resumeAutoChoice}
-                onChange={(checked) => onResumeAutoChoiceToggle && onResumeAutoChoiceToggle(checked)}
-              />
-            </div>
-            {resumeAutoChoice && (
-              <div className={styles.settingsItem}>
-                <Radio.Group
-                  value={resumeAutoChoice}
-                  onChange={(e) => onResumeAutoChoiceChange && onResumeAutoChoiceChange(e.target.value)}
-                  size="small"
-                >
-                  <Radio value="continue">{t('ui.resumeAutoChoice.continue')}</Radio>
-                  <Radio value="new">{t('ui.resumeAutoChoice.new')}</Radio>
-                </Radio.Group>
               </div>
             )}
           </div>

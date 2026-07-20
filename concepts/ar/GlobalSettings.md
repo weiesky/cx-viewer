@@ -19,7 +19,6 @@ Open via top-left menu → "Display Settings".
 | Collapse Tool Results | Switch | On | Collapse tool call result blocks in chat view |
 | Expand Thinking | Switch | On | Expand Codex reasoning/thinking blocks by default |
 | Show Full Tool Content | Switch | Off | Show full untruncated tool call content |
-| Auto Resume Session | Switch + Options | Off | Automatically choose when session resume prompt appears: `Continue` or `New` |
 
 ## 3. Preferences File
 
@@ -34,7 +33,6 @@ All UI settings are persisted to `<log_dir>/preferences.json` via the `/api/pref
   "expandThinking": true,
   "showFullToolContent": false,
   "logDir": "~/.codex/cx-viewer",
-  "resumeAutoChoice": null,
   "disabledPlugins": [],
   "presetShortcuts": []
 }
@@ -49,7 +47,6 @@ All UI settings are persisted to `<log_dir>/preferences.json` via the `/api/pref
 | `expandThinking` | boolean | Expand thinking blocks |
 | `showFullToolContent` | boolean | Show full content |
 | `logDir` | string | Log directory path |
-| `resumeAutoChoice` | null / "continue" / "new" | Auto resume session choice |
 | `disabledPlugins` | string[] | Disabled plugin filenames |
 | `presetShortcuts` | array | Agent Team preset shortcuts |
 
@@ -189,11 +186,13 @@ Plugin enable/disable managed via `disabledPlugins` array in `preferences.json`.
 ├── profile.json                   # Proxy configuration
 ├── plugins/                       # Plugin directory
 │   └── my-plugin.js
-├── <project>/                     # Per-project log directory
-│   ├── <project>_20260404_123456.jsonl  # JSONL log files
-│   ├── <project>.json             # Stats data (background generated)
-│   └── images/                    # Persistent uploaded image copies
-└── ...
+├── <encoded-project-id>/         # V2 project archive
+│   └── YYYYMMDD_<encoded-session-id>.cxvsession/
+│       ├── manifest.json
+│       ├── timeline.jsonl
+│       ├── threads/ and objects/
+├── v2-raw/<project-token>/       # Bounded app-server diagnostic sidecars
+└── v2-stats/                     # Background-generated V2 statistics
 
 /tmp/cx-viewer-uploads/            # Temporary upload file directory
 ```

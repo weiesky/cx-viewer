@@ -2,7 +2,7 @@ import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { request as httpRequest } from 'node:http';
 import { request as httpsRequest } from 'node:https';
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -12,20 +12,8 @@ import { resolveAppServerThreadIdentity } from '../lib/log-v2/identity.js';
 import { LogV2Writer } from '../lib/log-v2/writer.js';
 
 const root = mkdtempSync(join(tmpdir(), 'cxv-log-archive-endpoint-'));
-const siblingRoot = `${root}-sibling`;
 const projectDir = join(root, 'project');
 mkdirSync(projectDir, { recursive: true });
-mkdirSync(join(root, 'legacy'), { recursive: true });
-writeFileSync(join(root, 'legacy', 'legacy.jsonl'), `${JSON.stringify({
-  timestamp: '2026-07-15T02:59:00.000Z',
-  url: 'legacy://entry',
-  response: { body: { text: 'legacy' } },
-})}\n---\n`);
-mkdirSync(siblingRoot, { recursive: true });
-writeFileSync(join(siblingRoot, 'secret.jsonl'), '{"secret":true}\n---\n');
-let siblingSymlinkAvailable = true;
-try { symlinkSync(siblingRoot, join(root, 'sibling-link')); }
-catch { siblingSymlinkAvailable = false; }
 
 const writer = LogV2Writer.open({
   rootDir: root,
@@ -46,7 +34,6 @@ writer.append({
 process.env.CXV_TEST = '1';
 process.env.CXV_LOG_DIR = root;
 process.env.CXV_PROJECT_DIR = projectDir;
-process.env.CXV_LOG_READ_MODE = 'v2';
 process.env.CXV_START_PORT = '19820';
 process.env.CXV_MAX_PORT = '19829';
 process.env.CXV_WORKSPACE_MODE = '1';
@@ -90,7 +77,6 @@ describe('V2 log archive HTTP round trip', { concurrency: false }, () => {
   after(async () => {
     await stopViewer?.();
     rmSync(root, { recursive: true, force: true });
-    rmSync(siblingRoot, { recursive: true, force: true });
   });
 
   it('downloads the complete session directory as a ZIP', async () => {
@@ -148,26 +134,13 @@ describe('V2 log archive HTTP round trip', { concurrency: false }, () => {
     );
   });
 
-  it('maps missing V2 archives to 404 and preserves legacy JSONL downloads', async () => {
+  it('maps missing V2 archives to 404 and rejects non-V2 downloads', async () => {
     const missing = 'missing-project/20260715_missing-session.cxvsession/timeline.jsonl';
     const missingResponse = await request(port, `/api/download-log?file=${encodeURIComponent(missing)}`);
     assert.equal(missingResponse.status, 404);
     assert.equal(JSON.parse(missingResponse.body.toString('utf8')).code, 'NOT_FOUND');
 
-    const legacy = await request(port, '/api/download-log?file=legacy%2Flegacy.jsonl&format=raw');
-    assert.equal(legacy.status, 200);
-    assert.equal(legacy.headers['content-type'], 'application/octet-stream');
-    assert.match(legacy.headers['content-disposition'], /legacy\.jsonl/);
-    assert.match(legacy.body.toString('utf8'), /legacy:\/\/entry/);
-  });
-
-  it('rejects a legacy symlink into a sibling directory with the same path prefix', async (t) => {
-    if (!siblingSymlinkAvailable) {
-      t.skip('symbolic links are unavailable in this environment');
-      return;
-    }
-    const response = await request(port, '/api/download-log?file=sibling-link%2Fsecret.jsonl&format=raw');
-    assert.equal(response.status, 403);
-    assert.equal(JSON.parse(response.body.toString('utf8')).code, 'ACCESS_DENIED');
+    const nonV2 = await request(port, '/api/download-log?file=project%2Fold.jsonl');
+    assert.equal(nonV2.status, 400);
   });
 });

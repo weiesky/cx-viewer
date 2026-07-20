@@ -11,7 +11,7 @@ import { SettingsContext } from './contexts/SettingsContext';
 import { filterRelevantRequests, isRelevantRequest, visibleRequests } from './utils/helpers';
 import { snapToPreset, stepPreset } from './utils/displayScaleHelper';
 import { getProjectAlias, subscribeToAlias } from './utils/projectAlias';
-import { isMainAgent, classifySessionTransition, getEntryUserId, getMainAgentConversationId, getMainAgentSessionKey, isPostClearCheckpoint, setTeammateNameSeeds, clearTeammateNameSeeds } from './utils/contentFilter';
+import { isMainAgent, classifySessionTransition, getEntryUserId, getMainAgentConversationId, getMainAgentSessionKey, isPostClearCheckpoint } from './utils/contentFilter';
 import { apiUrl, getBasePath } from './utils/apiUrl';
 import { publish as publishWorkflowUpdate } from './utils/workflowStore';
 import { reportSwallowed } from './utils/errorReport';
@@ -22,9 +22,7 @@ import { saveEntries, loadEntries, clearEntries, getCacheMeta, saveSessionEntrie
 import { buildSessionIndex, splitHotCold, mergeSessionIndices, HOT_SESSION_COUNT, assignMessageTimestamps, applyInPlaceLastMsgReplace, getSessionStableId, resolveDisplaySessions, getLatestSessionByActivity, applyBatchEntryTimestamps } from './utils/sessionManager';
 import { mergeMainAgentSessions as _mergeMainAgentSessions, isColdIngestMergeBlockedEntry, isMergeBlockedEntry } from './utils/sessionMerge';
 import { createConversationEntryNormalizer, shouldExcludeFromConversation, stampConversationMessageCount } from './utils/conversationEntryNormalize';
-import { reconstructEntries, createIncrementalReconstructor } from '../server/lib/delta-reconstructor.js';
 import { createEntrySlimmer, createIncrementalSlimmer, restoreSlimmedEntry, inheritToolSnapshotOnDedup, internMainAgentInput } from './utils/entry-slim.js';
-import { createRepeatEntryExpander } from '../lib/repeat-entry.js';
 import { setLatestMapValue } from '../lib/log-entry-order.js';
 import { yieldToMain, runChunkedPass, INGEST_BATCH_SIZE } from './utils/ingestPipeline.js';
 import { reinitializeMermaid } from './hooks/useMermaidRender';
@@ -105,10 +103,6 @@ class AppBase extends React.Component {
       // 用作 AppHeader 血条 calibration 'auto' 启动期的回落 hint（避 haiku init ping 误判 200K）。
       // 初值 null = 还没拿到；/api/codex-settings 与 workspace_started SSE 都会塞值。
       codexProjectModel: null,
-      resumeModalVisible: false,
-      resumeFileName: '',
-      resumeRememberChoice: false,
-      resumeAutoChoice: null, // null | "continue" | "new"；出厂默认 'continue' 由 GET /api/preferences 注入（键缺失时），这里的 null 只是 pre-hydrate 占位
       approvalsReviewer: APPROVALS_REVIEWER_DEFAULT,
       logDir: '',
       themeColor: /Windows/i.test(navigator.userAgent) ? 'dark' : 'light',
@@ -200,8 +194,7 @@ class AppBase extends React.Component {
     // P0 perf: rAF batching for SSE messages
     this._pendingEntries = [];
     this._flushRafId = null;
-    this._sseSlimmer = null; this._sseReconstructor = null;
-    this._repeatEntryExpander = createRepeatEntryExpander();
+    this._sseSlimmer = null;
     // 冷启动分帧摄取管线（_runColdIngestCore）并发控制：
     // - _ingestRunning 在途时 live 条目入 _liveGateBuffer（见 handleEventMessage），
     //   提交后统一泄洪，防止 live 条目与未提交基线交错污染 sessionMerge
@@ -261,9 +254,8 @@ class AppBase extends React.Component {
   };
 
   _batchSlim(entries) {
-    this._repeatEntryExpander.reset();
     for (let i = 0; i < entries.length; i++) {
-      entries[i] = internMainAgentInput(this._repeatEntryExpander.process(entries[i]), isMainAgent);
+      entries[i] = internMainAgentInput(entries[i], isMainAgent);
       stampConversationMessageCount(entries[i]);
     }
     const slimmer = createEntrySlimmer(isMainAgent);
@@ -286,7 +278,6 @@ class AppBase extends React.Component {
     }
     if (resetIncremental) {
       this._sseSlimmer = null;
-      this._sseReconstructor = null;
     }
   }
 
@@ -322,16 +313,13 @@ class AppBase extends React.Component {
   }
 
   // 把 /api/preferences 回包水合进散落在 this.state 的偏好字段（approvalsReviewer / approvalPrefs /
-  // themeColor / displayScale / resumeAutoChoice 等，区别于 _prefValues() 直接读 context 的那几个）。
+  // themeColor / displayScale 等，区别于 _prefValues() 直接读 context 的那几个）。
   // 初次加载与 refreshAllPrefs（toggle「项目独立配置」后）共用，避免抽屉里这半数控件读到旧的全局值。
   _hydratePrefsFromData = (data) => {
     if (!data) return;
     if (data.lang) this.setState({ lang: data.lang });
     // collapseToolResults / expandThinking / expandDiff / showFullToolContent
     // 不再镜像进 state —— render 经 _prefValues() 直接读 context.preferences。
-    if (data.resumeAutoChoice) {
-      this.setState({ resumeAutoChoice: data.resumeAutoChoice });
-    }
     this.setState({ approvalsReviewer: normalizeApprovalsReviewer(data.approvalsReviewer) });
     // Approval modal preferences (defaults already in initial state — only override when persisted).
     if (data.approvalModal && typeof data.approvalModal === 'object') {
@@ -510,7 +498,7 @@ class AppBase extends React.Component {
   _initProcessState() {
     // _rebuildRequestIndex 内联
     this._requestIndexMap.clear();
-    this._sseSlimmer = null; this._sseReconstructor = null;
+    this._sseSlimmer = null;
 
     return {
       timestamps: [],
@@ -539,16 +527,6 @@ class AppBase extends React.Component {
     const conversationEntry = conversationExcluded
       ? entry
       : st.conversationNormalizer(entry, { commit: commitsConversationBaseline });
-
-    // Rotation-context sentinel (first frame of a post-rotation segment):
-    // capture the carry-forward payload, seed the teammate-name registry, and
-    // never treat it as a renderable request (isRelevantRequest also rejects
-    // it as belt-and-braces for other filter paths).
-    if (entry && entry.cxvRotationContext) {
-      this._rotationContext = entry;
-      if (Array.isArray(entry.teammateNames)) setTeammateNameSeeds(entry.teammateNames);
-      return;
-    }
 
     // requestIndex
     this._requestIndexMap.set(`${entry.timestamp}|${entry.url}`, i);
@@ -606,9 +584,8 @@ class AppBase extends React.Component {
   /** _batchSlim 的分帧版：与同步版完全同序 —— intern 全量 pass → slimmer.process 全量 pass
    *  → finalize 一次。两个 pass 各自分帧（保持"intern 先全部完成"的既有顺序假设）。 */
   async _batchSlimChunked(entries, ctl) {
-    this._repeatEntryExpander.reset();
     const r1 = await runChunkedPass(entries.length, (i) => {
-      entries[i] = internMainAgentInput(this._repeatEntryExpander.process(entries[i]), isMainAgent);
+      entries[i] = internMainAgentInput(entries[i], isMainAgent);
       stampConversationMessageCount(entries[i]);
     }, ctl);
     if (r1.aborted) return { aborted: true };
@@ -641,20 +618,14 @@ class AppBase extends React.Component {
     };
   }
 
-  /** 冷启动共享分帧管线：reconstruct（整体一次）→ 分帧 slim → 分帧 process。
-   *  reconstructEntries 有状态（running accumulated + _compensateBrokenEntries 全数组
-   *  前向补偿），不可切片 —— 作为独立任务隔离，算法不动。
-   *  Delta 重建必须在 entry-slim 之前：delta 条目的 body.input 只有增量部分，
-   *  先 slim 会永久丢失增量数据，导致重建后 input 为空。 */
+  /** 冷启动共享分帧管线：V2 canonical entries → 分帧 slim → 分帧 process。 */
   async _runColdIngestCore(rawEntries, ctl, { preSlimmed = false } = {}) {
-    const entries = preSlimmed
-      ? rawEntries
-      : (Array.isArray(rawEntries) ? reconstructEntries(rawEntries) : rawEntries);
+    const entries = rawEntries;
     if (ctl.shouldAbort()) return { aborted: true };
     if (!(Array.isArray(entries) && entries.length > 0)) {
       return { aborted: false, empty: true, entries: Array.isArray(entries) ? entries : [], mainAgentSessions: [], filtered: [] };
     }
-    await ctl.yieldFn();   // reconstruct 是长任务，先让出一帧再进分帧 passes
+    await ctl.yieldFn();
     if (ctl.shouldAbort()) return { aborted: true };
     if (!preSlimmed) {
       const s = await this._batchSlimChunked(entries, ctl);
@@ -705,17 +676,6 @@ class AppBase extends React.Component {
   async _runSseColdIngest(rawEntries, { isIncremental, unlockContextBar, preSlimmed = false }) {
     const myToken = ++this._ingestToken;
     this._ingestRunning = true;
-    // Seed lifecycle: reset carried teammate-name seeds ONLY on non-incremental
-    // baseline loads (workspace switches land here too). Incremental reloads
-    // (SSE reconnect ?since=, mobile cache merge) carry no sentinel and must
-    // not wipe seeds they cannot re-deliver. The route re-delivers context
-    // after this load, and an in-window sentinel re-seeds during processing.
-    if (!isIncremental) {
-      clearTeammateNameSeeds();
-      this._rotationContext = null;
-      this._backfillDoneFor = null;
-      this._backfillCount = 0;
-    }
     const ctl = this._makeIngestCtl(myToken);
     const core = await this._runColdIngestCore(rawEntries, ctl, { preSlimmed });
     if (core.aborted) return;
@@ -736,7 +696,7 @@ class AppBase extends React.Component {
       const { hotEntries, allSessions, coldGroups } = splitHotCold(
         unslimmed, mainAgentSessions, fullIndex, HOT_SESSION_COUNT, this._pinnedSessionIdSet()
       );
-      this._sseSlimmer = null; this._sseReconstructor = null;
+      this._sseSlimmer = null;
       // 冷 session entries 异步写入 IndexedDB
       const pn = this.state.projectName;
       if (pn) {
@@ -779,15 +739,6 @@ class AppBase extends React.Component {
         if (isMobile && this.state.projectName) {
           saveEntries(this.state.projectName, entries);
         }
-        // Post-rotation teammate backfill — desktop baseline loads only. The
-        // route decides whether rotation context exists (the in-band sentinel
-        // may sit outside the load window on long post-rotation files), so
-        // the call is unconditional up to the guards; "no context" is a
-        // silent no-op. Mobile is excluded in v1: persisting pre-split
-        // entries would corrupt the _oldestTs paging cursor.
-        if (!isIncremental && !isMobile && !this._isLocalLog && !newState.hasMoreHistory) {
-          this._fetchPrevSegmentTeammates();
-        }
       });
     }
   }
@@ -796,13 +747,7 @@ class AppBase extends React.Component {
   async _runLocalLogIngest(rawEntries) {
     const myToken = ++this._ingestToken;
     this._ingestRunning = true;
-    // History-switcher loads must not inherit live-session seeds or fire a
-    // stale backfill; a historical post-rotation segment self-seeds from its
-    // own head sentinel during processing.
-    clearTeammateNameSeeds();
-    this._rotationContext = null;
-    this._backfillDoneFor = null;
-    this._backfillCount = 0;
+    // History-switcher loads must not inherit live-session seeds.
     const ctl = this._makeIngestCtl(myToken);
     const core = await this._runColdIngestCore(rawEntries, ctl);
     if (core.aborted) return;
@@ -942,7 +887,7 @@ class AppBase extends React.Component {
                 const { hotEntries, allSessions } = splitHotCold(
                   unslimmed, mainAgentSessions, sessionIndex, HOT_SESSION_COUNT, this._pinnedSessionIdSet()
                 );
-                this._sseSlimmer = null; this._sseReconstructor = null; // 重置，下帧 SSE 重建
+                this._sseSlimmer = null;
                 const hotFiltered = hotEntries.filter(e => isRelevantRequest(e));
                 // 计算 _oldestTs 供"加载更多"使用
                 this._oldestTs = hotEntries.length > 0 ? hotEntries[0].timestamp : null;
@@ -1062,7 +1007,6 @@ class AppBase extends React.Component {
     this._chunkedTotal = 0;
     this._isIncremental = false;
     this._sseSlimmer = null;
-    this._sseReconstructor = null;
     // 分帧管线闸门兜底复位（_pendingEntries 已清空，缓冲不泄洪直接丢弃）
     this._ingestToken++;
     this._ingestRunning = false;
@@ -1091,7 +1035,7 @@ class AppBase extends React.Component {
     // 必须在 _teardownTransientLiveState() 之前，否则 _chunkedEntries 会被清零。
     if (this._chunkedEntries && this._chunkedEntries.length > 0 && isMobile) {
       try {
-        const partial = reconstructEntries([...this._chunkedEntries]);
+        const partial = [...this._chunkedEntries];
         if (Array.isArray(partial) && partial.length > 0) {
           this._batchSlim(partial);
           const { mainAgentSessions } = this._processEntries(partial);
@@ -1138,146 +1082,10 @@ class AppBase extends React.Component {
     this._loadingCountTimer = requestAnimationFrame(step);
   }
 
-  /**
-   * Post-rotation teammate backfill: fetch teammate-only entries from the
-   * previous log segment and prepend them so pre-split teammate rows reappear.
-   * One-shot per rotation context; superseded fetches (workspace switch / new
-   * cold ingest mid-flight) are dropped via the ingest token, mirroring the
-   * reload-token discipline used elsewhere.
-   */
-  async _fetchPrevSegmentTeammates() {
-    const ctxKey = this._rotationContext?.from || '__probe__';
-    if (this._backfillDoneFor === ctxKey) return;
-    const tok = this._ingestToken;
-    let lines;
-    try {
-      const res = await fetch(apiUrl('/api/prev-segment-teammates'));
-      if (!res.ok) return;
-      const text = await res.text();
-      lines = text.split('\n').filter(Boolean).map((l) => {
-        try { return JSON.parse(l); } catch { return null; }
-      }).filter(Boolean);
-    } catch { return; }
-    if (this._ingestToken !== tok || this._unmounted) return; // superseded mid-flight
-    if (!lines || lines.length === 0) return;
-    this._backfillDoneFor = ctxKey;
-    const ctx = lines[0];
-    const done = lines[lines.length - 1];
-    // The route's context line is the primary seed channel — the in-band
-    // sentinel may be outside the client's load window entirely.
-    if (Array.isArray(ctx?.teammateNames) && ctx.teammateNames.length > 0) {
-      setTeammateNameSeeds(ctx.teammateNames);
-    }
-    if (!done || done.error || !done.prevSegment) return; // not post-rotation / no predecessor
-    const entries = lines.slice(1, -1).filter((e) => e && e.timestamp && e.url && !e.done);
-    const fresh = entries.filter((e) => !this._requestIndexMap.has(`${e.timestamp}|${e.url}`));
-    if (fresh.length === 0) return;
-    // Prepend precedent (loadMoreHistory): merge → slim → reprocess → commit.
-    const reconstructed = reconstructEntries(fresh);
-    const merged = [...reconstructed, ...this.state.requests];
-    this._batchSlim(merged);
-    const { mainAgentSessions } = this._processEntries(merged);
-    if (this._ingestToken !== tok || this._unmounted) return;
-    this._backfillCount = (this._backfillCount || 0) + reconstructed.length;
-    this.setState((prev) => {
-      // Shift by the count of rows the ACTIVE view actually gained —
-      // selectedIndex indexes visibleRequests, which depends on showAll.
-      const addedVisible = visibleRequests(reconstructed, prev.showAll).length;
-      return {
-        requests: merged,
-        mainAgentSessions,
-        // Keep the DetailPanel selection on the same logical row.
-        selectedIndex: prev.selectedIndex == null ? null : prev.selectedIndex + addedVisible,
-      };
-    });
-  }
-
   async loadMoreHistory() {
-    if (!this.state.hasMoreHistory || this._loadingMore) return;
-    if (this._v2Archive) {
+    if (this.state.hasMoreHistory && this._v2Archive && !this._loadingMore) {
       await this._loadMoreV2History();
-      return;
     }
-    // 防御 _hasMoreHistory=true 而 _oldestTs 为 null 的不一致状态：
-    // 没有锚点时间戳就别去拼 before=null，否则服务端 400。把 hasMoreHistory 同步
-    // 关掉避免上层 loader 反复触发。
-    if (!this._oldestTs) {
-      this.setState({ hasMoreHistory: false });
-      return;
-    }
-    this._loadingMore = true;
-    this.setState({ loadingMore: true });
-    try {
-      // logfile 只读模式已全量加载（hasMoreHistory 恒 false），不会触发本函数；此分页逻辑仅供 live 模式使用。
-      const pageUrl = `/api/entries/page?before=${encodeURIComponent(this._oldestTs)}&limit=100`;
-      const res = await fetch(apiUrl(pageUrl));
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      if (Array.isArray(data.entries) && data.entries.length > 0) {
-        const reconstructed = reconstructEntries(data.entries);
-        // Paged current-file entries are OLDER than the current baseline but
-        // NEWER than any backfilled previous-segment block — splice them after
-        // the backfilled head so the array stays time-ordered (the sub-agent
-        // interleave cursor depends on it).
-        const bf = this._backfillCount || 0;
-        const merged = bf > 0
-          ? [...this.state.requests.slice(0, bf), ...reconstructed, ...this.state.requests.slice(bf)]
-          : [...reconstructed, ...this.state.requests];
-        this._batchSlim(merged);
-        const { mainAgentSessions } = this._processEntries(merged);
-        this._oldestTs = data.oldestTimestamp;
-
-        // P1: 移动端 hot/cold 分层
-        if (isMobile && mainAgentSessions.length > HOT_SESSION_COUNT) {
-          const sessionIndex = buildSessionIndex(merged, mainAgentSessions);
-          const fullIndex = mergeSessionIndices(this.state.sessionIndex, sessionIndex);
-          const unslimmed = merged.map(e => e._slimmed ? restoreSlimmedEntry(e, merged) : e);
-          const { hotEntries, allSessions, coldGroups } = splitHotCold(
-            unslimmed, mainAgentSessions, fullIndex, HOT_SESSION_COUNT, this._pinnedSessionIdSet()
-          );
-          this._sseSlimmer = null; this._sseReconstructor = null;
-          const pn = this.state.projectName;
-          if (pn) {
-            for (const [sid, coldEntries] of coldGroups) {
-              saveSessionEntries(pn, sid, coldEntries);
-            }
-            saveEntries(pn, merged);
-          }
-          this.setState({
-            requests: hotEntries,
-            mainAgentSessions: allSessions,
-            sessionIndex: fullIndex,
-            hasMoreHistory: !!data.hasMore && !!data.oldestTimestamp,
-            loadingMore: false,
-          });
-        } else {
-          this.setState((prev) => {
-            // Count against the ACTIVE view: raw pages contain non-relevant
-            // entries that showAll displays but the default view hides.
-            const addedVisible = visibleRequests(reconstructed, prev.showAll).length;
-            return {
-              requests: merged,
-              mainAgentSessions,
-              hasMoreHistory: !!data.hasMore && !!data.oldestTimestamp,
-              loadingMore: false,
-              // Keep the DetailPanel selection on the same logical row after the
-              // prepend (pre-existing latent flaw, fixed alongside the backfill).
-              selectedIndex: prev.selectedIndex == null ? null : prev.selectedIndex + addedVisible,
-            };
-          });
-          if (isMobile && this.state.projectName) {
-            saveEntries(this.state.projectName, merged);
-          }
-        }
-      } else {
-        this.setState({ hasMoreHistory: false, loadingMore: false });
-      }
-    } catch (e) {
-      console.error('loadMoreHistory failed:', e);
-      this.setState({ loadingMore: false });
-      message.error(t('ui.loadMoreHistoryFailed'));
-    }
-    this._loadingMore = false;
   }
 
   async _loadMoreV2History() {
@@ -1323,7 +1131,6 @@ class AppBase extends React.Component {
           unslimmed, mainAgentSessions, fullIndex, HOT_SESSION_COUNT, this._pinnedSessionIdSet()
         );
         this._sseSlimmer = null;
-        this._sseReconstructor = null;
         if (this.state.projectName) {
           for (const [sessionId, coldEntries] of coldGroups) {
             saveSessionEntries(this.state.projectName, sessionId, coldEntries);
@@ -1661,10 +1468,15 @@ class AppBase extends React.Component {
       pending.then((started) => {
         if (this._unmounted || epoch !== this._v2Epoch) return;
         if (started || this._v2Archive || this._v2Unavailable) {
-          // A 404 means this installation has no active V2 archive yet and may
-          // use the legacy stream. Any actual V2 protocol/corruption failure
-          // retries V2 instead of silently transmitting full legacy entries.
-          this._initLegacySSE();
+          if (this._v2Unavailable) this.setState({ fileLoading: false, fileLoadingCount: 0 });
+          if (!this.eventSource) this._initControlSSE();
+          if (this._v2Unavailable) {
+            this._v2InitAttempted = false;
+            this._v2RetryTimer = setTimeout(() => {
+              this._v2RetryTimer = null;
+              if (!this._unmounted) this.initSSE();
+            }, 2000);
+          }
           return;
         }
         this.setState({ fileLoading: false, fileLoadingCount: 0 });
@@ -1676,48 +1488,12 @@ class AppBase extends React.Component {
       });
       return;
     }
-    this._initLegacySSE();
+    this._initControlSSE();
   }
 
-  _initLegacySSE() {
+  _initControlSSE() {
     try {
-      // 尝试使用缓存元数据进行增量加载
-      let url = '/events';
-      let hasCache = false;
-      if (this._v2Archive) {
-        url = '/events?controlOnly=1';
-        hasCache = true;
-      }
-      if (!hasCache && isMobile) {
-        const meta = getCacheMeta();
-        if (meta && meta.lastTs && meta.count > 0) {
-          url = `/events?since=${encodeURIComponent(meta.lastTs)}&cc=${meta.count}&project=${encodeURIComponent(meta.projectName || '')}`;
-          hasCache = true;
-        }
-      }
-      // 桌面端重连：用最后接收到的时间戳做增量加载，避免全量重载放大卡顿
-      if (!hasCache && !isMobile && this._sseReconnectCount > 0 && this.state.requests.length > 0) {
-        const reqs = this.state.requests;
-        let lastTs = null;
-        for (let i = reqs.length - 1; i >= 0; i--) {
-          if (reqs[i]?.timestamp) { lastTs = reqs[i].timestamp; break; }
-        }
-        if (lastTs && this.state.projectName) {
-          url = `/events?since=${encodeURIComponent(lastTs)}&cc=${reqs.length}&project=${encodeURIComponent(this.state.projectName)}`;
-          hasCache = true;
-        }
-      }
-      // 无缓存时限制首屏加载量，剩余按需分页。
-      // 移动端 200 条；桌面端 400 条（Windows 上 1000 条的同步重建 + React 渲染
-      // 可达 10-15s，超出 Chrome tab kill 阈值导致崩溃）。
-      if (!hasCache) {
-        url = `/events?limit=${isMobile ? 200 : 400}`;
-      }
-      // 只有在无缓存时才显示 loading 遮罩
-      if (!hasCache) {
-        this.setState({ fileLoading: true, fileLoadingCount: 0 });
-      }
-      this.eventSource = new EventSource(apiUrl(url));
+      this.eventSource = new EventSource(apiUrl('/events?controlOnly=1'));
       // 每次收到任何 SSE 事件（包括心跳注释帧触发的隐式活动）都重置超时
       this.eventSource.onmessage = (event) => { this._resetSSETimeout(); this.handleEventMessage(event); };
       this.eventSource.onopen = () => { this._resetSSETimeout(); };
@@ -1758,32 +1534,6 @@ class AppBase extends React.Component {
           });
         } catch (e) { reportSwallowed('sse.stream-progress', e); }
       });
-      this.eventSource.addEventListener('resume_prompt', (event) => {
-        this._resetSSETimeout();
-        try {
-          const data = JSON.parse(event.data);
-          // 等待偏好加载完成再判断是否跳过弹窗（避免竞态）
-          (this.context._prefsReady || Promise.resolve({})).then((initialPrefs) => {
-            // 优先读 live preferences（本会话内改过开关需立即生效，否则关了开关当次仍自动继承）；
-            // provider 尚未 setState 时回落启动快照
-            const prefs = this.context?.preferences || initialPrefs;
-            if (prefs?.resumeAutoChoice) {
-              // 自动跳过：直接发送选择到服务端，不触碰偏好设置（避免 setState 竞态清除偏好）
-              fetch(apiUrl('/api/resume-choice'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ choice: prefs.resumeAutoChoice }),
-              }).catch(err => console.error('resume-choice failed:', err));
-            } else {
-              this.setState({ resumeModalVisible: true, resumeFileName: data.recentFileName || '' });
-            }
-          });
-        } catch (e) { reportSwallowed('sse.resume_prompt', e); }
-      });
-      this.eventSource.addEventListener('resume_resolved', () => {
-        this._resetSSETimeout();
-        this.setState({ resumeModalVisible: false, resumeFileName: '', resumeRememberChoice: false });
-      });
       // update_completed 事件已废弃：自 1.6.203 起后台 detached npm install 负责升级，
       // 当前进程内存里仍是旧版本，广播"已升级完成"会误导用户。保留 update_major_available
       // 作为"有新版可用"的统一信号（包含跨大版本提示 + 本版本忙时跳过两种场景）。
@@ -1793,133 +1543,6 @@ class AppBase extends React.Component {
           const data = JSON.parse(event.data);
           this.setState({ updateInfo: { type: 'major', version: data.version } });
         } catch (e) { reportSwallowed('sse.update_major_available', e); }
-      });
-      this.eventSource.addEventListener('load_start', (event) => {
-        this._resetSSETimeout();
-        try {
-          const data = JSON.parse(event.data);
-          this._chunkedEntries = [];
-          this._chunkedTotal = data.total || 0;
-          this._isIncremental = !!data.incremental;
-          this._hasMoreHistory = !!data.hasMore;
-          this._oldestTs = data.oldestTs || null;
-          // 增量模式下已有缓存数据在显示，不需要 loading 遮罩
-          if (!this._isIncremental) {
-            this.setState({ fileLoading: true, fileLoadingCount: 0 });
-          }
-        } catch (e) { reportSwallowed('sse.load_start', e); }
-      });
-      this.eventSource.addEventListener('load_chunk', (event) => {
-        this._resetSSETimeout();
-        try {
-          const chunk = JSON.parse(event.data);
-          if (Array.isArray(chunk)) {
-            this._chunkedEntries.push(...chunk);
-            // 增量模式下静默累积；非增量模式用 rAF 节流，每帧最多更新一次计数
-            if (!this._isIncremental && !this._loadingCountRafId) {
-              this._loadingCountRafId = requestAnimationFrame(() => {
-                this._loadingCountRafId = null;
-                this.setState({ fileLoadingCount: this._chunkedEntries.length });
-              });
-            }
-          }
-        } catch (e) { reportSwallowed('sse.load_chunk', e, { dataLen: event.data?.length }); }
-      });
-      this.eventSource.addEventListener('load_end', () => {
-        this._resetSSETimeout();
-        if (this._loadingCountRafId) { cancelAnimationFrame(this._loadingCountRafId); this._loadingCountRafId = null; }
-        const delta = this._chunkedEntries;
-        this._chunkedEntries = [];
-        this._chunkedTotal = 0;
-        const isIncremental = this._isIncremental;
-        this._isIncremental = false;
-        // 解锁信号：增量模式下出现至少一条**带 body.input 的 mainAgent** 条目，说明
-        // mainAgent 真有新一轮请求落盘。仅看 delta.length>0 会被 SSE 重连时 backlog
-        // replay 的旧 entry（synthetic、post-stop hook 等）误触发；mainAgent + body.input
-        // 才是"用户实际发了内容"的最强信号。覆盖 TerminalPanel /clear 后用户没走 ChatView
-        // 输入框（pty 直接键入 / 外部 hook / Agent 自驱）时血条卡 0% 的场景。
-        // 注：解锁不再单独 setState，并入分帧管线末段的原子提交（避免与主提交分帧）。
-        let unlockContextBar = false;
-        if (isIncremental && this.state.contextBarLocked) {
-          const hasMainAgentTurn = delta.some(e => {
-            if (!e || !isMainAgent(e)) return false;
-            const input = e.body?.input;
-            return Array.isArray(input) && input.length > 0;
-          });
-          if (hasMainAgentTurn) unlockContextBar = true;
-        }
-
-        // 增量模式：Map 去重合并（delta 条目覆盖同 key 的缓存条目）
-        let rawEntries;
-        if (isIncremental && isMobile && this.state.requests.length > 0) {
-          if (delta.length === 0) {
-            // 无新数据，缓存已是最新，跳过重建（保留缓存恢复时已设置的 hasMoreHistory）
-            const st = { fileLoading: false, fileLoadingCount: 0 };
-            if (unlockContextBar) st.contextBarLocked = false;
-            this.setState(st);
-            return;
-          }
-          const eKey = (e, i) => (e.timestamp && e.url) ? `${e.timestamp}|${e.url}` : `__nokey_c${i}`;
-          const map = new Map();
-          this.state.requests.forEach((e, i) => setLatestMapValue(map, eKey(e, i), e));
-          delta.forEach((e, i) => setLatestMapValue(map, (e.timestamp && e.url) ? `${e.timestamp}|${e.url}` : `__nokey_d${i}`, e));
-          // 注意：合并结果含 state.requests 的 live 引用 —— 分帧 slim/process 期间这些对象被
-          // 原地变异（intern/_slimmed），让步间隙的 render 会看到中间态。旧同步代码同样原地
-          // 变异（只是单任务内完成）；最终原子提交会以干净引用整体覆盖。
-          rawEntries = Array.from(map.values());
-        } else {
-          rawEntries = delta;
-        }
-
-        // 分帧管线：reconstruct → 分帧 slim → 分帧 process → 原子提交。
-        // async 不 await（EventSource 回调）；在途期间 live 条目入闸门缓冲（handleEventMessage）。
-        this._runSseColdIngest(rawEntries, { isIncremental, unlockContextBar });
-      });
-      this.eventSource.addEventListener('full_reload', (event) => {
-        this._resetSSETimeout();
-        // 服务端要求整体重载 = baseline 重置：废弃在途分帧管线（防其稍后提交陈旧基线），
-        // 闸门缓冲泄回 _pendingEntries（dedup 兜底与重载数据的重复）。
-        this._abortColdIngest({ drain: true });
-        // animateLoadingCount 回调有数百 ms 窗口：期间若新分帧管线启动（token 再 bump），
-        // 本次 full_reload 的延迟 setState 不得覆盖新管线提交 —— 回调内按 token 失配丢弃。
-        const reloadToken = this._ingestToken;
-        try {
-          const entries = JSON.parse(event.data);
-          if (Array.isArray(entries)) {
-            if (entries.length > 0) this._batchSlim(entries);
-            const { mainAgentSessions, filtered } = entries.length > 0 ? this._processEntries(entries) : { mainAgentSessions: [], filtered: [] };
-            if (entries.length > 0) {
-              this.animateLoadingCount(entries.length, () => {
-                if (this._ingestToken !== reloadToken) return; // 已被新管线 supersede
-                this.setState({
-                  requests: entries,
-                  selectedIndex: filtered.length > 0 ? filtered.length - 1 : null,
-                  mainAgentSessions,
-                  fileLoading: false,
-                  fileLoadingCount: 0,
-                });
-                if (isMobile && this.state.projectName) {
-                  saveEntries(this.state.projectName, entries);
-                }
-              });
-            } else {
-              this.setState({
-                requests: entries,
-                selectedIndex: null,
-                mainAgentSessions,
-                fileLoading: false,
-                fileLoadingCount: 0,
-              });
-              if (isMobile) clearEntries();
-            }
-          } else {
-            this.setState({ fileLoading: false, fileLoadingCount: 0 });
-          }
-        } catch (e) {
-          // A silently failed full reload discards the server's baseline — report, then recover.
-          reportSwallowed('sse.full_reload', e);
-          this.setState({ fileLoading: false, fileLoadingCount: 0 });
-        }
       });
       // 工作区模式事件
       this.eventSource.addEventListener('workspace_started', (event) => {
@@ -2104,74 +1727,7 @@ class AppBase extends React.Component {
   }
 
   loadLocalLogFile(file) {
-    const locatorParts = typeof file === 'string' ? file.split('/') : [];
-    if (locatorParts.length === 3
-        && /^\d{8}_[a-z0-9._~-]+\.cxvsession$/.test(locatorParts[1])
-        && locatorParts[2] === 'timeline.jsonl') {
-      this._loadLocalV2LogFile(file);
-      return;
-    }
-    // 独立 SSE 链路加载历史日志：/api/local-log 返回 event-stream，
-    // 与 /events (CLI 模式) 完全隔离，不会触发 terminal/workspace 等 CLI 行为
-    this._isLocalLog = true;
-    this._localLogFile = file;
-    if (this._sseTimeoutTimer) { clearTimeout(this._sseTimeoutTimer); this._sseTimeoutTimer = null; }
-    if (this._sseReconnectTimer) { clearTimeout(this._sseReconnectTimer); this._sseReconnectTimer = null; }
-    this._v2Epoch++;
-    this._v2SnapshotController?.abort();
-    this._v2PageController?.abort();
-    this._v2PageController = null;
-    this._v2PendingPage = null;
-    this._v2LiveSource?.close();
-    this._v2LiveSource = null;
-    this._v2Archive = null;
-    // 全量加载，无分页：防御上一次状态残留
-    this._hasMoreHistory = false;
-    this._oldestTs = null;
-    this.setState({ fileLoading: true, fileLoadingCount: 0 });
-
-    // 关闭上一次的加载连接（防止快速切换时资源泄漏）
-    if (this._localLogES) { this._localLogES.close(); this._localLogES = null; }
-
-    const entries = [];
-    // logfile 只读模式一次性全量加载（含移动端）：走服务端全量流式分支，
-    // 由分帧管线 _runLocalLogIngest 消化大文件，避免「加载更早」手工分页。
-    const es = new EventSource(apiUrl(`/api/local-log?file=${encodeURIComponent(file)}`));
-    this._localLogES = es;
-
-    es.addEventListener('load_start', (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        this._hasMoreHistory = !!data.hasMore;
-        this._oldestTs = data.oldestTs || null;
-        this.setState({ fileLoadingCount: 0 });
-      } catch (e) { reportSwallowed('sse.local-log.load_start', e); }
-    });
-
-    es.addEventListener('load_chunk', (event) => {
-      try {
-        const chunk = JSON.parse(event.data);
-        if (Array.isArray(chunk)) {
-          for (const entry of chunk) {
-            entries.push(entry);
-          }
-          this.setState({ fileLoadingCount: entries.length });
-        }
-      } catch (e) { reportSwallowed('sse.local-log.load_chunk', e, { dataLen: event.data?.length }); }
-    });
-
-    es.addEventListener('load_end', () => {
-      es.close();
-      // 分帧管线（reconstruct → 分帧 slim → 分帧 process → 原子提交）：
-      // 历史日志同样可能含巨型 checkpoint，同步管线会卡死主线程。
-      this._runLocalLogIngest(entries);
-    });
-
-    es.onerror = () => {
-      es.close();
-      console.error('加载日志文件 SSE 连接错误');
-      this.setState({ fileLoading: false, fileLoadingCount: 0 });
-    };
+    this._loadLocalV2LogFile(file);
   }
 
   async _loadLocalV2LogFile(file) {
@@ -2259,7 +1815,7 @@ class AppBase extends React.Component {
     try {
       // 冷启动分帧管线在途：live 条目入闸门缓冲，提交后统一泄洪（_commitColdIngest）。
       // 否则 live flush 会基于旧 prev.requests 合并、随后被管线的基线提交整体覆盖，
-      // 且 _sseSlimmer/_sseReconstructor 会对错误基线初始化（sessionMerge 脆弱区）。
+      // 且 _sseSlimmer 会对错误基线初始化（sessionMerge 脆弱区）。
       if (this._ingestRunning) {
         this._liveGateBuffer.push(entry);
         return;
@@ -2294,26 +1850,12 @@ class AppBase extends React.Component {
       if (!this._sseSlimmer) {
         this._sseSlimmer = createIncrementalSlimmer(isMainAgent);
       }
-      // Delta 增量重建器：SSE 逐条到达的 delta entry 只有增量 input，
-      // 需要拼接为完整 input（与批量加载时 reconstructEntries 对应）
-      if (!this._sseReconstructor) {
-        this._sseReconstructor = createIncrementalReconstructor();
-      }
-
       for (const rawEntry of batch) {
-        // Rotation-context sentinel on the LIVE path (rotation while this
-        // client is connected): capture + seed, never enter state.requests.
-        if (rawEntry && rawEntry.cxvRotationContext) {
-          this._rotationContext = rawEntry;
-          if (Array.isArray(rawEntry.teammateNames)) setTeammateNameSeeds(rawEntry.teammateNames);
-          continue;
-        }
         // MainAgent 的 body.input 内 tool_result block.content 走共享池（lazy-clone 三层
         // input/content/block）；SubAgent / Teammate 原始报文不改写。下方会 mutate `messages[i]._timestamp`
         //     的安全前提：浅 clone 仅 spread 顶层字段保留 _timestamp 写位；共享的
         //     block.content 是 string primitive 不可变，跨 entry 共享 ref 不会串扰。
-        const repeatedEntry = this._repeatEntryExpander.process(rawEntry);
-        const entry = internMainAgentInput(this._sseReconstructor.reconstruct(repeatedEntry), isMainAgent);
+        const entry = internMainAgentInput(rawEntry, isMainAgent);
         stampConversationMessageCount(entry);
         const key = `${entry.timestamp}|${entry.url}`;
         const existingIndex = this._requestIndexMap.get(key);
@@ -2347,10 +1889,7 @@ class AppBase extends React.Component {
           shouldClearStreaming = true;
         }
 
-        // 合并 mainAgent sessions（跳过被剪枝的 entry，其 input 已被清空；
-        // 跳过重建层标记的乱序/断裂条目，防完成序倒置翻倍，见 isMergeBlockedEntry JSDoc）
-        // KEEP IN SYNC: tests/sse-reconstructor-lifecycle.test.js locks this live wiring;
-        // tests/main-agent-delta.test.js covers the reconstructed ordering invariants.
+        // 合并 mainAgent sessions（跳过被剪枝或被 V2 materializer 标记不可合并的 entry）。
         // （mainAgent 形态 → teammate/blocked → applyInPlaceLastMsgReplace → merge），改动需同步
         const mergeBlocked = isMergeBlockedEntry(entry);
         const conversationExcluded = shouldExcludeFromConversation(entry);
@@ -2502,19 +2041,8 @@ class AppBase extends React.Component {
       // 1. 从 IndexedDB 加载
       let entries = await loadSessionEntries(this.state.projectName, sessionId);
 
-      // 2. fallback: 从 REST API 加载
-      if (!entries || entries.length === 0) {
-        const meta = (this.state.sessionIndex || []).find(s => s.sessionId === sessionId);
-        if (meta && meta.lastTs) {
-          const res = await fetch(apiUrl(`/api/entries/page?before=${encodeURIComponent(meta.lastTs)}&limit=200`));
-          const data = await res.json();
-          entries = data.entries || [];
-        }
-      }
-
       if (entries && entries.length > 0) {
-        const reconstructed = reconstructEntries(entries);
-        const merged = [...reconstructed, ...this.state.requests];
+        const merged = [...entries, ...this.state.requests];
         this._batchSlim(merged);
         const { mainAgentSessions } = this._processEntries(merged);
 
@@ -2526,7 +2054,7 @@ class AppBase extends React.Component {
           unslimmed, mainAgentSessions, fullIndex, HOT_SESSION_COUNT,
           this._pinnedSessionIdSet([sessionId])
         );
-        this._sseSlimmer = null; this._sseReconstructor = null;
+        this._sseSlimmer = null;
         const pn = this.state.projectName;
         if (pn) {
           for (const [sid, coldEntries] of coldGroups) {
@@ -2559,7 +2087,7 @@ class AppBase extends React.Component {
     const { hotEntries, allSessions, coldGroups } = splitHotCold(
       unslimmed, mainAgentSessions, this.state.sessionIndex, HOT_SESSION_COUNT, this._pinnedSessionIdSet()
     );
-    this._sseSlimmer = null; this._sseReconstructor = null;
+    this._sseSlimmer = null;
     const fullIndex = this.state.sessionIndex;
     if (projectName) {
       for (const [sid, coldEntries] of coldGroups) {
@@ -3082,31 +2610,6 @@ class AppBase extends React.Component {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-  };
-
-  // ─── 恢复会话 ──────────────────────────────────────────
-
-  handleResumeChoice = (choice) => {
-    if (this.state.resumeRememberChoice) {
-      this.setState({ resumeAutoChoice: choice });
-      this.context.updatePreferences({ resumeAutoChoice: choice });
-    }
-    fetch(apiUrl('/api/resume-choice'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ choice }),
-    }).catch(err => console.error('resume-choice failed:', err));
-  };
-
-  handleResumeAutoChoiceToggle = (enabled) => {
-    const value = enabled ? 'continue' : null;
-    this.setState({ resumeAutoChoice: value });
-    this.context.updatePreferences({ resumeAutoChoice: value });
-  };
-
-  handleResumeAutoChoiceChange = (value) => {
-    this.setState({ resumeAutoChoice: value });
-    this.context.updatePreferences({ resumeAutoChoice: value });
   };
 
   _finishLocalLoad = (entries, fileNames) => {

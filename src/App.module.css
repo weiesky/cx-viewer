@@ -982,20 +982,6 @@
   flex-direction: column;
 }
 
-/* Resume modal footer */
-.resumeFooterRight {
-  text-align: right;
-  margin-bottom: 8px;
-}
-
-.resumeFooterLeft {
-  text-align: left;
-}
-
-.resumeCheckboxOpacity {
-  opacity: 0.6;
-}
-
 .btnMarginLeft {
   margin-left: 8px;
 }

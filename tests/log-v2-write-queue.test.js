@@ -12,7 +12,6 @@ function queueOptions(root) {
     minFreeBytes: 0,
     minFreePercent: 0,
     durability: 'durable',
-    authority: 'primary',
   };
 }
 

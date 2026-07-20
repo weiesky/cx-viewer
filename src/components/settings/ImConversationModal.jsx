@@ -100,7 +100,7 @@ function renderSessions(sessions, senderMap, imAgent) {
 
 /**
  * IM 对话记录弹窗：点击 header 的 IM logo 打开，展示该 IM 独立 worker 的 Codex 会话。
- * 数据：GET /api/im/:platform/logs → 最新 .jsonl → /api/local-log SSE → reconstructEntries → 渲染。
+ * 数据：GET /api/im/:platform/logs → 最新 .jsonl → /api/im-log SSE → reconstructEntries → 渲染。
  * 非实时；右上角刷新按钮重新拉取。
  */
 export default function ImConversationModal({ open, onClose, platform, onOpenConfig }) {
@@ -222,7 +222,7 @@ export default function ImConversationModal({ open, onClose, platform, onOpenCon
         if (!latest) { setSessions([]); setLoading(false); return; }
 
         const entries = [];
-        es = new EventSource(apiUrl(`/api/local-log?file=${encodeURIComponent(latest)}`));
+        es = new EventSource(apiUrl(`/api/im-log?platform=${encodeURIComponent(platform)}&file=${encodeURIComponent(latest)}`));
         es.addEventListener('load_chunk', (ev) => {
           try { const chunk = JSON.parse(ev.data); if (Array.isArray(chunk)) for (const e of chunk) entries.push(e); } catch { /* skip bad chunk */ }
         });

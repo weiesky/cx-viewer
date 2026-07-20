@@ -9,7 +9,6 @@ import {
   createProjectManifest,
   createSessionManifest,
   createTimelineRecord,
-  validateImportReceipt,
   validateProjectManifest,
   validateSessionManifest,
   validateSessionSummary,
@@ -49,6 +48,14 @@ test('creates a session archive manifest with explicit lineage', () => {
   assert.equal(validateSessionManifest(manifest).ok, true);
 });
 
+test('accepts legacy as read compatibility for imported V2 archives', () => {
+  const manifest = createSessionManifest({
+    projectId: 'project-1', sessionId: 'imported', sessionSeq: 1,
+    startReason: 'legacy', source: 'legacy-import', createdAt: now,
+  });
+  assert.equal(validateSessionManifest(manifest).ok, true);
+});
+
 test('timeline record joins entry and input revisions in session order', () => {
   const record = createTimelineRecord({
     seq: 7,
@@ -65,11 +72,9 @@ test('timeline record joins entry and input revisions in session order', () => {
     entryRef: { thread: 't_abc', offset: 120, length: 80, checksum: 'sha256:abc' },
     inputRevision: 4,
     phase: 'inProgress',
-    legacyRef: { logFile: 'project/log.jsonl', offset: 40, length: 80 },
   });
   assert.equal(validateTimelineRecord(record).ok, true);
   assert.equal(record.committedAt, now);
-  assert.equal(record.legacyRef.offset, 40);
 });
 
 test('schema validation reports structural corruption', () => {
@@ -85,47 +90,6 @@ test('schema validation reports structural corruption', () => {
   assert.equal(timeline.ok, false);
   assert.ok(timeline.errors.some((error) => error.includes('entryRef.offset')));
 
-  const unsafeLegacy = validateTimelineRecord({
-    ...createTimelineRecord({
-      seq: 1,
-      eventId: 'e',
-      txnId: 't',
-      timestamp: now,
-      threadId: 'thread',
-      agentRole: 'main',
-      entryKey: 'entry',
-      entryRevision: 1,
-      entryRef: { thread: 'token', offset: 0, length: 1, checksum: 'sum' },
-      inputRevision: 0,
-      phase: 'completed',
-    }),
-    legacyRef: { logFile: '../escape.jsonl', offset: 0, length: 1 },
-  });
-  assert.equal(unsafeLegacy.ok, false);
-  assert.ok(unsafeLegacy.errors.some((error) => error.includes('legacyRef.logFile')));
-});
-
-test('legacy import receipt schema pins source, identity, digest, and durability evidence', () => {
-  const receipt = {
-    kind: 'cx-viewer.v1-import',
-    version: 1,
-    sourceFile: 'project/log.jsonl',
-    sourceBytes: 123,
-    sourceDigest: `sha256:${'a'.repeat(64)}`,
-    projectId: 'project',
-    canonicalCwd: '/workspace/project',
-    sessionId: 'legacy-import:session',
-    importedAt: now,
-    entryCount: 2,
-    entriesDigest: `sha256:${'b'.repeat(64)}`,
-    durability: 'batched-fsync',
-    syncedFiles: 8,
-  };
-  assert.equal(validateImportReceipt(receipt).ok, true);
-  assert.equal(validateImportReceipt({ ...receipt, sourceFile: '../escape.jsonl' }).ok, false);
-  assert.equal(validateImportReceipt({ ...receipt, sourceDigest: 'sha256:short' }).ok, false);
-  assert.equal(validateImportReceipt({ ...receipt, entryCount: 0 }).ok, false);
-  assert.equal(validateImportReceipt({ ...receipt, durability: 'buffered' }).ok, false);
 });
 
 test('session summary schema validates derived prompt and archive metadata without a session item cap', () => {

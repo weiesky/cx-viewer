@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { resolve } from 'node:path';
 
 import WebSocket from 'ws';
 
@@ -12,8 +10,6 @@ import { inspectCodexRequestUserInputSupport } from '../lib/codex-appserver-capa
 const codexPath = process.argv[2] || 'codex';
 const cwd = resolve(process.argv[3] || process.cwd());
 const timeoutMs = Number(process.env.CXV_CODEX_ASK_VERIFY_TIMEOUT_MS) || 120000;
-const temp = mkdtempSync(join(tmpdir(), 'cxv-codex-ask-e2e-'));
-
 let bridge = null;
 let ws = null;
 let nextId = 1;
@@ -67,7 +63,6 @@ try {
   bridge = await startAppServerBridge({
     cwd,
     codexPath,
-    logFile: join(temp, 'verify.jsonl'),
     extraConfigArgs: ['-c', 'features.default_mode_request_user_input=true'],
     writeLogEntry: () => ({ written: true }),
     onRequestUserInput: request => {
@@ -186,5 +181,4 @@ try {
   for (const pending of rpc.values()) pending.reject(new Error('verifier stopped'));
   try { ws?.close(); } catch {}
   try { bridge?.stop(); } catch {}
-  try { rmSync(temp, { recursive: true, force: true }); } catch {}
 }

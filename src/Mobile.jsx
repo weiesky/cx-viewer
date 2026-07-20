@@ -1142,28 +1142,6 @@ class Mobile extends AppBase {
                 )}
               </div>
               <div className={styles.mobileSettingsGroup}>
-                <div className={styles.mobileSettingsSectionTitle}>{t('ui.logSettings')}</div>
-                <div className={styles.mobileSettingsRow}>
-                  <span className={styles.mobileSettingsLabel}>{t('ui.resumeAutoChoice')}</span>
-                  <Switch
-                    checked={!!this.state.resumeAutoChoice}
-                    onChange={this.handleResumeAutoChoiceToggle}
-                  />
-                </div>
-                {this.state.resumeAutoChoice && (
-                  <div className={styles.mobileSettingsRow}>
-                    <Radio.Group
-                      value={this.state.resumeAutoChoice}
-                      onChange={(e) => this.handleResumeAutoChoiceChange(e.target.value)}
-                      size="small"
-                    >
-                      <Radio value="continue">{t('ui.resumeAutoChoice.continue')}</Radio>
-                      <Radio value="new">{t('ui.resumeAutoChoice.new')}</Radio>
-                    </Radio.Group>
-                  </div>
-                )}
-              </div>
-              <div className={styles.mobileSettingsGroup}>
                 <div className={styles.mobileSettingsSectionTitle}>{t('ui.themeStyle')}</div>
                 <div className={styles.mobileSettingsRow}>
                   <span className={styles.mobileSettingsLabel}>{t('ui.themeColor')}</span>

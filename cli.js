@@ -4,7 +4,7 @@
 process.env.CXV_WORKSPACE_MODE = '1';
 
 import { readFileSync, writeFileSync, existsSync, realpathSync, unlinkSync, mkdirSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { spawn } from 'node:child_process';
@@ -365,7 +365,8 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
 
   // 启动 App-Server Bridge（WebSocket 中间代理，获取完整执行日志）
   const interceptorMod = await import('./interceptor.js');
-  const currentLogFile = interceptorMod.LOG_FILE;
+  const { LOG_DIR } = await import('./findcx.js');
+  const { rawProjectDirectoryToken } = await import('./lib/log-v2/project-id.js');
   let _bridge = null;
   // Proxy redirect args exist only after successful startup. App-server gets
   // the native ask override last; the TUI receives the same final overrides below.
@@ -377,7 +378,7 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
     _bridge = await startAppServerBridge({
       cwd: workingDir,
       codexPath,
-      logFile: currentLogFile,
+      rawDir: join(LOG_DIR, 'v2-raw', rawProjectDirectoryToken(interceptorMod.getActiveProjectContext().projectId)),
       env: process.env,
       extraConfigArgs: appServerConfigArgs,
       onApprovalsReviewerActive: (reviewer) => serverMod.setActiveCodexApprovalsReviewer(reviewer, true),
@@ -428,7 +429,7 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
       },
     });
     // The Codex TUI is the critical path. Log watching/statistics can attach
-    // after the PTY exists; watchLogFile starts at the current EOF and the
+    // after the PTY exists; the V2 writer is ready before traffic starts and the
     // regular history endpoints own older conversation loading.
     serverMod.initPostLaunch();
   } catch (err) {

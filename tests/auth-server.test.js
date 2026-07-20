@@ -2,9 +2,12 @@ import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { request } from 'node:http';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 import WebSocket from 'ws';
+import { resolveAppServerThreadIdentity } from '../lib/log-v2/identity.js';
+import { LogV2Writer } from '../lib/log-v2/writer.js';
+import { rawProjectDirectoryToken } from '../lib/log-v2/project-id.js';
 
 const tmpDir = mkdtempSync(join(tmpdir(), 'cxv-auth-server-'));
 const switchedLogDir = join('/tmp', `cxv-auth-server-switch-${process.pid}`);
@@ -136,7 +139,7 @@ describe('single-port remote password access', { concurrency: false }, () => {
   });
 
   it('exposes only raw frames referenced by the selected business log', async () => {
-    const rawDir = join(tmpDir, 'project', 'raw');
+    const rawDir = join(tmpDir, 'v2-raw', rawProjectDirectoryToken('project'));
     mkdirSync(rawDir, { recursive: true });
     const ref = {
       version: 1,
@@ -146,7 +149,22 @@ describe('single-port remote password access', { concurrency: false }, () => {
       fromSeq: 2,
       toSeq: 3,
     };
-    writeFileSync(join(tmpDir, 'project', 'raw-api.jsonl'), `${JSON.stringify({ timestamp: 1, _codexRaw: ref })}\n---\n`);
+    const writer = LogV2Writer.open({
+      rootDir: tmpDir,
+      projectId: 'project',
+      canonicalCwd: projectDir,
+      sessionId: 'raw-api',
+      rootThreadId: 'raw-api',
+    });
+    writer.append({
+      timestamp: '2026-07-20T00:00:00.000Z',
+      url: 'codex://turn',
+      method: 'POST',
+      mainAgent: true,
+      body: { input: [{ role: 'user', content: 'raw test' }] },
+      _codexRaw: ref,
+    }, resolveAppServerThreadIdentity({ id: 'raw-api', sessionId: 'raw-api' }));
+    const file = relative(tmpDir, join(writer.sessionDir, 'timeline.jsonl')).split(sep).join('/');
     writeFileSync(join(rawDir, ref.sidecar), [
       JSON.stringify({ stream_id: ref.streamId, seq: 1, value: 'before' }),
       JSON.stringify({ stream_id: ref.streamId, seq: 2, value: 'visible' }),
@@ -154,14 +172,14 @@ describe('single-port remote password access', { concurrency: false }, () => {
       '',
     ].join('\n'));
 
-    const listed = await call('127.0.0.1', port, '/api/raw-sidecars?file=project%2Fraw-api.jsonl');
+    const listed = await call('127.0.0.1', port, `/api/raw-sidecars?file=${encodeURIComponent(file)}`);
     assert.equal(listed.status, 200);
     assert.equal(listed.json().sidecars.length, 1);
 
     const frames = await call('127.0.0.1', port, '/api/raw-sidecar/frames', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ file: 'project/raw-api.jsonl', ref }),
+      body: JSON.stringify({ file, ref }),
     });
     assert.equal(frames.status, 200, frames.body);
     assert.deepEqual(frames.json().frames.map(frame => frame.seq), [2, 3]);
@@ -169,7 +187,7 @@ describe('single-port remote password access', { concurrency: false }, () => {
     const denied = await call('127.0.0.1', port, '/api/raw-sidecar/frames', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ file: 'project/raw-api.jsonl', ref: { ...ref, streamId: 'other-stream' } }),
+      body: JSON.stringify({ file, ref: { ...ref, streamId: 'other-stream' } }),
     });
     assert.equal(denied.status, 403);
   });
@@ -213,7 +231,7 @@ describe('single-port remote password access', { concurrency: false }, () => {
     assert.equal((await call(lanIp, port, '/api/auth/state', { headers: { Cookie: cookie } })).status, 403);
   });
 
-  it('refreshes auth config and invalidates sessions when LOG_DIR changes', async t => {
+  it('rejects a runtime LOG_DIR change before readers and writers can split', async t => {
     if (!lanIp) return t.skip('no LAN address available');
     const login = await call('127.0.0.1', port, '/api/auth/login', {
       method: 'POST',
@@ -228,9 +246,8 @@ describe('single-port remote password access', { concurrency: false }, () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ logDir: switchedLogDir }),
     });
-    assert.equal(switched.status, 200, switched.body);
-    const localState = await call('127.0.0.1', port, '/api/auth/state');
-    assert.equal(localState.json().enabled, false);
-    assert.equal((await call(lanIp, port, '/api/auth/state', { headers: { Cookie: cookie } })).status, 403);
+    assert.equal(switched.status, 409, switched.body);
+    assert.match(switched.body, /requires a CX Viewer restart/);
+    assert.equal((await call(lanIp, port, '/api/auth/state', { headers: { Cookie: cookie } })).status, 200);
   });
 });

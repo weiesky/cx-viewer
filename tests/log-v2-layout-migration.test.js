@@ -130,7 +130,7 @@ test('layout migration defaults to a zero-write dry run', () => {
   } finally { cleanup(value); }
 });
 
-test('layout migration applies beside V1 files, verifies the archive, and retains the old backup', () => {
+test('layout migration applies beside previous-layout files, verifies the archive, and retains the backup', () => {
   const value = fixture();
   try {
     mkdirSync(value.targetProjectDir);

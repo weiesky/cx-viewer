@@ -1,5 +1,5 @@
 import React from 'react';
-import { ConfigProvider, Layout, theme, Modal, Button, Checkbox, Spin, Alert, message, Tooltip } from 'antd';
+import { ConfigProvider, Layout, theme, Modal, Button, Spin, Alert, message, Tooltip } from 'antd';
 import { UploadOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
 import AppBase, { styles } from './AppBase';
 import { isMobile, isElectron, setViewMode } from './env';
@@ -352,9 +352,6 @@ class App extends AppBase {
               contextBarOptimistic={this.state.contextBarOptimistic}
               contextBarLocked={this.state.contextBarLocked}
               contextCompactionExcludedEpoch={this._contextCompactionExcludedEpoch}
-              resumeAutoChoice={this.state.resumeAutoChoice}
-              onResumeAutoChoiceToggle={this.handleResumeAutoChoiceToggle}
-              onResumeAutoChoiceChange={this.handleResumeAutoChoiceChange}
               themeColor={this.state.themeColor}
               onThemeColorChange={this.handleThemeColorChange}
               displayScale={this.state.displayScale}
@@ -515,37 +512,6 @@ class App extends AppBase {
             </div>
           </div>
         </Modal>
-        <Modal
-          title={t('ui.resume.title')}
-          open={this.state.resumeModalVisible}
-          closable={false}
-          maskClosable={false}
-          keyboard={false}
-          footer={
-            <div>
-              <div className={styles.resumeFooterRight}>
-                <Button key="continue" type="primary" onClick={() => this.handleResumeChoice('continue')} className={styles.btnMarginRight}>
-                  {t('ui.resume.continue')}
-                </Button>
-                <Button key="new" onClick={() => this.handleResumeChoice('new')}>
-                  {t('ui.resume.new')}
-                </Button>
-              </div>
-              <div className={styles.resumeFooterLeft}>
-                <Checkbox
-                  checked={this.state.resumeRememberChoice}
-                  onChange={(e) => this.setState({ resumeRememberChoice: e.target.checked })}
-                  className={styles.resumeCheckboxOpacity}
-                >
-                  <span className={styles.resumeCheckboxOpacity}>{t('ui.resume.remember')}</span>
-                </Checkbox>
-              </div>
-            </div>
-          }
-        >
-          <p>{t('ui.resume.message', { file: this.state.resumeFileName })}</p>
-        </Modal>
-
         <Modal
           title={<span className={styles.modalTitleInline}><OpenFolderIcon apiEndpoint={apiUrl('/api/open-log-dir')} title={t('ui.openLogDir')} size={16} />{t('ui.importLocalLogs')}</span>}
           open={this.state.importModalVisible}

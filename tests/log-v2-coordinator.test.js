@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join, relative, sep } from 'node:path';
@@ -12,7 +12,7 @@ import {
   _resetAppServerBridgeForTests,
   _writeAppServerEntryForTests,
 } from '../lib/appserver-bridge.js';
-import { dispatchLogWrite, LogV2WriteCoordinator } from '../lib/log-v2/dual-write.js';
+import { LogV2WriteCoordinator } from '../lib/log-v2/coordinator.js';
 import { projectArchiveDirectoryName } from '../lib/log-v2/identity.js';
 import { inspectSessionArchive } from '../lib/log-v2/inspect.js';
 import { findActiveV2SessionFile, findLatestV2SessionFile, listV2LocalLogs, materializeSessionArchive, resolveV2SessionFile } from '../lib/log-v2/materializer.js';
@@ -26,42 +26,6 @@ function entry(timestamp = '2026-07-14T08:00:00.000Z') {
     response: { status: 200, headers: {}, body: { content: [] } },
   };
 }
-
-test('dual dispatcher completes authoritative V1 before V2 and isolates shadow failure', () => {
-  const order = [];
-  const success = dispatchLogWrite({
-    mode: 'dual',
-    writeV1() {
-      order.push('v1');
-      return { written: true, logFile: '/logs/v1.jsonl', offset: 10, bytes: 20 };
-    },
-    writeV2(v1) {
-      order.push(`v2:${v1.offset}`);
-      return { written: true, seq: 1 };
-    },
-  });
-  assert.deepEqual(order, ['v1', 'v2:10']);
-  assert.equal(success.written, true);
-  assert.equal(success.shadowV2.seq, 1);
-
-  let attemptedV2 = false;
-  const skipped = dispatchLogWrite({
-    mode: 'dual',
-    writeV1: () => ({ written: false }),
-    writeV2: () => { attemptedV2 = true; },
-  });
-  assert.equal(skipped.written, false);
-  assert.equal(attemptedV2, false);
-
-  const isolated = dispatchLogWrite({
-    mode: 'dual',
-    writeV1: () => ({ written: true, bytes: 12 }),
-    writeV2: () => { throw new Error('shadow unavailable'); },
-  });
-  assert.equal(isolated.written, true);
-  assert.equal(isolated.shadowV2.written, false);
-  assert.match(isolated.shadowV2.error.message, /shadow unavailable/);
-});
 
 test('V2 coordinator advances the durable latest-session pointer when activity returns to an older session', () => {
   const root = mkdtempSync(join(tmpdir(), 'cxv-v2-active-session-'));
@@ -111,7 +75,7 @@ test('V2 coordinator advances the durable latest-session pointer when activity r
     ), 'utf8'));
     assert.equal(projectManifest.latestSessionId, 'session-one');
     assert.equal(findActiveV2SessionFile(root, {
-      runtime: { config: { writeMode: 'v2' }, writer: coordinator.snapshot() },
+      runtime: { writer: coordinator.snapshot() },
       projectId: 'project',
       canonicalCwd: '/workspace/project',
     }), relative(root, join(first.sessionDir, 'timeline.jsonl')).split(sep).join('/'));
@@ -153,7 +117,7 @@ test('V2 project pointer remains authoritative across independent coordinators',
 });
 
 test('V2 coordinator routes root and child entries by authoritative Thread.sessionId', () => {
-  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-dual-'));
+  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-routing-'));
   try {
     const coordinator = new LogV2WriteCoordinator({ rootDir: root });
     const rootContext = {
@@ -166,30 +130,13 @@ test('V2 coordinator routes root and child entries by authoritative Thread.sessi
       ...rootContext,
       thread: { id: 'child-1', sessionId: 'session-1', parentThreadId: 'session-1' },
     };
-    const first = coordinator.writeAppServerEntry(entry(), rootContext, {
-      written: true,
-      logFile: join(root, 'project', 'legacy.jsonl'),
-      offset: 40,
-      bytes: 80,
-    });
-    const second = coordinator.writeAppServerEntry(entry('2026-07-14T08:01:00.000Z'), childContext, {
-      written: true,
-      logFile: join(root, 'project', 'legacy.jsonl'),
-      offset: 120,
-      bytes: 90,
-    });
+    const first = coordinator.writeAppServerEntry(entry(), rootContext);
+    const second = coordinator.writeAppServerEntry(entry('2026-07-14T08:01:00.000Z'), childContext);
     assert.equal(first.sessionDir, second.sessionDir);
     const report = inspectSessionArchive(first.sessionDir);
     assert.equal(report.ok, true);
     assert.equal(report.committedEvents, 2);
     assert.equal(report.threadCount, 2);
-    const timeline = readFileSync(join(first.sessionDir, 'timeline.jsonl'), 'utf8')
-      .trim().split('\n').map(JSON.parse);
-    assert.deepEqual(timeline.map((record) => record.legacyRef.offset), [40, 120]);
-    assert.deepEqual(timeline.map((record) => record.legacyRef.logFile), [
-      'project/legacy.jsonl',
-      'project/legacy.jsonl',
-    ]);
     assert.equal(coordinator.snapshot().failed, 0);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -439,7 +386,6 @@ test('Codex proxy subagent Responses share the authoritative App Server session 
 test('App Server bridge forwards the native Thread object as non-persisted write context', () => {
   let captured = null;
   _resetAppServerBridgeForTests({
-    logFile: '/tmp/cxv-v2-context.jsonl',
     cwd: '/workspace/project',
     project: 'project',
     writeLogEntry(_entry, context) {
@@ -472,7 +418,6 @@ test('App Server collaboration activity supplies child Session context before a 
       minFreePercent: 0,
     });
     _resetAppServerBridgeForTests({
-      logFile: join(root, 'projection.jsonl'),
       cwd: '/workspace/project',
       project: 'project',
       writeLogEntry(entryValue, context) {
@@ -534,7 +479,6 @@ test('App Server collaboration activity supplies child Session context before a 
 test('App Server bridge carries thread/start clear lifecycle into later write context', () => {
   let captured = null;
   _resetAppServerBridgeForTests({
-    logFile: '/tmp/cxv-v2-clear-context.jsonl',
     cwd: '/workspace/project',
     project: 'project',
     writeLogEntry(_entry, context) {
@@ -611,7 +555,7 @@ test('disk watermark and consecutive failures open a restart-scoped V2 fuse', ()
   }
 });
 
-test('interceptor dual mode writes V1 first and a linked V2 shadow in a fresh process', () => {
+test('interceptor writes only V2 in a fresh process', () => {
   const root = mkdtempSync(join(tmpdir(), 'cxv-v2-interceptor-'));
   const project = join(root, 'project');
   const logs = join(root, 'logs');
@@ -620,130 +564,117 @@ test('interceptor dual mode writes V1 first and a linked V2 shadow in a fresh pr
     const interceptorUrl = pathToFileURL(fileURLToPath(new URL('../interceptor.js', import.meta.url))).href;
     const source = `
       const mod = await import(${JSON.stringify(interceptorUrl)});
-      await mod._initPromise;
-      const entry = {
-        timestamp: '2026-07-14T08:00:00.000Z',
-        url: 'https://chatgpt.com/backend-api/codex/responses',
-        method: 'POST',
-        headers: {},
-        body: { input: [{ type: 'message', text: 'integration' }] },
-        response: { status: 200, headers: {}, body: { content: [] } },
-        mainAgent: true,
-      };
-      const result = mod.appendLogEntry(entry, {
-        source: 'app-server',
-        cwd: ${JSON.stringify(project)},
-        projectId: 'project',
-        thread: { id: 'session-integration', sessionId: 'session-integration' },
-      });
-      console.log(JSON.stringify({
-        written: result.written,
-        v1File: result.logFile,
-        v1Offset: result.offset,
-        v2Written: result.shadowV2?.written,
-        sessionDir: result.shadowV2?.sessionDir,
-        seq: result.shadowV2?.seq,
-      }));
+      const result = mod.appendLogEntry({
+        timestamp: '2026-07-14T08:00:00.000Z', project: 'project', url: 'codex://v2-only',
+        body: { input: [] }, response: { status: 200, headers: {}, body: { content: [] } }, mainAgent: true,
+      }, { source: 'app-server', cwd: ${JSON.stringify(project)}, projectId: 'project', thread: { id: 'session', sessionId: 'session' } });
+      console.log(JSON.stringify(result));
       process.exit(0);
     `;
-    const child = spawnSync(process.execPath, ['--input-type=module', '-e', source], {
-      cwd: project,
-      env: {
-        ...process.env,
-        CXV_LOG_DIR: logs,
-        CXV_LOG_WRITE_MODE: 'dual',
-        CXV_LOG_READ_MODE: 'v1',
-        CXV_LOG_V2_MIN_FREE_BYTES: '0',
-        CXV_LOG_V2_MIN_FREE_PERCENT: '0',
-        CXV_WORKSPACE_MODE: '0',
-      },
-      encoding: 'utf8',
-      timeout: 15_000,
-    });
+    const child = spawnSync(process.execPath, ['--input-type=module', '-e', source], { cwd: project, env: { ...process.env, CXV_TEST: '1', CXV_LOG_DIR: logs, CXV_LOG_V2_MIN_FREE_BYTES: '0', CXV_LOG_V2_MIN_FREE_PERCENT: '0' }, encoding: 'utf8' });
     assert.equal(child.status, 0, child.stderr);
     const output = JSON.parse(child.stdout.trim().split('\n').at(-1));
-    assert.equal(output.written, true, JSON.stringify(output));
-    assert.equal(output.v2Written, true);
-    assert.equal(output.v1Offset, 0);
-    assert.equal(output.seq, 1);
-    assert.equal(existsSync(output.v1File), true);
+    assert.equal(output.written, true);
     assert.equal(existsSync(join(output.sessionDir, 'timeline.jsonl')), true);
-    assert.equal(inspectSessionArchive(output.sessionDir).ok, true);
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
+    assert.deepEqual(readdirSync(logs).filter(name => name.endsWith('.jsonl')), []);
+  } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
-test('R3 sources dual-write parity-linked sessions through the interceptor', () => {
-  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-r3-interceptor-'));
+test('interceptor skips startup-only background entries before creating a V2 archive', () => {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-background-only-'));
   const project = join(root, 'project');
   const logs = join(root, 'logs');
   try {
     mkdirSync(project, { recursive: true });
     const interceptorUrl = pathToFileURL(fileURLToPath(new URL('../interceptor.js', import.meta.url))).href;
-    const parityUrl = pathToFileURL(fileURLToPath(new URL('../lib/log-v2/parity.js', import.meta.url))).href;
     const source = `
+      const { existsSync, readdirSync } = await import('node:fs');
       const mod = await import(${JSON.stringify(interceptorUrl)});
-      const { auditLogV2Readiness } = await import(${JSON.stringify(parityUrl)});
-      await mod._initPromise;
-      const make = (timestamp, suffix) => ({
-        timestamp,
-        project: 'project',
-        url: 'codex://r3/' + suffix,
-        method: 'POST',
-        headers: {},
-        body: { value: suffix },
-        response: { status: 200, headers: {}, body: { content: suffix } },
-        mainAgent: false,
-      });
-      const proxy = mod.appendLogEntry(make('2026-07-14T08:00:00.000Z', 'proxy'), {
-        source: 'proxy', cwd: ${JSON.stringify(project)}, projectId: 'project',
-      });
-      const sdkEntry = make('2026-07-14T08:01:00.000Z', 'sdk');
-      sdkEntry._sdkSource = true;
-      sdkEntry.body.metadata = { thread_id: 'sdk-thread', cwd: ${JSON.stringify(project)}, sdk: 'openai-codex-sdk' };
-      const sdk = mod.appendLogEntry(sdkEntry, {
-        source: 'sdk', cwd: ${JSON.stringify(project)}, projectId: 'project', sessionId: 'sdk-thread', threadId: 'sdk-thread',
-      });
-      const otelEntry = make('2026-07-14T08:02:00.000Z', 'otel');
-      otelEntry._otelSource = true;
-      otelEntry._otelSessionId = 'otel-process';
-      otelEntry._otelTraceId = 'trace-1';
-      const otel = mod.appendLogEntry(otelEntry, {
-        source: 'otel', cwd: ${JSON.stringify(project)}, projectId: 'project', sessionId: 'otel-process', threadId: 'trace-1',
-      });
-      const report = auditLogV2Readiness(${JSON.stringify(logs)}, {
-        projectId: 'project', minSessions: 3, minEvents: 3, minObservationHours: 0,
-        now: '2026-07-14T09:00:00.000Z',
-      });
-      console.log(JSON.stringify({
-        writes: [proxy.shadowV2?.written, sdk.shadowV2?.written, otel.shadowV2?.written],
-        report,
-        runtime: mod.getLogV2RuntimeStatus(),
-      }));
+      let commits = 0;
+      mod.setLogV2CommitListener(() => { commits++; });
+      const base = {
+        timestamp: '2026-07-20T13:46:20.000Z', project: 'project', method: 'GET',
+        body: null, response: null, mainAgent: false, subAgent: false,
+      };
+      const skipped = [
+        mod.appendLogEntry({ ...base, url: 'https://chatgpt.com/backend-api/codex/models?client_version=0.144.6', inProgress: true }),
+        mod.appendLogEntry({ ...base, url: 'http://127.0.0.1:7008/v1/models?client_version=0.144.6', proxyUrl: 'https://chatgpt.com/backend-api/codex/models?client_version=0.144.6', response: { status: 200 } }),
+        mod.appendLogEntry({ ...base, method: 'EVENT', url: 'codex://warning/deprecationNotice' }, {
+          source: 'app-server', cwd: ${JSON.stringify(project)}, projectId: 'project', thread: {},
+        }),
+      ];
+      const before = existsSync(${JSON.stringify(logs)})
+        ? readdirSync(${JSON.stringify(logs)}, { recursive: true }).map(String)
+        : [];
+      const retained = [
+        mod.appendLogEntry({ ...base, method: 'EVENT', url: 'codex://warning/warning' }, {
+          source: 'app-server', cwd: ${JSON.stringify(project)}, projectId: 'project',
+          thread: { thread_id: 'threaded', session_id: 'threaded' },
+        }),
+        mod.appendLogEntry({ ...base, method: 'POST', url: 'https://api.openai.com/v1/models' }, {
+          source: 'proxy', cwd: ${JSON.stringify(project)}, projectId: 'project',
+        }),
+        mod.appendLogEntry({ ...base, url: 'https://api.openai.com/v1/projects/models' }, {
+          source: 'proxy', cwd: ${JSON.stringify(project)}, projectId: 'project',
+        }),
+        mod.appendLogEntry({ ...base, url: 'https://api.openai.com/v1/models', _sdkSource: true }, {
+          source: 'sdk', cwd: ${JSON.stringify(project)}, projectId: 'project',
+          sessionId: 'sdk-session', threadId: 'sdk-session',
+        }),
+      ];
+      console.log(JSON.stringify({ skipped, retained, before, commits }));
       process.exit(0);
     `;
     const child = spawnSync(process.execPath, ['--input-type=module', '-e', source], {
       cwd: project,
-      env: {
-        ...process.env,
-        CXV_TEST: '1',
-        CXV_LOG_DIR: logs,
-        CXV_LOG_WRITE_MODE: 'dual',
-        CXV_LOG_READ_MODE: 'v1',
-        CXV_LOG_V2_MIN_FREE_BYTES: '0',
-        CXV_LOG_V2_MIN_FREE_PERCENT: '0',
-        CXV_WORKSPACE_MODE: '0',
-      },
+      env: { ...process.env, CXV_TEST: '1', CXV_LOG_DIR: logs, CXV_LOG_V2_MIN_FREE_BYTES: '0', CXV_LOG_V2_MIN_FREE_PERCENT: '0' },
       encoding: 'utf8',
-      timeout: 20_000,
     });
     assert.equal(child.status, 0, child.stderr);
     const output = JSON.parse(child.stdout.trim().split('\n').at(-1));
-    assert.deepEqual(output.writes, [true, true, true]);
-    assert.equal(output.report.ok, true, JSON.stringify(output.report));
-    assert.deepEqual(output.runtime.writer.sources, { proxy: 1, sdk: 1, otel: 1 });
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
+    assert.equal(output.before.some(name => name.includes('.cxvsession')), false);
+    assert.deepEqual(output.skipped.map(result => ({
+      written: result.written,
+      accepted: result.accepted,
+      durable: result.durable,
+      skipped: result.skipped,
+    })), Array(3).fill({ written: false, accepted: true, durable: true, skipped: true }));
+    assert.equal(output.retained.every(result => result.written === true), true, JSON.stringify(output.retained));
+    assert.equal(output.commits, output.retained.length);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('queued commit listeners receive the immutable committed entry', () => {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-listener-'));
+  const project = join(root, 'project');
+  const logs = join(root, 'logs');
+  try {
+    mkdirSync(project, { recursive: true });
+    const interceptorUrl = pathToFileURL(fileURLToPath(new URL('../interceptor.js', import.meta.url))).href;
+    const source = `
+      const mod = await import(${JSON.stringify(interceptorUrl)});
+      let observed = null;
+      mod.setLogV2CommitListener(entry => { observed = entry; });
+      const entry = {
+        timestamp: '2026-07-14T08:00:00.000Z', project: 'project', url: 'codex://v2-listener',
+        body: { input: [] }, response: { status: 200, body: { usage: { input_tokens: 7 } } }, mainAgent: true,
+      };
+      const result = mod.appendLogEntry(entry, {
+        source: 'app-server', cwd: ${JSON.stringify(project)}, projectId: 'project',
+        thread: { id: 'session', sessionId: 'session' },
+      });
+      entry.response = null;
+      await result.completion;
+      await mod.closeLogV2Writes();
+      console.log(JSON.stringify({ usage: observed?.response?.body?.usage?.input_tokens }));
+      process.exit(0);
+    `;
+    const child = spawnSync(process.execPath, ['--input-type=module', '-e', source], {
+      cwd: project,
+      env: { ...process.env, CXV_TEST: '0', CXV_LOG_DIR: logs, CXV_LOG_V2_MIN_FREE_BYTES: '0', CXV_LOG_V2_MIN_FREE_PERCENT: '0' },
+      encoding: 'utf8',
+    });
+    assert.equal(child.status, 0, child.stderr);
+    assert.deepEqual(JSON.parse(child.stdout.trim().split('\n').at(-1)), { usage: 7 });
+  } finally { rmSync(root, { recursive: true, force: true }); }
 });

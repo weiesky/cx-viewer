@@ -19,7 +19,6 @@
 | 折叠工具结果 | 开关 | 开 | 聊天视图中折叠工具调用结果块 |
 | 展开思考过程 | 开关 | 开 | 默认展开 Codex 的 reasoning/thinking 块 |
 | 完整展示所有内容 | 开关 | 关 | 显示完整的工具调用内容，不截断 |
-| 自动恢复会话 | 开关 + 选项 | 关 | 遇到会话恢复提示时自动选择：`继续` 或 `新建` |
 
 ## 三、偏好设置文件
 
@@ -34,7 +33,6 @@
   "expandThinking": true,
   "showFullToolContent": false,
   "logDir": "~/.codex/cx-viewer",
-  "resumeAutoChoice": null,
   "disabledPlugins": [],
   "presetShortcuts": []
 }
@@ -49,7 +47,6 @@
 | `expandThinking` | boolean | 展开思考过程 |
 | `showFullToolContent` | boolean | 完整展示内容 |
 | `logDir` | string | 日志目录路径 |
-| `resumeAutoChoice` | null / "continue" / "new" | 自动恢复会话选择 |
 | `disabledPlugins` | string[] | 已禁用的插件文件名列表 |
 | `presetShortcuts` | array | Agent Team 快捷指令预设 |
 
@@ -189,11 +186,13 @@ codex() { ... }
 ├── profile.json                   # 代理配置
 ├── plugins/                       # 插件目录
 │   └── my-plugin.js
-├── <项目名>/                       # 每个项目的日志目录
-│   ├── <项目名>_20260404_123456.jsonl  # JSONL 日志文件
-│   ├── <项目名>.json              # 统计数据（后台生成）
-│   └── images/                    # 上传图片的持久副本
-└── ...
+├── <encoded-project-id>/         # V2 project archive
+│   └── YYYYMMDD_<encoded-session-id>.cxvsession/
+│       ├── manifest.json
+│       ├── timeline.jsonl
+│       ├── threads/ and objects/
+├── v2-raw/<project-token>/       # Bounded app-server diagnostic sidecars
+└── v2-stats/                     # Background-generated V2 statistics
 
 /tmp/cx-viewer-uploads/            # 临时上传文件目录
 ```

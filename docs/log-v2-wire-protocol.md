@@ -113,8 +113,7 @@ An explicit
 `file=<encoded-project-id>/YYYYMMDD_<encoded-session-id>.cxvsession/timeline.jsonl`
 snapshot creates a readonly handle. It supports paging and object hydration but
 is rejected by the live endpoint. Project and session components use the same
-reversible portable-ASCII encoding as the on-disk layout; the date is UTC. V2
-local history never falls back to `/api/local-log` or `/events`.
+reversible portable-ASCII encoding as the on-disk layout; the date is UTC.
 
 The browser persists the last reference-only checkpoint and small decoded CAS
 objects in IndexedDB. On reload it sends the cached cursor identity with the

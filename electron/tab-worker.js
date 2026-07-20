@@ -83,8 +83,7 @@ async function launch({ path: projectPath, extraArgs = [], codexPath, isNpmVersi
     serverMod.setWorkspaceCodexPath(codexPath, isNpmVersion);
   }
 
-  // 7. Initialize workspace log directory (sets LOG_FILE, _projectName, _logDir)
-  //    forceNew: false — 复用最近的日志文件以保留历史数据
+  // 7. Initialize the active V2 workspace context.
   const { initForWorkspace } = await importAbs(runtimeFile('interceptor.js'));
   const result = initForWorkspace(projectPath, { forceNew: false });
 

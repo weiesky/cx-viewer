@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 
 import {
   _parseAppServerClientMessageForTests,
   _parseAppServerServerMessageForTests,
-  _resetAppServerBridgeForTests,
+  _resetAppServerBridgeForTests as resetAppServerBridgeImplementation,
   _injectApprovalsReviewerForTests,
   _flushAppServerRawSidecarsForTests,
   _getAppServerRawStateForTests,
@@ -15,6 +15,22 @@ import {
   resetRawCaptureBoundary,
 } from '../lib/appserver-bridge.js';
 import { buildSingleToolResultCore } from '../src/utils/toolResultCore.js';
+
+let capturedEntries = [];
+
+function _resetAppServerBridgeForTests(options) {
+  capturedEntries = [];
+  if (!options) return resetAppServerBridgeImplementation();
+  const originalWriter = options.writeLogEntry;
+  return resetAppServerBridgeImplementation({
+    ...options,
+    rawDir: options.rawDir || (options.logFile ? join(dirname(options.logFile), 'raw') : null),
+    writeLogEntry(entry, context) {
+      capturedEntries.push(JSON.parse(JSON.stringify(entry)));
+      return originalWriter ? originalWriter(entry, context) : { written: true, durable: true };
+    },
+  });
+}
 
 test('app-server bridge preserves structured image tool outputs for conversation rendering', () => {
   const tmp = mkdtempSync(join(tmpdir(), 'cxv-appserver-image-output-'));
@@ -229,7 +245,7 @@ test('each business entry references only raw frames captured since the previous
   try {
     _resetAppServerBridgeForTests({
       logFile: join(tmp, 'bridge.jsonl'),
-      writeLogEntry: entry => { seen.push(entry); return { written: true }; },
+      writeLogEntry: entry => { seen.push(entry); return { written: true, durable: true }; },
     });
     server('raw/first', { threadId: 'thread-range', value: 1 });
     _writeAppServerEntryForTests({ body: { metadata: { thread_id: 'thread-range' } } });
@@ -326,7 +342,7 @@ test('raw capture boundary discards pending frames and starts a new stream', () 
   try {
     _resetAppServerBridgeForTests({
       logFile: join(tmp, 'bridge.jsonl'),
-      writeLogEntry: entry => { seen.push(entry); return { written: true }; },
+      writeLogEntry: entry => { seen.push(entry); return { written: true, durable: true }; },
     });
     server('raw/before-clear', { threadId: 'thread-clear' });
     const boundary = resetRawCaptureBoundary();
@@ -465,11 +481,7 @@ test('app-server bridge does not override a native reviewer before an explicit C
 });
 
 function readEntries(logFile) {
-  const raw = readFileSync(logFile, 'utf8');
-  return raw
-    .split('\n---\n')
-    .filter(part => part.trim())
-    .map(part => JSON.parse(part));
+  return capturedEntries;
 }
 
 function server(method, params = {}) {

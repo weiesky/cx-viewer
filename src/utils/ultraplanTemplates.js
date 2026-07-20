@@ -16,6 +16,19 @@ export const ULTRAPLAN_VARIANTS = {
 
 Pre-requisite: Use \`request_user_input\` to clarify user intent whenever the request is ambiguous (target element, interaction style, scope of platforms, etc.). Skip only if the intent is unambiguous.
 
+Before writing code, the agent stops at the first rung that holds:
+1. Does this need to exist?   → no: skip it unless explicitly required (YAGNI)
+2. Already in this codebase?  → reuse it, don't rewrite
+3. Stdlib does it?            → use it
+4. Native platform feature?   → use it
+5. Installed dependency?      → use it
+6. One clear line?            → use one clear line
+7. Only then: the minimum that works
+
+The ladder runs after the agent understands the problem, not instead of it: it reads the code the change touches and traces the real flow before picking a rung. Lazy about the solution, never about reading.
+
+Lazy, not negligent: explicit requirements, trust-boundary validation, data-loss handling, security, and accessibility are never on the chopping block.
+
 Leverage a multi-agent exploration mechanism to formulate a highly detailed implementation plan.
 
 Instructions:
