@@ -1,10 +1,9 @@
 import React from 'react';
 import { ConfigProvider, Spin, Button, Badge, Switch, Select, Modal, message, Radio, Tooltip } from 'antd';
-import { BranchesOutlined, DownloadOutlined, DeleteOutlined, RollbackOutlined, ReloadOutlined, UploadOutlined, QuestionCircleOutlined, FileTextOutlined, MessageOutlined } from '@ant-design/icons';
+import { BranchesOutlined, DeleteOutlined, RollbackOutlined, UploadOutlined, QuestionCircleOutlined, FileTextOutlined } from '@ant-design/icons';
 import AppBase, { styles, OPTIMISTIC_CLEAR_PERCENT } from './AppBase';
 import { isIOS, isPad, setViewMode } from './env';
-import { isMainAgent, classifyUserContent, extractDisplayText } from './utils/contentFilter';
-import { parseImOrigin } from './utils/imOrigin';
+import { isMainAgent } from './utils/contentFilter';
 import { sortSkillsDefault } from './utils/skillsParser';
 import { handleSkillToggle, handleSkillDelete } from './utils/skillModalController';
 import { getDisplayedSessionModelName, computeContextPercent, sumUsageContextTokens } from './utils/helpers';
@@ -58,7 +57,6 @@ class Mobile extends AppBase {
       mobileLogMgmtVisible: false,
       mobileSettingsVisible: false,
       projectPrefsModalOpen: false,
-      mobilePromptVisible: false,
       mobileTerminalVisible: false,
       mobileFileExplorerVisible: false,
       mobileCachePanelVisible: false,  // 手机模式：点击血条划出的侧边抽屉
@@ -101,7 +99,6 @@ class Mobile extends AppBase {
       mobileChatVisible: false,
       mobileLogMgmtVisible: false,
       mobileSettingsVisible: false,
-      mobilePromptVisible: false,
       mobileTerminalVisible: false,
       mobileFileExplorerVisible: false,
       mobileCachePanelVisible: false,
@@ -336,131 +333,6 @@ class Mobile extends AppBase {
       mobileFileExplorerVisible: true,
       mobileFileExplorerTarget: { file: filePath, ancestors: ancestors || [] },
     });
-  };
-
-  // ─── Prompt 提取 ───────────────────────────────────────
-
-  static COMMAND_TAGS = new Set([
-    'command-name', 'command-message', 'command-args',
-    'local-command-caveat', 'local-command-stdout',
-  ]);
-
-  static parseSegments(text) {
-    const segments = [];
-    const regex = /<([a-zA-Z_][\w-]*)(?:\s[^>]*)?>[\s\S]*?<\/\1>/g;
-    let lastIndex = 0;
-    let match;
-    while ((match = regex.exec(text)) !== null) {
-      const before = text.slice(lastIndex, match.index).trim();
-      if (before) segments.push({ type: 'text', content: before });
-      const tagName = match[1];
-      lastIndex = match.index + match[0].length;
-      if (Mobile.COMMAND_TAGS.has(tagName)) continue;
-      const innerRegex = new RegExp(`^<${tagName}(?:\\s[^>]*)?>([\\s\\S]*)<\\/${tagName}>$`);
-      const innerMatch = match[0].match(innerRegex);
-      const content = innerMatch ? innerMatch[1].trim() : match[0].trim();
-      segments.push({ type: 'system', content, label: tagName });
-    }
-    const after = text.slice(lastIndex).trim();
-    if (after) segments.push({ type: 'text', content: after });
-    return segments;
-  }
-
-  static extractUserTexts(messages) {
-    const userMsgs = [];
-    const fullTexts = [];
-    let slashCmd = null;
-    for (const msg of messages) {
-      if (msg.role !== 'user') continue;
-      if (typeof msg.content === 'string') {
-        const text = extractDisplayText(parseImOrigin(msg.content).text);
-        if (!text) continue;
-        if (/Implement the following plan:/i.test(text)) continue;
-        userMsgs.push(text);
-        fullTexts.push(text);
-      } else if (Array.isArray(msg.content)) {
-        const { commands, textBlocks } = classifyUserContent(msg.content);
-        if (commands.length > 0) {
-          slashCmd = commands[commands.length - 1];
-        }
-        const userParts = [];
-        for (const b of textBlocks) {
-          if (/Implement the following plan:/i.test((b.text || '').trim())) continue;
-          userParts.push(b.text.trim());
-        }
-        const allParts = msg.content
-          .filter(b => b.type === 'text' && b.text?.trim())
-          .map(b => b.text.trim());
-        if (userParts.length > 0) {
-          userMsgs.push(userParts.join('\n'));
-          fullTexts.push(allParts.join('\n'));
-        }
-      }
-    }
-    return { userMsgs, fullTexts, slashCmd };
-  }
-
-  extractUserPrompts(requests) {
-    const prompts = [];
-    const seen = new Set();
-    let prevSlashCmd = null;
-    const mainAgentRequests = requests.filter(r => isMainAgent(r));
-
-    for (let ri = 0; ri < mainAgentRequests.length; ri++) {
-      const req = mainAgentRequests[ri];
-      const messages = req.body?.input || [];
-      const timestamp = req.timestamp || '';
-      const { userMsgs, fullTexts, slashCmd } = Mobile.extractUserTexts(messages);
-
-      if (slashCmd && slashCmd !== '/compact' && slashCmd !== prevSlashCmd) {
-        prompts.push({ type: 'prompt', segments: [{ type: 'text', content: slashCmd }], timestamp });
-      }
-      prevSlashCmd = slashCmd;
-
-      for (let i = 0; i < userMsgs.length; i++) {
-        const key = userMsgs[i];
-        if (seen.has(key)) continue;
-        seen.add(key);
-        const raw = fullTexts[i] || key;
-        prompts.push({ type: 'prompt', segments: Mobile.parseSegments(raw), timestamp });
-      }
-    }
-    return prompts;
-  }
-
-  renderOriginalPrompt(p) {
-    const textSegments = p.segments.filter(seg => seg.type === 'text');
-    if (textSegments.length === 0) return null;
-    return (
-      <div className={styles.mobilePromptCard}>
-        {textSegments.map((seg, j) => (
-          <pre key={j} className={styles.mobilePromptPreText}>{seg.content}</pre>
-        ))}
-      </div>
-    );
-  }
-
-  handleExportPromptsTxt = (prompts) => {
-    if (!prompts || prompts.length === 0) return;
-    const blocks = [];
-    for (const p of prompts) {
-      const lines = [];
-      const ts = p.timestamp ? new Date(p.timestamp).toLocaleString() : '';
-      if (ts) lines.push(`${ts}:\n`);
-      const textParts = (p.segments || [])
-        .filter(seg => seg.type === 'text')
-        .map(seg => seg.content);
-      if (textParts.length > 0) lines.push(textParts.join('\n'));
-      blocks.push(lines.join('\n'));
-    }
-    if (blocks.length === 0) return;
-    const blob = new Blob([blocks.join('\n\n\n\n')], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `user-prompts-${new Date().toISOString().slice(0, 10)}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
   // ─── 移动端渲染 ────────────────────────────────────────
@@ -706,15 +578,7 @@ class Mobile extends AppBase {
                   <FileTextOutlined aria-hidden="true" style={{ fontSize: 16, flexShrink: 0 }} />
                   {t('ui.logManagement')}
                 </button>
-                {/* 3. 用户 Prompt — 对应 PC 「查看用户 Prompt」 */}
-                <button
-                  className={styles.mobileMenuItem}
-                  onClick={() => { this.setState({ ...this._closeAllMobileOverlays(), mobilePromptVisible: true }); }}
-                >
-                  <MessageOutlined aria-hidden="true" style={{ fontSize: 16, flexShrink: 0 }} />
-                  {t('ui.userPrompt')}
-                </button>
-                {/* 4. 插件管理 — 与 PC AppHeader.jsx:1342 同 i18n key */}
+                {/* 3. 插件管理 */}
                 <button
                   className={styles.mobileMenuItem}
                   onClick={() => { this.setState({ ...this._closeAllMobileOverlays(), pluginModalVisible: true }); }}
@@ -727,7 +591,7 @@ class Mobile extends AppBase {
                   </svg>
                   {t('ui.pluginManagement')}
                 </button>
-                {/* 5. CXV 进程管理 */}
+                {/* 4. CXV 进程管理 */}
                 <button
                   className={styles.mobileMenuItem}
                   onClick={() => { this.setState({ ...this._closeAllMobileOverlays(), processModalVisible: true }); }}
@@ -744,7 +608,7 @@ class Mobile extends AppBase {
                   </svg>
                   {t('ui.processManagement')}
                 </button>
-                {/* 6. 代理热切换 */}
+                {/* 5. 代理热切换 */}
                 <button
                   className={styles.mobileMenuItem}
                   onClick={() => { this.setState({ ...this._closeAllMobileOverlays(), proxyModalVisible: true }); }}
@@ -757,9 +621,9 @@ class Mobile extends AppBase {
                   </svg>
                   {t('ui.proxySwitch')}
                 </button>
-                {/* 7-8 块前的 divider — 与 PC 「代理热切换」与「项目统计」之间分隔线一致 */}
+                {/* 6-7 块前的 divider — 与 PC 「代理热切换」与「项目统计」之间分隔线一致 */}
                 <div className={styles.mobileMenuDivider} />
-                {/* 7. 数据统计 — 对应 PC 「项目统计」 */}
+                {/* 6. 数据统计 — 对应 PC 「项目统计」 */}
                 <button
                   className={styles.mobileMenuItem}
                   onClick={() => { this.setState({ ...this._closeAllMobileOverlays(), mobileStatsVisible: true }); }}
@@ -772,7 +636,7 @@ class Mobile extends AppBase {
                   </svg>
                   {t('ui.tokenStats')}
                 </button>
-                {/* 8. 偏好设置 — mobile 独有 drawer (mobileSettingsVisible),不引入 PC 的 viewMode 条件 */}
+                {/* 7. 偏好设置 — mobile 独有 drawer (mobileSettingsVisible),不引入 PC 的 viewMode 条件 */}
                 <button
                   className={styles.mobileMenuItem}
                   onClick={() => { this.setState({ ...this._closeAllMobileOverlays(), mobileSettingsVisible: true }); }}
@@ -988,14 +852,6 @@ class Mobile extends AppBase {
               >
                 {t('ui.deleteLogs')}
               </Button>
-              <Button
-                size="small"
-                icon={<ReloadOutlined spin={this.state.refreshingStats} />}
-                loading={this.state.refreshingStats}
-                onClick={this.handleRefreshStats}
-              >
-                {t('ui.refreshStats')}
-              </Button>
             </div>
             <div className={styles.mobileLogMgmtBody}>
               {this.state.localLogsLoading ? (
@@ -1204,57 +1060,6 @@ class Mobile extends AppBase {
                       </div>
                     )}
                   </div>
-                );
-              })()}
-            </div>
-          </div>
-          <div className={`${styles.mobilePromptOverlay} ${this.state.mobilePromptVisible ? styles.mobilePromptOverlayVisible : ''}`}>
-            <div className={styles.mobileLogMgmtHeader}>
-              <span className={styles.mobileLogMgmtTitle}>{t('ui.userPrompt')}</span>
-              <button className={styles.mobileLogMgmtClose} onClick={() => this.setState({ mobilePromptVisible: false })}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </div>
-            <div className={styles.mobilePromptBody}>
-              {(() => {
-                const prompts = this.extractUserPrompts(filteredRequests);
-                if (prompts.length === 0) {
-                  return (
-                    <div className={styles.mobilePromptEmpty}>
-                      {t('ui.noPrompt')}
-                    </div>
-                  );
-                }
-                return (
-                  <>
-                    <div className={styles.mobilePromptHeader}>
-                      <span className={styles.mobilePromptCount}>
-                        {prompts.length} {t('ui.promptCountUnit')}
-                      </span>
-                      <Button
-                        size="small"
-                        icon={<DownloadOutlined />}
-                        onClick={() => this.handleExportPromptsTxt(prompts)}
-                      >
-                        {t('ui.exportPromptsTxt')}
-                      </Button>
-                    </div>
-                    <div className={styles.mobilePromptList}>
-                      {prompts.map((p, i) => (
-                        <div key={i} className={styles.mobilePromptItem}>
-                          {p.timestamp && (
-                            <div className={styles.mobilePromptTimestamp}>
-                              {new Date(p.timestamp).toLocaleString()}
-                            </div>
-                          )}
-                          {this.renderOriginalPrompt(p)}
-                        </div>
-                      ))}
-                    </div>
-                  </>
                 );
               })()}
             </div>

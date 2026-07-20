@@ -1,7 +1,6 @@
 import React from 'react';
 import { ConfigProvider, theme, Modal, Spin, Button, message } from 'antd';
 import { uploadFileAndGetPath } from './components/terminal/TerminalPanel';
-import { DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
 import { isMobile, isPad, hasNativeZoom } from './env';
 import WorkspaceList from './components/dashboard/WorkspaceList';
 import OpenFolderIcon from './components/common/OpenFolderIcon';
@@ -94,7 +93,6 @@ class AppBase extends React.Component {
       importModalVisible: false,
       localLogs: {},       // { projectName: [{file, timestamp, size}] }
       localLogsLoading: false,
-      refreshingStats: false,
       showAll: false,
       lang: getLang(),
       userProfile: null,    // { name, avatar }
@@ -2507,26 +2505,6 @@ class AppBase extends React.Component {
 
   handleCloseImportModal = () => {
     this.setState({ importModalVisible: false, selectedLogs: new Set() });
-  };
-
-  handleRefreshStats = () => {
-    this.setState({ refreshingStats: true });
-    fetch(apiUrl('/api/refresh-stats'), { method: 'POST' })
-      .then(res => res.json())
-      .then(data => {
-        if (!data.ok) throw new Error(data.error || 'refresh failed');
-        return fetch(apiUrl('/api/local-logs'));
-      })
-      .then(res => res.json())
-      .then(data => {
-        const { _currentProject, ...logs } = data;
-        this.setState({ localLogs: logs, refreshingStats: false });
-        message.success(t('ui.refreshStatsSuccess'));
-      })
-      .catch(() => {
-        this.setState({ refreshingStats: false });
-        message.error(t('ui.refreshStatsFailed'));
-      });
   };
 
   renderLogTable(logs, mobile) {

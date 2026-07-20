@@ -1,6 +1,6 @@
 import React from 'react';
 import { ConfigProvider, Layout, theme, Modal, Button, Spin, Alert, message, Tooltip } from 'antd';
-import { UploadOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
+import { UploadOutlined, DeleteOutlined } from '@ant-design/icons';
 import AppBase, { styles } from './AppBase';
 import { isMobile, isElectron, setViewMode } from './env';
 import AppHeader from './components/dashboard/AppHeader';
@@ -533,15 +533,6 @@ class App extends AppBase {
               className={styles.btnMarginLeft}
             >
               {t('ui.deleteLogs')}
-            </Button>
-            <Button
-              size="small"
-              icon={<ReloadOutlined spin={this.state.refreshingStats} />}
-              loading={this.state.refreshingStats}
-              onClick={this.handleRefreshStats}
-              className={styles.btnMarginLeft}
-            >
-              {t('ui.refreshStats')}
             </Button>
           </div>
           {this.state.localLogsLoading ? (

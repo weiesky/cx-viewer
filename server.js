@@ -684,7 +684,7 @@ let _launchCallback = null;
 export function setLaunchCallback(fn) { _launchCallback = fn; }
 export function setWorkspaceLaunched(v) { _workspaceLaunched = v; }
 export function initPostLaunch() {
-  if (!statsWorker) startStatsWorker();
+  notifyStatsWorker();
   startStreamingStatusTimer();
 }
 
@@ -1088,35 +1088,34 @@ function getPublicAccessUrl(ip = getLocalIp()) {
 
 function startStatsWorker() {
   try {
-    statsWorker = new Worker(new URL('./lib/stats-worker.js', import.meta.url));
-    statsWorker.on('error', (err) => {
+    const worker = new Worker(new URL('./lib/stats-worker.js', import.meta.url));
+    statsWorker = worker;
+    worker.on('error', (err) => {
       console.error('[CX Viewer] Stats worker error:', err.message);
-      statsWorker = null;
+      if (statsWorker === worker) statsWorker = null;
     });
-    statsWorker.on('exit', (code) => {
+    worker.on('exit', (code) => {
       if (code !== 0) {
         console.error('[CX Viewer] Stats worker exited with code', code);
       }
-      statsWorker = null;
+      if (statsWorker === worker) statsWorker = null;
     });
-    // 初始化：全量扫描当前项目
-    const projectId = getActiveProjectContext().projectId;
-    if (projectId && _logDir) {
-      statsWorker.postMessage({ type: 'init', logDir: LOG_DIR, projectName: projectId });
-    }
   } catch (err) {
     console.error('[CX Viewer] Failed to start stats worker:', err.message);
   }
 }
 
 function notifyStatsWorker(projectName = getActiveProjectContext().projectId) {
-  if (!statsWorker || !projectName) return;
+  if (!projectName) return;
+  if (!statsWorker) startStatsWorker();
+  if (!statsWorker) return;
   pendingStatsProjects.add(projectName);
   if (statsUpdateTimer) return;
   statsUpdateTimer = setTimeout(() => {
     statsUpdateTimer = null;
     const projects = [...pendingStatsProjects];
     pendingStatsProjects.clear();
+    if (!statsWorker) startStatsWorker();
     for (const pendingProject of projects) {
       statsWorker?.postMessage({ type: 'update', logDir: LOG_DIR, projectName: pendingProject });
     }
@@ -1846,8 +1845,8 @@ async function handleRequest(req, res) {
         process.env.CXV_PROJECT_DIR = wsPath;
 
         // 启动日志监听
-        // 启动 stats worker（如果尚未启动）
-        if (!statsWorker) startStatsWorker();
+        // 工作区切换后始终排队当前项目；若 worker 已退出，通知链路会自动重启。
+        notifyStatsWorker();
         startStreamingStatusTimer();
 
         // 启动 PTY
@@ -2135,42 +2134,6 @@ async function handleRequest(req, res) {
       }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(allStats));
-    } catch (err) {
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: err.message }));
-    }
-    return;
-  }
-
-  // 刷新统计：强制重新扫描所有项目日志，等待完成后再响应
-  if (url === '/api/refresh-stats' && method === 'POST') {
-    try {
-      if (!statsWorker) startStatsWorker();
-      if (statsWorker) {
-        const timeout = setTimeout(() => {
-          statsWorker?.removeListener('message', onDone);
-          res.writeHead(504, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Stats refresh timed out' }));
-        }, 30000);
-        const onDone = (m) => {
-          if (m.type === 'scan-all-done') {
-            clearTimeout(timeout);
-            statsWorker?.removeListener('message', onDone);
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ ok: true }));
-          } else if (m.type === 'error') {
-            clearTimeout(timeout);
-            statsWorker?.removeListener('message', onDone);
-            res.writeHead(500, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: m.message || 'Stats refresh failed' }));
-          }
-        };
-        statsWorker.on('message', onDone);
-        statsWorker.postMessage({ type: 'scan-all', logDir: LOG_DIR });
-      } else {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Stats worker not available' }));
-      }
     } catch (err) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: err.message }));
@@ -4189,7 +4152,7 @@ export async function startViewer() {
           }
           // 工作区模式下延迟到选择工作区后再启动监听
           if (!isWorkspaceMode) {
-            startStatsWorker();
+            notifyStatsWorker();
             startStreamingStatusTimer();
           }
           // CLI 模式下启动 WebSocket 服务 (必须 await，否则插件 hook 拿不到 upgrade listeners)

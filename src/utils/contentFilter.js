@@ -1,6 +1,5 @@
 // 内容分类与过滤规则
-// ChatView（对话模式）和 AppHeader（用户 Prompt 弹窗）共用此模块，确保过滤逻辑一致。
-// MainAgent / Teammate 判断也收敛于此，供全局统一调用。
+// ChatView（对话模式）的内容过滤，以及 MainAgent / Teammate 的全局统一判断。
 
 // ============== 请求体辅助 ==============
 
