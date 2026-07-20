@@ -14,8 +14,19 @@ import { appendCxvFinalConfigArgs, getDefaultModeRequestUserInputConfigArgs, nor
 import { ensureHooks } from './lib/ensure-hooks.js';
 import { APPROVALS_REVIEWER_DEFAULT } from './lib/approval-reviewer.js';
 import { appendOtelTraceExporterConfigArgsOnce, getOtelTraceExporterConfigArgs, OTEL_TRACE_HEADERS_ENV, stripLegacyOtelConfigBlock, withOtelTraceAuthHeader } from './lib/otel-config.js';
+import { registerSignalShutdown } from './lib/shutdown.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
+let activeShutdownCleanup = async () => {};
+let shutdownStarted = false;
+registerSignalShutdown(async (context) => {
+  shutdownStarted = true;
+  await activeShutdownCleanup(context);
+});
+
+function setActiveShutdownCleanup(cleanup) {
+  activeShutdownCleanup = typeof cleanup === 'function' ? cleanup : async () => {};
+}
 
 const INJECT_START = '// >>> Start CX Viewer Web Service >>>';
 const INJECT_END = '// <<< Start CX Viewer Web Service <<<';
@@ -228,6 +239,9 @@ async function runProxyCommand(args) {
     env.CXV_DIRECT_MODE = '1';
 
     const child = spawn(cmd, cmdArgs, { stdio: 'inherit', env });
+    setActiveShutdownCleanup(() => {
+      try { child.kill('SIGTERM'); } catch {}
+    });
 
     child.on('exit', (code) => {
       process.exit(code);
@@ -262,6 +276,19 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
   console.log(t('cli.cMode.starting'));
 
   const workingDir = cwd || process.cwd();
+  let serverMod = null;
+  let bridge = null;
+  let stopProxyFn = () => {};
+  let killPtyFn = () => {};
+  setActiveShutdownCleanup(async ({ deadlineAt } = {}) => {
+    killPtyFn();
+    serverMod?.setCodexApprovalsReviewerUpdater(null);
+    serverMod?.setCodexRequestUserInputBridge(null);
+    serverMod?.setActiveCodexApprovalsReviewer(null, false);
+    bridge?.stop();
+    try { stopProxyFn(); } catch {}
+    if (serverMod) await serverMod.stopViewer({ deadlineAt });
+  });
 
   // 注册工作区
   const { registerWorkspace } = await import('./workspace-registry.js');
@@ -283,10 +310,11 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
   initForWorkspace(workingDir);
 
   // 启动 HTTP 服务器（工作区模式下需要手动调用 startViewer）
-  const serverMod = await import('./server.js');
+  serverMod = await import('./server.js');
   serverMod.setWorkspaceCodexArgs(extraCodexArgs);
   serverMod.setWorkspaceCodexPath(codexPath, isNpmVersion);
   await serverMod.startViewer();
+  if (shutdownStarted) { await serverMod.stopViewer(); return; }
 
   const port = serverMod.getPort();
   const protocol = serverMod.getProtocol();
@@ -328,6 +356,7 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
     const { join } = await import('node:path');
     const { homedir } = await import('node:os');
     const { startProxy, stopProxy } = await import('./proxy.js');
+    stopProxyFn = stopProxy;
     const { readOriginalOpenAiBaseUrl } = await import('./lib/codex-config.js');
 
     let authMode = 'chatgpt';
@@ -348,6 +377,7 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
     }
     try {
       _proxyPort = await startProxy();
+      if (shutdownStarted) { stopProxyFn(); return; }
       if (authMode === 'chatgpt') {
         process.env.CXV_ORIGINAL_BASE_URL = 'https://chatgpt.com/backend-api/codex';
       } else {
@@ -367,7 +397,6 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
   const interceptorMod = await import('./interceptor.js');
   const { LOG_DIR } = await import('./findcx.js');
   const { rawProjectDirectoryToken } = await import('./lib/log-v2/project-id.js');
-  let _bridge = null;
   // Proxy redirect args exist only after successful startup. App-server gets
   // the native ask override last; the TUI receives the same final overrides below.
   const childBaseConfigArgs = [...baseConfigArgs, ...proxyRedirectArgs];
@@ -375,7 +404,7 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
   let bridgeArgs = [...childBaseConfigArgs];
   try {
     const { startAppServerBridge } = await import('./lib/appserver-bridge.js');
-    _bridge = await startAppServerBridge({
+    bridge = await startAppServerBridge({
       cwd: workingDir,
       codexPath,
       rawDir: join(LOG_DIR, 'v2-raw', rawProjectDirectoryToken(interceptorMod.getActiveProjectContext().projectId)),
@@ -386,26 +415,28 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
       onRequestUserInputCleared: serverMod.clearCodexRequestUserInput,
       writeLogEntry: interceptorMod.appendLogEntry,
     });
-    serverMod.setCodexApprovalsReviewerUpdater(_bridge.setApprovalsReviewer);
+    if (shutdownStarted) { bridge.stop(); return; }
+    serverMod.setCodexApprovalsReviewerUpdater(bridge.setApprovalsReviewer);
     serverMod.setCodexRequestUserInputBridge({
-      resolve: _bridge.resolveRequestUserInput,
-      cancel: _bridge.cancelRequestUserInput,
-      releaseToTui: _bridge.releaseRequestUserInputToTui,
+      resolve: bridge.resolveRequestUserInput,
+      cancel: bridge.cancelRequestUserInput,
+      releaseToTui: bridge.releaseRequestUserInputToTui,
     });
     // 让 codex TUI 通过 --remote 连接到代理
-    bridgeArgs = [...childBaseConfigArgs, '--remote', `ws://127.0.0.1:${_bridge.proxyPort}`];
-    console.log(`[CX Viewer] App-Server bridge started (proxy:${_bridge.proxyPort} → server:${_bridge.appServerPort})`);
+    bridgeArgs = [...childBaseConfigArgs, '--remote', `ws://127.0.0.1:${bridge.proxyPort}`];
+    console.log(`[CX Viewer] App-Server bridge started (proxy:${bridge.proxyPort} → server:${bridge.appServerPort})`);
   } catch (err) {
     console.warn('[CX Viewer] App-Server bridge failed, falling back to direct mode:', err.message);
   }
 
   // 启动 PTY 中的 codex TUI
   const { spawnCodexRequest, killPty } = await import('./pty-manager.js');
+  killPtyFn = killPty;
   const savedApprovalsReviewer = serverMod.getApprovalsReviewerPreference() || APPROVALS_REVIEWER_DEFAULT;
   const reviewerArgs = savedApprovalsReviewer
     ? ['-c', `approvals_reviewer="${savedApprovalsReviewer}"`]
     : [];
-  if (!_bridge && savedApprovalsReviewer) {
+  if (!bridge && savedApprovalsReviewer) {
     serverMod.setActiveCodexApprovalsReviewer(savedApprovalsReviewer, true);
   }
   try {
@@ -428,13 +459,14 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
         subcommandIndex: parseCodexInvocation(tuiArgs).subcommandIndex,
       },
     });
+    if (shutdownStarted) { killPtyFn(); return; }
     // The Codex TUI is the critical path. Log watching/statistics can attach
     // after the PTY exists; the V2 writer is ready before traffic starts and the
     // regular history endpoints own older conversation loading.
     serverMod.initPostLaunch();
   } catch (err) {
     console.error('[CX Viewer] Failed to spawn Codex:', err.message);
-    if (_bridge) _bridge.stop();
+    if (bridge) bridge.stop();
     await serverMod.stopViewer();
     process.exit(1);
   }
@@ -455,18 +487,6 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
     console.log(`  ➜ Network: ${protocol}://${_ip}:${port}?token=${_token}`);
   }
 
-  // 5. 注册退出处理
-  const cleanup = () => {
-    killPty();
-    serverMod.setCodexApprovalsReviewerUpdater(null);
-    serverMod.setCodexRequestUserInputBridge(null);
-    serverMod.setActiveCodexApprovalsReviewer(null, false);
-    if (_bridge) _bridge.stop();
-    try { stopProxy(); } catch {}
-    serverMod.stopViewer().finally(() => process.exit());
-  };
-  process.on('SIGINT', cleanup);
-  process.on('SIGTERM', cleanup);
 }
 
 async function runSdkMode(extraCodexArgs = [], cwd) {
@@ -491,6 +511,12 @@ async function runSdkMode(extraCodexArgs = [], cwd) {
   }
 
   const workingDir = cwd || process.cwd();
+  let serverMod = null;
+  let sdkSessionStarted = false;
+  setActiveShutdownCleanup(async ({ deadlineAt } = {}) => {
+    if (sdkSessionStarted) sdkManager.stopSession();
+    if (serverMod) await serverMod.stopViewer({ deadlineAt });
+  });
 
   // 注册工作区
   const { registerWorkspace } = await import('./workspace-registry.js');
@@ -510,10 +536,11 @@ async function runSdkMode(extraCodexArgs = [], cwd) {
   initForWorkspace(workingDir);
 
   // 启动 HTTP 服务器
-  const serverMod = await import('./server.js');
+  serverMod = await import('./server.js');
   serverMod.setWorkspaceCodexArgs(extraCodexArgs);
   serverMod.setWorkspaceCodexPath(codexPath, /\.m?js$/i.test(codexPath));
   await serverMod.startViewer();
+  if (shutdownStarted) { await serverMod.stopViewer(); return; }
   serverMod.setWorkspaceLaunched(true);
   serverMod.initPostLaunch();
 
@@ -550,6 +577,8 @@ async function runSdkMode(extraCodexArgs = [], cwd) {
     codexPath,
     codexArgs: sdkCodexArgs,
   });
+  sdkSessionStarted = true;
+  if (shutdownStarted) { sdkManager.stopSession(); return; }
 
   // 注册 SDK 回调到 server.js（WS 消息路由用）
   serverMod.setSdkResolveApproval(sdkManager.resolveApproval);
@@ -580,13 +609,6 @@ async function runSdkMode(extraCodexArgs = [], cwd) {
     });
   }
 
-  // 注册退出处理
-  const cleanup = () => {
-    sdkManager.stopSession();
-    serverMod.stopViewer().finally(() => process.exit());
-  };
-  process.on('SIGINT', cleanup);
-  process.on('SIGTERM', cleanup);
 }
 
 async function runCliModeWorkspaceSelector(extraCodexArgs = []) {
@@ -605,13 +627,21 @@ async function runCliModeWorkspaceSelector(extraCodexArgs = []) {
 
   console.log(t('cli.cMode.starting'));
 
+  let serverMod = null;
+  let killPtyFn = () => {};
+  setActiveShutdownCleanup(async ({ deadlineAt } = {}) => {
+    killPtyFn();
+    if (serverMod) await serverMod.stopViewer({ deadlineAt });
+  });
+
   process.env.CXV_CLI_MODE = '1';
 
   // 启动 HTTP 服务器（工作区模式，不初始化 interceptor 日志）
-  const serverMod = await import('./server.js');
+  serverMod = await import('./server.js');
 
   // 工作区模式下 server.js 跳过了自动启动，需要手动调用
   await serverMod.startViewer();
+  if (shutdownStarted) { await serverMod.stopViewer(); return; }
 
   const port = serverMod.getPort();
 
@@ -638,12 +668,7 @@ async function runCliModeWorkspaceSelector(extraCodexArgs = []) {
 
   // 注册退出处理
   const { killPty } = await import('./pty-manager.js');
-  const cleanup = () => {
-    killPty();
-    serverMod.stopViewer().finally(() => process.exit());
-  };
-  process.on('SIGINT', cleanup);
-  process.on('SIGTERM', cleanup);
+  killPtyFn = killPty;
 }
 
 // === 主逻辑 ===

@@ -35,6 +35,8 @@ function execWithStdin(cmd, args, input, options) {
   });
 }
 import { _initPromise, _projectName, _logDir, _cachedApiKey, _cachedAuthHeader, initForWorkspace, resetWorkspace, getActiveProjectContext, setLogV2CommitListener, streamingState, resetStreamingState, _loadProxyProfile, PROFILE_PATH, _defaultConfig, appendLogEntry, closeLogV2Writes, getLogV2RuntimeStatus } from './interceptor.js';
+import { FORCE_KILL_GRACE_MS, registerSignalShutdown, SHUTDOWN_DEADLINE_MS, terminateWithEscalation, waitWithTimeout } from './lib/shutdown.js';
+import { createProcessAdapter, decodeProcessRef, encodeProcessRef, isCxvProcess, killVerifiedTree, sameProcessIdentity } from './lib/cxv-processes.js';
 import { parseOtlpTraces } from './lib/otel-receiver.js';
 import { LOG_DIR } from './findcx.js';
 import { t, detectLanguage } from './i18n.js';
@@ -117,6 +119,30 @@ let _runtimeApprovalsReviewer = null;
 let _codexNativeReviewerAvailable = false;
 let _codexRequestUserInputBridge = null;
 const pendingCodexAsks = new Map();
+const cxvProcessAdapter = createProcessAdapter();
+const PROCESS_REF_SECRET = randomBytes(32);
+const processTerminationOperations = new Map();
+const PROCESS_OPERATION_TTL_MS = 15 * 60 * 1000;
+const PROCESS_OPERATION_LIMIT = 100;
+const PROCESS_FORCE_KILL_GRACE_MS = process.env.CXV_TEST === '1' ? 200 : FORCE_KILL_GRACE_MS;
+
+function pruneProcessTerminationOperations() {
+  const cutoff = Date.now() - PROCESS_OPERATION_TTL_MS;
+  for (const [id, operation] of processTerminationOperations) {
+    if ((operation.completedAt || operation.requestedAt) < cutoff) processTerminationOperations.delete(id);
+  }
+  while (processTerminationOperations.size > PROCESS_OPERATION_LIMIT) {
+    processTerminationOperations.delete(processTerminationOperations.keys().next().value);
+  }
+}
+
+function completeProcessTermination(operation, status, error = null) {
+  if (operation.status !== 'terminating') return false;
+  operation.status = status;
+  operation.completedAt = Date.now();
+  operation.error = error?.message || error || null;
+  return true;
+}
 function activeV2TimelineIdentity(file) {
   const { timelinePath } = resolveV2SessionFile(LOG_DIR, file);
   const stat = statSync(timelinePath, { bigint: true });
@@ -3869,73 +3895,35 @@ async function handleRequest(req, res) {
 
   // CXV 进程列表
   if (url === '/api/cxv-processes' && method === 'GET') {
-    if (platform() === 'win32') {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ processes: [] }));
-      return;
-    }
     try {
-      const { stdout } = await execAsync('lsof -iTCP:7008-7099 -sTCP:LISTEN -P -n', { timeout: 5000 }).catch(() => ({ stdout: '' }));
-      const lines = stdout.trim().split('\n').filter(Boolean);
-      // Parse lsof output: skip header, filter node processes, dedupe by PID:port
-      const seen = new Map(); // pid -> port
-      for (const line of lines.slice(1)) {
-        const parts = line.trim().split(/\s+/);
-        const cmd = parts[0];
-        if (cmd !== 'node') continue;
-        const pid = parseInt(parts[1], 10);
-        if (!pid) continue;
-        // lsof 输出: COMMAND PID USER FD TYPE DEVICE SIZE/OFF NODE NAME (STATE)
-        // 端口在 NAME 列（倒数第二列），如 *:7008，最后一列是 (LISTEN)
-        const nameField = parts[parts.length - 2] || '';
-        const portMatch = nameField.match(/:(\d+)$/);
-        if (!portMatch) continue;
-        const port = portMatch[1];
-        if (!seen.has(pid)) seen.set(pid, port);
-      }
-      // 获取所有候选进程的 PPID，过滤掉 PPID 也在 CXV 进程集合中的子进程（即 cxv -c/-d 启动的 codex 子进程）
-      const cxvPids = new Set(seen.keys());
-      const filteredPids = [];
-      for (const [pid] of seen) {
-        try {
-          const { stdout: ppidOut } = await execAsync(`ps -o ppid= -p ${pid}`, { timeout: 2000 }).catch(() => ({ stdout: '' }));
-          const ppid = parseInt(ppidOut.trim(), 10);
-          if (ppid && cxvPids.has(ppid)) continue; // 是某个 CXV 进程的子进程，跳过
-        } catch {}
-        filteredPids.push(pid);
-      }
-      const processes = [];
-      for (const pid of filteredPids) {
-        const port = seen.get(pid);
-        let startTime = '';
-        let command = '';
-        try {
-          const { stdout: psOut } = await execAsync(`ps -p ${pid} -o lstart=,command=`, { timeout: 3000 }).catch(() => ({ stdout: '' }));
-          const psLine = psOut.trim();
-          // lstart format: "Day Mon DD HH:MM:SS YYYY rest..."
-          const lsMatch = psLine.match(/^\w+\s+(\w+)\s+(\d+)\s+([\d:]+)\s+(\d{4})\s+(.*)/);
-          if (lsMatch) {
-            const months = { Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12 };
-            const mon = String(months[lsMatch[1]] || 1).padStart(2, '0');
-            const day = String(lsMatch[2]).padStart(2, '0');
-            const time = lsMatch[3];
-            const year = lsMatch[4];
-            startTime = `${year}年${mon}月${day}日 ${time}`;
-            const rawCmd = lsMatch[5];
-            // Extract path after lib/ (e.g. node_modules/cx-viewer/cli.js -d → cx-viewer/cli.js -d)
-            const libMatch = rawCmd.match(/lib\/(.+)/);
-            command = libMatch ? libMatch[1] : rawCmd;
-          }
-        } catch {}
-        const isCurrent = pid === process.pid;
-        processes.push({ port, pid, command, startTime, isCurrent });
-      }
+      const identities = await cxvProcessAdapter.listCxvProcesses();
+      const processes = identities.map(identity => ({
+        port: String(identity.port),
+        pid: identity.pid,
+        command: identity.command,
+        startTime: identity.startTime,
+        processRef: encodeProcessRef(identity, PROCESS_REF_SECRET),
+        isCurrent: identity.pid === process.pid,
+      }));
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ processes }));
     } catch (err) {
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: err.message }));
+      res.writeHead(503, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message, code: err.code || 'CXV_PROCESS_DISCOVERY_FAILED' }));
     }
+    return;
+  }
+
+  if (url === '/api/cxv-processes/kill-status' && method === 'GET') {
+    pruneProcessTerminationOperations();
+    const operation = processTerminationOperations.get(parsedUrl.searchParams.get('id'));
+    if (!operation) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Unknown termination operation' }));
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify(operation));
     return;
   }
 
@@ -3945,29 +3933,95 @@ async function handleRequest(req, res) {
     req.on('data', chunk => { body += chunk; if (body.length > MAX_POST_BODY) req.destroy(); });
     req.on('end', async () => {
       try {
-        const { pid } = JSON.parse(body);
-        if (!Number.isInteger(pid) || pid <= 0) {
+        const { processRef } = JSON.parse(body);
+        const expected = decodeProcessRef(processRef, PROCESS_REF_SECRET);
+        if (!expected) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Invalid PID' }));
+          res.end(JSON.stringify({ error: 'Invalid process reference' }));
           return;
         }
-        if (pid === process.pid) {
+        if (expected.pid === process.pid) {
           res.writeHead(403, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Cannot kill current process' }));
           return;
         }
-        // 安全检查：确认是监听 CXV 端口范围 (7008-7099) 的 node 进程
-        const { stdout: lsofOut } = await execAsync(`lsof -iTCP:7008-7099 -sTCP:LISTEN -P -n -p ${pid}`, { timeout: 5000 }).catch(() => ({ stdout: '' }));
-        const lsofLines = lsofOut.trim().split('\n').filter(Boolean).slice(1);
-        const isNodeOnCxvPort = lsofLines.some(line => line.trim().split(/\s+/)[0] === 'node');
-        if (!isNodeOnCxvPort) {
-          res.writeHead(403, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Not a CXV process' }));
+        const actual = await cxvProcessAdapter.inspect(expected.pid);
+        if (!sameProcessIdentity(expected, actual) || !isCxvProcess(actual)) {
+          res.writeHead(409, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Process identity changed' }));
           return;
         }
-        process.kill(pid, 'SIGTERM');
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ ok: true }));
+        if (platform() === 'darwin' && process.env.CXV_TEST !== '1') {
+          const startedAt = Date.parse(actual.startId);
+          if (Number.isFinite(startedAt) && Date.now() - startedAt < 2000) {
+            res.writeHead(409, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Process is too new to terminate safely; retry shortly' }));
+            return;
+          }
+        }
+        const descendants = await cxvProcessAdapter.descendants(actual);
+        const rechecked = await cxvProcessAdapter.inspect(expected.pid);
+        if (!sameProcessIdentity(expected, rechecked)) {
+          res.writeHead(409, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Process identity changed' }));
+          return;
+        }
+        pruneProcessTerminationOperations();
+        const operationId = randomBytes(18).toString('base64url');
+        const operation = {
+          id: operationId,
+          pid: expected.pid,
+          status: 'terminating',
+          requestedAt: Date.now(),
+          completedAt: null,
+          error: null,
+        };
+        processTerminationOperations.set(operationId, operation);
+        const termination = terminateWithEscalation(expected.pid, {
+          graceMs: PROCESS_FORCE_KILL_GRACE_MS,
+          kill: (_pid, signal) => cxvProcessAdapter.signal(actual, signal),
+          stillTarget: async () => sameProcessIdentity(expected, await cxvProcessAdapter.inspect(expected.pid)),
+          forceKill: () => killVerifiedTree(cxvProcessAdapter, actual, descendants),
+          onError: error => console.warn(`[CX Viewer] Failed to stop PID ${expected.pid}:`, error.message),
+        });
+        (async () => {
+          while (operation.status === 'terminating') {
+            await new Promise(resolve => {
+              const timer = setTimeout(resolve, 250);
+              timer.unref?.();
+            });
+            if (operation.status !== 'terminating') break;
+            const current = await cxvProcessAdapter.inspect(expected.pid);
+            if (!current) {
+              await killVerifiedTree(cxvProcessAdapter, actual, descendants);
+              completeProcessTermination(operation, 'exited');
+            } else if (!sameProcessIdentity(expected, current)) {
+              completeProcessTermination(operation, 'replaced');
+            }
+          }
+        })().catch(error => {
+          completeProcessTermination(operation, 'failed', error);
+        });
+        termination.completion.then(async result => {
+          if (operation.status !== 'terminating') return;
+          if (result.status === 'forced') {
+            for (let attempt = 0; attempt < 20; attempt++) {
+              const current = await cxvProcessAdapter.inspect(expected.pid);
+              if (!current) {
+                completeProcessTermination(operation, 'forced');
+                return;
+              }
+              await new Promise(resolve => setTimeout(resolve, 50));
+            }
+            completeProcessTermination(operation, 'failed', 'Process survived SIGKILL');
+            return;
+          }
+          completeProcessTermination(operation, result.status, result.error);
+        }).catch(error => {
+          completeProcessTermination(operation, 'failed', error);
+        });
+        res.writeHead(202, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, accepted: true, operationId, pid: expected.pid, status: operation.status }));
       } catch (err) {
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: err.message }));
@@ -4962,13 +5016,14 @@ function startStreamingStatusTimer() {
 }
 
 let _stoppingPromise = null;
-export function stopViewer() {
+export function stopViewer({ deadlineAt = Date.now() + SHUTDOWN_DEADLINE_MS } = {}) {
   if (_stoppingPromise) return _stoppingPromise;
-  _stoppingPromise = _doStop();
+  _stoppingPromise = _doStop(deadlineAt);
   return _stoppingPromise;
 }
-async function _doStop() {
-  try { await Promise.race([runParallelHook('serverStopping'), new Promise(r => setTimeout(r, 3000))]); } catch { }
+async function _doStop(deadlineAt) {
+  const remaining = () => Math.max(0, deadlineAt - Date.now());
+  try { await waitWithTimeout(() => runParallelHook('serverStopping'), Math.min(3000, remaining()), 'serverStopping hooks'); } catch { }
   pluginRoutes = [];
   for (const pending of pendingCodexAsks.values()) {
     if (pending.timer) clearTimeout(pending.timer);
@@ -5004,7 +5059,7 @@ async function _doStop() {
     _streamingStatusTimer = null;
   }
   resetStreamingState();
-  try { await closeLogV2Writes(); } catch (error) {
+  try { await waitWithTimeout(() => closeLogV2Writes(), remaining(), 'Log V2 shutdown'); } catch (error) {
     console.warn('[CX Viewer] Log V2 durable shutdown failed:', error.message);
   }
   try { unwatchFile(PROFILE_PATH); } catch {} // 清理 interceptor 的 StatWatcher
@@ -5089,5 +5144,6 @@ if (!isWorkspaceMode) {
   });
 }
 
-process.on('SIGINT', () => { stopViewer().finally(() => process.exit()); });
-process.on('SIGTERM', () => { stopViewer().finally(() => process.exit()); });
+// cli.js owns signals in workspace/CLI mode. Standalone `node server.js` still
+// needs a coordinator, but must not register a second pair of handlers.
+if (!isWorkspaceMode) registerSignalShutdown(({ deadlineAt }) => stopViewer({ deadlineAt }));

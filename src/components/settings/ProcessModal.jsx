@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Modal, Button, Table, message } from 'antd';
 import { ReloadOutlined, DashboardOutlined } from '@ant-design/icons';
 import { t } from '../../i18n';
@@ -22,18 +22,22 @@ export default function ProcessModal({ open, onClose }) {
   const [processLoading, setProcessLoading] = useState(false);
   const [killConfirmPid, setKillConfirmPid] = useState(null);
   const [killing, setKilling] = useState(false);
+  const killTargetRef = useRef(null);
+  const killAbortRef = useRef(null);
 
   const fetchProcesses = useCallback(() => {
     setProcessLoading(true);
     fetch(apiUrl('/api/cxv-processes'))
       .then(r => r.json())
       .then(data => {
+        if (data.error) throw new Error(data.error);
         setProcessList(data.processes || []);
         setProcessLoading(false);
       })
-      .catch(() => {
+      .catch((error) => {
         setProcessList([]);
         setProcessLoading(false);
+        message.error(error?.message || t('ui.processManagement.killFailed'));
       });
   }, []);
 
@@ -45,43 +49,72 @@ export default function ProcessModal({ open, onClose }) {
   // 父 modal 关闭时同步关闭 kill 确认 —— 避免外层关了内层确认仍在屏幕上的孤儿态
   useEffect(() => {
     if (!open) {
+      killAbortRef.current?.abort();
+      killAbortRef.current = null;
+      killTargetRef.current = null;
       setKillConfirmPid(null);
       setKilling(false);
     }
+    return () => killAbortRef.current?.abort();
   }, [open]);
 
-  const handleKillProcess = (pid) => {
-    setKillConfirmPid(pid);
+  const handleKillProcess = (record) => {
+    killTargetRef.current = record;
+    setKillConfirmPid(record.pid);
   };
 
-  const handleKillConfirm = () => {
-    const pid = killConfirmPid;
-    if (!pid) return;
+  const handleKillConfirm = async () => {
+    const target = killTargetRef.current;
+    if (!target?.processRef) return;
+    const controller = new AbortController();
+    killAbortRef.current?.abort();
+    killAbortRef.current = controller;
     setKilling(true);
-    fetch(apiUrl('/api/cxv-processes/kill'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pid }),
-    })
-      .then(r => r.json())
-      .then(data => {
-        if (data.ok) {
-          message.success(t('ui.processManagement.killed'));
-          fetchProcesses();
-        } else {
-          message.error(data.error || t('ui.processManagement.killFailed'));
-        }
-      })
-      .catch(() => {
-        message.error(t('ui.processManagement.killFailed'));
-      })
-      .finally(() => {
+    try {
+      const response = await fetch(apiUrl('/api/cxv-processes/kill'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ processRef: target.processRef }),
+        signal: controller.signal,
+      });
+      const data = await response.json();
+      if (!data.ok || !data.operationId) throw new Error(data.error || t('ui.processManagement.killFailed'));
+
+      let final = null;
+      for (let attempt = 0; attempt < 32 && !controller.signal.aborted; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const statusResponse = await fetch(
+          apiUrl(`/api/cxv-processes/kill-status?id=${encodeURIComponent(data.operationId)}`),
+          { signal: controller.signal },
+        );
+        if (!statusResponse.ok) continue;
+        const status = await statusResponse.json();
+        if (status.status !== 'terminating') { final = status; break; }
+      }
+      if (controller.signal.aborted) return;
+      if (final?.status === 'exited' || final?.status === 'forced') {
+        message.success(t('ui.processManagement.killed'));
+        fetchProcesses();
+      } else {
+        throw new Error(final?.error || t('ui.processManagement.killFailed'));
+      }
+    } catch (error) {
+      if (error?.name !== 'AbortError') {
+        message.error(error?.message || t('ui.processManagement.killFailed'));
+      }
+    } finally {
+      if (killAbortRef.current === controller) {
+        killAbortRef.current = null;
+        killTargetRef.current = null;
         setKilling(false);
         setKillConfirmPid(null);
-      });
+      }
+    }
   };
 
   const handleKillCancel = () => {
+    killAbortRef.current?.abort();
+    killTargetRef.current = null;
     setKillConfirmPid(null);
   };
 
@@ -114,7 +147,7 @@ export default function ProcessModal({ open, onClose }) {
           width: 100,
           render: (_, record) => record.isCurrent
             ? <Button size="small" className={styles.currentProcessBtn}>{t('ui.processManagement.current')}</Button>
-            : <Button size="small" danger onClick={() => handleKillProcess(record.pid)}>{t('ui.processManagement.kill')}</Button>,
+            : <Button size="small" danger disabled={killing} onClick={() => handleKillProcess(record)}>{t('ui.processManagement.kill')}</Button>,
         },
       ]}
     />
