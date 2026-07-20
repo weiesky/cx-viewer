@@ -50,7 +50,7 @@ test('V2 raw diagnostics expose only ranges referenced by the selected archive',
     assert.equal(existsSync(join(root, file)), true);
     assert.deepEqual(deleteLogFiles(root, [file]), [{ file, ok: true }]);
     assert.equal(existsSync(join(root, file)), false);
-    assert.equal(existsSync(join(rawDir, ref.sidecar)), false);
+    assert.equal(existsSync(join(rawDir, ref.sidecar)), true);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
