@@ -17,8 +17,8 @@ function defaultValue(field) {
   return '';
 }
 
-// 启动校验：轮询 status 直到 worker 真就绪（state==='ready'）或超时；对齐服务端 BOOT_WINDOW_MS(15s)。
-const START_POLL_TIMEOUT_MS = 15000;
+// 启动校验：轮询 status 直到 worker 真就绪（state==='ready'）或超时。
+const START_POLL_TIMEOUT_MS = 30000;
 const START_POLL_INTERVAL_MS = 500;
 
 /**
@@ -47,7 +47,7 @@ export default function ImPlatformSettings({ descriptor }) {
   const [stopping, setStopping] = useState(false);
   const [testing, setTesting] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
-  const [personaOpen, setPersonaOpen] = useState(false); // 「模型性格定义」(CODEX_APPEND_SYSTEM.md) 编辑弹窗
+  const [personaOpen, setPersonaOpen] = useState(false); // 「模型性格定义」(worker AGENTS.md) 编辑弹窗
   const [skillsModalOpen, setSkillsModalOpen] = useState(false); // 「SKILL 管理」弹窗
   const [skillsReloadKey, setSkillsReloadKey] = useState(0);     // 新增 skill 成功后 bump，触发管理弹窗重新拉取
   const skillFileInputRef = useRef(null);
@@ -126,6 +126,7 @@ export default function ImPlatformSettings({ descriptor }) {
   const lastSavedSigRef = useRef(null); // 上次已持久化的字段签名，做脏检查避免无谓请求
   const mountedRef = useRef(true);      // 防止启动轮询期间组件卸载后 setState
   const busyRef = useRef(false);        // 启动/停止进行中：暂停 5s 后台轮询，避免与启动轮询竞态
+  const configMutationRef = useRef(Promise.resolve()); // 串行化 blur 自动保存与启动/停止，避免旧请求后写覆盖
 
   const writeValues = (next) => { valuesRef.current = next; setValues(next); };
   const setField = (key, val) => writeValues({ ...valuesRef.current, [key]: val });
@@ -152,19 +153,24 @@ export default function ImPlatformSettings({ descriptor }) {
 
   // 统一的 config POST：返回 { ok, detail }，集中错误解析（body 可能非 JSON）。
   const postConfig = useCallback(async (body) => {
-    try {
-      const r = await fetch(apiUrl(descriptor.endpoints.config), {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-      });
-      if (!r.ok) {
-        let detail = '';
-        try { const e = await r.json(); detail = e.detail || e.error || ''; } catch { detail = `HTTP ${r.status}`; }
-        return { ok: false, detail };
+    const operation = configMutationRef.current.catch(() => {}).then(async () => {
+      try {
+        const r = await fetch(apiUrl(descriptor.endpoints.config), {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+        });
+        if (!r.ok) {
+          let detail = '';
+          let code = '';
+          try { const e = await r.json(); detail = e.detail || e.error || ''; code = e.code || ''; } catch { detail = `HTTP ${r.status}`; }
+          return { ok: false, detail, code };
+        }
+        return { ok: true };
+      } catch {
+        return { ok: false, detail: '' };
       }
-      return { ok: true };
-    } catch {
-      return { ok: false, detail: '' };
-    }
+    });
+    configMutationRef.current = operation;
+    return operation;
   }, [descriptor]);
 
   // 拉取一次 status；返回解析后的对象（失败返回 null）。full=true 时同步表单字段。
@@ -221,42 +227,40 @@ export default function ImPlatformSettings({ descriptor }) {
   // 变更即保存（select / tags / switch 这类无可靠 blur 的控件）：先写值再提交。
   const setFieldAndCommit = (key, val) => { setField(key, val); commit(); };
 
-  const allowlistField = descriptor.fields.find((f) => f.type === 'tags');
-  const isAllowlistEmpty = () => {
-    if (!allowlistField) return false;
-    const v = valuesRef.current[allowlistField.key];
-    return !Array.isArray(v) || v.length === 0;
-  };
-
   const procState = proc?.state;
   // 单按钮的两态：运行中(enabled)显示「停止」，否则显示「启动」；启动/停止过渡期间显示对应态的 loading。
   // starting 期间 enabled 已被乐观置 true，故 starting 优先级高于 enabled，避免过渡时按钮提前翻成「停止」。
-  const showStop = stopping || (enabled && !starting);
+  const showStop = stopping || (!starting && (proc?.running === true || connection?.running === true));
 
   const start = async () => {
     setStarting(true);
     busyRef.current = true;
     try {
       // 保存并驱动进程（applyProcess:true）：服务端 restartProcess → spawn 新 worker。
-      const { ok, detail } = await postConfig(buildBody(valuesRef.current, true, true));
-      if (!ok) { message.error(_tr('ui.im.startFailed', null, 'Start failed') + (detail ? `: ${detail}` : '')); return; }
+      const { ok, detail, code } = await postConfig(buildBody(valuesRef.current, true, true));
+      if (!ok) {
+        if (code === 'DINGTALK_WORKER_READY_TIMEOUT') message.error(_tr('ui.im.startTimeout', null, 'Start timed out: the worker or DingTalk connection did not become ready'), 6);
+        else message.error(_tr('ui.im.startFailed', null, 'Start failed') + (detail ? `: ${detail}` : ''));
+        return;
+      }
       setEnabled(true); enabledRef.current = true;
       lastSavedSigRef.current = fieldSig(valuesRef.current, true);
-      if (isAllowlistEmpty()) {
-        message.warning(_tr('ui.im.savedNoAllowlistWarn', null, 'No sender allowlist set: the first conversation that messages the bot is bound and anyone in it can drive the local session with no approval. Add an allowlist under More settings.'), 8);
-      }
-      // 轮询 status 直到 worker 真就绪（state==='ready'）或超时——这才是「启动成功」的判据。
+      // worker 可访问且平台长连接已建立才算启动成功；明确连接错误立即结束轮询。
       const deadline = Date.now() + START_POLL_TIMEOUT_MS;
       let ready = false;
+      let connectionError = '';
       while (Date.now() < deadline) {
         await new Promise((res) => setTimeout(res, START_POLL_INTERVAL_MS));
         if (!mountedRef.current) return;
         const d = await fetchStatus(false);
-        if (d?.process?.state === 'ready') { ready = true; break; }
+        if (d?.connection?.lastError) { connectionError = d.connection.lastError; break; }
+        if (d?.process?.lastError) { connectionError = d.process.lastError; break; }
+        if (d?.process?.state === 'ready' && d?.connection?.connected) { ready = true; break; }
       }
       if (!mountedRef.current) return;
       if (ready) message.success(_tr('ui.im.statusConnected', null, 'Connected'));
-      else message.error(_tr('ui.im.startFailed', null, 'Start failed: worker did not become ready in time'), 6);
+      else if (connectionError) message.error(`${_tr('ui.im.connectionFailed', null, 'Connection failed')}: ${connectionError}`, 6);
+      else message.error(_tr('ui.im.startTimeout', null, 'Start timed out: the worker or DingTalk connection did not become ready'), 6);
     } finally {
       busyRef.current = false;
       if (mountedRef.current) { setStarting(false); fetchStatus(false); }
@@ -401,11 +405,11 @@ export default function ImPlatformSettings({ descriptor }) {
       {showDetails && (
         <div className={styles.details}>
           {moreFields.map(renderField)}
-          {/* 模型性格定义：编辑该 IM 工作目录下的 CODEX_APPEND_SYSTEM.md（弹独立窗口，不关闭配置弹窗）。 */}
+          {/* 模型性格定义：编辑该 IM worker 专属工作目录下的 AGENTS.md。 */}
           <div className={styles.row}>
             <span className={styles.label}>
               {_tr('ui.im.persona', null, 'Model personality')}
-              <Tooltip title={_tr('ui.im.personaHelp', null, "Define the bot's personality and behavior; injected as a system prompt so it's harder to override. Takes effect after you restart this IM (requires a recent Codex build).")}>
+              <Tooltip title={_tr('ui.im.personaAgentsHelp', null, "Define the bot's behavior in the DingTalk worker's AGENTS.md. Codex loads it from that dedicated workspace after the worker restarts.")}>
                 <QuestionCircleOutlined className={styles.helpIcon} />
               </Tooltip>
             </span>

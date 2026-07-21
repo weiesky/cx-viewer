@@ -259,7 +259,7 @@ async function runProxyCommand(args) {
 
 // ensureHooks() extracted to lib/ensure-hooks.js (shared with electron/tab-worker.js)
 
-async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCodexInvocation(extraCodexArgs)) {
+async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCodexInvocation(extraCodexArgs), options = {}) {
   // 首先尝试 npm 版本（包括 nvm 安装），找不到再尝试 native 版本
   let codexPath = resolveNpmCodexPath();
   let isNpmVersion = !!codexPath;
@@ -280,6 +280,12 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
   let bridge = null;
   let stopProxyFn = () => {};
   let killPtyFn = () => {};
+  let shutdownHookCalled = false;
+  const runShutdownHook = async () => {
+    if (shutdownHookCalled) return;
+    shutdownHookCalled = true;
+    await options.onShutdown?.();
+  };
   setActiveShutdownCleanup(async ({ deadlineAt } = {}) => {
     killPtyFn();
     serverMod?.setCodexApprovalsReviewerUpdater(null);
@@ -288,14 +294,17 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
     bridge?.stop();
     try { stopProxyFn(); } catch {}
     if (serverMod) await serverMod.stopViewer({ deadlineAt });
+    await runShutdownHook();
   });
 
   // 注册工作区
-  const { registerWorkspace } = await import('./workspace-registry.js');
-  registerWorkspace(workingDir);
+  if (!options.skipWorkspaceRegistration) {
+    const { registerWorkspace } = await import('./workspace-registry.js');
+    registerWorkspace(workingDir);
+  }
 
   // 清理旧 request_user_input hook，并确保权限审批 hook 已注册。
-  ensureHooks();
+  if (!options.skipHooks) ensureHooks();
 
   // 2. 设置 CLI 模式标记
   process.env.CXV_CLI_MODE = '1';
@@ -318,6 +327,7 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
 
   const port = serverMod.getPort();
   const protocol = serverMod.getProtocol();
+  await options.onServerReady?.({ port, protocol });
 
   // 标记工作区已启动（跳过前端工作区选择器）
   serverMod.setWorkspaceLaunched(true);
@@ -348,7 +358,7 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
   // Reasoning summaries remain a user-overridable default. Native Default-mode
   // request_user_input is appended again at each child-process boundary so CX
   // Viewer's interactive bridge always agrees with Codex's advertised tools.
-  const defaultModeAskArgs = getDefaultModeRequestUserInputConfigArgs();
+  const defaultModeAskArgs = options.disableNativeAsk ? [] : getDefaultModeRequestUserInputConfigArgs();
   const baseConfigArgs = [...getReasoningSummaryConfigArgs(), ...defaultModeAskArgs];
   let proxyRedirectArgs = [];
   {
@@ -426,6 +436,10 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
     bridgeArgs = [...childBaseConfigArgs, '--remote', `ws://127.0.0.1:${bridge.proxyPort}`];
     console.log(`[CX Viewer] App-Server bridge started (proxy:${bridge.proxyPort} → server:${bridge.appServerPort})`);
   } catch (err) {
+    if (options.requireAppServerBridge) {
+      await activeShutdownCleanup();
+      throw err;
+    }
     console.warn('[CX Viewer] App-Server bridge failed, falling back to direct mode:', err.message);
   }
 
@@ -440,13 +454,14 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
     serverMod.setActiveCodexApprovalsReviewer(savedApprovalsReviewer, true);
   }
   try {
-    const tuiArgs = appendOtelTraceExporterConfigArgsOnce(
+    let tuiArgs = appendOtelTraceExporterConfigArgsOnce(
       appendCxvFinalConfigArgs(
         [...bridgeArgs, ...reviewerArgs, ...extraCodexArgs],
         { proxyPort: _proxyPort },
       ),
       otelConfigArgs,
     );
+    if (options.disableNativeAsk) tuiArgs = [...tuiArgs, '-c', 'features.default_mode_request_user_input=false'];
     await spawnCodexRequest({
       proxyPort: null,
       cwd: workingDir,
@@ -463,21 +478,24 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
     // The Codex TUI is the critical path. Log watching/statistics can attach
     // after the PTY exists; the V2 writer is ready before traffic starts and the
     // regular history endpoints own older conversation loading.
-    serverMod.initPostLaunch();
+    await serverMod.initPostLaunch();
   } catch (err) {
     console.error('[CX Viewer] Failed to spawn Codex:', err.message);
     if (bridge) bridge.stop();
     await serverMod.stopViewer();
+    await runShutdownHook();
     process.exit(1);
   }
 
   // 4. 自动打开浏览器
   const url = `${protocol}://127.0.0.1:${port}`;
-  try {
-    const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
-    const { execSync } = await import('node:child_process');
-    execSync(`${cmd} ${url}`, { stdio: 'ignore', timeout: 5000 });
-  } catch {}
+  if (!options.noOpen) {
+    try {
+      const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
+      const { execSync } = await import('node:child_process');
+      execSync(`${cmd} ${url}`, { stdio: 'ignore', timeout: 5000 });
+    } catch {}
+  }
 
   console.log(`CX Viewer:`);
   console.log(`  ➜ Local:   ${url}`);
@@ -487,6 +505,55 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
     console.log(`  ➜ Network: ${protocol}://${_ip}:${port}?token=${_token}`);
   }
 
+}
+
+async function runDingTalkImMode() {
+  const configMod = await import('./lib/dingtalk-im-config.js');
+  const lockMod = await import('./lib/dingtalk-im-lock.js');
+  const config = configMod.validateDingTalkImConfig(configMod.loadDingTalkImConfig(), { requireEnabled: true });
+  configMod.ensureDingTalkPrivateDirectory(configMod.getDingTalkImWorkerDir());
+  const { DEFAULT_DINGTALK_IM_PERSONA, ensureDingTalkImPersona } = await import('./lib/dingtalk-im-persona.js');
+  ensureDingTalkImPersona(DEFAULT_DINGTALK_IM_PERSONA);
+  const acquired = lockMod.acquireDingTalkImLock();
+  if (!acquired.ok) throw Object.assign(new Error('DingTalk IM worker is already running'), { code: 'DINGTALK_WORKER_RUNNING' });
+  try {
+    const { createProcessAdapter } = await import('./lib/cxv-processes.js');
+    const processIdentity = await createProcessAdapter().inspect(process.pid);
+    if (!processIdentity) throw new Error('Unable to establish DingTalk worker process identity');
+    lockMod.updateDingTalkImLock(acquired.lock, {
+      processStartId: processIdentity.startId,
+      commandHash: processIdentity.commandHash,
+    });
+  } catch (error) {
+    lockMod.releaseDingTalkImLock(acquired.lock);
+    throw error;
+  }
+
+  process.env.CXV_IM_PLATFORM = 'dingtalk';
+  process.env.CXV_IM_WORKER = '1';
+  process.env.CXV_HOST = '127.0.0.1';
+  const fixedArgs = [
+    '--sandbox', 'workspace-write',
+    '--ask-for-approval', 'never',
+    '-c', 'sandbox_workspace_write.network_access=false',
+  ];
+  const invocation = parseCodexInvocation(fixedArgs);
+  try {
+    await runCliMode(fixedArgs, configMod.getDingTalkImWorkerDir(), invocation, {
+      noOpen: true,
+      skipHooks: true,
+      skipWorkspaceRegistration: true,
+      disableNativeAsk: true,
+      requireAppServerBridge: true,
+      onServerReady: ({ port }) => lockMod.updateDingTalkImLock(acquired.lock, {
+        port, ready: false, connected: false, connectionState: 'starting', lastError: null,
+      }),
+      onShutdown: () => lockMod.releaseDingTalkImLock(acquired.lock),
+    });
+  } catch (error) {
+    lockMod.releaseDingTalkImLock(acquired.lock);
+    throw error;
+  }
 }
 
 async function runSdkMode(extraCodexArgs = [], cwd) {
@@ -852,7 +919,22 @@ if (isLogger) {
   process.exit(0);
 }
 
-if (args[0] === 'run') {
+const imArgIndex = args.indexOf('--im');
+const imPlatform = imArgIndex >= 0 ? args[imArgIndex + 1] : null;
+
+if (imArgIndex >= 0 && !imPlatform) {
+  console.error('--im requires a platform (currently: dingtalk)');
+  process.exit(1);
+} else if (imPlatform) {
+  if (imPlatform !== 'dingtalk') {
+    console.error(`Unsupported IM platform: ${imPlatform}`);
+    process.exit(1);
+  }
+  runDingTalkImMode().catch(err => {
+    console.error('DingTalk IM worker error:', err.message);
+    process.exit(1);
+  });
+} else if (args[0] === 'run') {
   runProxyCommand(args);
 } else if (args.includes('-SDK') || args.includes('--sdk')) {
   // SDK 模式（显式 -SDK 切换）

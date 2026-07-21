@@ -3,9 +3,8 @@ import { Modal, Input, Spin, Button, Popconfirm, message } from 'antd';
 import { apiUrl } from '../../utils/apiUrl';
 import { imTr as _tr } from '../../utils/imTr';
 
-// 「模型性格定义」编辑器：读/写该 IM 工作目录下的 CODEX_APPEND_SYSTEM.md（启动 codex 时注入为
-// --append-system-prompt-file）。叠加在「通讯软件集成」配置弹窗之上（antd Modal 走 portal 自动堆叠，
-// 不关闭下层）；保存/取消后回到配置弹窗。该文件仅在 worker 启动时读取一次，故保存后提示「下次重启该 IM 生效」。
+// 「模型性格定义」编辑器：读/写该 IM worker 专属工作目录下的 AGENTS.md。Codex 在
+// worker 启动时按原生工作区规则加载它，因此保存后需重启该 IM 才生效。
 export default function ImAppendSystemModal({ open, platform, onClose }) {
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
@@ -91,13 +90,18 @@ export default function ImAppendSystemModal({ open, platform, onClose }) {
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px 0' }}><Spin /></div>
       ) : (
-        <Input.TextArea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          autoSize={{ minRows: 16, maxRows: 28 }}
-          spellCheck={false}
-          style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}
-        />
+        <>
+          <div style={{ marginBottom: 12, color: 'var(--text-secondary)', fontSize: 13 }}>
+            {_tr('ui.im.personaAgentsHelp', null, "This edits AGENTS.md in the DingTalk worker's dedicated workspace and takes effect after the worker restarts.")}
+          </div>
+          <Input.TextArea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            autoSize={{ minRows: 16, maxRows: 28 }}
+            spellCheck={false}
+            style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}
+          />
+        </>
       )}
     </Modal>
   );

@@ -1676,20 +1676,6 @@ class AppBase extends React.Component {
           } catch { /* never propagate */ }
         }
       });
-      // im_log_update SSE — 主服务 fs.watch 到某 IM worker 日志目录写入时广播（IM worker 独立端口，
-      // turn_end 落在 worker 自己进程，主服务收不到，故用日志落盘信号驱动「对话记录」自动刷新）。
-      // AppBase 不直接持有 ImConversationModal，转成 window 事件解耦派发，弹窗打开时自行监听并重拉。
-      this.eventSource.addEventListener('im_log_update', (event) => {
-        if (!this.eventSource) return;
-        this._resetSSETimeout();
-        let platform = null;
-        if (typeof event?.data === 'string') {
-          try { platform = JSON.parse(event.data)?.platform || null; } catch { /* tolerate */ }
-        }
-        if (platform) {
-          try { window.dispatchEvent(new CustomEvent('cxv:im-log-update', { detail: { platform } })); } catch { /* noop */ }
-        }
-      });
       this.eventSource.addEventListener('streaming_status', (e) => {
         this._resetSSETimeout();
         try {

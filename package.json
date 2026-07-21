@@ -1,6 +1,6 @@
 {
   "name": "cx-viewer",
-  "version": "1.1.14",
+  "version": "1.1.15",
   "description": "Codex Logger visualization management tool",
   "license": "MIT",
   "main": "server.js",
@@ -173,6 +173,7 @@
     "@xterm/addon-serialize": "0.14.0",
     "@xterm/addon-unicode11": "0.9.0",
     "@xterm/headless": "6.0.0",
+    "dingtalk-stream": "2.1.5",
     "dompurify": "^3.3.3",
     "jszip": "^3.10.1",
     "node-pty": "^1.1.0",

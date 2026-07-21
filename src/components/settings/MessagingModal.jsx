@@ -3,13 +3,13 @@ import { Modal } from 'antd';
 import { CommentOutlined } from '@ant-design/icons';
 import { imTr as _tr } from '../../utils/imTr';
 import ImPlatformSettings from './ImPlatformSettings';
-import { IM_PLATFORMS } from './imPlatforms';
+import { AVAILABLE_IM_PLATFORMS } from './imPlatforms';
 import { BLUR_MASK_STYLE } from '../../utils/modalMask';
 import styles from './MessagingModal.module.css';
 
 // IM tool tabs derived from the platform registry (imPlatforms.js); the tab strip renders
 // automatically. Add a platform there and it appears here.
-const TOOLS = IM_PLATFORMS.map((p) => ({
+const TOOLS = AVAILABLE_IM_PLATFORMS.map((p) => ({
   id: p.id, labelKey: p.labelKey, fallback: p.fallback,
   Icon: p.icon, color: p.color,
   render: () => <ImPlatformSettings descriptor={p} />,

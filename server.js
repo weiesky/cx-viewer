@@ -51,6 +51,7 @@ import { parseCodexInvocation } from './lib/cli-args.js';
 import { CONTEXT_WINDOW_FILE, buildContextWindowEvent } from './lib/context-watcher.js';
 import { CODEX_CONTEXT_WINDOW_TOKENS, sumUsageContextTokens } from './server/lib/context-rules.js';
 import { isMainAgentEntry } from './lib/main-agent-entry.js';
+import { handleDingTalkImRoute } from './lib/dingtalk-im-routes.js';
 import {
   deleteLogFiles,
   validateImLogPath,
@@ -651,6 +652,10 @@ let _workspaceCodexArgs = [];
 let _workspaceCodexPath = null;
 let _workspaceIsNpmVersion = false;
 let _workspaceLaunched = false; // 工作区是否已经启动了会话
+let _dingtalkImBridge = null;
+let _dingtalkImLock = null;
+let _dingtalkRuntimeContextProvider = null;
+let _dingtalkPtyStateProvider = null;
 
 // Ask hook bridge state (for request_user_input hook)
 // At most one pending request at a time (Codex Code is single-threaded)
@@ -683,9 +688,73 @@ export function setWorkspaceCodexPath(path, isNpm) {
 let _launchCallback = null;
 export function setLaunchCallback(fn) { _launchCallback = fn; }
 export function setWorkspaceLaunched(v) { _workspaceLaunched = v; }
-export function initPostLaunch() {
-  notifyStatsWorker();
-  startStreamingStatusTimer();
+export async function initPostLaunch() {
+  if (process.env.CXV_IM_WORKER !== '1') {
+    notifyStatsWorker();
+    startStreamingStatusTimer();
+    try {
+      const { reconcileDingTalkImProcess } = await import('./lib/dingtalk-im-process-manager.js');
+      await reconcileDingTalkImProcess();
+    } catch (error) {
+      console.warn('[CX Viewer] DingTalk IM worker reconciliation failed:', error?.message || error);
+    }
+    return;
+  }
+  if (process.env.CXV_IM_PLATFORM !== 'dingtalk') return;
+
+  const [{ createDingTalkImBridge }, { loadDingTalkImConfig }, lockMod, ptyMod, appServerMod] = await Promise.all([
+    import('./lib/dingtalk-im-bridge.js'),
+    import('./lib/dingtalk-im-config.js'),
+    import('./lib/dingtalk-im-lock.js'),
+    import('./pty-manager.js'),
+    import('./lib/appserver-bridge.js'),
+  ]);
+  _dingtalkImLock = lockMod.readDingTalkImLock();
+  if (!_dingtalkImLock || _dingtalkImLock.pid !== process.pid) {
+    throw new Error('DingTalk IM worker lock identity is missing');
+  }
+  _dingtalkImBridge = createDingTalkImBridge({
+    getConfig: loadDingTalkImConfig,
+    getPtyState: ptyMod.getPtyState,
+    writeToPtySequential: ptyMod.writeToPtySequential,
+    getActiveContext: () => ({
+      ...getActiveProjectContext(),
+      ...appServerMod.getAppServerRuntimeContext(),
+    }),
+  });
+  _dingtalkRuntimeContextProvider = appServerMod.getAppServerRuntimeContext;
+  _dingtalkPtyStateProvider = ptyMod.getPtyState;
+  appServerMod.setAppServerTurnTerminalListener((event) => _dingtalkImBridge?.notifyTurnTerminal(event));
+  const connected = await _dingtalkImBridge.start();
+  if (!connected) {
+    lockMod.updateDingTalkImLock(_dingtalkImLock, {
+      ready: false, connected: false, connectionState: 'failed', lastError: 'DingTalk bridge failed to start',
+    });
+    throw new Error('DingTalk bridge failed to start');
+  }
+  lockMod.updateDingTalkImLock(_dingtalkImLock, {
+    port: actualPort,
+    ready: true,
+    connected: true,
+    connectionState: _dingtalkImBridge.getStatus().connectionState,
+    lastError: null,
+  });
+}
+
+export function getDingTalkImWorkerStatus() {
+  const status = _dingtalkImBridge?.getStatus?.() || {};
+  const runtime = _dingtalkRuntimeContextProvider?.() || {};
+  const pty = _dingtalkPtyStateProvider?.() || {};
+  const ready = status.running === true && pty.running === true && !!runtime.threadId;
+  return {
+    platform: 'dingtalk',
+    pid: process.pid,
+    bootId: _dingtalkImLock?.bootId || null,
+    ready,
+    connected: ready && status.connectionState === 'connected',
+    connectionState: status.connectionState || (_dingtalkImBridge ? 'starting' : 'disconnected'),
+    lastError: status.lastError || null,
+  };
 }
 
 // Global POST body size limit
@@ -697,7 +766,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const START_PORT = parseInt(process.env.CXV_START_PORT) || DEFAULT_START_PORT;
 const MAX_PORT = parseInt(process.env.CXV_MAX_PORT) || DEFAULT_MAX_PORT;
-const HOST = '0.0.0.0';
+const HOST = process.env.CXV_IM_WORKER === '1' ? '127.0.0.1' : '0.0.0.0';
 
 // 局域网访问 token（本地 127.0.0.1 免验证）
 const ACCESS_TOKEN = randomBytes(16).toString('hex');
@@ -1038,6 +1107,7 @@ let clients = [];
 setLogV2CommitListener((entry, _result, context) => {
   void runParallelHook('onNewEntry', entry).catch(() => {});
   notifyStatsWorker(context?.projectId);
+  void _dingtalkImBridge?.notifyLogV2Commit(entry, _result, context);
   if (!isMainAgentEntry(entry)) return;
   const usage = entry.response?.body?.usage;
   const contextEvent = usage ? buildContextWindowEvent(usage) : null;
@@ -1260,6 +1330,18 @@ async function handleRequest(req, res) {
   if (authDecision.action === 'insecure-password') {
     res.writeHead(403, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Secure transport required for password login', code: 'secure_transport_required' }));
+    return;
+  }
+
+  if (await handleDingTalkImRoute(req, res, parsedUrl, {
+    isLocal,
+    bridge: _dingtalkImBridge,
+    workerReady: getDingTalkImWorkerStatus().ready,
+    readUpload: readMultipartUpload,
+  })) return;
+
+  if (process.env.CXV_IM_WORKER === '1' && !url.startsWith('/v1/')) {
+    sendJson(res, 404, { error: 'Not Found' });
     return;
   }
 
@@ -4041,7 +4123,7 @@ async function handleRequest(req, res) {
 export async function startViewer() {
   pluginRoutes = [];
   // 加载插件（需要在创建服务器之前，以便通过 hook 获取 HTTPS 证书）
-  await loadPlugins();
+  if (process.env.CXV_IM_WORKER !== '1') await loadPlugins();
 
   // 通过插件 hook 获取 HTTPS 证书选项
   let httpsOptions = null;
@@ -4156,7 +4238,7 @@ export async function startViewer() {
             startStreamingStatusTimer();
           }
           // CLI 模式下启动 WebSocket 服务 (必须 await，否则插件 hook 拿不到 upgrade listeners)
-          if (isCliMode) {
+          if (isCliMode && process.env.CXV_IM_WORKER !== '1') {
             await setupTerminalWebSocket(currentServer);
           }
           // 通知插件服务器已启动
@@ -4986,6 +5068,16 @@ export function stopViewer({ deadlineAt = Date.now() + SHUTDOWN_DEADLINE_MS } = 
 }
 async function _doStop(deadlineAt) {
   const remaining = () => Math.max(0, deadlineAt - Date.now());
+  if (_dingtalkImBridge) {
+    try { await _dingtalkImBridge.stop(); } catch {}
+    _dingtalkImBridge = null;
+  }
+  _dingtalkRuntimeContextProvider = null;
+  _dingtalkPtyStateProvider = null;
+  try {
+    const appServerMod = await import('./lib/appserver-bridge.js');
+    appServerMod.setAppServerTurnTerminalListener(null);
+  } catch {}
   try { await waitWithTimeout(() => runParallelHook('serverStopping'), Math.min(3000, remaining()), 'serverStopping hooks'); } catch { }
   pluginRoutes = [];
   for (const pending of pendingCodexAsks.values()) {

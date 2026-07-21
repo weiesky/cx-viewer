@@ -4,7 +4,8 @@ import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { DEFAULT_API_BASE } from './lib/constants.js';
 import { homedir } from 'node:os';
-import { extractApiErrorMessage } from './lib/proxy-errors.js';
+import { extractApiErrorMessage, formatProxyRequestError } from './lib/proxy-errors.js';
+import { setupProxyEnv } from './lib/proxy-env.js';
 import { readOriginalOpenAiBaseUrl } from './lib/codex-config.js';
 
 let _interceptorReady = null;
@@ -245,6 +246,10 @@ export function stopProxy() {
 }
 
 export function startProxy({ onResponseModel = null } = {}) {
+  // The capture proxy performs the real upstream fetch itself. Configure
+  // undici here so that HTTPS_PROXY/HTTP_PROXY/ALL_PROXY from the user's
+  // environment also applies to this hop, not only to the Codex child.
+  setupProxyEnv();
   return ensureProxyInterceptor().then(() => new Promise((resolve, reject) => {
     const server = createServer(async (req, res) => {
       // Normalize the request target. When a client (or an upstream HTTP proxy
@@ -381,10 +386,10 @@ export function startProxy({ onResponseModel = null } = {}) {
         // Surface the real reason: log it and include it in the 502 body so it
         // shows up directly in Codex's error message (aids diagnosis without
         // needing CXV_DEBUG). Only the upstream host is revealed, not credentials.
-        const detail = err && err.message ? err.message : String(err);
-        console.error(`[CX-Viewer Proxy] Forward to ${fullUrl} failed: ${detail}`);
+        const diagnostic = formatProxyRequestError(err);
+        console.error(`${diagnostic} Upstream: ${fullUrl}`);
         res.statusCode = 502;
-        res.end(`Proxy Error: ${detail} (upstream: ${fullUrl})`);
+        res.end(`Proxy Error: ${diagnostic} (upstream: ${fullUrl})`);
       } finally {
         req.off('aborted', abortUpstream);
         res.off('close', abortUpstream);
