@@ -4038,6 +4038,10 @@ async function handleRequest(req, res) {
             if (operation.status !== 'terminating') break;
             const current = await cxvProcessAdapter.inspect(expected.pid);
             if (!current) {
+              // Once the escalation grace has elapsed, the escalation promise
+              // owns the final classification. Its SIGKILL can make the process
+              // disappear just before this poll and must still report `forced`.
+              if (Date.now() - operation.requestedAt >= PROCESS_FORCE_KILL_GRACE_MS) continue;
               await killVerifiedTree(cxvProcessAdapter, actual, descendants);
               completeProcessTermination(operation, 'exited');
             } else if (!sameProcessIdentity(expected, current)) {
