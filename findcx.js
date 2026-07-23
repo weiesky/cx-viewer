@@ -51,6 +51,7 @@ export const PACKAGES = ['@openai/codex'];
 
 // npm 包内的入口文件（相对于包根目录）
 export const CLI_ENTRY = 'cli.js';
+export const NPM_LAUNCHER_ENTRIES = ['bin/codex.js', CLI_ENTRY];
 
 // native 二进制候选路径（~ 会在运行时展开为 homedir()）
 const NATIVE_CANDIDATES = [
@@ -122,9 +123,11 @@ export function resolveNpmCodexPath() {
             const match = real.match(/(.*node_modules\/@[^/]+\/[^/]+)\//);
             if (match) {
               const packageDir = match[1];
-              const cliPath = join(packageDir, CLI_ENTRY);
-              if (existsSync(cliPath)) {
-                return cliPath;
+              for (const entry of NPM_LAUNCHER_ENTRIES) {
+                const entryPath = join(packageDir, entry);
+                if (existsSync(entryPath)) {
+                  return entryPath;
+                }
               }
             }
             // cli.js 不存在（新版 codex），直接返回二进制路径
@@ -141,9 +144,11 @@ export function resolveNpmCodexPath() {
   const globalRoot = getGlobalNodeModulesDir();
   if (globalRoot) {
     for (const packageName of PACKAGES) {
-      const cliPath = join(globalRoot, packageName, CLI_ENTRY);
-      if (existsSync(cliPath)) {
-        return cliPath;
+      for (const entry of NPM_LAUNCHER_ENTRIES) {
+        const entryPath = join(globalRoot, packageName, entry);
+        if (existsSync(entryPath)) {
+          return entryPath;
+        }
       }
     }
   }

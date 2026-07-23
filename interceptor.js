@@ -120,7 +120,7 @@ const _logV2Coordinator = new LogV2WriteCoordinator({
 // belong to one ordered worker so proxy/app-server/OTel traffic cannot stall
 // the HTTP and terminal event loop. Tests that assert immediate on-disk state
 // retain the direct coordinator and exercise the queue separately.
-const _logV2WriteQueue = process.env.CXV_TEST !== '1'
+const _logV2WriteQueue = process.env.CXV_TEST !== '1' && process.env.CXV_SYNC_LOG_WRITES !== '1'
   ? new LogV2WriteQueue({
       rootDir: LOG_DIR,
       debug: !!process.env.CXV_DEBUG,
@@ -248,7 +248,7 @@ export function setupInterceptor() {
 
   // 启动 viewer 服务（优先根目录 server.js，fallback 到 lib/server.js）
   // Teammate 子进程跳过，避免端口冲突（leader 已启动 viewer）
-  if (!_isTeammate) {
+  if (!_isTeammate && process.env.CXV_CAPTURE_ONLY !== '1') {
     const rootServerPath = join(__dirname, 'server.js');
     const libServerPath = join(__dirname, 'lib', 'server.js');
     import(rootServerPath).then(module => {
@@ -273,17 +273,19 @@ export function setupInterceptor() {
     }
   };
 
-  process.on('SIGINT', () => {
-    cleanupViewer().finally(() => process.exit(0));
-  });
+  if (process.env.CXV_CAPTURE_ONLY !== '1') {
+    process.on('SIGINT', () => {
+      cleanupViewer().finally(() => process.exit(0));
+    });
 
-  process.on('SIGTERM', () => {
-    cleanupViewer().finally(() => process.exit(0));
-  });
+    process.on('SIGTERM', () => {
+      cleanupViewer().finally(() => process.exit(0));
+    });
 
-  process.on('beforeExit', () => {
-    cleanupViewer();
-  });
+    process.on('beforeExit', () => {
+      cleanupViewer();
+    });
+  }
 
   const _originalFetch = globalThis.fetch;
 

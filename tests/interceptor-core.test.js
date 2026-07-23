@@ -41,6 +41,26 @@ test('interceptor-core recognizes Codex Responses API main and sub-agent request
     classifyAgentRequest('https://chatgpt.com/backend-api/codex/responses', rootBody),
     { mainAgent: true, subAgent: false, subAgentName: null },
   );
+
+  const currentRootBody = {
+    ...rootBody,
+    instructions: 'You are Codex. You may delegate work to subagents.',
+    client_metadata: {
+      session_id: 'root-thread',
+      thread_id: 'root-thread',
+      'x-codex-turn-metadata': JSON.stringify({
+        session_id: 'root-thread',
+        thread_id: 'root-thread',
+        request_kind: 'turn',
+        thread_source: 'user',
+      }),
+    },
+  };
+  assert.equal(isSubAgentRequest(currentRootBody), false);
+  assert.deepEqual(
+    classifyAgentRequest('https://chatgpt.com/backend-api/codex/responses', currentRootBody),
+    { mainAgent: true, subAgent: false, subAgentName: null },
+  );
   assert.deepEqual(
     classifyAgentRequest('https://api.openai.com/v1/responses', rootBody),
     { mainAgent: false, subAgent: false, subAgentName: null },
@@ -74,6 +94,20 @@ test('interceptor-core recognizes Codex Responses API main and sub-agent request
     classifyAgentRequest('https://chatgpt.com/backend-api/codex/responses', subBody),
     { mainAgent: false, subAgent: true, subAgentName: 'researcher' },
   );
+
+  const currentSubBody = {
+    ...rootBody,
+    client_metadata: {
+      'x-codex-turn-metadata': JSON.stringify({
+        session_id: 'root-thread',
+        thread_id: 'child-thread',
+        parent_thread_id: 'root-thread',
+        request_kind: 'turn',
+        thread_source: 'subagent',
+      }),
+    },
+  };
+  assert.equal(isSubAgentRequest(currentSubBody), true);
 });
 
 test('interceptor-core limits Master classification to the direct Responses create endpoint', () => {

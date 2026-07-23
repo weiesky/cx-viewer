@@ -3,18 +3,24 @@
 // 阻止 server.js 自动启动（必须在任何导入之前设置）
 process.env.CXV_WORKSPACE_MODE = '1';
 
-import { readFileSync, writeFileSync, existsSync, realpathSync, unlinkSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, unlinkSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { spawn } from 'node:child_process';
 import { t } from './i18n.js';
-import { INJECT_IMPORT, resolveCliPath, resolveNativePath, resolveNpmCodexPath, buildShellCandidates } from './findcx.js';
+import { INJECT_IMPORT, resolveCliPath, resolveNativePath, resolveNpmCodexPath } from './findcx.js';
 import { appendCxvFinalConfigArgs, getDefaultModeRequestUserInputConfigArgs, normalizeCodexArgs, hasBypassPermissions, getReasoningSummaryConfigArgs, parseCodexInvocation } from './lib/cli-args.js';
 import { ensureHooks } from './lib/ensure-hooks.js';
 import { APPROVALS_REVIEWER_DEFAULT } from './lib/approval-reviewer.js';
 import { appendOtelTraceExporterConfigArgsOnce, getOtelTraceExporterConfigArgs, OTEL_TRACE_HEADERS_ENV, stripLegacyOtelConfigBlock, withOtelTraceAuthHeader } from './lib/otel-config.js';
 import { registerSignalShutdown } from './lib/shutdown.js';
+import {
+  LOGGER_INJECT_START,
+  injectLoggerBootstrapAt,
+  removeLoggerBootstrapAt,
+  resolveJavascriptLauncher,
+} from './lib/logger-install.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 let activeShutdownCleanup = async () => {};
@@ -97,9 +103,14 @@ codex() {
 ${SHELL_HOOK_END}`;
   }
 
-  const candidates = buildShellCandidates();
   return `${SHELL_HOOK_START}
 codex() {
+  # Avoid recursion if cxv invokes codex
+  if [ "$1" = "--cxv-internal" ]; then
+    shift
+    command codex "$@"
+    return
+  fi
   # Pass through certain commands directly without cxv interception
   case "$1" in
     ${passthroughCommands.join('|')})
@@ -111,17 +122,20 @@ codex() {
       return
       ;;
   esac
-  local cli_js=""
-  for candidate in ${candidates}; do
-    if [ -f "$candidate" ]; then
-      cli_js="$candidate"
-      break
-    fi
-  done
-  if [ -n "$cli_js" ] && ! grep -q "CX Viewer" "$cli_js" 2>/dev/null; then
-    cxv -logger 2>/dev/null
+  local codex_exe=""
+  codex_exe="$(whence -p codex 2>/dev/null || type -P codex 2>/dev/null || command -v codex 2>/dev/null)"
+  local codex_entry="$codex_exe"
+  if [ -n "$codex_entry" ]; then
+    codex_entry="$(realpath "$codex_entry" 2>/dev/null || readlink -f "$codex_entry" 2>/dev/null || printf '%s' "$codex_entry")"
   fi
-  command codex "$@"
+  if [ -z "$codex_entry" ] || ! grep -q ${JSON.stringify(LOGGER_INJECT_START)} "$codex_entry" 2>/dev/null; then
+    cxv -logger --self-heal >/dev/null 2>&1
+  fi
+  if [ -n "$codex_entry" ] && grep -q ${JSON.stringify(LOGGER_INJECT_START)} "$codex_entry" 2>/dev/null; then
+    command codex "$@"
+  else
+    cxv run -- codex --cxv-internal "$@"
+  fi
 }
 ${SHELL_HOOK_END}`;
 }
@@ -203,7 +217,6 @@ function removeCliJsInjection() {
 }
 
 async function runProxyCommand(args) {
-  // 直接模式：不启动 proxy，直接运行 codex
   try {
     // args = ['run', '--', 'command', 'codex', ...] or ['run', 'codex', ...]
     // Our hook uses: cxv run -- codex --cxv-internal "$@"
@@ -227,27 +240,34 @@ async function runProxyCommand(args) {
       cmdArgs.shift();
     }
 
-    const env = { ...process.env };
+    let loggerRuntime = null;
     // Determine the path to the native 'codex' executable
     if (cmd === 'codex') {
       const nativePath = resolveNativePath();
       if (nativePath) {
         cmd = nativePath;
       }
-      cmdArgs = [...getReasoningSummaryConfigArgs(), ...cmdArgs];
+      const { startLoggerCapture } = await import('./lib/logger-bootstrap.js');
+      loggerRuntime = await startLoggerCapture();
+      const loggerArgs = loggerRuntime.active ? loggerRuntime.codexArgs : [];
+      cmdArgs = [...loggerArgs, ...getReasoningSummaryConfigArgs(), ...cmdArgs];
     }
+    const env = { ...process.env };
     env.CXV_DIRECT_MODE = '1';
 
     const child = spawn(cmd, cmdArgs, { stdio: 'inherit', env });
     setActiveShutdownCleanup(() => {
       try { child.kill('SIGTERM'); } catch {}
+      loggerRuntime?.close();
     });
 
     child.on('exit', (code) => {
+      loggerRuntime?.close();
       process.exit(code);
     });
 
     child.on('error', (err) => {
+      loggerRuntime?.close();
       console.error('Failed to start command:', err);
       process.exit(1);
     });
@@ -782,6 +802,8 @@ if (args[0] === 'cleanup-terminal-history') {
 
 if (isUninstall) {
   const cliResult = removeCliJsInjection();
+  const npmLauncher = resolveNpmCodexPath();
+  const loggerResult = npmLauncher ? removeLoggerBootstrapAt(npmLauncher) : { status: 'clean' };
   const shellResult = removeShellHook();
 
   if (cliResult === 'removed' || cliResult === 'clean') {
@@ -790,6 +812,9 @@ if (isUninstall) {
     // Silent is better for mixed mode uninstall
   } else {
     console.log(t('cli.uninstall.cliFail'));
+  }
+  if (loggerResult.status === 'removed') {
+    console.log(`Removed CX Viewer logger bootstrap from ${loggerResult.path}`);
   }
 
   if (shellResult.status === 'removed') {
@@ -823,42 +848,13 @@ if (isLogger) {
   // 安装/修复 hook 逻辑（原来无参数 cxv 的行为）
   let mode = 'unknown';
 
-  let prefersNative = true;
-  const paths = (process.env.PATH || '').split(':');
-  for (const dir of paths) {
-    if (!dir) continue;
-    const exePath = resolve(dir, 'codex');
-    if (existsSync(exePath)) {
-      try {
-        const real = realpathSync(exePath);
-        if (real.includes('node_modules')) {
-          prefersNative = false;
-        } else {
-          prefersNative = true;
-        }
-        break;
-      } catch (e) {
-        // ignore
-      }
-    }
-  }
-
+  const npmCodexPath = resolveNpmCodexPath();
+  const npmLauncher = resolveJavascriptLauncher(npmCodexPath);
   const nativePath = resolveNativePath();
   const hasNpm = existsSync(cliPath);
-
-  if (prefersNative) {
-    if (nativePath) {
-      mode = 'native';
-    } else if (hasNpm) {
-      mode = 'npm';
-    }
-  } else {
-    if (hasNpm) {
-      mode = 'npm';
-    } else if (nativePath) {
-      mode = 'native';
-    }
-  }
+  if (npmLauncher) mode = 'npm-launcher';
+  else if (hasNpm) mode = 'npm';
+  else if (nativePath) mode = 'native';
 
   if (mode === 'unknown') {
     console.error(t('cli.inject.notFound', { path: cliPath }));
@@ -867,7 +863,24 @@ if (isLogger) {
     process.exit(1);
   }
 
-  if (mode === 'npm') {
+  if (mode === 'npm-launcher') {
+    try {
+      const bootstrapPath = resolve(__dirname, 'lib', 'logger-bootstrap.js');
+      const loggerResult = injectLoggerBootstrapAt(npmLauncher, bootstrapPath);
+      const shellResult = installShellHook(false);
+      if (loggerResult.status === 'exists' && shellResult.status === 'exists') {
+        console.log(t('cli.alreadyWorking'));
+      } else {
+        console.log(`[CX Viewer] Codex launcher logger: ${loggerResult.status} (${loggerResult.path})`);
+        if (shellResult.status === 'installed') console.log('All READY!');
+        else if (shellResult.status !== 'exists') console.log(t('cli.hook.fail', { error: shellResult.error }));
+      }
+      console.log(t('cli.usage.hint'));
+    } catch (err) {
+      console.error(`Failed to install Codex launcher logger: ${err.message}`);
+      process.exit(1);
+    }
+  } else if (mode === 'npm') {
     try {
       const cliResult = injectCliJs();
       const shellResult = installShellHook(false);
