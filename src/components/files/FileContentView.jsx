@@ -321,6 +321,7 @@ export default function FileContentView({
   getRestoreScrollSnapshot,
   onConsumeScrollSnapshot,
   onDirtyChange,
+  onFileMissing,
 }) {
   const [content, setContent] = useState(null);
   const [currentContent, setCurrentContent] = useState(null);
@@ -343,6 +344,8 @@ export default function FileContentView({
   const containerRef = useRef(null);
   const mounted = useRef(true);
   const saveTimeoutRef = useRef(null);
+  const onFileMissingRef = useRef(onFileMissing);
+  onFileMissingRef.current = onFileMissing;
   const saveRef = useRef(null);
   const lineNumRef = useRef(null);
   const editorViewRef = useRef(null);
@@ -632,6 +635,7 @@ export default function FileContentView({
     fetch(apiUrl(`/api/file-content?path=${encodeURIComponent(filePath)}${editorSession ? '&editorSession=true' : ''}`))
       .then((r) => {
         if (!r.ok) {
+          const status = r.status;
           return r
             .json()
             .then((err) => {
@@ -641,12 +645,15 @@ export default function FileContentView({
                 ? (i18n(`ui.fileLoadError.reason.${err.reason}`) || err.error)
                 : (err.error || 'Failed to load');
               const e = new Error(reasonMsg);
+              e.status = status;
               if (err.allowedRoots) e.allowedRoots = err.allowedRoots;
               throw e;
             })
             .catch((parsedErr) => {
               if (parsedErr && parsedErr.message) throw parsedErr;
-              throw new Error(`HTTP ${r.status}`);
+              const e = new Error(`HTTP ${status}`);
+              e.status = status;
+              throw e;
             });
         }
         return r.json();
@@ -675,6 +682,10 @@ export default function FileContentView({
       })
       .catch((err) => {
         if (mounted.current) {
+          if (err?.status === 404 && !editorSession && onFileMissingRef.current) {
+            onFileMissingRef.current(filePath);
+            return;
+          }
           setError(`${i18n('ui.fileLoadError')}: ${err.message}`);
           setLoading(false);
         }

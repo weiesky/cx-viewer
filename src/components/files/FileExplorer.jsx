@@ -550,6 +550,9 @@ export default function FileExplorer({ style, onClose, onFileClick, expandedPath
   const [internalContainerDragOver, setInternalContainerDragOver] = useState(false);
   const mounted = useRef(true);
   const containerRef = useRef(null);
+  const manualRefreshRef = useRef(onManualRefresh);
+  const lastAutoRefreshRef = useRef(Date.now());
+  manualRefreshRef.current = onManualRefresh;
 
   // 重新加载根目录
   const refreshRoot = useCallback(() => {
@@ -573,6 +576,25 @@ export default function FileExplorer({ style, onClose, onFileClick, expandedPath
       mounted.current = false;
     };
   }, []); // 空依赖数组，只在挂载时执行一次
+
+  // 项目可能在页面保持打开时被 git pull、安装器或外部编辑器更新。
+  // 页面重新可见时刷新整棵已展开的树，避免展示已经不存在的文件。
+  useEffect(() => {
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'hidden') return;
+      const now = Date.now();
+      if (now - lastAutoRefreshRef.current < 500) return;
+      lastAutoRefreshRef.current = now;
+      if (manualRefreshRef.current) manualRefreshRef.current();
+      else refreshRoot();
+    };
+    window.addEventListener('focus', refreshWhenVisible);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    return () => {
+      window.removeEventListener('focus', refreshWhenVisible);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
+  }, [refreshRoot]);
 
   // 工具触发的增量刷新
   useEffect(() => {

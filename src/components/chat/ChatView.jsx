@@ -3668,6 +3668,15 @@ class ChatView extends React.Component {
                     getRestoreScrollSnapshot={this.getFileScrollSnapshot}
                     onConsumeScrollSnapshot={this.handleConsumeFileScroll}
                     onDirtyChange={this.handleFileDirtyChange}
+                    onFileMissing={(missingPath) => {
+                      this.setState(prev => ({
+                        currentFile: prev.currentFile === missingPath ? null : prev.currentFile,
+                        fileVersion: prev.currentFile === missingPath ? 0 : prev.fileVersion,
+                        scrollToLine: prev.currentFile === missingPath ? null : prev.scrollToLine,
+                        scrollToMatch: prev.currentFile === missingPath ? null : prev.scrollToMatch,
+                        fileExplorerRefresh: prev.fileExplorerRefresh + 1,
+                      }));
+                    }}
                     onClose={() => {
                       if (this.state.editorSessionId) {
                         fetch(apiUrl('/api/editor-done'), {
