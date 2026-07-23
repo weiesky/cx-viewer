@@ -383,11 +383,13 @@ export function startProxy({ onResponseModel = null } = {}) {
         // upstream forwarding failure and the downstream is no longer writable.
         if (isDownstreamClosed(req, res)) return;
 
-        // Surface the real reason: log it and include it in the 502 body so it
-        // shows up directly in Codex's error message (aids diagnosis without
-        // needing CXV_DEBUG). Only the upstream host is revealed, not credentials.
+        // Include the real reason in the 502 body so it shows up directly in
+        // Codex's error message. Keep the terminal quiet unless debug logging is
+        // explicitly enabled. Only the upstream host is revealed, not credentials.
         const diagnostic = formatProxyRequestError(err);
-        console.error(`${diagnostic} Upstream: ${fullUrl}`);
+        if (process.env.CXV_DEBUG) {
+          console.error(`${diagnostic} Upstream: ${fullUrl}`);
+        }
         res.statusCode = 502;
         res.end(`Proxy Error: ${diagnostic} (upstream: ${fullUrl})`);
       } finally {
