@@ -1,5 +1,5 @@
 import React from 'react';
-import { ConfigProvider, Layout, theme, Modal, Button, Spin, Alert, message, Tooltip } from 'antd';
+import { ConfigProvider, Layout, theme, Modal, Button, Spin, Alert, message, Tooltip, Select } from 'antd';
 import { UploadOutlined, DeleteOutlined } from '@ant-design/icons';
 import AppBase, { styles } from './AppBase';
 import { isMobile, isElectron, setViewMode } from './env';
@@ -521,6 +521,15 @@ class App extends AppBase {
           styles={{ body: { overflow: 'hidden' }, mask: BLUR_MASK_STYLE }}
         >
           <div className={styles.modalActions}>
+            <span>{t('ui.projectAlias.projectLabel')}</span>
+            <Select
+              size="small"
+              className={styles.logProjectSelect}
+              aria-label={t('ui.projectAlias.projectLabel')}
+              value={this.state.currentProject || undefined}
+              options={Object.keys(this.state.localLogs).sort().map(project => ({ value: project, label: project }))}
+              onChange={this.handleLogProjectChange}
+            />
             <Button size="small" icon={<UploadOutlined />} onClick={this.handleLoadLocalLogArchive}>
               {t('ui.loadLocalLogArchive')}
             </Button>

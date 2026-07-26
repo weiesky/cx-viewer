@@ -245,7 +245,57 @@ export function stopProxy() {
   _proxyOwnPort = null;
 }
 
-export function startProxy({ onResponseModel = null } = {}) {
+export function readProxyRequestBody(req, maxBytes = 64 * 1024 * 1024) {
+  const declaredLength = Number(req.headers?.['content-length']);
+  if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
+    const error = new Error(`request body exceeds ${maxBytes} bytes`);
+    error.code = 'CXV_REQUEST_TOO_LARGE';
+    return Promise.reject(error);
+  }
+  return new Promise((resolveBody, rejectBody) => {
+    const chunks = [];
+    let size = 0;
+    let settled = false;
+    const reject = error => {
+      if (settled) return;
+      settled = true;
+      rejectBody(error);
+    };
+    req.on('data', chunk => {
+      if (settled) return;
+      size += chunk.length;
+      if (size > maxBytes) {
+        const error = new Error(`request body exceeds ${maxBytes} bytes`);
+        error.code = 'CXV_REQUEST_TOO_LARGE';
+        reject(error);
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.once('end', () => {
+      if (settled) return;
+      settled = true;
+      resolveBody(Buffer.concat(chunks, size));
+    });
+    req.once('aborted', () => reject(new Error('request aborted')));
+    req.once('error', reject);
+    req.resume();
+  });
+}
+
+function safeUpstreamLabel(value) {
+  try {
+    const url = new URL(value);
+    return `${url.protocol}//${url.host}${url.pathname}`;
+  } catch {
+    return '(invalid upstream URL)';
+  }
+}
+
+export function startProxy({ onResponseModel = null, port = 0, health = null, readiness = null, maxRequestBodyBytes = 64 * 1024 * 1024 } = {}) {
+  if (!Number.isSafeInteger(port) || port < 0 || port > 65535) {
+    throw new TypeError('proxy port must be an integer between 0 and 65535');
+  }
   // The capture proxy performs the real upstream fetch itself. Configure
   // undici here so that HTTPS_PROXY/HTTP_PROXY/ALL_PROXY from the user's
   // environment also applies to this hop, not only to the Codex child.
@@ -260,6 +310,43 @@ export function startProxy({ onResponseModel = null } = {}) {
       let reqPath = req.url;
       if (/^https?:\/\//i.test(reqPath)) {
         try { const u = new URL(reqPath); reqPath = u.pathname + u.search; } catch { }
+      }
+      if (health && req.method === 'GET' && reqPath === '/__cxv/health') {
+        const healthToken = typeof health?.token === 'string' ? health.token : null;
+        if (healthToken && req.headers['x-cxv-health-token'] !== healthToken) {
+          res.writeHead(404, { 'cache-control': 'no-store' });
+          res.end();
+          return;
+        }
+        const healthBody = health?.body && typeof health.body === 'object' ? health.body : health;
+        res.writeHead(200, {
+          'content-type': 'application/json; charset=utf-8',
+          'cache-control': 'no-store',
+        });
+        res.end(JSON.stringify(healthBody));
+        return;
+      }
+      if (readiness && req.method === 'GET' && reqPath === '/__cxv/ready') {
+        const readinessToken = typeof readiness?.token === 'string' ? readiness.token : null;
+        if (readinessToken && req.headers['x-cxv-health-token'] !== readinessToken) {
+          res.writeHead(404, { 'cache-control': 'no-store' });
+          res.end();
+          return;
+        }
+        try {
+          const response = await fetch(readiness.url, {
+            method: 'GET',
+            headers: { accept: 'application/json' },
+            signal: AbortSignal.timeout(readiness.timeoutMs || 5000),
+          });
+          await response.body?.cancel().catch(() => {});
+          res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+          res.end(JSON.stringify({ ready: true, upstreamStatus: response.status }));
+        } catch (error) {
+          res.writeHead(503, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+          res.end(JSON.stringify({ ready: false, error: formatProxyRequestError(error) }));
+        }
+        return;
       }
       const { fullUrl, originalBaseUrl, authMode } = resolveUpstream(reqPath, req.headers);
       if (process.env.CXV_DEBUG) console.error(`[CX-Proxy] ${req.method} ${reqPath} [${authMode}] → ${fullUrl}`);
@@ -295,11 +382,7 @@ export function startProxy({ onResponseModel = null } = {}) {
         // decompression disagreeing, corrupting the SSE stream; identity avoids it.
         headers['accept-encoding'] = 'identity';
 
-        const buffers = [];
-        for await (const chunk of req) {
-          buffers.push(chunk);
-        }
-        const body = Buffer.concat(buffers);
+        const body = await readProxyRequestBody(req, maxRequestBodyBytes);
 
         const fetchOptions = {
           method: req.method,
@@ -383,20 +466,29 @@ export function startProxy({ onResponseModel = null } = {}) {
         // upstream forwarding failure and the downstream is no longer writable.
         if (isDownstreamClosed(req, res)) return;
 
+        if (err?.code === 'CXV_REQUEST_TOO_LARGE') {
+          res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8', 'connection': 'close' });
+          res.end('Request body too large');
+          return;
+        }
+
         // Include the real reason in the 502 body so it shows up directly in
         // Codex's error message. Keep the terminal quiet unless debug logging is
         // explicitly enabled. Only the upstream host is revealed, not credentials.
         const diagnostic = formatProxyRequestError(err);
         if (process.env.CXV_DEBUG) {
-          console.error(`${diagnostic} Upstream: ${fullUrl}`);
+          console.error(`${diagnostic} Upstream: ${safeUpstreamLabel(fullUrl)}`);
         }
         res.statusCode = 502;
-        res.end(`Proxy Error: ${diagnostic} (upstream: ${fullUrl})`);
+        res.setHeader('x-cxv-proxy-error', '1');
+        res.end(`Proxy Error: ${diagnostic} (upstream: ${safeUpstreamLabel(fullUrl)})`);
       } finally {
         req.off('aborted', abortUpstream);
         res.off('close', abortUpstream);
       }
     });
+    server.headersTimeout = 30000;
+    server.requestTimeout = 120000;
 
     // ─── WebSocket upgrade handling: REFUSE to force HTTP/SSE fallback ───
     // Codex's built-in openai provider prefers a Responses-over-WebSocket
@@ -418,20 +510,21 @@ export function startProxy({ onResponseModel = null } = {}) {
     // Store server reference for stopProxy()
     _proxyServer = server;
 
-    // Start on random port
-    server.listen(0, '127.0.0.1', () => {
+    // Logger bootstrap callers use an ephemeral port. The desktop App logger
+    // passes a stable loopback port because config.toml must survive restarts.
+    server.listen(port, '127.0.0.1', () => {
       const address = server.address();
       _proxyOwnPort = address.port;
       resolve(address.port);
     });
 
     server.on('error', (err) => {
-      _proxyServer = null;
+      if (_proxyServer === server) _proxyServer = null;
       reject(err);
     });
 
     server.on('close', () => {
-      _proxyServer = null;
+      if (_proxyServer === server) _proxyServer = null;
     });
   }));
 }

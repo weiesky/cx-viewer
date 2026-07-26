@@ -11,7 +11,7 @@ import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, basename, resolve } from 'node:path';
 import { LOG_DIR } from './findcx.js';
-import { assembleOpenAiResponseMessage, assembleStreamMessage, classifyAgentRequest, isOpenAiApiPath, parseRequestBodyForLog } from './lib/interceptor-core.js';
+import { assembleOpenAiResponseMessage, assembleStreamMessage, classifyAgentRequest, inferCodexWorkspaceCwd, isOpenAiApiPath, parseRequestBodyForLog } from './lib/interceptor-core.js';
 import { resolveLogV2Config } from './lib/log-v2/config.js';
 import { LogV2WriteCoordinator } from './lib/log-v2/coordinator.js';
 import { loadLogV2RuntimeConfig } from './lib/log-v2/runtime-config.js';
@@ -169,6 +169,8 @@ export function appendLogEntry(entry, context = {}) {
   }
   const cwd = resolve(context?.cwd
     || entry.body?.metadata?.cwd
+    || entry.body?.client_metadata?.cwd
+    || inferCodexWorkspaceCwd(entry.body)
     || entry.body?._cwd
     || _projectPath
     || process.env.CXV_PROJECT_DIR

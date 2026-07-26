@@ -6,6 +6,7 @@ import {
   assembleOpenAiResponseMessage,
   classifyAgentRequest,
   getInstructionsText,
+  inferCodexWorkspaceCwd,
   isCodexResponsesRequest,
   isChatGptCodexResponsesUrl,
   isMainAgentRequest,
@@ -14,6 +15,22 @@ import {
   parseRequestBodyForLog,
   isSubAgentRequest,
 } from '../lib/interceptor-core.js';
+
+test('interceptor-core maps a single native Codex workspace to cwd', () => {
+  const body = {
+    client_metadata: {
+      'x-codex-turn-metadata': JSON.stringify({
+        workspace_kind: 'project',
+        workspaces: { '/Users/test/example-project': { has_changes: true } },
+      }),
+    },
+  };
+  assert.equal(inferCodexWorkspaceCwd(body), '/Users/test/example-project');
+  assert.equal(inferCodexWorkspaceCwd({ client_metadata: {
+    'x-codex-turn-metadata': JSON.stringify({ workspaces: { '/one': {}, '/two': {} } }),
+  } }), null);
+  assert.equal(inferCodexWorkspaceCwd({ client_metadata: { 'x-codex-turn-metadata': '{bad' } }), null);
+});
 
 test('interceptor-core recognizes Codex Responses API main and sub-agent requests', () => {
   const rootBody = {

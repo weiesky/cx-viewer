@@ -580,6 +580,46 @@ test('interceptor writes only V2 in a fresh process', () => {
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
+test('desktop Codex metadata maps the archive workspace and turn', () => {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-desktop-workspace-'));
+  const fallbackCwd = join(root, 'fallback');
+  const workspace = join(root, 'actual-workspace');
+  const logs = join(root, 'logs');
+  try {
+    mkdirSync(fallbackCwd, { recursive: true });
+    mkdirSync(workspace, { recursive: true });
+    const interceptorUrl = pathToFileURL(fileURLToPath(new URL('../interceptor.js', import.meta.url))).href;
+    const source = `
+      const mod = await import(${JSON.stringify(interceptorUrl)});
+      const result = mod.appendLogEntry({
+        timestamp: '2026-07-26T08:00:00.000Z', url: 'https://chatgpt.com/backend-api/codex/responses',
+        method: 'POST', mainAgent: true,
+        body: { input: [], client_metadata: {
+          thread_id: 'desktop-thread', turn_id: 'desktop-turn',
+          'x-codex-turn-metadata': JSON.stringify({ workspace_kind: 'project', workspaces: { ${JSON.stringify(workspace)}: { has_changes: true } } }),
+        } },
+        response: { status: 200, headers: {}, body: { output: [] } },
+      });
+      console.log(JSON.stringify(result));
+      process.exit(0);
+    `;
+    const child = spawnSync(process.execPath, ['--input-type=module', '-e', source], {
+      cwd: fallbackCwd,
+      env: { ...process.env, CXV_TEST: '1', CXV_WORKSPACE_MODE: '1', CXV_LOG_DIR: logs, CXV_LOG_V2_MIN_FREE_BYTES: '0', CXV_LOG_V2_MIN_FREE_PERCENT: '0' },
+      encoding: 'utf8',
+    });
+    assert.equal(child.status, 0, child.stderr);
+    const output = JSON.parse(child.stdout.trim().split('\n').at(-1));
+    const projectManifestRelative = readdirSync(logs, { recursive: true })
+      .map(String)
+      .find(path => path.endsWith('project.json'));
+    const manifest = JSON.parse(readFileSync(join(logs, projectManifestRelative), 'utf8'));
+    const timeline = JSON.parse(readFileSync(join(output.sessionDir, 'timeline.jsonl'), 'utf8').trim());
+    assert.equal(manifest.canonicalCwd, workspace);
+    assert.equal(timeline.turnId, 'desktop-turn');
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
 test('interceptor skips startup-only background entries before creating a V2 archive', () => {
   const root = mkdtempSync(join(tmpdir(), 'cxv-v2-background-only-'));
   const project = join(root, 'project');

@@ -76,7 +76,7 @@ Even better — you can even code from your mobile device!
 
 ### Logger Mode
 
-⚠️ If you still prefer using the native codex tool or VS Code extension, use this mode.
+⚠️ If you still prefer using the ChatGPT/Codex desktop app, native codex tool, or VS Code extension, use this mode.
 
 In this mode, launching `codex` or `codex --dangerously-skip-permissions` automatically records requests in `~/.codex/cx-viewer/<encoded-project-id>/YYYYMMDD_<encoded-session-id>.cxvsession/`.
 
@@ -89,9 +89,12 @@ When the console cannot print the specific port, the default first port is 127.0
 
 This command automatically detects how Codex is installed locally (NPM or Native Install) and adapts accordingly.
 
+- **ChatGPT/Codex App on macOS**: Installs a launchd-managed loopback capture proxy and a reversible managed block in `~/.codex/config.toml`. Restart the desktop app after enabling or uninstalling logger mode.
 - **NPM version Codex**: Automatically injects an interceptor script into Codex's `cli.js`.
 - **Native version Codex**: Automatically detects the `codex` binary, configures a local transparent proxy, and sets up a Zsh Shell Hook to forward traffic automatically.
 - NPM-installed Codex is the recommended approach for this project.
+
+The desktop integration starts and health-checks the local proxy before changing `config.toml`. It preserves an existing non-local `openai_base_url` as the upstream and restores that exact line on uninstall. If `openai_base_url` already points to another loopback proxy, installation stops instead of replacing it.
 
 Uninstall logger mode:
 ```bash

@@ -2,6 +2,25 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { buildRequestSummary, validateRequestSummary } from '../lib/log-v2/request-summary.js';
+import { deriveTurnId } from '../lib/log-v2/entry-codec.js';
+
+test('native Codex client_metadata supplies turn identity and safe summary hints', () => {
+  const entry = {
+    body: {
+      client_metadata: {
+        turn_id: 'turn-native',
+        thread_id: 'thread-native',
+        'x-codex-turn-metadata': '{"workspaces":{"/secret":{}}}',
+      },
+    },
+  };
+  assert.equal(deriveTurnId(entry), 'turn-native');
+  assert.deepEqual(buildRequestSummary(entry).body.metadata, {
+    thread_id: 'thread-native',
+    turn_id: 'turn-native',
+  });
+  assert.equal(JSON.stringify(buildRequestSummary(entry)).includes('/secret'), false);
+});
 
 test('request summary keeps list fields without retaining large request and response bodies', () => {
   const entry = {

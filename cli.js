@@ -801,10 +801,19 @@ if (args[0] === 'cleanup-terminal-history') {
 }
 
 if (isUninstall) {
+  let uninstallFailed = false;
   const cliResult = removeCliJsInjection();
   const npmLauncher = resolveNpmCodexPath();
   const loggerResult = npmLauncher ? removeLoggerBootstrapAt(npmLauncher) : { status: 'clean' };
   const shellResult = removeShellHook();
+  let appLoggerResult = null;
+  try {
+    const { uninstallCodexAppLogger } = await import('./lib/codex-app-logger.js');
+    appLoggerResult = await uninstallCodexAppLogger();
+  } catch (error) {
+    appLoggerResult = { status: 'error', error: error.message };
+    uninstallFailed = true;
+  }
 
   if (cliResult === 'removed' || cliResult === 'clean') {
     console.log(t('cli.uninstall.cliCleaned'));
@@ -815,6 +824,11 @@ if (isUninstall) {
   }
   if (loggerResult.status === 'removed') {
     console.log(`Removed CX Viewer logger bootstrap from ${loggerResult.path}`);
+  }
+  if (appLoggerResult?.status === 'removed') {
+    console.log('Removed ChatGPT/Codex App logger service and restored config.toml.');
+  } else if (appLoggerResult?.status === 'error') {
+    console.warn(`Failed to remove ChatGPT/Codex App logger: ${appLoggerResult.error}`);
   }
 
   if (shellResult.status === 'removed') {
@@ -840,8 +854,8 @@ if (isUninstall) {
   } catch { }
 
   console.log(t('cli.uninstall.reloadShell'));
-  console.log(t('cli.uninstall.done'));
-  process.exit(0);
+  if (!uninstallFailed) console.log(t('cli.uninstall.done'));
+  process.exit(uninstallFailed ? 1 : 0);
 }
 
 if (isLogger) {
@@ -852,9 +866,17 @@ if (isLogger) {
   const npmLauncher = resolveJavascriptLauncher(npmCodexPath);
   const nativePath = resolveNativePath();
   const hasNpm = existsSync(cliPath);
+  let hasCodexApp = false;
+  if (process.platform === 'darwin') {
+    try {
+      const { findInstalledCodexApp } = await import('./lib/codex-app-logger.js');
+      hasCodexApp = Boolean(findInstalledCodexApp());
+    } catch {}
+  }
   if (npmLauncher) mode = 'npm-launcher';
   else if (hasNpm) mode = 'npm';
   else if (nativePath) mode = 'native';
+  else if (hasCodexApp) mode = 'app-only';
 
   if (mode === 'unknown') {
     console.error(t('cli.inject.notFound', { path: cliPath }));
@@ -910,7 +932,7 @@ if (isLogger) {
       }
       process.exit(1);
     }
-  } else {
+  } else if (mode === 'native') {
     // Native Mode
     try {
       console.log('Detected Codex Code Native Install.');
@@ -929,7 +951,26 @@ if (isLogger) {
       process.exit(1);
     }
   }
-  process.exit(0);
+  let appLoggerFailed = false;
+  // The shell hook invokes --self-heal on ordinary CLI launches. launchd owns
+  // desktop logger recovery, so avoid rewriting its state on every shell run.
+  if (!args.includes('--self-heal')) {
+    try {
+      const { installCodexAppLogger } = await import('./lib/codex-app-logger.js');
+      const result = await installCodexAppLogger();
+      if (result.status === 'installed' || result.status === 'updated' || result.status === 'exists') {
+        console.log(`[CX Viewer] ChatGPT/Codex App logger: ${result.status} (${result.proxyUrl})`);
+        console.log('[CX Viewer] Restart ChatGPT/Codex App to apply logger mode.');
+      }
+    } catch (error) {
+      appLoggerFailed = true;
+      console.error(`Failed to install ChatGPT/Codex App logger: ${error.message}`);
+      if (error.code === 'CXV_CODEX_APP_LOGGER_LOCAL_PROXY_CONFLICT') {
+        console.error('Remove or change the existing local openai_base_url, then run cxv -logger again.');
+      }
+    }
+  }
+  process.exit(appLoggerFailed ? 1 : 0);
 }
 
 const imArgIndex = args.indexOf('--im');

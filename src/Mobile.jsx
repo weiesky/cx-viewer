@@ -843,6 +843,14 @@ class Mobile extends AppBase {
               </button>
             </div>
             <div className={styles.mobileLogMgmtActions}>
+              <Select
+                size="small"
+                aria-label={t('ui.projectAlias.projectLabel')}
+                value={this.state.currentProject || undefined}
+                options={Object.keys(this.state.localLogs).sort().map(project => ({ value: project, label: project }))}
+                onChange={this.handleLogProjectChange}
+                style={{ flex: 1, minWidth: 0 }}
+              />
               <Button
                 size="small"
                 icon={<DeleteOutlined />}

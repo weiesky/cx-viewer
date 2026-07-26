@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { resolveProxyConfig } from '../lib/proxy-env.js';
+import { getSystemCaCachePath, resolveProxyConfig } from '../lib/proxy-env.js';
 import { formatProxyRequestError } from '../lib/proxy-errors.js';
 
 test('proxy configuration supports uppercase variables and ALL_PROXY fallback', () => {
@@ -14,6 +14,11 @@ test('proxy configuration supports uppercase variables and ALL_PROXY fallback', 
     httpsProxy: 'http://fallback-proxy.example:8080',
     noProxy: 'localhost,127.0.0.1',
   });
+});
+
+test('system CA cache is private to the Codex user directory', () => {
+  assert.equal(getSystemCaCachePath({ CXV_PROXY_CA_DIR: '/private/user-cache' }), '/private/user-cache/system-ca.pem');
+  assert.notEqual(getSystemCaCachePath({}), '/tmp/cxv-system-ca.pem');
 });
 
 test('proxy request diagnostics include the underlying fetch cause', () => {

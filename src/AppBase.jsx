@@ -31,6 +31,7 @@ import { buildLegacyRequestViewModels } from './utils/requestViewModels';
 import { fetchLogV2Page, fetchLogV2Snapshot } from './utils/logV2Transport';
 import { loadV2CachedSnapshot, reconcileV2CachedSnapshot, saveV2CachedSnapshot } from './utils/logV2Cache';
 import { isV2ConversationCandidate, LogV2Archive } from './utils/logV2Archive';
+import { chooseLogProject } from './utils/logProjectSelection';
 import { LOG_V2_WIRE_KINDS, LOG_V2_WIRE_LIMITS, LOG_V2_WIRE_VERSION } from '../lib/log-v2/wire-schema';
 import styles from './App.module.css';
 
@@ -2476,21 +2477,31 @@ class AppBase extends React.Component {
 
   // ─── 日志管理 ──────────────────────────────────────────
 
-  handleImportLocalLogs = () => {
+  loadLocalLogs = ({ preserveProject = false } = {}) => {
     this.setState({ importModalVisible: true, localLogsLoading: true });
     fetch(apiUrl('/api/local-logs'))
       .then(res => res.json())
       .then(data => {
         const { _currentProject, ...logs } = data;
-        this.setState({ localLogs: logs, currentProject: _currentProject || '', localLogsLoading: false });
+        this.setState(prev => ({
+          localLogs: logs,
+          currentProject: chooseLogProject(logs, prev.currentProject, _currentProject, preserveProject),
+          localLogsLoading: false,
+        }));
       })
       .catch(() => {
         this.setState({ localLogs: {}, localLogsLoading: false });
       });
   };
 
+  handleImportLocalLogs = () => this.loadLocalLogs();
+
   handleCloseImportModal = () => {
     this.setState({ importModalVisible: false, selectedLogs: new Set() });
+  };
+
+  handleLogProjectChange = (currentProject) => {
+    this.setState({ currentProject, selectedLogs: new Set() });
   };
 
   renderLogTable(logs, mobile) {
@@ -2540,7 +2551,7 @@ class AppBase extends React.Component {
               if (deleted > 0) message.success(t('ui.deleteSuccess', { count: deleted }));
               if (failed > 0) message.error(t('ui.deleteFailed', { count: failed }));
               this.setState({ selectedLogs: new Set() });
-              this.handleImportLocalLogs();
+              this.loadLocalLogs({ preserveProject: true });
             }
           })
           .catch(() => message.error('Delete failed'));
