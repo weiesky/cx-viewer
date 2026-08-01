@@ -139,7 +139,7 @@ Uninstall: `cxv --uninstall` or manually delete content between the markers.
 
 ## 8. Proxy Configuration (Proxy Profile)
 
-Stored in `<log_dir>/profile.json`, managed via the "Proxy Switch" panel in the UI.
+Stored in `~/.codex/cx-viewer/profile.json`, managed via the "Proxy Switch" panel in the UI.
 
 ```json
 {
@@ -158,8 +158,8 @@ Stored in `<log_dir>/profile.json`, managed via the "Proxy Switch" panel in the 
 | `name` | Display name |
 | `baseURL` | Proxy API address (replaces request origin) |
 | `apiKey` | Proxy API key (replaces auth headers) |
-| `models` | Available model list |
 | `activeModel` | Currently selected model |
+| `effort` | Optional OpenAI Responses `reasoning.effort` override |
 
 ## 9. Plugin System
 

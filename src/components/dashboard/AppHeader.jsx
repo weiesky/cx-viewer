@@ -1788,6 +1788,7 @@ class AppHeader extends React.Component {
           onClose={() => this.setState({ proxyModalVisible: false })}
           proxyProfiles={this.props.proxyProfiles}
           activeProxyId={this.props.activeProxyId}
+          proxyProfilesLoadError={this.props.proxyProfilesLoadError}
           defaultConfig={this.props.defaultConfig}
           onProxyProfileChange={this.props.onProxyProfileChange}
         />

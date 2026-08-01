@@ -1,6 +1,7 @@
 import { isSkillText, isMainAgent } from './contentFilter.js';
 import { getInstructionsText, getResponseInputItems, getResponseInstructions, getResponseTools, textFromContent } from '../../lib/openai-body.js';
 import { getInputCacheUsage } from '../../lib/token-usage.js';
+import { projectVisibleRequests } from '../../lib/request-visibility.js';
 import modelCodexUrl from '../img/model-codex.svg';
 import modelOpenaiUrl from '../img/model-openai.svg';
 import modelGeminiUrl from '../img/model-gemini.svg';
@@ -367,7 +368,7 @@ export function isRelevantRequest(request) {
     /\/api\/eval\/sdk-/.test(url) ||
     /\/messages\/count_tokens/.test(url) ||
     request.inProgress === true ||  // 过滤在途请求
-    (request.response && request.response.status === 0) ||  // 兼容历史日志：过滤状态为0的请求
+    (request.response && request.response.status === 0 && !request.response.error) ||  // 仅过滤无明确错误的历史 status-0 噪声
     (request.body?.max_tokens === 1 && !getResponseInstructions(request.body) && getResponseTools(request.body).length === 0)  // 配额检查请求（单 input "quota"，max_tokens=1）
   );
 }
@@ -384,7 +385,7 @@ export function filterRelevantRequests(requests) {
  * selectedIndex indexes. Every selectedIndex-coupled call site must use this helper.
  */
 export function visibleRequests(requests, showAll) {
-  return showAll ? requests : filterRelevantRequests(requests);
+  return projectVisibleRequests(requests, showAll, isRelevantRequest);
 }
 
 /**

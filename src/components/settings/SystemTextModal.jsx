@@ -6,14 +6,12 @@ import { renderMarkdown } from '../../utils/markdown';
 import ModelPromptTabs from './ModelPromptTabs';
 import styles from './SystemTextModal.module.css';
 
-// 「系统提示词修改」模态（偏好设置 → 专家设置）。self-contained：打开时自取、保存时自存。
+// Codex 指令模态（偏好设置 → 专家设置）。只在受支持的 App Server
+// bridge 上保存，并在下一次 thread/start 使用原生 base/developer instructions。
 // 页签化：
-//   - Default 页签 = 原有行为：写当前工作区 CODEX_SYSTEM.md(覆盖)/CODEX_APPEND_SYSTEM.md(追加)，
-//     两模式互斥、存空即禁用；
-//   - 模型页签 = 按模型定制条目(全局 <LOG_DIR>/system_prompt/ 或工作区 <ws>/system_prompt/)，
-//     启动时按「上次启动所用模型 id」大小写不敏感子串匹配，命中即整体取代 Default；
+//   - Default 页签 = 当前工作区的默认条目；
+//   - 模型页签 = CX Viewer 受管目录中的全局/工作区定制条目；
 //   - 每页签独立草稿(text+mode)，OK 一次保存全部脏页签；模型页签存空 = 删除条目。
-// 均由 cxv 在下次启动 codex 时注入为 --system-prompt-file / --append-system-prompt-file。
 
 const MODEL_NAME_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/; // 与 server/lib/model-system-prompts.js 严格一致
 
@@ -27,6 +25,8 @@ export default function SystemTextModal({ open, onClose }) {
   const [dir, setDir] = useState(null);
   const [active, setActive] = useState(true);
   const [globalDir, setGlobalDir] = useState(null);
+  const [workspaceDir, setWorkspaceDir] = useState(null);
+  const [capability, setCapability] = useState({ status: 'unknown', append: false, override: false });
   const [entries, setEntries] = useState([]);      // [{ name, scope }] 页签顺序
   const [snapshots, setSnapshots] = useState({});  // { key: {text, mode} } 服务端真值
   const [drafts, setDrafts] = useState({});        // { key: {text, mode} } 编辑草稿
@@ -51,9 +51,14 @@ export default function SystemTextModal({ open, onClose }) {
       const list = [];
       if (sysR.status === 'fulfilled' && sysR.value && !sysR.value.error) {
         const d = sysR.value;
-        snaps.default = { text: d.text || '', mode: d.mode === 'override' ? 'override' : 'append' };
+        snaps.default = {
+          text: d.text || '',
+          mode: d.mode === 'override' ? 'override' : 'append',
+          revision: d.revision || '0',
+        };
         setDir(d.dir || null);
         setActive(!!d.active);
+        setCapability(d.capability || { status: 'unknown', append: false, override: false });
         pers.default = true;
       } else {
         // Default 状态未知：禁用其编辑，避免盲目覆盖。
@@ -65,11 +70,17 @@ export default function SystemTextModal({ open, onClose }) {
       if (mpR.status === 'fulfilled' && mpR.value && !mpR.value.error) {
         const d = mpR.value;
         setGlobalDir(d.globalDir || null);
+        setWorkspaceDir(d.workspaceDir || null);
+        if (d.capability) setCapability(d.capability);
         for (const scope of ['global', 'workspace']) {
           for (const e of (d[scope] || [])) {
             const key = tabKeyOf(scope, e.name);
             list.push({ name: e.name, scope });
-            snaps[key] = { text: e.text || '', mode: e.mode === 'override' ? 'override' : 'append' };
+            snaps[key] = {
+              text: e.text || '',
+              mode: e.mode === 'override' ? 'override' : 'append',
+              revision: e.revision || '0',
+            };
             pers[key] = true;
           }
         }
@@ -101,7 +112,8 @@ export default function SystemTextModal({ open, onClose }) {
   const allKeys = ['default', ...entries.map((e) => tabKeyOf(e.scope, e.name))];
   const dirtyKeys = allKeys.filter(isDirty);
   // 某页签是否可编辑：全局作用域随时可编；Default 与工作区作用域需有活动工作区。
-  const editable = (key) => (key === 'default' || key.startsWith('workspace:') ? active : true);
+  const editable = (key) => capability.status === 'supported'
+    && (key === 'default' || key.startsWith('workspace:') ? active : true);
   const saveableDirty = dirtyKeys.filter(editable);
 
   const setDraft = (patch) => {
@@ -124,8 +136,8 @@ export default function SystemTextModal({ open, onClose }) {
     if (scope === 'workspace' && !active) return t('ui.expert.systemText.noWorkspace');
     const key = tabKeyOf(scope, canonical);
     setEntries((prev) => [...prev, { name: canonical, scope }]);
-    setSnapshots((prev) => ({ ...prev, [key]: { ...EMPTY_DRAFT } }));
-    setDrafts((prev) => ({ ...prev, [key]: { ...EMPTY_DRAFT } }));
+    setSnapshots((prev) => ({ ...prev, [key]: { ...EMPTY_DRAFT, revision: '0' } }));
+    setDrafts((prev) => ({ ...prev, [key]: { ...EMPTY_DRAFT, revision: '0' } }));
     setActiveKey(key);
     setPreview(false);
     setTimeout(() => textareaRef.current?.focus?.(), 0); // 新页签即刻可输入(添加后的编辑入口)
@@ -147,7 +159,13 @@ export default function SystemTextModal({ open, onClose }) {
     fetch(apiUrl('/api/expert/model-prompts'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ scope, name, text: '' }),
+      body: JSON.stringify({
+        scope,
+        name,
+        text: '',
+        mode: drafts[key]?.mode || 'append',
+        revision: snapshots[key]?.revision || '0',
+      }),
     })
       .then((r) => r.json())
       .then((d) => {
@@ -165,8 +183,14 @@ export default function SystemTextModal({ open, onClose }) {
       .map((key) => {
         const d = drafts[key] || EMPTY_DRAFT;
         const body = key === 'default'
-          ? { mode: d.mode, text: d.text }
-          : { scope: key.slice(0, key.indexOf(':')), name: key.slice(key.indexOf(':') + 1), mode: d.mode, text: d.text };
+          ? { mode: d.mode, text: d.text, revision: snapshots[key]?.revision || '0' }
+          : {
+              scope: key.slice(0, key.indexOf(':')),
+              name: key.slice(key.indexOf(':') + 1),
+              mode: d.mode,
+              text: d.text,
+              revision: snapshots[key]?.revision || '0',
+            };
         const url = key === 'default' ? '/api/expert/system-text' : '/api/expert/model-prompts';
         return fetch(apiUrl(url), {
           method: 'POST',
@@ -190,7 +214,13 @@ export default function SystemTextModal({ open, onClose }) {
         if (key !== 'default' && resp && resp.cleared) {
           removeTabLocal(key);
         } else {
-          setSnapshots((prev) => ({ ...prev, [key]: { ...(drafts[key] || EMPTY_DRAFT) } }));
+          setSnapshots((prev) => ({
+            ...prev,
+            [key]: {
+              ...(drafts[key] || EMPTY_DRAFT),
+              revision: resp?.revision || snapshots[key]?.revision || '0',
+            },
+          }));
           setPersisted((prev) => ({ ...prev, [key]: !(key === 'default' && resp && resp.cleared) }));
         }
       }
@@ -248,7 +278,7 @@ export default function SystemTextModal({ open, onClose }) {
           activeKey={activeKey}
           dirtyKeys={dirtyKeys}
           workspaceEnabled={active}
-          disabled={loading || saving}
+          disabled={loading || saving || capability.status !== 'supported'}
           onSelect={selectTab}
           onAdd={handleAdd}
           onDelete={handleDelete}
@@ -297,12 +327,14 @@ export default function SystemTextModal({ open, onClose }) {
               {isGlobalTab
                 ? t('ui.expert.systemText.dirHintGlobal', { dir: globalDir || '' })
                 : t('ui.expert.systemText.dirHint', {
-                    // Default 页签写工作区根;模型页签写工作区的 system_prompt/ 子目录
-                    dir: activeKey === 'default' ? (dir || '') : `${dir || ''}/system_prompt`,
+                    dir: activeKey === 'default' ? (dir || '') : (workspaceDir || ''),
                   })}
             </div>
             <div>{t('ui.expert.systemText.note')}</div>
+            <div>{t('ui.expert.systemText.privacy')}</div>
           </div>
+        ) : capability.status !== 'supported' ? (
+          <div className={styles.warn}>{t('ui.expert.systemText.unsupported')}</div>
         ) : (
           <div className={styles.warn}>{t('ui.expert.systemText.noWorkspace')}</div>
         )}

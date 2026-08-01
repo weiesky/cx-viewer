@@ -45,6 +45,39 @@ test('request summary keeps list fields without retaining large request and resp
   assert.equal(JSON.stringify(summary).includes('y'.repeat(100)), false);
 });
 
+test('request summary keeps proxy route diagnostics and redacts credentials from errors', () => {
+  const summary = buildRequestSummary({
+    timestamp: '2026-07-15T00:00:00.000Z',
+    url: 'https://chatgpt.com/backend-api/codex/responses',
+    proxyProfile: 'DeepSeek',
+    proxyWireApi: 'chat-completions',
+    response: {
+      status: 0,
+      error: 'Proxy profile rewrite failed with Bearer secret-token and sk-supersecret123',
+    },
+  }, {
+    seq: 1, eventId: 'event', entryKey: 'entry', entryRevision: 1, threadId: 'thread', phase: 'completed',
+  });
+
+  assert.equal(summary.root.proxyProfile, 'DeepSeek');
+  assert.equal(summary.root.proxyWireApi, 'chat-completions');
+  assert.match(summary.response.error, /Proxy profile rewrite failed/);
+  assert.doesNotMatch(summary.response.error, /secret-token|supersecret123/);
+});
+
+test('request summary preserves the App Server source marker for mirror projection', () => {
+  const summary = buildRequestSummary({
+    timestamp: '2026-07-15T00:00:00.000Z',
+    url: 'https://api.openai.com/v1/responses',
+    _appServerSource: true,
+  }, {
+    seq: 1, eventId: 'event', entryKey: 'entry', entryRevision: 1, threadId: 'thread', phase: 'completed',
+  });
+
+  assert.equal(summary.root._appServerSource, true);
+  assert.equal(validateRequestSummary(summary).ok, true);
+});
+
 test('request summary persists classification without retaining its prompt evidence', () => {
   const titlePrompt = 'Based on the above conversation, generate a short title for the session';
   const summary = buildRequestSummary({

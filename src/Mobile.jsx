@@ -815,6 +815,7 @@ class Mobile extends AppBase {
             onClose={() => this.setState({ proxyModalVisible: false })}
             proxyProfiles={this.state.proxyProfiles}
             activeProxyId={this.state.activeProxyId}
+            proxyProfilesLoadError={this.state.proxyProfilesLoadError}
             defaultConfig={this.state.defaultConfig}
             onProxyProfileChange={this.handleProxyProfileChange}
           />

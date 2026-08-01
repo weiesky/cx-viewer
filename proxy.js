@@ -63,7 +63,10 @@ const INJECTED_BASE_PATH = '/v1';
 let _proxyOwnPort = null;
 
 // Test hook: set/reset the remembered own port without starting a server.
-export function _setProxyOwnPortForTests(port) { _proxyOwnPort = port; }
+export function _setProxyOwnPortForTests(port) {
+  _proxyOwnPort = port;
+  globalThis.__cxViewerCaptureProxyPort = port;
+}
 
 function _defaultOpenAiBase() {
   return `${DEFAULT_API_BASE.replace(/\/+$/, '')}/v1`;
@@ -372,6 +375,9 @@ export function startProxy({ onResponseModel = null, port = 0, health = null, re
         // transfer-encoding / connection headers makes undici reject the request
         // (→ 502). Host is dropped so fetch sets it from the upstream URL.
         const headers = { ...req.headers };
+        for (const name of Object.keys(headers)) {
+          if (name.toLowerCase().startsWith('x-cx-viewer-')) delete headers[name];
+        }
         for (const h of ['host', 'connection', 'keep-alive', 'proxy-authenticate',
           'proxy-authorization', 'te', 'trailer', 'transfer-encoding', 'upgrade',
           'content-length']) {
@@ -393,6 +399,9 @@ export function startProxy({ onResponseModel = null, port = 0, health = null, re
         // 标记此请求为 CX-Viewer 代理转发的 Codex/OpenAI API 请求
         // 拦截器识别到此 Header 会强制记录，忽略 URL 匹配规则
         fetchOptions.headers['x-cx-viewer-trace'] = 'true';
+        // resolveUpstream owns OAuth detection (including auth.json fallback).
+        // Keep the marker private to this process; interceptor removes it.
+        fetchOptions.headers['x-cx-viewer-auth-mode'] = authMode === 'OAuth' ? 'oauth' : 'api-key';
 
         if (body.length > 0) {
           fetchOptions.body = body;
@@ -515,6 +524,7 @@ export function startProxy({ onResponseModel = null, port = 0, health = null, re
     server.listen(port, '127.0.0.1', () => {
       const address = server.address();
       _proxyOwnPort = address.port;
+      globalThis.__cxViewerCaptureProxyPort = address.port;
       resolve(address.port);
     });
 
@@ -525,6 +535,10 @@ export function startProxy({ onResponseModel = null, port = 0, health = null, re
 
     server.on('close', () => {
       if (_proxyServer === server) _proxyServer = null;
+      if (globalThis.__cxViewerCaptureProxyPort === _proxyOwnPort) {
+        globalThis.__cxViewerCaptureProxyPort = null;
+      }
+      _proxyOwnPort = null;
     });
   }));
 }

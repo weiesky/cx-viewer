@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -11,12 +11,50 @@ import {
   _injectApprovalsReviewerForTests,
   _flushAppServerRawSidecarsForTests,
   _getAppServerRawStateForTests,
+  injectManagedSystemPrompt,
   _writeAppServerEntryForTests,
   resetRawCaptureBoundary,
 } from '../lib/appserver-bridge.js';
+import { getDefaultSystemPrompt, saveDefaultSystemPrompt, saveModelSystemPrompt } from '../lib/model-system-prompts.js';
 import { buildSingleToolResultCore } from '../src/utils/toolResultCore.js';
 
 let capturedEntries = [];
+
+test('managed prompts modify only verified fresh thread/start messages', () => {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-managed-prompt-'));
+  const logDir = join(root, 'logs');
+  const cwd = join(root, 'workspace');
+  mkdirSync(logDir);
+  mkdirSync(cwd);
+  const capability = { verified: true, append: true, override: true };
+  saveDefaultSystemPrompt({ logDir, cwd, text: 'default', mode: 'append' });
+  saveModelSystemPrompt({
+    logDir, cwd, scope: 'workspace', name: 'GPT-5', text: 'model base', mode: 'override',
+  });
+
+  const start = injectManagedSystemPrompt({
+    id: 1,
+    method: 'thread/start',
+    params: { cwd, model: 'gpt-5.6', developerInstructions: 'existing' },
+  }, { capability, logDir, cwd });
+  assert.equal(start.params.baseInstructions, 'model base');
+  assert.equal(start.params.developerInstructions, 'existing');
+
+  const resume = { id: 2, method: 'thread/resume', params: { threadId: 't1' } };
+  assert.equal(injectManagedSystemPrompt(resume, { capability, logDir, cwd }), resume);
+  const unsupported = { id: 3, method: 'thread/start', params: { cwd } };
+  assert.equal(injectManagedSystemPrompt(unsupported, {
+    capability: { verified: false }, logDir, cwd,
+  }), unsupported);
+
+  const fallback = getDefaultSystemPrompt({ logDir, cwd });
+  writeFileSync(join(fallback.dir, 'default.json'), '{broken');
+  assert.throws(() => injectManagedSystemPrompt({
+    id: 4,
+    method: 'thread/start',
+    params: { cwd, model: 'unknown-model' },
+  }, { capability, logDir, cwd }), error => error?.code === 'CXV_SYSTEM_PROMPT_INJECTION_FAILED');
+});
 
 function _resetAppServerBridgeForTests(options) {
   capturedEntries = [];

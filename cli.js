@@ -13,6 +13,7 @@ import { INJECT_IMPORT, resolveCliPath, resolveNativePath, resolveNpmCodexPath }
 import { appendCxvFinalConfigArgs, getDefaultModeRequestUserInputConfigArgs, normalizeCodexArgs, hasBypassPermissions, getReasoningSummaryConfigArgs, parseCodexInvocation } from './lib/cli-args.js';
 import { ensureHooks } from './lib/ensure-hooks.js';
 import { APPROVALS_REVIEWER_DEFAULT } from './lib/approval-reviewer.js';
+import { inspectCodexSystemPromptSupport } from './lib/codex-appserver-capabilities.js';
 import { appendOtelTraceExporterConfigArgsOnce, getOtelTraceExporterConfigArgs, OTEL_TRACE_HEADERS_ENV, stripLegacyOtelConfigBlock, withOtelTraceAuthHeader } from './lib/otel-config.js';
 import { registerSignalShutdown } from './lib/shutdown.js';
 import {
@@ -311,6 +312,7 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
     serverMod?.setCodexApprovalsReviewerUpdater(null);
     serverMod?.setCodexRequestUserInputBridge(null);
     serverMod?.setActiveCodexApprovalsReviewer(null, false);
+    serverMod?.setSystemPromptRuntimeCapability(null);
     bridge?.stop();
     try { stopProxyFn(); } catch {}
     if (serverMod) await serverMod.stopViewer({ deadlineAt });
@@ -434,6 +436,7 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
   let bridgeArgs = [...childBaseConfigArgs];
   try {
     const { startAppServerBridge } = await import('./lib/appserver-bridge.js');
+    const systemPromptCapability = inspectCodexSystemPromptSupport(codexPath);
     bridge = await startAppServerBridge({
       cwd: workingDir,
       codexPath,
@@ -444,6 +447,8 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
       onRequestUserInput: serverMod.offerCodexRequestUserInput,
       onRequestUserInputCleared: serverMod.clearCodexRequestUserInput,
       writeLogEntry: interceptorMod.appendLogEntry,
+      systemPromptCapability,
+      systemPromptLogDir: LOG_DIR,
     });
     if (shutdownStarted) { bridge.stop(); return; }
     serverMod.setCodexApprovalsReviewerUpdater(bridge.setApprovalsReviewer);
@@ -452,10 +457,15 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
       cancel: bridge.cancelRequestUserInput,
       releaseToTui: bridge.releaseRequestUserInputToTui,
     });
+    serverMod.setSystemPromptRuntimeCapability({
+      ...systemPromptCapability,
+      transport: 'app-server-bridge',
+    });
     // 让 codex TUI 通过 --remote 连接到代理
     bridgeArgs = [...childBaseConfigArgs, '--remote', `ws://127.0.0.1:${bridge.proxyPort}`];
     console.log(`[CX Viewer] App-Server bridge started (proxy:${bridge.proxyPort} → server:${bridge.appServerPort})`);
   } catch (err) {
+    serverMod.setSystemPromptRuntimeCapability(null);
     if (options.requireAppServerBridge) {
       await activeShutdownCleanup();
       throw err;

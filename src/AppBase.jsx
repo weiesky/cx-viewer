@@ -131,6 +131,8 @@ class AppBase extends React.Component {
       loadingSessionId: null,
       proxyProfiles: [],
       activeProxyId: 'max',
+      proxyProfilesRevision: null,
+      proxyProfilesLoadError: null,
       defaultConfig: null,
       // ─── Approval modal global state ───
       // approvalGlobal: { ptyPlan?, ask? } currently active in the (single) ChatView mounted in this app instance.
@@ -855,10 +857,17 @@ class AppBase extends React.Component {
           });
           if (match) {
             activeId = match.id;
-            this.handleProxyProfileChange({ active: match.id, profiles: data.profiles });
+            this.handleProxyProfileChange({ active: match.id, profiles: data.profiles, revision: data.revision });
           }
         }
-        this.setState({ proxyProfiles: data.profiles, activeProxyId: activeId, defaultConfig: dc || null });
+        this.setState({
+          proxyProfiles: data.profiles,
+          activeProxyId: activeId,
+          proxyProfilesRevision: data.revision || null,
+          proxyProfilesLoadError: data.loadError || null,
+          defaultConfig: dc || null,
+        });
+        if (data.loadError) message.warning(t('ui.proxy.loadFailed', { error: data.loadError }));
       })
       .catch(() => { });
 
@@ -1634,11 +1643,22 @@ class AppBase extends React.Component {
         this._resetSSETimeout();
         try {
           const data = JSON.parse(event.data);
+          if (data.loadError) {
+            this.setState({ proxyProfilesLoadError: data.loadError });
+            message.warning(t('ui.proxy.loadFailed', { error: data.loadError }));
+            return;
+          }
+          this.setState({ proxyProfilesLoadError: null });
           if (data.active) this.setState({ activeProxyId: data.active });
           if (data.profile) {
             // 刷新完整列表
             fetch(apiUrl('/api/proxy-profiles')).then(r => r.json()).then(d => {
-              if (d.profiles) this.setState({ proxyProfiles: d.profiles, activeProxyId: d.active || 'max' });
+              if (d.profiles) this.setState({
+                proxyProfiles: d.profiles,
+                activeProxyId: d.active || 'max',
+                proxyProfilesRevision: d.revision || null,
+                proxyProfilesLoadError: d.loadError || null,
+              });
             }).catch(() => { });
           }
         } catch (e) { reportSwallowed('sse.proxy_profile', e); }
@@ -2188,17 +2208,43 @@ class AppBase extends React.Component {
 
   // ─── Proxy Profile ─────────────────────────────────────
 
-  handleProxyProfileChange = (data) => {
-    fetch(apiUrl('/api/proxy-profiles'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    })
-      .then(r => r.json())
-      .then(() => {
-        this.setState({ proxyProfiles: data.profiles, activeProxyId: data.active });
-      })
-      .catch(() => { });
+  handleProxyProfileChange = async (data) => {
+    if (this._proxyProfileSavePending) return false;
+    this._proxyProfileSavePending = true;
+    try {
+      const response = await fetch(apiUrl('/api/proxy-profiles'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...data, version: 3, revision: data.revision || this.state.proxyProfilesRevision }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || result.ok !== true) {
+        if (response.status === 409) {
+          const latestResponse = await fetch(apiUrl('/api/proxy-profiles'));
+          const latest = await latestResponse.json();
+          if (latest.profiles) this.setState({
+            proxyProfiles: latest.profiles,
+            activeProxyId: latest.active || 'max',
+            proxyProfilesRevision: latest.revision || null,
+            proxyProfilesLoadError: latest.loadError || null,
+          });
+        }
+        throw new Error(result.error || `HTTP ${response.status}`);
+      }
+      this.setState({
+        proxyProfiles: result.profiles || data.profiles,
+        activeProxyId: result.active || data.active,
+        proxyProfilesRevision: result.revision || null,
+        proxyProfilesLoadError: null,
+      });
+      return true;
+    } catch (error) {
+      reportSwallowed('proxy-profile.save', error);
+      message.error(t('ui.proxy.saveFailed', { error: error.message }));
+      return false;
+    } finally {
+      this._proxyProfileSavePending = false;
+    }
   };
 
   // ─── 偏好设置 ──────────────────────────────────────────

@@ -6,7 +6,8 @@ const _cxvSkipArgs = ['--version', '-v', '--v', '--help', '-h', 'doctor', 'insta
 const _cxvSkip = _cxvSkipArgs.includes(process.argv[2]);
 
 import './lib/proxy-env.js';
-import { readFileSync, watchFile } from 'node:fs';
+import { readFileSync, unwatchFile, watchFile } from 'node:fs';
+import { EventEmitter } from 'node:events';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, basename, resolve } from 'node:path';
@@ -17,11 +18,22 @@ import { LogV2WriteCoordinator } from './lib/log-v2/coordinator.js';
 import { loadLogV2RuntimeConfig } from './lib/log-v2/runtime-config.js';
 import { LogV2WriteQueue } from './lib/log-v2/write-queue.js';
 import { projectIdForCwd } from './lib/log-v2/project-id.js';
+import { classifyProxyOperation, createDefaultProxyProfiles, isOAuthProxyRequest, rewriteProxyProfileRequest, validateProxyProfilesDocument } from './lib/proxy-profile.js';
+import { adaptChatCompletionsResponse, prepareChatCompletionsRequest } from './lib/codex-chat-adapter.js';
 
 
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const SENSITIVE_LOG_HEADER_RE = /^(?:authorization|proxy-authorization|cookie|set-cookie|api-key|x-api-key|x-goog-api-key|x-auth-token|chatgpt-account-id|openai-(?:organization|project|session)|x-openai-(?:organization|project|session))$/i;
+
+function redactHeadersForLog(headers) {
+  const redacted = {};
+  for (const [name, value] of Object.entries(headers || {})) {
+    redacted[name] = SENSITIVE_LOG_HEADER_RE.test(name) ? '[REDACTED]' : value;
+  }
+  return redacted;
+}
 
 // 流式请求的实时状态（供 server.js SSE 推送）
 export const streamingState = { active: false, requestId: null, startTime: null, model: null, bytesReceived: 0, chunksReceived: 0 };
@@ -43,26 +55,189 @@ export let _cachedModel = null;
 export let _cachedHaikuModel = null;
 
 // Proxy profile hot-switch support
-const PROFILE_PATH = join(homedir(), '.codex', 'cx-viewer', 'profile.json');
-let _activeProfile = null; // { id, name, baseURL?, apiKey?, models?, activeModel? }
+const PROFILE_PATH = process.env.CXV_PROXY_PROFILE_PATH || join(homedir(), '.codex', 'cx-viewer', 'profile.json');
+const MAX_PROFILE_REQUEST_BYTES = 32 * 1024 * 1024;
+const MAX_CAPTURED_RESPONSE_BYTES = 8 * 1024 * 1024;
+const DEFAULT_PROXY_PROFILES = createDefaultProxyProfiles();
+let _activeProfile = null; // { id, name, baseURL, apiKey, activeModel?, effort? }
+let _proxyProfileLoadError = null;
+let _lastValidProfileWasThirdParty = false;
+let _lastValidProxyProfiles = DEFAULT_PROXY_PROFILES;
+const _proxyProfileEvents = new EventEmitter();
+let _proxyProfileFingerprint = null;
+const MAX_BOUND_PROXY_TURNS = 512;
+const _proxyRouteByTurn = new Map();
+
+function proxyTurnKey(body) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
+  const legacyMetadata = body.metadata && typeof body.metadata === 'object' && !Array.isArray(body.metadata)
+    ? body.metadata
+    : null;
+  const nativeMetadata = body.client_metadata && typeof body.client_metadata === 'object' && !Array.isArray(body.client_metadata)
+    ? body.client_metadata
+    : null;
+  const metadata = legacyMetadata || nativeMetadata
+    ? { ...(legacyMetadata || {}), ...(nativeMetadata || {}) }
+    : null;
+  const turnId = metadata?.turn_id;
+  if (typeof turnId !== 'string' || !turnId) return null;
+  const sessionId = typeof metadata.session_id === 'string' ? metadata.session_id : '';
+  const threadId = typeof metadata.thread_id === 'string' ? metadata.thread_id : '';
+  return `${sessionId}\0${threadId}\0${turnId}`;
+}
+
+function bindProxyRouteForTurn(body, profile, loadError) {
+  const key = proxyTurnKey(body);
+  if (!key) return { profile, loadError };
+  const existing = _proxyRouteByTurn.get(key);
+  if (existing) return existing;
+  const route = { profile, loadError };
+  _proxyRouteByTurn.set(key, route);
+  if (_proxyRouteByTurn.size > MAX_BOUND_PROXY_TURNS) {
+    _proxyRouteByTurn.delete(_proxyRouteByTurn.keys().next().value);
+  }
+  return route;
+}
+
+function isCaptureProxyUrl(value) {
+  const ownPort = Number(globalThis.__cxViewerCaptureProxyPort);
+  if (!Number.isInteger(ownPort) || ownPort <= 0) return false;
+  try {
+    const parsed = new URL(String(value));
+    const host = parsed.hostname.replace(/^\[|\]$/g, '').toLowerCase();
+    const loopback = host === 'localhost' || host === '::1' || host === '::ffff:127.0.0.1'
+      || host === '127.0.0.1' || host.startsWith('127.');
+    const port = Number(parsed.port) || (parsed.protocol === 'https:' ? 443 : 80);
+    return loopback && port === ownPort;
+  } catch {
+    return false;
+  }
+}
 
 // 启动时捕获的原始配置（首次 API 请求时记录，不可变）
 let _defaultConfig = null; // { origin, authType, model }
 
 function _loadProxyProfile() {
+  const commit = (data, fingerprint = JSON.stringify(data)) => {
+    const previous = _proxyProfileFingerprint;
+    const active = data.profiles.find(p => p.id === data.active);
+    _activeProfile = active?.id === 'max' ? null : active || null;
+    _lastValidProfileWasThirdParty = Boolean(_activeProfile);
+    _lastValidProxyProfiles = data;
+    _proxyProfileLoadError = null;
+    _proxyProfileFingerprint = fingerprint;
+    if (previous !== null && previous !== fingerprint) _proxyProfileEvents.emit('change', data);
+    return data;
+  };
   try {
-    const data = JSON.parse(readFileSync(PROFILE_PATH, 'utf-8'));
-    const active = data.profiles?.find(p => p.id === data.active);
-    _activeProfile = (active && active.id !== 'max') ? active : null;
-  } catch {
+    return commit(validateProxyProfilesDocument(JSON.parse(readFileSync(PROFILE_PATH, 'utf-8')), { migrateLegacy: true }));
+  } catch (error) {
+    const missing = error?.code === 'ENOENT';
+    if (missing && !_lastValidProfileWasThirdParty) {
+      commit(DEFAULT_PROXY_PROFILES, 'missing');
+      return null;
+    }
+    // Once a third-party route was active, an invalid/deleted file must fail
+    // closed instead of silently spending the user's official OAuth quota.
+    const previous = _proxyProfileFingerprint;
     _activeProfile = null;
+    _proxyProfileLoadError = error?.message || (missing ? 'Proxy profile configuration was deleted' : 'Invalid proxy profile configuration');
+    const fingerprint = `invalid:${_proxyProfileLoadError}`;
+    _proxyProfileFingerprint = fingerprint;
+    if (previous !== null && previous !== fingerprint) {
+      _proxyProfileEvents.emit('change', { ..._lastValidProxyProfiles, loadError: _proxyProfileLoadError });
+    }
+    return null;
   }
 }
 
 _loadProxyProfile();
 try { watchFile(PROFILE_PATH, { interval: 1500 }, _loadProxyProfile); } catch { }
 
-export { _activeProfile, _defaultConfig, _loadProxyProfile, PROFILE_PATH };
+export function onProxyProfileChange(listener) {
+  _proxyProfileEvents.on('change', listener);
+  return () => _proxyProfileEvents.off('change', listener);
+}
+
+export function _setProxyProfileRuntimeForTests(profile, loadError = null) {
+  if (process.env.CXV_TEST !== '1') throw new Error('Proxy profile test hook is unavailable outside tests');
+  // loadError 只表达“当前加载失败”，不应重置“上次有效配置是否为第三方”的历史；
+  // fail-closed 只在确实曾路由到第三方时触发。
+  if (loadError == null) _lastValidProfileWasThirdParty = Boolean(profile);
+  _activeProfile = profile;
+  _proxyProfileLoadError = loadError;
+}
+
+export function _clearProxyTurnRoutesForTests() {
+  if (process.env.CXV_TEST !== '1') throw new Error('Proxy profile test hook is unavailable outside tests');
+  _proxyRouteByTurn.clear();
+}
+
+export function _stopProxyProfileWatchForTests() {
+  if (process.env.CXV_TEST !== '1') throw new Error('Proxy profile test hook is unavailable outside tests');
+  unwatchFile(PROFILE_PATH, _loadProxyProfile);
+}
+
+export { _activeProfile, _defaultConfig, _loadProxyProfile, _proxyProfileLoadError, PROFILE_PATH };
+
+async function readRequestBodyLimited(request) {
+  if (!request.body) return null;
+  const declared = Number(request.headers.get('content-length'));
+  if (Number.isFinite(declared) && declared > MAX_PROFILE_REQUEST_BYTES) throw new TypeError('Responses request body is too large to rewrite');
+  const reader = request.body.getReader();
+  const abortError = () => request.signal.reason instanceof Error
+    ? request.signal.reason
+    : new DOMException('The operation was aborted', 'AbortError');
+  if (request.signal.aborted) {
+    await reader.cancel(abortError()).catch(() => {});
+    throw abortError();
+  }
+  const onAbort = () => { void reader.cancel(abortError()).catch(() => {}); };
+  request.signal.addEventListener('abort', onAbort, { once: true });
+  const chunks = [];
+  let size = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (request.signal.aborted) throw abortError();
+      if (done) break;
+      size += value.byteLength;
+      if (size > MAX_PROFILE_REQUEST_BYTES) {
+        await reader.cancel();
+        throw new TypeError('Responses request body is too large to rewrite');
+      }
+      chunks.push(Buffer.from(value));
+    }
+    return Buffer.concat(chunks, size);
+  } finally {
+    request.signal.removeEventListener('abort', onAbort);
+    try { reader.releaseLock(); } catch { }
+  }
+}
+
+async function materializeRequestInput(input, init) {
+  const request = new Request(input, init);
+  const hasBody = request.method !== 'GET' && request.method !== 'HEAD' && request.body !== null;
+  const body = hasBody ? await readRequestBodyLimited(request) : null;
+  return {
+    url: request.url,
+    options: {
+      ...init,
+      method: request.method,
+      headers: new Headers(request.headers),
+      signal: request.signal,
+      redirect: request.redirect,
+      credentials: request.credentials,
+      cache: request.cache,
+      integrity: request.integrity,
+      keepalive: request.keepalive,
+      mode: request.mode,
+      referrer: request.referrer,
+      referrerPolicy: request.referrerPolicy,
+      ...(hasBody ? { body } : {}),
+    },
+  };
+}
 
 // Teammate 子进程检测：--parent-session-id（旧模式）或 --agent-name（原生 team 模式）
 const _isTeammate = process.argv.includes('--parent-session-id') || process.argv.includes('--agent-name');
@@ -292,27 +467,60 @@ export function setupInterceptor() {
   const _originalFetch = globalThis.fetch;
 
   globalThis.fetch = async function (url, options) {
+    let profileSnapshot = _activeProfile;
+    let profileLoadErrorSnapshot = _proxyProfileLoadError;
+    if (options?.headers) {
+      options = {
+        ...options,
+        headers: options.headers instanceof Headers
+          ? new Headers(options.headers)
+          : { ...options.headers },
+      };
+    }
     // cx-viewer 内部请求（翻译等）直接透传，不拦截
-    const internalHeader = options?.headers?.['x-cx-viewer-internal']
-      || (options?.headers instanceof Headers && options.headers.get('x-cx-viewer-internal'));
+    const inputHeaders = options?.headers || (url instanceof Request ? url.headers : null);
+    const internalHeader = inputHeaders?.['x-cx-viewer-internal']
+      || (inputHeaders instanceof Headers && inputHeaders.get('x-cx-viewer-internal'));
     if (internalHeader) {
       return _originalFetch.apply(this, arguments);
     }
 
+    const preliminaryUrl = typeof url === 'string' ? url : url?.url || String(url);
+    const traceHeader = inputHeaders?.['x-cx-viewer-trace']
+      || (inputHeaders instanceof Headers && inputHeaders.get('x-cx-viewer-trace'));
+    if (url instanceof Request && (traceHeader || isOpenAiHost(preliminaryUrl) || isOpenAiApiPath(preliminaryUrl))) {
+      const materialized = await materializeRequestInput(url, options);
+      url = materialized.url;
+      options = materialized.options;
+    }
+
     const startTime = Date.now();
     let requestEntry = null;
+    let requestIsOAuth = false;
 
     try {
       const urlStr = typeof url === 'string' ? url : url?.url || String(url);
       // 检查 headers 中是否包含 x-cx-viewer-trace 标记
       const headers = options?.headers || {};
-      const isProxyTrace = headers['x-cx-viewer-trace'] === 'true' || headers['x-cx-viewer-trace'] === true;
+      const proxyTraceValue = headers instanceof Headers
+        ? headers.get('x-cx-viewer-trace')
+        : headers['x-cx-viewer-trace'];
+      const isProxyTrace = proxyTraceValue === 'true' || proxyTraceValue === true;
+      const proxyAuthMode = isProxyTrace
+        ? (headers instanceof Headers ? headers.get('x-cx-viewer-auth-mode') : headers['x-cx-viewer-auth-mode']) || ''
+        : '';
 
       // 如果是 proxy 转发的，或者符合 URL 规则
       if (isProxyTrace || isOpenAiHost(urlStr) || isOpenAiApiPath(urlStr)) {
         // 如果是 proxy 转发的，需要清理掉标记 header 避免发给上游
-        if (isProxyTrace && options?.headers) {
-          delete options.headers['x-cx-viewer-trace'];
+        if (options?.headers) {
+          if (options.headers instanceof Headers) {
+            options.headers.delete('x-cx-viewer-trace');
+            options.headers.delete('x-cx-viewer-auth-mode');
+          } else {
+            delete options.headers['x-cx-viewer-trace'];
+            delete options.headers['x-cx-viewer-auth-mode'];
+          }
         }
 
         // 转换 headers 为普通对象（支持 Request 对象、options.headers、Headers 实例）
@@ -325,6 +533,7 @@ export function setupInterceptor() {
             headers = { ...rawHeaders };
           }
         }
+        requestIsOAuth = isOAuthProxyRequest(headers, proxyAuthMode);
 
         const timestamp = new Date().toISOString();
         const body = options?.body ? parseRequestBodyForLog(options.body, headers) : null;
@@ -343,7 +552,7 @@ export function setupInterceptor() {
             const _u = new URL(urlStr);
             _defaultConfig = {
               origin: _u.origin,
-              authType: headers['authorization'] ? 'OAuth' : headers['x-api-key'] ? 'API Key' : 'Unknown',
+              authType: requestIsOAuth ? 'OAuth' : (headers['authorization'] || headers['x-api-key']) ? 'API Key' : 'Unknown',
               apiKey: headers['x-api-key'] || null,
               model: body?.model || null,
             };
@@ -354,22 +563,7 @@ export function setupInterceptor() {
         // 注意：写入移到 requestEntry 构建之后
 
         // 脱敏敏感 headers，避免写入日志泄漏凭证
-        const safeHeaders = { ...headers };
-        if (safeHeaders['x-api-key']) {
-          const k = safeHeaders['x-api-key'];
-          safeHeaders['x-api-key'] = k.length > 12 ? k.slice(0, 8) + '****' + k.slice(-4) : '****';
-        }
-        if (safeHeaders['authorization']) {
-          const v = safeHeaders['authorization'];
-          const spaceIdx = v.indexOf(' ');
-          if (spaceIdx > 0) {
-            const scheme = v.slice(0, spaceIdx);
-            const token = v.slice(spaceIdx + 1);
-            safeHeaders['authorization'] = scheme + ' ' + (token.length > 12 ? token.slice(0, 8) + '****' + token.slice(-4) : '****');
-          } else {
-            safeHeaders['authorization'] = '****';
-          }
-        }
+        const safeHeaders = redactHeadersForLog(headers);
 
         const agentClass = classifyAgentRequest(urlStr, body);
 
@@ -395,8 +589,75 @@ export function setupInterceptor() {
       if (process.env.CXV_DEBUG) console.warn('[CX-Viewer] Request interception error:', err.message);
     }
 
+    ({ profile: profileSnapshot, loadError: profileLoadErrorSnapshot } = bindProxyRouteForTurn(
+      requestEntry?.body,
+      profileSnapshot,
+      profileLoadErrorSnapshot,
+    ));
+
+    // 生成唯一请求 ID，用于关联在途请求和完成请求
+    const requestId = `${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    if (requestEntry) {
+      requestEntry.requestId = requestId;
+      requestEntry.inProgress = true;  // 标记为在途请求
+    }
+
+    // Default preserves the native auth route. An explicitly active profile
+    // takes ownership of supported model requests, even when Codex itself is
+    // signed in with ChatGPT OAuth.
+    let _fetchUrl = url;
+    let _fetchOpts = options;
+    let chatAdapterContext = null;
+    const requestMethod = options?.method || (url instanceof Request ? url.method : 'GET');
+    const proxyOperation = classifyProxyOperation(url, requestMethod);
+    const isProfileModelRequest = Boolean(requestEntry && proxyOperation);
+    if (profileLoadErrorSnapshot && _lastValidProfileWasThirdParty && isProfileModelRequest) {
+      const error = new Error(`Proxy profile is invalid: ${profileLoadErrorSnapshot}`);
+      requestEntry.response = { status: 0, error: error.message };
+      delete requestEntry.inProgress;
+      delete requestEntry.requestId;
+      appendLogEntry(requestEntry);
+      throw error;
+    }
+    if (profileSnapshot?.baseURL && isProfileModelRequest) {
+      requestEntry.proxyProfile = profileSnapshot.name;
+      requestEntry.proxyWireApi = profileSnapshot.wireApi;
+      try {
+        if (profileSnapshot.wireApi === 'chat-completions' && proxyOperation === 'compact') {
+          const error = new Error('Chat Completions profiles do not support /responses/compact. Switch the active profile to Default (or a Responses-compatible profile) and start a new turn to continue the conversation.');
+          error.code = 'CXV_PROXY_UNSUPPORTED_ENDPOINT';
+          throw error;
+        }
+        const rewritten = profileSnapshot.wireApi === 'chat-completions'
+          ? prepareChatCompletionsRequest(_fetchUrl, _fetchOpts, profileSnapshot)
+          : rewriteProxyProfileRequest(_fetchUrl, _fetchOpts, profileSnapshot);
+        _fetchUrl = rewritten.url;
+        _fetchOpts = rewritten.options;
+        if (isCaptureProxyUrl(_fetchUrl)) {
+          const error = new Error('Proxy profile cannot target the active CX Viewer capture proxy');
+          error.code = 'CXV_PROXY_SELF_FORWARD';
+          throw error;
+        }
+        chatAdapterContext = rewritten.context || null;
+        const rewrittenLogBody = rewritten.responsesBody || rewritten.json;
+        if (rewrittenLogBody) {
+          requestEntry.body = rewrittenLogBody;
+          requestEntry.isStream = rewrittenLogBody.stream === true;
+        }
+        requestEntry.proxyUrl = _fetchUrl;
+      } catch (err) {
+        requestEntry.response = { status: 0, error: `Proxy profile rewrite failed: ${err.message}` };
+        delete requestEntry.inProgress;
+        delete requestEntry.requestId;
+        appendLogEntry(requestEntry);
+        throw new Error(`Proxy profile rewrite failed: ${err.message}`, { cause: err });
+      }
+    }
+
     // MainAgent 元数据缓存；日志轮转由每次 appendLogEntry 统一处理，
-    // app-server / SDK / OTel 等非 HTTP 写入也走同一入口。
+    // app-server / SDK / OTel 等非 HTTP 写入也走同一入口。Profile rewrite
+    // 必须先完成，使缓存、pending revision 与 completed revision 从第一版起
+    // 就共享同一个 effective model / upstream identity。
     if (requestEntry?.mainAgent) {
       // 仅 mainAgent 请求时缓存模型名，避免 SubAgent 覆盖
       if (requestEntry.body?.model && typeof requestEntry.body.model === 'string') {
@@ -408,78 +669,44 @@ export function setupInterceptor() {
       }
     }
 
-    // 生成唯一请求 ID，用于关联在途请求和完成请求
-    const requestId = `${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-    if (requestEntry) {
-      requestEntry.requestId = requestId;
-      requestEntry.inProgress = true;  // 标记为在途请求
-    }
+    // 同步路由校验与 rewrite 成功后再写 pending。否则同一请求会先以原始
+    // ChatGPT/GPT 身份落盘、完成时再变成第三方身份，live conversation merge
+    // 会把两个 revision 当成不同 session 并反复合入累计 transcript。
+    if (requestEntry) appendLogEntry(requestEntry);
 
-    // 在发起请求前先写入一条未完成的条目，让前端可以检测在途请求
-    if (requestEntry) {
-      appendLogEntry(requestEntry);
-    }
-
-    // 流式请求状态追踪（仅对 Codex API 流式请求）
+    // 流式请求状态追踪（仅对 Codex API 流式请求）。初始化同样必须位于
+    // rewrite 之后，确保 UI 从 pending 阶段就展示 effective model。
     if (requestEntry?.isStream) {
       streamingState.active = true;
       streamingState.requestId = requestId;
-      streamingState.startTime = Date.now();
+      streamingState.startTime = startTime;
       streamingState.model = requestEntry.body?.model || '';
       streamingState.bytesReceived = 0;
       streamingState.chunksReceived = 0;
     }
-
-    // Proxy profile request rewriting
-    let _fetchUrl = url;
-    let _fetchOpts = options;
-    if (_activeProfile && _activeProfile.baseURL && requestEntry) {
-      try {
-        // 1. URL 重写: 用 baseURL 替换 origin，智能处理路径重叠
-        //    baseURL="https://proxy.com/v1" + pathname="/v1/responses" → "https://proxy.com/v1/responses"（去重 /v1）
-        //    baseURL="https://proxy.com"    + pathname="/v1/responses" → "https://proxy.com/v1/responses"（无重叠）
-        if (typeof _fetchUrl === 'string') {
-          const _origUrl = new URL(_fetchUrl);
-          const _baseUrl = new URL(_activeProfile.baseURL);
-          const _basePath = _baseUrl.pathname.replace(/\/+$/, '');
-          const _origPath = _origUrl.pathname;
-          // 如果原始路径以 baseURL 的路径开头（如都有 /v1/），去掉重叠部分
-          // 使用 _basePath + '/' 避免 /api 误匹配 /api-v2
-          const _finalPath = (!_basePath || _origPath === _basePath || _origPath.startsWith(_basePath + '/')) ? _origPath : _basePath + _origPath;
-          _fetchUrl = _baseUrl.origin + _finalPath + _origUrl.search;
-        }
-        // 2. Auth 替换
-        if (_activeProfile.apiKey && _fetchOpts?.headers) {
-          const h = _fetchOpts.headers;
-          if (typeof h === 'object' && !(h instanceof Headers)) {
-            _fetchOpts = { ..._fetchOpts, headers: { ...h } };
-            if (h['x-api-key']) _fetchOpts.headers['x-api-key'] = _activeProfile.apiKey;
-            if (h['authorization']) _fetchOpts.headers['authorization'] = `Bearer ${_activeProfile.apiKey}`;
-          }
-        }
-        // 3. Model 替换
-        if (_activeProfile.activeModel && _fetchOpts?.body) {
-          try {
-            const _b = JSON.parse(_fetchOpts.body);
-            if (_b.model) {
-              _b.model = _activeProfile.activeModel;
-              _fetchOpts = { ..._fetchOpts, body: JSON.stringify(_b) };
-            }
-          } catch { }
-        }
-        // 记录 proxy 信息到日志条目
-        requestEntry.proxyProfile = _activeProfile.name;
-        requestEntry.proxyUrl = _fetchUrl;
-      } catch (err) {
-        if (process.env.CXV_DEBUG) console.warn('[CX-Viewer] Proxy URL rewrite error:', err.message);
-      }
-    }
+    const ownsStreamingState = () => streamingState.requestId === requestId;
+    const resetRequestStreamingState = () => {
+      if (ownsStreamingState()) resetStreamingState();
+    };
 
     let response;
     try {
       response = await _originalFetch.call(this, _fetchUrl, _fetchOpts);
+      if (profileSnapshot?.baseURL && isProfileModelRequest && response.status >= 300 && response.status < 400) {
+        await response.body?.cancel().catch(() => {});
+        const error = new Error(`Proxy profile upstream redirect is not allowed (${response.status})`);
+        error.code = 'CXV_PROXY_REDIRECT_BLOCKED';
+        throw error;
+      }
+      if (chatAdapterContext) response = await adaptChatCompletionsResponse(response, chatAdapterContext);
     } catch (err) {
-      if (requestEntry?.isStream) resetStreamingState();
+      if (requestEntry?.isStream) resetRequestStreamingState();
+      if (requestEntry?.inProgress) {
+        requestEntry.response = { status: 0, error: err.message || 'Upstream request failed' };
+        delete requestEntry.inProgress;
+        delete requestEntry.requestId;
+        appendLogEntry(requestEntry);
+      }
       throw err;
     }
 
@@ -493,89 +720,92 @@ export function setupInterceptor() {
           requestEntry.response = {
             status: response.status,
             statusText: response.statusText,
-            headers: Object.fromEntries(response.headers.entries()),
+            headers: redactHeadersForLog(Object.fromEntries(response.headers.entries())),
             body: { events: [] }
           };
 
           const originalBody = response.body;
           const reader = originalBody.getReader();
-          const decoder = new TextDecoder();
-          let streamedContent = '';
+          const capturedChunks = [];
+          let capturedBytes = 0;
+          let captureTruncated = false;
+          let captureFinalized = false;
+
+          const finalizeCapture = (streamError = null) => {
+            if (captureFinalized) return;
+            captureFinalized = true;
+            let streamedContent = Buffer.concat(capturedChunks, capturedBytes).toString('utf8');
+            if (captureTruncated) streamedContent += '\n\n[CX Viewer capture truncated]';
+            try {
+              if (streamError) {
+                requestEntry.response.body = {
+                  error: streamError.message || 'Streaming response failed',
+                  ...(streamedContent ? { partial: streamedContent } : {}),
+                };
+              } else {
+                const events = streamedContent.split('\n\n')
+                  .filter(block => block.trim() && block !== '[CX Viewer capture truncated]')
+                  .map(block => {
+                    const lines = block.split('\n');
+                    const dataLine = lines.find(line => line.startsWith('data:'));
+                    if (!dataLine) return null;
+                    const jsonStr = dataLine.startsWith('data: ')
+                      ? dataLine.substring(6)
+                      : dataLine.substring(5);
+                    try { return JSON.parse(jsonStr); } catch { return jsonStr; }
+                  })
+                  .filter(Boolean);
+                const hasOpenAiResponsesEvents = events.some(event => event
+                  && typeof event === 'object'
+                  && typeof event.type === 'string'
+                  && event.type.startsWith('response.'));
+                const assembledMessage = hasOpenAiResponsesEvents
+                  ? assembleOpenAiResponseMessage(events)
+                  : assembleStreamMessage(events);
+                requestEntry.response.body = assembledMessage
+                  ? (captureTruncated ? { ...assembledMessage, truncated: true } : assembledMessage)
+                  : streamedContent;
+              }
+            } catch {
+              requestEntry.response.body = streamedContent.slice(0, 1000);
+            }
+            delete requestEntry.inProgress;
+            delete requestEntry.requestId;
+            appendLogEntry(requestEntry);
+            requestEntry.response = null;
+            resetRequestStreamingState();
+          };
 
           const stream = new ReadableStream({
-            async start(controller) {
+            async pull(controller) {
               try {
-                while (true) {
-                  const { done, value } = await reader.read();
-                  if (done) {
-                    // flush decoder 残留字节
-                    streamedContent += decoder.decode();
-                    // 流结束，组装完整的消息对象
-                    try {
-                      const events = streamedContent.split('\n\n')
-                        .filter(block => block.trim())
-                        .map(block => {
-                          // SSE 块可能包含多行: event: xxx\ndata: {...}
-                          const lines = block.split('\n');
-                          const dataLine = lines.find(l => l.startsWith('data:'));
-                          if (dataLine) {
-                            // 处理 "data:" 或 "data: " 两种格式
-                            const jsonStr = dataLine.startsWith('data: ')
-                              ? dataLine.substring(6)
-                              : dataLine.substring(5);
-                            try {
-                              return JSON.parse(jsonStr);
-                            } catch {
-                              return jsonStr;
-                            }
-                          }
-                          return null;
-                        })
-                        .filter(Boolean);
-
-                      const hasOpenAiResponsesEvents = events.some(event => event && typeof event === 'object' && typeof event.type === 'string' && event.type.startsWith('response.'));
-
-                      // 组装完整的 message 对象（Codex uses OpenAI Responses events; legacy adapters may still emit Claude-style events）
-                      const assembledMessage = hasOpenAiResponsesEvents
-                        ? assembleOpenAiResponseMessage(events)
-                        : assembleStreamMessage(events);
-
-                      // 直接使用组装后的 message 对象作为 response.body
-                      // 如果组装失败（例如非标准 SSE），则使用原始流内容
-                      requestEntry.response.body = assembledMessage || streamedContent;
-
-
-                      // 移除在途请求标记，保持原始报文
-                      delete requestEntry.inProgress;
-                      delete requestEntry.requestId;
-                      appendLogEntry(requestEntry);
-                      // Release memory: clear large objects after disk write
-                      streamedContent = '';
-                      requestEntry.response = null;
-                      resetStreamingState();
-                    } catch (err) {
-                      requestEntry.response.body = streamedContent.slice(0, 1000);
-                      delete requestEntry.inProgress;
-                      delete requestEntry.requestId;
-                      appendLogEntry(requestEntry);
-                      streamedContent = '';
-                      requestEntry.response = null;
-                      resetStreamingState();
-                    }
-                    controller.close();
-                    break;
-                  }
+                const { done, value } = await reader.read();
+                if (done) {
+                  finalizeCapture();
+                  controller.close();
+                  return;
+                }
+                if (ownsStreamingState()) {
                   streamingState.bytesReceived += value.byteLength;
                   streamingState.chunksReceived++;
-                  const chunk = decoder.decode(value, { stream: true });
-                  streamedContent += chunk;
-                  controller.enqueue(value);
                 }
+                const remaining = MAX_CAPTURED_RESPONSE_BYTES - capturedBytes;
+                if (remaining > 0) {
+                  const chunk = value.byteLength <= remaining ? value : value.slice(0, remaining);
+                  capturedChunks.push(Buffer.from(chunk));
+                  capturedBytes += chunk.byteLength;
+                }
+                if (value.byteLength > remaining) captureTruncated = true;
+                controller.enqueue(value);
               } catch (err) {
-                resetStreamingState();
+                finalizeCapture(err);
                 controller.error(err);
               }
-            }
+            },
+            async cancel(reason) {
+              const error = reason instanceof Error ? reason : new Error('Streaming response cancelled');
+              try { await reader.cancel(reason); } finally { finalizeCapture(error); }
+            },
           });
 
           // 返回带有代理流的新响应
@@ -588,13 +818,13 @@ export function setupInterceptor() {
           requestEntry.response = {
             status: response.status,
             statusText: response.statusText,
-            headers: Object.fromEntries(response.headers.entries()),
+            headers: redactHeadersForLog(Object.fromEntries(response.headers.entries())),
             body: '[Streaming Response - Capture failed]'
           };
           delete requestEntry.inProgress;
           delete requestEntry.requestId;
           appendLogEntry(requestEntry);
-          resetStreamingState();
+          resetRequestStreamingState();
         }
       } else {
         // 对于非流式响应，可以安全读取body
@@ -612,7 +842,7 @@ export function setupInterceptor() {
           requestEntry.response = {
             status: response.status,
             statusText: response.statusText,
-            headers: Object.fromEntries(response.headers.entries()),
+            headers: redactHeadersForLog(Object.fromEntries(response.headers.entries())),
             body: responseData
           };
 

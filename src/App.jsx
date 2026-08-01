@@ -371,6 +371,7 @@ class App extends AppBase {
               onApprovalReopen={this.handleApprovalReopen}
               proxyProfiles={this.state.proxyProfiles}
               activeProxyId={this.state.activeProxyId}
+              proxyProfilesLoadError={this.state.proxyProfilesLoadError}
               defaultConfig={this.state.defaultConfig}
               onProxyProfileChange={this.handleProxyProfileChange}
               contextBarSlot={this.state.contextBarSlot}

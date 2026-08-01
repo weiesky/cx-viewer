@@ -139,7 +139,7 @@ codex() { ... }
 
 ## 八、代理配置（Proxy Profile）
 
-存储在 `<日志目录>/profile.json`，通过 UI 的"代理切换"面板管理。
+存储在 `~/.codex/cx-viewer/profile.json`，通过 UI 的“代理切换”面板管理。
 
 ```json
 {
@@ -158,8 +158,8 @@ codex() { ... }
 | `name` | 显示名称 |
 | `baseURL` | 代理 API 地址（替换请求 origin） |
 | `apiKey` | 代理 API 密钥（替换认证头） |
-| `models` | 可用模型列表 |
 | `activeModel` | 当前选中的模型 |
+| `effort` | 可选的 OpenAI Responses `reasoning.effort` 覆盖值 |
 
 ## 九、插件系统
 

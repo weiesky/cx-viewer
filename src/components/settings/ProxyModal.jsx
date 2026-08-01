@@ -19,11 +19,11 @@ import MobileDrawerCloseButton from '../mobile/MobileDrawerCloseButton';
 // 删除确认改为受控 Modal（deleteConfirmTarget state）替代 Modal.confirm —— 后者 portal 到 body
 // 不受父 modal 关闭联动控制 (defensive review P2-2),且在 mobile zoom:0.6 容器下不缩放。
 const EMPTY_FORM = {
-  name: '', baseURL: '', apiKey: '', effort: 'max',
-  activeModel: '',
+  name: '', baseURL: '', apiKey: '', effort: '',
+  activeModel: '', wireApi: 'responses',
 };
 
-// output_config.effort 可选值（对应 CODEX_CODE_EFFORT_LEVEL）；空串 = 不注入，透传原始请求。
+// OpenAI Responses reasoning.effort 可选值；空串 = 不注入，透传原始请求。
 const EFFORT_OPTIONS = ['low', 'medium', 'high', 'xhigh', 'max'];
 
 // profile 行/标签展示的代表模型；兼容早期从 cc-viewer 迁移来的 ANTHROPIC_* 字段。
@@ -43,12 +43,14 @@ export default function ProxyModal({
   onClose,
   proxyProfiles,
   activeProxyId,
+  proxyProfilesLoadError,
   defaultConfig,
   onProxyProfileChange,
 }) {
   const [editingProxy, setEditingProxy] = useState(null);
   const [editForm, setEditForm] = useState(EMPTY_FORM);
   const [deleteConfirmTarget, setDeleteConfirmTarget] = useState(null);
+  const [pending, setPending] = useState(false);
 
   // open 变化时 reset 表单状态 + 删除确认。等价于原 AppHeader.jsx:1935 onCancel 里 setState({editingProxy:null})
   useEffect(() => {
@@ -75,6 +77,7 @@ export default function ProxyModal({
       apiKey: p.apiKey || '',
       effort: p.effort || '',
       activeModel: profileDisplayModel(p),
+      wireApi: p.wireApi || 'responses',
     });
   };
 
@@ -84,6 +87,7 @@ export default function ProxyModal({
   };
 
   const handleCancelEdit = () => {
+    if (pending) return;
     setEditingProxy(null);
   };
 
@@ -92,25 +96,30 @@ export default function ProxyModal({
     setDeleteConfirmTarget(p);
   };
 
-  const handleDeleteConfirm = () => {
-    if (!deleteConfirmTarget) return;
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirmTarget || pending) return;
     const newProfiles = profiles.filter(x => x.id !== deleteConfirmTarget.id);
     const newActive = activeId === deleteConfirmTarget.id ? 'max' : activeId;
-    onProxyProfileChange({ active: newActive, profiles: newProfiles });
-    setDeleteConfirmTarget(null);
+    setPending(true);
+    try {
+      if (await onProxyProfileChange({ active: newActive, profiles: newProfiles })) setDeleteConfirmTarget(null);
+    } finally { setPending(false); }
   };
 
   const handleDeleteCancel = () => {
+    if (pending) return;
     setDeleteConfirmTarget(null);
   };
 
-  const handleActivate = (p) => {
-    if (p.id !== activeId) {
-      onProxyProfileChange({ active: p.id, profiles });
-    }
+  const handleActivate = async (p) => {
+    if ((p.id === activeId && !proxyProfilesLoadError) || pending) return;
+    setPending(true);
+    try { await onProxyProfileChange({ active: p.id, profiles }); }
+    finally { setPending(false); }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (pending) return;
     if (!editForm.name?.trim() || !editForm.baseURL?.trim() || !editForm.apiKey?.trim()) {
       message.warning(t('ui.proxy.requiredFields'));
       return;
@@ -122,6 +131,7 @@ export default function ProxyModal({
       apiKey: editForm.apiKey.trim(),
       effort: editForm.effort || '',
       activeModel: (editForm.activeModel || '').trim(),
+      wireApi: editForm.wireApi || 'responses',
     };
     let newProfiles;
     if (editingProxy === '__new__') {
@@ -130,8 +140,10 @@ export default function ProxyModal({
       // 直接以 updated 覆盖，顺带清掉从 cc-viewer 迁移来的旧模型字段。
       newProfiles = profiles.map(p => p.id === editingProxy ? { ...updated, id: p.id } : p);
     }
-    onProxyProfileChange({ active: activeId, profiles: newProfiles });
-    setEditingProxy(null);
+    setPending(true);
+    try {
+      if (await onProxyProfileChange({ active: activeId, profiles: newProfiles })) setEditingProxy(null);
+    } finally { setPending(false); }
   };
 
   const titleNode = (
@@ -141,15 +153,15 @@ export default function ProxyModal({
     </span>
   );
 
-  const showMaxWarning = false;
+  const showThirdPartyWarning = activeId !== 'max';
 
   const bodyNode = (
     <div>
-      {showMaxWarning && <div className={styles.proxyWarning}>⚠️ {t('ui.proxy.maxWarning')}</div>}
+      {showThirdPartyWarning && <div className={styles.proxyWarning}>⚠️ {t('ui.proxy.thirdPartyWarning')}</div>}
       <div className={styles.proxyList}>
           {profiles.map(p => (
             <div key={p.id} className={`${styles.proxyItem} ${p.id === activeId ? styles.proxyItemActive : ''}`}>
-              <div className={styles.proxyItemMain} onClick={() => handleActivate(p)}>
+              <div className={styles.proxyItemMain} onClick={() => !pending && handleActivate(p)}>
                 <Radio checked={p.id === activeId} style={{ marginRight: 8 }} />
                 <div className={styles.proxyItemInfo}>
                   <div className={styles.proxyItemNameRow}>
@@ -168,6 +180,7 @@ export default function ProxyModal({
                     <div className={styles.proxyItemDetail}>
                       {(() => { try { return new URL(p.baseURL).host; } catch { return p.baseURL; } })()}
                       {profileDisplayModel(p) ? ` · ${profileDisplayModel(p)}` : ''}
+                      {p.wireApi ? ` · ${p.wireApi}` : ''}
                       {p.effort ? ` · effort: ${p.effort}` : ''}
                     </div>
                   )}
@@ -175,15 +188,15 @@ export default function ProxyModal({
               </div>
               {p.id !== 'max' && (
                 <div className={styles.proxyItemActions}>
-                  <Button type="text" size="small" icon={<EditOutlined />} onClick={() => handleStartEdit(p)} />
-                  <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteProxy(p)} />
+                  <Button disabled={pending} type="text" size="small" icon={<EditOutlined />} onClick={() => handleStartEdit(p)} />
+                  <Button disabled={pending} type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteProxy(p)} />
                 </div>
               )}
             </div>
           ))}
         </div>
 
-        <Button block type="dashed" icon={<PlusOutlined />} style={{ marginTop: 12 }} onClick={handleStartNew}>
+        <Button disabled={pending} block type="dashed" icon={<PlusOutlined />} style={{ marginTop: 12 }} onClick={handleStartNew}>
           {t('ui.proxy.addProxy')}
         </Button>
       </div>
@@ -196,7 +209,11 @@ export default function ProxyModal({
       title={editingProxy === '__new__' ? t('ui.proxy.addProxy') : t('ui.proxy.editProxy')}
       open={editingProxy !== null}
       onCancel={handleCancelEdit}
+      closable={!pending}
+      maskClosable={!pending}
+      keyboard={!pending}
       onOk={handleSave}
+      confirmLoading={pending}
       okText={t('ui.proxy.save')}
       cancelText={t('ui.proxy.cancel')}
       styles={{ body: isMobile ? { zoom: 0.6 } : {} }}
@@ -214,6 +231,16 @@ export default function ProxyModal({
         <Input.Password size="small" value={editForm.apiKey} onChange={e => updateField('apiKey', e.target.value)} placeholder="sk-..." />
       </div>
       <div className={styles.proxyEditDivider} />
+      <div className={styles.proxyEditRow}>
+        <label>{t('ui.proxy.protocol')}</label>
+        <Select size="small" className={styles.fullWidthSelect} value={editForm.wireApi} onChange={v => updateField('wireApi', v)}>
+          <Select.Option value="responses">{t('ui.proxy.protocol.responses')}</Select.Option>
+          <Select.Option value="chat-completions">{t('ui.proxy.protocol.chat')}</Select.Option>
+        </Select>
+      </div>
+      {editForm.wireApi === 'chat-completions' && (
+        <div className={styles.proxyEditHint}>{t('ui.proxy.chatLimitHint')}</div>
+      )}
       <div className={styles.proxyEditRow}>
         <label>{t('ui.proxy.activeModel')}</label>
         <Input size="small" value={editForm.activeModel} onChange={e => updateField('activeModel', e.target.value)} placeholder="gpt-5.4" />
@@ -237,7 +264,11 @@ export default function ProxyModal({
       title={t('ui.proxy.deleteProxy')}
       open={deleteConfirmTarget !== null}
       onCancel={handleDeleteCancel}
+      closable={!pending}
+      maskClosable={!pending}
+      keyboard={!pending}
       onOk={handleDeleteConfirm}
+      confirmLoading={pending}
       okText={t('ui.common.confirmYes')}
       cancelText={t('ui.common.confirmCancel')}
       okType="danger"
@@ -253,7 +284,7 @@ export default function ProxyModal({
         <div className={`${appStyles.mobileDrawerOverlay} ${open ? appStyles.mobileDrawerOverlayVisible : ''}`}>
           <div className={appStyles.mobileLogMgmtHeader}>
             <span className={appStyles.mobileLogMgmtTitle}>{titleNode}</span>
-            <MobileDrawerCloseButton onClose={onClose} />
+            <MobileDrawerCloseButton onClose={() => { if (!pending) onClose(); }} />
           </div>
           <div className={appStyles.mobileDrawerInner}>
             <div className={styles.proxyModalScroll}>
@@ -272,7 +303,10 @@ export default function ProxyModal({
       <Modal
         title={titleNode}
         open={open}
-        onCancel={onClose}
+        onCancel={() => { if (!pending) onClose(); }}
+        closable={!pending}
+        maskClosable={!pending}
+        keyboard={!pending}
         footer={null}
         width={520}
         styles={{ body: isMobile ? { zoom: 0.6 } : {}, mask: BLUR_MASK_STYLE }}

@@ -234,7 +234,7 @@ You can upload images and describe your needs. You can also paste images directl
 
 <img width="600" height="370" alt="image" src="https://github.com/user-attachments/assets/87d332ea-3e34-4957-b442-f9d070211fbf" />
 
-You can customize plugins, manage all CX-Viewer processes, and CX-Viewer supports hot-switching to third-party APIs (yes, you can use GLM, Kimi, MiniMax, Qwen, DeepSeek — although the author considers them all quite weak at this point).
+You can customize plugins, manage all CX-Viewer processes, and hot-switch API-key or ChatGPT OAuth sessions to third-party services. Native Responses providers are passed through; Chat Completions providers such as DeepSeek use the built-in Codex text/reasoning/function/custom-tool adapter. Official login state is preserved while third-party model traffic uses isolated credentials.
 
 ---
 

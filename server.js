@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
 import { createServer as createHttpsServer } from 'node:https';
 import { createConnection } from 'node:net';
-import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { constants as fsConstants, promises as fsPromises, readFileSync, writeFileSync, existsSync, watchFile, unwatchFile, statSync, fstatSync, readdirSync, renameSync, unlinkSync, rmSync, openSync, readSync, closeSync, realpathSync, mkdirSync, createReadStream, cpSync, copyFileSync, appendFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, extname, resolve, basename, relative, sep } from 'node:path';
@@ -34,8 +34,11 @@ function execWithStdin(cmd, args, input, options) {
     child.stdin.end();
   });
 }
-import { _initPromise, _projectName, _logDir, _cachedApiKey, _cachedAuthHeader, initForWorkspace, resetWorkspace, getActiveProjectContext, setLogV2CommitListener, streamingState, resetStreamingState, _loadProxyProfile, PROFILE_PATH, _defaultConfig, appendLogEntry, closeLogV2Writes, getLogV2RuntimeStatus } from './interceptor.js';
+import { _initPromise, _projectName, _logDir, _cachedApiKey, _cachedAuthHeader, initForWorkspace, resetWorkspace, getActiveProjectContext, setLogV2CommitListener, streamingState, resetStreamingState, _loadProxyProfile, onProxyProfileChange, PROFILE_PATH, _defaultConfig, _proxyProfileLoadError, appendLogEntry, closeLogV2Writes, getLogV2RuntimeStatus } from './interceptor.js';
 import { FORCE_KILL_GRACE_MS, registerSignalShutdown, SHUTDOWN_DEADLINE_MS, terminateWithEscalation, waitWithTimeout } from './lib/shutdown.js';
+import { atomicWriteFile } from './lib/logger-install.js';
+import { createDefaultProxyProfiles, validateProxyProfilesDocument } from './lib/proxy-profile.js';
+import { withFileLockSync } from './lib/log-v2/storage.js';
 import { createProcessAdapter, decodeProcessRef, encodeProcessRef, isCxvProcess, killVerifiedTree, sameProcessIdentity } from './lib/cxv-processes.js';
 import { parseOtlpTraces } from './lib/otel-receiver.js';
 import { LOG_DIR } from './findcx.js';
@@ -101,6 +104,14 @@ import {
 import { handleAuthRoute } from './lib/auth-routes.js';
 import { readPreferences, updatePreferences } from './lib/preferences.js';
 import {
+  getDefaultSystemPrompt,
+  getModelSystemPrompts,
+  saveDefaultSystemPrompt,
+  saveModelSystemPrompt,
+  SYSTEM_PROMPT_MAX_BYTES,
+  SystemPromptStoreError,
+} from './lib/model-system-prompts.js';
+import {
   buildCodexAutoResolutionAnswers,
   projectCodexAnswersForConversation,
 } from './lib/codex-request-user-input.js';
@@ -119,6 +130,7 @@ let _codexApprovalsReviewerUpdater = null;
 let _runtimeApprovalsReviewer = null;
 let _codexNativeReviewerAvailable = false;
 let _codexRequestUserInputBridge = null;
+let _systemPromptRuntimeCapability = null;
 const pendingCodexAsks = new Map();
 const cxvProcessAdapter = createProcessAdapter();
 const PROCESS_REF_SECRET = randomBytes(32);
@@ -211,6 +223,29 @@ export function setCodexApprovalsReviewerUpdater(fn) {
 export function setActiveCodexApprovalsReviewer(value, nativeAvailable = true) {
   _runtimeApprovalsReviewer = value == null ? null : normalizeApprovalsReviewer(value);
   _codexNativeReviewerAvailable = !!nativeAvailable;
+}
+
+export function setSystemPromptRuntimeCapability(capability) {
+  _systemPromptRuntimeCapability = capability?.verified
+    ? {
+        status: 'supported',
+        append: capability.append === true,
+        override: capability.override === true,
+        transport: capability.transport || 'app-server-bridge',
+        version: capability.version || null,
+      }
+    : null;
+}
+
+export function getSystemPromptRuntimeCapability() {
+  if (_systemPromptRuntimeCapability) return { ..._systemPromptRuntimeCapability };
+  return {
+    status: 'unsupported',
+    append: false,
+    override: false,
+    transport: isSdkMode ? 'sdk' : 'direct',
+    version: null,
+  };
 }
 
 function applyRuntimeApprovalsReviewer(value) {
@@ -412,6 +447,47 @@ function readJsonBody(req, maxSize = MAX_POST_BODY) {
       catch { reject(Object.assign(new Error('Invalid JSON'), { status: 400 })); }
     });
     req.on('error', err => fail(err));
+  });
+}
+
+function readStrictUtf8JsonBody(req, maxSize) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let bytes = 0;
+    let done = false;
+    const fail = (error) => {
+      if (done) return;
+      done = true;
+      reject(error);
+    };
+    const declared = Number(req.headers['content-length']);
+    if (Number.isFinite(declared) && declared > maxSize) {
+      fail(Object.assign(new Error('Request body too large'), { status: 413 }));
+      req.resume();
+      return;
+    }
+    req.on('data', chunk => {
+      if (done) return;
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      bytes += buffer.length;
+      if (bytes > maxSize) {
+        fail(Object.assign(new Error('Request body too large'), { status: 413 }));
+        req.resume();
+        return;
+      }
+      chunks.push(buffer);
+    });
+    req.on('end', () => {
+      if (done) return;
+      done = true;
+      try {
+        const text = new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks));
+        resolve(text ? JSON.parse(text) : {});
+      } catch {
+        reject(Object.assign(new Error('Invalid UTF-8 JSON'), { status: 400 }));
+      }
+    });
+    req.on('error', fail);
   });
 }
 
@@ -633,7 +709,21 @@ function removeDisabledPluginNames(names) {
 const isCliMode = process.env.CXV_CLI_MODE === '1';
 const isSdkMode = process.env.CXV_SDK_MODE === '1';
 const isWorkspaceMode = process.env.CXV_WORKSPACE_MODE === '1';
-const _defaultProxyProfiles = { active: 'max', profiles: [{ id: 'max', name: 'Default' }] };
+const _defaultProxyProfiles = createDefaultProxyProfiles();
+const _proxyProfilesRevision = raw => createHash('sha256').update(raw).digest('hex');
+const _defaultProxyProfilesRaw = `${JSON.stringify(_defaultProxyProfiles, null, 2)}\n`;
+function _withProxyProfilesLock(callback) {
+  const lockPath = `${PROFILE_PATH}.lock`;
+  try {
+    return withFileLockSync(lockPath, callback, { timeoutMs: 0, staleMs: 60_000 });
+  } catch (error) {
+    if (error?.code === 'CXV_LOG_V2_LOCK_TIMEOUT') {
+      error.message = 'Proxy profiles are being changed in another process';
+      error.statusCode = 409;
+    }
+    throw error;
+  }
+}
 const _maskApiKey = (k) => k && typeof k === 'string' && k.length > 4 ? '****' + k.slice(-4) : k ? '****' : '';
 const _maskProfiles = (data) => {
   if (!data?.profiles) return data;
@@ -1104,6 +1194,15 @@ function readOtelJsonBody(req, maxSize = OTEL_PAYLOAD_LIMITS.bodyBytes) {
 }
 
 let clients = [];
+onProxyProfileChange((data) => {
+  const profile = data.profiles.find(item => item.id === data.active) || { id: 'max', name: 'Default' };
+  const maskedProfile = profile.apiKey ? { ...profile, apiKey: _maskApiKey(profile.apiKey) } : profile;
+  sendEventToClients(clients, 'proxy_profile', {
+    active: data.active,
+    profile: maskedProfile,
+    ...(data.loadError ? { loadError: data.loadError } : {}),
+  });
+});
 setLogV2CommitListener((entry, _result, context) => {
   void runParallelHook('onNewEntry', entry).catch(() => {});
   notifyStatsWorker(context?.projectId);
@@ -1729,6 +1828,91 @@ async function handleRequest(req, res) {
     return;
   }
 
+  if ((url === '/api/expert/system-text' || url === '/api/expert/model-prompts')
+      && (method === 'GET' || method === 'POST')) {
+    if (!authorizeCodexMemoryRequest(req, res, parsedUrl)) return;
+    res.setHeader('Cache-Control', 'private, no-store');
+    const capability = getSystemPromptRuntimeCapability();
+    const cwd = currentProjectDir();
+    const active = !(isWorkspaceMode && !_workspaceLaunched);
+    try {
+      if (url === '/api/expert/system-text' && method === 'GET') {
+        const entry = getDefaultSystemPrompt({ logDir: LOG_DIR, cwd });
+        sendJson(res, 200, { ...entry, active, capability });
+        return;
+      }
+      if (url === '/api/expert/model-prompts' && method === 'GET') {
+        sendJson(res, 200, {
+          ...getModelSystemPrompts({ logDir: LOG_DIR, cwd }),
+          active,
+          capability,
+        });
+        return;
+      }
+
+      if (capability.status !== 'supported') {
+        sendJson(res, 409, {
+          ok: false,
+          error: 'system_prompt_unsupported',
+          code: 'system_prompt_unsupported',
+          capability,
+        });
+        return;
+      }
+      // JSON escaping can expand one UTF-8 text byte to six ASCII bytes
+      // (for example control characters encoded as \u00XX).
+      const body = await readStrictUtf8JsonBody(req, SYSTEM_PROMPT_MAX_BYTES * 6 + 4096);
+      if (typeof body.revision !== 'string' || !/^(?:0|[a-f0-9]{64})$/.test(body.revision)) {
+        sendJson(res, 400, {
+          ok: false,
+          error: 'invalid_revision',
+          code: 'invalid_revision',
+        });
+        return;
+      }
+      const mode = body.mode === 'override' ? 'override' : body.mode === 'append' ? 'append' : null;
+      if (!mode || capability[mode] !== true) {
+        sendJson(res, 409, {
+          ok: false,
+          error: 'system_prompt_mode_unsupported',
+          code: 'system_prompt_mode_unsupported',
+          capability,
+        });
+        return;
+      }
+      const result = url === '/api/expert/system-text'
+        ? saveDefaultSystemPrompt({
+            logDir: LOG_DIR,
+            cwd,
+            text: body.text,
+            mode,
+            expectedRevision: body.revision,
+          })
+        : saveModelSystemPrompt({
+            logDir: LOG_DIR,
+            cwd,
+            scope: body.scope,
+            name: body.name,
+            text: body.text,
+            mode,
+            expectedRevision: body.revision,
+          });
+      sendJson(res, 200, { ok: true, ...result, capability });
+    } catch (error) {
+      if (error instanceof SystemPromptStoreError || Number.isInteger(error?.status)) {
+        sendApiError(res, error, 'System prompt request failed');
+      } else {
+        console.error('[CX Viewer] Managed system prompt error:', error?.code || error?.message || error);
+        sendJson(res, 500, {
+          ok: false,
+          error: 'system_prompt_store_failed',
+          code: 'system_prompt_store_failed',
+        });
+      }
+    }
+    return;
+  }
+
   if (url === '/api/codex-md' && method === 'GET') {
     const entries = discoverCodexMdEntries();
     const id = parsedUrl.searchParams.get('id');
@@ -2259,14 +2443,18 @@ async function handleRequest(req, res) {
   // Proxy profile 热切换
   if (url === '/api/proxy-profiles' && method === 'GET') {
     try {
-      const data = existsSync(PROFILE_PATH) ? JSON.parse(readFileSync(PROFILE_PATH, 'utf-8')) : _defaultProxyProfiles;
+      const raw = existsSync(PROFILE_PATH) ? readFileSync(PROFILE_PATH, 'utf-8') : _defaultProxyProfilesRaw;
+      const data = validateProxyProfilesDocument(JSON.parse(raw), { migrateLegacy: true });
       const masked = _maskProfiles(data);
+      masked.revision = _proxyProfilesRevision(raw);
+      // 文件被删除/损坏且运行时已 fail-closed 时，GET 也要如实呈现，避免 UI 显示正常
+      if (masked.loadError == null && _proxyProfileLoadError) masked.loadError = _proxyProfileLoadError;
       if (_defaultConfig) masked.defaultConfig = { ..._defaultConfig, apiKey: _defaultConfig.apiKey ? _maskApiKey(_defaultConfig.apiKey) : null };
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(masked));
-    } catch {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(_defaultProxyProfiles));
+    } catch (error) {
+      const raw = existsSync(PROFILE_PATH) ? readFileSync(PROFILE_PATH, 'utf-8') : _defaultProxyProfilesRaw;
+      sendJson(res, 200, { ..._defaultProxyProfiles, revision: _proxyProfilesRevision(raw), loadError: error.message || 'Invalid proxy profile configuration' });
     }
     return;
   }
@@ -2277,38 +2465,45 @@ async function handleRequest(req, res) {
     req.on('end', () => {
       try {
         const incoming = JSON.parse(body);
-        if (!incoming || typeof incoming !== 'object' || !Array.isArray(incoming.profiles)) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Invalid profile data: profiles must be an array' }));
-          return;
-        }
         // 确保 max profile 始终存在
-        if (!incoming.profiles.some(p => p.id === 'max')) {
+        if (Array.isArray(incoming?.profiles) && !incoming.profiles.some(p => p?.id === 'max')) {
           incoming.profiles = [{ id: 'max', name: 'Default' }, ...(incoming.profiles || [])];
-        }
-        // 如果 apiKey 是 mask 值（未修改），从磁盘读取原始值保留
-        let existing = {};
-        try { if (existsSync(PROFILE_PATH)) existing = JSON.parse(readFileSync(PROFILE_PATH, 'utf-8')); } catch { }
-        const existingMap = {};
-        if (existing.profiles) existing.profiles.forEach(p => { if (p.apiKey) existingMap[p.id] = p.apiKey; });
-        for (const p of incoming.profiles) {
-          if (p.apiKey && _isMasked(p.apiKey) && existingMap[p.id]) {
-            p.apiKey = existingMap[p.id];
-          }
         }
         const dir = dirname(PROFILE_PATH);
         if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-        writeFileSync(PROFILE_PATH, JSON.stringify(incoming, null, 2), { mode: 0o600 });
+        _withProxyProfilesLock(() => {
+        // 如果 apiKey 是 mask 值（未修改），从磁盘读取原始值保留
+        let existing = {};
+        let existingRaw = _defaultProxyProfilesRaw;
+        try {
+          if (existsSync(PROFILE_PATH)) {
+            existingRaw = readFileSync(PROFILE_PATH, 'utf-8');
+            existing = JSON.parse(existingRaw);
+          }
+        } catch { }
+        const expectedRevision = incoming.revision;
+        const currentRevision = _proxyProfilesRevision(existingRaw);
+        if (typeof expectedRevision !== 'string' || expectedRevision !== currentRevision) {
+          sendJson(res, 409, { ok: false, error: 'Proxy profiles changed in another window or process', revision: currentRevision });
+          return;
+        }
+        const existingMap = new Map();
+        if (existing.profiles) existing.profiles.forEach(p => { if (p.apiKey) existingMap.set(p.id, p.apiKey); });
+        for (const p of incoming.profiles) {
+          if (p.apiKey && _isMasked(p.apiKey) && existingMap.has(p.id)) {
+            p.apiKey = existingMap.get(p.id);
+          }
+        }
+        const validated = validateProxyProfilesDocument(incoming, { migrateLegacy: false });
+        if (existsSync(PROFILE_PATH)) atomicWriteFile(`${PROFILE_PATH}.bak`, existingRaw, { mode: 0o600 });
+        const nextRaw = `${JSON.stringify(validated, null, 2)}\n`;
+        atomicWriteFile(PROFILE_PATH, nextRaw, { mode: 0o600 });
         _loadProxyProfile();
-        // SSE 广播给所有 viewer 客户端（mask apiKey）
-        const activeProfile = incoming.profiles?.find(p => p.id === incoming.active) || null;
-        const maskedProfile = activeProfile?.apiKey ? { ...activeProfile, apiKey: _maskApiKey(activeProfile.apiKey) } : activeProfile;
-        sendEventToClients(clients, 'proxy_profile', { active: incoming.active, profile: maskedProfile });
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ ok: true }));
-      } catch {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+        sendJson(res, 200, { ok: true, ..._maskProfiles(validated), revision: _proxyProfilesRevision(nextRaw) });
+        });
+      } catch (error) {
+        const invalid = error instanceof SyntaxError || error instanceof TypeError;
+        sendJson(res, error.statusCode || (invalid ? 400 : 500), { ok: false, error: error.message || (invalid ? 'Invalid profile data' : 'Failed to save profiles') });
       }
     });
     return;
@@ -5096,6 +5291,7 @@ async function _doStop(deadlineAt) {
     scratchTerminalWss = null;
   }
   _codexRequestUserInputBridge = null;
+  _systemPromptRuntimeCapability = null;
   unwatchFile(CONTEXT_WINDOW_FILE);
   clients.forEach(client => client.end());
   clients = [];
