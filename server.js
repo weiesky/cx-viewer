@@ -48,7 +48,7 @@ import { checkAndUpdate } from './lib/updater.js';
 import { loadPlugins, runWaterfallHook, runParallelHook, getPluginsInfo, getPluginsDir } from './lib/plugin-loader.js';
 import { uploadPlugins, installPluginFromUrl } from './lib/plugin-manager.js';
 import { getUserProfile } from './lib/user-profile.js';
-import { getGitDiffs } from './lib/git-diff.js';
+import { getGitDiffs, getUnpushedCommits, isValidCommitHash, isSafeRelativePath, PATH_TRAVERSAL, execFileAsync as gitExecFileAsync } from './lib/git-diff.js';
 import { getGitWorkingTreeLineStats } from './lib/git-change-stats.js';
 import { parseCodexInvocation } from './lib/cli-args.js';
 import { CONTEXT_WINDOW_FILE, buildContextWindowEvent } from './lib/context-watcher.js';
@@ -1352,6 +1352,30 @@ function sendCodexMemoryError(res, err) {
   console.error('[CX Viewer] Codex memory error:', err?.message || err);
   sendJson(res, 500, { error: 'memory_error', code: 'memory_error' });
 }
+
+// 多 git 仓库支持：解析 repo 参数为安全的 cwd 路径
+function resolveRepoCwd(repoParam) {
+  const projectDir = process.env.CXV_PROJECT_DIR || process.cwd();
+  if (!repoParam || repoParam === '.') {
+    // 快速路径：验证 projectDir 确实是 git 仓库，避免非 repo 目录返回 500 泄漏路径
+    if (!existsSync(join(projectDir, '.git'))) return null;
+    return projectDir;
+  }
+  if (repoParam.includes('/') || repoParam.includes('\\') || PATH_TRAVERSAL.test(repoParam)) return null;
+  const candidate = join(projectDir, repoParam);
+  try {
+    if (!existsSync(candidate) || !statSync(candidate).isDirectory()) return null;
+    if (!existsSync(join(candidate, '.git'))) return null;
+    if (!isPathContained(candidate, projectDir)) return null;
+    // 返回 realpath 规整后的路径，避免校验后仍使用可被符号链接替换的原始路径（TOCTOU）
+    return realpathSync(candidate);
+  } catch { return null; }
+}
+
+// Per-file mutex 序列化「git status + checkout/clean」子命令对。多 tab 并发同文件
+// revert 时不再有 race 让两个 checkout 交错执行（最终状态不可预测）。
+const GIT_RESTORE_LOCK_CLEANUP_MS = 30000;
+const gitRestoreLocks = new Map();
 
 async function handleRequest(req, res) {
   const parsedUrl = new URL(req.url, `${serverProtocol}://${req.headers.host}`);
@@ -3584,6 +3608,33 @@ async function handleRequest(req, res) {
   }
 
   // Git 状态
+  // 列出项目根及其子目录中的 git 仓库（含 .git 的一级子目录）
+  if (url === '/api/git-repos' && method === 'GET') {
+    try {
+      const projectDir = process.env.CXV_PROJECT_DIR || process.cwd();
+      const repos = [];
+      if (existsSync(join(projectDir, '.git'))) {
+        repos.push({ name: basename(projectDir), path: '.', isRoot: true });
+      }
+      const entries = readdirSync(projectDir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (!entry.isDirectory()) continue;
+        if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
+        try {
+          if (existsSync(join(projectDir, entry.name, '.git'))) {
+            repos.push({ name: entry.name, path: entry.name, isRoot: false });
+          }
+        } catch {}
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ repos }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message, repos: [] }));
+    }
+    return;
+  }
+
   // 撤销单个文件的 git 变更
   if (url === '/api/git-restore' && method === 'POST') {
     let body = '';
@@ -3595,37 +3646,85 @@ async function handleRequest(req, res) {
         res.end(JSON.stringify({ error: 'Invalid request body' }));
         return;
       }
+      // Reject null/array/non-object bodies (JSON.parse(null) → null, destructure → TypeError)
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid request body' }));
+        return;
+      }
       try {
-        const { path: filePath } = parsed;
-        if (!filePath) {
+        const { path: filePath, repo: repoParam } = parsed;
+        if (!filePath || typeof filePath !== 'string') {
           res.writeHead(400, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Missing path' }));
           return;
         }
-        if (filePath.startsWith('/') || filePath.includes('..')) {
+        if (!isSafeRelativePath(filePath)) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Invalid path' }));
           return;
         }
-        const cwd = process.env.CXV_PROJECT_DIR || process.cwd();
+        if (repoParam !== undefined && typeof repoParam !== 'string') {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Invalid repo parameter' }));
+          return;
+        }
+        const cwd = resolveRepoCwd(repoParam);
+        if (!cwd) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Invalid repo parameter' }));
+          return;
+        }
         const fullPath = join(cwd, filePath);
         if (existsSync(fullPath)) {
+          // 只允许还原单个文件；目录会被 git clean -fd 递归删除，风险过高
+          if (statSync(fullPath).isDirectory()) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Path is a directory' }));
+            return;
+          }
           const realFull = realpathSync(fullPath);
           const realCwd = realpathSync(cwd);
-          if (!realFull.startsWith(realCwd + '/')) {
+          if (!realFull.startsWith(realCwd + sep)) {
             res.writeHead(400, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: 'Path traversal not allowed' }));
             return;
           }
         }
-        // Check if file is untracked
-        const { stdout: statusOut } = await execFileAsync('git', ['status', '--porcelain', '--', filePath], { cwd, encoding: 'utf-8', timeout: 5000 });
-        const isUntracked = statusOut.trim().startsWith('??');
-        if (isUntracked) {
-          await execFileAsync('git', ['clean', '-fd', '--', filePath], { cwd, timeout: 10000 });
-        } else {
-          await execFileAsync('git', ['checkout', '--', filePath], { cwd, timeout: 10000 });
-        }
+        // Per-file mutex 序列化「git status + checkout/clean」子命令对。多 tab 并发同文件
+        // revert 时不再有 race 让两个 checkout 交错执行（最终状态不可预测）。
+        // resolve() 规整 ./foo.js / foo.js / .//foo.js 为同一 lockKey，防形变绕过。
+        const lockKey = resolve(join(cwd, filePath));
+        const prev = gitRestoreLocks.get(lockKey) || Promise.resolve();
+        // .catch(() => {}) isolates each queued op — one failure doesn't skip the rest
+        const current = prev.catch(() => {}).then(async () => {
+          // Use -z for NUL-terminated output: a glob/wildcard path never equals its own
+          // literal name in the status list, so this exact-match gates out glob injection.
+          const { stdout: statusOut } = await gitExecFileAsync('git', ['status', '--porcelain', '-z', '--', filePath], { cwd, encoding: 'utf-8', timeout: 5000 });
+          // -z output: <XY> <path>\0 …; match the exact filename after the NUL split
+          const entries = statusOut.split('\0').filter(Boolean);
+          const match = entries.find(e => e.length > 3 && e.substring(3) === filePath);
+          // File not in git status output (unchanged, nonexistent, or glob mismatch) → nothing to restore
+          if (!match) {
+            if (!existsSync(fullPath)) return;
+            // File exists on disk but not in git status (e.g. ignored, or glob didn't match) — skip
+            return;
+          }
+          const isUntracked = match.startsWith('??');
+          if (isUntracked) {
+            await gitExecFileAsync('git', ['clean', '-fd', '--', filePath], { cwd, timeout: 10000 });
+          } else {
+            await gitExecFileAsync('git', ['checkout', '--', filePath], { cwd, timeout: 10000 });
+          }
+        }).finally(() => {
+          if (gitRestoreLocks.get(lockKey) === current) gitRestoreLocks.delete(lockKey);
+        });
+        gitRestoreLocks.set(lockKey, current);
+        // setTimeout 兜底——防 finally 异常吞 entry 累积内存。
+        setTimeout(() => {
+          if (gitRestoreLocks.get(lockKey) === current) gitRestoreLocks.delete(lockKey);
+        }, GIT_RESTORE_LOCK_CLEANUP_MS).unref();
+        await current;
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true }));
       } catch (err) {
@@ -3638,9 +3737,15 @@ async function handleRequest(req, res) {
 
   if (url === '/api/git-status' && method === 'GET') {
     try {
-      const cwd = process.env.CXV_PROJECT_DIR || process.cwd();
-      const { stdout: output } = await execFileAsync('git', ['status', '--porcelain=v1', '--untracked-files=all'], { cwd, encoding: 'utf-8', timeout: 5000 });
-      const lines = output.split('\n').filter(line => line.trim());
+      const repoParam = parsedUrl.searchParams.get('repo');
+      const cwd = resolveRepoCwd(repoParam);
+      if (!cwd) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid repo parameter', changes: [] }));
+        return;
+      }
+      const { stdout: output } = await gitExecFileAsync('git', ['status', '--porcelain=v1', '--untracked-files=all'], { cwd, encoding: 'utf-8', timeout: 5000, maxBuffer: 10 * 1024 * 1024 });
+      const lines = output.split(/\r?\n/).filter(line => line.trim());
       const changes = lines.map(line => {
         const status = line.substring(0, 2).trim();
         let file = line.substring(3).trim();
@@ -3670,23 +3775,89 @@ async function handleRequest(req, res) {
   // Git diff 数据获取
   if (url.startsWith('/api/git-diff') && method === 'GET') {
     try {
-      const cwd = process.env.CXV_PROJECT_DIR || process.cwd();
+      const repoParam = parsedUrl.searchParams.get('repo');
+      const cwd = resolveRepoCwd(repoParam);
+      if (!cwd) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid repo parameter', diffs: [] }));
+        return;
+      }
       const filesParam = parsedUrl.searchParams.get('files');
 
       if (!filesParam) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Missing files parameter' }));
+        res.end(JSON.stringify({ error: 'Missing files parameter', diffs: [] }));
         return;
       }
 
       const files = filesParam.split(',').map(f => f.trim()).filter(Boolean);
-      const diffs = await getGitDiffs(cwd, files);
+
+      // Cap file count to prevent resource-exhaustion DoS (thousands of git subprocesses)
+      const MAX_DIFF_FILES = 200;
+      if (files.length > MAX_DIFF_FILES) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: `Too many files (max ${MAX_DIFF_FILES})`, diffs: [] }));
+        return;
+      }
+
+      const commitParam = parsedUrl.searchParams.get('commit');
+      // Reject malformed commit hashes; falsy = working-tree mode
+      if (commitParam && !isValidCommitHash(commitParam)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid commit parameter', diffs: [] }));
+        return;
+      }
+      const commitHash = commitParam || undefined;
+
+      // Verify the commit exists before attempting to diff (avoid silent 200-empty for nonexistent hashes)
+      let isMerge = false;
+      if (commitHash) {
+        try {
+          await gitExecFileAsync('git', ['rev-parse', '--verify', '-q', `${commitHash}^{commit}`], { cwd, encoding: 'utf-8', timeout: 3000 });
+          // Check if this is a merge commit (git diff-tree without -m shows nothing for merges)
+          const { stdout: parentOut } = await gitExecFileAsync('git', ['rev-list', '--parents', '-n', '1', commitHash], { cwd, encoding: 'utf-8', timeout: 3000 });
+          isMerge = parentOut.trim().split(/\s+/).length > 2; // <hash> <p1> [<p2>...]
+        } catch {
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Commit not found', diffs: [] }));
+          return;
+        }
+      }
+
+      const diffs = await getGitDiffs(cwd, files, commitHash, isMerge);
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ diffs }));
     } catch (err) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: err.message, diffs: [] }));
+    }
+    return;
+  }
+
+  // 未推送的本地提交（upstream..HEAD）
+  if (url === '/api/git-log-unpushed' && method === 'GET') {
+    try {
+      const repoParam = parsedUrl.searchParams.get('repo');
+      const cwd = resolveRepoCwd(repoParam);
+      if (!cwd) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid repo parameter', commits: [], hasUpstream: false }));
+        return;
+      }
+      const result = await getUnpushedCommits(cwd);
+      // logError = true means git log failed (timeout/maxBuffer); signal the degraded state
+      // explicitly so the UI can show "unavailable" instead of silently displaying "0 commits"
+      if (result.logError) {
+        res.writeHead(502, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ...result, error: 'git log timed out or exceeded buffer' }));
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message, commits: [], hasUpstream: false }));
     }
     return;
   }
