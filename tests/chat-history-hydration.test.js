@@ -12,3 +12,8 @@ test('completed history hydration schedules a settled conversation rebuild', () 
 test('pending hydration rebuild is cancelled on unmount', () => {
   assert.match(source, /cancelAnimationFrame\(this\._historyHydrationRafId\)/);
 });
+
+test('read-only logfile conversations keep the bounded client render window', () => {
+  assert.match(source, /_applyMobileSlice\(allItems\)[\s\S]*?const limit = ITEM_LIMIT \+ this\._mobileExtraItems;[\s\S]*?const offset = allItems\.length - limit;/);
+  assert.doesNotMatch(source, /if \(this\.props\.isLocalLog\)[\s\S]*?return allItems;/);
+});

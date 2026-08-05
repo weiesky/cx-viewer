@@ -4,6 +4,7 @@ import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
+  handleUltraAgentsRoute,
   handleUltraAgentsRequest,
   isLocalizedText,
   isNonEmptyAgentContent,
@@ -116,5 +117,28 @@ describe('ultra-agent response handler', () => {
     assert.equal(res.status, 500);
     assert.deepEqual(JSON.parse(res.body), { error: 'internal_error' });
     assert.equal(res.body.includes('/secret/path'), false);
+  });
+
+  it('matches only GET requests for the fixed route and ignores query parameters', () => {
+    const res = response();
+    const agents = [{ id: 'a' }];
+    assert.equal(handleUltraAgentsRoute(
+      { method: 'GET' },
+      res,
+      new URL('http://127.0.0.1/api/ultra-agents?dir=/tmp&limit=1'),
+      { list: () => agents },
+    ), true);
+    assert.deepEqual(JSON.parse(res.body), { ok: true, agents });
+
+    assert.equal(handleUltraAgentsRoute(
+      { method: 'POST' },
+      response(),
+      new URL('http://127.0.0.1/api/ultra-agents'),
+    ), false);
+    assert.equal(handleUltraAgentsRoute(
+      { method: 'GET' },
+      response(),
+      new URL('http://127.0.0.1/api/other'),
+    ), false);
   });
 });

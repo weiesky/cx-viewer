@@ -343,7 +343,6 @@ class ChatView extends React.Component {
     this._mobileExtraItems = 0;
     this._mobileSliceOffset = 0;
     this._totalItemCount = 0;
-    this._autoFillRafId = null; // logfile 只读模式自动渐进扩窗的 rAF 句柄（_maybeScheduleLocalLogAutoFill）
     // Cold history hydration can update sessions and the local current-session
     // anchor in adjacent React commits. Rebuild once on the following frame so
     // the final hydrated props always win over an earlier empty render.
@@ -1007,9 +1006,6 @@ class ChatView extends React.Component {
     }
     // 不再在此建立 ws — Provider 通过 props.open 派生(cliMode || terminalVisible)集中管理
     if (!useVirtuoso) this._stickyController.bind(this.containerRef.current);
-    // logfile 只读模式：非虚拟化平台自动渐进扩窗（替代手工「加载更多」），每步 setState 后
-    // 经本钩子接力调度下一步，直到 _mobileSliceOffset 归零。
-    this._maybeScheduleLocalLogAutoFill();
   }
 
   componentWillUnmount() {
@@ -1046,7 +1042,6 @@ class ChatView extends React.Component {
       }
     } catch {}
     if (this._queueTimer) clearTimeout(this._queueTimer);
-    if (this._autoFillRafId) { cancelAnimationFrame(this._autoFillRafId); this._autoFillRafId = null; }
     if (this._historyHydrationRafId) { cancelAnimationFrame(this._historyHydrationRafId); this._historyHydrationRafId = null; }
     this._ptyPrompt.dispose();
     this._toolFileMonitor.dispose();
@@ -1260,19 +1255,6 @@ class ChatView extends React.Component {
     clearTimeout(this._sendDeferTimer);
     this.setState({ sendDeferred: false });
   };
-
-  // logfile 只读模式（非虚拟化平台：桌面/iOS/iPad）自动渐进扩窗——替代手工点击「加载更多」。
-  // 每个 rAF 帧执行一步 handleLoadMore（帧间让出主线程给绘制/输入，避免单次全量挂 DOM 的长任务卡死，
-  // 见 DESKTOP_ITEM_LIMIT 注释），沿用其滚动补偿保持视口稳定；componentDidUpdate 接力续步直到全量渲染完成。
-  _maybeScheduleLocalLogAutoFill() {
-    if (!this.props.isLocalLog || useVirtuoso) return;
-    if (this._mobileSliceOffset <= 0 || this._autoFillRafId || this._unmounted) return;
-    this._autoFillRafId = requestAnimationFrame(() => {
-      this._autoFillRafId = null;
-      if (this._unmounted || this._mobileSliceOffset <= 0) return;
-      this.handleLoadMore();
-    });
-  }
 
   handleLoadMore = () => {
     this._mobileExtraItems += MOBILE_LOAD_MORE_STEP;
@@ -2089,13 +2071,6 @@ class ChatView extends React.Component {
   // （桌面端启用裁剪以避免长任务全量渲染卡死，见 DESKTOP_ITEM_LIMIT 注释）。
   _applyMobileSlice(allItems) {
     this._totalItemCount = allItems.length;
-    // logfile 只读模式：虚拟化平台（Android，渲染 O(1)）直接一次性全量渲染；
-    // 桌面/iOS/iPad 不走虚拟化，单次全量挂 DOM 会重现 DESKTOP_ITEM_LIMIT 注释里点名的长任务卡死，
-    // 故保留 ITEM_LIMIT 窗口裁剪，由 _maybeScheduleLocalLogAutoFill 逐帧自动扩窗至全量（无需手工点击）。
-    if (this.props.isLocalLog && useVirtuoso) {
-      this._mobileSliceOffset = 0;
-      return allItems;
-    }
     const limit = ITEM_LIMIT + this._mobileExtraItems;
     if (allItems.length <= limit) {
       this._mobileSliceOffset = 0;
@@ -3387,17 +3362,9 @@ class ChatView extends React.Component {
 
     const loadMoreBtn = this._mobileSliceOffset > 0 ? (
       <div className={styles.loadMoreWrap}>
-        {this.props.isLocalLog ? (
-          // logfile 只读模式自动渐进扩窗中：展示加载态而非可点按钮（_maybeScheduleLocalLogAutoFill 驱动）
-          <div className={`${styles.loadMoreBtn} ${styles.loadMoreBtnLoading}`}>
-            <span className={styles.loadMoreSpinner} />
-            {t('ui.loadingMoreHistory')}
-          </div>
-        ) : (
-          <button className={styles.loadMoreBtn} onClick={this.handleLoadMore}>
-            {t('ui.loadMoreHistory', { count: this._mobileSliceOffset })}
-          </button>
-        )}
+        <button className={styles.loadMoreBtn} onClick={this.handleLoadMore}>
+          {t('ui.loadMoreHistory', { count: this._mobileSliceOffset })}
+        </button>
       </div>
     ) : null;
 

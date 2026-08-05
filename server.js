@@ -122,7 +122,7 @@ import {
   serveLogV2Page,
   serveLogV2Snapshot,
 } from './server/lib/log-v2-routes.js';
-import { handleUltraAgentsRequest } from './server/lib/ultra-agents-api.js';
+import { handleUltraAgentsRoute } from './server/lib/ultra-agents-api.js';
 import { openScratchPty, killScratchPty, shutdownScratchPtys } from './scratch-pty-manager.js';
 
 
@@ -1501,10 +1501,7 @@ async function handleRequest(req, res) {
     return;
   }
 
-  if (url === '/api/ultra-agents' && method === 'GET') {
-    handleUltraAgentsRequest(req, res);
-    return;
-  }
+  if (handleUltraAgentsRoute(req, res, parsedUrl)) return;
 
   if (url === '/api/search' && method === 'POST') {
     try {
@@ -4591,7 +4588,7 @@ export async function startViewer() {
             }
           }
           // v2.0.69 之前的版本会清空控制台，自动打开浏览器确保用户能看到界面
-          if (!isCliMode) {
+          if (!isCliMode && process.env.CXV_TEST !== '1') {
             try {
               const ccPkgPath = join(__dirname, '..', '@openai', 'codex', 'package.json');
               const ccVer = JSON.parse(readFileSync(ccPkgPath, 'utf-8')).version;

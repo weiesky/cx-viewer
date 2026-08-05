@@ -13,3 +13,8 @@ test('a live reset during bootstrap is deferred until the baseline is visible', 
   assert.match(source, /if \(!this\._v2BootstrapReady\) \{[\s\S]*?this\._v2LiveNeedsReset = true/);
   assert.match(source, /this\._v2BootstrapReady = true;[\s\S]*?if \(this\._v2LiveNeedsReset\)/);
 });
+
+test('historical and active logs both request bounded snapshots', () => {
+  assert.match(source, /async _initV2Snapshot\(\)[\s\S]*?const snapshotLimit = isMobile \? 200 : 400;[\s\S]*?limit: snapshotLimit/);
+  assert.match(source, /async _loadLocalV2LogFile\(file\)[\s\S]*?const snapshotLimit = isMobile \? 200 : 400;[\s\S]*?readOnly: true,[\s\S]*?limit: snapshotLimit/);
+});

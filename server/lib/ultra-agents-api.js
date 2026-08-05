@@ -118,3 +118,9 @@ export function handleUltraAgentsRequest(req, res, { list = listUltraAgents } = 
     res.end(JSON.stringify({ error: 'internal_error' }));
   }
 }
+
+export function handleUltraAgentsRoute(req, res, parsedUrl, options) {
+  if (req.method !== 'GET' || parsedUrl.pathname !== '/api/ultra-agents') return false;
+  handleUltraAgentsRequest(req, res, options);
+  return true;
+}
