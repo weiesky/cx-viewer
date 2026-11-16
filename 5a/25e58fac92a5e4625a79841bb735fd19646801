@@ -1,0 +1,84 @@
+cli.js
+  h_f08accc60857ed 547-552
+imSkills/ar/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+imSkills/da/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+imSkills/de/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-79
+imSkills/en/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-79
+imSkills/es/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+imSkills/fr/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+imSkills/it/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+imSkills/ja/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+imSkills/ko/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+imSkills/no/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+imSkills/pl/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+imSkills/pt-BR/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+imSkills/ru/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+imSkills/scripts/cxv-projects.mjs
+  h_f08accc60857ed 1-225
+imSkills/th/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-78
+imSkills/tr/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-79
+imSkills/uk/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+imSkills/zh-TW/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+imSkills/zh/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+lib/adapters/dingtalk-adapter.js
+  h_f08accc60857ed 1-2,6-9,67-95,127-209,299-328
+lib/appserver-bridge.js
+  h_f08accc60857ed 68,73-76,2094-2098
+lib/dingtalk-im-bridge.js
+  h_f08accc60857ed 16-20,162-213,219,227,229-230,247-253,255,258,263,370-373,376-382,387-398,404,406-407,416
+lib/dingtalk-im-config.js
+  h_f08accc60857ed 145-148
+lib/dingtalk-im-skills.js
+  h_f08accc60857ed 1-51
+package.json
+  h_f08accc60857ed 71,85,124
+scripts/npm-pack-dry-run.mjs
+  h_f08accc60857ed 43-45,49,54
+server.js
+  h_f08accc60857ed 818
+src/components/settings/ImPlatformSettings.jsx
+  h_f08accc60857ed 15
+src/components/settings/imPlatforms.js
+  h_f08accc60857ed 24-43
+tests/appserver-bridge.test.js
+  h_f08accc60857ed 15,546-560
+tests/cxv-projects-skill-script.test.js
+  h_f08accc60857ed 1-61
+tests/dingtalk-adapter.test.js
+  h_f08accc60857ed 109-163
+tests/dingtalk-im-bridge.test.js
+  h_f08accc60857ed 230-282
+tests/dingtalk-im-config.test.js
+  h_f08accc60857ed 20,24-27
+tests/dingtalk-im-skills.test.js
+  h_f08accc60857ed 1-85
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "5a25e58fac92a5e4625a79841bb735fd19646801",
+  "prompts": {},
+  "humans": {
+    "h_f08accc60857ed": {
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
