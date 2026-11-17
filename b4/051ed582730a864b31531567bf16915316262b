@@ -1,0 +1,27 @@
+tests/file-api.test.js
+  s_7e818aa265d06a::t_e91f4922be46c0 1-2,4,6-20,22-63
+  s_7e818aa265d06a::t_cccb6d34fd83d7 3
+  s_7e818aa265d06a::t_07fb36eccc9a02 5,21
+tests/auth-server.test.js
+  s_7e818aa265d06a::t_07fb36eccc9a02 4,341-356
+  s_7e818aa265d06a::t_e95352e3f53c1b 357
+lib/file-api.js
+  s_7e818aa265d06a::t_3a7e0c0f24f36e 5-6,40,43-52,54-55,58-60,72-76,103,106,112
+  s_7e818aa265d06a::t_07fb36eccc9a02 56-57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "b4051ed582730a864b31531567bf16915316262b",
+  "prompts": {},
+  "sessions": {
+    "s_7e818aa265d06a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e7f7-4a23-7b73-8aee-7f5cf424b32f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
