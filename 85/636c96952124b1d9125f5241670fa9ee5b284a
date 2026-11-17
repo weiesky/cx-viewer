@@ -1,0 +1,27 @@
+interceptor.js
+  s_7e818aa265d06a::t_badc4d856e0925 9,20
+  s_7e818aa265d06a::t_9525f3953843a2 23,62,134
+tests/proxy-profiles-api.test.js
+  s_7e818aa265d06a::t_1309f81f2a0461 3-5,129-250
+  s_7e818aa265d06a::t_81239447036b58 251
+server.js
+  s_7e818aa265d06a::t_9525f3953843a2 16,699-706,2472,2481-2482,2502-2503,2518-2528,2534
+lib/proxy-profile-credentials.js
+  s_7e818aa265d06a::t_9525f3953843a2 2,47-59,62-63
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "85636c96952124b1d9125f5241670fa9ee5b284a",
+  "prompts": {},
+  "sessions": {
+    "s_7e818aa265d06a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e7f7-4a23-7b73-8aee-7f5cf424b32f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
