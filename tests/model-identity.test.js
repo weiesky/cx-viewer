@@ -9,8 +9,8 @@ import {
   normalizeModelName,
   resolveProducerModelName,
   sessionIdentityCandidatesMatch,
-} from '../src/utils/modelIdentity.js';
-import { getLatestSessionByActivity } from '../src/utils/sessionManager.js';
+} from '../packages/app/src/utils/modelIdentity.js';
+import { getLatestSessionByActivity } from '../apps/web/src/utils/sessionManager.js';
 
 function sessionCandidates(id, conversationId = 'thread:shared') {
   return [`internal:${id}`, `conversation:${conversationId}`];

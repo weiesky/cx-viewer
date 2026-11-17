@@ -15,9 +15,9 @@ import {
   setAppServerAgentMessageDeltaListener,
   _writeAppServerEntryForTests,
   resetRawCaptureBoundary,
-} from '../lib/appserver-bridge.js';
-import { getDefaultSystemPrompt, saveDefaultSystemPrompt, saveModelSystemPrompt } from '../lib/model-system-prompts.js';
-import { buildSingleToolResultCore } from '../src/utils/toolResultCore.js';
+} from '../packages/app/lib/appserver-bridge.js';
+import { getDefaultSystemPrompt, saveDefaultSystemPrompt, saveModelSystemPrompt } from '../packages/app/lib/model-system-prompts.js';
+import { buildSingleToolResultCore } from '../apps/web/src/utils/toolResultCore.js';
 
 let capturedEntries = [];
 

@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { formatCodexInternalRequestTag, getCodexMcpToolUseName, getCodexToolUseName } from '../src/utils/requestType.js';
+import { formatCodexInternalRequestTag, getCodexMcpToolUseName, getCodexToolUseName } from '../packages/app/src/utils/requestType.js';
 
-const requestList = readFileSync(new URL('../src/components/dashboard/RequestList.jsx', import.meta.url), 'utf8');
-const detailPanel = readFileSync(new URL('../src/components/dashboard/DetailPanel.jsx', import.meta.url), 'utf8');
+const requestList = readFileSync(new URL('../apps/web/src/components/dashboard/RequestList.jsx', import.meta.url), 'utf8');
+const detailPanel = readFileSync(new URL('../apps/web/src/components/dashboard/DetailPanel.jsx', import.meta.url), 'utf8');
 
 test('recognizes only concrete codex tool-use URLs and decodes their names', () => {
   assert.equal(getCodexToolUseName({ url: 'codex://tool/shell_command' }), 'shell_command');

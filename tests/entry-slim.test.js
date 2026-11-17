@@ -8,9 +8,9 @@ import {
   internMainAgentInput,
   restoreSlimmedEntry,
   _resetEntryInternPoolsForTest,
-} from '../src/utils/entry-slim.js';
-import { _resetReadPoolForTest } from '../src/utils/readResultPool.js';
-import { isPostClearCheckpoint } from '../src/utils/clearCheckpoint.js';
+} from '../apps/web/src/utils/entry-slim.js';
+import { _resetReadPoolForTest } from '../apps/web/src/utils/readResultPool.js';
+import { isPostClearCheckpoint } from '../packages/app/src/utils/clearCheckpoint.js';
 
 const isMainAgent = entry => entry?.mainAgent === true && !entry?.teammate;
 

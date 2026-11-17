@@ -6,13 +6,13 @@ import {
   getResponseConversationItems,
   getResponseInstructions,
   getResponseTools,
-} from '../lib/openai-body.js';
-import { classifyAgentRequest, isCodexResponsesRequest } from '../lib/interceptor-core.js';
-import { isMainAgentEntry } from '../lib/main-agent-entry.js';
+} from '../packages/app/lib/openai-body.js';
+import { classifyAgentRequest, isCodexResponsesRequest } from '../packages/app/lib/interceptor-core.js';
+import { isMainAgentEntry } from '../packages/app/lib/main-agent-entry.js';
 import {
   createEntrySlimmer,
   restoreSlimmedEntry,
-} from '../src/utils/entry-slim.js';
+} from '../apps/web/src/utils/entry-slim.js';
 
 function currentCodexBody() {
   return {

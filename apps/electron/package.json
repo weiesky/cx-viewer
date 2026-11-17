@@ -1,0 +1,53 @@
+{
+  "name": "@cxv/electron",
+  "version": "1.1.20",
+  "private": true,
+  "type": "module",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "electron electron/main.js",
+    "test": "CXV_TEST=1 CXV_LOG_DIR=tmp node --test",
+    "build": "node scripts/assemble-app.mjs && electron-builder",
+    "sign": "./scripts/mac-sign.sh",
+    "check-sign": "./scripts/check-sign-config.sh"
+  },
+  "devDependencies": {
+    "electron": "^35.1.2",
+    "electron-builder": "^26.0.12",
+    "@electron/notarize": "^3.1.1"
+  },
+  "build": {
+    "appId": "com.cxviewer.app",
+    "productName": "CX Viewer",
+    "asar": true,
+    "directories": {
+      "app": "stage",
+      "output": "../../release"
+    },
+    "extraMetadata": {
+      "main": "electron/main.js"
+    },
+    "files": [
+      "electron/**/*",
+      "package.json",
+      "!node_modules/**/*"
+    ],
+    "asarUnpack": [],
+    "extraResources": [
+      {
+        "from": "stage",
+        "to": "server",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "stage/node_modules",
+        "to": "server/node_modules",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ]
+  }
+}

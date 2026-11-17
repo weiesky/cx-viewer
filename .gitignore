@@ -2,3 +2,14 @@ node_modules/
 dist/
 release/
 coverage/
+
+apps/*/node_modules/
+packages/*/node_modules/
+apps/web/dist/
+packages/app/dist/
+packages/app/public/
+packages/app/electron/
+packages/app/README.md
+packages/app/LICENSE*
+apps/electron/stage/
+packages/app/docs/

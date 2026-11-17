@@ -1,0 +1,91 @@
+{
+  "name": "cx-viewer",
+  "version": "1.1.20",
+  "description": "Codex Logger visualization management tool",
+  "license": "MIT",
+  "main": "server.js",
+  "type": "module",
+  "exports": {
+    ".": "./server.js",
+    "./server.js": "./server.js",
+    "./interceptor.js": "./interceptor.js"
+  },
+  "author": "tian1024527726",
+  "bin": {
+    "cxv": "cli.js"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "CXV_TEST=1 CXV_LOG_DIR=tmp node --test",
+    "sync:ultraplan-presets": "node scripts/sync-ultraplan-presets.mjs",
+    "check:ultraplan-presets": "node scripts/sync-ultraplan-presets.mjs --check",
+    "verify:codex-ask": "node scripts/verify-codex-request-user-input.mjs",
+    "prepack": "node scripts/assemble-dist.mjs",
+    "pack:dry-run": "node scripts/npm-pack-dry-run.mjs"
+  },
+  "keywords": [
+    "codex"
+  ],
+  "contributors": [
+    {
+      "name": "tian1024527726",
+      "email": "18868814352@163.com"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weiesky/cx-viewer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/weiesky/cx-viewer/issues"
+  },
+  "homepage": "https://github.com/weiesky/cx-viewer#readme",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
+  "engines": {
+    "node": ">=20.12.0"
+  },
+  "files": [
+    "dist/",
+    "!dist/**/*.map",
+    "src/",
+    "public/",
+    "server.js",
+    "cli.js",
+    "proxy.js",
+    "interceptor.js",
+    "i18n.js",
+    "findcx.js",
+    "lib/",
+    "server/lib/",
+    "electron/",
+    "scripts/",
+    "plugins/",
+    "pty-manager.js",
+    "scratch-pty-manager.js",
+    "workspace-registry.js",
+    "concepts/",
+    "ultraAgents/",
+    "imSkills/",
+    "docs/"
+  ],
+  "dependencies": {
+    "@openai/codex-sdk": "0.142.5",
+    "@opentelemetry/api": "^1.9.1",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.214.0",
+    "@opentelemetry/resources": "^2.6.1",
+    "@opentelemetry/sdk-node": "^0.214.0",
+    "@opentelemetry/semantic-conventions": "^1.40.0",
+    "@xterm/addon-serialize": "0.14.0",
+    "@xterm/addon-unicode11": "0.9.0",
+    "@xterm/headless": "6.0.0",
+    "dingtalk-stream": "2.1.5",
+    "dompurify": "^3.3.3",
+    "jszip": "^3.10.1",
+    "node-pty": "^1.1.0",
+    "undici": "^7.22.0",
+    "ws": "^8.19.0"
+  },
+  "packageManager": "pnpm@10.34.9"
+}

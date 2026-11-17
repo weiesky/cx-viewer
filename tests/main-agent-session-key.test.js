@@ -7,9 +7,9 @@ import {
   getMainAgentConversationId,
   getMainAgentSessionKey,
   isSessionBoundary,
-} from '../src/utils/clearCheckpoint.js';
-import { applyBatchEntryTimestamps, applyInPlaceLastMsgReplace, getSessionBoundaryId, isSessionDividerBoundary } from '../src/utils/sessionManager.js';
-import { mergeMainAgentSessions } from '../src/utils/sessionMerge.js';
+} from '../packages/app/src/utils/clearCheckpoint.js';
+import { applyBatchEntryTimestamps, applyInPlaceLastMsgReplace, getSessionBoundaryId, isSessionDividerBoundary } from '../apps/web/src/utils/sessionManager.js';
+import { mergeMainAgentSessions } from '../apps/web/src/utils/sessionMerge.js';
 
 function msg(role, text) {
   return { role, content: [{ type: 'text', text }] };

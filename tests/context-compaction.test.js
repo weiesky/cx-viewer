@@ -8,8 +8,8 @@ import {
   extractEntryContextCompactionRecord,
   loadExcludedContextCompactionEpoch,
   saveExcludedContextCompactionEpoch,
-} from '../src/utils/contextCompaction.js';
-import { MAX_PROJECTED_TEXT_CHARS } from '../src/utils/userPromptContent.js';
+} from '../apps/web/src/utils/contextCompaction.js';
+import { MAX_PROJECTED_TEXT_CHARS } from '../packages/app/src/utils/userPromptContent.js';
 
 function main(input, threadId = 'thread-current', extra = {}) {
   return {
