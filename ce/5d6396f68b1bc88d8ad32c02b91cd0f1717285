@@ -1,0 +1,28 @@
+lib/code-search.js
+  s_7e818aa265d06a::t_594121f4602799 13,17,225-228,257-258,337,390,404-412,463
+lib/code-replace.js
+  s_7e818aa265d06a::t_1ea3dc358e47b9 9,13,177-185,202,205
+  s_7e818aa265d06a::t_594121f4602799 162
+lib/credential-file-policy.js
+  s_7e818aa265d06a::t_594121f4602799 67-71,81
+tests/credential-search-boundary.test.js
+  s_7e818aa265d06a::t_d0b36c8f46e349 14,40-41,44-45
+  s_7e818aa265d06a::t_594121f4602799 1-2,5-13,15-39,42-43,46,70
+  s_7e818aa265d06a::t_1ea3dc358e47b9 3-4,47-69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "ce5d6396f68b1bc88d8ad32c02b91cd0f1717285",
+  "prompts": {},
+  "sessions": {
+    "s_7e818aa265d06a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e7f7-4a23-7b73-8aee-7f5cf424b32f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
