@@ -1,0 +1,2316 @@
+packages/app/cli.js
+  h_f08accc60857ed 547-552
+  s_59be6bb53a5547::t_87c880396dc603 1-1025
+packages/app/imSkills/ar/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+  s_59be6bb53a5547::t_87c880396dc603 1-77
+packages/app/imSkills/da/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+  s_59be6bb53a5547::t_87c880396dc603 1-77
+packages/app/imSkills/de/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-79
+  s_59be6bb53a5547::t_87c880396dc603 1-79
+packages/app/imSkills/en/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-79
+  s_59be6bb53a5547::t_87c880396dc603 1-79
+packages/app/imSkills/es/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+  s_59be6bb53a5547::t_87c880396dc603 1-77
+packages/app/imSkills/fr/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+  s_59be6bb53a5547::t_87c880396dc603 1-77
+packages/app/imSkills/it/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+  s_59be6bb53a5547::t_87c880396dc603 1-77
+packages/app/imSkills/ja/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+  s_59be6bb53a5547::t_87c880396dc603 1-77
+packages/app/imSkills/ko/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+  s_59be6bb53a5547::t_87c880396dc603 1-77
+packages/app/imSkills/no/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+  s_59be6bb53a5547::t_87c880396dc603 1-77
+packages/app/imSkills/pl/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+  s_59be6bb53a5547::t_87c880396dc603 1-77
+packages/app/imSkills/pt-BR/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+  s_59be6bb53a5547::t_87c880396dc603 1-77
+packages/app/imSkills/ru/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+  s_59be6bb53a5547::t_87c880396dc603 1-77
+packages/app/imSkills/scripts/cxv-projects.mjs
+  h_f08accc60857ed 1-225
+  s_59be6bb53a5547::t_87c880396dc603 1-225
+packages/app/imSkills/th/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-78
+  s_59be6bb53a5547::t_87c880396dc603 1-78
+packages/app/imSkills/tr/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-79
+  s_59be6bb53a5547::t_87c880396dc603 1-79
+packages/app/imSkills/uk/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+  s_59be6bb53a5547::t_87c880396dc603 1-77
+packages/app/imSkills/zh-TW/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+  s_59be6bb53a5547::t_87c880396dc603 1-77
+packages/app/imSkills/zh/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+  s_59be6bb53a5547::t_87c880396dc603 1-77
+packages/app/lib/adapters/dingtalk-adapter.js
+  h_f08accc60857ed 1-2,6-9,67-95,127-209,299-328
+  s_59be6bb53a5547::t_87c880396dc603 1-342
+packages/app/lib/appserver-bridge.js
+  h_f08accc60857ed 68,73-76,2094-2098
+  s_59be6bb53a5547::t_87c880396dc603 1-2751
+packages/app/lib/dingtalk-im-bridge.js
+  h_f08accc60857ed 16-20,162-213,219,227,229-230,247-253,255,258,263,370-373,376-382,387-398,404,406-407,416
+  s_59be6bb53a5547::t_87c880396dc603 1-427
+packages/app/lib/dingtalk-im-skills.js
+  h_f08accc60857ed 1-51
+  s_59be6bb53a5547::t_87c880396dc603 1-51
+packages/app/scripts/npm-pack-dry-run.mjs
+  h_f08accc60857ed 43-45,49,54
+  s_59be6bb53a5547::t_838304d87908f9 13
+  s_59be6bb53a5547::t_87c880396dc603 1-12,14-54
+packages/app/server.js
+  h_f08accc60857ed 800
+  s_7e818aa265d06a::t_8ade16e0e53143 1809-1813
+  s_7e818aa265d06a::t_aacf1e1cdd2b03 895,1418,4752
+  s_7e818aa265d06a::t_fafba48d20e356 3530,3552-3556
+  s_7e818aa265d06a::t_f4120ac456d6e8 2055,2067,2080,2549,2552,2581
+  s_7e818aa265d06a::t_59bb30e81810c7 13,2615-2619,2637,2671-2673,2688-2689,2698-2699,2712-2721,2724,2740-2742,2773-2774,2806
+  s_7e818aa265d06a::t_ddc08e4dc5f262 14
+  s_7e818aa265d06a::t_695204005c2a2d 3003,3008,3127,3138
+  s_7e818aa265d06a::t_c25d380bdb9d9b 1688-1689,1716,1720,1723-1724,1730-1732,2997
+  s_7e818aa265d06a::t_28abef4cff36db 15,655,1944,1946,3909,3914,3916,4320-4324,4483,4491-4494,4501,4505
+  s_7e818aa265d06a::t_9eb16e582eaccc 2389,2393,2412
+  s_7e818aa265d06a::t_9525f3953843a2 698-705,2462,2471-2472,2492-2493,2508-2518,2524
+  s_59be6bb53a5547::t_87c880396dc603 1-15,17-24,25-706,708-5605
+  s_59be6bb53a5547::t_d89cc90ef59127 16,707
+apps/web/src/components/settings/ImPlatformSettings.jsx
+  h_f08accc60857ed 15
+  s_59be6bb53a5547::t_87c880396dc603 1-5,8-457
+  s_59be6bb53a5547::t_99aa6db8eec87a 6-7
+apps/web/src/components/settings/imPlatforms.js
+  h_f08accc60857ed 24-43
+  s_59be6bb53a5547::t_87c880396dc603 1-59
+tests/appserver-bridge.test.js
+  h_f08accc60857ed 15,546-560
+  s_59be6bb53a5547::t_87c880396dc603 18-20
+packages/app/tests/cxv-projects-skill-script.test.js
+  h_f08accc60857ed 1-61
+  s_59be6bb53a5547::t_87c880396dc603 1-61
+packages/app/tests/dingtalk-adapter.test.js
+  h_f08accc60857ed 109-163
+  s_59be6bb53a5547::t_87c880396dc603 1-188
+packages/app/tests/dingtalk-im-bridge.test.js
+  h_f08accc60857ed 230-282
+  s_59be6bb53a5547::t_87c880396dc603 1-291
+packages/app/tests/dingtalk-im-skills.test.js
+  h_f08accc60857ed 1-85
+  s_59be6bb53a5547::t_87c880396dc603 1-85
+packages/app/concepts/en/Tool-collaboration.md
+  s_ef9ee44cb3b089::t_4523baba35aa59 5-6
+  s_59be6bb53a5547::t_87c880396dc603 1-38
+packages/app/concepts/en/Tool-request_user_input.md
+  s_ef9ee44cb3b089::t_be35fb415d3996 3
+  s_59be6bb53a5547::t_87c880396dc603 1-3
+packages/app/concepts/en/Tool-exec.md
+  s_ef9ee44cb3b089::t_b96a5ea77b7e69 18-19,40,74-75,77,82
+  s_ef9ee44cb3b089::t_62430898c9c1d5 64-65
+  s_ef9ee44cb3b089::t_4523baba35aa59 83
+  s_59be6bb53a5547::t_87c880396dc603 1-92
+packages/app/src/utils/ultraplanTemplates.js
+  s_ef9ee44cb3b089::t_d51d16a0c7536c 193
+  s_59be6bb53a5547::t_87c880396dc603 1-226
+packages/app/concepts/zh/Tools.md
+  s_ef9ee44cb3b089::t_be35fb415d3996 41-42
+  s_ef9ee44cb3b089::t_b96a5ea77b7e69 12-14,39,43-45
+  s_ef9ee44cb3b089::t_62430898c9c1d5 3
+  s_59be6bb53a5547::t_87c880396dc603 1-45
+packages/app/concepts/zh/Tool-image_generation.md
+  s_ef9ee44cb3b089::t_4523baba35aa59 3
+  s_59be6bb53a5547::t_87c880396dc603 1-5
+packages/app/concepts/en/Tool-write_stdin.md
+  s_ef9ee44cb3b089::t_b96a5ea77b7e69 1-3
+  s_59be6bb53a5547::t_87c880396dc603 1-3
+apps/web/src/components/dashboard/DetailPanel.jsx
+  s_ef9ee44cb3b089::t_746dce6106be65 865-866
+  s_59be6bb53a5547::t_99aa6db8eec87a 15
+  s_59be6bb53a5547::t_87c880396dc603 1-14,16-981
+apps/web/src/components/dashboard/ContextTab.jsx
+  s_ef9ee44cb3b089::t_aa304976367002 602-612
+  s_ef9ee44cb3b089::t_eb5900f5dc6e75 573-574,578,589-591,595-600
+  s_59be6bb53a5547::t_87c880396dc603 1-788
+apps/web/src/utils/toolCatalog.js
+  s_ef9ee44cb3b089::t_746dce6106be65 4-5,16
+  s_59be6bb53a5547::t_87c880396dc603 1-31
+apps/web/src/components/common/ToolsHelp.jsx
+  s_ef9ee44cb3b089::t_7b317431878c2b 91
+  s_59be6bb53a5547::t_99aa6db8eec87a 6
+  s_59be6bb53a5547::t_87c880396dc603 1-5,7-114
+packages/app/concepts/zh/Tool-exec_command.md
+  s_ef9ee44cb3b089::t_b96a5ea77b7e69 1-3
+  s_59be6bb53a5547::t_87c880396dc603 1-3
+packages/app/concepts/en/Tool-image_generation.md
+  s_ef9ee44cb3b089::t_4523baba35aa59 3
+  s_59be6bb53a5547::t_87c880396dc603 1-5
+packages/app/concepts/zh/Tool-exec.md
+  s_ef9ee44cb3b089::t_b96a5ea77b7e69 18-19,22,40,74-75,77,82
+  s_ef9ee44cb3b089::t_62430898c9c1d5 64-65
+  s_ef9ee44cb3b089::t_4523baba35aa59 83
+  s_59be6bb53a5547::t_87c880396dc603 1-92
+packages/app/concepts/zh/Tool-write_stdin.md
+  s_ef9ee44cb3b089::t_b96a5ea77b7e69 1-3
+  s_59be6bb53a5547::t_87c880396dc603 1-3
+apps/web/src/i18n.js
+  s_ef9ee44cb3b089::t_d51d16a0c7536c 11799
+  s_ef9ee44cb3b089::t_7b317431878c2b 6254-6257
+  s_59be6bb53a5547::t_87c880396dc603 1-12640
+apps/web/tests/tools-diff.test.js
+  s_ef9ee44cb3b089::t_d00bf2ca5d8015 51-56
+  s_ef9ee44cb3b089::t_d53412305c12ed 64
+  s_ef9ee44cb3b089::t_aa304976367002 57-63,65
+  s_ef9ee44cb3b089::t_53d9fcf15ec855 29-50
+  s_59be6bb53a5547::t_87c880396dc603 1-65
+packages/app/concepts/zh/Tool-collaboration.md
+  s_ef9ee44cb3b089::t_4523baba35aa59 5-6
+  s_59be6bb53a5547::t_87c880396dc603 1-38
+packages/app/concepts/en/Tool-tool_search.md
+  s_ef9ee44cb3b089::t_be35fb415d3996 3
+  s_59be6bb53a5547::t_87c880396dc603 1-3
+packages/app/concepts/en/Tool-exec_command.md
+  s_ef9ee44cb3b089::t_b96a5ea77b7e69 1-3
+  s_59be6bb53a5547::t_87c880396dc603 1-3
+packages/app/concepts/en/Tools.md
+  s_ef9ee44cb3b089::t_62430898c9c1d5 3
+  s_ef9ee44cb3b089::t_b96a5ea77b7e69 12-14,39,43-45
+  s_ef9ee44cb3b089::t_be35fb415d3996 41-42
+  s_59be6bb53a5547::t_87c880396dc603 1-45
+packages/app/concepts/zh/Tool-request_user_input.md
+  s_ef9ee44cb3b089::t_be35fb415d3996 3
+  s_59be6bb53a5547::t_87c880396dc603 1-3
+packages/app/concepts/zh/Tool-tool_search.md
+  s_ef9ee44cb3b089::t_be35fb415d3996 3
+  s_59be6bb53a5547::t_87c880396dc603 1-3
+apps/web/src/utils/toolsDiff.js
+  s_ef9ee44cb3b089::t_d53412305c12ed 60
+  s_ef9ee44cb3b089::t_d00bf2ca5d8015 50
+  s_ef9ee44cb3b089::t_7b317431878c2b 13-14
+  s_ef9ee44cb3b089::t_aa304976367002 20-21,25-29,56-59,61-65
+  s_ef9ee44cb3b089::t_eb5900f5dc6e75 41-46,48,52-55,66-68,75-79
+  s_ef9ee44cb3b089::t_9a9198e7ecd518 47,49,51
+  s_59be6bb53a5547::t_87c880396dc603 1-81
+packages/app/tests/preferences.test.js
+  s_7e818aa265d06a::t_2f3d24e6b76754 4,86-115
+  s_7e818aa265d06a::t_18f11dd0aa958b 11,24-35,48-85,116-142
+  s_59be6bb53a5547::t_8c884e3d4b7396 143-170
+  s_59be6bb53a5547::t_87c880396dc603 1-170
+packages/app/lib/preferences.js
+  s_7e818aa265d06a::t_8ade16e0e53143 7,22,24-38
+  s_7e818aa265d06a::t_10cbbc9690d601 15,18,20
+  s_59be6bb53a5547::t_c6edab15ef7849 46,48-53,58
+  s_59be6bb53a5547::t_4b2aac044bd388 63,83,95-102
+  s_59be6bb53a5547::t_c6ac99e634e87d 6,19,42,55
+  s_59be6bb53a5547::t_9ebb6b5d06f965 103
+  s_59be6bb53a5547::t_87c880396dc603 1-103
+packages/app/tests/auth.test.js
+  s_7e818aa265d06a::t_93300c30e8ebf5 45-47,52-58
+  s_7e818aa265d06a::t_cc1cd5821688d7 59
+  s_7e818aa265d06a::t_51c4b38bfc531a 3,28-44,48-51,60-78
+  s_7e818aa265d06a::t_fb03b9ba5d36c5 79
+  s_59be6bb53a5547::t_87c880396dc603 1-292
+packages/app/lib/auth-routes.js
+  s_7e818aa265d06a::t_aacf1e1cdd2b03 77,87,159-162,186-189
+  s_59be6bb53a5547::t_87c880396dc603 1-217
+packages/app/lib/auth.js
+  s_7e818aa265d06a::t_cc1cd5821688d7 58,270-272
+  s_7e818aa265d06a::t_aacf1e1cdd2b03 54-57,156,159-161,169-194,236-237,242-243,246,252-256,275,278,294-295,297-298,307,377,384-387
+  s_7e818aa265d06a::t_1a662482f230f0 2,4-6,9-13,61,64-69,155,157-158,162-168,197,201-232,244-245,248,259-260,269,274,282,284,293,296,305-306,313-317
+  s_7e818aa265d06a::t_ab2e8021825d8c 62-63
+  s_59be6bb53a5547::t_c6ac99e634e87d 3,128-129,132
+  s_59be6bb53a5547::t_4b2aac044bd388 7-8,70,72-87,89-127,133-153
+  s_59be6bb53a5547::t_545a15ae8f4efc 71,88,130-131
+  s_59be6bb53a5547::t_20ff622019590e 154
+  s_59be6bb53a5547::t_87c880396dc603 1-457
+packages/app/tests/workspace-registry.test.js
+  s_7e818aa265d06a::t_3c7d5e6b4b378f 22-23,30
+  s_7e818aa265d06a::t_8108eaae1b1079 1-21,24-29,31-96
+  s_59be6bb53a5547::t_87c880396dc603 1-96
+packages/app/workspace-registry.js
+  s_7e818aa265d06a::t_32b6692f5b28cc 2,8,23,27,55-62,66,68-81,89-90,94,102,126
+  s_59be6bb53a5547::t_87c880396dc603 1-148
+packages/app/lib/credential-vault.js
+  s_7e818aa265d06a::t_b109757872d00a 1-18,21-23,25-43
+  s_7e818aa265d06a::t_3e740b27e1418d 19-20,24
+  s_59be6bb53a5547::t_87c880396dc603 1-43
+packages/app/tests/credential-vault.test.js
+  s_7e818aa265d06a::t_3e740b27e1418d 43
+  s_7e818aa265d06a::t_b109757872d00a 1-42,44-46
+  s_59be6bb53a5547::t_87c880396dc603 1-46
+packages/app/tests/credential-store.test.js
+  s_7e818aa265d06a::t_4afda7341963bc 1-3,6-9,11-13,44-82,84-155,182-183
+  s_7e818aa265d06a::t_5422fcdc95a758 83,156-181
+  s_7e818aa265d06a::t_6d2988dfba0b09 4-5,184-185,187-195,197-200,202-205,207-210
+  s_7e818aa265d06a::t_84b9eae1484a40 186,196,201,206
+  s_7e818aa265d06a::t_09f32abb60544c 211
+  s_59be6bb53a5547::t_87c880396dc603 1-9,11-13,44-211
+  s_59be6bb53a5547::t_186ea75957105f 10,14-43
+packages/app/lib/credential-store.js
+  s_7e818aa265d06a::t_4afda7341963bc 128,151
+  s_7e818aa265d06a::t_e025d579a39e67 1-7,9-40,46-52,86-95,97-111,112-127,129-150,152-168
+  s_7e818aa265d06a::t_84b9eae1484a40 41-45
+  s_7e818aa265d06a::t_0410826adb64b2 8
+  s_59be6bb53a5547::t_87c880396dc603 1-52,86-95,97-111,112-168
+  s_59be6bb53a5547::t_186ea75957105f 53-85,96
+packages/app/tests/file-api.test.js
+  s_7e818aa265d06a::t_e91f4922be46c0 2,5,13-25,28,30-71
+  s_7e818aa265d06a::t_07fb36eccc9a02 6,29
+  s_7e818aa265d06a::t_6e74ae51d3e700 1,3-4,7-9,11-12,72-84,86-89
+  s_7e818aa265d06a::t_300c2532b8bb7a 90
+  s_7e818aa265d06a::t_30a3324c9e0d48 10,26-27,85
+  s_59be6bb53a5547::t_87c880396dc603 1-90
+packages/app/lib/file-api.js
+  s_7e818aa265d06a::t_3a7e0c0f24f36e 42,45,47,49,55,67-71,99,102,108
+  s_7e818aa265d06a::t_07fb36eccc9a02 50-51
+  s_7e818aa265d06a::t_3de8863fc4cd2f 5,7,48
+  s_7e818aa265d06a::t_fafba48d20e356 6,8,46,52-54,79-87,109-119,143
+  s_7e818aa265d06a::t_6e74ae51d3e700 78
+  s_59be6bb53a5547::t_87c880396dc603 1-149
+packages/app/lib/canonical-path.js
+  s_7e818aa265d06a::t_3de8863fc4cd2f 1-14
+  s_59be6bb53a5547::t_87c880396dc603 1-14
+packages/app/lib/credential-file-policy.js
+  s_7e818aa265d06a::t_6b1f67ff73401c 34
+  s_7e818aa265d06a::t_3de8863fc4cd2f 1-4,5,10-23,25,28-33,35-46,48-54,56-64,78-83,89,91
+  s_7e818aa265d06a::t_594121f4602799 73-74,76-77,92
+  s_7e818aa265d06a::t_d08faeb9e3093e 6,9
+  s_7e818aa265d06a::t_59bb30e81810c7 65-67,69-72,90
+  s_7e818aa265d06a::t_b64795495156ca 27
+  s_7e818aa265d06a::t_10cbbc9690d601 7-8,24,26,47,55,68,75,84-88
+  s_59be6bb53a5547::t_87c880396dc603 1-92
+packages/app/tests/credential-file-policy.test.js
+  s_7e818aa265d06a::t_3de8863fc4cd2f 1-47,51-62
+  s_7e818aa265d06a::t_fafba48d20e356 48-50
+  s_7e818aa265d06a::t_59bb30e81810c7 63-74
+  s_7e818aa265d06a::t_b64795495156ca 75-94
+  s_59be6bb53a5547::t_87c880396dc603 1-94
+packages/app/lib/code-search.js
+  s_7e818aa265d06a::t_594121f4602799 13,17,225-226,228,257-258,337,390,404-412,463
+  s_7e818aa265d06a::t_10cbbc9690d601 227
+  s_59be6bb53a5547::t_87c880396dc603 1-500
+packages/app/lib/code-replace.js
+  s_7e818aa265d06a::t_1ea3dc358e47b9 9,13,177-185,202,205
+  s_7e818aa265d06a::t_594121f4602799 162
+  s_59be6bb53a5547::t_87c880396dc603 1-217
+packages/app/tests/credential-search-boundary.test.js
+  s_7e818aa265d06a::t_d0b36c8f46e349 15,44-45,48-49
+  s_7e818aa265d06a::t_594121f4602799 1-2,5-11,13-14,16-17,22-42,46-47,74
+  s_7e818aa265d06a::t_1ea3dc358e47b9 3-4,51-73
+  s_7e818aa265d06a::t_10cbbc9690d601 12,18-21,43,50
+  s_59be6bb53a5547::t_87c880396dc603 1-74
+packages/app/lib/credential-paths.js
+  s_7e818aa265d06a::t_d08faeb9e3093e 1-4,6-15,18-21
+  s_7e818aa265d06a::t_7af13b6a5c7f52 5,16-17
+  s_59be6bb53a5547::t_87c880396dc603 1-21
+packages/app/interceptor.js
+  s_7e818aa265d06a::t_d08faeb9e3093e 22
+  s_7e818aa265d06a::t_badc4d856e0925 9,20
+  s_7e818aa265d06a::t_9525f3953843a2 23,62,134
+  s_59be6bb53a5547::t_87c880396dc603 1-865
+packages/app/lib/proxy-profile-path.js
+  s_7e818aa265d06a::t_d08faeb9e3093e 1-5
+  s_59be6bb53a5547::t_87c880396dc603 1-5
+packages/app/tests/credential-paths.test.js
+  s_7e818aa265d06a::t_d08faeb9e3093e 1-12,14,18-20,23-36,39-48
+  s_7e818aa265d06a::t_10cbbc9690d601 13,15-17,21-22,37-38
+  s_59be6bb53a5547::t_87c880396dc603 1-48
+packages/app/tests/auth-server.test.js
+  s_7e818aa265d06a::t_6deff4f8c1ba69 5,437-490
+  s_7e818aa265d06a::t_ea55b9aaaaf248 491-492
+  s_7e818aa265d06a::t_e0881f289303c9 6,493-519
+  s_7e818aa265d06a::t_47a0d93ae5ad4e 520-521
+  s_7e818aa265d06a::t_695204005c2a2d 522-553,555-571
+  s_7e818aa265d06a::t_c7cddaced334aa 4,554
+  s_7e818aa265d06a::t_b64795495156ca 20,572-597
+  s_7e818aa265d06a::t_9f5a2ffa0bf66d 598-599
+  s_7e818aa265d06a::t_30a3324c9e0d48 600-637
+  s_7e818aa265d06a::t_9eb16e582eaccc 638-657
+  s_7e818aa265d06a::t_ba2f7f7e3e5bac 658-662,663-666,671-687,705-719
+  s_7e818aa265d06a::t_9f6b0f814241b2 720-741
+  s_7e818aa265d06a::t_b862bb1284edde 742-746,747-751,752,755-768,781-790
+  s_59be6bb53a5547::t_c46ad2a74504f3 688-704,769-780
+  s_59be6bb53a5547::t_61abc29cd40215 667-670
+  s_59be6bb53a5547::t_87c880396dc603 1-746,747-751,752,755-791
+  s_59be6bb53a5547::t_f85e3012bdf17d 753-754
+packages/app/tests/exec-with-stdin.test.js
+  s_7e818aa265d06a::t_ddc08e4dc5f262 1-19
+  s_59be6bb53a5547::t_87c880396dc603 1-19
+packages/app/lib/exec-with-stdin.js
+  s_7e818aa265d06a::t_ddc08e4dc5f262 1-32
+  s_59be6bb53a5547::t_87c880396dc603 1-32
+packages/app/lib/public-file-read.js
+  s_7e818aa265d06a::t_28abef4cff36db 1-14
+  s_59be6bb53a5547::t_87c880396dc603 1-14
+packages/app/lib/log-v2/archive-zip.js
+  s_7e818aa265d06a::t_121ad4b68acaff 33,81-82
+  s_59be6bb53a5547::t_87c880396dc603 1-507
+packages/app/tests/log-v2-archive-zip.test.js
+  s_7e818aa265d06a::t_121ad4b68acaff 3,18,64-76
+  s_7e818aa265d06a::t_aaca194c3d3a62 77
+  s_59be6bb53a5547::t_87c880396dc603 1-232
+packages/app/lib/skills-api.js
+  s_7e818aa265d06a::t_9eb16e582eaccc 15,59,157-159
+  s_59be6bb53a5547::t_87c880396dc603 1-366
+packages/app/tests/codex-memory.test.js
+  s_7e818aa265d06a::t_9eb16e582eaccc 3,18,31-39
+  s_7e818aa265d06a::t_ef111122f3c3ab 40
+  s_59be6bb53a5547::t_87c880396dc603 1-153
+packages/app/tests/skills-api.test.js
+  s_7e818aa265d06a::t_9eb16e582eaccc 3,12,15,40-50
+  s_7e818aa265d06a::t_c2c0b55f246354 51
+  s_59be6bb53a5547::t_87c880396dc603 1-122
+packages/app/lib/codex-memory.js
+  s_7e818aa265d06a::t_9eb16e582eaccc 14,125,142
+  s_59be6bb53a5547::t_87c880396dc603 1-274
+packages/app/tests/credential-reference.test.js
+  s_7e818aa265d06a::t_108d49f25d1e80 1-50
+  s_59be6bb53a5547::t_87c880396dc603 1-50
+packages/app/lib/credential-reference.js
+  s_7e818aa265d06a::t_108d49f25d1e80 1-39
+  s_59be6bb53a5547::t_87c880396dc603 1-39
+packages/app/tests/auth-credentials.test.js
+  s_7e818aa265d06a::t_e5c8f93aeedd6c 1-14,16-133
+  s_7e818aa265d06a::t_678f66ac462693 15,134-160
+  s_59be6bb53a5547::t_87c880396dc603 1-160
+packages/app/lib/proxy-profile.js
+  s_7e818aa265d06a::t_7af13b6a5c7f52 32,56,68
+  s_59be6bb53a5547::t_87c880396dc603 1-293
+packages/app/tests/proxy-profile-credentials.test.js
+  s_7e818aa265d06a::t_7dc9180fd43bf0 67-121
+  s_7e818aa265d06a::t_678f66ac462693 3,8,122-136
+  s_7e818aa265d06a::t_c5a69673870394 137
+  s_59be6bb53a5547::t_87c880396dc603 1-137
+packages/app/lib/proxy-profile-credentials.js
+  s_7e818aa265d06a::t_c6c8d558bd16e6 35,37-51
+  s_7e818aa265d06a::t_7dc9180fd43bf0 5,34,52-61,79,82-115
+  s_7e818aa265d06a::t_9525f3953843a2 2,62-69,74-77,80-81
+  s_7e818aa265d06a::t_678f66ac462693 7,36,70-73
+  s_59be6bb53a5547::t_87c880396dc603 1-7,9-11,24-118
+  s_59be6bb53a5547::t_d89cc90ef59127 8,12-22
+  s_59be6bb53a5547::t_65092eb77c39e7 23
+packages/app/tests/proxy-profiles-api.test.js
+  s_7e818aa265d06a::t_1309f81f2a0461 3-5,129,132-137,140-246
+  s_7e818aa265d06a::t_81239447036b58 247
+  s_7e818aa265d06a::t_a1e737fa58aadd 248-267
+  s_7e818aa265d06a::t_2e4769a0742661 268-269
+  s_59be6bb53a5547::t_87c880396dc603 1-5,7-129,132-137,140-269
+  s_59be6bb53a5547::t_2f819a2893b7bd 6,130-131,138-139
+packages/app/tests/dingtalk-im-config.test.js
+  s_7e818aa265d06a::t_5aebc0066b8df4 3-4,11,73-94
+  s_7e818aa265d06a::t_d3f1a1cf8f8e82 95
+  s_7e818aa265d06a::t_2d92ae49d30183 5-6,96,123-150
+  s_59be6bb53a5547::t_87c880396dc603 1-96,123-150
+  s_59be6bb53a5547::t_4d2ffc59839457 106-107
+  s_59be6bb53a5547::t_c6e851a2c87e71 97-105,108-122
+packages/app/lib/config-paths.js
+  s_7e818aa265d06a::t_3b980fa6615118 6-7
+  s_59be6bb53a5547::t_87c880396dc603 1-7
+packages/app/lib/dingtalk-im-config.js
+  s_7e818aa265d06a::t_3b980fa6615118 12-14,24-26,230-232,234-252,325-357,365,373
+  s_7e818aa265d06a::t_678f66ac462693 233
+  s_59be6bb53a5547::t_87c880396dc603 1-10,12-14,17-100,102-103,105-116,118-172,182-194,196-203,205,206-209,211-219,230-252,325-374
+  s_59be6bb53a5547::t_c6e851a2c87e71 101,104,117
+  s_59be6bb53a5547::t_390ec16955c122 11,15-16,173-181,195,210,220-222,224-229,253-282,284-323
+  s_59be6bb53a5547::t_527770b3b02213 324
+  s_59be6bb53a5547::t_a070453cfa77fa 204,223,283
+packages/app/tests/dingtalk-im-credentials.test.js
+  s_7e818aa265d06a::t_af85e4e2e0a418 1-15,17-127
+  s_7e818aa265d06a::t_678f66ac462693 16,128-141
+  s_7e818aa265d06a::t_8f9c71a064700c 142
+  s_59be6bb53a5547::t_87c880396dc603 1-142
+packages/app/tests/credential-migration-state.test.js
+  s_7e818aa265d06a::t_0410826adb64b2 1-43
+  s_59be6bb53a5547::t_87c880396dc603 1-43
+packages/app/lib/credential-migration-state.js
+  s_7e818aa265d06a::t_0410826adb64b2 1-33
+  s_59be6bb53a5547::t_87c880396dc603 1-33
+packages/app/lib/credential-backup.js
+  s_59be6bb53a5547::t_363272523ef192 1-14,16-41,43-70,75-76,78-85,87-97,104-111,135-147,150-151,153-170
+  s_59be6bb53a5547::t_dea36707194374 42,71-74
+  s_59be6bb53a5547::t_4b2aac044bd388 129-133
+  s_59be6bb53a5547::t_87c880396dc603 1-14,16-76,78-85,87-97,104-111,129-133,135-147,150-151,153-170
+  s_59be6bb53a5547::t_f9cc80860c8f3f 15,77,86,98-103,112-128,134,148-149,152,171-178
+packages/app/tests/credential-backup.test.js
+  s_59be6bb53a5547::t_dea36707194374 1-2,4-11,15-29,85-228,255
+  s_59be6bb53a5547::t_a46af02ca9d216 3,12,229-254
+  s_59be6bb53a5547::t_87c880396dc603 1-12,15-29,85-255
+  s_59be6bb53a5547::t_f9cc80860c8f3f 13-14,30-83
+  s_59be6bb53a5547::t_2a242b7ead31aa 84
+packages/app/tests/auth-credential-migration.test.js
+  s_59be6bb53a5547::t_61abc29cd40215 179-226
+  s_59be6bb53a5547::t_ee36d0a0e6993d 1-123,147-178
+  s_59be6bb53a5547::t_cea0dd494dba4e 124-146
+  s_59be6bb53a5547::t_87c880396dc603 1-226
+packages/app/scripts/migrate-auth-credentials.mjs
+  s_59be6bb53a5547::t_4b2aac044bd388 1-30
+  s_59be6bb53a5547::t_87c880396dc603 1-30
+README.md
+  s_59be6bb53a5547::t_47f440912855b3 327-333
+  s_59be6bb53a5547::t_82c3d59a9f5a0a 334-343
+package.json
+  s_59be6bb53a5547::t_47f440912855b3 14
+  s_59be6bb53a5547::t_87c880396dc603 2,4,6,8-11,13,15-22,43
+  s_59be6bb53a5547::t_fca32663e74490 12,23-24
+apps/web/build.js
+  s_59be6bb53a5547::t_47f440912855b3 3-4,6,12-14
+  s_59be6bb53a5547::t_87c880396dc603 1-18
+pnpm-workspace.yaml
+  s_59be6bb53a5547::t_47f440912855b3 5-13
+  s_59be6bb53a5547::t_87c880396dc603 1-4
+.github/workflows/npm-publish.yml
+  s_59be6bb53a5547::t_47f440912855b3 38-40,42,45,92-94,97,101
+  s_59be6bb53a5547::t_ef98e156a6ea37 69,82-83,108
+pnpm-lock.yaml
+  s_59be6bb53a5547::t_e336d5fdd85bc4 1-9,11-37,41-58,73-121,122-139,143-154,155-157,161-166,170-197,246-9270
+  s_59be6bb53a5547::t_5db50a53d768ff 10,38-40,59-72,140-142,158-160,167-169,198-245
+packages/app/concepts/de/ResponseFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-38
+apps/web/src/utils/fileIcons.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-36
+apps/web/src/components/dashboard/CachePopoverContent.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-474
+apps/web/src/utils/rateLimitParser.js
+  s_59be6bb53a5547::t_87c880396dc603 1-289
+packages/app/ultraAgents/README.md
+  s_59be6bb53a5547::t_87c880396dc603 1-25
+apps/web/src/components/terminal/UltraplanPanel.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-307
+packages/app/concepts/en/CustomUltraplanExpert.md
+  s_59be6bb53a5547::t_87c880396dc603 1-44
+apps/web/tests/session-display.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-82
+packages/app/tests/codex-app-logger.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-318
+apps/web/src/components/chat/controllers/splitDragController.js
+  s_59be6bb53a5547::t_87c880396dc603 1-135
+packages/app/lib/log-v2/inspect.js
+  s_59be6bb53a5547::t_87c880396dc603 1-95
+apps/web/src/utils/ultraplanController.js
+  s_59be6bb53a5547::t_87c880396dc603 1-109
+apps/web/src/components/settings/PluginModal.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-136
+apps/web/src/img/model-openai.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-2
+packages/app/concepts/tr/TranslateContextPollution.md
+  s_59be6bb53a5547::t_87c880396dc603 1-46
+apps/web/src/img/teammates/auditor.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-28
+apps/electron/electron/workspace-preload.js
+  s_59be6bb53a5547::t_87c880396dc603 1-19
+apps/web/src/utils/askOptionDesc.js
+  s_59be6bb53a5547::t_87c880396dc603 1-55
+apps/web/src/components/settings/ImAppendSystemModal.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-108
+apps/web/src/components/terminal/UltraplanPanel.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-540
+packages/app/concepts/en/Tool-apply_patch.md
+  s_59be6bb53a5547::t_87c880396dc603 1-11
+packages/app/lib/codex-app-logger-daemon.js
+  s_59be6bb53a5547::t_87c880396dc603 1-127
+apps/web/src/utils/sessionDisplay.js
+  s_59be6bb53a5547::t_87c880396dc603 1-63
+packages/app/concepts/es/ToolsFirst.md
+  s_59be6bb53a5547::t_87c880396dc603 1-71
+apps/web/src/utils/sessionMerge.js
+  s_59be6bb53a5547::t_87c880396dc603 1-383
+apps/web/src/components/dashboard/AppHeader.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-24,27-1869
+  s_59be6bb53a5547::t_99aa6db8eec87a 25-26
+apps/web/src/components/settings/MessagingModal.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-95
+packages/app/lib/log-v2/project-id.js
+  s_59be6bb53a5547::t_87c880396dc603 1-13
+apps/web/public/voice-packs/default/pack.json
+  s_59be6bb53a5547::t_87c880396dc603 1-24
+packages/app/concepts/zh-TW/ProxySwitch.md
+  s_59be6bb53a5547::t_87c880396dc603 1-57
+packages/app/concepts/uk/GlobalSettings.md
+  s_59be6bb53a5547::t_87c880396dc603 1-224
+apps/web/src/utils/imOrigin.js
+  s_59be6bb53a5547::t_87c880396dc603 1-24
+packages/app/concepts/zh-TW/Teammate.md
+  s_59be6bb53a5547::t_87c880396dc603 1-26
+apps/web/src/utils/workflowRuns.js
+  s_59be6bb53a5547::t_87c880396dc603 1-118
+packages/app/concepts/zh/Tool-wait_agent.md
+  s_59be6bb53a5547::t_87c880396dc603 1-9
+apps/web/src/components/settings/ProcessModal.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-21
+apps/web/src/components/settings/PreferencesForm.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-27
+apps/web/src/utils/requestTools.js
+  s_59be6bb53a5547::t_87c880396dc603 1-67
+packages/app/lib/logger-bootstrap.js
+  s_59be6bb53a5547::t_87c880396dc603 1-87
+apps/web/src/components/dashboard/AppHeader.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-595
+apps/web/src/components/settings/SkillsManagerModal.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-154
+apps/web/src/utils/gitApi.js
+  s_59be6bb53a5547::t_87c880396dc603 2-61
+  s_59be6bb53a5547::t_99aa6db8eec87a 1
+packages/app/lib/approval-reviewer.js
+  s_59be6bb53a5547::t_87c880396dc603 1-25
+apps/web/src/components/viewers/WebResultsView.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-85
+apps/web/src/components/dashboard/LiveTagPopover.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-75
+packages/app/lib/legacy-terminal-history.js
+  s_59be6bb53a5547::t_87c880396dc603 1-111
+packages/app/lib/codex-appserver-capabilities.js
+  s_59be6bb53a5547::t_87c880396dc603 1-148
+packages/app/concepts/zh-TW/ResponseFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-39
+apps/web/src/components/terminal/UltraplanExpertManagerModal.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-91
+apps/web/src/img/teammates/explorer.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-30
+packages/app/tests/log-v2-identity.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-216
+packages/app/concepts/th/BodyDiffJSON.md
+  s_59be6bb53a5547::t_87c880396dc603 1-32
+packages/app/lib/interceptor-core.js
+  s_59be6bb53a5547::t_87c880396dc603 1-635
+apps/web/src/components/files/MdxEditorPanel.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-917
+packages/app/concepts/tr/QRCode.md
+  s_59be6bb53a5547::t_87c880396dc603 1-25
+apps/web/src/App.jsx
+  s_59be6bb53a5547::t_99aa6db8eec87a 4-18,21-24
+  s_59be6bb53a5547::t_87c880396dc603 1-3,19-20,25-573
+packages/app/concepts/zh/GlobalSettings.md
+  s_59be6bb53a5547::t_87c880396dc603 1-225
+tests/main-agent-session-key.test.js
+  s_59be6bb53a5547::t_87c880396dc603 10-12
+packages/app/lib/log-v2/entry-codec.js
+  s_59be6bb53a5547::t_87c880396dc603 1-177
+packages/app/concepts/th/BodyFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-39
+packages/app/lib/dingtalk-im-persona.js
+  s_59be6bb53a5547::t_87c880396dc603 1-50
+packages/app/concepts/ar/TranslateContextPollution.md
+  s_59be6bb53a5547::t_87c880396dc603 1-46
+apps/web/src/img/model-deepseek.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-2
+apps/electron/scripts/check-sign-config.sh
+  s_59be6bb53a5547::t_87c880396dc603 1-85
+apps/web/src/components/dashboard/ContextCompactionDisclosure.jsx
+  s_59be6bb53a5547::t_99aa6db8eec87a 4
+  s_59be6bb53a5547::t_87c880396dc603 1-3,5-98
+packages/app/concepts/en/BodyFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-39
+apps/web/src/components/settings/ModelPromptTabs.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-118
+apps/web/src/utils/avatarAnimationPostPass.js
+  s_59be6bb53a5547::t_87c880396dc603 1,3-46
+  s_59be6bb53a5547::t_99aa6db8eec87a 2
+packages/app/concepts/en/Tool-send_message.md
+  s_59be6bb53a5547::t_87c880396dc603 1-10
+packages/app/concepts/pl/ProxySwitch.md
+  s_59be6bb53a5547::t_87c880396dc603 1-54
+apps/web/src/components/chat/controllers/toolFileChangeController.js
+  s_59be6bb53a5547::t_87c880396dc603 1-220
+packages/app/lib/shutdown.js
+  s_59be6bb53a5547::t_87c880396dc603 1-137
+apps/web/src/utils/imageResize.js
+  s_59be6bb53a5547::t_87c880396dc603 1-112
+apps/web/src/components/common/OpenFolderIcon.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-7
+packages/app/concepts/en/GlobalSettings.md
+  s_59be6bb53a5547::t_87c880396dc603 1-225
+apps/web/tests/tool-result-image-ui.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-32
+packages/app/concepts/zh-TW/TranslateContextPollution.md
+  s_59be6bb53a5547::t_87c880396dc603 1-46
+apps/web/src/utils/quickMenuHoverIntent.js
+  s_59be6bb53a5547::t_87c880396dc603 1-35
+apps/web/src/utils/tokenUsage.js
+  s_59be6bb53a5547::t_87c880396dc603 1
+apps/web/src/utils/readResultPool.js
+  s_59be6bb53a5547::t_87c880396dc603 1-104
+apps/web/tests/token-usage.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-36
+apps/web/src/components/mobile/MobileGitDiff.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-293
+packages/app/lib/log-v2/schema.js
+  s_59be6bb53a5547::t_87c880396dc603 1-316
+apps/web/src/components/chat/ChatMessage.jsx
+  s_59be6bb53a5547::t_99aa6db8eec87a 19,21,29,32
+  s_59be6bb53a5547::t_87c880396dc603 1-18,20,22-28,30-31,33-1649
+packages/app/lib/git-diff.js
+  s_59be6bb53a5547::t_87c880396dc603 1-428
+packages/app/tests/log-v2-session-summary.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-457
+packages/app/concepts/en/Tool-list_mcp_resource_templates.md
+  s_59be6bb53a5547::t_87c880396dc603 1-8
+packages/app/concepts/no/BodyFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-39
+packages/app/tests/proxy-env.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-34
+apps/web/src/img/teammates/executor.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-31
+packages/app/concepts/en/ResponseFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-38
+packages/app/concepts/zh-TW/MainAgent.md
+  s_59be6bb53a5547::t_87c880396dc603 1-22
+packages/app/tests/log-v2-benchmark.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-35
+apps/web/tests/tool-result-builder.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-52
+apps/web/src/components/chat/interactionOwnership.js
+  s_59be6bb53a5547::t_87c880396dc603 1-106
+apps/web/src/utils/promptNav.js
+  s_59be6bb53a5547::t_87c880396dc603 1-76
+packages/app/tests/main-agent-entry.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-23
+packages/app/concepts/es/UltraPlan.md
+  s_59be6bb53a5547::t_87c880396dc603 1-155
+tests/entry-slim.test.js
+  s_59be6bb53a5547::t_87c880396dc603 11-13
+packages/app/src/utils/teammateDetector.js
+  s_59be6bb53a5547::t_87c880396dc603 1-106
+packages/app/concepts/zh/QRCode.md
+  s_59be6bb53a5547::t_87c880396dc603 1-32
+apps/web/src/utils/markdownProfiler.js
+  s_59be6bb53a5547::t_87c880396dc603 1-113
+packages/app/plugins/README.md
+  s_59be6bb53a5547::t_87c880396dc603 1-8
+apps/web/src/components/common/DiscordIcon.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-21
+packages/app/concepts/ar/BodyDiffJSON.md
+  s_59be6bb53a5547::t_87c880396dc603 1-32
+packages/app/scratch-pty-manager.js
+  s_59be6bb53a5547::t_1ec3700b08c6a1 1,21
+  s_59be6bb53a5547::t_87c880396dc603 2-20,22-159
+apps/web/src/components/common/SnapLineOverlay.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-47
+packages/app/concepts/ja/SubAgent-Search.md
+  s_59be6bb53a5547::t_87c880396dc603 1-20
+apps/web/src/components/mobile/MobileGitDiff.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-317
+apps/web/src/components/common/PanelResizer.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-11
+packages/app/concepts/zh/MainAgent.md
+  s_59be6bb53a5547::t_87c880396dc603 1-23
+packages/app/concepts/de/CustomUltraplanExpert.md
+  s_59be6bb53a5547::t_87c880396dc603 1-44
+packages/app/lib/dingtalk-im-routes.js
+  s_59be6bb53a5547::t_87c880396dc603 1-404
+apps/web/src/img/codex/tickle.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-7
+packages/app/tests/dingtalk-im-lock.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-50
+apps/web/src/utils/teamModalBuilder.js
+  s_59be6bb53a5547::t_87c880396dc603 1-8,12-347
+  s_59be6bb53a5547::t_99aa6db8eec87a 9-11
+apps/web/src/img/teammates/marvel/builder.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-15
+apps/web/src/img/teammates/researcher.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-35
+apps/web/src/utils/contextRaw.js
+  s_59be6bb53a5547::t_87c880396dc603 2-17
+  s_59be6bb53a5547::t_99aa6db8eec87a 1
+apps/web/src/components/viewers/WorkflowLiveHud.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-5,7-153
+  s_59be6bb53a5547::t_99aa6db8eec87a 6
+packages/app/scripts/assemble-dist.mjs
+  s_59be6bb53a5547::t_ef98e156a6ea37 1-22,24-28
+  s_59be6bb53a5547::t_838304d87908f9 23
+apps/web/src/utils/pendingInputEcho.js
+  s_59be6bb53a5547::t_87c880396dc603 1-117
+apps/web/src/components/dashboard/RequestList.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-146
+apps/web/src/img/default-avatar.svg
+  s_59be6bb53a5547::t_87c880396dc603 1
+apps/web/src/utils/helpers.js
+  s_59be6bb53a5547::t_87c880396dc603 1-457
+apps/web/src/components/settings/SkillsManagerModal.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-161
+apps/web/src/components/approval/ApprovalModal.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-319
+apps/web/src/utils/approvalReviewerOptions.js
+  s_59be6bb53a5547::t_87c880396dc603 1-29
+packages/app/concepts/zh-TW/BodyDiffJSON.md
+  s_59be6bb53a5547::t_87c880396dc603 1-32
+apps/web/src/img/teammates/marvel/researcher.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-30
+apps/web/src/utils/askAnswerParser.js
+  s_59be6bb53a5547::t_87c880396dc603 1-59
+packages/app/findcx.js
+  s_59be6bb53a5547::t_87c880396dc603 1-213
+packages/app/tests/proxy-redirect.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-240
+apps/web/src/utils/projectAlias.js
+  s_59be6bb53a5547::t_87c880396dc603 1-135
+apps/web/src/utils/imageCompress.js
+  s_59be6bb53a5547::t_87c880396dc603 1-83
+packages/app/concepts/ko/SubAgent-Search.md
+  s_59be6bb53a5547::t_87c880396dc603 1-20
+packages/app/tests/log-v2-wire-schema.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-45
+packages/app/tests/dingtalk-im-persona.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-35
+packages/app/concepts/pt-BR/SubAgent-Search.md
+  s_59be6bb53a5547::t_87c880396dc603 1-20
+apps/web/src/components/search/SearchPanel.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-410
+apps/web/src/components/terminal/PresetModal.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-118
+apps/web/src/utils/planUsageDisplay.js
+  s_59be6bb53a5547::t_87c880396dc603 1-52
+apps/web/src/components/chat/AskTimeoutCountdown.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-113
+apps/web/src/hooks/useSessionStoragePersistedSet.js
+  s_59be6bb53a5547::t_87c880396dc603 1-41
+apps/web/tests/tool-result-core.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-80
+apps/electron/tests/electron-runtime-paths.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1,3,5-13,17-19,21-23,25-29,31-87,93-94,97,99,104
+  s_59be6bb53a5547::t_ef98e156a6ea37 14-16,20,24,30
+  s_59be6bb53a5547::t_5ab8300688e495 4,95
+  s_59be6bb53a5547::t_dc131b3da65cb5 2,88-92,96,98,100-103
+apps/web/vite.config.js
+  s_59be6bb53a5547::t_87c880396dc603 1-106
+packages/app/concepts/pl/MainAgent.md
+  s_59be6bb53a5547::t_87c880396dc603 1-22
+packages/app/concepts/uk/ToolsFirst.md
+  s_59be6bb53a5547::t_87c880396dc603 1-71
+apps/web/src/img/teammates/marvel/expert.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-31
+packages/app/concepts/da/QRCode.md
+  s_59be6bb53a5547::t_87c880396dc603 1-25
+packages/app/concepts/tr/GlobalSettings.md
+  s_59be6bb53a5547::t_87c880396dc603 1-224
+packages/app/concepts/pl/GlobalSettings.md
+  s_59be6bb53a5547::t_87c880396dc603 1-224
+apps/web/index.html
+  s_59be6bb53a5547::t_87c880396dc603 1-30
+packages/app/concepts/th/QRCode.md
+  s_59be6bb53a5547::t_87c880396dc603 1-25
+packages/app/tests/git-change-stats.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-56
+apps/web/src/components/terminal/PresetExpertPickerModal.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-90
+apps/web/src/env.js
+  s_59be6bb53a5547::t_87c880396dc603 1-54
+apps/electron/electron/tab-bar.html
+  s_59be6bb53a5547::t_87c880396dc603 1-574
+apps/web/src/components/viewers/WorkflowPanel.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-265
+apps/web/src/components/chat/AskQuestionForm.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-4,6-279
+  s_59be6bb53a5547::t_99aa6db8eec87a 5
+apps/web/src/utils/logV2Archive.js
+  s_59be6bb53a5547::t_87c880396dc603 1-150
+packages/app/concepts/no/BodyDiffJSON.md
+  s_59be6bb53a5547::t_87c880396dc603 1-32
+packages/app/lib/cli-args.js
+  s_59be6bb53a5547::t_87c880396dc603 1-225
+packages/app/concepts/es/SubAgent-Search.md
+  s_59be6bb53a5547::t_87c880396dc603 1-20
+packages/app/tests/codex-appserver-capabilities.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-44
+apps/web/src/utils/sessionManager.js
+  s_59be6bb53a5547::t_87c880396dc603 1-657
+apps/web/src/components/files/MdxEditorPanel.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-181
+packages/app/concepts/en/QRCode.md
+  s_59be6bb53a5547::t_87c880396dc603 1-32
+packages/app/concepts/fr/BodyDiffJSON.md
+  s_59be6bb53a5547::t_87c880396dc603 1-32
+packages/app/concepts/th/Teammate.md
+  s_59be6bb53a5547::t_87c880396dc603 1-26
+apps/web/tests/skills-parser.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-40
+packages/app/lib/terminal-screen-model.js
+  s_59be6bb53a5547::t_87c880396dc603 1-130
+packages/app/concepts/no/ToolsFirst.md
+  s_59be6bb53a5547::t_87c880396dc603 1-71
+apps/web/src/components/approval/ToolApprovalPanel.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-250
+apps/web/src/utils/formatters.js
+  s_59be6bb53a5547::t_87c880396dc603 1-48
+apps/web/src/components/search/SearchPanel.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-402
+packages/app/concepts/ru/UltraPlan.md
+  s_59be6bb53a5547::t_87c880396dc603 1-155
+packages/app/concepts/ru/BodyDiffJSON.md
+  s_59be6bb53a5547::t_87c880396dc603 1-32
+apps/web/src/img/codex/writing.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-7
+packages/app/concepts/pl/ToolsFirst.md
+  s_59be6bb53a5547::t_87c880396dc603 1-71
+apps/web/src/utils/mdExtensionDetect.js
+  s_59be6bb53a5547::t_87c880396dc603 1-64
+packages/app/concepts/it/BodyFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-39
+packages/app/tests/log-v2-write-queue.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-155
+apps/web/src/components/common/quickMenuIcons.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-99
+apps/web/tests/remote-image-disclosure.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-25
+packages/app/concepts/de/QRCode.md
+  s_59be6bb53a5547::t_87c880396dc603 1-25
+apps/web/src/utils/refreshCachedItemProp.js
+  s_59be6bb53a5547::t_87c880396dc603 1-32
+packages/app/concepts/de/TranslateContextPollution.md
+  s_59be6bb53a5547::t_87c880396dc603 1-46
+apps/web/src/img/codex/exit.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-7
+packages/app/concepts/pl/CustomUltraplanExpert.md
+  s_59be6bb53a5547::t_87c880396dc603 1-44
+apps/web/src/components/viewers/ImageViewer.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-203
+tests/codex-tool-use-ui.test.js
+  s_59be6bb53a5547::t_87c880396dc603 5,7-8
+packages/app/concepts/fr/SubAgent-Search.md
+  s_59be6bb53a5547::t_87c880396dc603 1-20
+apps/web/src/components/settings/ImStatusChip.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-36
+packages/app/concepts/ko/BodyFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-39
+packages/app/concepts/tr/ToolsFirst.md
+  s_59be6bb53a5547::t_87c880396dc603 1-71
+apps/web/public/voice-packs/sanguo/pack.json
+  s_59be6bb53a5547::t_87c880396dc603 1-24
+packages/app/tests/pty-manager.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-108
+apps/web/src/utils/gitTreeBuilder.js
+  s_59be6bb53a5547::t_87c880396dc603 1-19
+packages/app/concepts/uk/CustomUltraplanExpert.md
+  s_59be6bb53a5547::t_87c880396dc603 1-44
+packages/app/concepts/th/TranslateContextPollution.md
+  s_59be6bb53a5547::t_87c880396dc603 1-46
+packages/app/concepts/it/QRCode.md
+  s_59be6bb53a5547::t_87c880396dc603 1-25
+apps/web/src/img/teammates/expert.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-30
+apps/web/src/utils/terminalStreamController.js
+  s_59be6bb53a5547::t_87c880396dc603 1-148
+packages/app/concepts/ja/TranslateContextPollution.md
+  s_59be6bb53a5547::t_87c880396dc603 1-46
+packages/app/concepts/pt-BR/CustomUltraplanExpert.md
+  s_59be6bb53a5547::t_87c880396dc603 1-44
+packages/app/lib/log-v2/backfill-session-summaries.js
+  s_59be6bb53a5547::t_87c880396dc603 1-179
+apps/web/src/components/viewers/WebResultsView.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-74
+apps/web/src/img/model-gemini.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-2
+packages/app/lib/tool-result-image-protocol.js
+  s_59be6bb53a5547::t_87c880396dc603 1-44
+packages/app/lib/log-v2/runtime-config.js
+  s_59be6bb53a5547::t_87c880396dc603 1-90
+packages/app/concepts/zh/Tool-followup_task.md
+  s_59be6bb53a5547::t_87c880396dc603 1-10
+apps/web/src/utils/ultraplanExperts.js
+  s_59be6bb53a5547::t_87c880396dc603 1-86
+packages/app/concepts/zh/Tool-read_mcp_resource.md
+  s_59be6bb53a5547::t_87c880396dc603 1-10
+packages/app/src/utils/userImageRefs.js
+  s_59be6bb53a5547::t_87c880396dc603 1-49
+apps/electron/electron/window-state.js
+  s_59be6bb53a5547::t_87c880396dc603 1-60
+packages/app/concepts/th/GlobalSettings.md
+  s_59be6bb53a5547::t_87c880396dc603 1-224
+apps/web/src/img/teammates/default.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-25
+packages/app/concepts/th/UltraPlan.md
+  s_59be6bb53a5547::t_87c880396dc603 1-155
+packages/app/concepts/zh/BodyFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-39
+packages/app/concepts/zh/Tool-spawn_agent.md
+  s_59be6bb53a5547::t_87c880396dc603 1-11
+apps/web/src/components/dashboard/TeamSessionPanel.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-581
+packages/app/concepts/fr/TranslateContextPollution.md
+  s_59be6bb53a5547::t_87c880396dc603 1-46
+apps/web/tests/request-tools.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-159
+packages/app/concepts/th/ToolsFirst.md
+  s_59be6bb53a5547::t_87c880396dc603 1-71
+packages/app/concepts/es/GlobalSettings.md
+  s_59be6bb53a5547::t_87c880396dc603 1-224
+apps/web/src/components/mobile/MobileFileExplorer.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-231
+packages/app/lib/codex-request-user-input.js
+  s_59be6bb53a5547::t_87c880396dc603 1-218
+apps/web/src/components/common/WeComIcon.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-22
+apps/web/src/components/viewers/ImageViewer.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-288
+packages/app/concepts/zh-TW/UltraPlan.md
+  s_59be6bb53a5547::t_87c880396dc603 1-155
+packages/app/concepts/it/TranslateContextPollution.md
+  s_59be6bb53a5547::t_87c880396dc603 1-46
+packages/app/lib/stats-worker.js
+  s_59be6bb53a5547::t_87c880396dc603 1-120
+apps/web/src/Mobile.jsx
+  s_59be6bb53a5547::t_99aa6db8eec87a 4-5,7-33,35
+  s_59be6bb53a5547::t_87c880396dc603 1-3,6,34,36-1109
+jsconfig.json
+  s_59be6bb53a5547::t_87c880396dc603 13-15,17-21
+apps/web/src/components/files/FileExplorer.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-959
+apps/web/src/components/dashboard/DetailPanel.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-513
+apps/web/src/utils/slashCommandLabels.js
+  s_59be6bb53a5547::t_87c880396dc603 1-80
+packages/app/concepts/en/Tool-web_search.md
+  s_59be6bb53a5547::t_87c880396dc603 1-11
+apps/web/src/components/common/SnapLineOverlay.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-31
+packages/app/concepts/en/UltraPlan.md
+  s_59be6bb53a5547::t_87c880396dc603 1-155
+packages/app/concepts/ja/CustomUltraplanExpert.md
+  s_59be6bb53a5547::t_87c880396dc603 1-44
+packages/app/tests/codex-ask-server.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-166
+packages/app/concepts/it/ResponseFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-38
+packages/app/tests/log-v2-schema.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-203
+apps/web/src/components/common/QuickAutoApproveRows.jsx
+  s_59be6bb53a5547::t_99aa6db8eec87a 4
+  s_59be6bb53a5547::t_87c880396dc603 1-3,5-66
+apps/web/src/components/files/FileContentView.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-418
+packages/app/tests/cli-args.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-132
+packages/app/tests/perm-bridge.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-130
+packages/app/concepts/ko/ResponseFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-38
+apps/web/src/components/chat/DiffView.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-141
+apps/web/src/components/files/MdxEditorPanel.base.css
+  s_59be6bb53a5547::t_87c880396dc603 1-9
+apps/web/src/img/teammates/marvel/security.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-30
+apps/web/src/hooks/useProjectAlias.js
+  s_59be6bb53a5547::t_87c880396dc603 1-29
+apps/web/src/utils/remoteImageDisclosure.js
+  s_59be6bb53a5547::t_87c880396dc603 1-66
+apps/web/src/img/teammates/translator.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-32
+packages/app/concepts/en/Tool-wait_agent.md
+  s_59be6bb53a5547::t_87c880396dc603 1-9
+packages/app/concepts/ja/ToolsFirst.md
+  s_59be6bb53a5547::t_87c880396dc603 1-71
+packages/app/server/lib/log-v2-routes.js
+  s_59be6bb53a5547::t_87c880396dc603 1-714
+tests/openai-body.test.js
+  s_59be6bb53a5547::t_87c880396dc603 9-11,15
+packages/app/concepts/es/BodyFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-39
+apps/web/src/components/common/ImageLightbox.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-120
+apps/web/src/components/mobile/MobileStats.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-211
+apps/web/src/components/settings/SystemTextModal.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-5,7-344
+  s_59be6bb53a5547::t_99aa6db8eec87a 6
+packages/app/concepts/pt-BR/QRCode.md
+  s_59be6bb53a5547::t_87c880396dc603 1-25
+apps/electron/scripts/mac-sign.sh
+  s_59be6bb53a5547::t_87c880396dc603 1-41,43-46
+  s_59be6bb53a5547::t_82c3d59a9f5a0a 42,47
+apps/web/src/components/chat/controllers/scrollHighlightController.js
+  s_59be6bb53a5547::t_87c880396dc603 1-50
+apps/web/src/components/viewers/JsonViewer.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-9
+apps/web/tests/pty-prompt-controller.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-48
+packages/app/concepts/no/SubAgent-Search.md
+  s_59be6bb53a5547::t_87c880396dc603 1-20
+packages/app/tests/log-v2-config.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-58
+apps/web/src/components/settings/VoicePackSettings.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-319
+apps/web/src/utils/contextSidebarNavigation.js
+  s_59be6bb53a5547::t_87c880396dc603 1-16
+packages/app/concepts/pl/BodyFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-39
+packages/app/concepts/zh/CustomUltraplanExpert.md
+  s_59be6bb53a5547::t_87c880396dc603 1-44
+packages/app/concepts/zh/ResponseFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-39
+packages/app/concepts/en/ProxySwitch.md
+  s_59be6bb53a5547::t_87c880396dc603 1-57
+packages/app/concepts/ru/ResponseFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-38
+packages/app/concepts/no/Teammate.md
+  s_59be6bb53a5547::t_87c880396dc603 1-26
+packages/app/tests/log-v2-concurrency.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-81
+packages/app/concepts/da/SubAgent-Search.md
+  s_59be6bb53a5547::t_87c880396dc603 1-20
+apps/web/src/components/terminal/terminalThemes.js
+  s_59be6bb53a5547::t_87c880396dc603 1-33
+packages/app/tests/log-v2-transport.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-549
+apps/web/src/img/teammates/builder.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-33
+packages/app/concepts/zh/Tool-update_plan.md
+  s_59be6bb53a5547::t_87c880396dc603 1-9
+packages/app/concepts/pl/SubAgent-Search.md
+  s_59be6bb53a5547::t_87c880396dc603 1-20
+packages/app/concepts/it/SubAgent-Search.md
+  s_59be6bb53a5547::t_87c880396dc603 1-20
+apps/web/src/utils/memoryLinkParser.js
+  s_59be6bb53a5547::t_87c880396dc603 1-69
+apps/web/tests/memory-link-parser.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-26
+packages/app/concepts/en/ToolsFirst.md
+  s_59be6bb53a5547::t_87c880396dc603 1-71
+packages/app/concepts/tr/MainAgent.md
+  s_59be6bb53a5547::t_87c880396dc603 1-22
+packages/app/i18n.js
+  s_59be6bb53a5547::t_87c880396dc603 1-1681
+packages/app/concepts/pt-BR/ProxySwitch.md
+  s_59be6bb53a5547::t_87c880396dc603 1-54
+packages/app/tests/codex-chat-adapter.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-734
+packages/app/concepts/pt-BR/TranslateContextPollution.md
+  s_59be6bb53a5547::t_87c880396dc603 1-46
+packages/app/concepts/zh-TW/GlobalSettings.md
+  s_59be6bb53a5547::t_87c880396dc603 1-224
+packages/app/concepts/tr/BodyDiffJSON.md
+  s_59be6bb53a5547::t_87c880396dc603 1-32
+apps/web/src/hooks/useMermaidRender.js
+  s_59be6bb53a5547::t_87c880396dc603 1-193
+packages/app/concepts/en/SubAgent-Search.md
+  s_59be6bb53a5547::t_87c880396dc603 1-20
+apps/web/src/components/settings/SystemTextModal.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-331
+packages/app/concepts/en/TranslateContextPollution.md
+  s_59be6bb53a5547::t_87c880396dc603 1-18
+packages/app/concepts/it/Teammate.md
+  s_59be6bb53a5547::t_87c880396dc603 1-26
+packages/app/lib/log-v2/benchmark.js
+  s_59be6bb53a5547::t_87c880396dc603 1-179
+packages/app/tests/legacy-terminal-history.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-66
+apps/web/src/components/dashboard/ContextTab.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-575
+packages/app/concepts/no/CustomUltraplanExpert.md
+  s_59be6bb53a5547::t_87c880396dc603 1-44
+packages/app/lib/openai-body.js
+  s_59be6bb53a5547::t_87c880396dc603 1-101
+packages/app/lib/log-v2/write-queue.js
+  s_59be6bb53a5547::t_87c880396dc603 1-183
+apps/web/src/utils/logProjectSelection.js
+  s_59be6bb53a5547::t_87c880396dc603 1-5
+packages/app/lib/main-agent-entry.js
+  s_59be6bb53a5547::t_87c880396dc603 1-70
+packages/app/concepts/da/TranslateContextPollution.md
+  s_59be6bb53a5547::t_87c880396dc603 1-46
+packages/app/concepts/da/BodyFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-39
+apps/web/src/utils/modalMask.js
+  s_59be6bb53a5547::t_87c880396dc603 1-15
+packages/app/tests/frontend-classification.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-333
+apps/web/src/components/git/DiffMiniMap.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-98
+packages/app/concepts/ko/TranslateContextPollution.md
+  s_59be6bb53a5547::t_87c880396dc603 1-46
+apps/web/src/components/terminal/ScratchTerminal.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-11,13-358
+  s_59be6bb53a5547::t_99aa6db8eec87a 12
+apps/web/src/components/approval/ApprovalModal.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-160
+apps/web/src/components/dashboard/WorkspaceList.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-412
+packages/app/tests/dingtalk-im-routes.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-258
+packages/app/server/lib/approval-modal-prefs.js
+  s_59be6bb53a5547::t_87c880396dc603 1-72
+tests/log-v2-client-archive.test.js
+  s_59be6bb53a5547::t_87c880396dc603 4-11
+packages/app/tests/ultra-agents-api.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-144
+apps/web/src/img/default-model-avatar.svg
+  s_59be6bb53a5547::t_87c880396dc603 1
+packages/app/concepts/ja/QRCode.md
+  s_59be6bb53a5547::t_87c880396dc603 1-25
+apps/web/tests/detail-tab-selection.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-32
+packages/app/concepts/ko/BodyDiffJSON.md
+  s_59be6bb53a5547::t_87c880396dc603 1-32
+apps/web/src/components/viewers/ToolResultView.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-134
+apps/web/src/utils/splitDragCalc.js
+  s_59be6bb53a5547::t_87c880396dc603 1-73
+apps/web/src/components/dashboard/WorkspaceList.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-254
+apps/web/src/components/approval/ToolApprovalPanel.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-111
+apps/web/src/utils/applyPatchParser.js
+  s_59be6bb53a5547::t_87c880396dc603 1-202
+apps/web/src/components/chat/ApprovalPortalContext.js
+  s_59be6bb53a5547::t_87c880396dc603 1-26
+packages/app/concepts/en/Tool-create_goal.md
+  s_59be6bb53a5547::t_87c880396dc603 1-8
+packages/app/tests/request-visibility.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-244
+packages/app/concepts/zh-TW/CustomUltraplanExpert.md
+  s_59be6bb53a5547::t_87c880396dc603 1-44
+apps/web/src/utils/requestViewModels.js
+  s_59be6bb53a5547::t_87c880396dc603 1-36
+apps/electron/electron/menu-model.js
+  s_59be6bb53a5547::t_87c880396dc603 1-107
+apps/web/src/utils/toolsXmlFormatter.js
+  s_59be6bb53a5547::t_87c880396dc603 1-3
+apps/web/src/components/settings/ImPlatformSettings.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-110
+apps/web/src/components/settings/ProjectAliasEditor.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-87
+packages/app/tests/model-system-prompts.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-128
+apps/web/src/img/teammates/marvel/translator.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-24
+packages/app/concepts/no/QRCode.md
+  s_59be6bb53a5547::t_87c880396dc603 1-25
+packages/app/concepts/tr/ResponseFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-38
+apps/web/src/img/codex/thinking.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-7
+packages/app/tests/log-v2-writer.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-323
+packages/app/proxy.js
+  s_59be6bb53a5547::t_87c880396dc603 1-544
+apps/web/tests/session-model-state.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-161
+apps/web/src/components/dashboard/LiveTagPopover.jsx
+  s_59be6bb53a5547::t_99aa6db8eec87a 4
+  s_59be6bb53a5547::t_87c880396dc603 1-3,5-106
+apps/web/tests/interaction-ownership.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-40
+packages/app/concepts/zh/Teammate.md
+  s_59be6bb53a5547::t_87c880396dc603 1-26
+packages/app/tests/log-v2-object-api.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-365
+packages/app/concepts/da/MainAgent.md
+  s_59be6bb53a5547::t_87c880396dc603 1-22
+packages/app/concepts/en/Tool-read_mcp_resource.md
+  s_59be6bb53a5547::t_87c880396dc603 1-10
+packages/app/server/lib/delta-reconstructor.js
+  s_59be6bb53a5547::t_87c880396dc603 1-292
+packages/app/concepts/ar/ProxySwitch.md
+  s_59be6bb53a5547::t_87c880396dc603 1-54
+apps/web/src/components/chat/controllers/permissionController.js
+  s_59be6bb53a5547::t_87c880396dc603 1-84
+apps/web/src/utils/contextCompactionDisclosureState.js
+  s_59be6bb53a5547::t_87c880396dc603 1-28
+packages/app/concepts/pl/QRCode.md
+  s_59be6bb53a5547::t_87c880396dc603 1-25
+packages/app/concepts/fr/Teammate.md
+  s_59be6bb53a5547::t_87c880396dc603 1-26
+apps/web/src/utils/teammateAvatars.js
+  s_59be6bb53a5547::t_87c880396dc603 1-194
+packages/app/concepts/uk/MainAgent.md
+  s_59be6bb53a5547::t_87c880396dc603 1-22
+packages/app/tests/fixtures/shutdown-child.mjs
+  s_59be6bb53a5547::t_87c880396dc603 1-36
+apps/web/src/components/common/ConceptHelp.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-97
+packages/app/concepts/zh-TW/SubAgent-Search.md
+  s_59be6bb53a5547::t_87c880396dc603 1-20
+packages/app/concepts/da/GlobalSettings.md
+  s_59be6bb53a5547::t_87c880396dc603 1-224
+apps/electron/electron/diag.js
+  s_59be6bb53a5547::t_87c880396dc603 1-110
+packages/app/lib/log-v2/wire-schema.js
+  s_59be6bb53a5547::t_87c880396dc603 1-160
+apps/web/src/components/settings/PluginModal.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-423
+packages/app/concepts/en/Teammate.md
+  s_59be6bb53a5547::t_87c880396dc603 1-26
+apps/web/src/global.css
+  s_59be6bb53a5547::t_87c880396dc603 1-615
+apps/web/src/utils/skillModalController.js
+  s_59be6bb53a5547::t_87c880396dc603 1-6,8,10-111
+  s_59be6bb53a5547::t_99aa6db8eec87a 7,9
+packages/app/concepts/pt-BR/BodyDiffJSON.md
+  s_59be6bb53a5547::t_87c880396dc603 1-32
+apps/web/tests/ask-flow-controller.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-375
+apps/web/src/components/git/GitDiffView.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-205
+packages/app/lib/cxv-editor.js
+  s_59be6bb53a5547::t_87c880396dc603 1-73
+apps/web/src/utils/workflowStore.js
+  s_59be6bb53a5547::t_87c880396dc603 1-94
+packages/app/concepts/zh/Tool-list_mcp_resources.md
+  s_59be6bb53a5547::t_87c880396dc603 1-8
+packages/app/lib/log-v2/coordinator.js
+  s_59be6bb53a5547::t_87c880396dc603 1-280
+packages/app/tests/codex-config.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-61
+apps/web/src/img/model-qwen.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-2
+packages/app/concepts/de/ToolsFirst.md
+  s_59be6bb53a5547::t_87c880396dc603 1-71
+apps/web/src/img/codex/entrance.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-7
+apps/web/src/img/teammates/marvel/default.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-25
+packages/app/lib/proxy-env.js
+  s_59be6bb53a5547::t_87c880396dc603 1-96
+packages/app/lib/terminal-screen-worker.js
+  s_59be6bb53a5547::t_87c880396dc603 1-108
+packages/app/tests/codex-config-redirect.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-14
+packages/app/tests/logger-install.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-2,4-8,10-14,32-72
+  s_59be6bb53a5547::t_16b69f6c8a9e25 3,9,15-30
+  s_59be6bb53a5547::t_3216dd12f6b7ef 31
+apps/web/src/components/terminal/TerminalPanel.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-14,16-23,26-33,36,38-2127
+  s_59be6bb53a5547::t_99aa6db8eec87a 15,24-25,34-35,37
+packages/app/concepts/zh-TW/QRCode.md
+  s_59be6bb53a5547::t_87c880396dc603 1-25
+apps/web/src/img/teammates/marvel/auditor.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-28
+packages/app/lib/log-v2/config.js
+  s_59be6bb53a5547::t_87c880396dc603 1-37
+packages/app/server/lib/tools-xml-formatter.js
+  s_59be6bb53a5547::t_87c880396dc603 1-91
+apps/web/src/components/common/CountryFlag.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-105
+apps/web/src/components/common/OpenFolderIcon.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-53
+packages/app/tests/cli-shutdown-registration.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-17
+packages/app/concepts/ar/MainAgent.md
+  s_59be6bb53a5547::t_87c880396dc603 1-22
+apps/web/src/i18n/mdxTranslations.js
+  s_59be6bb53a5547::t_87c880396dc603 1-472
+apps/web/src/utils/terminalClipboard.js
+  s_59be6bb53a5547::t_87c880396dc603 1-117
+apps/web/src/img/codex/orbiting.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-7
+apps/web/src/components/viewers/WorkflowTimeline.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-83
+apps/web/src/utils/promptDetect.js
+  s_59be6bb53a5547::t_87c880396dc603 1-196
+apps/web/tests/conversation-role-filter.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-23
+packages/app/concepts/da/ResponseFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-38
+packages/app/lib/log-v2/write-worker.js
+  s_59be6bb53a5547::t_87c880396dc603 1-59
+apps/web/src/tokenInterceptor.js
+  s_59be6bb53a5547::t_87c880396dc603 1-60
+packages/app/concepts/ru/CustomUltraplanExpert.md
+  s_59be6bb53a5547::t_87c880396dc603 1-44
+apps/web/src/utils/commandValidator.js
+  s_59be6bb53a5547::t_87c880396dc603 1-45
+.gitignore
+  s_59be6bb53a5547::t_87c880396dc603 5-14
+  s_59be6bb53a5547::t_838304d87908f9 15
+apps/web/src/img/teammates/marvel/implementer.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-30
+apps/web/src/utils/webResultGrouping.js
+  s_59be6bb53a5547::t_87c880396dc603 1-111
+packages/app/lib/log-v2/reducer.js
+  s_59be6bb53a5547::t_87c880396dc603 1-337
+packages/app/lib/otel-receiver.js
+  s_59be6bb53a5547::t_87c880396dc603 1-184
+packages/app/lib/sdk-adapter.js
+  s_59be6bb53a5547::t_87c880396dc603 1-266
+apps/web/src/utils/seqResourceLoaders.js
+  s_59be6bb53a5547::t_87c880396dc603 1-80
+apps/web/src/utils/presetShortcuts.js
+  s_59be6bb53a5547::t_87c880396dc603 1-14
+apps/web/src/components/terminal/CustomUltraplanEditModal.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-189
+apps/web/tests/tool-file-change-controller.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-84
+apps/web/src/components/viewers/WorkflowPanel.jsx
+  s_59be6bb53a5547::t_99aa6db8eec87a 8
+  s_59be6bb53a5547::t_87c880396dc603 1-7,9-243
+packages/app/tests/stats-worker.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-71
+apps/web/src/components/dashboard/WorkflowRunsPanel.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-108
+apps/electron/package.json
+  s_59be6bb53a5547::t_8a06237ad33e25 43-49
+  s_59be6bb53a5547::t_61cd76b22a7a54 33,35-42,50
+  s_59be6bb53a5547::t_82c3d59a9f5a0a 11
+  s_59be6bb53a5547::t_87c880396dc603 1-10,12-32,34,51-53
+packages/app/concepts/es/Teammate.md
+  s_59be6bb53a5547::t_87c880396dc603 1-26
+apps/web/src/img/teammates/worker.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-29
+packages/app/tests/pty-install-layout.test.js
+  s_59be6bb53a5547::t_f5e8c0be9403c9 1-42
+packages/app/concepts/ja/Teammate.md
+  s_59be6bb53a5547::t_87c880396dc603 1-26
+packages/app/concepts/fr/GlobalSettings.md
+  s_59be6bb53a5547::t_87c880396dc603 1-224
+packages/app/lib/request-visibility.js
+  s_59be6bb53a5547::t_87c880396dc603 1-158
+packages/app/concepts/ja/ResponseFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-38
+apps/web/src/components/common/RefreshIcon.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-50
+apps/web/src/img/teammates/security.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-31
+packages/app/concepts/tr/ProxySwitch.md
+  s_59be6bb53a5547::t_87c880396dc603 1-54
+apps/web/src/components/settings/ProjectPrefsManagerModal.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-52
+apps/web/src/utils/toolResultClassifier.js
+  s_59be6bb53a5547::t_87c880396dc603 1-16
+apps/web/src/utils/toolNameAliases.js
+  s_59be6bb53a5547::t_87c880396dc603 1-13
+packages/app/concepts/zh/BodyDiffJSON.md
+  s_59be6bb53a5547::t_87c880396dc603 1-32
+tests/tool-catalog-concepts.test.js
+  s_59be6bb53a5547::t_014c25fd5669c7 6,8
+packages/app/tests/fixtures/cxv
+  s_59be6bb53a5547::t_87c880396dc603 1
+apps/web/src/utils/lazyWithReload.js
+  s_59be6bb53a5547::t_87c880396dc603 1-53
+apps/web/src/components/files/FileExplorer.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-173
+packages/app/src/utils/clearCheckpoint.js
+  s_59be6bb53a5547::t_87c880396dc603 1-248
+apps/web/src/img/teammates/marvel/designer.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-21
+packages/app/concepts/zh/Tool-list_agents.md
+  s_59be6bb53a5547::t_87c880396dc603 1-9
+apps/web/src/utils/conversationEntryNormalize.js
+  s_59be6bb53a5547::t_87c880396dc603 1-538
+packages/app/concepts/en/Tool-interrupt_agent.md
+  s_59be6bb53a5547::t_87c880396dc603 1-9
+apps/web/src/utils/markdownIncremental.js
+  s_59be6bb53a5547::t_87c880396dc603 2-39
+  s_59be6bb53a5547::t_99aa6db8eec87a 1
+packages/app/lib/extract-plugin-name.mjs
+  s_59be6bb53a5547::t_87c880396dc603 1-18
+apps/web/src/components/chat/ChatView.jsx
+  s_59be6bb53a5547::t_99aa6db8eec87a 3,46-47,59,61-67
+  s_59be6bb53a5547::t_87c880396dc603 1-2,4-45,48-58,60,68-3857
+apps/web/src/components/chat/RoleFilterBar.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-65
+apps/web/src/contexts/SettingsContext.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-140
+packages/app/concepts/ar/UltraPlan.md
+  s_59be6bb53a5547::t_87c880396dc603 1-155
+packages/app/concepts/uk/QRCode.md
+  s_59be6bb53a5547::t_87c880396dc603 1-25
+packages/app/concepts/zh/ProxySwitch.md
+  s_59be6bb53a5547::t_87c880396dc603 1-57
+apps/web/src/components/common/FeishuIcon.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-23
+packages/app/concepts/ko/QRCode.md
+  s_59be6bb53a5547::t_87c880396dc603 1-25
+apps/web/src/components/settings/ProxyModal.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-320
+apps/web/src/utils/workflowFormat.js
+  s_59be6bb53a5547::t_87c880396dc603 1-52
+packages/app/tests/otel-config.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-85
+apps/web/src/img/teammates/implementer.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-34
+packages/app/concepts/fr/ResponseFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-38
+packages/app/tests/git-endpoints.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-407
+apps/electron/electron/main.js
+  s_59be6bb53a5547::t_87c880396dc603 1-1441
+packages/app/concepts/en/Tool-get_goal.md
+  s_59be6bb53a5547::t_87c880396dc603 1-5
+apps/web/src/utils/voicePackPlayer.js
+  s_59be6bb53a5547::t_87c880396dc603 1-233
+packages/app/concepts/it/ToolsFirst.md
+  s_59be6bb53a5547::t_87c880396dc603 1-71
+packages/app/lib/codex-chat-adapter.js
+  s_59be6bb53a5547::t_87c880396dc603 1-1078
+apps/web/src/utils/stickyBottomController.js
+  s_59be6bb53a5547::t_87c880396dc603 1-643
+packages/app/concepts/zh/TranslateContextPollution.md
+  s_59be6bb53a5547::t_87c880396dc603 1-18
+packages/app/tests/im-delta-reconstructor.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-14
+apps/web/src/utils/systemTags.js
+  s_59be6bb53a5547::t_87c880396dc603 1-47
+packages/app/concepts/ru/ToolsFirst.md
+  s_59be6bb53a5547::t_87c880396dc603 1-71
+apps/web/src/utils/askPortalMatcher.js
+  s_59be6bb53a5547::t_87c880396dc603 1-54
+apps/web/src/utils/resizeCalc.js
+  s_59be6bb53a5547::t_87c880396dc603 1-21
+packages/app/concepts/ar/CustomUltraplanExpert.md
+  s_59be6bb53a5547::t_87c880396dc603 1-44
+packages/app/concepts/ar/ResponseFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-38
+packages/app/concepts/th/SubAgent-Search.md
+  s_59be6bb53a5547::t_87c880396dc603 1-20
+apps/web/src/components/dashboard/WorkflowRunsPanel.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-72
+packages/app/concepts/uk/BodyFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-39
+packages/app/concepts/en/Tool-list_mcp_resources.md
+  s_59be6bb53a5547::t_87c880396dc603 1-8
+packages/app/concepts/pl/ResponseFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-38
+apps/web/tests/user-message-image-ui.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-24
+packages/app/concepts/ar/QRCode.md
+  s_59be6bb53a5547::t_87c880396dc603 1-25
+apps/web/src/img/teammates/investigator.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-29
+packages/app/tests/approval-reviewer.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-37
+packages/app/concepts/it/MainAgent.md
+  s_59be6bb53a5547::t_87c880396dc603 1-22
+packages/app/concepts/uk/ProxySwitch.md
+  s_59be6bb53a5547::t_87c880396dc603 1-54
+apps/web/src/components/common/HoverPreviewTip.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-21
+apps/web/src/utils/promptClassifier.js
+  s_59be6bb53a5547::t_87c880396dc603 1-111
+packages/app/concepts/en/MainAgent.md
+  s_59be6bb53a5547::t_87c880396dc603 1-23
+packages/app/concepts/da/Teammate.md
+  s_59be6bb53a5547::t_87c880396dc603 1-26
+apps/electron/electron/tab-content-preload.js
+  s_59be6bb53a5547::t_87c880396dc603 1-66
+packages/app/concepts/ru/TranslateContextPollution.md
+  s_59be6bb53a5547::t_87c880396dc603 1-46
+apps/web/src/img/teammates/DESIGN.md
+  s_59be6bb53a5547::t_87c880396dc603 1-165
+packages/app/lib/sdk-manager.js
+  s_59be6bb53a5547::t_87c880396dc603 1-722
+packages/app/tests/log-v2-layout-migration.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-322
+packages/app/tests/pty-chunk-builder.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-54
+apps/web/src/components/terminal/UltraPlanModal.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-527
+apps/web/src/utils/apiUrl.js
+  s_59be6bb53a5547::t_87c880396dc603 1-28
+apps/web/src/utils/thinkingMerge.js
+  s_59be6bb53a5547::t_87c880396dc603 1-49
+packages/app/concepts/zh/Tool-shell_command.md
+  s_59be6bb53a5547::t_87c880396dc603 1-12
+apps/web/src/utils/toolResultBuilder.js
+  s_59be6bb53a5547::t_87c880396dc603 1-358
+packages/app/concepts/pt-BR/ToolsFirst.md
+  s_59be6bb53a5547::t_87c880396dc603 1-71
+apps/web/src/utils/searchApi.js
+  s_59be6bb53a5547::t_87c880396dc603 3-47
+  s_59be6bb53a5547::t_99aa6db8eec87a 1-2
+packages/app/concepts/ru/MainAgent.md
+  s_59be6bb53a5547::t_87c880396dc603 1-22
+packages/app/concepts/zh/Tool-get_goal.md
+  s_59be6bb53a5547::t_87c880396dc603 1-5
+apps/web/src/components/common/RefreshIcon.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-26
+packages/app/concepts/no/ResponseFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-38
+packages/app/concepts/es/BodyDiffJSON.md
+  s_59be6bb53a5547::t_87c880396dc603 1-32
+packages/app/concepts/pt-BR/BodyFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-39
+packages/app/tests/im-log-stream.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-22
+apps/web/src/components/settings/ProjectAliasEditor.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-138
+apps/web/src/img/teammates/tracer.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-30
+tests/model-identity.test.js
+  s_59be6bb53a5547::t_87c880396dc603 12-13
+packages/app/tests/ensure-hooks.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-64
+packages/app/tests/code-search.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-372
+packages/app/concepts/ar/Teammate.md
+  s_59be6bb53a5547::t_87c880396dc603 1-26
+packages/app/concepts/en/Tool-update_goal.md
+  s_59be6bb53a5547::t_87c880396dc603 1-9
+packages/app/lib/log-v2/layout.js
+  s_59be6bb53a5547::t_87c880396dc603 1-25
+apps/web/src/components/dashboard/CachePopoverContent.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-16,18-561
+  s_59be6bb53a5547::t_99aa6db8eec87a 17
+apps/web/tests/log-archive-upload.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-122
+packages/app/concepts/ko/Teammate.md
+  s_59be6bb53a5547::t_87c880396dc603 1-26
+packages/app/concepts/zh/Tool-update_goal.md
+  s_59be6bb53a5547::t_87c880396dc603 1-9
+packages/app/concepts/zh/UltraPlan.md
+  s_59be6bb53a5547::t_87c880396dc603 1-155
+packages/app/lib/perm-bridge.js
+  s_59be6bb53a5547::t_87c880396dc603 1-182
+packages/app/tests/code-replace.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-273
+apps/web/src/components/common/sharedChrome.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-274
+packages/app/concepts/zh/Tool-list_mcp_resource_templates.md
+  s_59be6bb53a5547::t_87c880396dc603 1-8
+apps/web/src/img/teammates/reviewer.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-23
+apps/web/tests/ask-answer-parser.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-41
+apps/web/tests/identity-heal.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-68
+apps/web/src/components/files/FileContentView.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-35,38-1040
+  s_59be6bb53a5547::t_99aa6db8eec87a 36-37
+apps/web/src/components/chat/RoleFilterBar.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-36
+apps/web/src/components/git/DiffMiniMap.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-17
+apps/web/src/components/viewers/ToolResultView.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-5,7-425
+  s_59be6bb53a5547::t_99aa6db8eec87a 6
+apps/web/src/utils/monotime.js
+  s_59be6bb53a5547::t_87c880396dc603 1-6
+apps/web/src/components/common/ConceptHelp.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-151
+apps/web/tests/app-header-auth.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-77
+packages/app/tests/shutdown-integration.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-83
+apps/web/src/img/teammates/analyst.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-32
+packages/app/lib/ensure-hooks.js
+  s_59be6bb53a5547::t_87c880396dc603 1-87
+packages/app/tests/otel-receiver.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-36
+apps/electron/electron/tab-worker.js
+  s_59be6bb53a5547::t_87c880396dc603 1-138
+packages/app/concepts/ar/GlobalSettings.md
+  s_59be6bb53a5547::t_87c880396dc603 1-224
+packages/app/concepts/ru/GlobalSettings.md
+  s_59be6bb53a5547::t_87c880396dc603 1-224
+packages/app/server/lib/context-rules.js
+  s_59be6bb53a5547::t_87c880396dc603 1-70
+apps/web/src/utils/ingestPipeline.js
+  s_59be6bb53a5547::t_87c880396dc603 1-47
+packages/app/concepts/de/GlobalSettings.md
+  s_59be6bb53a5547::t_87c880396dc603 1-224
+packages/app/concepts/ko/GlobalSettings.md
+  s_59be6bb53a5547::t_87c880396dc603 1-224
+packages/app/lib/log-management.js
+  s_59be6bb53a5547::t_87c880396dc603 1-197
+packages/app/tests/proxy-profile.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-221
+packages/app/concepts/en/Tool-followup_task.md
+  s_59be6bb53a5547::t_87c880396dc603 1-10
+packages/app/lib/im-log-stream.js
+  s_59be6bb53a5547::t_87c880396dc603 1-45
+packages/app/tests/terminal-websocket.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-215
+apps/electron/scripts/assemble-app.mjs
+  s_59be6bb53a5547::t_27580ba5453a85 4,33-43
+  s_59be6bb53a5547::t_ef98e156a6ea37 1-2,6-15,44
+  s_59be6bb53a5547::t_7fb5f1cd97f51f 3,5,16-32
+apps/web/tests/request-view-models.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-41
+apps/web/src/components/terminal/CustomUltraplanEditModal.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-5,7-227
+  s_59be6bb53a5547::t_99aa6db8eec87a 6
+packages/app/lib/model-system-prompts.js
+  s_59be6bb53a5547::t_87c880396dc603 1-275
+packages/app/concepts/da/ProxySwitch.md
+  s_59be6bb53a5547::t_87c880396dc603 1-54
+apps/web/src/utils/errorReport.js
+  s_59be6bb53a5547::t_87c880396dc603 1-40
+packages/app/concepts/da/UltraPlan.md
+  s_59be6bb53a5547::t_87c880396dc603 1-155
+apps/web/src/components/common/PanelResizer.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-48
+tests/log-v2-conversation-parity.test.js
+  s_59be6bb53a5547::t_87c880396dc603 4-9
+apps/web/src/img/teammates/marvel/reviewer.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-21
+packages/app/lib/otel-adapter.js
+  s_59be6bb53a5547::t_87c880396dc603 1-252
+packages/app/concepts/zh/Tool-send_message.md
+  s_59be6bb53a5547::t_87c880396dc603 1-10
+packages/app/lib/log-v2/transport.js
+  s_59be6bb53a5547::t_87c880396dc603 1-666
+packages/app/lib/plugin-manager.js
+  s_59be6bb53a5547::t_87c880396dc603 1-118
+packages/app/tests/ultra-agents-route.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-64
+packages/app/concepts/tr/CustomUltraplanExpert.md
+  s_59be6bb53a5547::t_87c880396dc603 1-44
+apps/web/src/components/viewers/MarkdownBlock.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-157
+packages/app/concepts/de/UltraPlan.md
+  s_59be6bb53a5547::t_87c880396dc603 1-155
+packages/app/concepts/it/ProxySwitch.md
+  s_59be6bb53a5547::t_87c880396dc603 1-54
+apps/web/src/utils/termDiag.js
+  s_59be6bb53a5547::t_87c880396dc603 1-114
+packages/app/concepts/fr/MainAgent.md
+  s_59be6bb53a5547::t_87c880396dc603 1-22
+packages/app/concepts/zh-TW/BodyFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-39
+apps/web/src/img/teammates/marvel/tracer.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-19
+tests/context-compaction.test.js
+  s_59be6bb53a5547::t_87c880396dc603 11-12
+apps/web/src/utils/logArchiveUpload.js
+  s_59be6bb53a5547::t_87c880396dc603 1-108
+packages/app/concepts/tr/Teammate.md
+  s_59be6bb53a5547::t_87c880396dc603 1-26
+apps/web/src/img/teammates/marvel/explorer.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-22
+apps/web/src/components/terminal/TerminalPanel.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-872
+apps/web/src/img/teammates/marvel/executor.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-25
+apps/web/src/components/mobile/MobileDrawerCloseButton.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-18
+apps/web/src/utils/markdown.js
+  s_59be6bb53a5547::t_87c880396dc603 1-2,4,6-68
+  s_59be6bb53a5547::t_99aa6db8eec87a 3,5
+packages/app/concepts/no/MainAgent.md
+  s_59be6bb53a5547::t_87c880396dc603 1-22
+apps/web/src/components/terminal/UltraplanExpertManagerModal.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-114
+apps/web/src/components/viewers/JsonViewer.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-40
+apps/web/src/utils/askFallback.js
+  s_59be6bb53a5547::t_87c880396dc603 1-21
+packages/app/concepts/ar/ToolsFirst.md
+  s_59be6bb53a5547::t_87c880396dc603 1-71
+apps/web/tests/model-logo-theme.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-25
+packages/app/concepts/ru/ProxySwitch.md
+  s_59be6bb53a5547::t_87c880396dc603 1-54
+packages/app/concepts/de/BodyFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-39
+apps/web/src/img/model-codex.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-2
+packages/app/concepts/en/Tool-view_image.md
+  s_59be6bb53a5547::t_87c880396dc603 1-10
+apps/web/src/utils/autoApproveOptions.js
+  s_59be6bb53a5547::t_87c880396dc603 1-23
+apps/web/src/components/viewers/LogTable.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-115
+packages/app/concepts/es/QRCode.md
+  s_59be6bb53a5547::t_87c880396dc603 1-25
+packages/app/lib/openai-responses-url.js
+  s_59be6bb53a5547::t_87c880396dc603 1-30
+apps/web/src/utils/imTr.js
+  s_59be6bb53a5547::t_87c880396dc603 1-7
+packages/app/concepts/es/CustomUltraplanExpert.md
+  s_59be6bb53a5547::t_87c880396dc603 1-44
+packages/app/tests/cxv-process-endpoint.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-82
+apps/web/tests/apply-patch-parser.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-78
+packages/app/concepts/no/GlobalSettings.md
+  s_59be6bb53a5547::t_87c880396dc603 1-224
+apps/web/src/hooks/useMarkdownExport.js
+  s_59be6bb53a5547::t_87c880396dc603 1-146
+packages/app/scripts/gen-default-voicepack.js
+  s_59be6bb53a5547::t_87c880396dc603 1-176
+apps/web/tests/context-compaction-disclosure-state.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-53
+packages/app/concepts/ko/MainAgent.md
+  s_59be6bb53a5547::t_87c880396dc603 1-22
+packages/app/concepts/th/MainAgent.md
+  s_59be6bb53a5547::t_87c880396dc603 1-22
+packages/app/scripts/migrate-log-v2-layout.mjs
+  s_59be6bb53a5547::t_87c880396dc603 1-970
+apps/web/src/components/common/ImageLightbox.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-278
+apps/web/src/components/dashboard/UsageWindowPill.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-153
+packages/app/concepts/ko/ProxySwitch.md
+  s_59be6bb53a5547::t_87c880396dc603 1-54
+packages/app/concepts/en/Tool-shell_command.md
+  s_59be6bb53a5547::t_87c880396dc603 1-12
+packages/app/concepts/no/ProxySwitch.md
+  s_59be6bb53a5547::t_87c880396dc603 1-54
+packages/app/server/lib/ultra-agents-api.js
+  s_59be6bb53a5547::t_87c880396dc603 1-126
+packages/app/concepts/ja/BodyDiffJSON.md
+  s_59be6bb53a5547::t_87c880396dc603 1-32
+apps/web/src/components/settings/ImConversationModal.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-49
+packages/app/lib/codex-config.js
+  s_59be6bb53a5547::t_87c880396dc603 1-285
+packages/app/tests/interceptor-proxy-profile.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-497
+packages/app/tests/system-prompt-server.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-138
+apps/web/src/utils/imageDownscale.js
+  s_59be6bb53a5547::t_87c880396dc603 1-28
+apps/web/src/utils/logV2ConversationProjection.js
+  s_59be6bb53a5547::t_87c880396dc603 1-17
+apps/web/src/components/chat/controllers/askFlowController.js
+  s_59be6bb53a5547::t_87c880396dc603 1-1002
+apps/web/src/components/terminal/UltraPlanModal.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-328
+apps/web/tests/prompt-nav.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-51
+apps/web/src/components/chat/DiffView.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-111
+apps/web/tests/log-project-selection.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-11
+packages/app/concepts/it/BodyDiffJSON.md
+  s_59be6bb53a5547::t_87c880396dc603 1-32
+packages/app/lib/codex-app-logger.js
+  s_59be6bb53a5547::t_87c880396dc603 1-576
+packages/app/lib/dingtalk-im-lock.js
+  s_59be6bb53a5547::t_87c880396dc603 1-192
+packages/app/lib/dingtalk-im-process-manager.js
+  s_59be6bb53a5547::t_87c880396dc603 1-193
+apps/web/src/components/git/GitChanges.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-468
+apps/web/tests/log-v2-bootstrap.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-20
+apps/web/src/utils/pinnedMenu.js
+  s_59be6bb53a5547::t_87c880396dc603 1-55
+packages/app/concepts/ja/ProxySwitch.md
+  s_59be6bb53a5547::t_87c880396dc603 1-54
+packages/app/concepts/zh-TW/ToolsFirst.md
+  s_59be6bb53a5547::t_87c880396dc603 1-71
+packages/app/tests/shutdown.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-100
+tests/conversation-entry-normalize.test.js
+  s_59be6bb53a5547::t_87c880396dc603 4,11-15
+apps/web/src/utils/builtinPresets.js
+  s_59be6bb53a5547::t_87c880396dc603 1-18
+packages/app/tests/user-prompt-content.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-189
+packages/app/concepts/zh/Tool-create_goal.md
+  s_59be6bb53a5547::t_87c880396dc603 1-8
+apps/web/src/img/codex/waiting.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-7
+apps/web/src/components/common/DingTalkIcon.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-20
+packages/app/concepts/de/MainAgent.md
+  s_59be6bb53a5547::t_87c880396dc603 1-22
+packages/app/concepts/zh/Tool-apply_patch.md
+  s_59be6bb53a5547::t_87c880396dc603 1-11
+packages/app/tests/log-v2-request-summary.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-173
+packages/app/concepts/de/ProxySwitch.md
+  s_59be6bb53a5547::t_87c880396dc603 1-54
+apps/web/src/components/settings/ProcessModal.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-208
+packages/app/concepts/en/Tool-spawn_agent.md
+  s_59be6bb53a5547::t_87c880396dc603 1-11
+apps/web/src/App.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-1003
+apps/web/tests/rate-limit-parser.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-126
+packages/app/concepts/it/UltraPlan.md
+  s_59be6bb53a5547::t_87c880396dc603 1-155
+apps/web/src/img/model-glm.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-2
+apps/web/src/img/model-kimi.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-2
+packages/app/concepts/ru/SubAgent-Search.md
+  s_59be6bb53a5547::t_87c880396dc603 1-20
+packages/app/concepts/th/ResponseFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-38
+packages/app/scripts/verify-codex-request-user-input.mjs
+  s_59be6bb53a5547::t_87c880396dc603 1-184
+packages/app/concepts/es/MainAgent.md
+  s_59be6bb53a5547::t_87c880396dc603 1-22
+packages/app/tests/log-v2-backfill.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-190
+packages/app/lib/log-v2/reader-worker.js
+  s_59be6bb53a5547::t_87c880396dc603 1-126
+packages/app/tests/log-v2-materializer.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-600
+packages/app/lib/proxy-errors.js
+  s_59be6bb53a5547::t_87c880396dc603 1-18
+apps/web/src/img/teammates/marvel/investigator.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-21
+apps/web/src/components/viewers/WorkflowTimeline.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-116
+packages/app/concepts/uk/SubAgent-Search.md
+  s_59be6bb53a5547::t_87c880396dc603 1-20
+packages/app/concepts/de/Teammate.md
+  s_59be6bb53a5547::t_87c880396dc603 1-26
+packages/app/concepts/en/Tool-list_agents.md
+  s_59be6bb53a5547::t_87c880396dc603 1-9
+packages/app/concepts/es/ProxySwitch.md
+  s_59be6bb53a5547::t_87c880396dc603 1-54
+packages/app/concepts/it/GlobalSettings.md
+  s_59be6bb53a5547::t_87c880396dc603 1-224
+packages/app/concepts/ja/MainAgent.md
+  s_59be6bb53a5547::t_87c880396dc603 1-22
+packages/app/concepts/pl/Teammate.md
+  s_59be6bb53a5547::t_87c880396dc603 1-26
+packages/app/concepts/da/CustomUltraplanExpert.md
+  s_59be6bb53a5547::t_87c880396dc603 1-44
+apps/web/src/components/git/FullFileDiffView.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-25,27-265
+  s_59be6bb53a5547::t_99aa6db8eec87a 26
+packages/app/lib/log-entry-order.js
+  s_59be6bb53a5547::t_87c880396dc603 1-13
+packages/app/server/lib/voice-pack-events.js
+  s_59be6bb53a5547::t_87c880396dc603 1-79
+packages/app/tests/log-v2-storage-guards.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-64
+packages/app/lib/logger-install.js
+  s_59be6bb53a5547::t_87c880396dc603 1-80,82-83,85-93,95-101
+  s_59be6bb53a5547::t_16b69f6c8a9e25 81,84,94
+packages/app/src/utils/contentFilter.js
+  s_59be6bb53a5547::t_87c880396dc603 1-673
+apps/web/src/utils/resolveLocalized.js
+  s_59be6bb53a5547::t_87c880396dc603 1-17
+packages/app/tests/log-archive-endpoint.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-146
+packages/app/tests/logger-bootstrap.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-175
+packages/app/concepts/uk/UltraPlan.md
+  s_59be6bb53a5547::t_87c880396dc603 1-155
+packages/app/tests/log-v2-coordinator.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-720
+apps/web/src/components/settings/ProxyModal.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-141
+apps/web/src/components/git/FullFileDiffView.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-176
+apps/web/src/utils/entryCache.js
+  s_59be6bb53a5547::t_87c880396dc603 1-179
+packages/app/concepts/fr/ToolsFirst.md
+  s_59be6bb53a5547::t_87c880396dc603 1-71
+packages/app/concepts/zh/Tool-web_search.md
+  s_59be6bb53a5547::t_87c880396dc603 1-11
+apps/web/src/components/chat/ChatInputBar.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-663
+packages/app/concepts/pt-BR/UltraPlan.md
+  s_59be6bb53a5547::t_87c880396dc603 1-155
+apps/web/tests/pending-input-echo.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-102
+packages/app/concepts/zh/Tool-view_image.md
+  s_59be6bb53a5547::t_87c880396dc603 1-10
+apps/web/src/utils/fileExpandedPathsStorage.js
+  s_59be6bb53a5547::t_87c880396dc603 1-70
+packages/app/lib/git-change-stats.js
+  s_59be6bb53a5547::t_87c880396dc603 1-97
+apps/web/src/components/chat/ApplyPatchView.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1,3-39
+  s_59be6bb53a5547::t_99aa6db8eec87a 2
+apps/web/src/components/common/ConfirmRemoveButton.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-78
+packages/app/lib/updater.js
+  s_59be6bb53a5547::t_87c880396dc603 1-119
+apps/web/src/components/mobile/MobileStats.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-75
+apps/web/src/utils/logV2Transport.js
+  s_59be6bb53a5547::t_87c880396dc603 1-133
+packages/app/tests/log-raw-sidecar.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-81
+apps/web/src/components/common/HoverPreviewTip.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-62
+apps/web/tests/terminal-stream-controller.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-53
+packages/app/lib/log-v2/timeline-watcher.js
+  s_59be6bb53a5547::t_87c880396dc603 1-226
+packages/app/concepts/uk/Teammate.md
+  s_59be6bb53a5547::t_87c880396dc603 1-26
+apps/web/src/components/chat/uploadDeferLogic.js
+  s_59be6bb53a5547::t_87c880396dc603 1-46
+packages/app/tests/ultraplan-generated-assets.test.js
+  s_59be6bb53a5547::t_61cd76b22a7a54 64-65
+  s_59be6bb53a5547::t_87c880396dc603 1-62,66-67
+  s_59be6bb53a5547::t_ef98e156a6ea37 63
+apps/web/src/img/teammates/marvel/scanner.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-23
+packages/app/lib/context-watcher.js
+  s_59be6bb53a5547::t_87c880396dc603 1-26
+packages/app/concepts/tr/UltraPlan.md
+  s_59be6bb53a5547::t_87c880396dc603 1-155
+apps/web/src/utils/searchReplace.js
+  s_59be6bb53a5547::t_87c880396dc603 1-51
+packages/app/concepts/fr/ProxySwitch.md
+  s_59be6bb53a5547::t_87c880396dc603 1-54
+packages/app/concepts/fr/UltraPlan.md
+  s_59be6bb53a5547::t_87c880396dc603 1-155
+packages/app/concepts/ko/ToolsFirst.md
+  s_59be6bb53a5547::t_87c880396dc603 1-71
+packages/app/ultraAgents/research-expert.json
+  s_59be6bb53a5547::t_87c880396dc603 1-45
+apps/web/src/utils/fileOpen.js
+  s_59be6bb53a5547::t_99aa6db8eec87a 8
+  s_59be6bb53a5547::t_87c880396dc603 1-7,9-37
+packages/app/concepts/fr/CustomUltraplanExpert.md
+  s_59be6bb53a5547::t_87c880396dc603 1-44
+packages/app/concepts/ja/UltraPlan.md
+  s_59be6bb53a5547::t_87c880396dc603 1-155
+apps/web/src/components/common/ToolsHelp.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-85
+packages/app/concepts/pt-BR/GlobalSettings.md
+  s_59be6bb53a5547::t_87c880396dc603 1-224
+packages/app/server/raw-sidecar-worker.js
+  s_59be6bb53a5547::t_87c880396dc603 1-18
+apps/electron/electron/runtime-paths.js
+  s_59be6bb53a5547::t_82c3d59a9f5a0a 13-22
+  s_59be6bb53a5547::t_87c880396dc603 1,4-12,23-33,35-63,66-84,98
+  s_59be6bb53a5547::t_ef98e156a6ea37 3,34,64-65,85,94,96-97
+  s_59be6bb53a5547::t_8390a28bcebd68 86-93,95
+  s_59be6bb53a5547::t_2fb0c9306e20e8 2
+apps/web/tests/plan-usage-display.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-80
+packages/app/src/utils/requestType.js
+  s_59be6bb53a5547::t_87c880396dc603 1-326
+packages/app/concepts/uk/ResponseFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-38
+apps/web/src/components/dashboard/CompactionPromptHistory.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-157
+apps/web/src/components/git/GitChanges.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-337
+packages/app/concepts/zh/Tool-interrupt_agent.md
+  s_59be6bb53a5547::t_87c880396dc603 1-9
+apps/web/src/components/viewers/MarkdownBlock.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-112
+apps/web/src/components/terminal/PresetExpertPickerModal.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-127
+apps/web/src/components/mobile/MobileFileExplorer.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-171
+packages/app/pty-manager.js
+  s_59be6bb53a5547::t_1ec3700b08c6a1 1,307
+  s_59be6bb53a5547::t_87c880396dc603 2-306,308-684
+apps/web/src/utils/contextCompaction.js
+  s_59be6bb53a5547::t_87c880396dc603 1-576
+packages/app/concepts/uk/TranslateContextPollution.md
+  s_59be6bb53a5547::t_87c880396dc603 1-46
+apps/web/src/utils/toolResultCore.js
+  s_59be6bb53a5547::t_87c880396dc603 1-191
+packages/app/tests/cxv-processes.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-115
+packages/app/src/utils/ptyChunkBuilder.js
+  s_59be6bb53a5547::t_87c880396dc603 1-264
+packages/app/tests/sdk-manager.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-109
+apps/web/src/components/chat/controllers/ptyPromptController.js
+  s_59be6bb53a5547::t_87c880396dc603 1-198
+packages/app/concepts/th/ProxySwitch.md
+  s_59be6bb53a5547::t_87c880396dc603 1-54
+packages/app/scripts/check-no-control-bytes.js
+  s_59be6bb53a5547::t_87c880396dc603 1-130
+apps/web/src/components/settings/MessagingModal.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-4,7-65
+  s_59be6bb53a5547::t_99aa6db8eec87a 5-6
+packages/app/concepts/ar/BodyFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-39
+packages/app/concepts/fr/BodyFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-39
+packages/app/lib/plugin-loader.js
+  s_59be6bb53a5547::t_87c880396dc603 1-281
+apps/web/src/main.jsx
+  s_59be6bb53a5547::t_99aa6db8eec87a 1,5-7,16,23,27
+  s_59be6bb53a5547::t_87c880396dc603 2-4,8-15,17-22,24-26,28-30
+apps/web/src/components/git/GitDiffView.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-4,6-161
+  s_59be6bb53a5547::t_99aa6db8eec87a 5
+packages/app/lib/log-v2/storage.js
+  s_59be6bb53a5547::t_87c880396dc603 1-455
+apps/web/src/utils/terminalWriteQueue.js
+  s_59be6bb53a5547::t_87c880396dc603 1-399
+apps/web/src/utils/logV2ObjectStore.js
+  s_59be6bb53a5547::t_87c880396dc603 1-372
+packages/app/concepts/th/CustomUltraplanExpert.md
+  s_59be6bb53a5547::t_87c880396dc603 1-44
+apps/web/tests/chat-history-hydration.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-19
+tests/process-modal-termination.test.js
+  s_59be6bb53a5547::t_87c880396dc603 5,19
+apps/web/src/components/settings/PreferencesForm.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-89
+apps/web/tests/context-compaction-disclosure.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-55
+apps/web/src/components/common/MemoryDetailModal.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-75
+packages/app/concepts/ru/QRCode.md
+  s_59be6bb53a5547::t_87c880396dc603 1-25
+packages/app/concepts/zh/Tool-wait.md
+  s_59be6bb53a5547::t_87c880396dc603 1-12
+packages/app/concepts/pt-BR/ResponseFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-38
+scripts/test-integration.mjs
+  s_59be6bb53a5547::t_fca32663e74490 1-9
+tests/ultraplan-prompt-classification.test.js
+  s_59be6bb53a5547::t_014c25fd5669c7 5-6,11,13
+packages/app/concepts/de/SubAgent-Search.md
+  s_59be6bb53a5547::t_87c880396dc603 1-20
+packages/app/concepts/tr/BodyFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-39
+packages/app/lib/token-usage.js
+  s_59be6bb53a5547::t_87c880396dc603 1-29
+apps/web/src/components/settings/ImSkillsModal.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-2,4-94
+  s_59be6bb53a5547::t_99aa6db8eec87a 3
+packages/app/lib/otel-config.js
+  s_59be6bb53a5547::t_87c880396dc603 1-87
+apps/electron/electron/tab-preload.js
+  s_59be6bb53a5547::t_87c880396dc603 1-24
+packages/app/concepts/es/ResponseFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-38
+packages/app/tests/sdk-adapter.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-38
+apps/web/src/components/settings/VoicePackSettings.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-151
+packages/app/concepts/no/UltraPlan.md
+  s_59be6bb53a5547::t_87c880396dc603 1-155
+apps/web/src/img/teammates/marvel/worker.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-16
+packages/app/lib/log-v2/materializer.js
+  s_59be6bb53a5547::t_87c880396dc603 1-1057
+packages/app/concepts/en/BodyDiffJSON.md
+  s_59be6bb53a5547::t_87c880396dc603 1-32
+packages/app/concepts/zh/ToolsFirst.md
+  s_59be6bb53a5547::t_87c880396dc603 1-71
+packages/app/tests/codex-request-user-input.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-125
+packages/app/concepts/en/Tool-wait.md
+  s_59be6bb53a5547::t_87c880396dc603 1-12
+packages/app/concepts/ko/UltraPlan.md
+  s_59be6bb53a5547::t_87c880396dc603 1-155
+packages/app/concepts/uk/BodyDiffJSON.md
+  s_59be6bb53a5547::t_87c880396dc603 1-32
+apps/web/src/components/common/CountryFlag.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-36
+apps/web/src/utils/conversationRoleFilter.js
+  s_59be6bb53a5547::t_87c880396dc603 1-13
+apps/web/src/components/dashboard/UsageWindowPill.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-189
+packages/app/concepts/es/TranslateContextPollution.md
+  s_59be6bb53a5547::t_87c880396dc603 1-46
+apps/web/src/components/viewers/WorkflowLiveHud.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-256
+apps/web/src/components/chat/ChatMessage.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-1577
+apps/web/package.json
+  s_59be6bb53a5547::t_87c880396dc603 1-51,53-54
+  s_59be6bb53a5547::t_8390a28bcebd68 52
+apps/web/src/components/chat/ChatInputBar.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-620
+packages/app/concepts/pl/BodyDiffJSON.md
+  s_59be6bb53a5547::t_87c880396dc603 1-32
+packages/app/concepts/pl/UltraPlan.md
+  s_59be6bb53a5547::t_87c880396dc603 1-155
+apps/web/src/utils/teamSessionParser.js
+  s_59be6bb53a5547::t_87c880396dc603 1-186
+packages/app/lib/log-v2/identity.js
+  s_59be6bb53a5547::t_87c880396dc603 1-245
+packages/app/concepts/zh/SubAgent-Search.md
+  s_59be6bb53a5547::t_87c880396dc603 1-20
+packages/app/concepts/fr/QRCode.md
+  s_59be6bb53a5547::t_87c880396dc603 1-25
+apps/web/src/utils/displayScaleHelper.js
+  s_59be6bb53a5547::t_87c880396dc603 1-47
+packages/app/concepts/it/CustomUltraplanExpert.md
+  s_59be6bb53a5547::t_87c880396dc603 1-44
+packages/app/concepts/da/BodyDiffJSON.md
+  s_59be6bb53a5547::t_87c880396dc603 1-32
+packages/app/concepts/ja/BodyFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-39
+packages/app/lib/log-v2/session-summary.js
+  s_59be6bb53a5547::t_87c880396dc603 1-363
+apps/web/src/utils/identityHeal.js
+  s_59be6bb53a5547::t_87c880396dc603 1-91
+packages/app/concepts/en/Tool-update_plan.md
+  s_59be6bb53a5547::t_87c880396dc603 1-9
+apps/web/src/utils/entry-slim.js
+  s_59be6bb53a5547::t_87c880396dc603 1-712
+apps/web/src/img/model-minimax.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-2
+packages/app/concepts/tr/SubAgent-Search.md
+  s_59be6bb53a5547::t_87c880396dc603 1-20
+apps/web/src/components/chat/ChatView.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-432
+packages/app/concepts/ar/SubAgent-Search.md
+  s_59be6bb53a5547::t_87c880396dc603 1-20
+packages/app/lib/log-v2/request-summary.js
+  s_59be6bb53a5547::t_87c880396dc603 1-134
+packages/app/src/utils/modelIdentity.js
+  s_59be6bb53a5547::t_87c880396dc603 1-210
+packages/app/tests/log-v2-reducer.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-192
+packages/app/tests/otel-security.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-193
+apps/web/src/components/terminal/TerminalWsContext.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-215
+packages/app/concepts/ja/GlobalSettings.md
+  s_59be6bb53a5547::t_87c880396dc603 1-224
+apps/web/src/components/settings/ImConversationModal.jsx
+  s_59be6bb53a5547::t_99aa6db8eec87a 11
+  s_59be6bb53a5547::t_87c880396dc603 1-10,12-328
+apps/web/src/utils/logV2Cache.js
+  s_59be6bb53a5547::t_87c880396dc603 1-178
+packages/app/concepts/ko/CustomUltraplanExpert.md
+  s_59be6bb53a5547::t_87c880396dc603 1-44
+packages/app/concepts/ru/BodyFields.md
+  s_59be6bb53a5547::t_87c880396dc603 1-39
+packages/app/scripts/sync-ultraplan-presets.mjs
+  s_59be6bb53a5547::t_87c880396dc603 1-256
+apps/web/src/components/dashboard/TeamSessionPanel.module.css
+  s_59be6bb53a5547::t_87c880396dc603 1-437
+packages/app/tests/interceptor-core.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-387
+apps/web/src/img/teammates/scanner.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-31
+apps/web/src/components/settings/ProjectPrefsManagerModal.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-7,9-123
+  s_59be6bb53a5547::t_99aa6db8eec87a 8
+apps/web/src/AppBase.jsx
+  s_59be6bb53a5547::t_99aa6db8eec87a 3-12,14-17,20-23,27-34
+  s_59be6bb53a5547::t_87c880396dc603 1-2,13,18-19,24-26,35-2796
+packages/app/concepts/pl/TranslateContextPollution.md
+  s_59be6bb53a5547::t_87c880396dc603 1-46
+apps/web/src/utils/tCodex.js
+  s_59be6bb53a5547::t_87c880396dc603 1-20
+packages/app/concepts/pt-BR/Teammate.md
+  s_59be6bb53a5547::t_87c880396dc603 1-26
+apps/web/src/img/teammates/marvel/analyst.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-26
+packages/app/concepts/ru/Teammate.md
+  s_59be6bb53a5547::t_87c880396dc603 1-26
+packages/app/tests/search-endpoint.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-141
+packages/app/src/utils/userPromptContent.js
+  s_59be6bb53a5547::t_87c880396dc603 1-380
+apps/web/src/utils/detailTabSelection.js
+  s_59be6bb53a5547::t_87c880396dc603 1-16
+apps/web/src/img/codex/shimmer.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-7
+packages/app/tests/dingtalk-im-process-manager.test.js
+  s_59be6bb53a5547::t_87c880396dc603 1-59,61-78,81-109
+  s_59be6bb53a5547::t_2ce80d836166fe 60,79-80
+packages/app/concepts/da/ToolsFirst.md
+  s_59be6bb53a5547::t_87c880396dc603 1-71
+packages/app/concepts/no/TranslateContextPollution.md
+  s_59be6bb53a5547::t_87c880396dc603 1-46
+apps/web/src/components/settings/ImStatusChip.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-80
+packages/app/ultraAgents/manifest.json
+  s_59be6bb53a5547::t_87c880396dc603 1-71
+apps/web/src/components/dashboard/RequestList.jsx
+  s_59be6bb53a5547::t_87c880396dc603 1-153
+packages/app/lib/cxv-processes.js
+  s_59be6bb53a5547::t_87c880396dc603 1-316
+packages/app/lib/log-v2/writer.js
+  s_59be6bb53a5547::t_87c880396dc603 1-679
+packages/app/lib/user-profile.js
+  s_59be6bb53a5547::t_87c880396dc603 1-43
+packages/app/package.json
+  s_59be6bb53a5547::t_87c880396dc603 1-91
+packages/app/concepts/pt-BR/MainAgent.md
+  s_59be6bb53a5547::t_87c880396dc603 1-22
+packages/app/ultraAgents/code-expert.json
+  s_59be6bb53a5547::t_87c880396dc603 1-45
+apps/web/src/utils/svgSanitize.js
+  s_59be6bb53a5547::t_87c880396dc603 1-48
+tests/search-replace-preview.test.js
+  s_59be6bb53a5547::t_87c880396dc603 7-9
+packages/app/concepts/de/BodyDiffJSON.md
+  s_59be6bb53a5547::t_87c880396dc603 1-32
+apps/web/src/utils/skillsParser.js
+  s_59be6bb53a5547::t_87c880396dc603 1-147
+apps/web/src/img/teammates/designer.svg
+  s_59be6bb53a5547::t_87c880396dc603 1-25
+packages/app/lib/constants.js
+  s_59be6bb53a5547::t_87c880396dc603 1-22
+packages/app/tests/proxy-credential-migration.test.js
+  s_59be6bb53a5547::t_e94d3eed9f069c 210-217,219-224,226-249
+  s_59be6bb53a5547::t_f9bda5c170c4e4 218,225
+  s_59be6bb53a5547::t_2f819a2893b7bd 1-209,250-303
+packages/app/scripts/migrate-proxy-credentials.mjs
+  s_59be6bb53a5547::t_d89cc90ef59127 1-30
+packages/app/lib/proxy-credential-migration.js
+  s_59be6bb53a5547::t_c11b93a450b384 106-108
+  s_59be6bb53a5547::t_d89cc90ef59127 1-105,109-122
+packages/app/scripts/migrate-im-credentials.mjs
+  s_59be6bb53a5547::t_390ec16955c122 1-30
+packages/app/tests/dingtalk-credential-migration.test.js
+  s_59be6bb53a5547::t_f85e3012bdf17d 1-255
+packages/app/lib/credential-recovery.js
+  s_59be6bb53a5547::t_2d00965f1f2bb0 51
+  s_59be6bb53a5547::t_a070453cfa77fa 2-48,50,52-190
+  s_59be6bb53a5547::t_e66e374807cc3a 1,49
+packages/app/scripts/restore-credentials.mjs
+  s_59be6bb53a5547::t_a070453cfa77fa 1-33
+packages/app/tests/credential-recovery.test.js
+  s_59be6bb53a5547::t_e66e374807cc3a 249,254-258
+  s_59be6bb53a5547::t_47aa42fbfa0ff8 304-333
+  s_59be6bb53a5547::t_0bfc2d775bd90d 120
+  s_59be6bb53a5547::t_451449a5f26da3 1-119,121-248,250-253,259-303,334-359
+packages/app/scripts/repair-credential-key.mjs
+  s_59be6bb53a5547::t_1b28226bc167bb 1-34
+packages/app/lib/credential-key-repair.js
+  s_59be6bb53a5547::t_1b28226bc167bb 1-108
+packages/app/tests/credential-key-repair.test.js
+  s_59be6bb53a5547::t_0bc241d770d767 1-288
+packages/app/scripts/capture-credential-damage.mjs
+  s_59be6bb53a5547::t_49d70206bc0d1b 1-41
+packages/app/tests/credential-damage-cli.test.js
+  s_59be6bb53a5547::t_49d70206bc0d1b 1-64
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "2c0edc8378adf605527fae7f8681cd61f1055895",
+  "prompts": {},
+  "humans": {
+    "h_f08accc60857ed": {
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  },
+  "sessions": {
+    "s_59be6bb53a5547": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e8ef-9e3a-77d2-bb21-f9e9684a34f6",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    },
+    "s_7e818aa265d06a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e7f7-4a23-7b73-8aee-7f5cf424b32f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    },
+    "s_abcb5ca510cf12": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "afb4ba59-3a4f-4b14-a932-6de7f47880e5",
+        "model": "k3"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    },
+    "s_ef9ee44cb3b089": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e5bd-4c89-7421-a8a2-63319454b8f5",
+        "model": "gpt-6.1-terra"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
