@@ -8,7 +8,7 @@ import { buildContextItemRawText } from '../../utils/contextRaw';
 import { computeToolsDiff } from '../../utils/toolsDiff';
 import JsonViewer from '../viewers/JsonViewer';
 import ConceptHelp from '../common/ConceptHelp';
-import { getResponseInstructions, getResponseTools, isResponseConfigInputItem } from '../../../lib/openai-body.js';
+import { getResponseInstructions, getResponseToolDeclaration, isResponseConfigInputItem } from '../../../lib/openai-body.js';
 
 import styles from './ContextTab.module.css';
 
@@ -570,11 +570,12 @@ export default function ContextTab({ body, prevTools }) {
   }
 
   const accordionSections = [];
-  const tools = getResponseTools(body);
+  const declaration = getResponseToolDeclaration(body);
+  const tools = declaration.tools;
   const instructions = getResponseInstructions(body);
 
   // Tools (collapsed by default, shown first to match API request order)
-  if (tools.length > 0) {
+  if (declaration.declared && (tools.length > 0 || (Array.isArray(prevTools) && prevTools.length > 0))) {
     // 相对上一条 MainAgent 请求的 tools diff：tools_search 等场景下 tools 列表逐请求变化，
     // 这里高亮新增/移除，让"变化时机/内容"可见。prevTools 为空（无上一条/非 MainAgent）时不显示 diff。
     const diff = computeToolsDiff(prevTools, tools);
@@ -585,13 +586,30 @@ export default function ContextTab({ body, prevTools }) {
       const namespaceChildren = tool?.type === 'namespace' && Array.isArray(tool.tools)
         ? tool.tools.map((child, childIndex) => ({
           id: `tool__${i}__child__${childIndex}`,
-          label: child?.name || `Tool ${childIndex}`,
+          label: diff.addedChildren.some(item => item.namespace === name && item.name === child?.name)
+            ? <span className={styles.toolAdded}>{child.name}<span className={styles.toolDiffTag}>{t('ui.context.toolAdded')}</span></span>
+            : (child?.name || `Tool ${childIndex}`),
           sublabel: child?.description || undefined,
           blocks: parseToolBlocks(child),
           raw: child,
-        }))
+        })).concat(diff.removedChildren.filter(item => item.namespace === name).map(item => ({
+          id: `tool__${i}__removed__${item.name}`,
+          label: <span className={styles.toolRemoved}>{item.name}<span className={styles.toolDiffTag}>{t('ui.context.toolRemoved')}</span></span>,
+          blocks: [{ type: 'markdown', text: t('ui.context.toolRemovedNote') }],
+          raw: { name: item.name, _removed: true },
+        })))
         : null;
-      const execChildren = parseExecDeclaredTools(tool, i);
+      const execChildren = parseExecDeclaredTools(tool, i).map(child => ({
+        ...child,
+        label: diff.addedChildren.some(item => item.namespace === 'exec' && item.name === child.raw.name)
+          ? <span className={styles.toolAdded}>{child.raw.name}<span className={styles.toolDiffTag}>{t('ui.context.toolAdded')}</span></span>
+          : child.label,
+      })).concat(tool?.name === 'exec' ? diff.removedChildren.filter(item => item.namespace === 'exec').map(item => ({
+        id: `tool__${i}__removed__${item.name}`,
+        label: <span className={styles.toolRemoved}>{item.name}<span className={styles.toolDiffTag}>{t('ui.context.toolRemoved')}</span></span>,
+        blocks: [{ type: 'markdown', text: t('ui.context.toolRemovedNote') }],
+        raw: { name: item.name, _removed: true },
+      })) : []);
       return {
         id: `tool__${i}`,
         label: isAdded

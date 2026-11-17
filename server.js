@@ -10,30 +10,14 @@ import { execFile, exec, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 import { Worker } from 'node:worker_threads';
 import { isPathContained, readFileContent, writeFileContent, resolveFilePath, ERROR_STATUS_MAP } from './lib/file-api.js';
+import { assertPublicFilePath, assertPublicMutationPath, isPublicFilePath } from './lib/credential-file-policy.js';
+import { execWithStdin } from './lib/exec-with-stdin.js';
+import { readPublicFileSync } from './lib/public-file-read.js';
+import { createProxyProfileCredentials, PROXY_CREDENTIAL_VERSION_FIELD } from './lib/proxy-profile-credentials.js';
 
 const execFileAsync = promisify(execFile);
 const execAsync = promisify(exec);
 
-// execFile with stdin input support (for git check-ignore --stdin)
-function execWithStdin(cmd, args, input, options) {
-  return new Promise((resolve, reject) => {
-    const child = spawn(cmd, args, { ...options, stdio: ['pipe', 'pipe', 'pipe'] });
-    let stdout = '';
-    let stderr = '';
-    child.stdout.on('data', d => { stdout += d; });
-    child.stderr.on('data', d => { stderr += d; });
-    child.on('error', reject);
-    child.on('close', code => {
-      // git check-ignore exits 1 when no files are ignored — treat as success
-      resolve(stdout);
-    });
-    if (options?.timeout) {
-      setTimeout(() => { try { child.kill(); } catch {} reject(new Error('timeout')); }, options.timeout);
-    }
-    child.stdin.write(input);
-    child.stdin.end();
-  });
-}
 import { _initPromise, _projectName, _logDir, _cachedApiKey, _cachedAuthHeader, initForWorkspace, resetWorkspace, getActiveProjectContext, setLogV2CommitListener, streamingState, resetStreamingState, _loadProxyProfile, onProxyProfileChange, PROFILE_PATH, _defaultConfig, _proxyProfileLoadError, appendLogEntry, closeLogV2Writes, getLogV2RuntimeStatus } from './interceptor.js';
 import { FORCE_KILL_GRACE_MS, registerSignalShutdown, SHUTDOWN_DEADLINE_MS, terminateWithEscalation, waitWithTimeout } from './lib/shutdown.js';
 import { atomicWriteFile } from './lib/logger-install.js';
@@ -669,7 +653,7 @@ function discoverCodexMdEntries() {
   const add = (filePath, scope) => {
     try {
       const real = realpathSync(filePath);
-      if (seen.has(real) || !existsSync(real) || !statSync(real).isFile()) return;
+      if (seen.has(real) || !existsSync(real) || !statSync(real).isFile() || !isPublicFilePath(real)) return;
       seen.add(real);
       entries.push({
         id: encodeStableId(real),
@@ -712,6 +696,14 @@ const isWorkspaceMode = process.env.CXV_WORKSPACE_MODE === '1';
 const _defaultProxyProfiles = createDefaultProxyProfiles();
 const _proxyProfilesRevision = raw => createHash('sha256').update(raw).digest('hex');
 const _defaultProxyProfilesRaw = `${JSON.stringify(_defaultProxyProfiles, null, 2)}\n`;
+const _proxyCredentials = createProxyProfileCredentials(PROFILE_PATH);
+function _readProxyProfileState() {
+  try { return _proxyCredentials.read(); }
+  catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+    return { raw: _defaultProxyProfilesRaw, document: _defaultProxyProfiles, data: _defaultProxyProfiles, missing: true };
+  }
+}
 function _withProxyProfilesLock(callback) {
   const lockPath = `${PROFILE_PATH}.lock`;
   try {
@@ -815,6 +807,7 @@ export async function initPostLaunch() {
   _dingtalkRuntimeContextProvider = appServerMod.getAppServerRuntimeContext;
   _dingtalkPtyStateProvider = ptyMod.getPtyState;
   appServerMod.setAppServerTurnTerminalListener((event) => _dingtalkImBridge?.notifyTurnTerminal(event));
+  appServerMod.setAppServerAgentMessageDeltaListener((event) => _dingtalkImBridge?.notifyAgentMessageDelta(event));
   const connected = await _dingtalkImBridge.start();
   if (!connected) {
     lockMod.updateDingTalkImLock(_dingtalkImLock, {
@@ -909,6 +902,7 @@ function getAuthSessionContext() {
     state.scope,
     state.effective.revision,
     state.effective.enabled ? '1' : '0',
+    state.effective.passwordUnreadable ? 'unreadable' : 'readable',
     authSessionGeneration,
   ].join('\0');
   return createHmac('sha256', ACCESS_TOKEN).update(context).digest('base64url');
@@ -1431,6 +1425,7 @@ async function handleRequest(req, res) {
     sessionToken: isAuthSessionValid(cookieToken) ? cookieToken : '',
     enabled: currentAuthConfig.enabled,
     password: currentAuthConfig.password,
+    passwordUnreadable: currentAuthConfig.passwordUnreadable,
     wantsHtml: method === 'GET' && ((req.headers.accept || '').includes('text/html') || url === '/'),
     passwordLoginAvailable: isLocal || remotePasswordLogin,
   });
@@ -1700,7 +1695,8 @@ async function handleRequest(req, res) {
       if (aborted) return;
       try {
         const cwd = process.env.CXV_PROJECT_DIR || process.cwd();
-        const targetDir = join(cwd, dir);
+        // Check existing ancestors before mkdir, including a not-yet-created dir.
+        const targetDir = resolveFilePath(cwd, dir || '.', false);
         mkdirSync(targetDir, { recursive: true });
         const realDir = realpathSync(targetDir);
         const realCwd = realpathSync(cwd);
@@ -1727,19 +1723,23 @@ async function handleRequest(req, res) {
         let finalName = originalName;
         let savePath = join(realDir, finalName);
         let counter = 1;
+        assertPublicFilePath(savePath);
         while (existsSync(savePath)) {
           finalName = `${stem}-${counter}${ext}`;
           savePath = join(realDir, finalName);
+          assertPublicFilePath(savePath);
           counter++;
         }
-        writeFileSync(savePath, fileData);
+        // A raced-in file/link must not be overwritten after the existence check.
+        writeFileSync(savePath, fileData, { flag: 'wx' });
         const relPath = dir ? `${dir}/${finalName}` : finalName;
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true, name: finalName, relPath }));
       } catch (err) {
         console.error('import-file error:', err);
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Import failed' }));
+        const status = ERROR_STATUS_MAP[err.code] || (err.code === 'EEXIST' ? 409 : 500);
+        res.writeHead(status, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: status === 500 ? 'Import failed' : err.message }));
       }
     });
     return;
@@ -1816,7 +1816,11 @@ async function handleRequest(req, res) {
         prefs.logDir = LOG_DIR;
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(reviewerState ? { ...prefs, ...reviewerState } : prefs));
-      } catch {
+      } catch (error) {
+        if (error.code === 'PREFERENCES_UNREADABLE') {
+          sendApiError(res, error);
+          return;
+        }
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Invalid JSON' }));
       }
@@ -1947,9 +1951,9 @@ async function handleRequest(req, res) {
       return;
     }
     try {
-      sendJson(res, 200, { content: readFileSync(hit.path, 'utf8') });
+      sendJson(res, 200, { content: readPublicFileSync(hit.path, 'utf8') });
     } catch (err) {
-      sendJson(res, 500, { error: err.message || 'Failed to read AGENTS.md' });
+      sendJson(res, err.status || 500, { error: err.message || 'Failed to read AGENTS.md' });
     }
     return;
   }
@@ -2058,7 +2062,7 @@ async function handleRequest(req, res) {
   // 目录浏览器
   if (url.startsWith('/api/browse-dir') && method === 'GET') {
     try {
-      const dirPath = parsedUrl.searchParams.get('path') || homedir();
+      const dirPath = assertPublicFilePath(parsedUrl.searchParams.get('path') || homedir());
       if (!existsSync(dirPath) || !statSync(dirPath).isDirectory()) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Invalid directory' }));
@@ -2070,6 +2074,7 @@ async function handleRequest(req, res) {
         if (!entry.isDirectory()) continue;
         if (entry.name.startsWith('.') && entry.name !== '.') continue;
         const fullPath = join(dirPath, entry.name);
+        if (!isPublicFilePath(fullPath)) continue;
         let hasGit = false;
         try { hasGit = existsSync(join(fullPath, '.git')); } catch {}
         dirs.push({ name: entry.name, path: fullPath, hasGit });
@@ -2082,7 +2087,7 @@ async function handleRequest(req, res) {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ current: dirPath, parent: parent !== dirPath ? parent : null, dirs }));
     } catch (err) {
-      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.writeHead(err.status || 500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: err.message }));
     }
     return;
@@ -2391,11 +2396,11 @@ async function handleRequest(req, res) {
         res.end(JSON.stringify({ error: 'Stats file not found' }));
         return;
       }
-      const stats = readFileSync(statsFile, 'utf-8');
+      const stats = readPublicFileSync(statsFile, 'utf-8');
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(stats);
     } catch (err) {
-      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.writeHead(err.status || 500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: err.message }));
     }
     return;
@@ -2414,7 +2419,7 @@ async function handleRequest(req, res) {
           const statsFile = join(statsDir, entry.name);
           if (existsSync(statsFile)) {
             try {
-              allStats[project] = JSON.parse(readFileSync(statsFile, 'utf-8'));
+              allStats[project] = JSON.parse(readPublicFileSync(statsFile, 'utf-8'));
             } catch { }
           }
         }
@@ -2464,8 +2469,7 @@ async function handleRequest(req, res) {
   // Proxy profile 热切换
   if (url === '/api/proxy-profiles' && method === 'GET') {
     try {
-      const raw = existsSync(PROFILE_PATH) ? readFileSync(PROFILE_PATH, 'utf-8') : _defaultProxyProfilesRaw;
-      const data = validateProxyProfilesDocument(JSON.parse(raw), { migrateLegacy: true });
+      const { raw, data } = _readProxyProfileState();
       const masked = _maskProfiles(data);
       masked.revision = _proxyProfilesRevision(raw);
       // 文件被删除/损坏且运行时已 fail-closed 时，GET 也要如实呈现，避免 UI 显示正常
@@ -2474,7 +2478,8 @@ async function handleRequest(req, res) {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(masked));
     } catch (error) {
-      const raw = existsSync(PROFILE_PATH) ? readFileSync(PROFILE_PATH, 'utf-8') : _defaultProxyProfilesRaw;
+      let raw = _defaultProxyProfilesRaw;
+      try { raw = readFileSync(PROFILE_PATH, 'utf-8'); } catch {}
       sendJson(res, 200, { ..._defaultProxyProfiles, revision: _proxyProfilesRevision(raw), loadError: error.message || 'Invalid proxy profile configuration' });
     }
     return;
@@ -2494,14 +2499,8 @@ async function handleRequest(req, res) {
         if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
         _withProxyProfilesLock(() => {
         // 如果 apiKey 是 mask 值（未修改），从磁盘读取原始值保留
-        let existing = {};
-        let existingRaw = _defaultProxyProfilesRaw;
-        try {
-          if (existsSync(PROFILE_PATH)) {
-            existingRaw = readFileSync(PROFILE_PATH, 'utf-8');
-            existing = JSON.parse(existingRaw);
-          }
-        } catch { }
+        const state = _readProxyProfileState();
+        const { raw: existingRaw, data: existing } = state;
         const expectedRevision = incoming.revision;
         const currentRevision = _proxyProfilesRevision(existingRaw);
         if (typeof expectedRevision !== 'string' || expectedRevision !== currentRevision) {
@@ -2516,15 +2515,23 @@ async function handleRequest(req, res) {
           }
         }
         const validated = validateProxyProfilesDocument(incoming, { migrateLegacy: false });
-        if (existsSync(PROFILE_PATH)) atomicWriteFile(`${PROFILE_PATH}.bak`, existingRaw, { mode: 0o600 });
-        const nextRaw = `${JSON.stringify(validated, null, 2)}\n`;
-        atomicWriteFile(PROFILE_PATH, nextRaw, { mode: 0o600 });
+        let backup = null;
+        if (state.document[PROXY_CREDENTIAL_VERSION_FIELD] === 1) {
+          try { backup = _proxyCredentials.readBackup().document; }
+          catch (error) { if (error.code !== 'ENOENT') throw error; }
+        }
+        let nextRaw;
+        _proxyCredentials.save(validated, state.document, backup, stored => {
+          if (!state.missing) atomicWriteFile(`${PROFILE_PATH}.bak`, existingRaw, { mode: 0o600 });
+          nextRaw = `${JSON.stringify(stored, null, 2)}\n`;
+          atomicWriteFile(PROFILE_PATH, nextRaw, { mode: 0o600 });
+        });
         _loadProxyProfile();
         sendJson(res, 200, { ok: true, ..._maskProfiles(validated), revision: _proxyProfilesRevision(nextRaw) });
         });
       } catch (error) {
         const invalid = error instanceof SyntaxError || error instanceof TypeError;
-        sendJson(res, error.statusCode || (invalid ? 400 : 500), { ok: false, error: error.message || (invalid ? 'Invalid profile data' : 'Failed to save profiles') });
+        sendJson(res, error.statusCode || error.status || (invalid ? 400 : 500), { ok: false, error: error.message || (invalid ? 'Invalid profile data' : 'Failed to save profiles') });
       }
     });
     return;
@@ -2548,11 +2555,11 @@ async function handleRequest(req, res) {
       return;
     }
     const cwd = process.env.CXV_PROJECT_DIR || process.cwd();
-    const targetDir = join(cwd, reqPath);
     try {
+      const targetDir = resolveFilePath(cwd, reqPath, false);
       const entries = await fsPromises.readdir(targetDir, { withFileTypes: true });
       const items = entries
-        .filter(e => !IGNORED_PATTERNS.has(e.name))
+        .filter(e => !IGNORED_PATTERNS.has(e.name) && isPublicFilePath(join(targetDir, e.name)))
         .map(e => ({ name: e.name, type: e.isDirectory() ? 'directory' : 'file' }))
         .sort((a, b) => {
           if (a.type !== b.type) return a.type === 'directory' ? -1 : 1;
@@ -2581,7 +2588,7 @@ async function handleRequest(req, res) {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(result));
     } catch (err) {
-      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.writeHead(ERROR_STATUS_MAP[err.code] || 404, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Directory not found' }));
     }
     return;
@@ -2615,6 +2622,11 @@ async function handleRequest(req, res) {
         const oldFullPath = join(cwd, oldPath);
         const parentDir = dirname(oldFullPath);
         const newFullPath = join(parentDir, newName);
+        // Validate real targets, but rename the original entry (a link stays a link).
+        for (const path of [oldFullPath, newFullPath]) {
+          resolveFilePath(cwd, path, false);
+          assertPublicMutationPath(path);
+        }
         // 检查源文件存在
         if (!existsSync(oldFullPath)) {
           res.writeHead(404, { 'Content-Type': 'application/json' });
@@ -2632,7 +2644,7 @@ async function handleRequest(req, res) {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true, newPath: newRelPath }));
       } catch (err) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.writeHead(ERROR_STATUS_MAP[err.code] || 500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: err.message }));
       }
     });
@@ -2666,6 +2678,9 @@ async function handleRequest(req, res) {
         const cwd = process.env.CXV_PROJECT_DIR || process.cwd();
         const oldFullPath = join(cwd, fromPath);
         const toDirFull = join(cwd, toDir);
+        const sourceTarget = resolveFilePath(cwd, oldFullPath, false);
+        const destinationTarget = resolveFilePath(cwd, toDirFull, false);
+        assertPublicMutationPath(oldFullPath);
         // 检查源文件/目录存在
         if (!existsSync(oldFullPath)) {
           res.writeHead(404, { 'Content-Type': 'application/json' });
@@ -2680,8 +2695,8 @@ async function handleRequest(req, res) {
         }
         // 不能把目录移到自身或其子目录下
         if (statSync(oldFullPath).isDirectory()) {
-          const srcResolved = resolve(oldFullPath);
-          const destResolved = resolve(toDirFull);
+          const srcResolved = sourceTarget;
+          const destResolved = destinationTarget;
           if (destResolved === srcResolved || destResolved.startsWith(srcResolved + '/')) {
             res.writeHead(400, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: 'Cannot move directory into itself' }));
@@ -2690,6 +2705,8 @@ async function handleRequest(req, res) {
         }
         const name = basename(fromPath);
         const newFullPath = join(toDirFull, name);
+        resolveFilePath(cwd, newFullPath, false);
+        assertPublicMutationPath(newFullPath);
         // 检查目标位置不存在同名文件
         if (existsSync(newFullPath)) {
           res.writeHead(409, { 'Content-Type': 'application/json' });
@@ -2702,10 +2719,19 @@ async function handleRequest(req, res) {
           if (mvErr.code === 'EXDEV') {
             // 跨文件系统：fallback to copy + delete
             if (statSync(oldFullPath).isDirectory()) {
-              cpSync(oldFullPath, newFullPath, { recursive: true });
+              cpSync(oldFullPath, newFullPath, {
+                recursive: true, force: false, errorOnExist: true,
+                filter(source, destination) {
+                  resolveFilePath(cwd, source, false);
+                  resolveFilePath(cwd, destination, false);
+                  assertPublicMutationPath(source);
+                  assertPublicMutationPath(destination);
+                  return true;
+                },
+              });
               rmSync(oldFullPath, { recursive: true, force: true });
             } else {
-              copyFileSync(oldFullPath, newFullPath);
+              copyFileSync(oldFullPath, newFullPath, fsConstants.COPYFILE_EXCL);
               unlinkSync(oldFullPath);
             }
           } else if (mvErr.code === 'EEXIST') {
@@ -2721,8 +2747,9 @@ async function handleRequest(req, res) {
         res.end(JSON.stringify({ ok: true, newPath: newRelPath }));
       } catch (err) {
         console.error('move-file error:', err);
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Internal server error' }));
+        const status = ERROR_STATUS_MAP[err.code] || 500;
+        res.writeHead(status, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: status === 500 ? 'Internal server error' : err.message }));
       }
     });
     return;
@@ -2753,6 +2780,8 @@ async function handleRequest(req, res) {
         }
         const cwd = process.env.CXV_PROJECT_DIR || process.cwd();
         const fullPath = join(cwd, filePath);
+        resolveFilePath(cwd, fullPath, false);
+        assertPublicMutationPath(fullPath);
         if (!existsSync(fullPath)) {
           res.writeHead(404, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'File not found' }));
@@ -2784,7 +2813,7 @@ async function handleRequest(req, res) {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true }));
       } catch (err) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.writeHead(ERROR_STATUS_MAP[err.code] || 500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: err.message }));
       }
     });
@@ -2975,17 +3004,18 @@ async function handleRequest(req, res) {
           return;
         }
         const fullPath = join(fullDirPath, name);
+        resolveFilePath(cwd, fullPath, false);
         if (existsSync(fullPath)) {
           res.writeHead(409, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'File already exists' }));
           return;
         }
-        writeFileSync(fullPath, '');
+        writeFileSync(fullPath, '', { flag: 'wx' });
         const relPath = relDir ? `${relDir}/${name}` : name;
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true, path: relPath }));
       } catch (err) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.writeHead(ERROR_STATUS_MAP[err.code] || (err.code === 'EEXIST' ? 409 : 500), { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: err.message }));
       }
     });
@@ -3104,6 +3134,7 @@ async function handleRequest(req, res) {
           return;
         }
         const fullPath = join(fullDirPath, name);
+        resolveFilePath(cwd, fullPath, false);
         if (existsSync(fullPath)) {
           res.writeHead(409, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Already exists' }));
@@ -3114,7 +3145,7 @@ async function handleRequest(req, res) {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true, path: relPath }));
       } catch (err) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.writeHead(ERROR_STATUS_MAP[err.code] || 500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: err.message }));
       }
     });
@@ -3506,7 +3537,7 @@ async function handleRequest(req, res) {
         try {
           constrainedFd = openSync(
             targetFile,
-            fsConstants.O_RDONLY | (fsConstants.O_NOFOLLOW || 0),
+            fsConstants.O_RDONLY | (fsConstants.O_NOFOLLOW || 0) | (fsConstants.O_NONBLOCK || 0),
           );
         } catch (error) {
           if (error?.code === 'ELOOP' || error?.code === 'EMLINK') {
@@ -3528,7 +3559,11 @@ async function handleRequest(req, res) {
         }
         targetFile = canonicalPath;
       }
-      const stat = constrainedFd === null ? statSync(targetFile) : fstatSync(constrainedFd);
+      if (constrainedFd === null) {
+        constrainedFd = openSync(targetFile, fsConstants.O_RDONLY | (fsConstants.O_NOFOLLOW || 0) | (fsConstants.O_NONBLOCK || 0));
+      }
+      const stat = fstatSync(constrainedFd);
+      assertPublicFilePath(targetFile, stat);
       if (!stat.isFile()) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Not a file' }));
@@ -3881,13 +3916,14 @@ async function handleRequest(req, res) {
         res.end(JSON.stringify({ error: 'Plugin file not found' }));
         return;
       }
+      const content = readPublicFileSync(filePath, 'utf-8');
       res.writeHead(200, {
         'Content-Type': 'application/javascript; charset=utf-8',
         'Cache-Control': 'no-store',
       });
-      res.end(readFileSync(filePath, 'utf-8'));
+      res.end(content);
     } catch (err) {
-      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.writeHead(err.status || 500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: err.message }));
     }
     return;
@@ -4291,9 +4327,11 @@ async function handleRequest(req, res) {
       }
     }
     if (existsSync(mdPath)) {
-      const content = readFileSync(mdPath, 'utf-8');
-      res.writeHead(200, { 'Content-Type': 'text/markdown; charset=utf-8' });
-      res.end(content);
+      try {
+        const content = readPublicFileSync(mdPath, 'utf-8');
+        res.writeHead(200, { 'Content-Type': 'text/markdown; charset=utf-8' });
+        res.end(content);
+      } catch (err) { sendJson(res, err.status || 500, { error: err.message }); }
     } else {
       res.writeHead(404, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Not found' }));
@@ -4452,7 +4490,7 @@ async function handleRequest(req, res) {
 
     try {
       if (existsSync(fullPath) && statSync(fullPath).isFile()) {
-        const content = readFileSync(fullPath);
+        const content = readPublicFileSync(fullPath);
         const ext = extname(filePath);
         const contentType = MIME_TYPES[ext] || 'application/octet-stream';
         res.writeHead(200, { 'Content-Type': contentType });
@@ -4460,17 +4498,21 @@ async function handleRequest(req, res) {
         return;
       }
     } catch (err) {
+      if (err.code === 'ACCESS_DENIED') {
+        sendJson(res, 403, { error: err.message });
+        return;
+      }
       // fall through to SPA fallback
     }
 
     // SPA fallback: 非 API/非静态文件请求返回 index.html
     try {
       const indexPath = join(__dirname, 'dist', 'index.html');
-      const html = readFileSync(indexPath, 'utf-8');
+      const html = readPublicFileSync(indexPath, 'utf-8');
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       res.end(html);
     } catch (err) {
-      res.writeHead(404);
+      res.writeHead(err.status || 404);
       res.end('Not Found');
     }
     return;
@@ -4717,6 +4759,7 @@ async function setupTerminalWebSocket(httpServer) {
         sessionToken: isAuthSessionValid(cookieToken) ? cookieToken : '',
         enabled: currentAuthConfig.enabled,
         password: currentAuthConfig.password,
+        passwordUnreadable: currentAuthConfig.passwordUnreadable,
         wantsHtml: false,
         passwordLoginAvailable: serverProtocol === 'https',
         allowPasswordless: false,

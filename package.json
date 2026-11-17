@@ -26,11 +26,11 @@
     "sync:ultraplan-presets": "node scripts/sync-ultraplan-presets.mjs",
     "check:ultraplan-presets": "node scripts/sync-ultraplan-presets.mjs --check",
     "pack:dry-run": "node scripts/npm-pack-dry-run.mjs",
-    "release:check": "npm test && npm run build && npm run pack:dry-run",
-    "prepublishOnly": "npm run check:ultraplan-presets && npm run build",
+    "release:check": "pnpm test && pnpm run build && pnpm run pack:dry-run",
+    "prepublishOnly": "pnpm run check:ultraplan-presets && pnpm run build",
     "electron:dev": "electron electron/main.js",
-    "electron:build": "npm run build && electron-builder",
-    "electron:sign": "npm run electron:build && ./scripts/mac-sign.sh",
+    "electron:build": "pnpm run build && electron-builder",
+    "electron:sign": "pnpm run electron:build && ./scripts/mac-sign.sh",
     "electron:check-sign": "./scripts/check-sign-config.sh"
   },
   "keywords": [
@@ -68,6 +68,7 @@
       "public/**/*",
       "concepts/**/*",
       "ultraAgents/**/*",
+      "imSkills/**/*",
       "plugins/**/*",
       "electron/**/*",
       "lib/**/*",
@@ -81,6 +82,7 @@
       "public/**/*",
       "concepts/**/*",
       "ultraAgents/**/*",
+      "imSkills/**/*",
       "plugins/**/*",
       "electron/tab-worker.js",
       "electron/runtime-paths.js",
@@ -119,6 +121,7 @@
     "workspace-registry.js",
     "concepts/",
     "ultraAgents/",
+    "imSkills/",
     "docs/"
   ],
   "devDependencies": {
@@ -181,5 +184,6 @@
     "node-pty": "^1.1.0",
     "undici": "^7.22.0",
     "ws": "^8.19.0"
-  }
+  },
+  "packageManager": "pnpm@10.34.9"
 }

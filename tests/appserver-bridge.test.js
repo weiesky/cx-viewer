@@ -12,6 +12,7 @@ import {
   _flushAppServerRawSidecarsForTests,
   _getAppServerRawStateForTests,
   injectManagedSystemPrompt,
+  setAppServerAgentMessageDeltaListener,
   _writeAppServerEntryForTests,
   resetRawCaptureBoundary,
 } from '../lib/appserver-bridge.js';
@@ -541,6 +542,21 @@ function client(method, params = {}) {
 function clientResponse(id, result, error = null) {
   _parseAppServerClientMessageForTests(error ? { id, error } : { id, result });
 }
+
+test('app-server bridge exposes main-agent message deltas for IM card streaming', () => {
+  const events = [];
+  try {
+    _resetAppServerBridgeForTests({ cwd: '/tmp/cxv-delta-listener', project: 'delta-project' });
+    setAppServerAgentMessageDeltaListener((event) => events.push(event));
+    client('thread/start', { cwd: '/tmp/cxv-delta-listener' });
+    server('thread/started', { thread: { id: 'delta-thread', cwd: '/tmp/cxv-delta-listener' } });
+    server('turn/started', { threadId: 'delta-thread', turn: { id: 'delta-turn', status: 'inProgress' } });
+    server('item/agentMessage/delta', { threadId: 'delta-thread', itemId: 'answer', delta: 'hello' });
+    assert.deepEqual(events, [{ threadId: 'delta-thread', turnId: 'delta-turn', itemId: 'answer', delta: 'hello' }]);
+  } finally {
+    setAppServerAgentMessageDeltaListener(null);
+  }
+});
 
 test('app-server bridge marks root and spawned subagent turns correctly', () => {
   const tmp = mkdtempSync(join(tmpdir(), 'cxv-appserver-bridge-'));

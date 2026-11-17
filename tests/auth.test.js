@@ -1,6 +1,6 @@
 import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer, request } from 'node:http';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -24,6 +24,58 @@ const {
 const { handleAuthRoute } = await import('../lib/auth-routes.js');
 
 after(() => rmSync(logDir, { recursive: true, force: true }));
+
+test('unreadable passwords remain protected and saves validate the target scope', () => {
+  const path = getAuthPrefsPath();
+  const project = '/fixture/auth';
+  const global = { enabled: true, password: '!!!', revision: 7 };
+  try {
+    for (const password of ['!!!', 123, null, '/w==', 'QQ', 'Q Q==']) {
+      const bytes = JSON.stringify({ auth: { ...global, password } });
+      writeFileSync(path, bytes);
+      assert.equal(loadAuthConfig().passwordUnreadable, true);
+      assert.throws(() => saveAuthConfig({ enabled: true, password: 'REPLACE' }), { code: 'PASSWORD_UNREADABLE' });
+      assert.throws(() => enableGlobalAuthAndClearProjectOverride(project), { code: 'PASSWORD_UNREADABLE' });
+      assert.equal(readFileSync(path, 'utf8'), bytes);
+    }
+    writeFileSync(path, JSON.stringify({ auth: global }));
+    saveAuthConfig({ enabled: true, password: 'PROJECT' }, { scope: 'project', projectDir: project });
+    assert.equal(loadAuthConfig(project).password, 'PROJECT');
+    assert.equal(loadAuthState(project).global.passwordUnreadable, true);
+    const independent = readFileSync(path, 'utf8');
+    assert.throws(() => enableGlobalAuthAndClearProjectOverride(project), { code: 'PASSWORD_UNREADABLE' });
+    assert.equal(readFileSync(path, 'utf8'), independent);
+    const prefs = JSON.parse(readFileSync(path, 'utf8'));
+    prefs.authByProject[project] = global;
+    writeFileSync(path, JSON.stringify(prefs));
+    assert.throws(() => saveAuthConfig({ password: 'NEW' }, { scope: 'project', projectDir: project }), { code: 'PASSWORD_UNREADABLE' });
+    for (const authByProject of [[], null, 42]) {
+      writeFileSync(path, JSON.stringify({ auth: { enabled: false, password: '' }, authByProject }));
+      assert.equal(loadAuthConfig(project).passwordUnreadable, true);
+      assert.throws(() => saveAuthConfig({ password: 'NEW' }, { scope: 'project', projectDir: project }), { code: 'PASSWORD_UNREADABLE' });
+      saveAuthConfig({ enabled: true, password: 'GLOBAL' });
+      assert.equal(loadAuthConfig().password, 'GLOBAL');
+    }
+    for (const password of ['', 'AB1234', '口令🔑', '\uFEFF']) {
+      writeFileSync(path, '{}');
+      saveAuthConfig({ enabled: true, password });
+      assert.equal(loadAuthConfig().password, password);
+      assert.equal(!!loadAuthConfig().passwordUnreadable, false);
+    }
+    writeFileSync(path, '{broken');
+    assert.equal(loadAuthConfig(project).passwordUnreadable, true);
+    assert.equal(loadAuthState(project).effective.passwordUnreadable, true);
+  } finally { writeFileSync(path, '{}'); }
+});
+
+test('unreadable auth denies passwordless and session access while preserving explicit trusted access', () => {
+  const base = { pathname: '/api/auth/state', enabled: true, password: '', passwordUnreadable: true,
+    accessToken: 'access', sessionToken: 'session', cookieToken: 'session', wantsHtml: false };
+  assert.equal(decideAuth(base).action, 'forbidden');
+  assert.equal(decideAuth({ ...base, allowPasswordless: false }).action, 'forbidden');
+  assert.equal(decideAuth({ ...base, isLocal: true }).action, 'allow');
+  assert.equal(decideAuth({ ...base, urlToken: 'access' }).action, 'allow');
+});
 
 test('generated passwords use two letters followed by four digits', () => {
   assert.match(generatePassword(), /^[A-Z]{2}\d{4}$/);

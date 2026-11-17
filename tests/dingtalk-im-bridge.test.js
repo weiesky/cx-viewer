@@ -227,6 +227,59 @@ test('only final assistant text is returned; reasoning and tool text are exclude
   assert.doesNotMatch(extractDingTalkFinalText(entry), /private/);
 });
 
+test('AI card receives live deltas and is finalized without a duplicate text reply', async () => {
+  let inbound;
+  const calls = { streamed: [], updated: [], sent: [], writes: [] };
+  const config = {
+    enabled: true,
+    appKey: 'app-key',
+    appSecret: 'app-secret',
+    allowStaffIds: [],
+    maxChunkChars: 1000,
+    ackCard: true,
+    aiCardTemplateId: 'ai-template',
+    aiCardStreamKey: 'content',
+  };
+  const adapter = {
+    async connect(_config, hooks) { inbound = hooks.onInbound; return { connected: true }; },
+    ack() {},
+    async disconnect() {},
+    connectionState() { return 'connected'; },
+    async sendText(_config, _target, text) { calls.sent.push(text); },
+    async sendAckCard() { return { outTrackId: 'card-1', streaming: true }; },
+    async streamCardText(_config, _target, _handle, text) { calls.streamed.push(text); return true; },
+    async updateAckCard(_config, _target, _handle, text, status) { calls.updated.push({ text, status }); return true; },
+    async testConnection() { return { ok: true }; },
+  };
+  const bridge = createDingTalkImBridge({
+    adapter,
+    getConfig: () => config,
+    getPtyState: () => ({ running: true, recovering: false }),
+    getActiveContext: () => ({ projectId: 'project-1', threadId: 'thread-1', sessionId: 'session-1' }),
+    writeToPtySequential(chunks, callback) { calls.writes.push(chunks); callback(true); return () => {}; },
+    turnTimeoutMs: 10_000,
+  });
+  await bridge.start();
+  inbound({
+    messageId: 'message-ai', text: 'question', senderStaffId: 'staff-1', conversationId: 'conversation-1', conversationType: '1',
+    target: { conversationId: 'conversation-1', conversationType: '1', robotCode: 'robot-1', senderStaffId: 'staff-1' },
+  }, { headers: { messageId: 'message-ai' } });
+  const prompt = injectedText({ chunks: calls.writes[0] });
+  assert.equal(bridge.notifyAgentMessageDelta({
+    threadId: 'thread-1', turnId: 'turn-ai', itemId: 'answer', delta: 'a sufficiently long partial answer',
+  }), true);
+  await new Promise((resolve) => setTimeout(resolve, 350));
+  assert.deepEqual(calls.streamed, ['a sufficiently long partial answer']);
+
+  assert.equal(await bridge.notifyLogV2Commit(
+    completedEntry(prompt, { turnId: 'turn-ai', text: 'authoritative final answer' }), {},
+    { projectId: 'project-1', thread: { id: 'thread-1', sessionId: 'session-1' } },
+  ), true);
+  assert.deepEqual(calls.updated, [{ text: 'authoritative final answer', status: 'done' }]);
+  assert.deepEqual(calls.sent, []);
+  await bridge.stop();
+});
+
 test('stop disconnects and invalidates callbacks from the old client generation', async () => {
   const harness = makeHarness();
   await harness.bridge.start();

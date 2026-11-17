@@ -1,6 +1,6 @@
 # Codex 工具
 
-“上下文消耗”弹窗里的 Codex 工具清单来自当前会话请求体中的已装载工具，而不是旧版工具集合。目录会同时收录已装载的工具组入口及其可调用操作。
+“全部工具”是静态参考目录，不代表当前会话实际装载的工具。实际能力取决于 CLI 版本、模型、功能配置和宿主；`namespace` 类型条目表示分组，其子项为可调用操作。上下文中展示的请求工具也可能是 CX Viewer 为 App Server 或 SDK 模式合成的参考数据。
 
 ## Code Mode
 
@@ -9,7 +9,9 @@
 
 ## 核心工具
 
-- shell_command：运行本地 shell 命令，并通过 sandbox/approval 字段表达权限边界。
+- shell_command：部分运行环境使用的 shell 工具。
+- exec_command：部分运行环境使用的命令执行工具，可以返回运行中的进程会话。
+- write_stdin：向运行中的命令会话写入输入或等待输出。
 - apply_patch：用结构化 patch 修改工作区文件。
 - view_image：查看本地图片文件。
 - update_plan：维护任务计划。
@@ -34,6 +36,10 @@
 - interrupt_agent：停止目标当前轮次，同时保留该 Agent 供后续复用。
 - list_agents：查看当前线程树中的活跃 Agent。
 
-Code Mode 与 Multi-Agent V2 的工具名同时得到了本地请求体和 `openai/codex` 对应工具注册源码的确认。MCP、插件、App connector 等动态工具按会话发现和注入，因此不会硬编码进本目录。
+MCP、插件和连接器工具随会话发现和注入。Code Mode 与协作工具的名称和具体接口随运行环境变化；应以实际工具 schema 为准。历史工具名仍保留，以便阅读旧日志。
 
-旧版工具名不属于当前 Codex 工具清单，也不再作为概念文档别名保留。
+差异视图会比较 namespace 子项，以及可解析的 `exec` 描述中的声明；后者只是文本声明，不证明工具在运行时可用。缺失声明不会被当作空列表。
+
+## 版本对照
+
+0.142.5 与 0.169.0 的官方源码都包含 Code Mode、统一命令执行和工具发现能力，不能笼统称为近期新增。0.169.0 的模型目录包含使用 `code_mode_only` 的新模型；工具选择还会受配置和服务端模型目录影响。参见 [0.142.5 功能开关](https://github.com/openai/codex/blob/rust-v0.142.5/codex-rs/features/src/lib.rs)、[0.169.0 功能开关](https://github.com/openai/codex/blob/rust-v0.169.0/codex-rs/features/src/lib.rs)、[0.169.0 模型目录](https://github.com/openai/codex/blob/rust-v0.169.0/codex-rs/models-manager/models.json) 和 [工具发现实现](https://github.com/openai/codex/blob/rust-v0.169.0/codex-rs/core/src/tools/handlers/tool_search_spec.rs)。

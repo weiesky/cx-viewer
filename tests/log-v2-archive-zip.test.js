@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
+import { linkSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative, sep } from 'node:path';
 
@@ -15,6 +15,7 @@ import {
 import { resolveAppServerThreadIdentity } from '../lib/log-v2/identity.js';
 import { readV2LogEntries } from '../lib/log-v2/materializer.js';
 import { LogV2Writer } from '../lib/log-v2/writer.js';
+import { CREDENTIAL_PATHS } from '../lib/credential-file-policy.js';
 
 function fixture(t, {
   projectId = 'archive-project',
@@ -59,6 +60,20 @@ async function streamBuffer(stream) {
     stream.once('end', () => resolve(Buffer.concat(chunks)));
   });
 }
+
+test('ZIP export rejects private hard links before snapshotting and removes partial staging data', { skip: process.platform === 'win32' }, async t => {
+  const { root, tempRoot, writer, identity } = fixture(t);
+  writer.append(entry('2026-07-15T02:01:00.000Z', 'one', 'done'), identity);
+  mkdirSync(CREDENTIAL_PATHS.root, { recursive: true, mode: 0o700 });
+  const secret = join(CREDENTIAL_PATHS.root, 'archive-fixture');
+  writeFileSync(secret, 'synthetic archive secret', { mode: 0o600 });
+  try {
+    linkSync(secret, join(writer.sessionDir, 'private-alias.txt'));
+    await assert.rejects(createV2SessionZip(root, locator(root, writer), { tempRoot }), { code: 'ACCESS_DENIED', status: 403 });
+    assert.deepEqual(readdirSync(tempRoot), []);
+    assert.equal(readFileSync(secret, 'utf8'), 'synthetic archive secret');
+  } finally { rmSync(secret, { force: true }); }
+});
 
 test('V2 session ZIP round-trips the complete folder and final winning entries', async (t) => {
   const { root, tempRoot, writer, identity } = fixture(t);

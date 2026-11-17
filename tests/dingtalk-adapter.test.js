@@ -106,6 +106,61 @@ test('adapter sends only plain markdown messages and reuses its access token', a
   assert.equal('cardTemplateId' in group.body, false);
 });
 
+test('adapter creates, streams and finalizes a DingTalk AI card', async () => {
+  const calls = [];
+  const adapter = createDingTalkAdapter({
+    fetchImpl: async (url, init) => {
+      calls.push({ url, method: init.method, body: JSON.parse(init.body) });
+      if (url.endsWith('/accessToken')) return response(true, { accessToken: 'token', expireIn: 7200 });
+      return response(true, {});
+    },
+  });
+  const config = {
+    appKey: 'key', appSecret: 'secret', aiCardTemplateId: 'ai-template', aiCardStreamKey: 'answer',
+  };
+  const target = {
+    conversationId: 'group-1', conversationType: '2', robotCode: 'robot-1', senderStaffId: 'staff-1',
+  };
+  const handle = await adapter.sendAckCard(config, target, 'processing');
+  assert.equal(handle.streaming, true);
+
+  const created = calls.find((call) => call.url.endsWith('/card/instances/createAndDeliver'));
+  assert.equal(created.body.cardTemplateId, 'ai-template');
+  assert.equal(created.body.callbackType, 'STREAM');
+  assert.deepEqual(created.body.cardData.cardParamMap, { answer: '', flowStatus: '1' });
+  assert.equal(created.body.openSpaceId, 'dtv1.card//IM_GROUP.group-1');
+
+  assert.equal(await adapter.streamCardText(config, target, handle, 'partial answer'), true);
+  assert.equal(await adapter.updateAckCard(config, target, handle, 'final answer', 'done'), true);
+  const streamCalls = calls.filter((call) => call.url.endsWith('/card/streaming'));
+  assert.equal(streamCalls.at(-1).body.content, 'final answer');
+  assert.equal(streamCalls.at(-1).body.isFinalize, true);
+  const settled = calls.findLast((call) => call.url.endsWith('/card/instances') && call.method === 'PUT');
+  assert.deepEqual(settled.body.cardData.cardParamMap, { answer: 'final answer', flowStatus: '3' });
+});
+
+test('AI card creation falls back to the legacy template', async () => {
+  const calls = [];
+  const adapter = createDingTalkAdapter({
+    fetchImpl: async (url, init) => {
+      const call = { url, method: init.method, body: JSON.parse(init.body) };
+      calls.push(call);
+      if (url.endsWith('/accessToken')) return response(true, { accessToken: 'token', expireIn: 7200 });
+      if (url.endsWith('/createAndDeliver')) return response(false, { code: 'NoPermission' }, 403);
+      return response(true, {});
+    },
+  });
+  const handle = await adapter.sendAckCard({
+    appKey: 'key', appSecret: 'secret', aiCardTemplateId: 'ai-template', cardTemplateId: 'legacy-template',
+  }, {
+    conversationId: 'dm', conversationType: '1', robotCode: 'robot', senderStaffId: 'staff',
+  }, 'processing');
+  assert.equal(handle.streaming, false);
+  assert.equal(calls.some((call) => call.url.endsWith('/card/instances/deliver')), true);
+  const legacy = calls.find((call) => call.url.endsWith('/card/instances') && call.method === 'POST');
+  assert.equal(legacy.body.cardTemplateId, 'legacy-template');
+});
+
 test('connection errors expose a bounded provider code, never the configured secret', async () => {
   const adapter = createDingTalkAdapter({
     fetchImpl: async () => response(false, { code: 'InvalidCredential', message: 'secret-value leaked' }, 401),

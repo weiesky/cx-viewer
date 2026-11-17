@@ -1,8 +1,8 @@
 /**
  * Single source of truth for the built-in tool catalog.
  *
- * `TOOL_CATALOG` is an ordered, function-grouped list of the currently loaded
- * Codex request-body tools. It drives:
+ * `TOOL_CATALOG` is a static reference, not the tools loaded in a session.
+ * Availability depends on the runtime, model and configuration. It drives:
  *   - the "all tools" catalog modal (src/components/common/ToolsHelp.jsx)
  *   - the Tool-* whitelist in ConceptHelp (src/components/common/ConceptHelp.jsx)
  *
@@ -13,7 +13,7 @@
  */
 export const TOOL_CATALOG = [
   { key: 'codeMode', tools: ['exec', 'wait'] },
-  { key: 'terminal', tools: ['shell_command'] },
+  { key: 'terminal', tools: ['shell_command', 'exec_command', 'write_stdin'] },
   { key: 'file', tools: ['apply_patch', 'view_image'] },
   { key: 'planning', tools: ['update_plan', 'request_user_input', 'get_goal', 'create_goal', 'update_goal'] },
   {

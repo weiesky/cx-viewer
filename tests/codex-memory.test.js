@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, symlinkSync, writeFileSync } from 'node:fs';
+import { linkSync, mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -15,6 +15,7 @@ import {
   readCodexMemoryFile,
   readCodexMemoryOverview,
 } from '../lib/codex-memory.js';
+import { CREDENTIAL_PATHS } from '../lib/credential-file-policy.js';
 
 function fixture() {
   const home = mkdtempSync(join(tmpdir(), 'cxv-memory-'));
@@ -26,6 +27,16 @@ function fixture() {
 function expectCode(fn, code) {
   assert.throws(fn, err => err instanceof CodexMemoryError && err.code === code);
 }
+
+test('generated memories reject hard links to private credentials', { skip: process.platform === 'win32' }, t => {
+  const { home, memoryDir, env } = fixture();
+  mkdirSync(CREDENTIAL_PATHS.root, { recursive: true, mode: 0o700 });
+  const secret = join(CREDENTIAL_PATHS.root, 'memory-fixture');
+  writeFileSync(secret, 'synthetic memory secret', { mode: 0o600 });
+  t.after(() => { rmSync(home, { recursive: true, force: true }); rmSync(secret, { force: true }); });
+  linkSync(secret, join(memoryDir, 'MEMORY.md'));
+  assert.throws(() => readCodexMemoryFile('MEMORY.md', { env }), { code: 'memory_file_forbidden', status: 403 });
+});
 
 test('Codex memory root honors CODEX_HOME and CODEX_CONFIG_DIR', () => {
   assert.equal(getCodexMemoryDir({ CODEX_HOME: '/one', CODEX_CONFIG_DIR: '/two' }), join('/one', 'memories'));

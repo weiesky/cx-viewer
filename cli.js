@@ -544,6 +544,12 @@ async function runDingTalkImMode() {
   configMod.ensureDingTalkPrivateDirectory(configMod.getDingTalkImWorkerDir());
   const { DEFAULT_DINGTALK_IM_PERSONA, ensureDingTalkImPersona } = await import('./lib/dingtalk-im-persona.js');
   ensureDingTalkImPersona(DEFAULT_DINGTALK_IM_PERSONA);
+  try {
+    const { ensureDingTalkImBuiltinSkill } = await import('./lib/dingtalk-im-skills.js');
+    ensureDingTalkImBuiltinSkill();
+  } catch (error) {
+    console.warn('[CX Viewer] Failed to sync DingTalk built-in skill (non-fatal):', error.message);
+  }
   const acquired = lockMod.acquireDingTalkImLock();
   if (!acquired.ok) throw Object.assign(new Error('DingTalk IM worker is already running'), { code: 'DINGTALK_WORKER_RUNNING' });
   try {

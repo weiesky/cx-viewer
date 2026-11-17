@@ -6,9 +6,8 @@ const _cxvSkipArgs = ['--version', '-v', '--v', '--help', '-h', 'doctor', 'insta
 const _cxvSkip = _cxvSkipArgs.includes(process.argv[2]);
 
 import './lib/proxy-env.js';
-import { readFileSync, unwatchFile, watchFile } from 'node:fs';
+import { unwatchFile, watchFile } from 'node:fs';
 import { EventEmitter } from 'node:events';
-import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, basename, resolve } from 'node:path';
 import { LOG_DIR } from './findcx.js';
@@ -18,8 +17,10 @@ import { LogV2WriteCoordinator } from './lib/log-v2/coordinator.js';
 import { loadLogV2RuntimeConfig } from './lib/log-v2/runtime-config.js';
 import { LogV2WriteQueue } from './lib/log-v2/write-queue.js';
 import { projectIdForCwd } from './lib/log-v2/project-id.js';
-import { classifyProxyOperation, createDefaultProxyProfiles, isOAuthProxyRequest, rewriteProxyProfileRequest, validateProxyProfilesDocument } from './lib/proxy-profile.js';
+import { classifyProxyOperation, createDefaultProxyProfiles, isOAuthProxyRequest, rewriteProxyProfileRequest } from './lib/proxy-profile.js';
 import { adaptChatCompletionsResponse, prepareChatCompletionsRequest } from './lib/codex-chat-adapter.js';
+import { PROFILE_PATH } from './lib/proxy-profile-path.js';
+import { createProxyProfileCredentials } from './lib/proxy-profile-credentials.js';
 
 
 
@@ -55,10 +56,10 @@ export let _cachedModel = null;
 export let _cachedHaikuModel = null;
 
 // Proxy profile hot-switch support
-const PROFILE_PATH = process.env.CXV_PROXY_PROFILE_PATH || join(homedir(), '.codex', 'cx-viewer', 'profile.json');
 const MAX_PROFILE_REQUEST_BYTES = 32 * 1024 * 1024;
 const MAX_CAPTURED_RESPONSE_BYTES = 8 * 1024 * 1024;
 const DEFAULT_PROXY_PROFILES = createDefaultProxyProfiles();
+const _proxyCredentials = createProxyProfileCredentials(PROFILE_PATH);
 let _activeProfile = null; // { id, name, baseURL, apiKey, activeModel?, effort? }
 let _proxyProfileLoadError = null;
 let _lastValidProfileWasThirdParty = false;
@@ -130,7 +131,7 @@ function _loadProxyProfile() {
     return data;
   };
   try {
-    return commit(validateProxyProfilesDocument(JSON.parse(readFileSync(PROFILE_PATH, 'utf-8')), { migrateLegacy: true }));
+    return commit(_proxyCredentials.read().data);
   } catch (error) {
     const missing = error?.code === 'ENOENT';
     if (missing && !_lastValidProfileWasThirdParty) {

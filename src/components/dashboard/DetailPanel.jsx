@@ -6,7 +6,7 @@ import ConceptHelp from '../common/ConceptHelp';
 import { t } from '../../i18n';
 import { apiUrl } from '../../utils/apiUrl';
 import { formatTokenCount, stripPrivateKeys, hasCodexMdReminder, isCodexMdReminder, hasSkillsReminder, isSkillsReminder } from '../../utils/helpers';
-import { getResponseTools } from '../../../lib/openai-body.js';
+import { getResponseToolDeclaration } from '../../../lib/openai-body.js';
 import { getInputCacheUsage } from '../../../lib/token-usage.js';
 import { classifyRequest } from '../../utils/requestType';
 import { requestHidesContextTab, resolveDetailTabForRequest } from '../../utils/detailTabSelection.js';
@@ -862,7 +862,8 @@ class DetailPanel extends React.Component {
                 // `getResponseTools(undefined)` returns [], which looks like a
                 // real empty baseline and marks every tool as newly added.
                 // Master/non-MainAgent requests must have no diff baseline.
-                prevTools={prevMainAgent ? getResponseTools(prevMainAgent.body) : null}
+                prevTools={prevMainAgent && getResponseToolDeclaration(prevMainAgent.body).declared
+                  ? getResponseToolDeclaration(prevMainAgent.body).tools : null}
               />
             )}
           </div>

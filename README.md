@@ -324,3 +324,10 @@ Do not publish without a version bump; npm will reject republishing an existing 
 ## License
 
 MIT
+
+
+## Development package manager
+
+Use the pinned `pnpm@10.34.9` declared in package.json (Node 20/22/24 development and CI). Install with `pnpm install --frozen-lockfile`, then run `pnpm test`, `pnpm run build`, and `pnpm run pack:dry-run`. Native node-pty and the other reviewed installation scripts are explicitly listed in pnpm-workspace.yaml; changes to this list require reviewing the dependency's build behavior. The pnpm 10 pin keeps the existing Node 20 CI lane usable; it does not change the published application's runtime requirements.
+
+npm remains the publication tool and users can continue installing cx-viewer through npm. The A1 migration changes dependency installation and build invocation; workspace directory migration is a separate step.

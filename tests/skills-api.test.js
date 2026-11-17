@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, linkSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import JSZip from 'jszip';
@@ -9,8 +9,10 @@ import {
   deleteSkill,
   importSkillUpload,
   listSkills,
+  parseSkillMetadata,
   toggleSkill,
 } from '../lib/skills-api.js';
+import { CREDENTIAL_PATHS } from '../lib/credential-file-policy.js';
 
 function fixture(t) {
   const root = mkdtempSync(join(tmpdir(), 'cxv-skills-'));
@@ -34,6 +36,18 @@ function writeSkill(dir, { name = null, description = 'desc' } = {}) {
     '',
   ].join('\n'));
 }
+
+test('skill metadata does not expose private file aliases', { skip: process.platform === 'win32' }, t => {
+  const { cwd } = fixture(t);
+  const skill = join(cwd, 'public-skill');
+  mkdirSync(skill);
+  mkdirSync(CREDENTIAL_PATHS.root, { recursive: true, mode: 0o700 });
+  const secret = join(CREDENTIAL_PATHS.root, 'skill-metadata-fixture');
+  writeFileSync(secret, '---\nname: synthetic secret\ndescription: private credential\n---\n', { mode: 0o600 });
+  t.after(() => rmSync(secret, { force: true }));
+  linkSync(secret, join(skill, 'SKILL.md'));
+  assert.deepEqual(parseSkillMetadata(skill), { name: 'public-skill', description: null });
+});
 
 test('skills api lists project, codex, agents, builtin, and plugin skills', (t) => {
   const { homeDir, cwd } = fixture(t);

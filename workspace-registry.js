@@ -1,10 +1,11 @@
 // Workspace Registry - 工作区持久化管理
-import { readFileSync, writeFileSync, existsSync, mkdirSync, statSync, readdirSync, openSync, closeSync, renameSync, unlinkSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, statSync, fstatSync, lstatSync, openSync, closeSync, unlinkSync } from 'node:fs';
 import { join, basename, resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { LOG_DIR } from './findcx.js';
 import { listV2LocalLogs } from './lib/log-v2/materializer.js';
 import { projectIdForCwd } from './lib/log-v2/project-id.js';
+import { renameSyncWithRetry } from './lib/file-api.js';
 
 // 动态获取（LOG_DIR 可能在运行时被 setLogDir 修改）
 function getWorkspacesFile() { return join(LOG_DIR, 'workspaces.json'); }
@@ -19,11 +20,11 @@ function withLock(fn) {
   const deadline = Date.now() + 2000;
   // 如果锁文件超过 5 秒未更新，认为它是死锁（前一个进程崩溃）
   const STALE_THRESHOLD = 5000;
+  let fd;
 
   while (true) {
     try {
-      const fd = openSync(getLockFile(), 'wx');
-      closeSync(fd);
+      fd = openSync(getLockFile(), 'wx');
       break;
     } catch (err) {
       if (err?.code === 'EEXIST') {
@@ -51,17 +52,33 @@ function withLock(fn) {
   try {
     return fn();
   } finally {
-    try { unlinkSync(getLockFile()); } catch { }
+    let ownsLock = false;
+    try {
+      const held = fstatSync(fd);
+      const current = statSync(getLockFile());
+      ownsLock = held.dev === current.dev && held.ino === current.ino;
+    } catch {}
+    try { closeSync(fd); } catch {}
+    if (ownsLock) try { unlinkSync(getLockFile()); } catch {}
   }
 }
 
-export function loadWorkspaces() {
+export function loadWorkspaces({ strict = false } = {}) {
   try {
-    if (!existsSync(getWorkspacesFile())) return [];
-    const data = JSON.parse(readFileSync(getWorkspacesFile(), 'utf-8'));
-    return Array.isArray(data.workspaces) ? data.workspaces : [];
-  } catch {
-    return [];
+    const bytes = readFileSync(getWorkspacesFile());
+    const data = JSON.parse(strict ? new TextDecoder('utf-8', { fatal: true }).decode(bytes) : bytes.toString('utf8'));
+    if (!data || typeof data !== 'object' || Array.isArray(data) || !Array.isArray(data.workspaces)) {
+      throw new TypeError('Invalid workspace registry');
+    }
+    return data.workspaces;
+  } catch (cause) {
+    if (!strict) return [];
+    if (cause.code === 'ENOENT') {
+      try { if (!lstatSync(getWorkspacesFile(), { throwIfNoEntry: false })) return []; } catch {}
+    }
+    throw Object.assign(new Error('Workspace registry is unreadable; restore workspaces.json before saving', { cause }), {
+      code: 'WORKSPACES_UNREADABLE',
+    });
   }
 }
 
@@ -69,25 +86,12 @@ export function saveWorkspaces(list) {
   const tmpFile = `${getWorkspacesFile()}.tmp-${process.pid}-${randomBytes(4).toString('hex')}`;
   try {
     mkdirSync(LOG_DIR, { recursive: true });
-    writeFileSync(tmpFile, JSON.stringify({ workspaces: list }, null, 2));
-    
-    // Windows 上 renameSync 可能会因为目标文件存在或被占用而失败
-    // 简单的重试机制
-    let retries = 3;
-    while (retries > 0) {
-      try {
-        renameSync(tmpFile, getWorkspacesFile());
-        break;
-      } catch (err) {
-        if (retries === 1) throw err;
-        retries--;
-        sleep(20);
-      }
-    }
+    writeFileSync(tmpFile, JSON.stringify({ workspaces: list }, null, 2), { mode: 0o600 });
+    renameSyncWithRetry(tmpFile, getWorkspacesFile());
   } catch (err) {
-    console.error('[CX Viewer] Failed to save workspaces:', err.message);
     // 尝试清理临时文件
     try { unlinkSync(tmpFile); } catch { }
+    throw err;
   }
 }
 
@@ -95,7 +99,7 @@ export function registerWorkspace(absolutePath) {
   return withLock(() => {
     const resolvedPath = resolve(absolutePath);
     const projectName = basename(resolvedPath).replace(/[^a-zA-Z0-9_\-\.]/g, '_');
-    const list = loadWorkspaces();
+    const list = loadWorkspaces({ strict: true });
     const existing = list.find(w => w.path === resolvedPath);
     if (existing) {
       existing.lastUsed = new Date().toISOString();
@@ -119,7 +123,7 @@ export function registerWorkspace(absolutePath) {
 
 export function removeWorkspace(id) {
   return withLock(() => {
-    const list = loadWorkspaces();
+    const list = loadWorkspaces({ strict: true });
     const filtered = list.filter(w => w.id !== id);
     if (filtered.length !== list.length) {
       saveWorkspaces(filtered);

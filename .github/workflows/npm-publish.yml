@@ -35,13 +35,14 @@ jobs:
           node-version: ${{ matrix.node-version }}
           package-manager-cache: false
 
-      # This repository does not currently commit a package-lock.json, so npm ci
-      # cannot be used. Keep the runner install ephemeral and do not create a lock.
+      - name: Set up the pinned pnpm version
+        uses: pnpm/action-setup@v4
+
       - name: Install dependencies
-        run: npm install --no-package-lock
+        run: pnpm install --frozen-lockfile
 
       - name: Test supported Node.js runtime
-        run: npm test
+        run: pnpm test
 
   publish:
     if: github.repository == 'weiesky/cx-viewer'
@@ -88,15 +89,16 @@ jobs:
             echo "published=false" >> "$GITHUB_OUTPUT"
           fi
 
-      # This repository does not currently commit a package-lock.json, so npm ci
-      # cannot be used. Keep the runner install ephemeral and do not create a lock.
+      - name: Set up the pinned pnpm version
+        uses: pnpm/action-setup@v4
+
       - name: Install dependencies
         if: steps.npm-version.outputs.published != 'true'
-        run: npm install --no-package-lock
+        run: pnpm install --frozen-lockfile
 
       - name: Test, build, and inspect package contents
         if: steps.npm-version.outputs.published != 'true'
-        run: npm run release:check
+        run: pnpm run release:check
 
       # Authentication comes from npm Trusted Publishing via GitHub OIDC.
       # Provenance is generated automatically for trusted publishes.

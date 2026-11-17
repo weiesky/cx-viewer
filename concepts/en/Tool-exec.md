@@ -15,6 +15,8 @@
 
 Nested tools keep their own schemas, sandbox boundaries, and approval requirements. Calling a tool through `exec` does not bypass its policy.
 
+Tool names, parameters and defaults vary by CLI version, model and host. These examples apply only when the corresponding interface is exposed.
+
 ## Calling nested tools
 
 Tool names are normalized into valid JavaScript identifiers. A plain tool such as `shell_command` is called as `tools.shell_command(...)`; a namespaced tool such as `web.run` is exposed as a name like `tools.web__run(...)`.
@@ -35,7 +37,7 @@ Parallel composition:
 
 ```js
 const [status, resources] = await Promise.all([
-  tools.shell_command({ command: "git status --short", workdir: "/workspace" }),
+  tools.exec_command({ cmd: "git status --short", workdir: "/workspace" }),
   tools.list_mcp_resources({}),
 ]);
 text(status);
@@ -59,6 +61,8 @@ text(resources);
 
 Pending timers alone do not keep the isolate alive. Await an explicit promise when delayed work must complete.
 
+An `exec` cell and a process session returned by `exec_command` have separate lifecycles; use `write_stdin` for the latter.
+
 ## Input and execution lifecycle
 
 The input is raw JavaScript source, not JSON, a quoted string, or a Markdown code block. The script is evaluated as an async module, so top-level `await` is available.
@@ -67,16 +71,16 @@ An optional first-line pragma controls the initial yield window and direct outpu
 
 ```js
 // @exec: {"yield_time_ms": 10000, "max_output_tokens": 2000}
-const result = await tools.shell_command({
-  command: "npm test",
+const result = await tools.exec_command({
+  cmd: "npm test",
   workdir: "/workspace",
-  timeout_ms: 120000,
+  yield_time_ms: 10000,
 });
 text(result);
 ```
 
-- `yield_time_ms` defaults to 10,000 milliseconds.
-- `max_output_tokens` defaults to 10,000 tokens.
+- The default `yield_time_ms` depends on the host; consult the active tool specification.
+- The default `max_output_tokens` depends on the host.
 - When work is still running at the yield boundary, `exec` returns `Script running with cell ID ...`.
 - Pass that id to `wait`; repeat until the cell completes, or use `terminate: true` to stop it.
 - Once evaluation finishes, the isolate is destroyed and unawaited promises are discarded. Values survive only when explicitly saved with `store`.

@@ -1,6 +1,6 @@
 # Codex Tools
 
-The tools shown in the context-usage popover come from the currently loaded Codex request-body tools, not the legacy tool catalog. The catalog documents both loaded tool-group entry points and their callable operations.
+The all-tools catalog is a static reference, not a list of tools loaded in the current session. Availability depends on CLI version, model, features and host. Entries of type `namespace` group callable operations. Request tools shown in context can also be synthetic reference data produced by CX Viewer in App Server or SDK mode.
 
 ## Code Mode
 
@@ -9,7 +9,9 @@ The tools shown in the context-usage popover come from the currently loaded Code
 
 ## Core tools
 
-- shell_command: run local shell commands with explicit working directory and sandbox/approval metadata.
+- shell_command: a shell tool available in some runtimes.
+- exec_command: execute a command, optionally returning a running process session.
+- write_stdin: write to or wait for a running command session.
 - apply_patch: edit workspace files with structured patches.
 - view_image: inspect local image files.
 - update_plan: maintain the task plan.
@@ -34,6 +36,10 @@ The tools shown in the context-usage popover come from the currently loaded Code
 - interrupt_agent: stop the target's current turn while keeping the agent available.
 - list_agents: inspect the live agent tree.
 
-The Code Mode and Multi-Agent V2 names are confirmed both by the captured request bodies and by the corresponding tool registration code in `openai/codex`. MCP, plugin, app-connector, and other dynamic tools are intentionally not hard-coded here because Codex discovers and injects them per session.
+MCP, plugin, and connector tools are discovered per session. Code Mode and collaboration names and contracts depend on the host; use the actual tool schema. Historical names remain documented for older logs.
 
-Legacy tool names are not part of the Codex tool catalog and are not kept as concept aliases.
+The diff view compares namespace members and parseable declarations in the `exec` description. The latter are text declarations, not proof of runtime availability. Missing declarations are not treated as empty lists.
+
+## Version comparison
+
+Both 0.142.5 and 0.169.0 include Code Mode, unified command execution and tool discovery; these are not uniformly new in the latter release. The 0.169.0 model catalog includes newer models using `code_mode_only`; configuration and server-provided model metadata also affect tool selection. See the official [0.142.5 features](https://github.com/openai/codex/blob/rust-v0.142.5/codex-rs/features/src/lib.rs), [0.169.0 features](https://github.com/openai/codex/blob/rust-v0.169.0/codex-rs/features/src/lib.rs), [model catalog](https://github.com/openai/codex/blob/rust-v0.169.0/codex-rs/models-manager/models.json) and [tool discovery implementation](https://github.com/openai/codex/blob/rust-v0.169.0/codex-rs/core/src/tools/handlers/tool_search_spec.rs).

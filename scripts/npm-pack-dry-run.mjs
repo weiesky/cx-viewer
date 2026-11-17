@@ -40,12 +40,15 @@ const required = [
   'concepts/en/CustomUltraplanExpert.md',
   'concepts/zh/UltraPlan.md',
   'concepts/zh/CustomUltraplanExpert.md',
+  'imSkills/zh/manage-cxv-projects/SKILL.md',
+  'imSkills/en/manage-cxv-projects/SKILL.md',
+  'imSkills/scripts/cxv-projects.mjs',
 ];
 const missing = required.filter((path) => !files.has(path));
 if (missing.length) {
-  process.stderr.write(`npm package is missing required UltraPlan assets:\n${missing.map((path) => `- ${path}`).join('\n')}\n`);
+  process.stderr.write(`npm package is missing required assets:\n${missing.map((path) => `- ${path}`).join('\n')}\n`);
   process.exit(1);
 }
 
 if (result.stderr) process.stderr.write(result.stderr);
-process.stdout.write(`npm package preview verified (${files.size} files; UltraPlan presets and docs included).\n`);
+process.stdout.write(`npm package preview verified (${files.size} files; required presets, docs, and IM skills included).\n`);

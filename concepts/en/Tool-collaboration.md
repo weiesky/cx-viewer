@@ -2,6 +2,8 @@
 
 `collaboration` is the Multi-Agent V2 tool group for coordinating teammates that work alongside the root agent. The group chip is an entry point: its callable operations are `spawn_agent`, `send_message`, `followup_task`, `wait_agent`, `interrupt_agent`, and `list_agents`.
 
+The operations and availability depend on the host and session; this describes one collaboration interface, not a guarantee for every Codex CLI.
+
 ## Operations
 
 | Operation | Purpose |

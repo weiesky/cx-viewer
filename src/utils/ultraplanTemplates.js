@@ -190,7 +190,7 @@ export function buildCustomTemplate(content) {
   // 避免正文里只是「提到」<user_instructions> 字样就误判而漏掉作用域声明。
   if (body.startsWith('<user_instructions>')) return body;
   return `<user_instructions>
-[SCOPED INSTRUCTION] The following instructions apply only to the next 1-3 interactions. Once the task is complete, these instructions should gradually decrease in priority and no longer affect subsequent interactions. You should be adept at utilizing tools such as \`request_user_input\`, \`update_plan\`, and \`multi_agent_v\${verson}\`, rather than relying solely on plain text processing. Before execution, you must ensure that the \`update_plan\`, \`multi_agent_v\${verson}\`, \`request_user_input\` and \`parellel\` tools are loaded.
+[SCOPED INSTRUCTION] The following instructions apply only to the next 1-3 interactions. Once the task is complete, these instructions should gradually decrease in priority and no longer affect subsequent interactions. Use \`tool_search\`, \`request_user_input\`, and \`update_plan\` when available to discover tools, clarify requirements, and track the plan. Discover multi-agent operations from the current environment; do not assume versioned names or that any tool is available.
 
 ${body}
 </user_instructions>`;

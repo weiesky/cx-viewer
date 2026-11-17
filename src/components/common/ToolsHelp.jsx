@@ -88,6 +88,7 @@ export default function ToolsHelp({ zIndex, closeParent, onOpenChange, children 
         wrapProps={{ onMouseDown: (e) => e.stopPropagation() }}
       >
         <div className={styles.catalog}>
+          <p>{t('ui.toolCatalog.referenceNote')} <ConceptHelp doc="Tools" /></p>
           {TOOL_CATALOG.map((group) => (
             <div key={group.key} className={styles.catBlock}>
               <div className={styles.catLabel}>{t(`ui.toolCatalog.cat.${group.key}`)}</div>

@@ -21,6 +21,26 @@ export const dingtalkDescriptor = {
       placeholderKey: 'ui.dingtalk.allowStaffPlaceholder', placeholderFallback: 'staffId, press Enter to add',
       helpKey: 'ui.im.allowlistOptionalHelp', helpFallback: 'Optional. When set, only listed staff IDs are accepted; when empty, messages from any sender are accepted.',
     },
+    {
+      key: 'ackCard', type: 'switch', section: 'more', default: true,
+      labelKey: 'ui.im.ackCard', fallback: 'Instant acknowledgment',
+      helpKey: 'ui.im.ackCardHelp', helpFallback: 'Send immediate status feedback when a message is received; update in-place when the reply is ready.',
+    },
+    {
+      key: 'cardTemplateId', type: 'text', section: 'more', optional: true,
+      labelKey: 'ui.dingtalk.cardTemplateId', fallback: 'Card Template ID',
+      helpKey: 'ui.dingtalk.cardTemplateIdHelp', helpFallback: 'Interactive Card template ID from the DingTalk Open Platform (optional — leave empty for plain-text acknowledgment).',
+    },
+    {
+      key: 'aiCardTemplateId', type: 'text', section: 'more', optional: true,
+      labelKey: 'ui.dingtalk.aiCardTemplateId', fallback: 'AI Card Template ID (streaming)',
+      helpKey: 'ui.dingtalk.aiCardTemplateIdHelp', helpFallback: 'AI-card scene template ID (must declare content + flowStatus variables). Replies stream into the card when configured.',
+    },
+    {
+      key: 'aiCardStreamKey', type: 'text', section: 'more', optional: true,
+      labelKey: 'ui.dingtalk.aiCardStreamKey', fallback: 'AI Card streaming variable name (default: content)',
+      helpKey: 'ui.dingtalk.aiCardStreamKeyHelp', helpFallback: 'Name of the streaming markdown variable in the AI-card template; leave empty to use content.',
+    },
   ],
   notes: [],
 };

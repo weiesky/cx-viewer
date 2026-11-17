@@ -12,7 +12,7 @@ const SUPPORTS_DIRECTORY_UPLOAD = typeof document !== 'undefined'
 
 function defaultValue(field) {
   if (field.type === 'tags') return [];
-  if (field.type === 'switch') return false;
+  if (field.type === 'switch') return field.default ?? false;
   if (field.type === 'select') return field.default ?? (field.options?.[0]?.value ?? '');
   return '';
 }

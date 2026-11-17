@@ -1,0 +1,10 @@
+# A1: settings only; source directories stay in place.
+# Reviewed against this repository's npm lockfile, including Electron 35.
+onlyBuiltDependencies:
+  - electron
+  - electron-winstaller
+  - es5-ext
+  - esbuild
+  - fsevents
+  - node-pty
+  - protobufjs

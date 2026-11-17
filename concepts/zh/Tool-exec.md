@@ -15,9 +15,11 @@
 
 嵌套工具仍保留各自的 schema、沙箱边界和审批要求。通过 `exec` 调用不会绕过原有权限策略。
 
+不同 CLI 版本、模型及宿主的工具名、参数和默认值可能不同；以下示例只适用于暴露相应接口的环境。
+
 ## 调用嵌套工具
 
-工具名会被规范化为合法 JavaScript 标识符。普通工具 `shell_command` 通过 `tools.shell_command(...)` 调用；带 namespace 的 `web.run` 则会暴露为类似 `tools.web__run(...)` 的名称。
+工具名会被规范化为合法 JavaScript 标识符。例如某些宿主将 `exec_command` 暴露为 `tools.exec_command(...)`；带 namespace 的 `web.run` 则会暴露为类似 `tools.web__run(...)` 的名称。
 
 - Function tool 接收对象参数。
 - `apply_patch` 这类 freeform tool 接收字符串参数。
@@ -35,7 +37,7 @@ text(goal);
 
 ```js
 const [status, resources] = await Promise.all([
-  tools.shell_command({ command: "git status --short", workdir: "/workspace" }),
+  tools.exec_command({ cmd: "git status --short", workdir: "/workspace" }),
   tools.list_mcp_resources({}),
 ]);
 text(status);
@@ -59,6 +61,8 @@ text(resources);
 
 仅存在待触发 timer 不会让 isolate 保持运行；需要完成延迟工作时，必须等待一个明确的 Promise。
 
+`exec` cell 的等待与 `exec_command` 返回的进程会话是两个独立生命周期；后者使用 `write_stdin`。
+
 ## 输入格式与执行生命周期
 
 输入必须是原始 JavaScript source，不能是 JSON、带引号字符串或 Markdown 代码块。脚本按异步 module 执行，因此可以直接使用顶层 `await`。
@@ -67,16 +71,16 @@ text(resources);
 
 ```js
 // @exec: {"yield_time_ms": 10000, "max_output_tokens": 2000}
-const result = await tools.shell_command({
-  command: "npm test",
+const result = await tools.exec_command({
+  cmd: "npm test",
   workdir: "/workspace",
-  timeout_ms: 120000,
+  yield_time_ms: 10000,
 });
 text(result);
 ```
 
-- `yield_time_ms` 默认 10,000 毫秒。
-- `max_output_tokens` 默认 10,000 tokens。
+- `yield_time_ms` 的默认值由宿主决定，以当前工具说明为准。
+- `max_output_tokens` 的默认值以当前宿主说明为准。
 - 到达 yield 边界时任务仍在运行，`exec` 会返回 `Script running with cell ID ...`。
 - 将这个 id 传给 `wait`，可以反复等待直至完成；也可以用 `terminate: true` 终止。
 - JavaScript 执行完成后 isolate 会被销毁，未被 await 的 Promise 会被丢弃。只有通过 `store` 显式保存的数据可以跨调用保留。

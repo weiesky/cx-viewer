@@ -2,6 +2,8 @@
 
 `collaboration` 是用于协调 teammate 与根 Agent 并行工作的 Multi-Agent V2 工具组。UI 中的工具组 chip 是入口；其可调用操作包括 `spawn_agent`、`send_message`、`followup_task`、`wait_agent`、`interrupt_agent` 和 `list_agents`。
 
+具体操作与可用性取决于宿主及会话；以下为一种协作接口，不代表所有 Codex CLI 都提供相同工具。
+
 ## 操作一览
 
 | 操作 | 用途 |
