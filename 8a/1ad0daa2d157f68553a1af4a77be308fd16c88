@@ -1,0 +1,46 @@
+tests/auth-server.test.js
+  s_7e818aa265d06a::t_a1e737fa58aadd 664,671,749,758
+  s_59be6bb53a5547::t_c46ad2a74504f3 689-705,773-784
+lib/auth.js
+  s_7e818aa265d06a::t_ab2e8021825d8c 61-62
+  s_7e818aa265d06a::t_678f66ac462693 7
+tests/proxy-profile-credentials.test.js
+  s_7e818aa265d06a::t_678f66ac462693 3,8,122-136
+  s_7e818aa265d06a::t_c5a69673870394 137
+tests/proxy-profiles-api.test.js
+  s_7e818aa265d06a::t_a1e737fa58aadd 6,132,145,254-273
+  s_7e818aa265d06a::t_2e4769a0742661 274-275
+tests/auth-credentials.test.js
+  s_7e818aa265d06a::t_678f66ac462693 15,134-160
+tests/dingtalk-im-credentials.test.js
+  s_7e818aa265d06a::t_678f66ac462693 16,128-141
+  s_7e818aa265d06a::t_8f9c71a064700c 142
+lib/proxy-profile-credentials.js
+  s_7e818aa265d06a::t_678f66ac462693 7,23,57-60
+lib/dingtalk-im-config.js
+  s_7e818aa265d06a::t_678f66ac462693 15,221
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "8a1ad0daa2d157f68553a1af4a77be308fd16c88",
+  "prompts": {},
+  "sessions": {
+    "s_59be6bb53a5547": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e8ef-9e3a-77d2-bb21-f9e9684a34f6",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    },
+    "s_7e818aa265d06a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e7f7-4a23-7b73-8aee-7f5cf424b32f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
