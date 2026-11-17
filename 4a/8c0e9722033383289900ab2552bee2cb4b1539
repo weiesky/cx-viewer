@@ -1,0 +1,23 @@
+tests/credential-store.test.js
+  s_7e818aa265d06a::t_4afda7341963bc 1-51,53-124,151-152
+  s_7e818aa265d06a::t_5422fcdc95a758 52,125-150
+lib/credential-store.js
+  s_7e818aa265d06a::t_4afda7341963bc 111,134
+  s_7e818aa265d06a::t_e025d579a39e67 1-110,112-133,135-151
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "4a8c0e9722033383289900ab2552bee2cb4b1539",
+  "prompts": {},
+  "sessions": {
+    "s_7e818aa265d06a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e7f7-4a23-7b73-8aee-7f5cf424b32f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
