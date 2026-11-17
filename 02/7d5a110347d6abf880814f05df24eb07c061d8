@@ -1,0 +1,37 @@
+lib/code-search.js
+  s_7e818aa265d06a::t_10cbbc9690d601 227
+lib/preferences.js
+  s_7e818aa265d06a::t_10cbbc9690d601 14,17-18
+lib/credential-file-policy.js
+  s_7e818aa265d06a::t_b64795495156ca 27
+  s_7e818aa265d06a::t_10cbbc9690d601 7-8,24,26,47,55,68,75,84-88
+tests/auth-server.test.js
+  s_7e818aa265d06a::t_b64795495156ca 20,572-597
+  s_7e818aa265d06a::t_9f5a2ffa0bf66d 598-599
+tests/credential-paths.test.js
+  s_7e818aa265d06a::t_10cbbc9690d601 13,15-17,21-22,37-38
+tests/credential-file-policy.test.js
+  s_7e818aa265d06a::t_b64795495156ca 75-94
+lib/config-paths.js
+  s_7e818aa265d06a::t_10cbbc9690d601 1-7
+tests/credential-search-boundary.test.js
+  s_7e818aa265d06a::t_10cbbc9690d601 12,18-21,43,50
+lib/dingtalk-im-config.js
+  s_7e818aa265d06a::t_10cbbc9690d601 10-11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "027d5a110347d6abf880814f05df24eb07c061d8",
+  "prompts": {},
+  "sessions": {
+    "s_7e818aa265d06a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e7f7-4a23-7b73-8aee-7f5cf424b32f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
