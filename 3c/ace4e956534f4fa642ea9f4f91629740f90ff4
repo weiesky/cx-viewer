@@ -1,0 +1,33 @@
+tests/file-api.test.js
+  s_7e818aa265d06a::t_6e74ae51d3e700 1,3-4,7-11,69-85
+  s_7e818aa265d06a::t_300c2532b8bb7a 86
+lib/credential-file-policy.js
+  s_7e818aa265d06a::t_fafba48d20e356 57
+lib/file-api.js
+  s_7e818aa265d06a::t_fafba48d20e356 6,8,46,52-54,79-87,109-119,143
+  s_7e818aa265d06a::t_6e74ae51d3e700 78
+tests/auth-server.test.js
+  s_7e818aa265d06a::t_4397f4ac57957e 4,358-394
+  s_7e818aa265d06a::t_2b931dc0b31a53 5
+  s_7e818aa265d06a::t_ac2f6ce1107b45 395
+tests/credential-file-policy.test.js
+  s_7e818aa265d06a::t_fafba48d20e356 48-50
+server.js
+  s_7e818aa265d06a::t_fafba48d20e356 13,3517,3539-3543
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "3cace4e956534f4fa642ea9f4f91629740f90ff4",
+  "prompts": {},
+  "sessions": {
+    "s_7e818aa265d06a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e7f7-4a23-7b73-8aee-7f5cf424b32f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
