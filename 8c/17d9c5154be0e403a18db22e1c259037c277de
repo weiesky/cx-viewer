@@ -1,0 +1,25 @@
+lib/credential-paths.js
+  s_7e818aa265d06a::t_7af13b6a5c7f52 5,16-17
+lib/proxy-profile-credentials.js
+  s_7e818aa265d06a::t_7af13b6a5c7f52 1-40
+tests/proxy-profile-credentials.test.js
+  s_7e818aa265d06a::t_7af13b6a5c7f52 1-65
+lib/proxy-profile.js
+  s_7e818aa265d06a::t_7af13b6a5c7f52 32,56,68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "8c17d9c5154be0e403a18db22e1c259037c277de",
+  "prompts": {},
+  "sessions": {
+    "s_7e818aa265d06a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e7f7-4a23-7b73-8aee-7f5cf424b32f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
