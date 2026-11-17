@@ -1,0 +1,29 @@
+README.md
+  s_59be6bb53a5547::t_47f440912855b3 327-333
+package.json
+  s_59be6bb53a5547::t_47f440912855b3 29-30,32-33,187-188
+build.js
+  s_59be6bb53a5547::t_47f440912855b3 3-4,6,12-14
+pnpm-workspace.yaml
+  s_59be6bb53a5547::t_47f440912855b3 1-10
+.github/workflows/npm-publish.yml
+  s_59be6bb53a5547::t_47f440912855b3 38-40,42,45,92-94,97,101
+pnpm-lock.yaml
+  s_59be6bb53a5547::t_e336d5fdd85bc4 1-9208
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "6287d2a9d459eb904aa2cfe3680cf546c99797ee",
+  "prompts": {},
+  "sessions": {
+    "s_59be6bb53a5547": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e8ef-9e3a-77d2-bb21-f9e9684a34f6",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
