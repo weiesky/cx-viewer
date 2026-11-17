@@ -1,0 +1,35 @@
+tests/preferences.test.js
+  s_7e818aa265d06a::t_2f3d24e6b76754 4,86-115
+  s_7e818aa265d06a::t_18f11dd0aa958b 11,24-35,48-85,116-142
+lib/preferences.js
+  s_7e818aa265d06a::t_8ade16e0e53143 6,23,25-39,77
+server.js
+  s_7e818aa265d06a::t_8ade16e0e53143 1820-1824
+tests/auth-server.test.js
+  s_7e818aa265d06a::t_8ade16e0e53143 4,253-273
+  s_abcb5ca510cf12::t_c1ceaf827cc521 274
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "450affb570c0a7f4ac5ee673bfee070ca0ac04c6",
+  "prompts": {},
+  "sessions": {
+    "s_7e818aa265d06a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e7f7-4a23-7b73-8aee-7f5cf424b32f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    },
+    "s_abcb5ca510cf12": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "afb4ba59-3a4f-4b14-a932-6de7f47880e5",
+        "model": "k3"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
