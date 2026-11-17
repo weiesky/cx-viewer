@@ -1,0 +1,21 @@
+server.js
+  s_7e818aa265d06a::t_f4120ac456d6e8 13,2069,2081,2094,2561,2564,2593
+tests/auth-server.test.js
+  s_7e818aa265d06a::t_f4120ac456d6e8 396-433
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "b6fe3e9bd066b4d215c4ecb2c7dc635abc940d51",
+  "prompts": {},
+  "sessions": {
+    "s_7e818aa265d06a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e7f7-4a23-7b73-8aee-7f5cf424b32f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
