@@ -1,0 +1,30 @@
+packages/app/lib/credential-recovery.js
+  s_59be6bb53a5547::t_2d00965f1f2bb0 51
+  s_59be6bb53a5547::t_a070453cfa77fa 2-48,50,52-190
+  s_59be6bb53a5547::t_e66e374807cc3a 1,49
+packages/app/scripts/restore-credentials.mjs
+  s_59be6bb53a5547::t_a070453cfa77fa 1-33
+packages/app/lib/dingtalk-im-config.js
+  s_59be6bb53a5547::t_a070453cfa77fa 204,223,283
+packages/app/tests/credential-recovery.test.js
+  s_59be6bb53a5547::t_e66e374807cc3a 249,254-258
+  s_59be6bb53a5547::t_47aa42fbfa0ff8 304-333
+  s_59be6bb53a5547::t_0bfc2d775bd90d 120
+  s_59be6bb53a5547::t_451449a5f26da3 1-119,121-248,250-253,259-303,334-359
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "36d0697f12c47226e6c78e1c4c67cde524a49b77",
+  "prompts": {},
+  "sessions": {
+    "s_59be6bb53a5547": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e8ef-9e3a-77d2-bb21-f9e9684a34f6",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
