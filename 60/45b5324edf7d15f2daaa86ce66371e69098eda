@@ -1,0 +1,411 @@
+cli.js
+  h_f08accc60857ed 547-552
+imSkills/ar/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+imSkills/da/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+imSkills/de/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-79
+imSkills/en/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-79
+imSkills/es/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+imSkills/fr/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+imSkills/it/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+imSkills/ja/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+imSkills/ko/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+imSkills/no/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+imSkills/pl/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+imSkills/pt-BR/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+imSkills/ru/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+imSkills/scripts/cxv-projects.mjs
+  h_f08accc60857ed 1-225
+imSkills/th/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-78
+imSkills/tr/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-79
+imSkills/uk/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+imSkills/zh-TW/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+imSkills/zh/manage-cxv-projects/SKILL.md
+  h_f08accc60857ed 1-77
+lib/adapters/dingtalk-adapter.js
+  h_f08accc60857ed 1-2,6-9,67-95,127-209,299-328
+lib/appserver-bridge.js
+  h_f08accc60857ed 68,73-76,2094-2098
+lib/dingtalk-im-bridge.js
+  h_f08accc60857ed 16-20,162-213,219,227,229-230,247-253,255,258,263,370-373,376-382,387-398,404,406-407,416
+lib/dingtalk-im-config.js
+  h_f08accc60857ed 145-148
+  s_7e818aa265d06a::t_10cbbc9690d601 10,16
+  s_7e818aa265d06a::t_1fab2f4dfbb719 102
+  s_7e818aa265d06a::t_4e6aa2057d9a3b 3,11,164-172,174-214,274,282-285
+  s_7e818aa265d06a::t_3b980fa6615118 12-14,23-25,218-220,222-273,281,289
+  s_7e818aa265d06a::t_678f66ac462693 15,221
+lib/dingtalk-im-skills.js
+  h_f08accc60857ed 1-51
+package.json
+  h_f08accc60857ed 71,85,124
+  s_59be6bb53a5547::t_47f440912855b3 29-30,32-33,187-188
+scripts/npm-pack-dry-run.mjs
+  h_f08accc60857ed 43-45,49,54
+server.js
+  h_f08accc60857ed 810
+  s_7e818aa265d06a::t_8ade16e0e53143 1819-1823
+  s_7e818aa265d06a::t_aacf1e1cdd2b03 905,1428,4762
+  s_7e818aa265d06a::t_fafba48d20e356 3540,3562-3566
+  s_7e818aa265d06a::t_f4120ac456d6e8 2065,2077,2090,2559,2562,2591
+  s_7e818aa265d06a::t_59bb30e81810c7 13,2625-2629,2647,2681-2683,2698-2699,2708-2709,2722-2731,2734,2750-2752,2783-2784,2816
+  s_7e818aa265d06a::t_ddc08e4dc5f262 14
+  s_7e818aa265d06a::t_695204005c2a2d 3013,3018,3137,3148
+  s_7e818aa265d06a::t_c25d380bdb9d9b 1698-1699,1726,1730,1733-1734,1740-1742,3007
+  s_7e818aa265d06a::t_28abef4cff36db 15,656,1954,1956,3919,3924,3926,4330-4334,4493,4501-4504,4511,4515
+  s_7e818aa265d06a::t_9eb16e582eaccc 2399,2403,2422
+  s_7e818aa265d06a::t_9525f3953843a2 16,699-706,2472,2481-2482,2502-2503,2518-2528,2534
+src/components/settings/ImPlatformSettings.jsx
+  h_f08accc60857ed 15
+src/components/settings/imPlatforms.js
+  h_f08accc60857ed 24-43
+tests/appserver-bridge.test.js
+  h_f08accc60857ed 15,546-560
+tests/cxv-projects-skill-script.test.js
+  h_f08accc60857ed 1-61
+tests/dingtalk-adapter.test.js
+  h_f08accc60857ed 109-163
+tests/dingtalk-im-bridge.test.js
+  h_f08accc60857ed 230-282
+tests/dingtalk-im-config.test.js
+  h_f08accc60857ed 23,27-30
+  s_7e818aa265d06a::t_5aebc0066b8df4 3-4,11,73-94
+  s_7e818aa265d06a::t_d3f1a1cf8f8e82 95
+  s_7e818aa265d06a::t_2d92ae49d30183 5-6,96-124
+tests/dingtalk-im-skills.test.js
+  h_f08accc60857ed 1-85
+concepts/en/Tool-collaboration.md
+  s_ef9ee44cb3b089::t_4523baba35aa59 5-6
+concepts/en/Tool-request_user_input.md
+  s_ef9ee44cb3b089::t_be35fb415d3996 3
+concepts/en/Tool-exec.md
+  s_ef9ee44cb3b089::t_b96a5ea77b7e69 18-19,40,74-75,77,82
+  s_ef9ee44cb3b089::t_62430898c9c1d5 64-65
+  s_ef9ee44cb3b089::t_4523baba35aa59 83
+src/utils/ultraplanTemplates.js
+  s_ef9ee44cb3b089::t_d51d16a0c7536c 193
+concepts/zh/Tools.md
+  s_ef9ee44cb3b089::t_be35fb415d3996 41-42
+  s_ef9ee44cb3b089::t_b96a5ea77b7e69 12-14,39,43-45
+  s_ef9ee44cb3b089::t_62430898c9c1d5 3
+concepts/zh/Tool-image_generation.md
+  s_ef9ee44cb3b089::t_4523baba35aa59 3
+concepts/en/Tool-write_stdin.md
+  s_ef9ee44cb3b089::t_b96a5ea77b7e69 1-3
+src/components/dashboard/DetailPanel.jsx
+  s_ef9ee44cb3b089::t_746dce6106be65 9,865-866
+src/components/dashboard/ContextTab.jsx
+  s_ef9ee44cb3b089::t_aa304976367002 602-612
+  s_ef9ee44cb3b089::t_eb5900f5dc6e75 11,573-574,578,589-591,595-600
+src/utils/toolCatalog.js
+  s_ef9ee44cb3b089::t_746dce6106be65 4-5,16
+src/components/common/ToolsHelp.jsx
+  s_ef9ee44cb3b089::t_7b317431878c2b 91
+concepts/zh/Tool-exec_command.md
+  s_ef9ee44cb3b089::t_b96a5ea77b7e69 1-3
+concepts/en/Tool-image_generation.md
+  s_ef9ee44cb3b089::t_4523baba35aa59 3
+concepts/zh/Tool-exec.md
+  s_ef9ee44cb3b089::t_b96a5ea77b7e69 18-19,22,40,74-75,77,82
+  s_ef9ee44cb3b089::t_62430898c9c1d5 64-65
+  s_ef9ee44cb3b089::t_4523baba35aa59 83
+concepts/zh/Tool-write_stdin.md
+  s_ef9ee44cb3b089::t_b96a5ea77b7e69 1-3
+src/i18n.js
+  s_ef9ee44cb3b089::t_d51d16a0c7536c 11799
+  s_ef9ee44cb3b089::t_7b317431878c2b 6254-6257
+tests/tools-diff.test.js
+  s_ef9ee44cb3b089::t_d00bf2ca5d8015 51-56
+  s_ef9ee44cb3b089::t_d53412305c12ed 64
+  s_ef9ee44cb3b089::t_aa304976367002 57-63,65
+  s_ef9ee44cb3b089::t_53d9fcf15ec855 29-50
+concepts/zh/Tool-collaboration.md
+  s_ef9ee44cb3b089::t_4523baba35aa59 5-6
+concepts/en/Tool-tool_search.md
+  s_ef9ee44cb3b089::t_be35fb415d3996 3
+concepts/en/Tool-exec_command.md
+  s_ef9ee44cb3b089::t_b96a5ea77b7e69 1-3
+concepts/en/Tools.md
+  s_ef9ee44cb3b089::t_62430898c9c1d5 3
+  s_ef9ee44cb3b089::t_b96a5ea77b7e69 12-14,39,43-45
+  s_ef9ee44cb3b089::t_be35fb415d3996 41-42
+concepts/zh/Tool-request_user_input.md
+  s_ef9ee44cb3b089::t_be35fb415d3996 3
+concepts/zh/Tool-tool_search.md
+  s_ef9ee44cb3b089::t_be35fb415d3996 3
+src/utils/toolsDiff.js
+  s_ef9ee44cb3b089::t_d53412305c12ed 60
+  s_ef9ee44cb3b089::t_d00bf2ca5d8015 50
+  s_ef9ee44cb3b089::t_7b317431878c2b 13-14
+  s_ef9ee44cb3b089::t_aa304976367002 20-21,25-29,56-59,61-65
+  s_ef9ee44cb3b089::t_eb5900f5dc6e75 41-46,48,52-55,66-68,75-79
+  s_ef9ee44cb3b089::t_9a9198e7ecd518 47,49,51
+tests/preferences.test.js
+  s_7e818aa265d06a::t_2f3d24e6b76754 4,86-115
+  s_7e818aa265d06a::t_18f11dd0aa958b 11,24-35,48-85,116-142
+  s_59be6bb53a5547::t_8c884e3d4b7396 143-170
+lib/preferences.js
+  s_7e818aa265d06a::t_8ade16e0e53143 7,22,24-38
+  s_7e818aa265d06a::t_10cbbc9690d601 15,18,20
+  s_59be6bb53a5547::t_c6edab15ef7849 46,48-53,58
+  s_59be6bb53a5547::t_4b2aac044bd388 63,83,95-102
+  s_59be6bb53a5547::t_c6ac99e634e87d 6,19,42,55
+  s_59be6bb53a5547::t_9ebb6b5d06f965 103
+tests/auth-server.test.js
+  s_7e818aa265d06a::t_8ade16e0e53143 256-276
+  s_abcb5ca510cf12::t_c1ceaf827cc521 277
+  s_7e818aa265d06a::t_cc1cd5821688d7 278-318
+  s_7e818aa265d06a::t_3c7d5e6b4b378f 319-342
+  s_7e818aa265d06a::t_6d7ef46926696c 343
+  s_7e818aa265d06a::t_07fb36eccc9a02 344-359
+  s_7e818aa265d06a::t_e95352e3f53c1b 360
+  s_7e818aa265d06a::t_4397f4ac57957e 361-397
+  s_7e818aa265d06a::t_2b931dc0b31a53 7
+  s_7e818aa265d06a::t_ac2f6ce1107b45 398
+  s_7e818aa265d06a::t_f4120ac456d6e8 399-436
+  s_7e818aa265d06a::t_6deff4f8c1ba69 5,437-490
+  s_7e818aa265d06a::t_ea55b9aaaaf248 491-492
+  s_7e818aa265d06a::t_e0881f289303c9 6,493-519
+  s_7e818aa265d06a::t_47a0d93ae5ad4e 520-521
+  s_7e818aa265d06a::t_695204005c2a2d 522-553,555-571
+  s_7e818aa265d06a::t_c7cddaced334aa 4,554
+  s_7e818aa265d06a::t_b64795495156ca 20,572-597
+  s_7e818aa265d06a::t_9f5a2ffa0bf66d 598-599
+  s_7e818aa265d06a::t_30a3324c9e0d48 600-637
+  s_7e818aa265d06a::t_9eb16e582eaccc 638-657
+  s_7e818aa265d06a::t_ba2f7f7e3e5bac 658-662,663-666,671-687,705-719
+  s_7e818aa265d06a::t_9f6b0f814241b2 720-741
+  s_7e818aa265d06a::t_b862bb1284edde 742-747,749-756,758-771,784-793
+  s_7e818aa265d06a::t_a1e737fa58aadd 748,757
+  s_59be6bb53a5547::t_c46ad2a74504f3 688-704,772-783
+  s_59be6bb53a5547::t_61abc29cd40215 667-670
+tests/auth.test.js
+  s_7e818aa265d06a::t_93300c30e8ebf5 45-47,52-58
+  s_7e818aa265d06a::t_cc1cd5821688d7 59
+  s_7e818aa265d06a::t_51c4b38bfc531a 3,28-44,48-51,60-78
+  s_7e818aa265d06a::t_fb03b9ba5d36c5 79
+lib/auth-routes.js
+  s_7e818aa265d06a::t_aacf1e1cdd2b03 77,87,159-162,186-189
+lib/auth.js
+  s_7e818aa265d06a::t_cc1cd5821688d7 58,270-272
+  s_7e818aa265d06a::t_aacf1e1cdd2b03 54-57,156,159-161,169-194,236-237,242-243,246,252-256,275,278,294-295,297-298,307,377,384-387
+  s_7e818aa265d06a::t_1a662482f230f0 2,4-6,9-13,61,64-69,155,157-158,162-168,197,201-232,244-245,248,259-260,269,274,282,284,293,296,305-306,313-317
+  s_7e818aa265d06a::t_ab2e8021825d8c 62-63
+  s_59be6bb53a5547::t_c6ac99e634e87d 3,128-129,132
+  s_59be6bb53a5547::t_4b2aac044bd388 7-8,70,72-87,89-127,133-153
+  s_59be6bb53a5547::t_545a15ae8f4efc 71,88,130-131
+  s_59be6bb53a5547::t_20ff622019590e 154
+tests/workspace-registry.test.js
+  s_7e818aa265d06a::t_3c7d5e6b4b378f 22-23,30
+  s_7e818aa265d06a::t_8108eaae1b1079 1-21,24-29,31-96
+workspace-registry.js
+  s_7e818aa265d06a::t_32b6692f5b28cc 2,8,23,27,55-62,66,68-81,89-90,94,102,126
+lib/credential-vault.js
+  s_7e818aa265d06a::t_b109757872d00a 1-18,21-23,25-43
+  s_7e818aa265d06a::t_3e740b27e1418d 19-20,24
+tests/credential-vault.test.js
+  s_7e818aa265d06a::t_3e740b27e1418d 43
+  s_7e818aa265d06a::t_b109757872d00a 1-42,44-46
+tests/credential-store.test.js
+  s_7e818aa265d06a::t_4afda7341963bc 1-3,6-52,54-125,152-153
+  s_7e818aa265d06a::t_5422fcdc95a758 53,126-151
+  s_7e818aa265d06a::t_6d2988dfba0b09 4-5,154-155,157-165,167-170,172-175,177-180
+  s_7e818aa265d06a::t_84b9eae1484a40 156,166,171,176
+  s_7e818aa265d06a::t_09f32abb60544c 181
+lib/credential-store.js
+  s_7e818aa265d06a::t_4afda7341963bc 115,138
+  s_7e818aa265d06a::t_e025d579a39e67 1-7,9-40,46-114,116-137,139-155
+  s_7e818aa265d06a::t_84b9eae1484a40 41-45
+  s_7e818aa265d06a::t_0410826adb64b2 8
+tests/file-api.test.js
+  s_7e818aa265d06a::t_e91f4922be46c0 2,5,13-25,28,30-71
+  s_7e818aa265d06a::t_07fb36eccc9a02 6,29
+  s_7e818aa265d06a::t_6e74ae51d3e700 1,3-4,7-9,11-12,72-84,86-89
+  s_7e818aa265d06a::t_300c2532b8bb7a 90
+  s_7e818aa265d06a::t_30a3324c9e0d48 10,26-27,85
+lib/file-api.js
+  s_7e818aa265d06a::t_3a7e0c0f24f36e 42,45,47,49,55,67-71,99,102,108
+  s_7e818aa265d06a::t_07fb36eccc9a02 50-51
+  s_7e818aa265d06a::t_3de8863fc4cd2f 5,7,48
+  s_7e818aa265d06a::t_fafba48d20e356 6,8,46,52-54,79-87,109-119,143
+  s_7e818aa265d06a::t_6e74ae51d3e700 78
+lib/canonical-path.js
+  s_7e818aa265d06a::t_3de8863fc4cd2f 1-14
+lib/credential-file-policy.js
+  s_7e818aa265d06a::t_6b1f67ff73401c 34
+  s_7e818aa265d06a::t_3de8863fc4cd2f 1-4,5,10-23,25,28-33,35-46,48-54,56-64,78-83,89,91
+  s_7e818aa265d06a::t_594121f4602799 73-74,76-77,92
+  s_7e818aa265d06a::t_d08faeb9e3093e 6,9
+  s_7e818aa265d06a::t_59bb30e81810c7 65-67,69-72,90
+  s_7e818aa265d06a::t_b64795495156ca 27
+  s_7e818aa265d06a::t_10cbbc9690d601 7-8,24,26,47,55,68,75,84-88
+tests/credential-file-policy.test.js
+  s_7e818aa265d06a::t_3de8863fc4cd2f 1-47,51-62
+  s_7e818aa265d06a::t_fafba48d20e356 48-50
+  s_7e818aa265d06a::t_59bb30e81810c7 63-74
+  s_7e818aa265d06a::t_b64795495156ca 75-94
+lib/code-search.js
+  s_7e818aa265d06a::t_594121f4602799 13,17,225-226,228,257-258,337,390,404-412,463
+  s_7e818aa265d06a::t_10cbbc9690d601 227
+lib/code-replace.js
+  s_7e818aa265d06a::t_1ea3dc358e47b9 9,13,177-185,202,205
+  s_7e818aa265d06a::t_594121f4602799 162
+tests/credential-search-boundary.test.js
+  s_7e818aa265d06a::t_d0b36c8f46e349 15,44-45,48-49
+  s_7e818aa265d06a::t_594121f4602799 1-2,5-11,13-14,16-17,22-42,46-47,74
+  s_7e818aa265d06a::t_1ea3dc358e47b9 3-4,51-73
+  s_7e818aa265d06a::t_10cbbc9690d601 12,18-21,43,50
+lib/credential-paths.js
+  s_7e818aa265d06a::t_d08faeb9e3093e 1-4,6-15,18-21
+  s_7e818aa265d06a::t_7af13b6a5c7f52 5,16-17
+interceptor.js
+  s_7e818aa265d06a::t_d08faeb9e3093e 22
+  s_7e818aa265d06a::t_badc4d856e0925 9,20
+  s_7e818aa265d06a::t_9525f3953843a2 23,62,134
+lib/proxy-profile-path.js
+  s_7e818aa265d06a::t_d08faeb9e3093e 1-5
+tests/credential-paths.test.js
+  s_7e818aa265d06a::t_d08faeb9e3093e 1-12,14,18-20,23-36,39-48
+  s_7e818aa265d06a::t_10cbbc9690d601 13,15-17,21-22,37-38
+tests/exec-with-stdin.test.js
+  s_7e818aa265d06a::t_ddc08e4dc5f262 1-19
+lib/exec-with-stdin.js
+  s_7e818aa265d06a::t_ddc08e4dc5f262 1-32
+lib/config-paths.js
+  s_7e818aa265d06a::t_10cbbc9690d601 1-5
+  s_7e818aa265d06a::t_3b980fa6615118 6-7
+lib/public-file-read.js
+  s_7e818aa265d06a::t_28abef4cff36db 1-14
+lib/log-v2/archive-zip.js
+  s_7e818aa265d06a::t_121ad4b68acaff 33,81-82
+tests/log-v2-archive-zip.test.js
+  s_7e818aa265d06a::t_121ad4b68acaff 3,18,64-76
+  s_7e818aa265d06a::t_aaca194c3d3a62 77
+lib/skills-api.js
+  s_7e818aa265d06a::t_9eb16e582eaccc 15,59,157-159
+tests/codex-memory.test.js
+  s_7e818aa265d06a::t_9eb16e582eaccc 3,18,31-39
+  s_7e818aa265d06a::t_ef111122f3c3ab 40
+tests/skills-api.test.js
+  s_7e818aa265d06a::t_9eb16e582eaccc 3,12,15,40-50
+  s_7e818aa265d06a::t_c2c0b55f246354 51
+lib/codex-memory.js
+  s_7e818aa265d06a::t_9eb16e582eaccc 14,125,142
+tests/credential-reference.test.js
+  s_7e818aa265d06a::t_108d49f25d1e80 1-50
+lib/credential-reference.js
+  s_7e818aa265d06a::t_108d49f25d1e80 1-39
+tests/auth-credentials.test.js
+  s_7e818aa265d06a::t_e5c8f93aeedd6c 1-14,16-133
+  s_7e818aa265d06a::t_678f66ac462693 15,134-160
+lib/proxy-profile-credentials.js
+  s_7e818aa265d06a::t_7af13b6a5c7f52 1,3-4,6,8-20,65,103-105
+  s_7e818aa265d06a::t_c6c8d558bd16e6 22,24-38
+  s_7e818aa265d06a::t_7dc9180fd43bf0 5,21,39-48,66,69-102
+  s_7e818aa265d06a::t_9525f3953843a2 2,49-56,61-64,67-68
+  s_7e818aa265d06a::t_678f66ac462693 7,23,57-60
+tests/proxy-profile-credentials.test.js
+  s_7e818aa265d06a::t_7af13b6a5c7f52 1-2,4-7,9-66
+  s_7e818aa265d06a::t_7dc9180fd43bf0 67-121
+  s_7e818aa265d06a::t_678f66ac462693 3,8,122-136
+  s_7e818aa265d06a::t_c5a69673870394 137
+lib/proxy-profile.js
+  s_7e818aa265d06a::t_7af13b6a5c7f52 32,56,68
+tests/proxy-profiles-api.test.js
+  s_7e818aa265d06a::t_1309f81f2a0461 3-5,129-131,133-144,146-252
+  s_7e818aa265d06a::t_81239447036b58 253
+  s_7e818aa265d06a::t_a1e737fa58aadd 6,132,145,254-273
+  s_7e818aa265d06a::t_2e4769a0742661 274-275
+tests/dingtalk-im-credentials.test.js
+  s_7e818aa265d06a::t_af85e4e2e0a418 1-15,17-127
+  s_7e818aa265d06a::t_678f66ac462693 16,128-141
+  s_7e818aa265d06a::t_8f9c71a064700c 142
+tests/credential-migration-state.test.js
+  s_7e818aa265d06a::t_0410826adb64b2 1-43
+lib/credential-migration-state.js
+  s_7e818aa265d06a::t_0410826adb64b2 1-33
+lib/credential-backup.js
+  s_59be6bb53a5547::t_363272523ef192 1-40,42-69,74-109,115-150
+  s_59be6bb53a5547::t_dea36707194374 41,70-73
+  s_59be6bb53a5547::t_4b2aac044bd388 110-114
+tests/credential-backup.test.js
+  s_59be6bb53a5547::t_dea36707194374 1-2,4-11,13-172,199
+  s_59be6bb53a5547::t_a46af02ca9d216 3,12,173-198
+tests/auth-credential-migration.test.js
+  s_59be6bb53a5547::t_61abc29cd40215 179-226
+  s_59be6bb53a5547::t_ee36d0a0e6993d 1-123,147-178
+  s_59be6bb53a5547::t_cea0dd494dba4e 124-146
+scripts/migrate-auth-credentials.mjs
+  s_59be6bb53a5547::t_4b2aac044bd388 1-30
+README.md
+  s_59be6bb53a5547::t_47f440912855b3 327-333
+build.js
+  s_59be6bb53a5547::t_47f440912855b3 3-4,6,12-14
+pnpm-workspace.yaml
+  s_59be6bb53a5547::t_47f440912855b3 1-10
+.github/workflows/npm-publish.yml
+  s_59be6bb53a5547::t_47f440912855b3 38-40,42,45,92-94,97,101
+pnpm-lock.yaml
+  s_59be6bb53a5547::t_e336d5fdd85bc4 1-9208
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "6045b5324edf7d15f2daaa86ce66371e69098eda",
+  "prompts": {},
+  "humans": {
+    "h_f08accc60857ed": {
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  },
+  "sessions": {
+    "s_59be6bb53a5547": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e8ef-9e3a-77d2-bb21-f9e9684a34f6",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    },
+    "s_7e818aa265d06a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e7f7-4a23-7b73-8aee-7f5cf424b32f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    },
+    "s_abcb5ca510cf12": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "afb4ba59-3a4f-4b14-a932-6de7f47880e5",
+        "model": "k3"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    },
+    "s_ef9ee44cb3b089": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e5bd-4c89-7421-a8a2-63319454b8f5",
+        "model": "gpt-6.1-terra"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
