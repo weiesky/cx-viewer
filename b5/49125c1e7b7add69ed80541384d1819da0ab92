@@ -1,0 +1,20 @@
+cc-viewer-alignment/probes/b12-installed-acceptance.py
+  s_701ec3b89ba9ea::t_a43cee32e5821d 1-26,29-38,44-247
+  s_701ec3b89ba9ea::t_ce07aa6392aa65 27-28,39-43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "b549125c1e7b7add69ed80541384d1819da0ab92",
+  "prompts": {},
+  "sessions": {
+    "s_701ec3b89ba9ea": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ea5f-68db-7b91-870f-dfe371f94c5d",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
