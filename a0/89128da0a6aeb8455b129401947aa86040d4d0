@@ -1,0 +1,23 @@
+tests/dingtalk-im-config.test.js
+  s_7e818aa265d06a::t_2d92ae49d30183 5-6,96-124
+tests/auth-server.test.js
+  s_7e818aa265d06a::t_9f6b0f814241b2 702-723
+lib/dingtalk-im-config.js
+  s_7e818aa265d06a::t_4e6aa2057d9a3b 3,11,157-165,167-207,211-212,219-224,228
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a089128da0a6aeb8455b129401947aa86040d4d0",
+  "prompts": {},
+  "sessions": {
+    "s_7e818aa265d06a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e7f7-4a23-7b73-8aee-7f5cf424b32f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
