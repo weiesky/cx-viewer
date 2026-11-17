@@ -1,0 +1,23 @@
+packages/app/scripts/repair-credential-key.mjs
+  s_59be6bb53a5547::t_1b28226bc167bb 1-34
+packages/app/lib/credential-key-repair.js
+  s_59be6bb53a5547::t_1b28226bc167bb 1-108
+packages/app/tests/credential-key-repair.test.js
+  s_59be6bb53a5547::t_0bc241d770d767 1-288
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "0122f7ed3c9422016636ebc9c4e12f9ef8285a15",
+  "prompts": {},
+  "sessions": {
+    "s_59be6bb53a5547": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e8ef-9e3a-77d2-bb21-f9e9684a34f6",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
