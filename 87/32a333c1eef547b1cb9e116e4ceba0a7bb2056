@@ -1,0 +1,22 @@
+packages/app/lib/credential-backup.js
+  s_59be6bb53a5547::t_f9cc80860c8f3f 15,77,86,98-103,112-128,134,148-149,152,171-178
+packages/app/tests/credential-backup.test.js
+  s_59be6bb53a5547::t_f9cc80860c8f3f 13-14,30-83
+  s_59be6bb53a5547::t_2a242b7ead31aa 84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "8732a333c1eef547b1cb9e116e4ceba0a7bb2056",
+  "prompts": {},
+  "sessions": {
+    "s_59be6bb53a5547": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e8ef-9e3a-77d2-bb21-f9e9684a34f6",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
