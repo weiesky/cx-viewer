@@ -1,0 +1,83 @@
+concepts/en/Tool-collaboration.md
+  s_ef9ee44cb3b089::t_4523baba35aa59 5-6
+concepts/en/Tool-request_user_input.md
+  s_ef9ee44cb3b089::t_be35fb415d3996 3
+concepts/en/Tool-exec.md
+  s_ef9ee44cb3b089::t_b96a5ea77b7e69 18-19,40,74-75,77,82
+  s_ef9ee44cb3b089::t_62430898c9c1d5 64-65
+  s_ef9ee44cb3b089::t_4523baba35aa59 83
+src/utils/ultraplanTemplates.js
+  s_ef9ee44cb3b089::t_d51d16a0c7536c 193
+concepts/zh/Tools.md
+  s_ef9ee44cb3b089::t_be35fb415d3996 41-42
+  s_ef9ee44cb3b089::t_b96a5ea77b7e69 12-14,39,43-45
+  s_ef9ee44cb3b089::t_62430898c9c1d5 3
+concepts/zh/Tool-image_generation.md
+  s_ef9ee44cb3b089::t_4523baba35aa59 3
+concepts/en/Tool-write_stdin.md
+  s_ef9ee44cb3b089::t_b96a5ea77b7e69 1-3
+src/components/dashboard/DetailPanel.jsx
+  s_ef9ee44cb3b089::t_746dce6106be65 9,865-866
+src/components/dashboard/ContextTab.jsx
+  s_ef9ee44cb3b089::t_aa304976367002 602-612
+  s_ef9ee44cb3b089::t_eb5900f5dc6e75 11,573-574,578,589-591,595-600
+src/utils/toolCatalog.js
+  s_ef9ee44cb3b089::t_746dce6106be65 4-5,16
+src/components/common/ToolsHelp.jsx
+  s_ef9ee44cb3b089::t_7b317431878c2b 91
+concepts/zh/Tool-exec_command.md
+  s_ef9ee44cb3b089::t_b96a5ea77b7e69 1-3
+concepts/en/Tool-image_generation.md
+  s_ef9ee44cb3b089::t_4523baba35aa59 3
+concepts/zh/Tool-exec.md
+  s_ef9ee44cb3b089::t_b96a5ea77b7e69 18-19,22,40,74-75,77,82
+  s_ef9ee44cb3b089::t_62430898c9c1d5 64-65
+  s_ef9ee44cb3b089::t_4523baba35aa59 83
+concepts/zh/Tool-write_stdin.md
+  s_ef9ee44cb3b089::t_b96a5ea77b7e69 1-3
+src/i18n.js
+  s_ef9ee44cb3b089::t_d51d16a0c7536c 11799
+  s_ef9ee44cb3b089::t_7b317431878c2b 6254-6257
+tests/tools-diff.test.js
+  s_ef9ee44cb3b089::t_d00bf2ca5d8015 51-56
+  s_ef9ee44cb3b089::t_d53412305c12ed 64
+  s_ef9ee44cb3b089::t_aa304976367002 57-63,65
+  s_ef9ee44cb3b089::t_53d9fcf15ec855 29-50
+concepts/zh/Tool-collaboration.md
+  s_ef9ee44cb3b089::t_4523baba35aa59 5-6
+concepts/en/Tool-tool_search.md
+  s_ef9ee44cb3b089::t_be35fb415d3996 3
+concepts/en/Tool-exec_command.md
+  s_ef9ee44cb3b089::t_b96a5ea77b7e69 1-3
+concepts/en/Tools.md
+  s_ef9ee44cb3b089::t_62430898c9c1d5 3
+  s_ef9ee44cb3b089::t_b96a5ea77b7e69 12-14,39,43-45
+  s_ef9ee44cb3b089::t_be35fb415d3996 41-42
+concepts/zh/Tool-request_user_input.md
+  s_ef9ee44cb3b089::t_be35fb415d3996 3
+concepts/zh/Tool-tool_search.md
+  s_ef9ee44cb3b089::t_be35fb415d3996 3
+src/utils/toolsDiff.js
+  s_ef9ee44cb3b089::t_d53412305c12ed 60
+  s_ef9ee44cb3b089::t_d00bf2ca5d8015 50
+  s_ef9ee44cb3b089::t_7b317431878c2b 13-14
+  s_ef9ee44cb3b089::t_aa304976367002 20-21,25-29,56-59,61-65
+  s_ef9ee44cb3b089::t_eb5900f5dc6e75 41-46,48,52-55,66-68,75-79
+  s_ef9ee44cb3b089::t_9a9198e7ecd518 47,49,51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "753fd6c632b5bac8577dfe98f28d666ff3437d28",
+  "prompts": {},
+  "sessions": {
+    "s_ef9ee44cb3b089": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e5bd-4c89-7421-a8a2-63319454b8f5",
+        "model": "gpt-6.1-terra"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
