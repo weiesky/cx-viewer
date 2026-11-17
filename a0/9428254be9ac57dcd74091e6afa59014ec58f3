@@ -1,0 +1,22 @@
+packages/app/lib/sdk-manager.js
+  s_701ec3b89ba9ea::t_3520754ebdc59a 44,180,183-184,186,189,193,207,231,235,243-248,549-551
+packages/app/tests/sdk-manager.test.js
+  s_701ec3b89ba9ea::t_a84048b4dceff8 121,123,126,141-142,152,155,177-206
+  s_701ec3b89ba9ea::t_1f6a7cc113dba7 3,28-32,115-120,122,124-125,127-140,143-151,153-154,156-176
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a09428254be9ac57dcd74091e6afa59014ec58f3",
+  "prompts": {},
+  "sessions": {
+    "s_701ec3b89ba9ea": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ea5f-68db-7b91-870f-dfe371f94c5d",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
