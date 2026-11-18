@@ -1,0 +1,21 @@
+packages/app/lib/sdk-manager.js
+  s_6e646d1718f8c0::t_a4669f7a053ee2 20-21,41-53,56-66,68-84,86-88,90-100,102-142,145-150,152-196,199-215,219-220,222-291,294-296,298-300,302-312,316-347,349-350,352-373,376-415,417-422,424-429,431-432,434-438,441-461,463-464,466-472,474-505,508-534,536-543,546-551,553,555-571,573-579,581-594,596-606,609-620,623-627,630-636,639-645,648-654,656-658,660-671,673-689,691-698
+packages/app/tests/sdk-session-registry.test.js
+  s_6e646d1718f8c0::t_c519720799645e 1-163
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a00ed8a55a1623ba67ac7b3fa4f033f4fc6d90e0",
+  "prompts": {},
+  "sessions": {
+    "s_6e646d1718f8c0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ecb2-cf92-7a82-b5ae-e077a71259a9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
