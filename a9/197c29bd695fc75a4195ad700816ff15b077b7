@@ -1,0 +1,36 @@
+apps/web/src/components/terminal/ScratchTerminal.jsx
+  s_6e646d1718f8c0::t_ff81a40c859884 333-336
+apps/web/src/components/terminal/TerminalPanel.jsx
+  s_6e646d1718f8c0::t_ff81a40c859884 60-65,301,305-321,323-325,337-338,362-363,392,448-450,505-511,1388-1391,1789-1801
+  s_6e646d1718f8c0::t_f18d63c88dcc8a 292,299,322
+  s_6e646d1718f8c0::t_c5fe4fde1ab7dd 1696-1785,2008
+  s_6e646d1718f8c0::t_f3a89166de2144 1786
+apps/web/src/components/terminal/TerminalPanel.module.css
+  s_6e646d1718f8c0::t_f18d63c88dcc8a 651-655,660-683
+  s_6e646d1718f8c0::t_967749eb54ee70 656-659
+apps/web/src/Mobile.jsx
+  s_6e646d1718f8c0::t_f18d63c88dcc8a 346,713-715
+apps/web/src/AppBase.jsx
+  s_6e646d1718f8c0::t_f18d63c88dcc8a 945-946
+apps/web/src/App.jsx
+  s_6e646d1718f8c0::t_f18d63c88dcc8a 225,345
+  s_6e646d1718f8c0::t_e9e61e0428cdd0 460
+apps/web/src/components/chat/ChatView.jsx
+  s_6e646d1718f8c0::t_f18d63c88dcc8a 590,2962,3697,3805,3819,3823-3825
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a9197c29bd695fc75a4195ad700816ff15b077b7",
+  "prompts": {},
+  "sessions": {
+    "s_6e646d1718f8c0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ecb2-cf92-7a82-b5ae-e077a71259a9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
