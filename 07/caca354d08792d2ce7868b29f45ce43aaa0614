@@ -1,0 +1,34 @@
+apps/web/src/components/chat/controllers/askFlowController.js
+  s_33c4bc22026691::t_87197b89255733 914
+packages/app/lib/terminal-ws-ping.js
+  s_33c4bc22026691::t_d4de3159d5ff53 1-16
+apps/web/src/components/chat/ChatView.jsx
+  s_33c4bc22026691::t_87197b89255733 68,398,2266-2276,2683-2693,2696-2703,2705,2830
+packages/app/tests/terminal-ws-ping.test.js
+  s_33c4bc22026691::t_debf2519c81788 1-22
+apps/web/tests/terminal-ws-liveness.test.js
+  s_33c4bc22026691::t_debf2519c81788 1-27,29-120
+  s_33c4bc22026691::t_51922037e18229 28
+packages/app/server.js
+  s_33c4bc22026691::t_d4de3159d5ff53 16,5260,5728-5732
+apps/web/src/components/terminal/TerminalWsContext.jsx
+  s_33c4bc22026691::t_d4de3159d5ff53 3,32-33,41-44,56-59,73,97-101,106-110,116,132,147,151-166,168,219,231
+packages/app/tests/terminal-websocket.test.js
+  s_33c4bc22026691::t_debf2519c81788 216-224
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "07caca354d08792d2ce7868b29f45ce43aaa0614",
+  "prompts": {},
+  "sessions": {
+    "s_33c4bc22026691": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ef81-9641-7562-8716-fb5b6a9ae27f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
