@@ -1,0 +1,21 @@
+apps/web/tests/terminal-ws-liveness.test.js
+  s_33c4bc22026691::t_cd7fbf9d85abd2 194-203
+apps/web/src/components/chat/ChatMessage.jsx
+  s_33c4bc22026691::t_8668c14ee10894 908
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "285e51f3b73ad3e9d08651d2d12dc00da4e57a7d",
+  "prompts": {},
+  "sessions": {
+    "s_33c4bc22026691": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ef81-9641-7562-8716-fb5b6a9ae27f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
