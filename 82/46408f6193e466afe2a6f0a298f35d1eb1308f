@@ -1,0 +1,21 @@
+packages/app/lib/sdk-manager.js
+  s_33c4bc22026691::t_faf4b4df6a6ac4 735-737
+packages/app/tests/sdk-manager.test.js
+  s_33c4bc22026691::t_faf4b4df6a6ac4 284-290
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "8246408f6193e466afe2a6f0a298f35d1eb1308f",
+  "prompts": {},
+  "sessions": {
+    "s_33c4bc22026691": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ef81-9641-7562-8716-fb5b6a9ae27f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
