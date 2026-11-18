@@ -1,0 +1,29 @@
+apps/web/src/utils/sessionManager.js
+  s_33c4bc22026691::t_0e84de57bf5aa3 36-39,435-440
+packages/app/tests/sdk-resume-history.test.js
+  s_33c4bc22026691::t_dddbf82ec61674 91-100
+packages/app/lib/sdk-resume-history.js
+  s_33c4bc22026691::t_0e84de57bf5aa3 92-94,98-102
+packages/app/tests/sdk-manager.test.js
+  s_33c4bc22026691::t_0e84de57bf5aa3 288-289
+apps/web/tests/sdk-message-timestamps.test.js
+  s_33c4bc22026691::t_dddbf82ec61674 1-47
+packages/app/lib/sdk-manager.js
+  s_33c4bc22026691::t_0e84de57bf5aa3 493,671,704,737-738
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "467fbf3c683fc7142926d226a98426608f531be4",
+  "prompts": {},
+  "sessions": {
+    "s_33c4bc22026691": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ef81-9641-7562-8716-fb5b6a9ae27f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
