@@ -1,0 +1,35 @@
+packages/app/server.js
+  s_33c4bc22026691::t_600c5f2fec9d06 5353-5354
+packages/app/tests/sdk-queue.test.js
+  s_33c4bc22026691::t_4912ebd86a2f9b 102-110,125
+  s_33c4bc22026691::t_87950d62c0fd6d 6,100-101,111-124
+  s_33c4bc22026691::t_cdfef4c0019f3b 126
+apps/web/src/i18n.js
+  s_33c4bc22026691::t_600c5f2fec9d06 6
+packages/app/lib/sdk-manager.js
+  s_33c4bc22026691::t_600c5f2fec9d06 182-185,423-437,856
+apps/web/src/components/chat/ChatView.jsx
+  s_33c4bc22026691::t_600c5f2fec9d06 2,2723,2725-2726,2729-2731
+  s_33c4bc22026691::t_559363e04e873b 2732
+packages/app/tests/sdk-workspace-connections.test.js
+  s_33c4bc22026691::t_87950d62c0fd6d 212-217
+apps/web/tests/terminal-ws-liveness.test.js
+  s_33c4bc22026691::t_87950d62c0fd6d 151
+  s_33c4bc22026691::t_34623e24fa1ace 181-193
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "94d45588bc66dffdf76fd28bb89c8d4a86b63c6a",
+  "prompts": {},
+  "sessions": {
+    "s_33c4bc22026691": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ef81-9641-7562-8716-fb5b6a9ae27f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
