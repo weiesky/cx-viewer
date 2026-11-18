@@ -1,0 +1,30 @@
+packages/app/server.js
+  s_6e646d1718f8c0::t_f0a9fd7c0c0a7b 110,2274-2275,2329-2330,4908-4911,4936,4971-4972,5029
+packages/app/tests/scratch-pty-manager.test.js
+  s_6e646d1718f8c0::t_791c54db5f9575 8
+  s_6e646d1718f8c0::t_14fa21d6e2b80a 1-7,9-76
+packages/app/tests/sdk-workspace-connections.test.js
+  s_6e646d1718f8c0::t_791c54db5f9575 17,19-29,66,68-71,135-136,154,225-228,343-389,391-392
+apps/web/src/components/terminal/ScratchTerminal.jsx
+  s_6e646d1718f8c0::t_f0a9fd7c0c0a7b 19,239
+apps/web/tests/api-url-instance.test.js
+  s_6e646d1718f8c0::t_791c54db5f9575 27-30
+packages/app/scratch-pty-manager.js
+  s_6e646d1718f8c0::t_f0a9fd7c0c0a7b 48-53,55,69,106-107,125-126,138-139,141-146,148-152,155-161,164-172
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "b1b3c7a7c2a053713438555810d9aa9b58288a43",
+  "prompts": {},
+  "sessions": {
+    "s_6e646d1718f8c0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ecb2-cf92-7a82-b5ae-e077a71259a9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
