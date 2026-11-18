@@ -1,0 +1,50 @@
+apps/web/src/Mobile.jsx
+  s_6e646d1718f8c0::t_dd5ba3f5f691b6 434
+  s_6e646d1718f8c0::t_e7e9491cd1b634 652
+packages/app/tests/sdk-workspace-connections.test.js
+  s_6e646d1718f8c0::t_e7e9491cd1b634 147-149,161,217-221
+apps/web/src/components/dashboard/SdkWorkspaceTabs.jsx
+  s_6e646d1718f8c0::t_ea9852047f2b57 1-25,28-64,67,69-85
+  s_6e646d1718f8c0::t_84130ad2e70c8a 65-66,68
+  s_6e646d1718f8c0::t_d9d67bef74e3a1 26-27
+apps/web/src/App.module.css
+  s_6e646d1718f8c0::t_d9d67bef74e3a1 9-10
+apps/web/src/utils/sdkWorkspaceNavigation.js
+  s_6e646d1718f8c0::t_ea9852047f2b57 1-16
+apps/web/src/i18n.js
+  s_6e646d1718f8c0::t_e7e9491cd1b634 4-10
+apps/web/src/components/dashboard/SdkWorkspaceTabs.module.css
+  s_6e646d1718f8c0::t_ea9852047f2b57 1-11
+apps/web/tests/sdk-workspace-navigation.test.js
+  s_6e646d1718f8c0::t_e7e9491cd1b634 1-24,26-28
+  s_6e646d1718f8c0::t_d9d67bef74e3a1 25
+packages/app/lib/sdk-manager.js
+  s_6e646d1718f8c0::t_ea9852047f2b57 86
+packages/app/server.js
+  s_6e646d1718f8c0::t_ef3417f4c611df 1541,2168-2170,2470,3764-3765,3767-3768
+apps/web/src/components/dashboard/WorkspaceList.jsx
+  s_6e646d1718f8c0::t_ea9852047f2b57 286
+apps/web/src/AppBase.jsx
+  s_6e646d1718f8c0::t_ea9852047f2b57 21-22,882-885,942-943,2195-2198,2792-2793
+  s_6e646d1718f8c0::t_d9d67bef74e3a1 2784-2787
+  s_6e646d1718f8c0::t_bc955cf18d89ac 2794-2795
+apps/web/src/App.jsx
+  s_6e646d1718f8c0::t_dd5ba3f5f691b6 294-295
+  s_6e646d1718f8c0::t_ea9852047f2b57 378
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d39d3a83a328d54bfb6103ceaf4b5d7b653384a1",
+  "prompts": {},
+  "sessions": {
+    "s_6e646d1718f8c0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ecb2-cf92-7a82-b5ae-e077a71259a9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
