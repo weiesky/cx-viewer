@@ -1,0 +1,30 @@
+packages/app/tests/sdk-resume-history.test.js
+  s_6e646d1718f8c0::t_c395cb17349c50 1-74
+packages/app/lib/sdk-resume-history.js
+  s_6e646d1718f8c0::t_5654d6de0e3c01 1-49
+packages/app/lib/log-v2/reader-worker.js
+  s_6e646d1718f8c0::t_5654d6de0e3c01 93
+packages/app/tests/sdk-session-registry.test.js
+  s_6e646d1718f8c0::t_c395cb17349c50 10,28,30,65-115
+  s_6e646d1718f8c0::t_52dac012b4d2c6 116
+packages/app/lib/log-v2/materializer.js
+  s_6e646d1718f8c0::t_5654d6de0e3c01 471-472,556-560,579,593-595,758
+packages/app/lib/sdk-manager.js
+  s_6e646d1718f8c0::t_5654d6de0e3c01 192-208,231,364,701,731-746,783-784
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "2d95017de64af53c1417ab1d457b38b763556c97",
+  "prompts": {},
+  "sessions": {
+    "s_6e646d1718f8c0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ecb2-cf92-7a82-b5ae-e077a71259a9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
