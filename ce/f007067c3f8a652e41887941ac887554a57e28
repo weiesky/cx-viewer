@@ -1,0 +1,26 @@
+apps/web/src/utils/mobileTouchScroll.js
+  s_33c4bc22026691::t_f3b3fdc82bb95f 1-59,61-102
+  s_33c4bc22026691::t_10aa94a6d569df 60
+apps/web/src/components/terminal/TerminalPanel.jsx
+  s_33c4bc22026691::t_906a5890b0d617 31,829
+apps/web/tests/mobile-touch-scroll.test.js
+  s_33c4bc22026691::t_10aa94a6d569df 1-138
+apps/web/src/components/terminal/ScratchTerminal.jsx
+  s_33c4bc22026691::t_906a5890b0d617 15,61,75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "cef007067c3f8a652e41887941ac887554a57e28",
+  "prompts": {},
+  "sessions": {
+    "s_33c4bc22026691": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ef81-9641-7562-8716-fb5b6a9ae27f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
