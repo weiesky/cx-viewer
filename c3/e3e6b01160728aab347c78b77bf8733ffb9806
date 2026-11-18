@@ -1,0 +1,44 @@
+packages/app/lib/log-v2/writer.js
+  s_6e646d1718f8c0::t_8f68d468e6b295 140-145,163
+  s_6e646d1718f8c0::t_dabb2906a94b3b 137-139
+  s_6e646d1718f8c0::t_a1216e2de88931 146-148,160-162
+  s_6e646d1718f8c0::t_da2797c59c9ca1 164-166
+packages/app/tests/proxy-workspace-capture.test.js
+  s_6e646d1718f8c0::t_870d8b3b90eee9 78-84
+packages/app/lib/log-v2/project-id.js
+  s_6e646d1718f8c0::t_c5616aa73ad532 4,17-21
+  s_ceaad255d6d631::t_078fd3005e4c8c 1-2,22-51
+packages/app/tests/log-v2-project-allocation.test.js
+  s_6e646d1718f8c0::t_8f68d468e6b295 58-62
+  s_6e646d1718f8c0::t_12e4229c2eff27 1-38,49-57,63-107
+  s_6e646d1718f8c0::t_fe6fe6817b570c 43,45
+  s_6e646d1718f8c0::t_c5616aa73ad532 39-42,44,46-48
+packages/app/interceptor.js
+  s_6e646d1718f8c0::t_7262047c765a26 20,262,269,272,365-368
+packages/app/workspace-registry.js
+  s_6e646d1718f8c0::t_d49a92c4fab61f 7,142
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "c3e3e6b01160728aab347c78b77bf8733ffb9806",
+  "prompts": {},
+  "sessions": {
+    "s_6e646d1718f8c0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ecb2-cf92-7a82-b5ae-e077a71259a9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    },
+    "s_ceaad255d6d631": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "874d0fe4-f69b-4ea9-a019-5e31e782c6b2",
+        "model": "k3"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
