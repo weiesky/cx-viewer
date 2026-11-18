@@ -1,0 +1,33 @@
+packages/app/tests/sdk-workspace-connections.test.js
+  s_6e646d1718f8c0::t_6343112803850e 4,20-31,125,129-131,137,181-184,206-242,246-255,266-267,306-312
+  s_6e646d1718f8c0::t_c2d4fa94ff1edf 122,243-245,256-265
+  s_6e646d1718f8c0::t_05f037230fc108 268-305,313
+packages/app/server.js
+  s_6e646d1718f8c0::t_5ff8ea46afcc2b 2182,4418-4421
+  s_6e646d1718f8c0::t_3f36d184d593f7 2167-2168,2193,2203-2221,2223,2256,2263-2278,2316-2327
+  s_6e646d1718f8c0::t_e0061cf532daae 28,153-168,170,188-190,193-194,196,582-583,613,643,666,683,1400,1542-1545,1549-1550,1598,1705,1764,1928,2009,2036,2049,2059,2070,2355,2382,2424,2428,2467-2468,2474,2513,2518,2682,2746,2803,2906,2971,3026,3076,3117,3168,3247,3303,3593,3611,3616,3746,3771,3829,3898,3936,3999,4186,4200,4217,4417
+  s_6e646d1718f8c0::t_c427c16a31a698 1423-1430,1546-1548
+  s_6e646d1718f8c0::t_c2d4fa94ff1edf 1540-1541
+packages/app/lib/sdk-manager.js
+  s_6e646d1718f8c0::t_5ff8ea46afcc2b 41-44
+packages/app/cli.js
+  s_6e646d1718f8c0::t_5ff8ea46afcc2b 616-617,683
+packages/app/tests/sdk-session-registry.test.js
+  s_6e646d1718f8c0::t_05f037230fc108 9,223
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "7415615aa3084e9f36bffa3d9803d14c63dfc85f",
+  "prompts": {},
+  "sessions": {
+    "s_6e646d1718f8c0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ecb2-cf92-7a82-b5ae-e077a71259a9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
