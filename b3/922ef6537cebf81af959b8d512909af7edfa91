@@ -1,0 +1,38 @@
+packages/app/lib/sdk-manager.js
+  s_33c4bc22026691::t_327357347ddb80 376,386
+apps/web/tests/terminal-ws-liveness.test.js
+  s_33c4bc22026691::t_0192661b3e5bdd 121-180
+apps/web/src/components/chat/ChatView.module.css
+  s_33c4bc22026691::t_7ebb58ce87ebb9 1-5
+packages/app/server.js
+  s_33c4bc22026691::t_327357347ddb80 5346
+apps/web/src/components/terminal/TerminalWsContext.jsx
+  s_33c4bc22026691::t_7ebb58ce87ebb9 46,188,195-196,204-205
+  s_33c4bc22026691::t_5e169cc6ead4cf 206
+packages/app/tests/sdk-workspace-connections.test.js
+  s_33c4bc22026691::t_327357347ddb80 207
+apps/web/src/components/chat/ChatView.jsx
+  s_33c4bc22026691::t_4c9cd819e985c7 640,2378,2718-2727,3416
+  s_33c4bc22026691::t_327357347ddb80 225-226,516,2380
+  s_33c4bc22026691::t_7ebb58ce87ebb9 259,2269,2365-2377,2379,2381-2386,2731,2733,3405
+apps/web/src/i18n.js
+  s_33c4bc22026691::t_7ebb58ce87ebb9 4-5
+apps/web/src/components/chat/ChatMessage.jsx
+  s_33c4bc22026691::t_7ebb58ce87ebb9 174,951
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "b3922ef6537cebf81af959b8d512909af7edfa91",
+  "prompts": {},
+  "sessions": {
+    "s_33c4bc22026691": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ef81-9641-7562-8716-fb5b6a9ae27f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
