@@ -1,0 +1,55 @@
+apps/web/src/components/common/quickMenuIcons.jsx
+  s_33c4bc22026691::t_90b4908a25a6a9 100-110
+apps/web/src/components/common/ResumeSessionsRow.module.css
+  s_33c4bc22026691::t_90b4908a25a6a9 1-8
+apps/web/src/components/terminal/TerminalPanel.jsx
+  s_33c4bc22026691::t_90b4908a25a6a9 41,1705-1713
+apps/web/src/components/chat/ChatInputBar.jsx
+  s_33c4bc22026691::t_90b4908a25a6a9 12,50,413-416
+apps/web/src/utils/resumeSessions.js
+  s_33c4bc22026691::t_90b4908a25a6a9 1-104
+apps/web/src/components/chat/ChatView.jsx
+  s_33c4bc22026691::t_90b4908a25a6a9 3795-3796,3926
+apps/web/src/components/chat/ResumeSessionsPopover.module.css
+  s_33c4bc22026691::t_90b4908a25a6a9 1-119
+apps/web/src/components/chat/ResumeSessionsPopover.jsx
+  s_33c4bc22026691::t_90b4908a25a6a9 1-109
+apps/web/src/AppBase.jsx
+  s_33c4bc22026691::t_90b4908a25a6a9 6,303-304,2182-2203,2859
+apps/web/src/components/dashboard/SdkResumeModal.jsx
+  s_33c4bc22026691::t_90b4908a25a6a9 1-3,6-11
+apps/web/src/utils/sdkResumeApi.js
+  s_33c4bc22026691::t_90b4908a25a6a9 12-13
+apps/web/src/components/dashboard/SdkWorkspaceTabs.jsx
+  s_33c4bc22026691::t_90b4908a25a6a9 2,33,185
+apps/web/src/components/common/QuickAutoApproveRows.jsx
+  s_33c4bc22026691::t_90b4908a25a6a9 12,33,36,63-64
+apps/web/src/components/common/ResumeSessionsRow.jsx
+  s_33c4bc22026691::t_90b4908a25a6a9 1-54
+AGENTS.md
+  s_33c4bc22026691::t_3b9aa903106b5a 25
+apps/web/src/Mobile.jsx
+  s_33c4bc22026691::t_ebdf20208a3552 15,54,96-102,105,468,589-617,1142-1149
+apps/web/src/i18n.js
+  s_33c4bc22026691::t_3d15e47b5e546a 4-343
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_33c4bc22026691::t_252ad620f2ed5b 24-25,40,57-58,102,118,249-284
+cc-viewer-alignment/migration-code-first.md
+  s_33c4bc22026691::t_9c984d139ac677 61-68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "fbd581799bb330d8e7744eda7cc04a266d672e7a",
+  "prompts": {},
+  "sessions": {
+    "s_33c4bc22026691": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ef81-9641-7562-8716-fb5b6a9ae27f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
