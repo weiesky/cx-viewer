@@ -1,0 +1,27 @@
+AGENTS.md
+  s_33c4bc22026691::t_191d6d46ce017e 25
+apps/web/src/components/terminal/TerminalPanel.jsx
+  s_33c4bc22026691::t_863a394fc2f59d 1551,1630
+apps/web/src/components/terminal/TerminalPanel.module.css
+  s_33c4bc22026691::t_713bcb686e4f90 638-651,665-699,701-749,751-801,932
+cc-viewer-alignment/B2-gui-acceptance.md
+  s_33c4bc22026691::t_d7095e4c6ac183 1,3,5,12,14,16-19,21,23,25-29,31
+cc-viewer-alignment/migration-code-first.md
+  s_33c4bc22026691::t_f50cf3ac0767a0 77-82
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "35e8d3047c19ad0e0187759c147cfe39d1cb21a7",
+  "prompts": {},
+  "sessions": {
+    "s_33c4bc22026691": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ef81-9641-7562-8716-fb5b6a9ae27f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
