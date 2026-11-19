@@ -1,0 +1,34 @@
+apps/web/src/components/dashboard/SdkWorkspaceTabs.module.css
+  s_33c4bc22026691::t_14524088635663 2,4-5,7-13,20,24,34-37
+apps/web/src/App.jsx
+  s_33c4bc22026691::t_14524088635663 336,357
+apps/web/src/components/dashboard/AppHeader.jsx
+  s_33c4bc22026691::t_14524088635663 727,1209,1337,1341
+  s_33c4bc22026691::t_e38d443f1b6cc5 1342
+apps/web/src/Mobile.jsx
+  s_33c4bc22026691::t_14524088635663 458,651
+apps/web/src/components/dashboard/AppHeader.module.css
+  s_33c4bc22026691::t_14524088635663 8,11
+  s_33c4bc22026691::t_c0da901bea5df5 12
+apps/web/src/App.module.css
+  s_33c4bc22026691::t_14524088635663 806-808
+  s_33c4bc22026691::t_acd0a475b3e63f 19-20
+apps/web/src/AppBase.jsx
+  s_33c4bc22026691::t_14524088635663 2813
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "b280d003c44a1bfb6d050c3bea1b646b1cf14155",
+  "prompts": {},
+  "sessions": {
+    "s_33c4bc22026691": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ef81-9641-7562-8716-fb5b6a9ae27f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
