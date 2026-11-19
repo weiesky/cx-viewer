@@ -1,0 +1,45 @@
+apps/web/src/components/dashboard/SdkWorkspaceTabs.jsx
+  s_33c4bc22026691::t_184bed1ab2364d 2-7,13-14,18-25,28-33,40-41,46-47,56,80,92-97,102,104,113-117,119-127,129-136,138-184,186
+apps/web/src/utils/sdkWorkspaceOrder.js
+  s_33c4bc22026691::t_3e5c8670dbbca2 32-49
+AGENTS.md
+  s_6e646d1718f8c0::t_2e68be103825bc 19-22,24,26-29
+  s_33c4bc22026691::t_c32c9c4ff7c39c 25
+  s_33c4bc22026691::t_ea979daf717045 23
+apps/web/src/i18n.js
+  s_33c4bc22026691::t_184bed1ab2364d 4-35
+apps/web/src/components/dashboard/AppHeader.jsx
+  s_33c4bc22026691::t_3e5c8670dbbca2 1209,1337
+apps/web/src/components/dashboard/SdkWorkspaceTabs.module.css
+  s_33c4bc22026691::t_184bed1ab2364d 1-14,16-68,70-141,143-148,150-155,157-161
+apps/web/tests/sdk-workspace-order.test.js
+  s_33c4bc22026691::t_bae22833dc7846 4,57-65
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_33c4bc22026691::t_0a7baa922dfe1e 53-57,68,82,93-99,112,115-118,120-122,127-130,132,139-142,144-145,148,153,156,158,161,164-193
+cc-viewer-alignment/migration-code-first.md
+  s_33c4bc22026691::t_efb596374848be 45-52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "77d4ad55b76eda50ee1fa151b9a2c46da11dea87",
+  "prompts": {},
+  "sessions": {
+    "s_33c4bc22026691": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ef81-9641-7562-8716-fb5b6a9ae27f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    },
+    "s_6e646d1718f8c0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ecb2-cf92-7a82-b5ae-e077a71259a9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
