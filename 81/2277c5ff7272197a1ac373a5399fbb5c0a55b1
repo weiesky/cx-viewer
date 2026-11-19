@@ -1,0 +1,25 @@
+packages/app/tests/log-v2-shards.test.js
+  s_55198d5dd9a4c0::t_f106ac70f3baaa 1-67
+packages/app/lib/log-v2/shards.js
+  s_55198d5dd9a4c0::t_acd06b22818ad6 85
+  s_55198d5dd9a4c0::t_fa7643ba79249a 1-17,22-79,84,86,88-95,99-133
+  s_55198d5dd9a4c0::t_f106ac70f3baaa 18-21,80-83,87,96-98
+cc-viewer-alignment/B3-sharding-proposal.md
+  s_55198d5dd9a4c0::t_acd06b22818ad6 3-4,20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "812277c5ff7272197a1ac373a5399fbb5c0a55b1",
+  "prompts": {},
+  "sessions": {
+    "s_55198d5dd9a4c0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f258-d147-7a10-bf0d-07ee52baa90b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
