@@ -1,0 +1,25 @@
+AGENTS.md
+  s_33c4bc22026691::t_2711c807176494 25
+apps/web/src/i18n.js
+  s_33c4bc22026691::t_ed55c9fed900f9 5-22,45-62,465-482
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_33c4bc22026691::t_d1868828f7f79e 287-289
+cc-viewer-alignment/migration-code-first.md
+  s_33c4bc22026691::t_b6f898cf8d0d52 83-90
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "43ed8552e57374ab492975cbda8391ac8dab1d4e",
+  "prompts": {},
+  "sessions": {
+    "s_33c4bc22026691": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ef81-9641-7562-8716-fb5b6a9ae27f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
