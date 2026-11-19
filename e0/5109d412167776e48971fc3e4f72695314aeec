@@ -1,0 +1,43 @@
+AGENTS.md
+  s_33c4bc22026691::t_8511ac13981664 25
+apps/web/src/AppBase.jsx
+  s_33c4bc22026691::t_5a170b6d5c7a2e 24,328,787,834,841,890,900,953,2231,2259
+apps/web/src/components/dashboard/SdkWorkspaceTabs.jsx
+  s_33c4bc22026691::t_60a98c672bb5b6 12,96,126,131
+apps/web/src/components/dashboard/WorkspaceRoot.jsx
+  s_33c4bc22026691::t_883c35317ce0be 1-17
+apps/web/src/components/terminal/TerminalPanel.jsx
+  s_33c4bc22026691::t_79add6bd12a5de 63-67,75-76,78,80,94,96,111,113,119-120,122-123,207,266-267,271,278,298,334-335,360-361,388,443,451-452
+apps/web/src/contexts/SettingsContext.jsx
+  s_33c4bc22026691::t_a92e5996dd116b 39,48,103,122
+apps/web/src/main.jsx
+  s_33c4bc22026691::t_6cdbc1e4f7b926 7,24,28
+apps/web/src/utils/entryCache.js
+  s_33c4bc22026691::t_256babc968dee4 3-8,46,48,60,73,86,88-89,93-94,107,119,132-135,153,168
+apps/web/src/utils/sdkWorkspaceNavigation.js
+  s_33c4bc22026691::t_55730764418364 18-29
+apps/web/tests/entry-cache-instance.test.js
+  s_33c4bc22026691::t_f23d93bb57b981 30-34,41-42
+apps/web/tests/sdk-workspace-navigation.test.js
+  s_33c4bc22026691::t_232a7319b0835d 3,30-37
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_33c4bc22026691::t_6cf39982711eed 24-27,53,59-61,190,293-330
+cc-viewer-alignment/migration-code-first.md
+  s_33c4bc22026691::t_43e8f7005c2258 69-76
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "e05109d412167776e48971fc3e4f72695314aeec",
+  "prompts": {},
+  "sessions": {
+    "s_33c4bc22026691": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ef81-9641-7562-8716-fb5b6a9ae27f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
