@@ -2,15 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { classifyUserContent, extractDisplayText, isSystemText } from '../src/utils/contentFilter.js';
-import { projectUserPromptItem } from '../src/utils/userPromptContent.js';
+import { classifyUserContent, extractDisplayText, isSystemText } from '../packages/app/src/utils/contentFilter.js';
+import { projectUserPromptItem } from '../packages/app/src/utils/userPromptContent.js';
 import {
   buildCustomTemplate,
   buildLocalUltraplan,
   parseUltraplanPrompt,
-} from '../src/utils/ultraplanTemplates.js';
+} from '../packages/app/src/utils/ultraplanTemplates.js';
 
-const ROOT = new URL('../', import.meta.url);
+const ROOT = new URL('../apps/web/', import.meta.url);
 
 test('built-in UltraPlan prompts expose only the user task', () => {
   for (const variant of ['codeExpert', 'researchExpert']) {

@@ -1,0 +1,164 @@
+/* Fixed upstream AppHeader styles; protocol identity is adapted in JSX. */
+.switcher { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
+.headerProjectName { font-size: 12px; color: inherit; white-space: nowrap; }
+.headerProjectName:hover [data-alias-edit-trigger], .headerProjectName:focus-within [data-alias-edit-trigger] { opacity: 0.55; }
+.newProjectPlusBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-inline-start: 4px;
+  padding: 0;
+  background: transparent;
+  border: 1px dashed var(--text-muted);
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+.newProjectPlusBtn:hover {
+  color: var(--text-primary);
+  border-color: var(--text-primary);
+}
+/* Kill the focus ring on this small icon button — a visible focus rectangle
+   around a 16px dashed square reads as a visual bug, not an affordance. */
+.newProjectPlusBtn:focus,
+.newProjectPlusBtn:focus-visible {
+  outline: none;
+}
+
+
+.projectTabsStrip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 44vw;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.projectTabsStrip::-webkit-scrollbar {
+  display: none;
+}
+.projectTab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  min-width: 60px;
+  max-width: 180px;
+  border-radius: 12px;
+  background: var(--border-secondary);
+  border: 1px solid var(--border-light);
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: color 0.2s, border-color 0.2s, box-shadow 0.2s;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+.projectTab:hover {
+  color: var(--text-secondary);
+  border-color: var(--text-disabled);
+}
+/* 激活 tab：常驻强可见（不依赖 hover）——主色描边 + 主色浅底 + 主色加粗文字，
+   一眼可辨。此前仅靠 inset box-shadow 描边 + 与普通 tab 几乎相同的底色，非 hover
+   下选中态不可辨（用户反馈"只有 hover/失焦才看得见"）。 */
+.projectTabActive,
+.projectTabActive:hover {
+  color: var(--color-primary);
+  font-weight: 600;
+  background: var(--color-primary-bg-light);
+  border-color: var(--color-primary);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+/* 左侧状态点：恒占位防 tab 名抖动（Electron tab-pending 槽同款思路）。 */
+.projectTabDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  flex-shrink: 0;
+}
+/* 切换中旋转圆环（替换状态点，见 AppHeader isSwitching）：空心环 + 缺口旋转，
+   与任务列表 HUD 的状态 dot 同一尺寸量级与配色语义（激活=主色、未激活=灰）。
+   恒 8px 占位，与 projectTabDot 一致，切换前后 tab 名不抖动。 */
+.projectTabRing,
+.projectTabRingActive {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.6px solid var(--text-muted);
+  border-top-color: transparent;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+.projectTabRingActive {
+  border-color: var(--color-primary);
+  border-top-color: transparent;
+}
+.projectTabRingSpin {
+  animation: ccvProjectTabRingSpin 0.7s linear infinite;
+}
+/* Header 级切换指示：tab 条左缘的总圆环，与 tab 内圆环同款，垂直居中且不被压缩。 */
+.projectTabsStripSpinner {
+  align-self: center;
+  margin-right: 2px;
+}
+@keyframes ccvProjectTabRingSpin {
+  to { transform: rotate(360deg); }
+}
+.projectTabName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+/* Same-name ` [n]` discriminator: never shrinks, so a long basename's ellipsis
+   clips only the name and the ordinal stays visible (P0 review fix). */
+.projectTabIdx {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.projectTabClose {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background: none;
+  color: inherit;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+/* 关闭按钮只在选中/hover/键盘聚焦的 tab 上显示（Electron 同规则）；
+   × 自身 tabIndex=-1 不抢焦点，:focus-within 保证键盘焦点落进 tab 时它也可见。 */
+.projectTabActive .projectTabClose,
+.projectTab:hover .projectTabClose,
+.projectTab:focus-within .projectTabClose {
+  opacity: 1;
+}
+.projectTabClose:hover {
+  background: var(--border-light);
+  color: var(--text-primary);
+}
+.announcement { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.historyPath { overflow-wrap: anywhere; }
+.historyBody { max-height: 60vh; overflow: auto; }
+.historyPreview { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 4.5em; overflow: auto; }

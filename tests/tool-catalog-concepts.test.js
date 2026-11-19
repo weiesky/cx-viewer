@@ -3,10 +3,9 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { ALL_TOOL_NAMES, TOOL_CATALOG } from '../src/utils/toolCatalog.js';
+import { ALL_TOOL_NAMES, TOOL_CATALOG } from '../apps/web/src/utils/toolCatalog.js';
 
-const root = new URL('..', import.meta.url).pathname;
-const conceptsDir = join(root, 'concepts');
+const conceptsDir = new URL('../packages/app/concepts', import.meta.url).pathname;
 const expectedDocs = new Set(ALL_TOOL_NAMES.map((name) => `Tool-${name}.md`));
 
 function walkToolDocs(dir, out = []) {

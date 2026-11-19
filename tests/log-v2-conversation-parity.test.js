@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { applyWireCommit, checkpointWireArchiveState, createWireArchiveState } from '../lib/log-v2/reducer.js';
-import { LOG_V2_WIRE_KINDS, LOG_V2_WIRE_VERSION } from '../lib/log-v2/wire-schema.js';
-import { isV2ConversationCandidate, LogV2Archive } from '../src/utils/logV2Archive.js';
-import { normalizeConversationEntry } from '../src/utils/conversationEntryNormalize.js';
-import { extractLatestPlanUsage } from '../src/utils/rateLimitParser.js';
-import { isColdIngestMergeBlockedEntry, mergeMainAgentSessions } from '../src/utils/sessionMerge.js';
+import { applyWireCommit, checkpointWireArchiveState, createWireArchiveState } from '../packages/app/lib/log-v2/reducer.js';
+import { LOG_V2_WIRE_KINDS, LOG_V2_WIRE_VERSION } from '../packages/app/lib/log-v2/wire-schema.js';
+import { isV2ConversationCandidate, LogV2Archive } from '../apps/web/src/utils/logV2Archive.js';
+import { normalizeConversationEntry } from '../apps/web/src/utils/conversationEntryNormalize.js';
+import { extractLatestPlanUsage } from '../apps/web/src/utils/rateLimitParser.js';
+import { isColdIngestMergeBlockedEntry, mergeMainAgentSessions } from '../apps/web/src/utils/sessionMerge.js';
 
 const identity = { projectId: 'project', sessionId: 'session', generation: 'generation' };
 

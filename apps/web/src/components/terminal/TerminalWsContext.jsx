@@ -1,0 +1,261 @@
+import React, { createContext } from 'react';
+import { appendToken, appendWorkspaceInstance, getBasePath } from '../../utils/apiUrl';
+import { now } from '../../utils/monotime';
+
+/**
+ * Single shared `/ws/terminal` connection.
+ *
+ * Why a shared ws:
+ * - 改前 ChatView (`_inputWs`) 与 TerminalPanel (`this.ws`) 各开一条,服务端广播给两条
+ *   client-readyState=1 的连接,导致 PTY data / state / exit 等大量消息**双倍传输**,
+ *   ChatView 端还要跑 `_stripAnsi` + `_detectPrompt` 解析全量 raw bytes(纯浪费 CPU)。
+ * - 合并到单 ws 后,server 端无需 role 过滤、`activeWs` 仲裁简化、新消息类型不再要决策"该过滤谁"。
+ *
+ * Provider 职责:
+ * - 在 `props.open=true` 时建立 ws,`open=false` 时关闭
+ * - 内部封装重连(2s 退避),消费者无感
+ * - `addMessageHandler` 把单条 onmessage 派发给所有注册者(各自 switch type)
+ * - `addStateListener` 通知 open/close,TerminalPanel 用它在 onopen 后立即 sendResize
+ * - 只缓存 state；PTY 字节不在 Provider 或服务端积累。晚挂载的 TerminalPanel
+ *   从 state 携带的当前序号开始接收实时输出
+ *
+ * 默认值是 no-op,纯 web 模式 / 未包 Provider 时调用不报错。
+ */
+export const TerminalWsContext = createContext({
+  send: () => false,
+  isOpen: () => false,
+  addMessageHandler: () => () => {},
+  addStateListener: () => () => {},
+});
+
+const RECONNECT_DELAY_MS = 2000;
+const DIAL_TIMEOUT_MS = 10_000;
+const SOCKET_IDLE_MS = 45_000;
+export class TerminalWsProvider extends React.Component {
+  constructor(props) {
+    super(props);
+    this.ws = null;
+    this.messageHandlers = new Set();
+    this.stateListeners = new Set();
+    this.reconnectTimer = null;
+    this.dialTimer = null;
+    this.watchdogTimer = null;
+    this.lastInboundAt = 0;
+    this.pingSeen = false;
+    this.lastStateMessage = null;
+    this.lastQueueState = null;
+    this._unmounted = false;
+    this._ctxValue = {
+      send: this.send,
+      isOpen: this.isOpen,
+      addMessageHandler: this.addMessageHandler,
+      addStateListener: this.addStateListener,
+    };
+  }
+
+  componentDidMount() {
+    this._onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') this.lastInboundAt = now();
+    };
+    document.addEventListener('visibilitychange', this._onVisibilityChange);
+    if (this.props.open) this.connect();
+  }
+
+  componentDidUpdate(prevProps) {
+    if (!prevProps.open && this.props.open) {
+      this.connect();
+    } else if (prevProps.open && !this.props.open) {
+      this.disconnect();
+    }
+  }
+
+  componentWillUnmount() {
+    this._unmounted = true;
+    document.removeEventListener('visibilitychange', this._onVisibilityChange);
+    this.disconnect();
+  }
+
+  connect = () => {
+    if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) return;
+    let url;
+    try {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      // 带上 LAN token —— 服务端 WS upgrade 与 HTTP 同款鉴权,远程 ?token= 终端必须携带凭证。
+      // 密码登录用户由浏览器自动随握手发送 cxv_auth cookie,此处无 token 时原样返回。
+      url = appendToken(appendWorkspaceInstance(`${protocol}//${window.location.host}${getBasePath().replace(/\/$/, '')}/ws/terminal`));
+    } catch (e) {
+      return; // SSR / 测试环境兜底
+    }
+    let ws;
+    try {
+      ws = new WebSocket(url);
+    } catch (e) {
+      console.warn('[TerminalWsProvider] WebSocket constructor failed:', e);
+      this._scheduleReconnect();
+      return;
+    }
+    this.ws = ws;
+    this.pingSeen = false;
+    this.lastInboundAt = now();
+    this.dialTimer = setTimeout(() => {
+      if (this.ws === ws && ws.readyState === WebSocket.CONNECTING) this._retireSocket(ws);
+    }, DIAL_TIMEOUT_MS);
+    this._resetStateCache();
+
+    ws.onopen = () => {
+      if (this.ws !== ws) return;
+      clearTimeout(this.dialTimer); this.dialTimer = null;
+      this.lastInboundAt = now();
+      this.watchdogTimer = setInterval(() => {
+        if (this.ws === ws && this._socketStale()) this._retireSocket(ws);
+      }, 5000);
+      this._notifyState('open');
+    };
+
+    ws.onmessage = (ev) => {
+      if (this.ws !== ws) return;
+      this.lastInboundAt = now();
+      let msg;
+      try { msg = JSON.parse(ev.data); } catch {
+        // 整条消息丢弃 = 数据流中间挖洞且无路径补发（概率极低：ws 帧不会截断 JSON）
+        // → 跳到服务端当前游标，并通知协议消费者立即暂停。
+        let syncRequested = false;
+        try {
+          ws.send(JSON.stringify({ type: 'resync-request', reason: 'parse-error' }));
+          syncRequested = true;
+        } catch {}
+        const gap = { type: 'transport-gap', reason: 'parse-error', syncRequested };
+        for (const h of this.messageHandlers) {
+          try { h(gap); } catch (e) { console.warn('[TerminalWsProvider] handler error:', e); }
+        }
+        return;
+      }
+      if (msg?.type === 'ping') { this.pingSeen = true; return; }
+      this._rememberMessage(msg);
+      // 单点 onmessage 派发给所有 handler;handler 抛错被吞,不影响其他。
+      for (const h of this.messageHandlers) {
+        try { h(msg); } catch (e) { console.warn('[TerminalWsProvider] handler error:', e); }
+      }
+    };
+
+    ws.onerror = () => {
+      if (this.ws !== ws) return;
+      this._notifyState('error');
+    };
+
+    ws.onclose = () => {
+      if (this.ws !== ws) return;
+      this._retireSocket(ws);
+    };
+  };
+
+  _socketStale = () => this.pingSeen && now() - this.lastInboundAt > SOCKET_IDLE_MS;
+
+  _clearSocketTimers = () => {
+    clearTimeout(this.dialTimer); this.dialTimer = null;
+    clearInterval(this.watchdogTimer); this.watchdogTimer = null;
+  };
+
+  _retireSocket = ws => {
+    if (this.ws !== ws) return;
+    this.ws = null;
+    this._clearSocketTimers();
+    try { ws.close(); } catch {}
+    this._notifyState('close');
+    if (!this._unmounted && this.props.open) this._scheduleReconnect();
+  };
+
+  disconnect = () => {
+    this._clearSocketTimers();
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    if (this.ws) {
+      const ws = this.ws;
+      this.ws = null;
+      try { ws.onopen = null; } catch {}
+      try { ws.onmessage = null; } catch {}
+      try { ws.onerror = null; } catch {}
+      try { ws.onclose = null; } catch {}
+      try { ws.close(); } catch {}
+      if (!this._unmounted) this._notifyState('close');
+    }
+  };
+
+  _resetStateCache = () => {
+    this.lastStateMessage = null;
+    this.lastQueueState = null;
+  };
+
+  _rememberMessage = (msg) => {
+    if (!msg || typeof msg.type !== 'string') return;
+    if (msg.type === 'state') {
+      this.lastStateMessage = msg;
+    } else if (msg.type === 'queue-state') {
+      this.lastQueueState = msg;
+    }
+  };
+
+  _replayToHandler = (fn) => {
+    if (this.lastStateMessage) {
+      try { fn(this.lastStateMessage); } catch (e) { console.warn('[TerminalWsProvider] replay state handler error:', e); }
+    }
+    if (this.lastQueueState) {
+      try { fn(this.lastQueueState); } catch (e) { console.warn('[TerminalWsProvider] replay queue handler error:', e); }
+    }
+  };
+
+  _scheduleReconnect = () => {
+    if (this.reconnectTimer || this._unmounted) return;
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      if (!this._unmounted && this.props.open) this.connect();
+    }, RECONNECT_DELAY_MS);
+  };
+
+  _notifyState = (state) => {
+    for (const l of this.stateListeners) {
+      try { l(state); } catch (e) { console.warn('[TerminalWsProvider] state listener error:', e); }
+    }
+  };
+
+  send = (obj) => {
+    const ws = this.ws;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return false;
+    if (this._socketStale()) { this._retireSocket(ws); return false; }
+    try {
+      ws.send(JSON.stringify(obj));
+      return true;
+    } catch (e) {
+      console.warn('[TerminalWsProvider] send error:', e);
+      return false;
+    }
+  };
+
+  isOpen = () => {
+    const ws = this.ws;
+    return !!(ws && ws.readyState === WebSocket.OPEN && !this._socketStale());
+  };
+
+  addMessageHandler = (fn) => {
+    if (typeof fn !== 'function') return () => {};
+    this.messageHandlers.add(fn);
+    this._replayToHandler(fn);
+    return () => { this.messageHandlers.delete(fn); };
+  };
+
+  addStateListener = (fn) => {
+    if (typeof fn !== 'function') return () => {};
+    this.stateListeners.add(fn);
+    return () => { this.stateListeners.delete(fn); };
+  };
+
+  render() {
+    return (
+      <TerminalWsContext.Provider value={this._ctxValue}>
+        {this.props.children}
+      </TerminalWsContext.Provider>
+    );
+  }
+}

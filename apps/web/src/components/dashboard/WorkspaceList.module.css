@@ -1,0 +1,359 @@
+/* WorkspaceList root */
+.root {
+  min-height: 100vh;
+  background: var(--bg-base-alt);
+  display: flex;
+  justify-content: center;
+  padding: 60px 0 40px; /* 整页底部也留白，避免最后一行卡片贴底 */
+}
+
+/* 浮层模式：浅色半透明遮罩铺满(透出后面内容,配合.popupCard 的 backdrop-filter 形成毛玻璃);
+   改成几乎透明 + 轻微压暗,让 blur 真正生效(原先 0.45 黑会把后方糊成纯暗,毛玻璃出不来)。 */
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+}
+
+/* 浮层卡片：覆盖 .root 的整页布局，收成有限宽高、圆角、滚动的窗口。
+   毛玻璃(2026-10-09):bg 改 var(--bg-glass) + backdrop-filter blur/saturate,
+   透出后方主界面;box-shadow 改深一档 + 1px inset 高光,避免玻璃下阴影发灰。 */
+.popupCard {
+  display: block; /* 改块级：flex 滚动容器会吞掉尾部 padding，block 则上下都保留 */
+  min-height: auto;
+  padding: 28px 0; /* 卡片自身上下留白；左右由 .inner 的 0 24px 负责 */
+  width: min(880px, 92vw);
+  max-height: 86vh;
+  overflow: auto;
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+  position: relative;
+}
+
+/* block 布局下 .inner 的 width:100% + 左右 padding(content-box) 会超出卡片宽度产生横向滚轴；
+   改 border-box 让 padding 计入 100% 之内。 */
+.popupCard .inner {
+  box-sizing: border-box;
+}
+
+/* 嵌入 antd Modal 模式(2026-10-08):NewProjectModal 场景下去掉 .root 的整页灰底 + 大留白,
+   让内容透出 .ant-modal-content 的底色(亮白 / 暗 #1e1e1e),与弹窗融为一体。
+   声明位于 .root 之后,靠源码顺序覆盖,不加 !important。整页工作区(!embedded)和
+   Electron 浮层(.popupCard)不受影响。 */
+.modalBody {
+  background: transparent;
+  min-height: auto;
+  padding: 0 0 20px; /* 底部出血在 antd body 默认 24px 之上再 +20px */
+}
+
+.popupClose {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  color: var(--text-muted);
+}
+
+.inner {
+  width: 100%;
+  max-width: 1100px;
+  padding: 0 24px;
+}
+
+/* Action row: add-workspace button + subtitle underneath. Top and bottom
+   whitespace match (symmetric bleed), and the block keeps clear distance from
+   the history table below. */
+.addButtonRow {
+  margin: 32px 0 32px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.addButtonSubtitle {
+  font-size: 13px;
+}
+
+/* Help modal body — content is rendered via renderMarkdown, so the rules
+   below just give the generated tags basic typography. */
+.helpBody {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+.helpBody h3 {
+  margin: 16px 0 6px;
+  font-size: 14px;
+}
+.helpBody h3:first-child {
+  margin-top: 0;
+}
+.helpBody p {
+  margin: 0 0 10px;
+}
+.helpBody ul {
+  margin: 0 0 10px;
+  padding-left: 20px;
+}
+.helpBody li {
+  margin-bottom: 4px;
+}
+.helpBody code {
+  background: var(--bg-elevated);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+/* Loading / empty states */
+.loadingCenter {
+  text-align: center;
+  padding: 60px;
+}
+
+.emptyState {
+  margin-top: 60px;
+}
+
+/* Workspace table */
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  /* Solid body so the table reads against the frosted-glass modal: light
+     theme lands on #FFF, dark theme on #111 (both via --bg-container). */
+  background: var(--bg-container);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.th {
+  text-align: left;
+  padding: 8px 12px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 12px;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.thActions {
+  text-align: right;
+}
+
+.tr {
+  transition: background 0.15s;
+}
+
+.tr:hover {
+  background: var(--bg-elevated);
+}
+
+/* 「查看更多」展开行(2026-10-08):融入表格最后一行,整行可点;主色文字提示可点,
+   hover 复用 .tr:hover 的灰色反馈。仅当 workspaces.length > 5 且未展开时渲染。 */
+.showMoreRow {
+  cursor: pointer;
+}
+
+.showMoreRow .td {
+  text-align: center;
+  color: var(--color-primary);
+  font-weight: 500;
+  padding: 10px 12px;
+}
+
+.tr + .tr .td {
+  border-top: 1px solid var(--border-primary);
+}
+
+.td {
+  padding: 8px 12px;
+  vertical-align: middle;
+  color: var(--text-primary);
+}
+
+.cellName {
+  color: var(--text-primary);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.cellPath {
+  display: block;
+  max-width: 260px;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tdMeta {
+  color: var(--text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.tdActions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Keep some breathing room between the primary "launch" button and the
+   delete icon so the destructive action doesn't sit flush against the main
+   action. */
+.tdActions > * + * {
+  margin-left: 12px;
+}
+
+/* DirBrowser modal */
+.dirPathHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px 10px;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.dirCurrentPath {
+  color: var(--text-primary);
+  font-size: 13px;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+
+.dirCrumb {
+  cursor: pointer;
+  padding: 0 3px;
+  border-radius: 3px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.dirCrumb:hover {
+  color: var(--color-primary);
+  background: var(--bg-elevated);
+}
+
+.dirCrumbSep {
+  margin: 0 2px;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.dirList {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.dirListCenter {
+  text-align: center;
+  padding: 40px;
+}
+
+.dirItem {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.dirItemInner {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dirItemName {
+  color: var(--text-primary);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dirGitTag {
+  font-size: 11px;
+  line-height: 18px;
+  padding: 0 4px;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+/* DirBrowser footer */
+.dirFooter {
+  border-top: 1px solid var(--border-primary);
+  padding: 10px 16px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dirPathInputRow {
+  display: flex;
+  gap: 8px;
+}
+
+.dirPathInput {
+  flex: 1;
+}
+
+/* DirBrowser tree */
+.dirTreeItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px 6px 0;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.dirTreeItem:hover {
+  background: var(--bg-elevated);
+}
+
+.dirTreeItemCurrent {
+  background: var(--bg-elevated);
+}
+
+.dirTreeArrow {
+  width: 16px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: transform 0.15s;
+}
+
+.dirTreeArrowExpanded {
+  transform: rotate(90deg);
+}
+
+.dirTreeEmpty {
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 6px 16px 6px 0;
+}

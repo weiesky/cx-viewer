@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { LogV2Archive } from '../src/utils/logV2Archive.js';
-import { readV2CachedObjectBatch, reconcileV2CachedSnapshot } from '../src/utils/logV2Cache.js';
-import { checkpointWireArchiveState, createWireArchiveState, applyWireCommit } from '../lib/log-v2/reducer.js';
-import { LOG_V2_WIRE_KINDS, LOG_V2_WIRE_VERSION } from '../lib/log-v2/wire-schema.js';
-import { batchLogV2ObjectRefs, LogV2ObjectStore } from '../src/utils/logV2ObjectStore.js';
-import { fetchLogV2Page, fetchLogV2Snapshot, readNdjsonResponse } from '../src/utils/logV2Transport.js';
-import { encodeV2ControlFragments } from '../server/lib/log-v2-routes.js';
-import { extractLatestPlanUsage } from '../src/utils/rateLimitParser.js';
+import { LogV2Archive } from '../apps/web/src/utils/logV2Archive.js';
+import { readV2CachedObjectBatch, reconcileV2CachedSnapshot } from '../apps/web/src/utils/logV2Cache.js';
+import { checkpointWireArchiveState, createWireArchiveState, applyWireCommit } from '../packages/app/lib/log-v2/reducer.js';
+import { LOG_V2_WIRE_KINDS, LOG_V2_WIRE_VERSION } from '../packages/app/lib/log-v2/wire-schema.js';
+import { batchLogV2ObjectRefs, LogV2ObjectStore } from '../apps/web/src/utils/logV2ObjectStore.js';
+import { fetchLogV2Page, fetchLogV2Snapshot, readNdjsonResponse } from '../apps/web/src/utils/logV2Transport.js';
+import { encodeV2ControlFragments } from '../packages/app/server/lib/log-v2-routes.js';
+import { extractLatestPlanUsage } from '../apps/web/src/utils/rateLimitParser.js';
 
 const archiveIdentity = { projectId: 'project', sessionId: 'session', generation: 'generation' };
 const ref = (char, value) => ({ ref: { hash: char.repeat(64), bytes: JSON.stringify(value).length }, value });

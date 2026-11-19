@@ -1,4 +1,7 @@
-# A1: settings only; source directories stay in place.
+# Private build units; packages/app remains the only published package.
+packages:
+  - packages/*
+  - apps/*
 # Reviewed against this repository's npm lockfile, including Electron 35.
 onlyBuiltDependencies:
   - electron

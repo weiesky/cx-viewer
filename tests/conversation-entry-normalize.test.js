@@ -1,18 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { isMainAgent } from '../src/utils/contentFilter.js';
+import { isMainAgent } from '../packages/app/src/utils/contentFilter.js';
 import {
   codexItemsToViewerMessages,
   createConversationEntryNormalizer,
   normalizeConversationEntry,
   shouldExcludeFromConversation,
   stampConversationMessageCount,
-} from '../src/utils/conversationEntryNormalize.js';
-import { mergeMainAgentSessions } from '../src/utils/sessionMerge.js';
-import { messageFingerprint } from '../src/utils/sessionMerge.js';
-import { applyBatchEntryTimestamps } from '../src/utils/sessionManager.js';
-import { resolveContextCompactionRecordBySourceKey } from '../src/utils/contextCompaction.js';
+} from '../apps/web/src/utils/conversationEntryNormalize.js';
+import { mergeMainAgentSessions } from '../apps/web/src/utils/sessionMerge.js';
+import { messageFingerprint } from '../apps/web/src/utils/sessionMerge.js';
+import { applyBatchEntryTimestamps } from '../apps/web/src/utils/sessionManager.js';
+import { resolveContextCompactionRecordBySourceKey } from '../apps/web/src/utils/contextCompaction.js';
 
 test('normalizes older app-server messages shape for conversation rendering', () => {
   const entry = {
