@@ -1,0 +1,29 @@
+cc-viewer-alignment/probes/b0-live-failure.mjs
+  s_55198d5dd9a4c0::t_784cd7d0328420 9-13,15
+AGENTS.md
+  s_55198d5dd9a4c0::t_2590257a718880 25
+cc-viewer-alignment/B3-handoff.md
+  s_55198d5dd9a4c0::t_1098c67f948914 3
+cc-viewer-alignment/B3-implementation.md
+  s_55198d5dd9a4c0::t_f9d22aec6202f9 1-26
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_55198d5dd9a4c0::t_7114ffa3d3de3d 3,6228
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_55198d5dd9a4c0::t_04fd91d03c8367 3,44,88
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "9ea4bddb0e05cca83a4c1a80ef50a2bb85f7a314",
+  "prompts": {},
+  "sessions": {
+    "s_55198d5dd9a4c0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f258-d147-7a10-bf0d-07ee52baa90b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
