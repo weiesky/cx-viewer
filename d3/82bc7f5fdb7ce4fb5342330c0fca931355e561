@@ -1,0 +1,21 @@
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_55198d5dd9a4c0::t_f8109766c2b8b5 503-514
+apps/web/src/AppBase.jsx
+  s_55198d5dd9a4c0::t_f8109766c2b8b5 737-744
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d382bc7f5fdb7ce4fb5342330c0fca931355e561",
+  "prompts": {},
+  "sessions": {
+    "s_55198d5dd9a4c0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f258-d147-7a10-bf0d-07ee52baa90b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
