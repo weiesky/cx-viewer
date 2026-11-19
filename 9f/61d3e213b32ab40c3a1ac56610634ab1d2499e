@@ -1,0 +1,48 @@
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_55198d5dd9a4c0::t_324e1af49dae87 318,1470,1622,2265,2326,4178,4616,4685,4775,4892,4918,6239,7025,7236,14835,14939,15089,15486-15489
+cc-viewer-alignment/probes/b3-log-picker-gui.mjs
+  s_55198d5dd9a4c0::t_8b2d16047d6a38 1-24
+cc-viewer-alignment/probes/b3-installed-check.py
+  s_55198d5dd9a4c0::t_f1e8558c9eef34 1-92
+cc-viewer-alignment/probes/b3-browser-recovery.mjs
+  s_55198d5dd9a4c0::t_ca47afa52e078f 13-14
+  s_55198d5dd9a4c0::t_5487700c2d0d45 6-12,15-17
+  s_55198d5dd9a4c0::t_7cd624aa11d2e8 20
+cc-viewer-alignment/B3-implementation.md
+  s_55198d5dd9a4c0::t_324e1af49dae87 74-75
+  s_55198d5dd9a4c0::t_9b688d7c73b110 61,66-73
+cc-viewer-alignment/B3-install-2026-11-20.json
+  s_55198d5dd9a4c0::t_f6c572af4dc485 1-11
+cc-viewer-alignment/B3-handoff.md
+  s_55198d5dd9a4c0::t_9b688d7c73b110 3
+cc-viewer-alignment/B3-sharding-proposal.md
+  s_55198d5dd9a4c0::t_18ae3cba7e064c 1-18
+cc-viewer-alignment/B3-transport-and-pagination.md
+  s_55198d5dd9a4c0::t_324e1af49dae87 32,40-41
+  s_55198d5dd9a4c0::t_5e3f9a26993cb8 1-31,33-39
+AGENTS.md
+  s_55198d5dd9a4c0::t_324e1af49dae87 25
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_55198d5dd9a4c0::t_9b688d7c73b110 44,88
+  s_55198d5dd9a4c0::t_324e1af49dae87 3
+cc-viewer-alignment/README.md
+  s_55198d5dd9a4c0::t_324e1af49dae87 5
+cc-viewer-alignment/B3-browser-recovery.md
+  s_55198d5dd9a4c0::t_324e1af49dae87 49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "9f61d3e213b32ab40c3a1ac56610634ab1d2499e",
+  "prompts": {},
+  "sessions": {
+    "s_55198d5dd9a4c0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f258-d147-7a10-bf0d-07ee52baa90b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
