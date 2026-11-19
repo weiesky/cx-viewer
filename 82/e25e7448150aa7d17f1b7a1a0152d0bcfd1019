@@ -1,0 +1,30 @@
+AGENTS.md
+  s_33c4bc22026691::t_7996acda4b272f 25
+cc-viewer-alignment/migration-code-first.md
+  s_33c4bc22026691::t_7996acda4b272f 98
+  s_33c4bc22026691::t_b31b80a5dbf210 91-97
+apps/web/src/components/chat/ChatView.jsx
+  s_33c4bc22026691::t_5b16841254fce8 2740-2748,2751-2755,3454,3797-3802
+apps/web/src/components/chat/ChatView.module.css
+  s_33c4bc22026691::t_368d3a0b0aaf6d 1,435-553
+apps/web/src/i18n.js
+  s_33c4bc22026691::t_40016bcc56a8a6 4-83
+apps/web/tests/terminal-ws-liveness.test.js
+  s_33c4bc22026691::t_7f4491f74bc539 152,189,193,196,198-204,212,218
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "82e25e7448150aa7d17f1b7a1a0152d0bcfd1019",
+  "prompts": {},
+  "sessions": {
+    "s_33c4bc22026691": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ef81-9641-7562-8716-fb5b6a9ae27f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
