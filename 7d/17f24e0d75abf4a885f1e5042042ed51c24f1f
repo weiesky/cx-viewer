@@ -1,0 +1,45 @@
+AGENTS.md
+  s_33c4bc22026691::t_d3315f37ddca24 25
+apps/web/src/App.jsx
+  s_33c4bc22026691::t_ab17a950aa561c 576
+apps/web/src/AppBase.jsx
+  s_33c4bc22026691::t_0abdbc168bd89e 6,124,2200-2204,2821,2827-2832,2834
+apps/web/src/components/common/Loading.jsx
+  s_33c4bc22026691::t_63565a45763fcf 1-53
+apps/web/src/components/common/Loading.module.css
+  s_33c4bc22026691::t_05700f2fd4e28b 1-30
+apps/web/src/components/common/sharedChrome.module.css
+  s_33c4bc22026691::t_475cfacdd882a3 275-290
+apps/web/src/components/dashboard/DirBrowser.jsx
+  s_33c4bc22026691::t_68ad07ade80d78 1-331
+apps/web/src/components/dashboard/NewProjectModal.jsx
+  s_33c4bc22026691::t_4468d649ce8756 1-38
+apps/web/src/components/dashboard/WorkspaceList.jsx
+  s_33c4bc22026691::t_5b24ef190172da 2-3,7-10,12,14-19,33,35,42-47,54,93-96,99-100,110,112,130,141,163-174,179,187-215,217-218,220,222,224-248,258-270
+apps/web/src/components/dashboard/WorkspaceList.module.css
+  s_33c4bc22026691::t_21291c477eabda 10-11,15,23-25,33-35,38,48-57,72-76,78-81,84-85,88-90,92-93,95-116,129-136,139-170,174-178,181-182,185-188,191,193-194,197-199,202-203,206,208-209,212-221,322-359
+apps/web/src/global.css
+  s_33c4bc22026691::t_203fdf9cda6c5f 15,173,618-641
+apps/web/src/i18n.js
+  s_33c4bc22026691::t_48ef9c0f92567d 4-183
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_33c4bc22026691::t_089195e1df0f03 24-25,32,38,55,61,72-73,87,96,98,114,212-244
+cc-viewer-alignment/migration-code-first.md
+  s_33c4bc22026691::t_8d435fe7b82d20 53-60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "7d17f24e0d75abf4a885f1e5042042ed51c24f1f",
+  "prompts": {},
+  "sessions": {
+    "s_33c4bc22026691": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ef81-9641-7562-8716-fb5b6a9ae27f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
