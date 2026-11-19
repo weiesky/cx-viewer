@@ -1,0 +1,38 @@
+AGENTS.md
+  s_55198d5dd9a4c0::t_da0c8f40f3cbf2 25
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_55198d5dd9a4c0::t_da0c8f40f3cbf2 3,6228,6514,15465-15468
+cc-viewer-alignment/B0-cold-ingest-review.md
+  s_55198d5dd9a4c0::t_da0c8f40f3cbf2 3-4
+cc-viewer-alignment/B3-benchmark-2026-11-19.json
+  s_55198d5dd9a4c0::t_5c659fc884d3c1 1-159
+cc-viewer-alignment/migration-code-first.md
+  s_55198d5dd9a4c0::t_da0c8f40f3cbf2 3
+cc-viewer-alignment/README.md
+  s_55198d5dd9a4c0::t_da0c8f40f3cbf2 5,20,26
+cc-viewer-alignment/B3-implementation.md
+  s_55198d5dd9a4c0::t_abdc8a35cbabb5 24,26-65
+cc-viewer-alignment/B3-handoff.md
+  s_55198d5dd9a4c0::t_da0c8f40f3cbf2 3,14-16
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_55198d5dd9a4c0::t_da0c8f40f3cbf2 3,37,44,76,88
+  s_55198d5dd9a4c0::t_e98a2f1c54ae66 96
+cc-viewer-alignment/probes/b3-live-benchmark.mjs
+  s_55198d5dd9a4c0::t_e577a2b3caf93b 1-100
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "264d370485eaf95dc51a22e9852d12b5684d3335",
+  "prompts": {},
+  "sessions": {
+    "s_55198d5dd9a4c0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f258-d147-7a10-bf0d-07ee52baa90b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
