@@ -1,0 +1,52 @@
+cc-viewer-alignment/B3-sharding-proposal.md
+  s_55198d5dd9a4c0::t_082f1d40bccf4b 11,13,20
+cc-viewer-alignment/probes/b3-window-benchmark.mjs
+  s_55198d5dd9a4c0::t_0b429b5cfa145b 7,15-19,47-57,67-68,71,76-82,101,108,112
+cc-viewer-alignment/B3-implementation.md
+  s_55198d5dd9a4c0::t_082f1d40bccf4b 3-4
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_55198d5dd9a4c0::t_082f1d40bccf4b 44,88,183
+  s_55198d5dd9a4c0::t_b2feaad3773501 3
+  s_55198d5dd9a4c0::t_8c05aa03089de6 37
+cc-viewer-alignment/B3-completion-matrix.md
+  s_55198d5dd9a4c0::t_9f7bc972fa9b75 1-34,36-39,45-48
+  s_55198d5dd9a4c0::t_e5e2f1ce3c471c 35
+  s_55198d5dd9a4c0::t_b2feaad3773501 40-44
+cc-viewer-alignment/B3-transport-and-pagination.md
+  s_55198d5dd9a4c0::t_082f1d40bccf4b 3-4
+AGENTS.md
+  s_55198d5dd9a4c0::t_082f1d40bccf4b 20
+  s_55198d5dd9a4c0::t_b2feaad3773501 26
+cc-viewer-alignment/B3-shard-benchmark-2026-11-20.json
+  s_55198d5dd9a4c0::t_0b429b5cfa145b 1-64
+cc-viewer-alignment/probes/b3-installed-check.py
+  s_55198d5dd9a4c0::t_2fb72e30afa2d6 23,29
+cc-viewer-alignment/B3-handoff.md
+  s_55198d5dd9a4c0::t_082f1d40bccf4b 3-4
+cc-viewer-alignment/B3-sharding.md
+  s_55198d5dd9a4c0::t_9f7bc972fa9b75 1-60
+cc-viewer-alignment/B3-shard-install-2026-11-20.json
+  s_55198d5dd9a4c0::t_b2feaad3773501 1-11
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_55198d5dd9a4c0::t_b2feaad3773501 15495
+  s_55198d5dd9a4c0::t_e5e2f1ce3c471c 3,1470,1622,2326,3561,6240,6527,7238,14837,15091,15492-15494
+cc-viewer-alignment/README.md
+  s_55198d5dd9a4c0::t_b2feaad3773501 5
+  s_55198d5dd9a4c0::t_082f1d40bccf4b 20,26-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1b3d46cbb1ee11f32784e915c39dabb5e9fe761d",
+  "prompts": {},
+  "sessions": {
+    "s_55198d5dd9a4c0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f258-d147-7a10-bf0d-07ee52baa90b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
