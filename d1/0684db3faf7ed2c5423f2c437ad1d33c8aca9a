@@ -1,0 +1,21 @@
+cc-viewer-alignment/migration-code-first.md
+  s_33c4bc22026691::t_ea979daf717045 1-44
+cc-viewer-alignment/B2-gui-acceptance.md
+  s_33c4bc22026691::t_ea979daf717045 3-4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d10684db3faf7ed2c5423f2c437ad1d33c8aca9a",
+  "prompts": {},
+  "sessions": {
+    "s_33c4bc22026691": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ef81-9641-7562-8716-fb5b6a9ae27f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
