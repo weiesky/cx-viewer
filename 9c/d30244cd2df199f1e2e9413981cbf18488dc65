@@ -1,0 +1,23 @@
+packages/app/lib/log-v2/transport.js
+  s_55198d5dd9a4c0::t_a4097db49a80ab 473-475,614
+packages/app/tests/ws-mux-routes.test.js
+  s_55198d5dd9a4c0::t_c4de0d2a9e562a 220
+packages/app/server/lib/log-v2-routes.js
+  s_55198d5dd9a4c0::t_a4097db49a80ab 487
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "9cd30244cd2df199f1e2e9413981cbf18488dc65",
+  "prompts": {},
+  "sessions": {
+    "s_55198d5dd9a4c0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f258-d147-7a10-bf0d-07ee52baa90b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
