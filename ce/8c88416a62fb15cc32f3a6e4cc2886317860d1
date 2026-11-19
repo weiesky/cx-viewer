@@ -1,0 +1,45 @@
+packages/app/lib/log-v2/transport.js
+  s_55198d5dd9a4c0::t_064b197093c826 461-463,639-643
+  s_55198d5dd9a4c0::t_4437998eaeaeac 4-5,99,151-168,170-172,176-190,429-430,432-436,440-443,473,479,497,510-511,553-558,591
+packages/app/tests/log-v2-shards.test.js
+  s_55198d5dd9a4c0::t_35388efb9b2952 3,16
+  s_55198d5dd9a4c0::t_199875e40e3aff 8-12,25,72-106
+  s_55198d5dd9a4c0::t_82727aa64c5b9d 107
+packages/app/server/lib/log-v2-routes.js
+  s_55198d5dd9a4c0::t_064b197093c826 499,511
+packages/app/lib/log-v2/archive-zip.js
+  s_55198d5dd9a4c0::t_2f23f38b5203cd 32-33,431
+packages/app/lib/log-v2/session-summary.js
+  s_55198d5dd9a4c0::t_2f23f38b5203cd 14,230,341
+packages/app/lib/log-v2/writer.js
+  s_55198d5dd9a4c0::t_199875e40e3aff 217,245
+  s_55198d5dd9a4c0::t_35388efb9b2952 233-239
+  s_55198d5dd9a4c0::t_1e122c986f9e5b 30-31,47,214-216,218-229,247-253,262-263,317,327-329,441-443,523,525,530-532,675,684,691
+packages/app/lib/log-v2/timeline-watcher.js
+  s_55198d5dd9a4c0::t_064b197093c826 2,41,162,170
+packages/app/lib/log-v2/materializer.js
+  s_55198d5dd9a4c0::t_2f23f38b5203cd 5,190,229,264,355,508,531,820,870,943-944
+  s_55198d5dd9a4c0::t_1e122c986f9e5b 356-357
+packages/app/lib/log-v2/inspect.js
+  s_55198d5dd9a4c0::t_2f23f38b5203cd 6,37
+packages/app/lib/log-v2/shards.js
+  s_55198d5dd9a4c0::t_4437998eaeaeac 48-51
+  s_55198d5dd9a4c0::t_35388efb9b2952 52-54
+  s_55198d5dd9a4c0::t_1e122c986f9e5b 4,78-81,129-137,139
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "ce8c88416a62fb15cc32f3a6e4cc2886317860d1",
+  "prompts": {},
+  "sessions": {
+    "s_55198d5dd9a4c0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f258-d147-7a10-bf0d-07ee52baa90b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
