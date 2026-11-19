@@ -1,0 +1,20 @@
+tests/log-v2-shards-client.test.js
+  s_55198d5dd9a4c0::t_25c4a57b15d3db 14,68-108
+  s_55198d5dd9a4c0::t_6a0e8d63f4514b 109
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "32f6d94d732d8a1a8c9d0092a9eacefbfdf9a23a",
+  "prompts": {},
+  "sessions": {
+    "s_55198d5dd9a4c0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f258-d147-7a10-bf0d-07ee52baa90b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
