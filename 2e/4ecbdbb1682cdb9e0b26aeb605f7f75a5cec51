@@ -1,0 +1,31 @@
+apps/web/src/utils/errorReport.js
+  s_55198d5dd9a4c0::t_3f7ae07fcfaf5c 1
+packages/app/server/lib/error-report.js
+  s_55198d5dd9a4c0::t_2b581d1b7c68db 1-26
+packages/app/src/utils/errorReport.js
+  s_701ec3b89ba9ea::t_3fe129b7771b74 1-40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "2e4ecbdbb1682cdb9e0b26aeb605f7f75a5cec51",
+  "prompts": {},
+  "sessions": {
+    "s_55198d5dd9a4c0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f258-d147-7a10-bf0d-07ee52baa90b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    },
+    "s_701ec3b89ba9ea": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ea5f-68db-7b91-870f-dfe371f94c5d",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
