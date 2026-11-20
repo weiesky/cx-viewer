@@ -469,7 +469,7 @@ class App extends AppBase {
               )
             )}
             <div className={styles.chatViewWrapper} style={{ display: viewMode === 'chat' ? 'flex' : 'none' }}>
-              <ChatView {...this._settingsProps()} getTokenStatsContent={this._getTokenStatsContent} requests={filteredRequests} mainAgentSessions={displaySessions} sessionUpperBoundTs={sessionUpperBoundTs} streamingLatest={this.state.streamingLatest} userProfile={this.state.userProfile} collapseToolResults={prefs.collapseToolResults} expandThinking={prefs.expandThinking} showFullToolContent={prefs.showFullToolContent} onlyCurrentSession={this._isLocalLog ? false : prefs.onlyCurrentSession} isLocalLog={!!this._isLocalLog} showThinkingSummaries={prefs.showThinkingSummaries} onViewRequest={this.handleViewRequest} scrollToTimestamp={this.state.chatScrollToTs} onScrollTsDone={this.handleScrollTsDone} cliMode={this._isLocalLog ? false : this.state.cliMode} sdkMode={this._isLocalLog ? false : this.state.sdkMode} sdkResumeId={this.state.sdkResumeId} terminalVisible={this._isLocalLog ? false : (this.state.sdkMode ? this.state.sdkScratchOpen : this.state.terminalVisible)} onToggleTerminal={this.handleToggleTerminal} pendingUploadPaths={this.state.pendingUploadPaths} onUploadPathsConsumed={this.handleUploadPathsConsumed} uploadingDrop={this.state.uploadingDrop} fileLoading={this.state.fileLoading} isStreaming={this.state.isStreaming} hasMoreHistory={this.state.hasMoreHistory} loadingMore={this.state.loadingMore} onLoadMoreHistory={() => this.loadMoreHistory()} loadingSessionId={this.state.loadingSessionId} onLoadSession={(sid) => this.loadSession(sid)} lang={this.state.lang} approvalsReviewer={this.state.approvalsReviewer} onApprovalsReviewerChange={this.handleApprovalsReviewerChange} onApprovalsReviewerSynced={this.handleApprovalsReviewerSynced} planAutoApproveSeconds={this.state.approvalPrefs?.planAutoApproveSeconds} onPlanAutoApproveChange={this.handlePlanAutoApproveChange} onClearContextOptimistic={this.handleClearContextOptimistic} onUserMessageSent={this.handleUserMessageSent} onPendingAsk={this.handleApprovalAsk} onPendingPtyPlan={this.handleApprovalPtyPlan} ownTabId={this.state.ownTabId} projectName={this.state.projectName} setContextBarSlot={this.setContextBarSlot} />
+              <ChatView {...this._settingsProps()} getTokenStatsContent={this._getTokenStatsContent} requests={filteredRequests} mainAgentSessions={displaySessions} sessionUpperBoundTs={sessionUpperBoundTs} streamingLatest={this.state.streamingLatest} userProfile={this.state.userProfile} collapseToolResults={prefs.collapseToolResults} expandThinking={prefs.expandThinking} showFullToolContent={prefs.showFullToolContent} onlyCurrentSession={this._isLocalLog ? false : prefs.onlyCurrentSession} isLocalLog={!!this._isLocalLog} showThinkingSummaries={prefs.showThinkingSummaries} onViewRequest={this.handleViewRequest} scrollToTimestamp={this.state.chatScrollToTs} onScrollTsDone={this.handleScrollTsDone} cliMode={this._isLocalLog ? false : this.state.cliMode} sdkMode={this._isLocalLog ? false : this.state.sdkMode} sdkResumeId={this.state.sdkResumeId} terminalVisible={this._isLocalLog ? false : (this.state.sdkMode ? this.state.sdkScratchOpen : this.state.terminalVisible)} onToggleTerminal={this.handleToggleTerminal} pendingUploadPaths={this.state.pendingUploadPaths} onUploadPathsConsumed={this.handleUploadPathsConsumed} uploadingDrop={this.state.uploadingDrop} fileLoading={this.state.fileLoading} isStreaming={this.state.isStreaming} shards={this.state.shards} shardPrependCount={this.state.shardPrependCount} hasMoreHistory={this.state.hasMoreHistory} loadingMore={this.state.loadingMore} onLoadMoreHistory={() => this.loadMoreHistory()} loadingSessionId={this.state.loadingSessionId} onLoadSession={(sid) => this.loadSession(sid)} lang={this.state.lang} approvalsReviewer={this.state.approvalsReviewer} onApprovalsReviewerChange={this.handleApprovalsReviewerChange} onApprovalsReviewerSynced={this.handleApprovalsReviewerSynced} planAutoApproveSeconds={this.state.approvalPrefs?.planAutoApproveSeconds} onPlanAutoApproveChange={this.handlePlanAutoApproveChange} onClearContextOptimistic={this.handleClearContextOptimistic} onUserMessageSent={this.handleUserMessageSent} onPendingAsk={this.handleApprovalAsk} onPendingPtyPlan={this.handleApprovalPtyPlan} ownTabId={this.state.ownTabId} projectName={this.state.projectName} setContextBarSlot={this.setContextBarSlot} />
             </div>
           </Layout.Content>
           <div className={styles.footer}>
@@ -537,8 +537,8 @@ class App extends AppBase {
               size="small"
               className={styles.logProjectSelect}
               aria-label={t('ui.projectAlias.projectLabel')}
-              value={this.state.currentProject || undefined}
-              options={Object.keys(this.state.localLogs).sort().map(project => ({ value: project, label: project }))}
+              value={this.state.logViewProject || this.state.currentProject || undefined}
+              options={this.state.allLogProjects.map(project => ({ value: project, label: project }))}
               onChange={this.handleLogProjectChange}
             />
             <Button size="small" icon={<UploadOutlined />} onClick={this.handleLoadLocalLogArchive}>
@@ -555,23 +555,25 @@ class App extends AppBase {
               {t('ui.deleteLogs')}
             </Button>
           </div>
-          {this.state.localLogsLoading ? (
-            <div className={styles.spinCenter}><Spin /></div>
-          ) : (() => {
-            const currentLogs = this.state.localLogs[this.state.currentProject];
-            if (!currentLogs || currentLogs.length === 0) {
+          <div className={styles.logsModalContent}>
+            {this.state.localLogsLoading ? (
+              <div className={styles.spinCenter}><Spin /></div>
+            ) : (() => {
+              const currentLogs = this.state.localLogs;
+              if (!currentLogs || currentLogs.length === 0) {
+                return (
+                  <div className={styles.emptyCenter}>
+                    {t('ui.noLogs')}
+                  </div>
+                );
+              }
               return (
-                <div className={styles.emptyCenter}>
-                  {t('ui.noLogs')}
+                <div className={styles.logListContainer}>
+                  {this.renderLogTable(currentLogs, false)}
                 </div>
               );
-            }
-            return (
-              <div className={styles.logListContainer}>
-                {this.renderLogTable(currentLogs, false)}
-              </div>
-            );
-          })()}
+            })()}
+          </div>
         </Modal>
         {this.renderNewProjectModal()}
         </ApprovalModal>

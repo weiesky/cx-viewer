@@ -15,6 +15,7 @@ import {
   getActiveV2SessionLookupStats,
   getActiveV2SessionSelectionStats,
   listV2LocalLogs,
+  listV2LocalLogsPage,
   materializeSessionArchive,
   readV2LogEntries,
   readV2PagedEntries,
@@ -59,6 +60,48 @@ function entry(timestamp, input, text, extra = {}) {
     ...extra,
   };
 }
+
+test('V2 log pages summarize only the requested page and preserve project identities', () => {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-list-page-'));
+  try {
+    const writers = [];
+    for (let index = 0; index < 5; index++) {
+      const sessionId = `session-${index}`;
+      const writer = LogV2Writer.open({ ...options(root), sessionId, rootThreadId: sessionId,
+        createdAt: `2026-07-1${index + 1}T08:00:00.000Z` });
+      writer.append(entry(`2026-07-1${index + 1}T08:01:00.000Z`, [{ type: 'message', text: `prompt-${index}` }], 'done'),
+        resolveAppServerThreadIdentity({ id: sessionId, sessionId }));
+      writers.push(writer);
+    }
+    LogV2Writer.open({ ...options(root), projectId: 'other', canonicalCwd: '/workspace/other' });
+    const oldSummary = join(writers[0].sessionDir, 'summary.json');
+    rmSync(oldSummary);
+    const first = listV2LocalLogsPage(root, 'other', { project: 'project', page: 1, pageSize: 2 });
+    assert.equal(first.total, 5);
+    assert.equal(first._currentProject, 'other');
+    assert.equal(first._viewedProject, 'project');
+    assert.deepEqual(first._allProjects, ['other', 'project']);
+    assert.deepEqual(first.items.map(row => row.sessionId), ['session-4', 'session-3']);
+    assert.throws(() => statSync(oldSummary), { code: 'ENOENT' }, 'off-page summaries must not be rebuilt');
+    const second = listV2LocalLogsPage(root, 'other', { project: 'project', page: 2, pageSize: 2 });
+    const third = listV2LocalLogsPage(root, 'other', { project: 'project', page: 3, pageSize: 2 });
+    assert.deepEqual([...first.items, ...second.items, ...third.items].map(row => row.sessionId),
+      ['session-4', 'session-3', 'session-2', 'session-1', 'session-0']);
+    assert.deepEqual(listV2LocalLogsPage(root, 'other', { project: 'project', page: 99 }).items, []);
+    assert.equal(listV2LocalLogsPage(root, 'other', { project: 'missing' }).total, 0);
+    assert.equal(listV2LocalLogsPage(root, 'other').total, 1, 'empty candidate counts before summary filter');
+    assert.deepEqual(listV2LocalLogsPage(root, 'other').items, []);
+    const repeated = listV2LocalLogsPage(root, 'other', { project: 'project', page: 1, pageSize: 2 });
+    first.items[0].size = -1;
+    assert.ok(repeated.items[0].size > 0, 'responses cannot mutate cached metadata');
+    writers[4].append(entry('2026-07-15T08:02:00.000Z', [{ type: 'message', text: 'updated' }], 'updated'),
+      resolveAppServerThreadIdentity({ id: 'session-4', sessionId: 'session-4' }));
+    assert.ok(listV2LocalLogsPage(root, 'other', { project: 'project' }).items[0].preview.includes('updated'));
+    symlinkSync(join(root, 'project'), join(root, 'alias'));
+    assert.deepEqual(listV2LocalLogsPage(root, 'other')._allProjects, ['other', 'project']);
+    assert.equal(listV2LocalLogsPage(root, 'other', { project: '../project' }).total, 0);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
 
 test('V2 materializer reconstructs full safe entry revisions in commit order', () => {
   const root = mkdtempSync(join(tmpdir(), 'cxv-v2-read-'));

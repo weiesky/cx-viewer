@@ -7,7 +7,7 @@ import styles from '../../App.module.css';
 
 const EMPTY_SET = new Set();
 
-function LogTable({ logs, mobile, selectedLogs = EMPTY_SET, onToggleSelect, onOpenLog, onDownloadLog }) {
+function LogTable({ logs, mobile, selectedLogs = EMPTY_SET, onToggleSelect, onOpenLog, onDownloadLog, pagination = false }) {
   const columns = useMemo(() => [
     {
       title: '',
@@ -99,8 +99,8 @@ function LogTable({ logs, mobile, selectedLogs = EMPTY_SET, onToggleSelect, onOp
       dataSource={logs}
       columns={columns}
       rowKey="file"
-      pagination={false}
-      scroll={mobile ? { x: 'max-content', y: 'calc(100vh - 160px)' } : { y: 400 }}
+      pagination={pagination}
+      scroll={mobile ? { x: 'max-content', y: 'calc(100vh - 220px)' } : { y: 505 }}
       onRow={(log) => ({
         onClick: () => {
           const checked = !selectedLogs.has(log.file);

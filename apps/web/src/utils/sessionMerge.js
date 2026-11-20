@@ -261,7 +261,8 @@ export function mergeMainAgentSessions(prevSessions, entry, options = {}) {
       ...lastSession.messages.slice(0, conversationWindowStart),
       ...newMessages,
     ];
-    lastSession.response = newResponse;
+    // In-flight frames omit response; keep the last completed turn until one arrives.
+    if (newResponse !== undefined) lastSession.response = newResponse;
     lastSession.entryTimestamp = entryTimestamp;
     if (v2Seq !== null) lastSession._lastV2Seq = v2Seq;
     if (modelName) lastSession.modelName = modelName;
@@ -289,7 +290,7 @@ export function mergeMainAgentSessions(prevSessions, entry, options = {}) {
       const replacement = newMessages[newLen - 1];
       if (!replacement._timestamp) replacement._timestamp = entryTimestamp;
       lastSession.messages = [...lastSession.messages.slice(0, -1), replacement];
-      lastSession.response = newResponse;
+      if (newResponse !== undefined) lastSession.response = newResponse;
       lastSession.entryTimestamp = entryTimestamp;
       if (v2Seq !== null) lastSession._lastV2Seq = v2Seq;
       if (modelName) lastSession.modelName = modelName;
@@ -367,7 +368,8 @@ export function mergeMainAgentSessions(prevSessions, entry, options = {}) {
       }
     }
 
-    lastSession.response = newResponse;
+    // In-flight frames omit response; keep the last completed turn until one arrives.
+    if (newResponse !== undefined) lastSession.response = newResponse;
     lastSession.entryTimestamp = entryTimestamp;
     if (v2Seq !== null) lastSession._lastV2Seq = v2Seq;
     // Model-less transport/checkpoint frames must not erase the last

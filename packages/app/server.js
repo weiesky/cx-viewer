@@ -1,4 +1,6 @@
 import { createServer } from 'node:http';
+import { EventEmitter } from 'node:events';
+import { createStreamMuxServer } from './server/lib/ws-mux.js';
 import { createServer as createHttpsServer } from 'node:https';
 import { createConnection } from 'node:net';
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
@@ -50,6 +52,7 @@ import {
   findActiveV2SessionFileAsync,
   isV2SessionFile,
   listV2LocalLogs,
+  listV2LocalLogsPage,
   readV2WirePageAsync,
   readV2WireSnapshotAsync,
   readV2WireSummariesAsync,
@@ -823,6 +826,7 @@ const _editorCleanupTimer = setInterval(() => {
 _editorCleanupTimer.unref(); // Don't keep process alive for cleanup
 let terminalWss = null; // WebSocketServer reference for broadcasting
 let scratchTerminalWss = null;
+let dialogueMux = null;
 let _writeToPty = null; // PTY write function reference (set by setupTerminalWebSocket)
 let _onPtyData = null;  // PTY data listener registration (set by setupTerminalWebSocket)
 export function setWorkspaceCodexArgs(args) {
@@ -4248,7 +4252,19 @@ async function handleViewerRequest(req, res) {
 
   if (url === '/api/local-logs' && method === 'GET') {
     try {
-      const result = listV2LocalLogs(LOG_DIR, (isSdkMode ? projectContextForSdkView(requestSdkView) : getActiveProjectContext()).projectId);
+      const projectId = (isSdkMode ? projectContextForSdkView(requestSdkView) : getActiveProjectContext()).projectId;
+      const pageParam = parsedUrl.searchParams.get('page');
+      let result;
+      if (pageParam != null) {
+        const project = parsedUrl.searchParams.get('project') || projectId;
+        if (project === '.' || project === '..' || /[/\\\0]/.test(project)) {
+          sendJson(res, 400, { error: 'Invalid project name' });
+          return;
+        }
+        const page = Math.max(1, parseInt(pageParam, 10) || 1);
+        const pageSize = Math.min(200, Math.max(1, parseInt(parsedUrl.searchParams.get('pageSize'), 10) || 50));
+        result = listV2LocalLogsPage(LOG_DIR, projectId, { project, page, pageSize });
+      } else result = listV2LocalLogs(LOG_DIR, projectId);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(result));
     } catch (err) {
@@ -4839,6 +4855,7 @@ export async function startViewer() {
             notifyStatsWorker();
             startStreamingStatusTimer();
           }
+          if (process.env.CXV_IM_WORKER !== '1') await setupDialogueWebSocket(currentServer);
           // CLI 模式下启动 WebSocket 服务 (必须 await，否则插件 hook 拿不到 upgrade listeners)
           if (isCliMode && process.env.CXV_IM_WORKER !== '1') {
             await setupTerminalWebSocket(currentServer);
@@ -4860,6 +4877,88 @@ export async function startViewer() {
     }
 
     tryListen(START_PORT);
+  });
+}
+
+function authorizeViewerWebSocket(req, socket) {
+  let wsUrl;
+  try { wsUrl = new URL(req.url, `${serverProtocol}://${req.headers.host}`); }
+  catch { socket.destroy(); return null; }
+  const pathname = wsUrl.pathname;
+  const remoteIp = req.socket.remoteAddress;
+  const isLoopbackPeer = remoteIp === '127.0.0.1' || remoteIp === '::1' || remoteIp === '::ffff:127.0.0.1';
+  const wsOrigin = typeof req.headers.origin === 'string' ? req.headers.origin : '';
+  const wsHost = typeof req.headers.host === 'string' ? req.headers.host : '';
+  const wsSameOrigin = !!wsOrigin && isSameOriginRequest(wsOrigin, wsHost, serverProtocol);
+  if (wsOrigin && !wsSameOrigin) {
+    socket.destroy();
+    return;
+  }
+  // Browser WebSockets must be same-origin even over loopback. Header-less
+  // native clients use an explicit token/session instead of ambient trust.
+  const isLocal = isLoopbackPeer && isLoopbackHost(wsHost) && wsSameOrigin;
+  const currentAuthConfig = getAuthConfig();
+  const cookieToken = parseCookies(req.headers.cookie).cxv_auth;
+  const authDecision = decideAuth({
+    isStaticAsset: false,
+    pathname,
+    isLocal,
+    urlToken: wsUrl.searchParams.get('token'),
+    cookieToken,
+    accessToken: ACCESS_TOKEN,
+    sessionToken: isAuthSessionValid(cookieToken) ? cookieToken : '',
+    enabled: currentAuthConfig.enabled,
+    password: currentAuthConfig.password,
+    passwordUnreadable: currentAuthConfig.passwordUnreadable,
+    wantsHtml: false,
+    passwordLoginAvailable: serverProtocol === 'https',
+    allowPasswordless: false,
+  });
+  if (authDecision.action !== 'allow') {
+    socket.destroy();
+    return;
+  }
+  return { wsUrl, pathname };
+}
+
+async function setupDialogueWebSocket(httpServer) {
+  const { WebSocketServer } = await import('ws');
+  const mux = createStreamMuxServer({
+    WebSocketServer,
+    serveStream: async (sink, qs, handshake, path) => {
+      // Reuse the actual HTTP authorization and scoped handlers for both streams.
+      const request = new EventEmitter();
+      Object.assign(request, { method: 'GET', url: `${path}?${qs}`,
+        headers: { ...handshake.headers, accept: 'text/event-stream' }, socket: handshake.socket });
+      sink.headersSent = false;
+      sink.setHeader = () => {}; // HTTP headers are irrelevant after the authenticated upgrade.
+      sink.writeHead = (status) => {
+        if (sink.destroyed || status !== 200) throw new Error(`Mux stream unavailable (${status})`);
+        sink.headersSent = true;
+        return sink;
+      };
+      sink.destroy = () => sink.end();
+      sink.once('close', () => request.emit('close'));
+      await handleRequest(request, sink);
+      return { dispose: () => sink.end() };
+    },
+  });
+  dialogueMux = mux;
+  httpServer.on('upgrade', (req, socket, head) => {
+    let pathname;
+    try { pathname = new URL(req.url, `${serverProtocol}://${req.headers.host}`).pathname; }
+    catch { socket.destroy(); return; }
+    if (pathname !== '/ws/mux') {
+      if (httpServer.listenerCount('upgrade') === 1) socket.destroy();
+      return;
+    }
+    if (!authorizeViewerWebSocket(req, socket)) return;
+    const ip = req.socket.remoteAddress;
+    if (mux._sockets.size >= 32 || [...mux._sockets].filter(state => state.request?.socket?.remoteAddress === ip).length >= 8) {
+      socket.destroy();
+      return;
+    }
+    mux.handleUpgrade(req, socket, head);
   });
 }
 
@@ -4926,41 +5025,10 @@ async function setupTerminalWebSocket(httpServer) {
     };
 
     httpServer.on('upgrade', (req, socket, head) => {
-      const wsUrl = new URL(req.url, `${serverProtocol}://${req.headers.host}`);
-      const pathname = wsUrl.pathname;
-      const remoteIp = req.socket.remoteAddress;
-      const isLoopbackPeer = remoteIp === '127.0.0.1' || remoteIp === '::1' || remoteIp === '::ffff:127.0.0.1';
-      const wsOrigin = typeof req.headers.origin === 'string' ? req.headers.origin : '';
-      const wsHost = typeof req.headers.host === 'string' ? req.headers.host : '';
-      const wsSameOrigin = !!wsOrigin && isSameOriginRequest(wsOrigin, wsHost, serverProtocol);
-      if (wsOrigin && !wsSameOrigin) {
-        socket.destroy();
-        return;
-      }
-      // Browser WebSockets must be same-origin even over loopback. Header-less
-      // native clients use an explicit token/session instead of ambient trust.
-      const isLocal = isLoopbackPeer && isLoopbackHost(wsHost) && wsSameOrigin;
-      const currentAuthConfig = getAuthConfig();
-      const cookieToken = parseCookies(req.headers.cookie).cxv_auth;
-      const authDecision = decideAuth({
-        isStaticAsset: false,
-        pathname,
-        isLocal,
-        urlToken: wsUrl.searchParams.get('token'),
-        cookieToken,
-        accessToken: ACCESS_TOKEN,
-        sessionToken: isAuthSessionValid(cookieToken) ? cookieToken : '',
-        enabled: currentAuthConfig.enabled,
-        password: currentAuthConfig.password,
-        passwordUnreadable: currentAuthConfig.passwordUnreadable,
-        wantsHtml: false,
-        passwordLoginAvailable: serverProtocol === 'https',
-        allowPasswordless: false,
-      });
-      if (authDecision.action !== 'allow') {
-        socket.destroy();
-        return;
-      }
+      const authorized = authorizeViewerWebSocket(req, socket);
+      if (!authorized) return;
+      const { wsUrl, pathname } = authorized;
+      if (pathname === '/ws/mux') return; // handled by the authenticated dialogue listener
       if (isSdkMode && (pathname === '/ws/terminal' || pathname === '/ws/terminal-scratch')) {
         try { req.cxvSdkSession = sdkViewForUrl(wsUrl); }
         catch { socket.destroy(); return; }
@@ -5744,6 +5812,8 @@ async function _doStop(deadlineAt) {
   }
   pendingCodexAsks.clear();
   shutdownScratchPtys();
+  dialogueMux?.close();
+  dialogueMux = null;
   if (terminalWss) {
     for (const client of terminalWss.clients) client.terminate();
     terminalWss.close();

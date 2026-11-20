@@ -1,6 +1,46 @@
 // 客户端专用的i18n文件
 
 const i18nData = {
+  "ui.loadEarlierShard": {
+    "zh": "加载更早历史",
+    "en": "Load earlier history",
+    "zh-TW": "載入更早歷史",
+    "ko": "이전 기록 로드",
+    "ja": "以前の履歴を読み込む",
+    "de": "Älteren Verlauf laden",
+    "es": "Cargar historial anterior",
+    "fr": "Charger l'historique précédent",
+    "it": "Carica cronologia precedente",
+    "da": "Indlæs ældre historik",
+    "pl": "Załaduj wcześniejszą historię",
+    "ru": "Загрузить более раннюю историю",
+    "ar": "تحميل السجل الأقدم",
+    "no": "Last inn eldre historikk",
+    "pt-BR": "Carregar histórico anterior",
+    "th": "โหลดประวัติก่อนหน้า",
+    "tr": "Önceki geçmişi yükle",
+    "uk": "Завантажити давнішу історію"
+  },
+  "ui.logsTotal": {
+    "zh": "共 {total} 条",
+    "en": "Total {total} items",
+    "zh-TW": "共 {total} 條",
+    "ko": "총 {total}개",
+    "ja": "合計 {total} 件",
+    "de": "Gesamt {total} Einträge",
+    "es": "Total {total} elementos",
+    "fr": "Total {total} éléments",
+    "it": "Totale {total} elementi",
+    "da": "I alt {total} elementer",
+    "pl": "Łącznie {total} pozycji",
+    "ru": "Всего {total} записей",
+    "ar": "الإجمالي {total} عنصر",
+    "no": "Totalt {total} elementer",
+    "pt-BR": "Total de {total} itens",
+    "th": "ทั้งหมด {total} รายการ",
+    "tr": "Toplam {total} öğe",
+    "uk": "Всього {total} записів"
+  },
   "ui.chatInput.queueRemove": {
     "zh": "移除",
     "en": "Remove",

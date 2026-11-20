@@ -720,7 +720,7 @@ class Mobile extends AppBase {
                     mobileChatVisible={true}
                     fileLoading={this.state.fileLoading}
                     isStreaming={this.state.isStreaming}
-                    hasMoreHistory={this.state.hasMoreHistory}
+                    shards={this.state.shards} shardPrependCount={this.state.shardPrependCount} hasMoreHistory={this.state.hasMoreHistory}
                     loadingMore={this.state.loadingMore}
                     onLoadMoreHistory={() => this.loadMoreHistory()}
                     loadingSessionId={this.state.loadingSessionId}
@@ -888,8 +888,8 @@ class Mobile extends AppBase {
               <Select
                 size="small"
                 aria-label={t('ui.projectAlias.projectLabel')}
-                value={this.state.currentProject || undefined}
-                options={Object.keys(this.state.localLogs).sort().map(project => ({ value: project, label: project }))}
+                value={this.state.logViewProject || this.state.currentProject || undefined}
+                options={this.state.allLogProjects.map(project => ({ value: project, label: project }))}
                 onChange={this.handleLogProjectChange}
                 style={{ flex: 1, minWidth: 0 }}
               />
@@ -907,7 +907,7 @@ class Mobile extends AppBase {
               {this.state.localLogsLoading ? (
                 <div className={styles.spinCenter}><Spin /></div>
               ) : (() => {
-                const currentLogs = this.state.localLogs[this.state.currentProject];
+                const currentLogs = this.state.localLogs;
                 if (!currentLogs || currentLogs.length === 0) {
                   return (
                     <div className={styles.emptyCenter}>

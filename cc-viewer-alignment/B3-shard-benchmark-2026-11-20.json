@@ -1,0 +1,64 @@
+{
+  "runtime": "v24.14.0",
+  "platform": "darwin",
+  "arch": "arm64",
+  "dataset": "2001 cumulative synthetic GUI prompts, production 2000-prompt cut",
+  "results": [
+    {
+      "limit": 400,
+      "total": 2001,
+      "windowRows": 1,
+      "shard": {
+        "part": 1,
+        "total": 2,
+        "inputBaselines": [
+          {
+            "threadId": "b3-A",
+            "path": "root.body.input",
+            "revision": 2000,
+            "length": 3999
+          }
+        ]
+      },
+      "firstSeq": 2001,
+      "snapshotMs": 68.299,
+      "projectionMs": 20.70441600000001,
+      "objectRequests": 1,
+      "objectBytes": 1349,
+      "historyPages": 20,
+      "paginationMs": 997.1473340000001,
+      "retryVerified": true,
+      "finalRows": 2001,
+      "rssBytes": 185712640,
+      "controlBytes": 546723
+    },
+    {
+      "limit": 200,
+      "total": 2001,
+      "windowRows": 1,
+      "shard": {
+        "part": 1,
+        "total": 2,
+        "inputBaselines": [
+          {
+            "threadId": "b3-A",
+            "path": "root.body.input",
+            "revision": 2000,
+            "length": 3999
+          }
+        ]
+      },
+      "firstSeq": 2001,
+      "snapshotMs": 53.135125000000016,
+      "projectionMs": 13.538999999999987,
+      "objectRequests": 1,
+      "objectBytes": 1349,
+      "historyPages": 20,
+      "paginationMs": 954.643292,
+      "retryVerified": true,
+      "finalRows": 2001,
+      "rssBytes": 248807424,
+      "controlBytes": 546723
+    }
+  ]
+}

@@ -29,7 +29,8 @@ import {
   scanMaterializedSessionArchive,
 } from './materializer.js';
 import { validateSessionManifest } from './schema.js';
-import { scanJsonlSync, withFileLockSync } from './storage.js';
+import { scanSessionTimelineSync } from './shards.js';
+import { withFileLockSync } from './storage.js';
 import { assertPublicFilePath } from '../credential-file-policy.js';
 
 export const LOG_ARCHIVE_LIMITS = Object.freeze({
@@ -427,7 +428,7 @@ export async function parseV2SessionZip(data, options = {}) {
 function winningTimelineSequences(sessionDir) {
   const winners = new Map();
   let expectedSeq = 1;
-  const timeline = scanJsonlSync(join(sessionDir, 'timeline.jsonl'), ({ value }) => {
+  const timeline = scanSessionTimelineSync(sessionDir, ({ value }) => {
     if (value.seq !== expectedSeq++) throw new Error(`timeline sequence gap at ${expectedSeq - 1}`);
     if (winners.has(value.entryKey)) winners.delete(value.entryKey);
     winners.set(value.entryKey, value.seq);

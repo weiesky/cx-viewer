@@ -1,7 +1,8 @@
 import { closeSync, existsSync, openSync, readFileSync, readSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { applyWireCommit, checkpointWireArchiveState, createWireArchiveState } from './reducer.js';
+import { applyWireCommit, checkpointWireArchiveState, createWireArchiveState, restoreWireArchiveState } from './reducer.js';
+import { partForSequence, readShardBaseline, readShardLayout, timelinePartDir, timelinePartPath } from './shards.js';
 import { validateRequestSummary } from './request-summary.js';
 import { validateSessionManifest, validateTimelineRecord } from './schema.js';
 import { readContentObjectSync, readJsonReferenceSync, scanJsonlRangeSync, scanJsonlSync, sha256, stableJsonStringify } from './storage.js';
@@ -95,7 +96,7 @@ function wireRefMap(value) {
   return Object.fromEntries(Object.entries(value || {}).map(([part, ref]) => [part, wireObjectRef(ref)]));
 }
 
-function loadRequestSummaries(sessionDir, wantedSeqs = null) {
+function loadPartRequestSummaries(sessionDir, wantedSeqs = null) {
   const file = join(sessionDir, 'request-summaries.jsonl');
   if (!existsSync(file)) return new Map();
   const stat = statSync(file, { bigint: true });
@@ -147,12 +148,46 @@ function loadRequestSummaries(sessionDir, wantedSeqs = null) {
   return summaries;
 }
 
+function loadRequestSummaries(sessionDir, wantedSeqs = null) {
+  const layout = readShardLayout(sessionDir);
+  if (!layout.activePart) return loadPartRequestSummaries(sessionDir, wantedSeqs);
+  const groups = new Map();
+  if (wantedSeqs === null) {
+    for (let part = 0; part <= layout.activePart; part++) groups.set(part, null);
+  } else for (const seq of wantedSeqs) {
+    const part = partForSequence(layout.cuts, seq);
+    if (!groups.has(part)) groups.set(part, new Set());
+    groups.get(part).add(seq);
+  }
+  const summaries = new Map();
+  for (const [part, seqs] of groups) {
+    for (const [seq, value] of loadPartRequestSummaries(timelinePartDir(sessionDir, part), seqs)) summaries.set(seq, value);
+  }
+  return summaries;
+}
+
 function requestSummaryLocator(sessionDir, seq) {
-  const locator = summaryIndexes.get(join(sessionDir, 'request-summaries.jsonl'))?.locators.get(seq);
-  return locator ? Object.freeze({ offset: locator.offset, length: locator.length }) : null;
+  const part = partForSequence(readShardLayout(sessionDir).cuts, seq);
+  const locator = summaryIndexes.get(join(timelinePartDir(sessionDir, part), 'request-summaries.jsonl'))?.locators.get(seq);
+  return locator ? Object.freeze({ offset: locator.offset, length: locator.length, ...(part ? { part } : {}) }) : null;
 }
 
 function loadRequestSummariesAtLocators(sessionDir, winners, descriptors) {
+  const layout = readShardLayout(sessionDir);
+  if (!layout.activePart) return loadPartRequestSummariesAtLocators(sessionDir, winners, descriptors);
+  const groups = new Map(), summaries = new Map();
+  descriptors.forEach((descriptor, index) => {
+    const part = partForSequence(layout.cuts, descriptor.seq);
+    if (!groups.has(part)) groups.set(part, { winners: [], descriptors: [] });
+    groups.get(part).winners.push(winners[index]); groups.get(part).descriptors.push(descriptor);
+  });
+  for (const [part, group] of groups) {
+    for (const [seq, value] of loadPartRequestSummariesAtLocators(timelinePartDir(sessionDir, part), group.winners, group.descriptors)) summaries.set(seq, value);
+  }
+  return summaries;
+}
+
+function loadPartRequestSummariesAtLocators(sessionDir, winners, descriptors) {
   const summaries = new Map();
   const file = join(sessionDir, 'request-summaries.jsonl');
   if (!existsSync(file) || winners.length === 0) return summaries;
@@ -391,14 +426,21 @@ export function readV2WireSnapshot(logDir, file, {
   limit = 0,
   throughSeq = 0,
   includeRevisionState = false,
+  part = null,
+  deferSummaries = false,
 } = {}) {
-  const { sessionDir, timelinePath } = resolveV2SessionFile(logDir, file);
-  const manifest = readJson(join(sessionDir, 'manifest.json'));
+  const { sessionDir, manifest } = resolveV2SessionFile(logDir, file);
+  const layout = readShardLayout(sessionDir, manifest);
+  part ??= layout.activePart;
+  if (!Number.isSafeInteger(part) || part < 0 || part > layout.activePart) throw new TypeError('invalid V2 snapshot part');
+  const timelinePath = timelinePartPath(sessionDir, part);
   const manifestValidation = validateSessionManifest(manifest);
   if (!manifestValidation.ok) throw new Error(`invalid V2 session manifest: ${manifestValidation.errors.join('; ')}`);
   const archive = archiveIdentity(manifest);
-  const state = createWireArchiveState(archive);
-  let expectedSeq = 1;
+  const baseline = readShardBaseline(sessionDir, part, layout);
+  const state = baseline ? restoreWireArchiveState(baseline.checkpoint) : createWireArchiveState(archive);
+  if (!sameWireArchive(state.archive, archive)) throw new Error('V2 shard archive generation mismatch');
+  let expectedSeq = state.throughSeq + 1;
 
   const timelineScan = scanJsonlSync(timelinePath, ({ value, offset, length }) => {
     const validation = validateTimelineRecord(value);
@@ -416,6 +458,9 @@ export function readV2WireSnapshot(logDir, file, {
     error.offset = timelineScan.error.offset;
     throw error;
   }
+  if (part < layout.activePart && (timelineScan.error || state.throughSeq !== layout.cuts[part].throughSeq)) {
+    throw Object.assign(new Error('Frozen V2 shard cut mismatch'), { code: 'CXV_LOG_V2_CORRUPT' });
+  }
   if (throughSeq && state.throughSeq !== throughSeq) {
     const error = new Error('V2 frozen watermark is beyond the archive tail');
     error.code = 'CXV_LOG_V2_WIRE_RESET_REQUIRED';
@@ -425,13 +470,15 @@ export function readV2WireSnapshot(logDir, file, {
   const winners = [...state.winners.values()];
   const selected = limit > 0 && winners.length > limit ? winners.slice(-limit) : winners;
   const selectedSeqs = new Set(selected.map(value => value.seq));
-  const summariesBySeq = loadRequestSummaries(sessionDir, selectedSeqs);
+  // Explicit older-part reads also freeze derived-file locators, so subsequent
+  // pages can reuse their index instead of replaying that part for every click.
+  const summariesBySeq = deferSummaries && part === layout.activePart ? new Map() : loadRequestSummaries(sessionDir, selectedSeqs);
   // The initial window is the only summary payload needed for the snapshot
   // response.  Older winners stay as lightweight descriptors in the frozen
   // page index and resolve their summaries only if that page is requested.
   // Rebuilding every missing derived summary here made a 200/400-entry first
   // window pay object I/O for the entire archive.
-  const summaries = selected.map(descriptor => summaryForDescriptor(summariesBySeq, descriptor)
+  const summaries = deferSummaries ? [] : selected.map(descriptor => summaryForDescriptor(summariesBySeq, descriptor)
     || rebuildRequestSummary(sessionDir, descriptor));
   const cursor = createWireCursor(
     archive,
@@ -444,11 +491,19 @@ export function readV2WireSnapshot(logDir, file, {
     ...fullCheckpoint,
     winners: Object.freeze(fullCheckpoint.winners.filter(value => selectedSeqs.has(value.descriptor.seq))),
   });
+  const shard = layout.activePart ? {
+    part, total: layout.activePart + 1,
+    inputBaselines: (baseline?.checkpoint.threads || []).map(thread => ({
+      threadId: thread.threadId, path: thread.path, revision: thread.revision, length: thread.length,
+    })),
+  } : null;
   const pageIndex = Object.freeze({
     cursor,
     // Internal locator used by readV2WirePageFromIndex. It is never emitted on
     // the wire, but survives the snapshot worker's structured clone.
     sessionDir,
+    logDir, file, part,
+    shard,
     values: Object.freeze(fullCheckpoint.winners.map(winner => Object.freeze({
       winner,
       summaryLocator: requestSummaryLocator(sessionDir, winner.descriptor.seq),
@@ -461,7 +516,8 @@ export function readV2WireSnapshot(logDir, file, {
     cursor,
     total: winners.length,
     windowCount: selected.length,
-    hasMore: selected.length < winners.length,
+    hasMore: selected.length < winners.length || part > 0,
+    ...(shard ? { shard } : {}),
   });
   const end = createWireEnvelope(LOG_V2_WIRE_KINDS.end, archive, { cursor });
   return Object.freeze({
@@ -503,6 +559,12 @@ export function readV2WirePageFromIndex(pageIndex, {
     else high = middle;
   }
   const eligibleCount = low;
+  if (eligibleCount === 0 && pageIndex.part > 0) {
+    const layout = readShardLayout(pageIndex.sessionDir);
+    const part = Math.min(pageIndex.part - 1, partForSequence(layout.cuts, beforeSeq - 1));
+    const older = readV2WireSnapshot(pageIndex.logDir, pageIndex.file, { part, deferSummaries: true });
+    return readV2WirePageFromIndex({ ...older.pageIndex, cursor }, { cursor, beforeSeq, limit, deferSummaries });
+  }
   const selected = pageIndex.values.slice(Math.max(0, eligibleCount - limit), eligibleCount);
   const pageSeqs = new Set(selected.map(value => value.winner.descriptor.seq));
   const summariesBySeq = !deferSummaries && typeof pageIndex.sessionDir === 'string'
@@ -535,8 +597,9 @@ export function readV2WirePageFromIndex(pageIndex, {
     cursor,
     page: true,
     windowCount: selected.length,
-    hasMore: eligibleCount > selected.length,
+    hasMore: eligibleCount > selected.length || pageIndex.part > 0,
     nextBeforeSeq,
+    ...(pageIndex.shard ? { shard: pageIndex.shard } : {}),
   });
   return Object.freeze({
     start,
@@ -548,6 +611,7 @@ export function readV2WirePageFromIndex(pageIndex, {
       ...value.winner,
       summaryLocator: value.summaryLocator ?? null,
     }))),
+    pageIndex,
     end: createWireEnvelope(LOG_V2_WIRE_KINDS.end, cursor.archive, { cursor }),
   });
 }
@@ -583,8 +647,11 @@ export function readV2WireCommitsAfter(logDir, file, {
     throw error;
   }
   const pending = [];
-  const state = createWireArchiveState(archive);
-  let expectedSeq = 1;
+  const layout = readShardLayout(sessionDir, manifest);
+  const baseline = readShardBaseline(sessionDir, layout.activePart, layout);
+  const state = baseline ? restoreWireArchiveState(baseline.checkpoint) : createWireArchiveState(archive);
+  if (afterSeq < state.throughSeq) throw Object.assign(new Error('V2 replay cursor precedes the active shard'), { code: 'CXV_LOG_V2_WIRE_RESET_REQUIRED' });
+  let expectedSeq = state.throughSeq + 1;
   const scan = scanJsonlSync(timelinePath, ({ value, offset, length }) => {
     const validation = validateTimelineRecord(value);
     if (!validation.ok) throw new Error(validation.errors.join('; '));

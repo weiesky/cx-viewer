@@ -1,6 +1,6 @@
 # cc-viewer 逐提交对齐台账
 
-2026-11-19 用户明确验收B2并要求收口、压缩本地提交后推送main。B2现已按用户验收结论完成，当前进入B3准备（第4/12工作包）。固定上游快照仍为74cd752d99caf122e750216d2af3bb9f467c4de1，继续先读PR实际diff、完整调用链和CSS。B2最终1295/1295、0 skip、构建、685文件新安装/202Web精确字节、66/66运行时、B1.2及隔离CLI通过；桌面/移动工作区回退、共享历史恢复及原thread续发、iOS模拟器软键盘/虚拟键通过。指针跨项拖放、物理单/多指惯性、其他平台/真实外部模型等保留为未覆盖项，用户接受据此收口，不将它们改写为测试通过。63笔本地提交与本轮进度文档合并为本次main聚合提交，旧历史和映射保留；详见local-commit-consolidation-2026-11-19.md。B3交接见B3-handoff.md，本轮不夹带B3实现。
+2026-11-20 B3本地迁移完成（第4/12工作包），B2保持用户验收完成；固定上游74cd752d99caf122e750216d2af3bb9f467c4de1。按用户选择渐进启用2000-prompt分片，已完成writer/reader恢复、旧写者版本隔离、按需历史与对象授权、cold gate/live重放、完整ZIP/归档删除保护、原按钮/CSS、mux背压、分页及增量工具扫描；真实Safari桌面/强制移动布局与重启、2001轮冷窗口/20页完整历史已验证。最终源码1410/1410、0 skip、构建通过；最终新生产安装结果见B3-completion-matrix.md。没有转换真实用户日志；用户现已确认B3收口并要求30笔合并推送main，见[提交合并记录](./local-commit-consolidation-2026-11-20.md)。下一工作包B4；真实模型/外部慢网、Windows/Linux/最低Node、物理设备和断电等仍未验证，保留原验证边界，不整体勾选混合提交其他子项。详见[B3完成矩阵](./B3-completion-matrix.md)与[B3分片实施](./B3-sharding.md)。
 
 2026-11-18 GitHub 同步：已按用户请求将 main 6045b53 与 codex/pnpm-workspace 2c0edc8 原子推送到 origin 同名分支，远端完整 hash 已读回核对，上游跟踪已设置。未执行强推、分支合并或活动安装切换；未提交的 AGENTS.md 与 cc-viewer-alignment 文档仍保留本地。
 
@@ -315,6 +315,7 @@
 
 <a id="commit-bde0244333"></a>
 ## [bde0244333](https://github.com/weiesky/cc-viewer/commit/bde0244333a14245e5889deafca622cdb97bbff9) — fix(server): WS-mux cold-load backpressure stall (1011 queue-overflow blank chat)
+- 2026-11-20 B3：`4a7a8e7`迁入最终credit-based pump；100ms、4MB预算、双时钟stall、control bypass、drain语义保留，48/48服务器/背压通过；`c31b20b`真实路由复用现有SSE生产者。物理慢网/完整进程崩溃未覆盖。详见[B3第二轮](./B3-transport-and-pagination.md)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-bde0244333)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-bde0244333)
 
@@ -1466,6 +1467,7 @@
 
 <a id="commit-4391792212"></a>
 ## [4391792212](https://github.com/weiesky/cc-viewer/commit/439179221296fcc2ca1beb0ffce69c13a336b56f) — review(3-commit CR): harden shard cursor/seeding + base-url parsing, dedupe shard cut resolution, translate new comments
+- 2026-11-20 B3当前结论：分片后续修复已完成：持久promptCount重开、已交付窗口游标、manifest唯一切点、异步prepend归属/gate/ack、空片历史入口与附件尾部值守卫（e8ed8a7）。URL base等其他混合子项仍属B10/B11，不整条勾选。 最终验证及边界见[B3完成矩阵](./B3-completion-matrix.md)与[分片实施](./B3-sharding.md)。
 - B0 本地关键代码对照：复审同时覆盖附件 stable-id、日志 shard cursor/重启 seed、view 切换状态及 base-url 反斜杠/C0 导致的跨域 token 风险。本地 ChatView.jsx 有附件、log-v2 有 cursor、apiUrl.js 有路径前缀；必须分别验证，不照搬上游 shard 结构，归 B3/B7/B10。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-4391792212)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-4391792212)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-4391792212)
@@ -1617,6 +1619,7 @@
 
 <a id="commit-b23c137372"></a>
 ## [b23c137372](https://github.com/weiesky/cc-viewer/commit/b23c137372d979186c024de6a1c6eca873cc3306) — fix(logs): auto-shard oversized session logs by prompt count + manual per-shard load
+- 2026-11-20 B3当前结论：分片B3子能力已完成：812277c/ce8c884/aee399e/48afcd7/2639cd8/57bddc8/9cd3024/c9a3991/94f81bf/d382bc7/e8ed8a7；渐进启用，原root字节保留，后续parts/N、默认2000切点、版本隔离、完整历史/导出/删除与空片恢复。2001轮真实阈值和Safari通过。 最终验证及边界见[B3完成矩阵](./B3-completion-matrix.md)与[分片实施](./B3-sharding.md)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-b23c137372)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-b23c137372)
 
@@ -2259,6 +2262,7 @@
 
 <a id="commit-c29af25e64"></a>
 ## [c29af25e64](https://github.com/weiesky/cc-viewer/commit/c29af25e64d3491fe7c58dc80bf859eda7831ba4) — fix(server+web): upstream v1.9.19 review — file-tree path, convSeqs single pass, toolUseMap LRU trim, approval guards
+- 2026-11-20 B3：`f20f7b2`迁入toolUseMap随已处理id FIFO同步清理，20001条完成工具→保留15000条及payload；不把本笔等同整个混合提交完成。convSeqs的Claude文件覆盖协议与本地事务timeline不同，其他file-tree/approval子项保留所属工作包。详见[B3第二轮](./B3-transport-and-pagination.md)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-c29af25e64)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-c29af25e64)
 
@@ -2319,6 +2323,7 @@
 
 <a id="commit-0cbb545288"></a>
 ## [0cbb545288](https://github.com/weiesky/cc-viewer/commit/0cbb5452887476d3838c772e9fcd04cf3d01ce63) — perf(web): incremental scan in ToolFileChangeController.check
+- 2026-11-20 B3当前结论：f20f7b2迁入最终增量两pass/尾部重扫/持久Map；Codex body.input数组替换失效；c29af25e64的LRU清理同步释放payload。原提案回退后此独立重提有效，B3增量扫描完成。 最终验证及边界见[B3完成矩阵](./B3-completion-matrix.md)与[分片实施](./B3-sharding.md)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-0cbb545288)
 - B0 status: Pending B3 benchmark: local controller scans histories; check Codex event semantics.
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-0cbb545288)
@@ -3553,6 +3558,7 @@
 
 <a id="commit-0c7195b689"></a>
 ## [0c7195b689](https://github.com/weiesky/cc-viewer/commit/0c7195b68967f3c92a84b5ea5e0c271672c798e0) — fix(web): refresh changes after git commits
+- 2026-11-20 B3当前结论：563a51d迁入git commit命令分类；真实ToolFileChangeController覆盖成功刷新、失败/只读不刷新、重复结果幂等。仅B3刷新信号完成，其他Git能力按B5核对。 最终验证及边界见[B3完成矩阵](./B3-completion-matrix.md)与[分片实施](./B3-sharding.md)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-0c7195b689)
 - B0 status: Adapt in B3/B5: git commit does not trigger the local mutation classifier.
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-0c7195b689)
@@ -4170,6 +4176,7 @@
 
 <a id="commit-45bfa4124d"></a>
 ## [45bfa4124d](https://github.com/weiesky/cc-viewer/commit/45bfa4124d73c034220405efdc32b8cf0fe74a20) — fix(server): gate [ccv:*] diagnostic logs on CCV_DEBUG
+- 2026-11-20 B3：`2e4ecbd`迁入共享报告器及CXV_DEBUG包装，新mux沿用；既有其他服务器诊断点不因此整批改写或整体完成。详见[B3第二轮](./B3-transport-and-pagination.md)。
 - B0 本地关键代码对照：上游将服务端可恢复诊断日志置于 CCV_DEBUG，前端不变；本地 server.js 部分日志已 gated by CXV_DEBUG，另有 src/utils/errorReport.js。须区分安全事件、用户错误和可恢复日志，归 B11。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-45bfa4124d)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-45bfa4124d)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-45bfa4124d)
@@ -4607,6 +4614,7 @@
 
 <a id="commit-46d33276c9"></a>
 ## [46d33276c9](https://github.com/weiesky/cc-viewer/commit/46d33276c9bda1a0ab09a153762c7987be18fa25) — fix(sse): gate ws.mux.diag probes + pin perMessageDeflate:false (CR follow-up)
+- 2026-11-20 B3：`16e2406`保留显式诊断开关，`4a7a8e7`保留perMessageDeflate:false及后续最终pump；48项含大帧/队列测试，Safari真实增量和重启已观察。详见[B3第二轮](./B3-transport-and-pagination.md)。
 - B0 本地关键代码对照：上游为 mux 诊断加显式开关、固定禁用 perMessageDeflate 和大帧测试；本地应先核对实际 WS 构造及敏感日志，只有采用相同 mux 时才复用具体配置，归 B3。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-46d33276c9)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-46d33276c9)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-46d33276c9)
@@ -4675,6 +4683,7 @@
 
 <a id="commit-4991ba762d"></a>
 ## [4991ba762d](https://github.com/weiesky/cc-viewer/commit/4991ba762db4fdaf68450880dfd4d399d290eee0) — fix(sse): WS-mux cold-load queue overflow left dialogue blank after refresh
+- 2026-11-20 B3：`16e2406`/`4a7a8e7`迁入后续最终32MB真实字节FIFO/credit pump；不重用terminal的跳帧语义。纯服务器/背压48/48及真实路由通过，不能把最终snapshot有界当作物理分片。详见[B3第二轮](./B3-transport-and-pagination.md)。
 - B0 本地关键代码对照：上游 WS mux 大冷加载因压缩+backpressure 造成循环断线，后续 46d33276 补充日志开关与回归；本地 server.js 有 bufferedAmount 排队，是否为同一通道及压缩选项须核实。以大快消费者、慢消费者和重连验证，归 B3。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-4991ba762d)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-4991ba762d)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-4991ba762d)
@@ -4764,6 +4773,7 @@
 
 <a id="commit-db2ada0866"></a>
 ## [db2ada0866](https://github.com/weiesky/cc-viewer/commit/db2ada0866f721ed82560ca267b0447be8619711) — feat(sse): multiplex the dialogue channel over one WebSocket, SSE fallback
+- 2026-11-20 B3：`16e2406`前端最终transport、`4a7a8e7`服务端最终pump、`c31b20b`接入真实鉴权/scope。snapshot/page/object仍HTTP，control与V2 live共用WS，逐流SSE降级保留。真实WS/SSE载荷/游标/隔离/回收与Safari增量重连通过，慢网等边界仍未全验。详见[B3第二轮](./B3-transport-and-pagination.md)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-db2ada0866)
 - B0 status: Pending B3 validation: terminal WebSocket is not the dialogue multiplexer.
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-db2ada0866)
@@ -4880,6 +4890,7 @@
 
 <a id="commit-a30d8c92a7"></a>
 ## [a30d8c92a7](https://github.com/weiesky/cc-viewer/commit/a30d8c92a7a56803d501ea50775f9993c96a19d5) — fix(sse): per-workspace SSE 通道 CR 修复(P1×7+P2×7)与 git-diff flake
+- 2026-11-20 B3：`c31b20b`沿用现有scope handler和Origin/token边界并补真实mux/SSE隔离/回收；错误B scope+A handle拒绝且无watcher残留。混合P1/P2其余项保持逐项边界。详见[B3第二轮](./B3-transport-and-pagination.md)。
 - B0 本地关键代码对照：上游 per-workspace SSE 审查包含 stop 防写、streaming scope、close 清理、sid 元数据及跨项目重绑定等多项 P1；本地非同一实现，需对照 server.js/live 与 AppBase.jsx 的工作区事件逐项故障注入，归 B2/B3/B4。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-a30d8c92a7)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-a30d8c92a7)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-a30d8c92a7)
@@ -4905,6 +4916,7 @@
 
 <a id="commit-5c28d4c50a"></a>
 ## [5c28d4c50a](https://github.com/weiesky/cc-viewer/commit/5c28d4c50a952110c32b04922cee56bdf9bd8560) — feat(sse): per-workspace independent SSE channels
+- 2026-11-20 B3：`c31b20b`在原Codex SDK精确instance/cwd路径接入mux，真实路由证明多scope、相同SSE字节、cursor和watcher释放；Safari同名A/B切换通过。Claude per-workspace channel其余子项不整体完成。详见[B3第二轮](./B3-transport-and-pagination.md)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-5c28d4c50a)
 - B0 status: Pending B2/B3 validation: EventSource exists; scoped isolation not yet proven.
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-5c28d4c50a)
@@ -6225,6 +6237,8 @@
 
 <a id="commit-0670581b3d"></a>
 ## [0670581b3d](https://github.com/weiesky/cc-viewer/commit/0670581b3dd0bcecebc1a88d8a032f295b6ada66) — fix(chat): release cold-ingest gate on pipeline failure to unfreeze conversation panel
+- 2026-11-20 B3当前结论：冷载B3子能力完成：a55eb66/5047b36/2b765b1/fb20fd5，gate/索引恢复、成功入队后确认cursor、写失败关闭/释放及外围诊断；自然磁盘损坏HTTP拒绝后重试、reset/刷新缓存已观察，异步历史prepend复用同一闸门。 最终验证及边界见[B3完成矩阵](./B3-completion-matrix.md)与[分片实施](./B3-sharding.md)。
+- 2026-11-19 B3：`a55eb66`失败恢复、`5047b36`本地V2入队后确认游标、`2b765b1`SSE写失败关闭与回收。已读完整diff与固定快照调用链；最终1312/1312、构建/685文件预览、故障探针、真实HTTP写失败关闭/原游标重放及初始基准通过。浏览器自然损坏/reset恢复、异步flush异常及外围catch对照未全覆盖，不标整条完成。见[B3实施](./B3-implementation.md)。
 - B0 复核结论（2026-11-17）：**需适配，归 B3**。已读完整 diff、上游 gate/seen 测试及固定快照最终实现。本地实际活跃/历史 snapshot 均进入 `_runSseColdIngest`，处理后注入异常会留下 gate=true 和与旧 state 不一致的索引；活跃入口安排 1000ms 重试，移除故障后可恢复，历史入口只清 loading。null 直接方法调用抛错；V3 seen 和服务端写异常子项仍须按本地 V2 分别核验。新增 [隔离探针与证据](./B0-cold-ingest-review.md)，相关现有测试 81/81；本地产品修复提交：无（B0 审计），GUI/自然损坏触发源未验证。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-0670581b3d)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-0670581b3d)
@@ -6510,6 +6524,8 @@
 
 <a id="commit-d7f355ba89"></a>
 ## [d7f355ba89](https://github.com/weiesky/cc-viewer/commit/d7f355ba895e24bb5e46c820a7d3105a76018ea3) — fix(chat): rebuild conversation immediately on mid-round page refresh
+- 2026-11-20 B3当前结论：B3同会话response子项4a21cec及原B2首轮投影/队列证据保留；本轮分片prepend重投影与live恢复通过。Claude SDK任务/其他混合子项仍在B4/B11，不整条完成。 最终验证及边界见[B3完成矩阵](./B3-completion-matrix.md)与[分片实施](./B3-sharding.md)。
+- 2026-11-19 B3：`4a21cec`迁入undefined不覆盖已有response守卫，适配Codex投影窗口/末位替换同会话分支，保留新身份/compaction/null语义。56/56针对、Web222/222、最终全量1312/1312；原loopback首轮快照仍通过。上游自身冷载体测试也允许response undefined，本地答案已在transcript，不能据字段判气泡丢失；浏览器产品验收仍待。见[B3实施](./B3-implementation.md)。
 - B2补缺`c11609f`/`a8df3db`：真实Chrome/Safari发现运行中提示/暂停队列刷新丢失，补activeInput/epoch及HTTP模式发现竞态。当前真实双浏览器相应刷新均通过；该条B3存储/其他投影边界仍保留原台账，不整体完成。
 - B0 复核结论（2026-11-17）：**首轮刷新数据链路已具备；response 子项及产品验收仍待核验，归 B3/B4**。实际 writer/coordinator 建立已完成 P 与首轮进行中 N，loopback snapshot/object 路由和提取的 AppBase 方法重建 N，持久指针也选择 N；snapshot 后完成记录通过实际 SSE 重放和客户端投影。下一轮进行中冷加载保留上一轮回答 messages，但清除 lastSession.response，未等价于上游保留 response 的子项；不据此推断气泡丢失。[证据与限制](./B0-cold-ingest-review.md)；相关测试 81/81，本地产品实现提交：沿用当前基线，无新增。真实浏览器/CLI/移动端未验证。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-d7f355ba89)
@@ -7008,6 +7024,7 @@
 
 <a id="commit-57798b7ccc"></a>
 ## [57798b7ccc](https://github.com/weiesky/cc-viewer/commit/57798b7ccc4d38c0cfa7535ba6c299ce8cfa45e8) — fix(logs): project switch lag, single-page pager, and pager spacing in log-management modal
+- 2026-11-20 B3：`4883004`迁入setState回调内refetch、total>50无单页pager、上游4px CSS间距。Codex补request-id守卫迟到项目响应；Web248/248、Safari51/1会话项目切换和重开实测通过；移动分页GUI仍未验。详见[B3第二轮](./B3-transport-and-pagination.md)。
 - B0 本地关键代码对照：本地 AppBase.jsx 的 loadLocalLogs 一次请求 /api/local-logs，handleLogProjectChange 只更新项目状态，与上游分页 refetch 流程不同；仍需检查快速切换、单页展示和 CSS，归 B3/B7。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-57798b7ccc)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-57798b7ccc)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-57798b7ccc)
@@ -7218,6 +7235,7 @@
 
 <a id="commit-fa77ecd681"></a>
 ## [fa77ecd681](https://github.com/weiesky/cc-viewer/commit/fa77ecd6818e2a4874d2020dd09e0d6f6dcde672) — fix(v2): exclude proxy retry-stat shards from legacy v1 log sniffing
+- 2026-11-20 B3当前结论：格式审计完成：本地只发现经manifest校验的canonical目录，无按JSONL后缀猜测V1的入口；proxy统计不进入该发现链。不照搬不存在的Claude sniff转换器。 最终验证及边界见[B3完成矩阵](./B3-completion-matrix.md)与[分片实施](./B3-sharding.md)。
 - B0 本地关键代码对照：上游修复旧日志扫描把 proxy_日期.jsonl 识别为会话；本地迁移脚本与上游布局不同，需先核查迁移候选来源和统计文件布局，再用非会话文件构造误识别测试，归 B3。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-fa77ecd681)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-fa77ecd681)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-fa77ecd681)
@@ -14816,6 +14834,7 @@
 
 <a id="commit-e4fc788b9e"></a>
 ## [e4fc788b9e](https://github.com/weiesky/cc-viewer/commit/e4fc788b9e324c8b1604a20eac541d88bade78ec) — fix(v2-read): finalize crash orphans as completed deltas on cold reads (1.7.16)
+- 2026-11-20 B3当前结论：本地格式等效已验证：32f6d94实际canonical writer预提交故障/重开，输入slice保留，未提交不可见，投影/normalizer/sessionMerge无虚构answer；不将Codex进行中记录强制改completed。Claude缺done转换规则不照搬。 最终验证及边界见[B3完成矩阵](./B3-completion-matrix.md)与[分片实施](./B3-sharding.md)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-e4fc788b9e)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-e4fc788b9e)
 
@@ -14919,6 +14938,7 @@
 
 <a id="commit-6baff0cd6f"></a>
 ## [6baff0cd6f](https://github.com/weiesky/cc-viewer/commit/6baff0cd6f3235daba1777ccd3c0919030596146) — feat(log-list): perf cache + server-side pagination + project switcher (1.7.13)
+- 2026-11-20 B3：`363d061`canonical列表服务端分页、复用现有summary缓存；`4883004`迁入50行分页/查看项目/宿主布局。17/17物化器、3/3路由、Web248/248；真实Safari51→50+1、切项目及重开通过。Claude V1迁移提示/TTL等混合子项仍按本地格式核对，不整条勾选。详见[B3第二轮](./B3-transport-and-pagination.md)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-6baff0cd6f)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-6baff0cd6f)
 
@@ -15068,6 +15088,7 @@
 
 <a id="commit-87432d4c5a"></a>
 ## [87432d4c5a](https://github.com/weiesky/cc-viewer/commit/87432d4c5aed9ac923c9f138af92a3059abe2fca) — fix(migrate): respect status:'done' in pendingOf() to stop false re-prompts after migration
+- 2026-11-20 B3当前结论：格式审计完成：Claude V1双写/migrate_prompt在本地不存在；canonical布局迁移receipt.complete直接返回，现有零写预览/完成幂等/备份/锁/坏归档隔离测试最终全量通过。不新建V1自动转换入口。 最终验证及边界见[B3完成矩阵](./B3-completion-matrix.md)与[分片实施](./B3-sharding.md)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-87432d4c5a)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-87432d4c5a)
 
@@ -15460,3 +15481,19 @@
 ## 2026-11-19 用户验收B2收口与B3准备
 
 用户明确认为B2已可以，授权收口、将本地commit合为一个提交到main并提交GitHub。B2状态改为用户验收完成；指针/真机多指等仍保留未验证事实，不再阻塞本轮收口。原63笔上游/本地映射与历史对象不删除，见[压缩记录](./local-commit-consolidation-2026-11-19.md)。最新1295/1295与安装/GUI证据来自最后代码版本，本轮仅文档/历史整理，没有宣称重跑。下一工作包[B3交接](./B3-handoff.md)，尚无B3新增实现。
+
+## 2026-11-19 B3首轮实施与初始基准
+
+上游`0670581b3dd0bcecebc1a88d8a032f295b6ada66` → 本地`a55eb66` / `5047b36` / `2b765b1`；上游`d7f355ba895e24bb5e46c820a7d3105a76018ea3` → 本地`4a21cec`。独立提交及后续修复关系、Codex必要适配、源码/测试证据和未覆盖项见[B3实施](./B3-implementation.md)，没有UI/CSS重设计。最终1312/1312、0 skip、构建、685文件预览通过；初始长日志/高频数值已归档，不以单批reset和最终快照代替浏览器自动恢复验收。B3继续实施。
+
+## 2026-11-20 B3第二轮独立迁移与验证
+
+上游/本地逐笔映射见[B3第二轮](./B3-transport-and-pagination.md)，自然故障/真实窗口见[B3浏览器恢复](./B3-browser-recovery.md)。最终源码1394/1394、0 skip；构建、688文件新生产安装、202Web精确字节、134/134运行时、B1.2合成回归及隔离CLI相对--cd启动通过。原始安装结果见[B3-install-2026-11-20.json](./B3-install-2026-11-20.json)。自动分片尚未实施，旧归档政策等待用户选择；其他未覆盖项保持明示，不整体完成B3，也未推送或改真实日志。
+
+## 2026-11-20 B3渐进分片完成与收口
+
+用户已选择渐进启用并授权自主迁移；13笔独立实现/验证映射见[B3分片实施](./B3-sharding.md)，六项完成条件及17/46候选归属见[B3完成矩阵](./B3-completion-matrix.md)。最终全量1410/1410、0 skip、构建通过；689文件新生产安装、202Web精确字节、144/144运行时、B1.2合成回归及隔离CLI通过，原始结果见[B3最终安装](./B3-shard-install-2026-11-20.json)。B3本地迁移完成，下一包B4；没有宣称用户验收、真实用户日志批量迁移或其他混合子项完成，未推送。
+
+## 2026-11-20 用户确认B3收口与提交合并
+
+用户要求B3提交合并后提交GitHub；原30笔均映射至[本次main聚合提交](./local-commit-consolidation-2026-11-20.md)。原完整历史保留本地archive引用及已校验bundle；只更新进度文档，应用/测试/依赖/探针树保持原末端精确字节。推送采用正常快进，远端完整hash读回结果保存本地consolidation.json，不强推或改写旧远端历史。B3验证及未覆盖环境维持完成矩阵原结论，下一工作包B4。

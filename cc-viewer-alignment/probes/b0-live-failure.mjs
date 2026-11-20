@@ -1,18 +1,17 @@
-// B0 fault-injection evidence. Exit 0 means known pre-migration behavior was
-// observed, including defects. No user configuration or Codex process is used.
+// B0/B3 fault-injection evidence. Exit 0 checks the current recovery behavior. No user configuration or Codex process is used.
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { runInNewContext } from 'node:vm';
-import { LogV2Writer } from '../../lib/log-v2/writer.js';
-import { readV2WireSnapshot } from '../../lib/log-v2/transport.js';
-import { registerV2ObjectHandle, serveLogV2Live } from '../../server/lib/log-v2-routes.js';
-import { closeIdleV2TimelinePublishers, getV2TimelineWatcherStats } from '../../lib/log-v2/timeline-watcher.js';
-import { isV2ConversationCandidate } from '../../src/utils/logV2Archive.js';
+import { LogV2Writer } from '../../packages/app/lib/log-v2/writer.js';
+import { readV2WireSnapshot } from '../../packages/app/lib/log-v2/transport.js';
+import { registerV2ObjectHandle, serveLogV2Live } from '../../packages/app/server/lib/log-v2-routes.js';
+import { closeIdleV2TimelinePublishers, getV2TimelineWatcherStats } from '../../packages/app/lib/log-v2/timeline-watcher.js';
+import { isV2ConversationCandidate } from '../../apps/web/src/utils/logV2Archive.js';
 
-const source = readFileSync(new URL('../../src/AppBase.jsx', import.meta.url), 'utf8');
+const source = readFileSync(new URL('../../apps/web/src/AppBase.jsx', import.meta.url), 'utf8');
 function extract(start, end) {
   const a = source.indexOf(start);
   const b = source.indexOf(end, a + start.length);
@@ -45,12 +44,14 @@ for (const failure of ['apply', 'enqueue']) {
   const commit = { frame: { timeline: { seq: 2 } } };
   h._queueV2Commit(commit);
   await h._v2LiveChain;
-  assert.equal(h._v2AppliedSeq, failure === 'enqueue' ? 2 : 1);
-  assert.equal(resets, failure === 'enqueue' ? 0 : 1);
+  assert.equal(h._v2AppliedSeq, 1);
+  assert.equal(resets, 1);
   if (failure === 'enqueue') {
+    h._pendingEntries = [];
     h._queueV2Commit(commit);
     await h._v2LiveChain;
-    assert.equal(applies, 1, 'acknowledged frame is skipped on resend');
+    assert.equal(applies, 2, 'unacknowledged frame can be retried');
+    assert.equal(h._v2AppliedSeq, 2);
   }
   console.log(JSON.stringify({ scenario: `client-${failure}-failure`, appliedSeq: h._v2AppliedSeq, resets, applies }));
 }
@@ -92,9 +93,9 @@ try {
       await done;
       // Let the subscriber catch/finally finish after end() resolves the probe.
       await new Promise(resolve => setImmediate(resolve));
-      assert.equal(!!res.writableEnded, failure === 'once');
-      assert.equal(rejection, failure === 'always' ? 'B0 write failure' : null);
-      assert.equal(getV2TimelineWatcherStats().subscribers, failure === 'once' ? 0 : 1);
+      assert.equal(!!res.writableEnded, true);
+      assert.equal(rejection, null);
+      assert.equal(getV2TimelineWatcherStats().subscribers, 0);
       console.log(JSON.stringify({ scenario: `server-write-${failure}`, writes, ended: !!res.writableEnded,
         unhandledRejection: rejection, subscribersBeforeCleanup: getV2TimelineWatcherStats().subscribers }));
     } finally {

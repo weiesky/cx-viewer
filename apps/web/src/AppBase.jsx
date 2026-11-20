@@ -16,6 +16,7 @@ import { isMainAgent, classifySessionTransition, getEntryUserId, getMainAgentCon
 import { apiUrl, getBasePath } from './utils/apiUrl';
 import { publish as publishWorkflowUpdate } from './utils/workflowStore';
 import { reportSwallowed } from './utils/errorReport';
+import { createMuxTransport } from './utils/wsMuxTransport';
 import { playEvent as playVoiceEvent, unlockAudio, setTurnEndCooldownMs } from './utils/voicePackPlayer';
 import { getDefaultBindingsForLocale as vpDefaultBindingsForLocale } from '../../../packages/app/server/lib/voice-pack-events';
 import { mergeVoicePackInto } from '../../../packages/app/server/lib/approval-modal-prefs';
@@ -35,7 +36,6 @@ import { buildLegacyRequestViewModels } from './utils/requestViewModels';
 import { fetchLogV2Page, fetchLogV2Snapshot } from './utils/logV2Transport';
 import { loadV2CachedSnapshot, reconcileV2CachedSnapshot, saveV2CachedSnapshot, v2SnapshotCacheScope } from './utils/logV2Cache';
 import { isV2ConversationCandidate, LogV2Archive } from './utils/logV2Archive';
-import { chooseLogProject } from './utils/logProjectSelection';
 import { LOG_V2_WIRE_KINDS, LOG_V2_WIRE_LIMITS, LOG_V2_WIRE_VERSION } from '../../../packages/app/lib/log-v2/wire-schema';
 import styles from './App.module.css';
 
@@ -44,6 +44,7 @@ export { styles };
 export const MAX_SESSIONS = (isMobile && !isPad) ? 30 : 100;
 // /clear 后乐观水位：把上下文血条压到这个百分比，下一次 context_window SSE 推送会自动覆盖回真实值
 export const OPTIMISTIC_CLEAR_PERCENT = 5;
+const LOG_PAGE_SIZE = 50;
 
 // AntD 主题配置：模块顶层冻结常量。
 // 旧实现是 getter 每次 render 返回新字面量，导致 antd cssinjs useTheme cache 永远 miss、
@@ -96,7 +97,11 @@ class AppBase extends React.Component {
       // “仅展示当前会话”的本地稳定 id（= 会话起点 ts）。
       pinnedSessionTs: null,
       importModalVisible: false,
-      localLogs: {},       // { projectName: [{file, timestamp, size}] }
+      localLogs: [],
+      localLogsTotal: 0,
+      localLogsPage: 1,
+      logViewProject: '',
+      allLogProjects: [],
       localLogsLoading: false,
       showAll: false,
       lang: getLang(),
@@ -132,6 +137,8 @@ class AppBase extends React.Component {
       isStreaming: false,
       streamingLatest: null, // { timestamp, url, content, model } — Live typewriter overlay for latest assistant message
       hasMoreHistory: false,
+      shards: null,
+      shardPrependCount: 0,
       loadingMore: false,
       sessionIndex: [],
       loadingSessionId: null,
@@ -177,6 +184,15 @@ class AppBase extends React.Component {
       },
     };
     this.eventSource = null;
+    this._streamTransport = createMuxTransport({
+      openEventSource: url => new EventSource(url),
+      reportSwallowed,
+      onRuntimeFallback: facade => {
+        if (!this._unmounted && (facade === this.eventSource || facade === this._v2LiveSource)) {
+          this._resetV2Communication();
+        }
+      },
+    });
     this._liveConversationNormalizer = createConversationEntryNormalizer();
     this._currentSessionId = null;
     // Track the pre-/clear logical session id. Persistence is project-scoped
@@ -281,6 +297,7 @@ class AppBase extends React.Component {
     this._requestIndexMap.clear();
     for (let i = 0; i < entries.length; i++) {
       const e = entries[i];
+      if (!e) continue;
       this._requestIndexMap.set(`${e.timestamp}|${e.url}`, i);
     }
     if (resetIncremental) {
@@ -527,6 +544,7 @@ class AppBase extends React.Component {
    *  同步与分帧路径共用此方法 —— mergeMainAgentSessions 的调用序列/参数/
    *  _sessionId 赋值因此与抽取前完全相同（sessionMerge 脆弱区零语义变化）。 */
   _processOneEntry(entry, i, st) {
+    if (!entry) return;
     const mergeBlocked = isColdIngestMergeBlockedEntry(entry);
     const conversationExcluded = shouldExcludeFromConversation(entry);
     // SubAgent/Teammate rows remain projectable for their auxiliary transcript,
@@ -681,74 +699,118 @@ class AppBase extends React.Component {
     }
   }
 
+  /** Release only the failed pipeline's gate, then restore the visible baseline.
+   * V2 bootstrap commits are buffered separately and replayed by the next snapshot. */
+  _failColdIngest(myToken, baseline) {
+    if (this._ingestToken !== myToken || this._unmounted) return;
+    this._abortColdIngest({ drain: true });
+    this._ingestProgressCount = 0;
+    this.setState({ fileLoading: false, fileLoadingCount: 0 });
+    try {
+      this._rebuildRequestIndex(this.state.requests || []);
+    } catch (error) {
+      reportSwallowed('sse.cold-ingest-repair', error);
+    } finally {
+      // Do not rebuild a Codex prefix normalizer from already slimmed requests.
+      this._liveConversationNormalizer = baseline.normalizer;
+      this._currentSessionId = baseline.sessionId;
+      this._sseSlimmer = baseline.slimmer;
+    }
+  }
+
   /** initSSE load_end 的分帧版主流程（移动端 hot/cold 分层提交原样保留）。 */
   async _runSseColdIngest(rawEntries, { isIncremental, unlockContextBar, preSlimmed = false }) {
     const myToken = ++this._ingestToken;
     this._ingestRunning = true;
-    const ctl = this._makeIngestCtl(myToken);
-    const core = await this._runColdIngestCore(rawEntries, ctl, { preSlimmed });
-    if (core.aborted) return;
-    if (core.empty) {
-      const st = { fileLoading: false, fileLoadingCount: 0 };
-      if (unlockContextBar) st.contextBarLocked = false;
-      return this._commitColdIngest(myToken, st);
-    }
-    const { entries, mainAgentSessions, filtered } = core;
-
-    // P1: 移动端 hot/cold 分层
-    if (isMobile && mainAgentSessions.length > HOT_SESSION_COUNT) {
-      const sessionIndex = buildSessionIndex(entries, mainAgentSessions);
-      const fullIndex = isIncremental
-        ? mergeSessionIndices(this.state.sessionIndex, sessionIndex)
-        : sessionIndex;
-      const unslimmed = entries.map(e => e._slimmed ? restoreSlimmedEntry(e, entries) : e);
-      const { hotEntries, allSessions, coldGroups } = splitHotCold(
-        unslimmed, mainAgentSessions, fullIndex, HOT_SESSION_COUNT, this._pinnedSessionIdSet()
-      );
-      this._sseSlimmer = null;
-      // 冷 session entries 异步写入 IndexedDB
-      const pn = this.state.projectName;
-      if (pn) {
-        for (const [sid, coldEntries] of coldGroups) {
-          saveSessionEntries(pn, sid, coldEntries);
+    // These processors still belong to the visible baseline until React commits.
+    const baseline = {
+      normalizer: this._liveConversationNormalizer,
+      sessionId: this._currentSessionId,
+      slimmer: this._sseSlimmer,
+    };
+    try {
+      const ctl = this._makeIngestCtl(myToken);
+      const core = await this._runColdIngestCore(rawEntries, ctl, { preSlimmed });
+      if (core.aborted) return;
+      if (core.empty) {
+        const st = { fileLoading: false, fileLoadingCount: 0 };
+        if (this._v2Archive) {
+          this._processEntries([]);
+          this._sseSlimmer = null;
+          Object.assign(st, { requests: [], mainAgentSessions: [], selectedIndex: null,
+            hasMoreHistory: this._v2Archive.hasMore,
+            shards: this._v2Archive.start.shard ? { hasMore: this._v2Archive.hasMore } : null,
+            shardPrependCount: 0 });
         }
-        // 主缓存保存全量 entries（而非 hotEntries），确保下次缓存恢复时有完整数据
-        saveEntries(pn, entries);
+        if (unlockContextBar) st.contextBarLocked = false;
+        return await this._commitColdIngest(myToken, st);
       }
-      // Fix #4: selectedIndex 基于 hotEntries 而非全量 filtered
-      const hotFiltered = hotEntries.filter(e => isRelevantRequest(e));
-      const newState = {
-        requests: hotEntries,
-        selectedIndex: hotFiltered.length > 0 ? hotFiltered.length - 1 : null,
-        mainAgentSessions: allSessions,
-        sessionIndex: fullIndex,
-        fileLoading: false,
-        fileLoadingCount: 0,
-      };
-      // 增量模式保留缓存恢复时设的 hasMoreHistory；非增量（limit）模式用服务端的值
-      // hasMoreHistory 必须 AND 上 _oldestTs 非空，否则后续 loadMoreHistory() 会拼 before=null 触发 400
-      if (!isIncremental) newState.hasMoreHistory = this._v2Archive
-        ? !!this._v2Archive.hasMore
-        : !!this._hasMoreHistory && !!this._oldestTs;
-      if (unlockContextBar) newState.contextBarLocked = false;
-      return this._commitColdIngest(myToken, newState);
-    } else {
-      const newState = {
-        requests: entries,
-        selectedIndex: filtered.length > 0 ? filtered.length - 1 : null,
-        mainAgentSessions,
-        fileLoading: false,
-        fileLoadingCount: 0,
-      };
-      if (!isIncremental) newState.hasMoreHistory = this._v2Archive
-        ? !!this._v2Archive.hasMore
-        : !!this._hasMoreHistory && !!this._oldestTs;
-      if (unlockContextBar) newState.contextBarLocked = false;
-      return this._commitColdIngest(myToken, newState, () => {
-        if (isMobile && this.state.projectName) {
-          saveEntries(this.state.projectName, entries);
+      const { entries, mainAgentSessions, filtered } = core;
+
+      // P1: 移动端 hot/cold 分层
+      if (isMobile && mainAgentSessions.length > HOT_SESSION_COUNT) {
+        const sessionIndex = buildSessionIndex(entries, mainAgentSessions);
+        const fullIndex = isIncremental
+          ? mergeSessionIndices(this.state.sessionIndex, sessionIndex)
+          : sessionIndex;
+        const unslimmed = entries.map(e => e._slimmed ? restoreSlimmedEntry(e, entries) : e);
+        const { hotEntries, allSessions, coldGroups } = splitHotCold(
+          unslimmed, mainAgentSessions, fullIndex, HOT_SESSION_COUNT, this._pinnedSessionIdSet()
+        );
+        this._sseSlimmer = null;
+        // 冷 session entries 异步写入 IndexedDB
+        const pn = this.state.projectName;
+        if (pn) {
+          for (const [sid, coldEntries] of coldGroups) {
+            saveSessionEntries(pn, sid, coldEntries);
+          }
+          // 主缓存保存全量 entries（而非 hotEntries），确保下次缓存恢复时有完整数据
+          saveEntries(pn, entries);
         }
-      });
+        // Fix #4: selectedIndex 基于 hotEntries 而非全量 filtered
+        const hotFiltered = hotEntries.filter(e => isRelevantRequest(e));
+        const newState = {
+          requests: hotEntries,
+          selectedIndex: hotFiltered.length > 0 ? hotFiltered.length - 1 : null,
+          mainAgentSessions: allSessions,
+          sessionIndex: fullIndex,
+          fileLoading: false,
+          fileLoadingCount: 0,
+        };
+        // 增量模式保留缓存恢复时设的 hasMoreHistory；非增量（limit）模式用服务端的值
+        // hasMoreHistory 必须 AND 上 _oldestTs 非空，否则后续 loadMoreHistory() 会拼 before=null 触发 400
+        if (!isIncremental) {
+          newState.hasMoreHistory = this._v2Archive ? !!this._v2Archive.hasMore : !!this._hasMoreHistory && !!this._oldestTs;
+          newState.shards = this._v2Archive?.start.shard ? { hasMore: this._v2Archive.hasMore } : null;
+          newState.shardPrependCount = 0;
+        }
+        if (unlockContextBar) newState.contextBarLocked = false;
+        return await this._commitColdIngest(myToken, newState);
+      } else {
+        const newState = {
+          requests: entries,
+          selectedIndex: filtered.length > 0 ? filtered.length - 1 : null,
+          mainAgentSessions,
+          fileLoading: false,
+          fileLoadingCount: 0,
+        };
+        if (!isIncremental) {
+          newState.hasMoreHistory = this._v2Archive ? !!this._v2Archive.hasMore : !!this._hasMoreHistory && !!this._oldestTs;
+          newState.shards = this._v2Archive?.start.shard ? { hasMore: this._v2Archive.hasMore } : null;
+          newState.shardPrependCount = 0;
+        }
+        if (unlockContextBar) newState.contextBarLocked = false;
+        return await this._commitColdIngest(myToken, newState, () => {
+          if (isMobile && this.state.projectName) {
+            saveEntries(this.state.projectName, entries);
+          }
+        });
+      }
+    } catch (error) {
+      reportSwallowed('sse.cold-ingest', error, { token: myToken });
+      this._failColdIngest(myToken, baseline);
+      // V2 bootstrap must stay unready and let its existing caller retry.
+      throw error;
     }
   }
 
@@ -976,6 +1038,7 @@ class AppBase extends React.Component {
       this._tabBridgeDisposers = null;
     }
     this._unmounted = true;
+    this._streamTransport.closeAll();
     this._v2Epoch++;
     this._v2SnapshotController?.abort();
     this._v2PageController?.abort();
@@ -1122,68 +1185,70 @@ class AppBase extends React.Component {
     this._v2PageController = controller;
     this._loadingMore = true;
     this.setState({ loadingMore: true });
+    let ingestToken = null, baseline = null;
     try {
       let pending = this._v2PendingPage;
       if (!pending || pending.archive !== archive || pending.epoch !== epoch) {
         const page = await fetchLogV2Page({
-          handle: archive.objectStore.handle,
-          archive: archive.start.archive,
-          limit: 100,
-          ackPageToken: archive.pageAckToken,
-          signal: controller.signal,
+          handle: archive.objectStore.handle, archive: archive.start.archive, limit: 100,
+          ackPageToken: archive.pageAckToken, signal: controller.signal,
         });
         if (epoch !== this._v2Epoch || archive !== this._v2Archive) return;
         if (page && (typeof page.start.pageToken !== 'string' || !page.start.pageToken)) {
           throw new Error('V2 page response is missing its acknowledgement token');
         }
-        const rows = archive.prependPage(page);
-        pending = { archive, epoch, page, rows };
+        const previousPart = archive.projectionPart;
+        const added = archive.prependPage(page);
+        const replace = previousPart !== archive.projectionPart;
+        pending = { archive, epoch, page, rows: replace ? [...archive.rows] : added, replace };
         this._v2PendingPage = pending;
       }
-      const { page, rows } = pending;
+      const { page, rows, replace } = pending;
+      // Reuse the cold gate while an older part expands the projection base.
+      // Existing and newly arriving live rows replay only after the prepend commits.
+      baseline = { normalizer: this._liveConversationNormalizer, sessionId: this._currentSessionId, slimmer: this._sseSlimmer };
+      ingestToken = ++this._ingestToken;
+      this._ingestRunning = true;
+      this._liveGateBuffer.push(...this._pendingEntries.splice(0));
+      if (this._flushRafId) { cancelAnimationFrame(this._flushRafId); this._flushRafId = null; }
       const older = await this._projectV2Rows(rows, archive, { epoch, finalize: false });
-      const stillCurrent = older.filter(entry => (
-        archive.state.winners.get(entry._v2Descriptor.entryKey)?.seq === entry._v2Descriptor.seq
-      ));
-      const merged = [...stillCurrent, ...this.state.requests];
-      this._batchSlim(merged);
-      const { mainAgentSessions } = this._processEntries(merged);
+      if (epoch !== this._v2Epoch || archive !== this._v2Archive || controller.signal.aborted) return;
+      const stillCurrent = older.filter(entry => archive.state.winners.get(entry._v2Descriptor.entryKey)?.seq === entry._v2Descriptor.seq);
+      const merged = replace ? stillCurrent : [...stillCurrent, ...this.state.requests];
+      const selectedHandle = this.state.selectedIndex == null ? null
+        : visibleRequests(this.state.requests, this.state.showAll)[this.state.selectedIndex]?._v2RowHandle;
+      const core = await this._runColdIngestCore(merged, this._makeIngestCtl(ingestToken));
+      if (core.aborted || epoch !== this._v2Epoch || archive !== this._v2Archive) return;
+      const { entries, mainAgentSessions } = core;
       this._hasMoreHistory = archive.hasMore;
+      const newState = {
+        requests: entries, mainAgentSessions, hasMoreHistory: archive.hasMore, loadingMore: false,
+        shards: archive.start.shard ? { hasMore: archive.hasMore } : null,
+        shardPrependCount: (this.state.shardPrependCount || 0) + stillCurrent.length,
+        selectedIndex: selectedHandle ? visibleRequests(entries, this.state.showAll).findIndex(row => row._v2RowHandle === selectedHandle) : null,
+      };
+      if (newState.selectedIndex < 0) newState.selectedIndex = null;
       if (isMobile && mainAgentSessions.length > HOT_SESSION_COUNT) {
-        const sessionIndex = buildSessionIndex(merged, mainAgentSessions);
+        const sessionIndex = buildSessionIndex(entries, mainAgentSessions);
         const fullIndex = mergeSessionIndices(this.state.sessionIndex, sessionIndex);
-        const unslimmed = merged.map(entry => entry._slimmed ? restoreSlimmedEntry(entry, merged) : entry);
+        const unslimmed = entries.map(entry => entry._slimmed ? restoreSlimmedEntry(entry, entries) : entry);
         const { hotEntries, allSessions, coldGroups } = splitHotCold(
           unslimmed, mainAgentSessions, fullIndex, HOT_SESSION_COUNT, this._pinnedSessionIdSet()
         );
         this._sseSlimmer = null;
         if (this.state.projectName) {
-          for (const [sessionId, coldEntries] of coldGroups) {
-            saveSessionEntries(this.state.projectName, sessionId, coldEntries);
-          }
-          saveEntries(this.state.projectName, merged);
+          for (const [sessionId, coldEntries] of coldGroups) saveSessionEntries(this.state.projectName, sessionId, coldEntries);
+          saveEntries(this.state.projectName, entries);
         }
-        this.setState({
-          requests: hotEntries,
-          mainAgentSessions: allSessions,
-          sessionIndex: fullIndex,
-          hasMoreHistory: archive.hasMore,
-          loadingMore: false,
-        });
-      } else {
-        this.setState(prev => ({
-          requests: merged,
-          mainAgentSessions,
-          hasMoreHistory: archive.hasMore,
-          loadingMore: false,
-          selectedIndex: prev.selectedIndex == null
-            ? null
-            : prev.selectedIndex + visibleRequests(stillCurrent, prev.showAll).length,
-        }));
+        Object.assign(newState, { requests: hotEntries, mainAgentSessions: allSessions, sessionIndex: fullIndex });
       }
+      const committed = await this._commitColdIngest(ingestToken, newState);
+      if (!committed || epoch !== this._v2Epoch || archive !== this._v2Archive) return;
       archive.pageAckToken = page?.start?.pageToken || archive.pageAckToken;
       this._v2PendingPage = null;
     } catch (error) {
+      if (epoch !== this._v2Epoch || archive !== this._v2Archive || controller.signal.aborted || this._unmounted) return;
+      if (ingestToken !== null) this._failColdIngest(ingestToken, baseline);
       if (error?.code === 'CXV_LOG_V2_WIRE_RESET_REQUIRED') {
         if (this._isLocalLog) this.loadLocalLogFile(this._localLogFile);
         else this._resetV2Communication();
@@ -1191,11 +1256,12 @@ class AppBase extends React.Component {
         reportSwallowed('log-v2.page', error);
         message.error(t('ui.loadMoreHistoryFailed'));
       }
-      if (!this._unmounted) this.setState({ loadingMore: false });
     } finally {
-      this._loadingMore = false;
+      if (ingestToken !== null && this._ingestToken === ingestToken && this._ingestRunning
+          && (epoch !== this._v2Epoch || controller.signal.aborted)) this._abortColdIngest();
       if (this._v2PageController === controller) {
         this._v2PageController = null;
+        this._loadingMore = false;
         if (!this._unmounted) this.setState({ loadingMore: false });
       }
     }
@@ -1249,6 +1315,7 @@ class AppBase extends React.Component {
     this._v2SnapshotController?.abort();
     this._v2PageController?.abort();
     this._v2PageController = null;
+    this._loadingMore = false;
     this._v2PendingPage = null;
     const controller = new AbortController();
     this._v2SnapshotController = controller;
@@ -1289,12 +1356,12 @@ class AppBase extends React.Component {
       this._startV2Live(snapshot, epoch);
       this._hasMoreHistory = !!snapshot.start.hasMore;
       const entries = await this._projectV2Rows(archive.rows, archive, { signal: controller.signal, epoch });
-      await this._runSseColdIngest(entries, {
+      const committed = await this._runSseColdIngest(entries, {
         isIncremental: false,
         unlockContextBar: false,
         preSlimmed: true,
       });
-      if (epoch !== this._v2Epoch || this._unmounted) return false;
+      if (!committed || epoch !== this._v2Epoch || this._unmounted) return false;
       this._v2BootstrapReady = true;
       if (this._v2LiveNeedsReset) {
         this._v2LiveNeedsReset = false;
@@ -1307,7 +1374,14 @@ class AppBase extends React.Component {
       return true;
     } catch (error) {
       if (epoch === this._v2Epoch) {
+        this._v2LiveSource?.close();
+        this._v2LiveSource = null;
+        if (this._v2LiveRetryTimer) { clearTimeout(this._v2LiveRetryTimer); this._v2LiveRetryTimer = null; }
         this._v2Archive = null;
+        this._v2BootstrapReady = false;
+        this._v2LiveBuffer = [];
+        this._v2LiveNeedsReset = false;
+        this._v2AppliedSeq = 0;
         this._v2Unavailable = error?.status === 404;
       }
       if (error?.code && error.code !== 'CXV_LOG_V2_SNAPSHOT_FAILED') {
@@ -1339,7 +1413,7 @@ class AppBase extends React.Component {
       afterSeq: String(cursor.throughSeq),
       handle: snapshot.start.objectHandle,
     });
-    const source = new EventSource(apiUrl(`/api/log-v2/live?${query}`));
+    const source = this._streamTransport.open(apiUrl(`/api/log-v2/live?${query}`));
     this._v2LiveSource = source;
     const fragments = new Map();
     const resetAfterBootstrap = () => {
@@ -1453,7 +1527,7 @@ class AppBase extends React.Component {
       } else if (row) {
         entry = { ...row, body: { ...(row.body || {}) } };
       }
-      if (entry) this.handleEntryObject(entry);
+      if (entry && !this.handleEntryObject(entry)) throw new Error('V2 live entry enqueue failed');
       this._v2AppliedSeq = seq;
     }).catch(error => {
       if (error?.name !== 'AbortError') {
@@ -1468,9 +1542,10 @@ class AppBase extends React.Component {
     this._v2SnapshotController?.abort();
     this._v2PageController?.abort();
     this._v2PageController = null;
+    this._loadingMore = false;
     this._v2PendingPage = null;
     this._v2SnapshotController = null;
-    this._abortColdIngest();
+    this._teardownTransientLiveState();
     this._v2LiveSource?.close();
     this._v2LiveSource = null;
     if (this._v2LiveRetryTimer) { clearTimeout(this._v2LiveRetryTimer); this._v2LiveRetryTimer = null; }
@@ -1519,7 +1594,7 @@ class AppBase extends React.Component {
 
   _initControlSSE() {
     try {
-      this.eventSource = new EventSource(apiUrl('/events?controlOnly=1'));
+      this.eventSource = this._streamTransport.open(apiUrl('/events?controlOnly=1'));
       // 每次收到任何 SSE 事件（包括心跳注释帧触发的隐式活动）都重置超时
       this.eventSource.onmessage = (event) => { this._resetSSETimeout(); this.handleEventMessage(event); };
       this.eventSource.onopen = () => { this._resetSSETimeout(); };
@@ -1743,7 +1818,7 @@ class AppBase extends React.Component {
               this.setState({ isStreaming: false });
             }, 2000);
           }
-        } catch (err) { console.error('Failed to parse streaming_status:', err); }
+        } catch (err) { reportSwallowed('sse.streaming_status', err); }
       });
       this.eventSource.onerror = () => {
         console.error('SSE连接错误');
@@ -1752,7 +1827,7 @@ class AppBase extends React.Component {
         // 若流式已完成，最终 entry 的原子清除会收走 overlay。
       };
     } catch (error) {
-      console.error('EventSource初始化失败:', error);
+      reportSwallowed('sse.init', error);
       this.setState({ fileLoading: false, fileLoadingCount: 0 });
     }
   }
@@ -1763,6 +1838,7 @@ class AppBase extends React.Component {
 
   async _loadLocalV2LogFile(file) {
     this._isLocalLog = true;
+    this._streamTransport.closeAll();
     this._localLogFile = file;
     if (this._sseTimeoutTimer) { clearTimeout(this._sseTimeoutTimer); this._sseTimeoutTimer = null; }
     if (this._sseReconnectTimer) { clearTimeout(this._sseReconnectTimer); this._sseReconnectTimer = null; }
@@ -1774,6 +1850,7 @@ class AppBase extends React.Component {
     this._v2SnapshotController?.abort();
     this._v2PageController?.abort();
     this._v2PageController = null;
+    this._loadingMore = false;
     this._v2PendingPage = null;
     const controller = new AbortController();
     this._v2SnapshotController = controller;
@@ -1824,6 +1901,9 @@ class AppBase extends React.Component {
         preSlimmed: true,
       });
     } catch (error) {
+      if (epoch !== this._v2Epoch || this._unmounted || this._localLogFile !== file) return;
+      this._v2Archive = null;
+      this._v2AppliedSeq = 0;
       if (error?.name !== 'AbortError') {
         reportSwallowed('log-v2.local-snapshot', error);
         if (!this._unmounted) this.setState({ fileLoading: false, fileLoadingCount: 0 });
@@ -1838,7 +1918,7 @@ class AppBase extends React.Component {
       const entry = JSON.parse(event.data);
       this.handleEntryObject(entry);
     } catch (error) {
-      console.error('处理事件消息失败:', error);
+      reportSwallowed('sse.message', error, { dataLen: event.data?.length });
     }
   }
 
@@ -1849,14 +1929,16 @@ class AppBase extends React.Component {
       // 且 _sseSlimmer 会对错误基线初始化（sessionMerge 脆弱区）。
       if (this._ingestRunning) {
         this._liveGateBuffer.push(entry);
-        return;
+        return true;
       }
       this._pendingEntries.push(entry);
       if (!this._flushRafId) {
         this._flushRafId = requestAnimationFrame(this._flushPendingEntries);
       }
+      return true;
     } catch (error) {
-      console.error('处理事件消息失败:', error);
+      reportSwallowed('sse.entry', error);
+      return false;
     }
   }
 
@@ -1865,8 +1947,10 @@ class AppBase extends React.Component {
     const batch = this._pendingEntries;
     this._pendingEntries = [];
     if (batch.length === 0) return;
+    if (this._ingestRunning) { this._liveGateBuffer.push(...batch); return; }
 
     this.setState(prev => {
+      if (this._ingestRunning) { this._liveGateBuffer.push(...batch); return null; }
       const requests = [...prev.requests]; // one copy per frame, not per message
       const selectedV2Handle = prev.selectedIndex == null
         ? null
@@ -2609,34 +2693,71 @@ class AppBase extends React.Component {
 
   // ─── 日志管理 ──────────────────────────────────────────
 
-  loadLocalLogs = ({ preserveProject = false } = {}) => {
-    this.setState({ importModalVisible: true, localLogsLoading: true });
-    fetch(apiUrl('/api/local-logs'))
-      .then(res => res.json())
+  _localLogsUrl(page = this.state.localLogsPage) {
+    const { logViewProject, currentProject } = this.state;
+    const project = logViewProject && logViewProject !== currentProject
+      ? `&project=${encodeURIComponent(logViewProject)}` : '';
+    return apiUrl(`/api/local-logs?page=${page}&pageSize=${LOG_PAGE_SIZE}${project}`);
+  }
+
+  _fetchV2Logs = (page) => {
+    const requestId = this._localLogsRequestId = (this._localLogsRequestId || 0) + 1;
+    return fetch(this._localLogsUrl(page))
+      .then(res => {
+        if (!res.ok) throw new Error(`local-logs ${res.status}`);
+        return res.json();
+      })
       .then(data => {
-        const { _currentProject, ...logs } = data;
-        this.setState(prev => ({
-          localLogs: logs,
-          currentProject: chooseLogProject(logs, prev.currentProject, _currentProject, preserveProject),
+        if (requestId !== this._localLogsRequestId || this._unmounted) return;
+        const { items, total, _allProjects, _currentProject } = data;
+        this.setState({
+          localLogs: Array.isArray(items) ? items : [],
+          localLogsTotal: total || 0,
+          localLogsPage: page,
+          allLogProjects: Array.isArray(_allProjects) ? _allProjects : [],
+          currentProject: _currentProject || '',
           localLogsLoading: false,
-        }));
+        });
       })
       .catch(() => {
-        this.setState({ localLogs: {}, localLogsLoading: false });
+        if (requestId !== this._localLogsRequestId || this._unmounted) return;
+        this.setState({ localLogs: [], localLogsTotal: 0, localLogsLoading: false });
       });
   };
 
-  handleImportLocalLogs = () => this.loadLocalLogs();
+  handleImportLocalLogs = () => {
+    this.setState({ importModalVisible: true, localLogsLoading: true, localLogsPage: 1, logViewProject: '' }, () => {
+      this._fetchV2Logs(1);
+    });
+  };
+
+  handleLogPageChange = (page) => {
+    this.setState({ localLogsLoading: true });
+    this._fetchV2Logs(page);
+  };
 
   handleCloseImportModal = () => {
     this.setState({ importModalVisible: false, selectedLogs: new Set() });
   };
 
-  handleLogProjectChange = (currentProject) => {
-    this.setState({ currentProject, selectedLogs: new Set() });
+  handleLogProjectChange = (project) => {
+    this.setState({ logViewProject: project, localLogsPage: 1, localLogs: [], localLogsTotal: 0,
+      localLogsLoading: true, selectedLogs: new Set() }, () => {
+      this._fetchV2Logs(1);
+    });
   };
 
   renderLogTable(logs, mobile) {
+    const total = this.state.localLogsTotal;
+    const pagination = total > LOG_PAGE_SIZE ? {
+      current: this.state.localLogsPage,
+      pageSize: LOG_PAGE_SIZE,
+      total,
+      onChange: this.handleLogPageChange,
+      showSizeChanger: false,
+      showTotal: n => t('ui.logsTotal', { total: n }),
+      size: 'small',
+    } : false;
     return (
       <LogTable
         logs={logs}
@@ -2645,6 +2766,7 @@ class AppBase extends React.Component {
         onToggleSelect={this.handleToggleLogSelect}
         onOpenLog={this.handleOpenLogFile}
         onDownloadLog={this.handleDownloadLogFile}
+        pagination={pagination}
       />
     );
   }
@@ -2683,7 +2805,7 @@ class AppBase extends React.Component {
               if (deleted > 0) message.success(t('ui.deleteSuccess', { count: deleted }));
               if (failed > 0) message.error(t('ui.deleteFailed', { count: failed }));
               this.setState({ selectedLogs: new Set() });
-              this.loadLocalLogs({ preserveProject: true });
+              this._fetchV2Logs(this.state.localLogsPage);
             }
           })
           .catch(() => message.error('Delete failed'));

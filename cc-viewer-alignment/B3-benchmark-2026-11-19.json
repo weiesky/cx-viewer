@@ -1,0 +1,159 @@
+{
+  "date": "2026-11-19",
+  "runtime": "v24.14.0",
+  "platform": "darwin",
+  "arch": "arm64",
+  "fixedUpstream": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "localSourceCommits": [
+    "a55eb66",
+    "5047b36",
+    "2b765b1",
+    "4a21cec"
+  ],
+  "writer": [
+    {
+      "events": 200,
+      "messageBytes": 512,
+      "durability": "buffered",
+      "fullEntryBytes": 11430190,
+      "v2Bytes": 911014,
+      "v2ToFullEntryRatio": 0.07970243714233971,
+      "bytesSaved": 10519176,
+      "bytesPerEvent": 4555.07,
+      "objectFiles": 604,
+      "inputObjectCandidates": 20100,
+      "uniqueInputObjects": 200,
+      "inputObjectDeduplicationRatio": 0.9900497512437811,
+      "recoveryTimeMs": 28.146834000000013,
+      "materializeTimeMs": 1374.1402079999998,
+      "wireSnapshotTimeMs": 29.380874999999833,
+      "legacyFullWireBytes": 11429190,
+      "v2ControlWireBytes": 419667,
+      "v2ControlToFullWireRatio": 0.03671887509088571,
+      "materializedEvents": 200,
+      "appendLatencyMs": {
+        "p50": 3.1936660000000074,
+        "p95": 6.771416999999985,
+        "max": 160.825625
+      },
+      "peakRssBytes": 154058752,
+      "wallSeconds": 2.67
+    },
+    {
+      "events": 800,
+      "messageBytes": 512,
+      "durability": "buffered",
+      "fullEntryBytes": 181441090,
+      "v2Bytes": 3643596,
+      "v2ToFullEntryRatio": 0.02008142697996358,
+      "bytesSaved": 177797494,
+      "bytesPerEvent": 4554.495,
+      "objectFiles": 2404,
+      "inputObjectCandidates": 320400,
+      "uniqueInputObjects": 800,
+      "inputObjectDeduplicationRatio": 0.9975031210986267,
+      "recoveryTimeMs": 104.92358299999978,
+      "materializeTimeMs": 20250.959334,
+      "wireSnapshotTimeMs": 102.203333999998,
+      "legacyFullWireBytes": 181437090,
+      "v2ControlWireBytes": 1676067,
+      "v2ControlToFullWireRatio": 0.009237730830008352,
+      "materializedEvents": 800,
+      "appendLatencyMs": {
+        "p50": 6.148874999999862,
+        "p95": 10.13716599999998,
+        "max": 181.40633300000013
+      },
+      "peakRssBytes": 505364480,
+      "wallSeconds": 27.24
+    }
+  ],
+  "checkpointScaling": [
+    {
+      "events": 1000,
+      "window": 400,
+      "controlBytes": 402777,
+      "bytesPerEvent": 402.777,
+      "buildTimeMs": 5.464000000000002,
+      "inputNodes": 1000,
+      "entryRevisionStates": 0
+    },
+    {
+      "events": 2000,
+      "window": 400,
+      "controlBytes": 590570,
+      "bytesPerEvent": 295.285,
+      "buildTimeMs": 5.955082999999998,
+      "inputNodes": 2000,
+      "entryRevisionStates": 0
+    },
+    {
+      "events": 4000,
+      "window": 400,
+      "controlBytes": 960570,
+      "bytesPerEvent": 240.1425,
+      "buildTimeMs": 10.75875,
+      "inputNodes": 4000,
+      "entryRevisionStates": 0
+    }
+  ],
+  "live": {
+    "runtime": "v24.14.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "scenarios": [
+      {
+        "events": 200,
+        "slowDrainMs": 3,
+        "burstWriteMs": 2264.135583,
+        "totalMs": 3175.081541,
+        "sampledRssBytes": 93323264,
+        "subscribersBeforeClose": 2,
+        "subscribersAfterClose": 0,
+        "finalSnapshotSeq": 201,
+        "clients": [
+          {
+            "delayMs": 0,
+            "delivered": 200,
+            "reset": null,
+            "firstFrameMs": 2314.418375,
+            "completeMs": 2316.6000830000003
+          },
+          {
+            "delayMs": 3,
+            "delivered": 200,
+            "reset": null,
+            "firstFrameMs": 2314.495167,
+            "completeMs": 2996.7847500000003
+          }
+        ]
+      },
+      {
+        "events": 300,
+        "slowDrainMs": 3,
+        "burstWriteMs": 566.7098330000003,
+        "totalMs": 680.7945,
+        "sampledRssBytes": 111837184,
+        "subscribersBeforeClose": 0,
+        "subscribersAfterClose": 0,
+        "finalSnapshotSeq": 301,
+        "clients": [
+          {
+            "delayMs": 0,
+            "delivered": 0,
+            "reset": "CXV_LOG_V2_WIRE_RESET_REQUIRED",
+            "firstFrameMs": 632.9284170000001,
+            "completeMs": null
+          },
+          {
+            "delayMs": 3,
+            "delivered": 0,
+            "reset": "CXV_LOG_V2_WIRE_RESET_REQUIRED",
+            "firstFrameMs": 632.9385000000002,
+            "completeMs": null
+          }
+        ]
+      }
+    ]
+  }
+}

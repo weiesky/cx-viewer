@@ -1,4 +1,5 @@
 import { watchFile, unwatchFile } from 'node:fs';
+import { dirname, join } from 'node:path';
 
 import {
   checkpointWireArchiveState,
@@ -37,6 +38,7 @@ function closePublisher(source) {
   if (source.timer) clearTimeout(source.timer);
   if (source.closeTimer) clearTimeout(source.closeTimer);
   unwatchFile(source.timelinePath, source.listener);
+  unwatchFile(source.manifestPath, source.listener);
   publishers.delete(source.key);
   source.reader.close();
 }
@@ -157,6 +159,7 @@ function createPublisher({ logDir, file, timelinePath, cursor, seedCheckpoint = 
   }
   const source = {
     key, logDir, file, timelinePath, cursor,
+    manifestPath: join(dirname(join(logDir, file)), 'manifest.json'),
     reader: createV2WireLiveReader({ logDir, file, timelinePath, checkpoint }),
     ring: [], ringBytes: 0, subscribers: new Set(),
     running: false, pending: false, closed: false, timer: null, closeTimer: null,
@@ -164,6 +167,7 @@ function createPublisher({ logDir, file, timelinePath, cursor, seedCheckpoint = 
   };
   source.listener = () => schedulePump(source);
   watchFile(timelinePath, { interval: 250 }, source.listener);
+  watchFile(source.manifestPath, { interval: 250 }, source.listener);
   publishers.set(key, source);
   // Close the snapshot/subscribe registration race.
   queueMicrotask(() => { void pump(source); });

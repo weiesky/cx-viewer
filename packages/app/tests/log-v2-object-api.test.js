@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
+import { createServer } from 'node:http';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
@@ -7,7 +8,7 @@ import test from 'node:test';
 
 import { LogV2Writer } from '../lib/log-v2/writer.js';
 import { readV2WireCommitsFromCursor, readV2WireSnapshot, readV2WireSummariesForWinners } from '../lib/log-v2/transport.js';
-import { closeIdleV2TimelinePublishers } from '../lib/log-v2/timeline-watcher.js';
+import { closeIdleV2TimelinePublishers, getV2TimelineWatcherStats } from '../lib/log-v2/timeline-watcher.js';
 import {
   classifyActiveSnapshotError,
   createActiveV2RecoveryState,
@@ -362,4 +363,91 @@ test('readonly historical handles can page and hydrate but can never subscribe l
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+function liveFailureFixture(t) {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-live-failure-'));
+  const requests = [];
+  t.after(() => {
+    for (const req of requests) req.emit('close');
+    closeIdleV2TimelinePublishers();
+    rmSync(root, { recursive: true, force: true });
+  });
+  const writer = LogV2Writer.open({ rootDir: root, projectId: 'fixture', canonicalCwd: '/fixture',
+    sessionId: 'failure', rootThreadId: 'failure', source: 'app-server', startReason: 'startup', durability: 'buffered' });
+  const identity = { sessionId: 'failure', rootThreadId: 'failure', threadId: 'failure', agentRole: 'main', isRoot: true };
+  const append = index => writer.append({ timestamp: `2026-07-15T00:00:0${index}Z`,
+    url: `codex://fixture/${index}`, body: { input: [] } }, identity);
+  append(0);
+  const file = relative(root, join(writer.sessionDir, 'timeline.jsonl')).split('\\').join('/');
+  const snapshot = readV2WireSnapshot(root, file);
+  const handle = registerV2ObjectHandle(file, snapshot);
+  append(1);
+  append(2);
+  const options = { logDir: root, file, getActiveFile: () => file,
+    afterSeq: snapshot.end.cursor.throughSeq, generation: snapshot.start.archive.generation, objectHandle: handle };
+  return { options, requests };
+}
+
+for (const mode of ['write', 'write-and-end', 'async-error']) {
+  test(`live ${mode} failure closes the connection and subscription; reconnect replays the suffix`, async t => {
+    const { options, requests } = liveFailureFixture(t);
+    const req = new EventEmitter(), response = mockResponse();
+    requests.push(req);
+    const warnings = [];
+    t.mock.method(console, 'warn', (...args) => warnings.push(args));
+    let writes = 0;
+    response.write = () => {
+      writes++;
+      if (mode === 'async-error') {
+        queueMicrotask(() => response.emit('error', new Error('async write fixture')));
+        return false;
+      }
+      throw new Error('write fixture');
+    };
+    response.end = () => {
+      if (mode === 'write-and-end') throw new Error('end fixture');
+      response.writableEnded = true;
+      response.emit('fixture-finished');
+    };
+    response.destroy = () => { response.destroyed = true; response.emit('fixture-finished'); };
+    const ended = new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('live close timed out')), 2000);
+      t.after(() => clearTimeout(timer));
+      response.once('fixture-finished', () => { clearTimeout(timer); resolve(); });
+    });
+    await serveLogV2Live(req, response, options);
+    await ended;
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(writes, 1, 'a failed response never attempts a reset write');
+    assert.equal(!!response.writableEnded || !!response.destroyed, true);
+    assert.equal(getV2TimelineWatcherStats().subscribers, 0);
+    assert.equal(response.listenerCount('drain'), 0);
+    assert.ok(warnings.some(([tag]) => tag === '[cxv:log-v2.live-write]'));
+
+    // Failed writes did not advance the handle; the original cursor still works.
+    const resumedReq = new EventEmitter(), resumed = mockResponse();
+    requests.push(resumedReq);
+    await serveLogV2Live(resumedReq, resumed, options);
+    await waitForBody(resumed, /id: [^\n]+:3\n/);
+    assert.equal((resumed.body.match(/event: v2_commit/g) || []).length, 2);
+    resumedReq.emit('close');
+    assert.equal(getV2TimelineWatcherStats().subscribers, 0);
+  });
+}
+
+test('an actual HTTP SSE response ends after a throwing write without stranding its subscriber', async t => {
+  const { options, requests } = liveFailureFixture(t);
+  t.mock.method(console, 'warn', () => {});
+  const server = createServer((req, res) => {
+    requests.push(req);
+    res.write = () => { throw new Error('HTTP write fixture'); };
+    void serveLogV2Live(req, res, options);
+  });
+  t.after(() => { server.closeAllConnections(); server.close(); });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const response = await fetch(`http://127.0.0.1:${server.address().port}/live`, { signal: AbortSignal.timeout(2000) });
+  assert.equal(response.status, 200);
+  assert.equal(await response.text(), '');
+  assert.equal(getV2TimelineWatcherStats().subscribers, 0);
 });

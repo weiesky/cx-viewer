@@ -27,6 +27,9 @@ import {
   threadStoreToken,
 } from './identity.js';
 import { assertLogLayoutWritable } from './layout.js';
+import { activeTimelinePath, publishTimelineShard, readShardBaseline, readShardLayout, SHARD_PROMPT_THRESHOLD } from './shards.js';
+import { resolveWireInputRefs, restoreWireArchiveState } from './reducer.js';
+import { readV2WireSnapshot } from './transport.js';
 import {
   applyInputOperations,
   deriveEntryKey,
@@ -40,8 +43,10 @@ import {
   atomicWriteJsonSync,
   fsyncDirectorySync,
   readJsonReferenceSync,
+  readContentObjectSync,
   repairJsonlTailSync,
   scanJsonlSync,
+  scanJsonlRangeSync,
   withFileLockSync,
   writeContentObjectSync,
 } from './storage.js';
@@ -54,6 +59,7 @@ import {
   rebuildSessionSummary,
   summaryBaseBytes,
   writeSessionSummary,
+  directoryLogicalBytes,
 } from './session-summary.js';
 import { buildRequestSummary } from './request-summary.js';
 
@@ -208,16 +214,46 @@ function applyPartRevision(previous, record) {
 function recoverSessionState(sessionDir) {
   const threadStates = new Map();
   const entryStates = new Map();
+  const entryPhases = new Map();
+  const layout = readShardLayout(sessionDir);
+  const baseline = readShardBaseline(sessionDir, layout.activePart, layout);
+  const storageRef = ref => ({ ...ref, algorithm: 'sha256', path: `objects/${ref.hash.slice(0, 2)}/${ref.hash.slice(2, 4)}/${ref.hash}.json` });
+  if (baseline) {
+    const state = restoreWireArchiveState(baseline.checkpoint);
+    for (const [threadId, thread] of state.threads) {
+      threadStates.set(threadStoreToken(threadId), { inputRevision: thread.revision, inputPath: thread.path,
+        inputRefs: resolveWireInputRefs(state, { threadId, revision: thread.revision, length: thread.length }).map(storageRef) });
+    }
+    for (const [key, entry] of state.entries) {
+      const separator = key.lastIndexOf('\u0000');
+      entryStates.set(`${threadStoreToken(key.slice(0, separator))}\u0000${key.slice(separator + 1)}`,
+        { revision: entry.revision, parts: new Map([...entry.parts].map(([part, ref]) => [part, storageRef(ref)])) });
+    }
+  }
   let repairedThreadFiles = 0;
   let discardedThreadBytes = 0;
   const threadsRoot = join(sessionDir, 'threads');
+  for (const [token, bounds] of Object.entries(baseline?.threadBounds || {})) {
+    for (const [name, size] of Object.entries(bounds)) {
+      if (size > 0 && (!existsSync(join(threadsRoot, token, name)) || statSync(join(threadsRoot, token, name)).size < size)) {
+        throw new Error('Frozen V2 thread file is missing or truncated');
+      }
+    }
+  }
   for (const dir of listDirectories(threadsRoot)) {
     const token = dir.split('/').pop();
     if (!THREAD_TOKEN_PATTERN.test(token)) continue;
     for (const name of ['entries.jsonl', 'input.jsonl']) {
       const file = join(dir, name);
+      if (!existsSync(file) && baseline?.threadBounds?.[token]?.[name] > 0) throw new Error('Frozen V2 thread file is missing');
       if (existsSync(file)) {
-        const repaired = repairJsonlTailSync(file);
+        let repaired;
+        const bound = baseline?.threadBounds?.[token]?.[name];
+        if (bound !== undefined) {
+          const scan = scanJsonlRangeSync(file, { startOffset: bound });
+          if (scan.validBytes < scan.fileSize) truncateSync(file, scan.validBytes);
+          repaired = { ...scan, repaired: scan.validBytes < scan.fileSize };
+        } else repaired = repairJsonlTailSync(file);
         if (repaired.repaired) {
           repairedThreadFiles++;
           discardedThreadBytes += repaired.fileSize - repaired.validBytes;
@@ -226,8 +262,8 @@ function recoverSessionState(sessionDir) {
     }
   }
 
-  let expectedSeq = 1;
-  const timeline = join(sessionDir, TIMELINE_FILE);
+  let expectedSeq = (baseline?.checkpoint.throughSeq || 0) + 1;
+  const timeline = activeTimelinePath(sessionDir, layout.manifest);
   const scan = scanJsonlSync(timeline, ({ value: timelineRecord }) => {
     const validation = validateTimelineRecord(timelineRecord);
     if (!validation.ok) throw new Error(validation.errors.join('; '));
@@ -281,6 +317,7 @@ function recoverSessionState(sessionDir) {
     }
 
     entryStates.set(entryStateKey, nextEntry);
+    entryPhases.set(entryStateKey, timelineRecord.phase);
     threadStates.set(threadToken, nextThread);
     expectedSeq++;
   });
@@ -290,6 +327,9 @@ function recoverSessionState(sessionDir) {
     nextSeq: expectedSeq,
     threadStates,
     entryStates,
+    entryPhases,
+    timelinePath: timeline,
+    activePart: layout.activePart,
     timelineBytes: scan.validBytes,
     recovery: Object.freeze({
       committedRecords: expectedSeq - 1,
@@ -322,6 +362,7 @@ export class LogV2Writer {
     faultInjector = null,
     durability = 'durable',
     summaryMode = 'live',
+    shardPrompts = SHARD_PROMPT_THRESHOLD,
   }) {
     for (const [name, value] of Object.entries({ rootDir, projectId, canonicalCwd, sessionId, rootThreadId })) {
       if (typeof value !== 'string' || !value) throw new TypeError(`${name} is required`);
@@ -336,6 +377,8 @@ export class LogV2Writer {
     this.durable = durability === 'durable';
     if (!['live', 'deferred'].includes(summaryMode)) throw new TypeError('summaryMode must be live or deferred');
     this.summaryMode = summaryMode;
+    if (!Number.isSafeInteger(shardPrompts) || shardPrompts < 0) throw new TypeError('shardPrompts must be a non-negative safe integer');
+    this.shardPrompts = shardPrompts;
     assertLogLayoutWritable(rootDir);
     this.projectStorageName = projectArchiveDirectoryName(projectId);
     this.projectDir = join(rootDir, this.projectStorageName);
@@ -401,6 +444,9 @@ export class LogV2Writer {
     this.nextSeq = recovered.nextSeq;
     this.threadStates = recovered.threadStates;
     this.entryStates = recovered.entryStates;
+    this.entryPhases = recovered.entryPhases;
+    this.timelinePath = recovered.timelinePath;
+    this.activePart = recovered.activePart;
     this.recovery = recovered.recovery;
     // This byte cursor must come from the same locked recovery snapshot as the
     // sequence/revision state. A stat after releasing the lock can observe a
@@ -480,13 +526,16 @@ export class LogV2Writer {
     return withFileLockSync(this.sessionLockPath, () => {
       invokeFault(this.faultInjector, 'append-lock-acquired', { sessionId: this.sessionId });
       assertLogLayoutWritable(this.rootDir);
-      const timelinePath = join(this.sessionDir, TIMELINE_FILE);
+      const timelinePath = activeTimelinePath(this.sessionDir);
       const actualTimelineBytes = existsSync(timelinePath) ? statSync(timelinePath).size : 0;
-      if (actualTimelineBytes !== this.timelineBytes) {
+      if (timelinePath !== this.timelinePath || actualTimelineBytes !== this.timelineBytes) {
         const recovered = recoverSessionState(this.sessionDir);
         this.nextSeq = recovered.nextSeq;
         this.threadStates = recovered.threadStates;
         this.entryStates = recovered.entryStates;
+        this.entryPhases = recovered.entryPhases;
+        this.timelinePath = recovered.timelinePath;
+        this.activePart = recovered.activePart;
         this.recovery = recovered.recovery;
         this.timelineBytes = recovered.timelineBytes;
         if (this.recovery.repairedTimeline || this.recovery.repairedThreadFiles > 0) {
@@ -496,6 +545,7 @@ export class LogV2Writer {
       }
       if (this.summaryMode === 'live' && !this.summary) this.loadOrRebuildSummaryLocked();
       try {
+        this.maybeRotateLocked(entry, identity, options);
         return this.appendLocked(entry, identity, options);
       } catch (error) {
         if (this.summaryMode === 'live') {
@@ -506,6 +556,47 @@ export class LogV2Writer {
         throw error;
       }
     });
+  }
+
+  maybeRotateLocked(entry, identity, options) {
+    if (!this.shardPrompts || this.summaryMode !== 'live' || !this.summary
+        || identity.threadId !== this.rootThreadId || identity.agentRole !== 'main') return;
+    const layout = readShardLayout(this.sessionDir);
+    const prompts = this.summary.userPrompts.length;
+    if (prompts - (layout.cuts.at(-1)?.promptCount || 0) < this.shardPrompts
+        || [...this.entryPhases.values()].includes('inProgress')) return;
+    const split = splitEntryParts(entry);
+    if (!split.input) return;
+    // Reuse the summary's prompt occurrence rules, including repeated explicit
+    // turns and compaction reuse. Tool loops never create a new user boundary.
+    const preview = structuredClone(this.summary);
+    applyRootInputSnapshot(preview, split.input.items, preview.rootInputRevision + 1);
+    const turnId = options.turnId ?? deriveTurnId(entry);
+    const turnHash = turnId ? hashTurnId(turnId) : null;
+    if (turnHash && turnHash !== preview.lastRootTurnId && preview.userPrompts.length === prompts) {
+      appendRepeatedRootPrompt(preview, split.input.items);
+    }
+    if (preview.userPrompts.length <= prompts) return;
+    // Older canonical logs may predate the inProgress phase stamp. The root
+    // payload remains authoritative; never split an unfinished old carrier.
+    for (const [key, state] of this.entryStates) {
+      const ref = state.parts.get('root.meta');
+      if (ref && readContentObjectSync(this.sessionDir, ref)?.inProgress === true) {
+        this.entryPhases.set(key, 'inProgress');
+        return;
+      }
+    }
+    const file = relative(this.rootDir, join(this.sessionDir, TIMELINE_FILE)).split(sep).join('/');
+    const snapshot = readV2WireSnapshot(this.rootDir, file, { includeRevisionState: true, deferSummaries: true });
+    invalidateSessionSummary(this.sessionDir);
+    const rotated = publishTimelineShard(this.sessionDir, snapshot.checkpoint, prompts, {
+      durable: this.durable, faultInjector: stage => invokeFault(this.faultInjector, stage, { sessionId: this.sessionId }),
+    });
+    this.timelinePath = rotated.timelinePath;
+    this.activePart = rotated.activePart;
+    this.timelineBytes = 0;
+    this.summary.indexedTimelineBytes = 0;
+    this.summaryBaseBytes = directoryLogicalBytes(this.sessionDir, { excludeSummary: true });
   }
 
   appendLocked(entry, identity, options) {
@@ -629,7 +720,7 @@ export class LogV2Writer {
     try {
       requestSummary = buildRequestSummary(entry, timelineRecord);
       const requestSummaryRef = appendJsonLineSync(
-        join(this.sessionDir, REQUEST_SUMMARY_FILE),
+        join(dirname(this.timelinePath), REQUEST_SUMMARY_FILE),
         requestSummary,
         { durable: this.durable },
       );
@@ -638,13 +729,14 @@ export class LogV2Writer {
       requestSummaryError = error;
     }
     const timelineRef = appendJsonLineSync(
-      join(this.sessionDir, TIMELINE_FILE),
+      this.timelinePath,
       timelineRecord,
       { durable: this.durable },
     );
     addedArchiveBytes += timelineRef.length;
 
     this.entryStates.set(entryStateKey, { revision: entryRevision, parts: nextParts });
+    this.entryPhases.set(entryStateKey, timelineRecord.phase);
     if (split.input) this.threadStates.set(threadToken, nextThread);
     this.nextSeq++;
     this.timelineBytes = timelineRef.offset + timelineRef.length;

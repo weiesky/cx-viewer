@@ -1,4 +1,4 @@
-// B0 audit probe, not a production regression test. Executes current AppBase
+// B0/B3 cold-ingest probe. Assertions now check the B3 failure recovery. Executes current AppBase
 // method bodies in a host with synchronous setState and a queued (unrun) rAF.
 // No browser, Codex process, user configuration, or external network is used.
 import assert from 'node:assert/strict';
@@ -7,22 +7,23 @@ import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { runInNewContext } from 'node:vm';
-import * as filter from '../../src/utils/contentFilter.js';
-import * as normalize from '../../src/utils/conversationEntryNormalize.js';
-import * as slim from '../../src/utils/entry-slim.js';
-import * as sessions from '../../src/utils/sessionManager.js';
-import * as merge from '../../src/utils/sessionMerge.js';
-import * as pipeline from '../../src/utils/ingestPipeline.js';
-import * as body from '../../lib/openai-body.js';
-import { LogV2WriteCoordinator } from '../../lib/log-v2/coordinator.js';
-import { findActiveV2SessionFileAsync } from '../../lib/log-v2/materializer.js';
-import { readV2WireSnapshot } from '../../lib/log-v2/transport.js';
-import { serveLogV2Snapshot, serveLogV2Objects, serveLogV2Live } from '../../server/lib/log-v2-routes.js';
-import { closeIdleV2TimelinePublishers } from '../../lib/log-v2/timeline-watcher.js';
-import { fetchLogV2Snapshot } from '../../src/utils/logV2Transport.js';
-import { LogV2Archive, isV2ConversationCandidate } from '../../src/utils/logV2Archive.js';
+import * as filter from '../../packages/app/src/utils/contentFilter.js';
+import * as normalize from '../../apps/web/src/utils/conversationEntryNormalize.js';
+import * as slim from '../../apps/web/src/utils/entry-slim.js';
+import * as sessions from '../../apps/web/src/utils/sessionManager.js';
+import * as merge from '../../apps/web/src/utils/sessionMerge.js';
+import * as pipeline from '../../apps/web/src/utils/ingestPipeline.js';
+import * as body from '../../packages/app/lib/openai-body.js';
+import { LogV2WriteCoordinator } from '../../packages/app/lib/log-v2/coordinator.js';
+import { findActiveV2SessionFileAsync } from '../../packages/app/lib/log-v2/materializer.js';
+import { readV2WireSnapshot } from '../../packages/app/lib/log-v2/transport.js';
+import { serveLogV2Snapshot, serveLogV2Objects, serveLogV2Live } from '../../packages/app/server/lib/log-v2-routes.js';
+import { closeIdleV2TimelinePublishers } from '../../packages/app/lib/log-v2/timeline-watcher.js';
+import { fetchLogV2Snapshot } from '../../apps/web/src/utils/logV2Transport.js';
+import { v2SnapshotCacheScope } from '../../apps/web/src/utils/logV2Cache.js';
+import { LogV2Archive, isV2ConversationCandidate } from '../../apps/web/src/utils/logV2Archive.js';
 
-const source = readFileSync(new URL('../../src/AppBase.jsx', import.meta.url), 'utf8');
+const source = readFileSync(new URL('../../apps/web/src/AppBase.jsx', import.meta.url), 'utf8');
 function between(text, start, end) {
   const a = text.indexOf(start);
   const b = text.indexOf(end, a + start.length);
@@ -30,13 +31,14 @@ function between(text, start, end) {
   return text.slice(a, b);
 }
 const methods = [
+  between(source, '  _rebuildRequestIndex(entries,', '  // 给子组件'),
   between(source, '  _processEntries(entries) {', '  componentDidMount() {'),
   between(source, '  async _projectV2Rows(', '  hydrateV2Request ='),
   between(source, '  initSSE() {', '  _initControlSSE() {'),
   between(source, '  async _loadLocalV2LogFile(file) {', '  handleEventMessage(event) {'),
   between(source, '  handleEntryObject(entry) {', '  _flushPendingEntries ='),
 ].join('\n');
-const helpers = readFileSync(new URL('../../src/utils/helpers.js', import.meta.url), 'utf8');
+const helpers = readFileSync(new URL('../../apps/web/src/utils/helpers.js', import.meta.url), 'utf8');
 const relevant = between(helpers, 'export function isRelevantRequest(request) {', '\n\n/**').replace('export ', '');
 const root = mkdtempSync(join(tmpdir(), 'cxv-b0-cold-ingest-'));
 const coordinator = new LogV2WriteCoordinator({ rootDir: root, minFreeBytes: 0, minFreePercent: 0 });
@@ -91,15 +93,19 @@ try {
     LogV2Archive: class extends LogV2Archive {
       constructor(snapshot) { super(snapshot, { fetchImpl }); }
     },
-    isV2ConversationCandidate,
+    isV2ConversationCandidate, v2SnapshotCacheScope,
   });
   function host() {
     return Object.assign(new Host(), {
       state: { requests: [], mainAgentSessions: [], fileLoading: true },
+      _streamTransport: { closeAll() {} },
       _requestIndexMap: new Map(), _ingestToken: 0, _ingestRunning: false,
       _liveGateBuffer: [], _pendingEntries: [], _unmounted: false,
       _v2Epoch: 0, _v2LiveBuffer: [], _v2BootstrapReady: false,
-      _startV2Live(snapshot) { this._probeSnapshot = snapshot; }, // browser EventSource is outside this probe
+      _startV2Live(snapshot) {
+        this._probeSnapshot = snapshot;
+        this._v2LiveSource = this._probeLiveSource = { closed: false, close() { this.closed = true; } };
+      }, // browser EventSource is outside this probe
       _initControlSSE() { this.eventSource = { close() {} }; },
       _observeSuccessfulContextClear() {},
       mergeMainAgentSessions: merge.mergeMainAgentSessions,
@@ -187,27 +193,56 @@ try {
       h.initSSE();
       assert.equal(await h._probePending, false);
       assert.equal(timers.at(-1).delay, 1000);
+      assert.equal(h._probeLiveSource.closed, true);
+      assert.equal(h._v2LiveSource, null);
     } else await h._loadLocalV2LogFile(await activeFile());
-    assert.equal(h._ingestRunning, true);
-    assert.equal(h._liveGateBuffer.length, 1);
+    assert.equal(h._ingestRunning, false);
+    assert.equal(h._liveGateBuffer.length, 0);
+    assert.equal(h._pendingEntries.length, 1);
     assert.equal(h.state.requests[0].timestamp, 'BASELINE');
-    assert.equal(h._requestIndexMap.has('BASELINE|codex://baseline'), false);
-    assert.equal(!!h._v2Archive, mode === 'readonly');
+    assert.equal(h._requestIndexMap.has('BASELINE|codex://baseline'), true);
+    assert.equal(h._v2Archive, null);
+    assert.equal(h._v2AppliedSeq, 0);
+    assert.equal(h._v2LiveBuffer.length, 0);
     console.log(JSON.stringify({ scenario: `${mode}-processing-failure`, gateLatched: h._ingestRunning,
       gateBuffered: h._liveGateBuffer.length, loading: h.state.fileLoading,
-      bootstrapReady: h._v2BootstrapReady, archiveRetained: !!h._v2Archive, committedIndexLost: true }));
+      bootstrapReady: h._v2BootstrapReady, archiveRetained: !!h._v2Archive, committedIndexRestored: true }));
+    h._processOneEntry = process;
     if (mode === 'active') {
-      h._processOneEntry = process;
       timers.at(-1).callback();
       assert.equal(await h._probePending, true);
       assert.equal(h._ingestRunning, false);
       assert.equal(h._liveGateBuffer.length, 0);
       console.log(JSON.stringify({ scenario: 'active-transient-retry', recovered: true, delayMs: 1000 }));
+    } else {
+      await h._loadLocalV2LogFile(await activeFile());
+      assert.ok(h._v2Archive);
+      assert.equal(h._ingestRunning, false);
+      console.log(JSON.stringify({ scenario: 'readonly-explicit-retry', recovered: true }));
     }
   }
-  // A literal null reaches a dereference despite isColdIngestMergeBlockedEntry.
-  assert.throws(() => host()._processEntries([null]), /timestamp/);
-  console.log(JSON.stringify({ scenario: 'null-row', processThrows: true, scheduledRafCallbacks: scheduled, reports }));
+  // A late historical failure must not clear the replacement archive/loading.
+  const superseded = host();
+  const projectRows = superseded._projectV2Rows;
+  let rejectOld;
+  let signalStarted;
+  const started = new Promise(resolve => { signalStarted = resolve; });
+  superseded._projectV2Rows = async function (...args) {
+    if (!rejectOld) return new Promise((_, reject) => { rejectOld = reject; signalStarted(); });
+    return projectRows.apply(this, args);
+  };
+  const oldHistory = superseded._loadLocalV2LogFile(await activeFile());
+  await started;
+  await superseded._loadLocalV2LogFile(await activeFile());
+  const currentArchive = superseded._v2Archive;
+  superseded.state.fileLoading = true;
+  rejectOld(new Error('superseded historical failure'));
+  await oldHistory;
+  assert.equal(superseded._v2Archive, currentArchive);
+  assert.equal(superseded.state.fileLoading, true);
+  console.log(JSON.stringify({ scenario: 'superseded-history-failure', replacementUntouched: true }));
+  assert.doesNotThrow(() => host()._processEntries([null]));
+  console.log(JSON.stringify({ scenario: 'null-row', processThrows: false, scheduledRafCallbacks: scheduled, reports }));
 } finally {
   server.closeAllConnections();
   await new Promise(resolve => server.close(resolve));

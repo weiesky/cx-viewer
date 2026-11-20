@@ -159,3 +159,53 @@ test('session index and cold placeholders preserve model identity with old-data 
   assert.equal(allSessions[0].modelName, 'model-a');
   assert.equal(allSessions[1].modelName, undefined);
 });
+
+for (const path of ['cumulative', 'projection-window', 'in-place']) {
+  test(`response-less in-flight ${path} updates retain the previous response until completion`, () => {
+    const messages = [message('user', 'q1'), message('assistant', 'a1')];
+    let sessions = mergeMainAgentSessions([], entry({
+      timestamp: '2026-01-01T00:00:00.000Z', input: structuredClone(messages),
+    }));
+    const previousResponse = sessions[0].response;
+    const input = path === 'in-place'
+      ? [message('user', 'q1'), message('assistant', 'a1 evolving')]
+      : path === 'projection-window'
+        ? [message('assistant', 'a1'), message('user', 'q2')]
+        : [...structuredClone(messages), message('user', 'q2')];
+    const extra = {
+      inProgress: true,
+      ...(path === 'in-place' ? { _inPlaceReplaceDetected: true } : {}),
+      ...(path === 'projection-window' ? { _codexConversationProjection: true,
+        _codexConversationDelta: true, _conversationWindowStart: 1, _conversationMessageCount: 3 } : {}),
+    };
+    sessions = mergeMainAgentSessions(sessions, entry({
+      timestamp: '2026-01-01T00:00:01.000Z', input, response: false, extra,
+    }));
+    assert.equal(sessions.length, 1);
+    assert.equal(sessions[0].response, previousResponse);
+    const count = sessions[0].messages.length;
+    const completed = entry({ timestamp: '2026-01-01T00:00:02.000Z',
+      input: structuredClone(input), extra: { ...extra, inProgress: false } });
+    sessions = mergeMainAgentSessions(sessions, completed);
+    assert.equal(sessions[0].response, completed.response);
+    assert.equal(sessions[0].messages.length, count, 'completion does not duplicate the prefix');
+  });
+}
+
+test('new identities and authoritative compact rewrites never inherit an unrelated prior response', () => {
+  const baseline = () => mergeMainAgentSessions([], entry({
+    timestamp: '2026-01-01T00:00:00.000Z', input: [message('user', 'q1'), message('assistant', 'a1')],
+  }));
+  const incoming = (extra = {}) => entry({ timestamp: '2026-01-01T00:00:01.000Z',
+    input: [message('user', 'q2')], response: false, extra: { inProgress: true, ...extra } });
+  const other = incoming();
+  other.body.metadata.thread_id = 'other-thread';
+  const split = mergeMainAgentSessions(baseline(), other);
+  assert.equal(split.length, 2);
+  assert.equal(split[1].response, undefined);
+  const compact = mergeMainAgentSessions(baseline(), incoming({ _authoritativeConversationReplace: true }));
+  assert.equal(compact[0].response, undefined);
+  const explicitNull = incoming({ response: null });
+  const cleared = mergeMainAgentSessions(baseline(), explicitNull);
+  assert.equal(cleared[0].response, null, 'only undefined is omitted; explicit null remains authoritative');
+});

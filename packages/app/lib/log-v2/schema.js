@@ -1,4 +1,5 @@
 export const LOG_V2_FORMAT_VERSION = 2;
+export const SHARDED_SESSION_FORMAT_VERSION = 3;
 export const PROJECT_MANIFEST_KIND = 'cx-viewer.project-archive';
 export const SESSION_MANIFEST_KIND = 'cx-viewer.session-archive';
 export const SESSION_SUMMARY_KIND = 'cx-viewer.session-summary';
@@ -119,7 +120,10 @@ export function validateSessionManifest(value) {
   const errors = [];
   if (!value || typeof value !== 'object') return validationResult(['session manifest must be an object']);
   if (value.kind !== SESSION_MANIFEST_KIND) errors.push(`kind must be ${SESSION_MANIFEST_KIND}`);
-  if (value.version !== LOG_V2_FORMAT_VERSION) errors.push(`version must be ${LOG_V2_FORMAT_VERSION}`);
+  const sharded = value.shards?.version === 1 && Array.isArray(value.shards.cuts) && value.shards.cuts.length > 0;
+  if (value.version !== (sharded ? SHARDED_SESSION_FORMAT_VERSION : LOG_V2_FORMAT_VERSION)) {
+    errors.push(`session version must be ${sharded ? SHARDED_SESSION_FORMAT_VERSION : LOG_V2_FORMAT_VERSION}`);
+  }
   if (!nonEmptyString(value.projectId)) errors.push('projectId is required');
   if (!nonEmptyString(value.sessionId)) errors.push('sessionId is required');
   if (!positiveInteger(value.sessionSeq)) errors.push('sessionSeq must be a positive safe integer');

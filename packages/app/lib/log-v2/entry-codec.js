@@ -90,7 +90,7 @@ export function deriveTimelinePhase(entry, explicitPhase) {
   const status = entry?.response?.body?.turn?.status ?? entry?.turn?.status ?? entry?.status;
   if (status === 'failed') return 'failed';
   if (status === 'interrupted' || status === 'cancelled') return 'interrupted';
-  if (status === 'inProgress' || status === 'in_progress' || status === 'running') return 'inProgress';
+  if (entry?.inProgress === true || status === 'inProgress' || status === 'in_progress' || status === 'running') return 'inProgress';
   return 'completed';
 }
 

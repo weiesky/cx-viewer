@@ -32,7 +32,7 @@ import { createEmptyToolState, appendToolResultMap, cachedBuildToolResultMap, ge
 import { refreshCachedItemProp } from '../../utils/refreshCachedItemProp';
 import { ASK_TOOL_NAMES, CODEX_PLAN_TOOL_NAME, PLAN_TOOL_NAMES, isPlanToolName } from '../../utils/toolNameAliases.js';
 import { refreshResolvedModelInfo, healUnresolvedTeammateEntries, needsFullReqRescan } from '../../utils/identityHeal';
-import { getLatestSessionByActivity, isSessionDividerBoundary, resolveBubbleProducerTs } from '../../utils/sessionManager';
+import { getLatestSessionByActivity, getSessionActivityTs, isSessionDividerBoundary, resolveBubbleProducerTs } from '../../utils/sessionManager';
 import {
   didFinishConversationHydration,
   getConversationGroupStartTs,
@@ -203,6 +203,7 @@ class ChatView extends React.Component {
     this._incToolProcessedCount = 0;
     this._incToolSessionIdx = -1;
     this._prevSessions = null;
+    this._prevShardTail = null;
 
     // requests 扫描增量缓存。按职责分 3 类，增量扫描时只追加不回溯：
     //
@@ -622,6 +623,8 @@ class ChatView extends React.Component {
       nextProps.isStreaming !== this.props.isStreaming ||
       nextProps.hasMoreHistory !== this.props.hasMoreHistory ||
       nextProps.loadingMore !== this.props.loadingMore ||
+      nextProps.shards !== this.props.shards ||
+      nextProps.shardPrependCount !== this.props.shardPrependCount ||
       nextProps.loadingSessionId !== this.props.loadingSessionId ||
       nextProps.lang !== this.props.lang ||
       nextProps.showThinkingSummaries !== this.props.showThinkingSummaries ||
@@ -635,6 +638,36 @@ class ChatView extends React.Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
+    // Sharding (2026-11): a "load earlier history" prepend landed — expand the
+    // render window by the number of items it added and anchor the viewport, or
+    // the older history lands above the visible tail and the click looks like a
+    // no-op. Runs BEFORE the session-switch reset below so it isn't wiped.
+    if (prevProps.shardPrependCount !== this.props.shardPrependCount) {
+      const added = (this.props.shardPrependCount || 0) - (prevProps.shardPrependCount || 0);
+      if (added > 0) {
+        this._mobileExtraItems += added;
+        const prevLen = this.state.allItems?.length || 0;
+        const rawItems = this.buildAllItems();
+        const allItems = this._applyMobileSlice(rawItems);
+        const addedCount = allItems.length - prevLen;
+        if (useVirtuoso && this.virtuosoRef.current) {
+          this.setState({ allItems, visibleCount: allItems.length }, () => {
+            if (this.virtuosoRef.current && addedCount > 0) this.virtuosoRef.current.scrollToIndex({ index: addedCount, align: 'start' });
+          });
+        } else {
+          const el = this.containerRef.current;
+          const prevScrollHeight = el ? el.scrollHeight : 0;
+          const prevScrollTop = el ? el.scrollTop : 0;
+          this.setState({ allItems, visibleCount: allItems.length }, () => {
+            if (el) {
+              this._stickyController.suppressOnce();
+              el.scrollTop = prevScrollTop + (el.scrollHeight - prevScrollHeight);
+            }
+          });
+        }
+      }
+    }
+
     if (this.props.sdkResumeId && prevProps.sdkResumeId !== this.props.sdkResumeId) {
       // Keep the draft and uploads, but require another explicit send after a
       // conversation switch instead of draining an old deferred submission.
@@ -931,6 +964,7 @@ class ChatView extends React.Component {
           this._incToolSessionIdx = -1;
           this._reqScanCache = createRequestScanCache();
           this._sessionItemCache = [];
+          this._toolFileMonitor.resetCursors();
           // 会话/工作区切换：清除乐观停止标志，避免陈旧 true 泄漏到新会话
           if (this.state.stopOptimistic) this._clearStopOptimistic();
         }
@@ -939,9 +973,18 @@ class ChatView extends React.Component {
       // Request scanning is invalidated inside buildAllItems by object identity;
       // keeping the cache here allows append-only updates to remain per-session.
       // 会话/工作区切换：复位「加载更早」展开量，新会话从最近窗口开始（移动端+桌面端一致）
-      this._mobileExtraItems = 0;
+      // Codex rebuilds a cumulative session when loading older input, so its
+      // first-message id changes. Cache the canonical tail's values instead;
+      // an in-place live append in the same commit must not use the prepend skip.
+      const tail = getLatestSessionByActivity(this.props.mainAgentSessions || []);
+      const nextTail = [tail?.sessionKey || tail?.conversationId || tail?.sessionId, getSessionActivityTs(tail), tail?._lastV2Seq];
+      const tailUnchanged = nextTail[0] != null && nextTail[1] != null && this._prevShardTail
+        && nextTail.every((value, index) => value === this._prevShardTail[index]);
+      const shardPrepended = (this.props.shardPrependCount || 0) > (prevProps.shardPrependCount || 0) && tailUnchanged;
+      this._prevShardTail = nextTail;
+      if (!shardPrepended) this._mobileExtraItems = 0;
       this.startRender();
-      this._clearPendingImages();
+      if (!shardPrepended) this._clearPendingImages();
       this._updateSuggestion();
       this._toolFileMonitor.check();
     } else if (prevProps.requests !== this.props.requests) {
@@ -1818,7 +1861,7 @@ class ChatView extends React.Component {
 
     // Server-side pagination: "load earlier conversations" button
     // 仅展示当前会话时隐藏跨会话的「加载更早」按钮（更早内容本就不展示）。
-    if (!onlyCurrentSession && (this.props.hasMoreHistory || this.props.loadingMore)) {
+    if (!this.props.shards && !onlyCurrentSession && (this.props.hasMoreHistory || this.props.loadingMore)) {
       allItems.push(
         <div key="load-more-history" className={styles.loadMoreWrap}>
           {this.props.loadingMore ? (
@@ -3471,6 +3514,22 @@ class ChatView extends React.Component {
       </div>
     ) : null;
 
+    const shards = this.props.shards;
+    const shardBtn = (shards && shards.hasMore) ? (
+      <div className={styles.loadMoreWrap}>
+        {this.props.loadingMore ? (
+          <div className={`${styles.loadMoreBtn} ${styles.loadMoreBtnLoading}`}>
+            <span className={styles.loadMoreSpinner} />
+            {t('ui.loading')}
+          </div>
+        ) : (
+          <button className={styles.loadMoreBtn} onClick={this.props.onLoadMoreHistory}>
+            {t('ui.loadEarlierShard')}
+          </button>
+        )}
+      </div>
+    ) : null;
+
     const roleFilterBar = this.state.roleFilterOpen && collectedRoles.length > 0 ? (
       <RoleFilterBar roles={collectedRoles} selectedRoles={this.state.roleFilterSelected} onToggle={(key) => this.setState(prev => {
         const next = new Set(prev.roleFilterSelected);
@@ -3482,6 +3541,7 @@ class ChatView extends React.Component {
     const messageList = (noData || loading) ? (
       <div className={styles.messageListWrap}>
         <div ref={this.containerRef} className={styles.container}>
+          {shardBtn}
           {(!cliMode || loading) ? (
             <div className={styles.centerEmpty}>
               {loading ? <Spin size="large" /> : <Empty description={t('ui.noChat')} />}
@@ -3498,7 +3558,7 @@ class ChatView extends React.Component {
           <ImageLightbox src={this.state.mdLightboxSrc} alt="" onClose={() => this.setState({ mdLightboxSrc: null })} />
         )}
         {useVirtuoso ? (
-          this._virtuosoHeader = loadMoreBtn,
+          this._virtuosoHeader = <>{shardBtn}{loadMoreBtn}</>,
           this._virtuosoFooter = <>
             {spinnerNode}
             {pendingBubbles}
@@ -3539,6 +3599,7 @@ class ChatView extends React.Component {
             ref={this.containerRef}
             className={styles.container}
           >
+            {shardBtn}
             {loadMoreBtn}
             {visible.map((item, i) => {
               const isScrollTarget = i === targetIdx;

@@ -8,6 +8,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { inspectSessionArchive } from '../lib/log-v2/inspect.js';
 import { materializeSessionArchive } from '../lib/log-v2/materializer.js';
+import { readShardLayout } from '../lib/log-v2/shards.js';
 
 function runWriter(source, cwd) {
   return new Promise((resolve, reject) => {
@@ -27,7 +28,7 @@ function runWriter(source, cwd) {
   });
 }
 
-test('multiple processes serialize concurrent threads into one gap-free session timeline', async () => {
+for (const shardPrompts of [0, 3]) test(`multiple processes serialize concurrent threads across shards (threshold ${shardPrompts})`, async () => {
   const root = mkdtempSync(join(tmpdir(), 'cxv-v2-process-stress-'));
   try {
     const writerUrl = pathToFileURL(fileURLToPath(new URL('../lib/log-v2/writer.js', import.meta.url))).href;
@@ -43,7 +44,7 @@ test('multiple processes serialize concurrent threads into one gap-free session 
         const writer = LogV2Writer.open({
           rootDir: ${JSON.stringify(root)}, projectId: 'project', canonicalCwd: '/workspace/project',
           sessionId: 'stress-session', rootThreadId: 'stress-session',
-          createdAt: '2026-07-14T00:00:00.000Z', durability: 'buffered',
+          createdAt: '2026-07-14T00:00:00.000Z', durability: 'buffered', shardPrompts: ${shardPrompts},
         });
         const threadId = worker === 0 ? 'stress-session' : 'child-' + worker;
         const identity = resolveAppServerThreadIdentity({
@@ -54,7 +55,8 @@ test('multiple processes serialize concurrent threads into one gap-free session 
           writer.append({
             timestamp: new Date(Date.UTC(2026, 6, 14, worker, 0, index)).toISOString(),
             url: 'codex://stress/' + worker + '/' + index,
-            body: { input: [{ type: 'message', text: worker + ':' + index }] },
+            mainAgent: worker === 0,
+            body: { input: [{ type: 'message', role: 'user', content: worker + ':' + index }] },
             response: { status: 200, headers: {}, body: { worker, index } },
           }, identity);
         }
@@ -71,6 +73,7 @@ test('multiple processes serialize concurrent threads into one gap-free session 
     assert.equal(report.ok, true, JSON.stringify(report));
     assert.equal(report.committedEvents, workers * eventsPerWorker);
     assert.equal(report.threadCount, workers);
+    assert.equal(readShardLayout(sessionDir).activePart, shardPrompts ? 3 : 0);
     const materialized = materializeSessionArchive(sessionDir);
     assert.deepEqual(materialized.records.map((record) => record.seq),
       Array.from({ length: workers * eventsPerWorker }, (_, index) => index + 1));

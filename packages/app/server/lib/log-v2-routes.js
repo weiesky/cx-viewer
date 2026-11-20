@@ -484,6 +484,7 @@ export async function serveLogV2Page(req, res, { logDir, body, readPage, readSum
     if (registration.pendingPage && body?.ackPageToken === registration.pendingPage.token) {
       registration.nextBeforeSeq = registration.pendingPage.nextBeforeSeq;
       registration.hasMore = registration.pendingPage.hasMore;
+      if (registration.pendingPage.page.pageIndex) registration.pageIndex = registration.pendingPage.page.pageIndex;
       registration.pendingPage = null;
     }
     if (!registration.hasMore) {
@@ -496,7 +497,7 @@ export async function serveLogV2Page(req, res, { logDir, body, readPage, readSum
     if (!page) {
       const limit = Math.min(Math.max(Number(body?.limit) || 100, 1), 500);
       assertV2WireCursorFile(logDir, registration.file, registration.frozenCursor);
-      page = registration.pageIndex
+      page = registration.pageIndex && !registration.pageIndex.part
         ? readV2WirePageFromIndex(registration.pageIndex, {
             cursor: registration.frozenCursor,
             beforeSeq: registration.nextBeforeSeq,
@@ -508,7 +509,7 @@ export async function serveLogV2Page(req, res, { logDir, body, readPage, readSum
             beforeSeq: registration.nextBeforeSeq,
             limit,
           });
-      if (registration.pageIndex && typeof readSummaries === 'function'
+      if (registration.pageIndex && !registration.pageIndex.part && typeof readSummaries === 'function'
           && page.checkpoint.winners.length > 0) {
         // The frozen winner slice is cheap and synchronous. All summary-file
         // indexing, reads, validation and canonical rebuilds stay in a Reader
@@ -639,6 +640,27 @@ export async function serveLogV2Live(req, res, {
     'X-CX-Log-Protocol': `log-v2-wire/${LOG_V2_WIRE_VERSION}`,
   });
   let stopped = false;
+  let stopWatch = () => {};
+  let heartbeat;
+  let activeCheck;
+  const close = () => {
+    if (stopped) return;
+    stopped = true;
+    stopWatch();
+    clearInterval(heartbeat);
+    clearInterval(activeCheck);
+    releaseV2ObjectHandle(objectHandle);
+  };
+  const finish = () => {
+    if (stopped) return;
+    close();
+    try { if (!res.writableEnded) res.end(); }
+    catch { try { res.destroy?.(); } catch {} }
+  };
+  const onWriteError = (error) => {
+    console.warn('[cxv:log-v2.live-write]', error);
+    finish();
+  };
   const sendRaw = async (event, data, id = null) => {
     if (stopped || res.destroyed || res.writableEnded) return false;
     if (event === 'ping' && res.writableNeedDrain) return false;
@@ -659,56 +681,57 @@ export async function serveLogV2Live(req, res, {
   // reset or heartbeat cannot be inserted between fragments of a commit.
   let sendChain = Promise.resolve(true);
   const send = (event, value, id = null) => {
-    const result = sendChain.then(() => sendNow(event, value, id));
-    sendChain = result.catch(() => false);
+    const result = sendChain.then(() => sendNow(event, value, id)).catch(error => {
+      onWriteError(error);
+      return false;
+    });
+    sendChain = result;
     return result;
   };
-  const stopWatch = watchV2Timeline({
-    logDir,
-    file,
-    timelinePath: resolveV2SessionFile(logDir, file).timelinePath,
-    cursor: resumeCursor,
-    seedCheckpoint: registration.liveCheckpoint,
-    onCommits: async (commits) => {
-      for (const commit of commits) {
-        if (!await send('v2_commit', commit, `${generation}:${commit.frame.timeline.seq}`)) break;
-        extendV2ObjectHandle(objectHandle, commit.frame.archive, commit.frame);
-      }
-    },
-    onError: async (error) => {
-      await send('v2_reset', {
-        code: error.code || 'CXV_LOG_V2_LIVE_FAILED', message: error.message,
-      });
-      if (!res.writableEnded) res.end();
-    },
-  });
-  const heartbeat = setInterval(() => { void send('ping', {}).catch(() => {}); }, 15_000);
+  try {
+    stopWatch = watchV2Timeline({
+      logDir,
+      file,
+      timelinePath: resolveV2SessionFile(logDir, file).timelinePath,
+      cursor: resumeCursor,
+      seedCheckpoint: registration.liveCheckpoint,
+      onCommits: async (commits) => {
+        for (const commit of commits) {
+          if (!await send('v2_commit', commit, `${generation}:${commit.frame.timeline.seq}`)) break;
+          extendV2ObjectHandle(objectHandle, commit.frame.archive, commit.frame);
+        }
+      },
+      onError: async (error) => {
+        await send('v2_reset', {
+          code: error.code || 'CXV_LOG_V2_LIVE_FAILED', message: error.message,
+        });
+        finish();
+      },
+    });
+  } catch (error) {
+    onWriteError(error);
+    return;
+  }
+  heartbeat = setInterval(() => { void send('ping', {}); }, 15_000);
   let activeCheckRunning = false;
-  const activeCheck = setInterval(async () => {
+  activeCheck = setInterval(async () => {
     if (activeCheckRunning || stopped) return;
     activeCheckRunning = true;
     try {
       if (await getActiveFile() !== file) {
         await send('v2_reset', { code: 'CXV_LOG_V2_ARCHIVE_CHANGED' });
-        res.end();
+        finish();
       }
     } catch (error) {
       await send('v2_reset', {
         code: error.code || 'CXV_LOG_V2_ACTIVE_CHECK_FAILED', message: error.message,
       });
-      if (!res.writableEnded) res.end();
+      finish();
     } finally {
       activeCheckRunning = false;
     }
   }, 1000);
-  const close = () => {
-    if (stopped) return;
-    stopped = true;
-    stopWatch();
-    clearInterval(heartbeat);
-    clearInterval(activeCheck);
-    releaseV2ObjectHandle(objectHandle);
-  };
   req.on('close', close);
   res.on('close', close);
+  res.on('error', onWriteError);
 }

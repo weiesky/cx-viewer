@@ -11,6 +11,7 @@ import {
 } from 'node:fs';
 import { join, resolve } from 'node:path';
 
+import { activeTimelinePath } from './shards.js';
 import { projectUserPromptItem, projectedPromptFingerprint } from '../../src/utils/userPromptContent.js';
 import { splitEntryParts } from './entry-codec.js';
 import { scanMaterializedSessionArchive } from './materializer.js';
@@ -226,7 +227,7 @@ export function writeSessionSummary(sessionDir, state, {
 
 /** Read a stable identity for the exact canonical timeline byte watermark. */
 export function readSessionTimelineIdentity(sessionDir, expectedBytes = null) {
-  const path = join(resolve(sessionDir), 'timeline.jsonl');
+  const path = activeTimelinePath(resolve(sessionDir));
   if (!existsSync(path)) return null;
   const fd = openSync(path, 'r');
   try {
@@ -337,7 +338,7 @@ export function rebuildSessionSummary(sessionDir, {
 export function inspectSessionSummary(sessionDir) {
   const resolved = resolve(sessionDir);
   const manifest = JSON.parse(readFileSync(join(resolved, 'manifest.json'), 'utf8'));
-  const timelinePath = join(resolved, 'timeline.jsonl');
+  const timelinePath = activeTimelinePath(resolved);
   const timelineBytes = existsSync(timelinePath) ? statSync(timelinePath).size : 0;
   try {
     const summary = readSessionSummary(resolved, { manifest, timelineBytes });

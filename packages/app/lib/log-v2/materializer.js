@@ -2,6 +2,7 @@ import { existsSync, lstatSync, readFileSync, readdirSync, realpathSync, rmSync,
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { Worker } from 'node:worker_threads';
 
+import { activeTimelinePath, readShardLayout, scanSessionTimelineSync } from './shards.js';
 import { assembleEntryParts, applyInputOperations } from './entry-codec.js';
 import { setLatestMapValue } from '../log-entry-order.js';
 import {
@@ -186,7 +187,7 @@ export function scanMaterializedSessionArchive(sessionDir, onEntry, {
   if (!manifestValidation.ok) throw new Error(`invalid V2 session manifest: ${manifestValidation.errors.join('; ')}`);
   let committedEvents = 0;
   const states = { nextSeq: 1, entries: new Map(), threads: new Map() };
-  const timeline = scanJsonlSync(join(resolvedSessionDir, 'timeline.jsonl'), ({ value }) => {
+  const timeline = scanSessionTimelineSync(resolvedSessionDir, ({ value }) => {
     const included = includeRecord ? !!includeRecord(value) : true;
     const entry = materializeTimelineRecord(resolvedSessionDir, value, states, { assemble: included });
     if (included) onEntry(entry, value);
@@ -225,7 +226,7 @@ export function summarizeV2SessionArchive(sessionDir) {
   const manifest = readJson(join(resolvedSessionDir, 'manifest.json'));
   const manifestValidation = validateSessionManifest(manifest);
   if (!manifestValidation.ok) throw new Error(`invalid V2 session manifest: ${manifestValidation.errors.join('; ')}`);
-  const timelinePath = join(resolvedSessionDir, 'timeline.jsonl');
+  const timelinePath = activeTimelinePath(resolvedSessionDir);
   const timelineFileBytes = existsSync(timelinePath) ? statSync(timelinePath).size : 0;
 
   // Normal hot path: the summary watermark covers the complete stable
@@ -260,7 +261,7 @@ export function summarizeV2SessionArchive(sessionDir) {
   let nextSeq = 1;
   let committedEvents = 0;
 
-  const timeline = scanJsonlSync(timelinePath, ({ value: timelineRecord }) => {
+  const timeline = scanSessionTimelineSync(resolvedSessionDir, ({ value: timelineRecord }) => {
     const validation = validateTimelineRecord(timelineRecord);
     if (!validation.ok) throw new Error(validation.errors.join('; '));
     if (timelineRecord.seq !== nextSeq) throw new Error(`timeline sequence gap at ${nextSeq}`);
@@ -351,8 +352,9 @@ function lightweightConversationFile(logDir, project, projectDir, sessionId, {
       const manifest = readValidatedSession(project, sessionDir);
       if (manifest.sessionId !== sessionId || manifest.source === 'app-server-global') continue;
       const timelinePath = join(sessionDir, 'timeline.jsonl');
-      const timelineStat = lstatSync(timelinePath);
-      if (!timelineStat.isFile() || timelineStat.isSymbolicLink() || timelineStat.size === 0) return null;
+      const timelineStat = lstatSync(activeTimelinePath(sessionDir, manifest));
+      if (!timelineStat.isFile() || timelineStat.isSymbolicLink()
+          || (timelineStat.size === 0 && !readShardLayout(sessionDir, manifest).activePart)) return null;
       if (requireRootMain && !cachedRootMainActivity(sessionDir, manifest, timelineStat)) return null;
       return relative(logDir, timelinePath).split(sep).join('/');
     } catch {}
@@ -392,6 +394,19 @@ export function discoverV2SessionArchives(logDir, { projectId = null } = {}) {
   return Object.freeze({ archives: Object.freeze(archives), errors: Object.freeze(errors) });
 }
 
+function localLogRow(logDir, sessionDir, summary) {
+  return {
+    file: relative(logDir, join(sessionDir, 'timeline.jsonl')).split(sep).join('/'),
+    timestamp: sessionTimestamp(summary.manifest.createdAt),
+    size: summary.archiveBytes,
+    turns: summary.turns,
+    preview: summary.previews,
+    sessionId: summary.manifest.sessionId,
+    logStore: 'v2',
+    degraded: !!summary.error,
+  };
+}
+
 /** Lists validated V2 sessions in the shape consumed by the existing log picker. */
 export function listV2LocalLogs(logDir, currentProjectName = '') {
   const grouped = {};
@@ -403,24 +418,45 @@ export function listV2LocalLogs(logDir, currentProjectName = '') {
           readValidatedSession(project, sessionDir);
           const summary = summarizeV2SessionArchive(sessionDir);
           if (summary.committedEvents === 0) continue;
-          const timelinePath = join(sessionDir, 'timeline.jsonl');
           if (!grouped[project.projectId]) grouped[project.projectId] = [];
-          grouped[project.projectId].push({
-            file: relative(logDir, timelinePath).split(sep).join('/'),
-            timestamp: sessionTimestamp(summary.manifest.createdAt),
-            size: summary.archiveBytes,
-            turns: summary.turns,
-            preview: summary.previews,
-            sessionId: summary.manifest.sessionId,
-            logStore: 'v2',
-            degraded: !!summary.error,
-          });
+          grouped[project.projectId].push(localLogRow(logDir, sessionDir, summary));
         } catch {}
       }
     } catch {}
   }
   for (const logs of Object.values(grouped)) logs.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
   return { ...grouped, _currentProject: currentProjectName || '' };
+}
+
+/** Baseline per-project paging: enumerate identities, summarize only this page. */
+export function listV2LocalLogsPage(logDir, currentProjectName, { project = currentProjectName, page = 1, pageSize = 50 } = {}) {
+  const out = { items: [], total: 0, page, pageSize, _currentProject: currentProjectName || '',
+    _viewedProject: project || '', _allProjects: [] };
+  const candidates = [];
+  for (const projectDir of listProjectDirs(logDir)) {
+    try {
+      const manifest = readValidatedProject(projectDir);
+      out._allProjects.push(manifest.projectId);
+      if (manifest.projectId !== project) continue;
+      for (const sessionDir of listSessionDirs(projectDir)) {
+        try {
+          const session = readValidatedSession(manifest, sessionDir);
+          candidates.push({ sessionDir, createdAt: session.createdAt });
+        } catch {} // Concurrently removed or invalid sessions do not break the list.
+      }
+    } catch {}
+  }
+  out._allProjects.sort();
+  candidates.sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.sessionDir.localeCompare(a.sessionDir));
+  // Like upstream, total counts candidates before the expensive empty/corrupt filter.
+  out.total = candidates.length;
+  for (const { sessionDir } of candidates.slice((page - 1) * pageSize, page * pageSize)) {
+    try {
+      const summary = summarizeV2SessionArchive(sessionDir);
+      if (summary.committedEvents > 0) out.items.push(localLogRow(logDir, sessionDir, summary));
+    } catch {}
+  }
+  return out;
 }
 
 /** Resolves a user-facing V2 timeline locator to its validated session archive. */
@@ -469,7 +505,7 @@ export function resolveV2SessionFile(logDir, file) {
   }
   const project = readValidatedProject(projectDir);
   const manifest = readValidatedSession(project, sessionDir);
-  return { sessionDir, timelinePath, project, manifest };
+  return { sessionDir, timelinePath: activeTimelinePath(sessionDir, manifest), project, manifest };
 }
 
 export function isV2SessionFile(file) {
@@ -492,7 +528,7 @@ export function dedupeMaterializedEntries(entries) {
 function selectWinningTimelineRecords(sessionDir, { strict = true } = {}) {
   const winners = new Map();
   let expectedSeq = 1;
-  const timeline = scanJsonlSync(join(sessionDir, 'timeline.jsonl'), ({ value }) => {
+  const timeline = scanSessionTimelineSync(sessionDir, ({ value }) => {
     const validation = validateTimelineRecord(value);
     if (!validation.ok) throw new Error(validation.errors.join('; '));
     if (value.seq !== expectedSeq) throw new Error(`timeline sequence gap at ${expectedSeq}`);
@@ -781,7 +817,7 @@ export function findV2SessionFileBySessionId(logDir, sessionId, {
 function rootMainActivity(sessionDir, manifest) {
   let lastMainActivity = null;
   let expectedSeq = 1;
-  const timeline = scanJsonlSync(join(sessionDir, 'timeline.jsonl'), ({ value }) => {
+  const timeline = scanSessionTimelineSync(sessionDir, ({ value }) => {
     const recordValidation = validateTimelineRecord(value);
     if (!recordValidation.ok) throw new Error(recordValidation.errors.join('; '));
     if (value.seq !== expectedSeq) throw new Error(`timeline sequence gap at ${expectedSeq}`);
@@ -831,7 +867,7 @@ function rememberRootMainActivity(timelinePath, value) {
 
 function cachedRootMainActivity(sessionDir, manifest, timelineStat = null) {
   const timelinePath = join(sessionDir, 'timeline.jsonl');
-  const stat = timelineStat || lstatSync(timelinePath);
+  const stat = timelineStat || lstatSync(activeTimelinePath(sessionDir, manifest));
   const canonicalIdentity = readSessionTimelineIdentity(sessionDir, stat.size);
   if (!canonicalIdentity) throw new Error('V2 timeline identity is unstable');
   const identity = `${canonicalIdentity.fileId}:${canonicalIdentity.fileVersion}:${canonicalIdentity.tailHash}:${canonicalIdentity.fileBytes}`;
@@ -904,7 +940,8 @@ function findLatestV2SessionFileSlow(logDir, project, projectDir) {
       const timelinePath = join(sessionDir, 'timeline.jsonl');
       // A crash can leave project.json pointing at a newly created but never
       // committed archive. Do not let that hide the preceding conversation.
-      if (!existsSync(timelinePath) || statSync(timelinePath).size === 0) continue;
+      if (!existsSync(timelinePath) || (statSync(activeTimelinePath(sessionDir, manifest)).size === 0
+          && !readShardLayout(sessionDir, manifest).activePart)) continue;
       const lastMainActivity = cachedRootMainActivity(sessionDir, manifest);
       if (!lastMainActivity) continue;
       candidates.push({

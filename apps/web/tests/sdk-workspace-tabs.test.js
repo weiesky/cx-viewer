@@ -364,3 +364,303 @@ test('scoped SDK close events repair the URL before the legacy picker unmounts t
   assert.equal(picker.searchParams.has('instance'), false);
   assert.equal(f.requests.length, 0);
 });
+
+// Exercise the bundled AppBase methods; setState/rAF are deterministic hosts,
+// so these cover callback ordering rather than browser layout or React mounting.
+test('log picker fetches the committed project, rejects stale pages and preserves the active project', async t => {
+  const { app } = coldIngestFixture(t);
+  const pending = [], updates = [];
+  globalThis.fetch = url => new Promise(resolve => pending.push({ url: new URL(url, 'http://fixture'), resolve }));
+  app.state.currentProject = 'active';
+  app.state.logViewProject = 'old';
+  app.state.selectedLogs = new Set(['old-file']);
+  const commit = app.setState;
+  app.setState = (patch, after) => updates.push(() => commit(patch, after));
+  app.handleLogProjectChange('other');
+  assert.equal(pending.length, 0, 'fetch waits for React state commit');
+  updates.shift()();
+  assert.equal(pending[0].url.searchParams.get('project'), 'other');
+  assert.equal(app.state.selectedLogs.size, 0);
+  app.handleLogProjectChange('third'); updates.shift()();
+  assert.equal(pending[1].url.searchParams.get('project'), 'third');
+  const response = (items, total = 1) => ({ ok: true, json: async () => ({ items, total,
+    _allProjects: ['active', 'other', 'third'], _currentProject: 'active' }) });
+  pending[1].resolve(response([{ file: 'third-file' }], 51));
+  await new Promise(resolve => setImmediate(resolve)); updates.shift()();
+  pending[0].resolve(response([{ file: 'stale-file' }]));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(updates.length, 0, 'late response cannot replace another project');
+  assert.equal(app.state.currentProject, 'active');
+  assert.deepEqual(app.state.localLogs, [{ file: 'third-file' }]);
+  let pagination = app.renderLogTable(app.state.localLogs, false).props.pagination;
+  assert.equal(pagination.pageSize, 50);
+  assert.equal(pagination.total, 51);
+  app.state.localLogsTotal = 50;
+  assert.equal(app.renderLogTable([], true).props.pagination, false, 'single page has no pager');
+  app.handleImportLocalLogs();
+  assert.equal(pending.length, 2);
+  updates.shift()();
+  assert.equal(pending[2].url.searchParams.has('project'), false, 'reopen requests the active project');
+  assert.equal(pending[2].url.searchParams.get('page'), '1');
+  app.setState = commit;
+  pending[2].resolve({ ok: false, status: 400 });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(app.state.localLogs, []);
+  assert.equal(app.state.localLogsLoading, false);
+});
+
+function coldIngestFixture(t) {
+  const f = fixture(t), app = new f.AppBase({});
+  const raf = new Map();
+  for (const [key, value] of Object.entries({
+    requestAnimationFrame: callback => { const id = raf.size + 1; raf.set(id, callback); return id; },
+    cancelAnimationFrame: id => raf.delete(id),
+  })) {
+    const original = Object.getOwnPropertyDescriptor(globalThis, key);
+    Object.defineProperty(globalThis, key, { configurable: true, writable: true, value });
+    t.after(() => { if (original) Object.defineProperty(globalThis, key, original); else delete globalThis[key]; });
+  }
+  app.setState = (patch, after) => {
+    Object.assign(app.state, typeof patch === 'function' ? patch(app.state) : patch);
+    after?.();
+  };
+  app._makeIngestCtl = token => ({ shouldAbort: () => token !== app._ingestToken || app._unmounted,
+    yieldFn: async () => {}, batchSize: 250 });
+  const row = (timestamp, text = timestamp) => ({ timestamp, url: 'codex://fixture/turn',
+    mainAgent: true, body: { model: 'fixture', input: [{ role: 'user', content: text }] } });
+  const ingest = rows => app._runSseColdIngest(rows, { isIncremental: false, unlockContextBar: false });
+  return { app, row, ingest, raf };
+}
+
+function historyFixture(t) {
+  const fixture = coldIngestFixture(t), { app, row } = fixture;
+  const older = row('older'), current = row('current');
+  for (const [entry, seq] of [[older, 1], [current, 2]]) {
+    entry._v2Descriptor = { entryKey: entry.timestamp, seq };
+    entry._v2RowHandle = entry.timestamp;
+  }
+  const identity = { projectId: 'p', sessionId: 's', generation: 'g' };
+  const cursor = { archive: identity, throughSeq: 2, timelineBytes: 100 };
+  const envelope = kind => ({ kind: `cx-viewer.log-v2-wire.${kind}`, version: 2, archive: identity });
+  globalThis.fetch = async () => new Response([
+    { ...envelope('start'), page: true, hasMore: false, pageToken: 'page-token', nextBeforeSeq: 1 },
+    { ...envelope('checkpoint'), throughSeq: 2, timelineBytes: 100, entries: [], threads: [], winners: [] },
+    { ...envelope('end'), cursor },
+  ].map(JSON.stringify).join('\n') + '\n');
+  const archive = {
+    start: { archive: identity, shard: { part: 1 } }, hasMore: true, projectionPart: 1,
+    objectStore: { handle: 'handle' }, rows: [current],
+    state: { winners: new Map([[older.timestamp, older._v2Descriptor], [current.timestamp, current._v2Descriptor]]) },
+    prependPage() { this.projectionPart = 0; this.hasMore = false; this.rows = [older, current]; return [older]; },
+  };
+  app._v2Archive = archive; app._v2Epoch = 1;
+  app.state.requests = [current]; app.state.hasMoreHistory = true; app.state.selectedIndex = 0;
+  return { ...fixture, archive, older, current };
+}
+
+test('older shard projection uses the cold gate and replays live rows only after prepend commit', async t => {
+  const { app, archive, row } = historyFixture(t);
+  let release;
+  const projection = new Promise(resolve => { release = resolve; });
+  app._projectV2Rows = async rows => { await projection; return rows; };
+  const work = app._loadMoreV2History();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(app._ingestRunning, true);
+  const live = row('live'); live._v2Descriptor = { entryKey: 'live', seq: 3 };
+  archive.state.winners.set('live', live._v2Descriptor);
+  assert.equal(app.handleEntryObject(live), true);
+  assert.equal(app._liveGateBuffer.length, 1);
+  release(); await work;
+  assert.deepEqual(app.state.requests.map(entry => entry.timestamp), ['older', 'current']);
+  assert.equal(app._ingestRunning, false);
+  assert.equal(app.state.loadingMore, false);
+  assert.equal(app._pendingEntries[0].timestamp, 'live');
+  assert.equal(archive.pageAckToken, 'page-token');
+  app._flushPendingEntries();
+  assert.deepEqual(app.state.requests.map(entry => entry.timestamp), ['older', 'current', 'live']);
+  assert.equal(app.state.selectedIndex, 1, 'selected request survives a full shard reprojection');
+});
+
+test('late shard failure cannot reset a new archive or clear its loading flag', async t => {
+  const { app } = historyFixture(t);
+  let reject;
+  app._projectV2Rows = () => new Promise((_resolve, fail) => { reject = fail; });
+  const work = app._loadMoreV2History();
+  await new Promise(resolve => setImmediate(resolve));
+  const nextArchive = { name: 'next' }, nextController = new AbortController();
+  app._v2Epoch++; app._ingestToken++;
+  app._v2Archive = nextArchive; app._v2PageController = nextController;
+  app._loadingMore = true;
+  app._resetV2Communication = () => assert.fail('old page reset the new view');
+  reject(Object.assign(new Error('late page error'), { code: 'CXV_LOG_V2_WIRE_RESET_REQUIRED' }));
+  await work;
+  assert.equal(app._v2Archive, nextArchive);
+  assert.equal(app._v2PageController, nextController);
+  assert.equal(app._loadingMore, true);
+  assert.equal(app.state.loadingMore, true);
+});
+
+test('an empty published shard still exposes older history after a cut-time crash', async t => {
+  const { app, ingest, row } = coldIngestFixture(t);
+  app.state.requests = [row('old-view')];
+  app._v2Archive = { hasMore: true, start: { shard: { part: 1 } } };
+  assert.equal(await ingest([]), true);
+  assert.deepEqual(app.state.requests, []);
+  assert.equal(app.state.hasMoreHistory, true);
+  assert.deepEqual(app.state.shards, { hasMore: true });
+  assert.equal(app._requestIndexMap.size, 0);
+  assert.equal(app._ingestRunning, false);
+});
+
+test('cold failure restores the committed index and drains live rows in order for normal dedup', async t => {
+  const { app, row, ingest } = coldIngestFixture(t);
+  await ingest([row('baseline')]);
+  const baseline = app.state.requests, normalizer = app._liveConversationNormalizer;
+  const process = app._processOneEntry;
+  app._processOneEntry = function (...args) {
+    process.apply(this, args);
+    this.handleEntryObject(row('baseline', 'corrected'));
+    this.handleEntryObject(row('live'));
+    throw new Error('cold processing fixture');
+  };
+  app.state.fileLoading = true;
+  await assert.rejects(ingest([row('uncommitted')]), /cold processing fixture/);
+  assert.equal(app._ingestRunning, false);
+  assert.equal(app.state.fileLoading, false);
+  assert.equal(app.state.requests, baseline);
+  assert.equal(app._liveConversationNormalizer, normalizer);
+  assert.deepEqual([...app._requestIndexMap], [['baseline|codex://fixture/turn', 0]]);
+  assert.deepEqual(app._liveGateBuffer, []);
+  assert.deepEqual(app._pendingEntries.map(entry => entry.timestamp), ['baseline', 'live']);
+  app._flushPendingEntries();
+  assert.deepEqual(app.state.requests.map(entry => entry.timestamp), ['baseline', 'live']);
+  assert.equal(app.state.requests[0].body.input[0].content, 'corrected');
+  app._processOneEntry = process;
+  assert.equal(await ingest([row('retry')]), true);
+  assert.deepEqual(app.state.requests.map(entry => entry.timestamp), ['retry']);
+});
+
+test('failure after processing restores the previous Codex normalizer, session and slimmer', async t => {
+  const { app, row, ingest } = coldIngestFixture(t);
+  await ingest([row('baseline')]);
+  const normalizer = app._liveConversationNormalizer, sessionId = app._currentSessionId;
+  const slimmer = app._sseSlimmer = { baseline: true };
+  app._commitColdIngest = async () => { throw new Error('before commit'); };
+  await assert.rejects(ingest([row('new')]), /before commit/);
+  assert.equal(app._liveConversationNormalizer, normalizer);
+  assert.equal(app._currentSessionId, sessionId);
+  assert.equal(app._sseSlimmer, slimmer);
+  assert.equal(app.state.requests[0].timestamp, 'baseline');
+});
+
+test('an older cold rejection cannot open or drain a newer pipeline gate', async t => {
+  const { app, ingest, row } = coldIngestFixture(t);
+  const pending = [];
+  app._runColdIngestCore = () => new Promise((resolve, reject) => pending.push({ resolve, reject }));
+  const old = ingest([row('old')]);
+  const fresh = ingest([row('fresh')]);
+  const token = app._ingestToken;
+  app.handleEntryObject(row('buffered'));
+  pending[0].reject(new Error('stale failure'));
+  await assert.rejects(old, /stale failure/);
+  assert.equal(app._ingestToken, token);
+  assert.equal(app._ingestRunning, true);
+  assert.equal(app._liveGateBuffer.length, 1);
+  assert.equal(app._pendingEntries.length, 0);
+  pending[1].resolve({ empty: true });
+  assert.equal(await fresh, true);
+  assert.equal(app._pendingEntries[0].timestamp, 'buffered');
+});
+
+test('failure after teardown cannot repair or update an unmounted workspace', async t => {
+  const { app, ingest, row } = coldIngestFixture(t);
+  let reject;
+  app._runColdIngestCore = () => new Promise((_, fail) => { reject = fail; });
+  const pending = ingest([row('old')]);
+  app._unmounted = true;
+  app._abortColdIngest();
+  const token = app._ingestToken;
+  app.setState = () => assert.fail('unmounted state update');
+  app._rebuildRequestIndex = () => assert.fail('unmounted index repair');
+  reject(new Error('late rejection'));
+  await assert.rejects(pending, /late rejection/);
+  assert.equal(app._ingestToken, token);
+  assert.equal(app._ingestRunning, false);
+});
+
+test('cold gate stays closed until the baseline setState callback runs', async t => {
+  const { app, ingest, row } = coldIngestFixture(t);
+  let finish;
+  app.setState = (patch, after) => { finish = () => { Object.assign(app.state, patch); after?.(); }; };
+  const pending = ingest([row('baseline')]);
+  while (!finish) await new Promise(resolve => setImmediate(resolve));
+  app.handleEntryObject(row('live'));
+  assert.equal(app._ingestRunning, true);
+  assert.equal(app._pendingEntries.length, 0);
+  assert.equal(app.state.requests.length, 0);
+  finish();
+  assert.equal(await pending, true);
+  assert.equal(app._ingestRunning, false);
+  assert.equal(app._pendingEntries[0].timestamp, 'live');
+});
+
+test('index repair failure still opens the gate and restores the baseline processors', async t => {
+  const { app, row, ingest } = coldIngestFixture(t);
+  const normalizer = app._liveConversationNormalizer;
+  app._processOneEntry = () => { throw new Error('processing failure'); };
+  app._rebuildRequestIndex = () => { throw new Error('repair failure'); };
+  await assert.rejects(ingest([row('new')]), /processing failure/);
+  assert.equal(app._ingestRunning, false);
+  assert.equal(app.state.fileLoading, false);
+  assert.equal(app._liveConversationNormalizer, normalizer);
+});
+
+test('null processing rows preserve dedup positions and a malformed slim batch releases its gate', async t => {
+  const { app, row, ingest } = coldIngestFixture(t);
+  await app._processEntriesChunked([null, row('valid')], app._makeIngestCtl(app._ingestToken));
+  assert.equal(app._requestIndexMap.get('valid|codex://fixture/turn'), 1);
+  app._rebuildRequestIndex([null, row('valid')]);
+  assert.equal(app._requestIndexMap.get('valid|codex://fixture/turn'), 1);
+  await assert.rejects(ingest([null, row('invalid-batch')]), TypeError);
+  assert.equal(app._ingestRunning, false);
+  assert.equal(app.state.fileLoading, false);
+});
+
+test('V2 enqueue failure does not acknowledge a live cursor and resets transient buffers for replay', async t => {
+  const { app, row } = coldIngestFixture(t);
+  let restarted = 0;
+  app.initSSE = () => { restarted++; };
+  app._v2AppliedSeq = 1;
+  app._v2Archive = { applyCommit: () => row('live') };
+  app._pendingEntries = { push() { throw new Error('enqueue fixture'); } };
+  app._queueV2Commit({ frame: { timeline: { seq: 2 } } });
+  await app._v2LiveChain;
+  assert.equal(restarted, 1);
+  assert.equal(app._v2AppliedSeq, 0, 'reset clears the cursor instead of acknowledging seq 2');
+  assert.equal(app._v2Archive, null);
+  assert.deepEqual(app._pendingEntries, []);
+  assert.deepEqual(app._liveGateBuffer, []);
+  assert.equal(app._ingestRunning, false);
+  app._v2Archive = { applyCommit: () => row('replayed') };
+  app._v2AppliedSeq = 1;
+  app._queueV2Commit({ frame: { timeline: { seq: 2 } } });
+  await app._v2LiveChain;
+  assert.equal(app._v2AppliedSeq, 2);
+  assert.equal(app._pendingEntries[0].timestamp, 'replayed');
+});
+
+test('accepted live frames acknowledge once, including while the cold gate buffers them', async t => {
+  const { app, row } = coldIngestFixture(t);
+  let applied = 0;
+  app._v2AppliedSeq = 1;
+  app._v2Archive = { applyCommit: () => { applied++; return row('accepted'); } };
+  app._ingestRunning = true;
+  for (let i = 0; i < 2; i++) {
+    app._queueV2Commit({ frame: { timeline: { seq: 2 } } });
+    await app._v2LiveChain;
+  }
+  assert.equal(applied, 1);
+  assert.equal(app._v2AppliedSeq, 2);
+  assert.equal(app._liveGateBuffer.length, 1);
+  assert.equal(app._pendingEntries.length, 0);
+});

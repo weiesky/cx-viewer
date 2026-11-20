@@ -1,0 +1,40 @@
+{
+  "runtime": "v24.14.0",
+  "platform": "darwin",
+  "arch": "arm64",
+  "dataset": "600 distinct requests, one 512-byte user input per request, one fixed-size answer",
+  "results": [
+    {
+      "limit": 400,
+      "total": 600,
+      "windowRows": 400,
+      "firstSeq": 201,
+      "snapshotMs": 138.5819160000001,
+      "projectionMs": 470.0571670000004,
+      "objectRequests": 400,
+      "objectBytes": 463525,
+      "historyPages": 2,
+      "paginationMs": 57.50099999999975,
+      "retryVerified": true,
+      "finalRows": 600,
+      "rssBytes": 189038592,
+      "controlBytes": 768135
+    },
+    {
+      "limit": 200,
+      "total": 600,
+      "windowRows": 200,
+      "firstSeq": 401,
+      "snapshotMs": 117.73783400000002,
+      "projectionMs": 212.2021249999998,
+      "objectRequests": 200,
+      "objectBytes": 231925,
+      "historyPages": 4,
+      "paginationMs": 108.0305000000003,
+      "retryVerified": true,
+      "finalRows": 600,
+      "rssBytes": 223330304,
+      "controlBytes": 439335
+    }
+  ]
+}

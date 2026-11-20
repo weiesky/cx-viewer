@@ -120,6 +120,32 @@ test('failed composer and typed-interrupt sends retain drafts, attachments and o
   assert.equal(errors.length, 2);
 });
 
+test('shard prepend retains attachments only while the cached canonical tail survives', t => {
+  const f = fixture(t), chat = new f.Chat({ mainAgentSessions: [], requests: [] });
+  chat.setState = (patch, callback) => { Object.assign(chat.state, typeof patch === 'function' ? patch(chat.state) : patch); callback?.(); };
+  chat.startRender = () => {};
+  chat.buildAllItems = () => [];
+  chat._applyMobileSlice = items => items;
+  chat._updateSuggestion = () => {};
+  chat._toolFileMonitor.check = () => {};
+  const update = (sessions, count) => {
+    const previous = chat.props, state = { ...chat.state };
+    chat.props = { ...previous, mainAgentSessions: sessions, shardPrependCount: count };
+    chat.componentDidUpdate(previous, state);
+  };
+  const tail = { sessionKey: 'canonical', entryTimestamp: '2026-11-20T00:00:02Z', _lastV2Seq: 2,
+    messages: [{ role: 'user', _timestamp: 'newer-prompt' }] };
+  update([tail], 0);
+  const images = [{ path: '/synthetic/draft.png' }];
+  chat.state.pendingImages = images;
+  update([{ ...tail, messages: [{ role: 'user', _timestamp: 'older-prompt' }, ...tail.messages] }], 1);
+  assert.equal(chat.state.pendingImages, images, 'backwards expansion changes the first message without changing the canonical tail');
+  const current = chat.props.mainAgentSessions[0];
+  current.entryTimestamp = '2026-11-20T00:00:03Z'; current._lastV2Seq = 3;
+  update([current], 2);
+  assert.deepEqual(chat.state.pendingImages, [], 'in-place live append cannot hide behind a simultaneous prepend');
+});
+
 test('late-mounted queue consumers receive the current snapshot, and a replacement socket clears the cache', t => {
   const f = fixture(t), socket = f.open();
   const snapshot = { type: 'queue-state', instanceKey: 'a', items: [{ id: 'q1', text: 'queued', ts: 1, status: 'queued' }] };

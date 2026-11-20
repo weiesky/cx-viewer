@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+import { scanSessionTimelineSync } from './shards.js';
 import { validateSessionManifest, validateTimelineRecord } from './schema.js';
 import { readContentObjectSync, readJsonReferenceSync, scanJsonlSync } from './storage.js';
 
@@ -33,7 +34,7 @@ export function inspectSessionArchive(sessionDir) {
   const threads = new Set();
   const objects = new Set();
   const phases = {};
-  const timeline = scanJsonlSync(timelinePath, ({ value }) => {
+  const timeline = scanSessionTimelineSync(sessionDir, ({ value }) => {
     const validation = validateTimelineRecord(value);
     if (!validation.ok) throw new Error(validation.errors.join('; '));
     if (value.seq !== previousSeq + 1) throw new Error(`timeline sequence gap after ${previousSeq}`);

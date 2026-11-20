@@ -43,6 +43,9 @@ export class LogV2Archive {
     this.start = snapshot.start;
     this.end = snapshot.end;
     this.state = restoreWireArchiveState(snapshot.checkpoint);
+    this.projectionPart = snapshot.start.shard?.part ?? 0;
+    this.projectionBaselines = snapshot.start.shard?.inputBaselines || [];
+    this.projectionBaseRefs = new Map();
     this.objectStore = new LogV2ObjectStore({
       handle: snapshot.start.objectHandle,
       archive: snapshot.start.archive,
@@ -69,6 +72,11 @@ export class LogV2Archive {
       throw error;
     }
     const pageState = restoreWireArchiveState(page.checkpoint);
+    if (page.start.shard && page.start.shard.part < this.projectionPart) {
+      this.projectionPart = page.start.shard.part;
+      this.projectionBaselines = page.start.shard.inputBaselines || [];
+      this.projectionBaseRefs.clear();
+    }
     for (const summary of page.summaries || []) this.summaries.set(summary.seq, summary);
     const added = [];
     for (const [entryKey, descriptor] of pageState.winners) {
@@ -110,9 +118,23 @@ export class LogV2Archive {
     if (!descriptor || descriptor.archive.generation !== this.start.archive.generation) {
       throw new Error('Unknown V2 descriptor');
     }
+    let inputRefs = descriptor.input ? resolveWireInputRefs(this.state, descriptor.input) : [];
+    const baseline = this.projectionBaselines.find(value => value.threadId === descriptor.input?.threadId);
+    if (baseline && descriptor.input.revision >= baseline.revision) {
+      let refs = this.projectionBaseRefs.get(baseline.threadId);
+      if (!refs) {
+        refs = resolveWireInputRefs(this.state, baseline);
+        this.projectionBaseRefs.set(baseline.threadId, refs);
+      }
+      // Only remove an exact frozen prefix. A native compaction/rollback may
+      // replace it; in that case the new input is authoritative in full.
+      if (inputRefs.length >= refs.length && refs.every((ref, index) => ref.hash === inputRefs[index].hash && ref.bytes === inputRefs[index].bytes)) {
+        inputRefs = inputRefs.slice(refs.length);
+      }
+    }
     const projected = await projectLogV2ConversationEntry(this.objectStore, descriptor, {
       ...options,
-      inputRefs: descriptor.input ? resolveWireInputRefs(this.state, descriptor.input) : [],
+      inputRefs,
     });
     // Conversation projection deliberately keeps full response headers lazy.
     // Request summaries already carry a small usage-only allowlist, so restore
