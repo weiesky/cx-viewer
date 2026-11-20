@@ -1,0 +1,54 @@
+cc-viewer-alignment/B4-candidate-matrix.md
+  s_f3ce02ff91d9cf::t_6fa9af356b4a63 24,35
+apps/web/tests/terminal-ws-liveness.test.js
+  s_f3ce02ff91d9cf::t_404cf23a45d2c0 486-492
+  s_f3ce02ff91d9cf::t_8a590ac9402251 465-485,493-512
+apps/web/src/components/chat/ChatView.module.css
+  s_f3ce02ff91d9cf::t_c237bf8310b796 580-644
+AGENTS.md
+  s_f3ce02ff91d9cf::t_6fa9af356b4a63 26
+cc-viewer-alignment/B4-implementation.md
+  s_f3ce02ff91d9cf::t_6fa9af356b4a63 212-226
+  s_f3ce02ff91d9cf::t_63cf287612c274 227-228
+cc-viewer-alignment/probes/b4-tasks-gui.mjs
+  s_f3ce02ff91d9cf::t_51c4f527379433 74-76,140-141
+apps/web/tests/sdk-message-timestamps.test.js
+  s_f3ce02ff91d9cf::t_ace6f9f98f2d37 48-64
+apps/web/src/components/chat/ChatView.jsx
+  s_f3ce02ff91d9cf::t_c237bf8310b796 2855-2894,3677,3730,3972
+  s_f3ce02ff91d9cf::t_40a363c08a199b 3658
+  s_f3ce02ff91d9cf::t_ace6f9f98f2d37 1487
+  s_f3ce02ff91d9cf::t_04027125c478bd 16,257,678,709-711,713-716,910,913,2344,2497-2505,2901,2916
+  s_f3ce02ff91d9cf::t_8a590ac9402251 712
+  s_f3ce02ff91d9cf::t_1285412835e9ea 911-912
+apps/web/src/utils/conversationEntryNormalize.js
+  s_f3ce02ff91d9cf::t_ace6f9f98f2d37 321,325-328,392-397
+cc-viewer-alignment/B4-error-row-baseline-2026-11-20.json
+  s_f3ce02ff91d9cf::t_053e3ec74e274c 1-29
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_f3ce02ff91d9cf::t_6fa9af356b4a63 3,2457,4162,15574-15578
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_f3ce02ff91d9cf::t_6fa9af356b4a63 3
+apps/web/src/i18n.js
+  s_f3ce02ff91d9cf::t_c237bf8310b796 4-23
+cc-viewer-alignment/README.md
+  s_f3ce02ff91d9cf::t_6fa9af356b4a63 5
+cc-viewer-alignment/B4-error-row-install-2026-11-20.json
+  s_f3ce02ff91d9cf::t_5f1f6efe02ec95 1-11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "ba061664d021377986ff5b9c207e2cce9c0785c1",
+  "prompts": {},
+  "sessions": {
+    "s_f3ce02ff91d9cf": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6e7-9606-7a33-911c-33e9b1de1cad",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
