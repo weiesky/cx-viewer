@@ -1,0 +1,93 @@
+apps/web/tests/ask-flow-controller.test.js
+  s_f3ce02ff91d9cf::t_64b6725a43da2b 376-426
+cc-viewer-alignment/probes/b4-tasks-gui.mjs
+  s_f3ce02ff91d9cf::t_f6465a2936e6bb 22,47-78,84
+AGENTS.md
+  s_f3ce02ff91d9cf::t_e4dc222336e3ba 26
+packages/app/lib/sdk-appserver-approvals.js
+  s_f3ce02ff91d9cf::t_6d7718f495129c 88-93
+  s_f3ce02ff91d9cf::t_4808f1ea463a67 57-60
+  s_f3ce02ff91d9cf::t_eb83ec7efdd2b4 1-3,5-14,16-18,20,22,25-42,46-56,61-64,66-68,70-79,82,87,94,102-108,116-123
+  s_f3ce02ff91d9cf::t_3770527c54a4d4 19,86
+  s_f3ce02ff91d9cf::t_c2c886a5c1f99d 95-101
+  s_f3ce02ff91d9cf::t_b85a3a59c0df44 65,69,81
+  s_f3ce02ff91d9cf::t_34ee4a92477a33 4,15,21,23-24,43-45,80,83-84
+  s_f3ce02ff91d9cf::t_2791b6154c25d7 109-115
+  s_f3ce02ff91d9cf::t_420396ff780e67 85
+cc-viewer-alignment/B4-implementation.md
+  s_f3ce02ff91d9cf::t_e4dc222336e3ba 79-95
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_f3ce02ff91d9cf::t_e4dc222336e3ba 3
+packages/app/lib/sdk-manager.js
+  s_f3ce02ff91d9cf::t_9d583823da8a92 549-550
+  s_f3ce02ff91d9cf::t_c2c886a5c1f99d 361-363,542,557
+  s_f3ce02ff91d9cf::t_8c6aea9274e8f5 541,543-548,551-556,558-562
+  s_f3ce02ff91d9cf::t_2791b6154c25d7 26,148-151,251,532-540,563-579,921,930,988,1013
+packages/app/lib/sdk-appserver-transport.js
+  s_f3ce02ff91d9cf::t_b85a3a59c0df44 82,180,204-232
+  s_f3ce02ff91d9cf::t_3770527c54a4d4 150-154,182
+  s_f3ce02ff91d9cf::t_2791b6154c25d7 79-80,149,155,183,195
+cc-viewer-alignment/probes/b3-installed-check.py
+  s_f3ce02ff91d9cf::t_486308fc890d70 23,29
+packages/app/tests/sdk-workspace-connections.test.js
+  s_f3ce02ff91d9cf::t_93319d4f734824 541-603
+cc-viewer-alignment/B4-appserver-approvals-2026-11-20.json
+  s_f3ce02ff91d9cf::t_01f5cfb60781cb 1-123
+packages/app/lib/codex-server-request.js
+  s_f3ce02ff91d9cf::t_94c2534ca3ed25 1-97
+cc-viewer-alignment/README.md
+  s_f3ce02ff91d9cf::t_e4dc222336e3ba 5
+packages/app/tests/sdk-appserver-approvals.test.js
+  s_f3ce02ff91d9cf::t_7db937237e70bc 1-82
+  s_f3ce02ff91d9cf::t_486308fc890d70 83-97
+packages/app/server.js
+  s_f3ce02ff91d9cf::t_93319d4f734824 5440
+  s_f3ce02ff91d9cf::t_2791b6154c25d7 5335
+  s_f3ce02ff91d9cf::t_4e3af621fd918f 5434-5436
+  s_f3ce02ff91d9cf::t_6d7718f495129c 5441-5442
+apps/web/src/components/terminal/TerminalWsContext.jsx
+  s_f3ce02ff91d9cf::t_3770527c54a4d4 48,166,174,196,201-204,224-226
+apps/web/src/components/chat/controllers/askFlowController.js
+  s_f3ce02ff91d9cf::t_0ae34ec595ee78 637,640-644,653,661,664,669,724,747-749,853,856-857,864,869,877,908-913,962-963
+packages/app/lib/appserver-bridge.js
+  s_f3ce02ff91d9cf::t_94c2534ca3ed25 27
+cc-viewer-alignment/B4-appserver-proposal.md
+  s_f3ce02ff91d9cf::t_e4dc222336e3ba 64-66
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_f3ce02ff91d9cf::t_e4dc222336e3ba 15526-15529
+apps/web/src/components/chat/ChatView.jsx
+  s_f3ce02ff91d9cf::t_3770527c54a4d4 2413-2417,2503
+  s_f3ce02ff91d9cf::t_01d2d51de586de 2782,2862
+packages/app/lib/codex-appserver-client.js
+  s_f3ce02ff91d9cf::t_b85a3a59c0df44 70
+apps/web/src/components/chat/ChatMessage.jsx
+  s_f3ce02ff91d9cf::t_2d1cb3a279dced 840
+  s_f3ce02ff91d9cf::t_01d2d51de586de 465,814,824,828
+packages/app/tests/sdk-appserver-transport.test.js
+  s_f3ce02ff91d9cf::t_6d7718f495129c 17-19,121-133
+  s_f3ce02ff91d9cf::t_f5d0ff906fa3a9 134-136
+cc-viewer-alignment/probes/b4-appserver-compat.mjs
+  s_f3ce02ff91d9cf::t_4dafd03f003745 2,61-67,256-257,263-276,294,297
+apps/web/tests/terminal-ws-liveness.test.js
+  s_f3ce02ff91d9cf::t_64b6725a43da2b 371-391
+cc-viewer-alignment/B4-approvals-install-2026-11-20.json
+  s_f3ce02ff91d9cf::t_e9cca427be8351 1-11
+cc-viewer-alignment/B4-candidate-matrix.md
+  s_f3ce02ff91d9cf::t_73d19771b02f0a 32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "61026670b7a85a50bf1658031a4e398f8d75759c",
+  "prompts": {},
+  "sessions": {
+    "s_f3ce02ff91d9cf": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6e7-9606-7a33-911c-33e9b1de1cad",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
