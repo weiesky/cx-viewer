@@ -1,0 +1,46 @@
+apps/web/src/AppBase.jsx
+  s_f3ce02ff91d9cf::t_0d6a5254636a05 670-675
+  s_f3ce02ff91d9cf::t_ecc5c148b9402e 1638-1642
+AGENTS.md
+  s_f3ce02ff91d9cf::t_825efcf623a676 26
+cc-viewer-alignment/B4-overlay-settlement-2026-11-20.json
+  s_f3ce02ff91d9cf::t_00930a4f59475c 1-34
+cc-viewer-alignment/B4-implementation.md
+  s_f3ce02ff91d9cf::t_825efcf623a676 277-278
+  s_f3ce02ff91d9cf::t_00930a4f59475c 262-276
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_f3ce02ff91d9cf::t_825efcf623a676 3
+  s_f3ce02ff91d9cf::t_00930a4f59475c 15594-15598
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_f3ce02ff91d9cf::t_825efcf623a676 3
+cc-viewer-alignment/B4-candidate-matrix.md
+  s_f3ce02ff91d9cf::t_00930a4f59475c 20
+cc-viewer-alignment/migration-code-first.md
+  s_f3ce02ff91d9cf::t_00930a4f59475c 154,157-158
+cc-viewer-alignment/B4-overlay-install-2026-11-20.json
+  s_f3ce02ff91d9cf::t_825efcf623a676 1-11
+apps/web/tests/log-v2-bootstrap.test.js
+  s_f3ce02ff91d9cf::t_0d6a5254636a05 9
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_f3ce02ff91d9cf::t_467e4e5240e455 451-458
+  s_f3ce02ff91d9cf::t_ea5da44bbc8c71 435-450,459-460
+  s_f3ce02ff91d9cf::t_1f3527c88ef516 461-470
+cc-viewer-alignment/README.md
+  s_f3ce02ff91d9cf::t_825efcf623a676 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "9e7a83a0fbc5c8439f3d54c07b945b6185e17047",
+  "prompts": {},
+  "sessions": {
+    "s_f3ce02ff91d9cf": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6e7-9606-7a33-911c-33e9b1de1cad",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
