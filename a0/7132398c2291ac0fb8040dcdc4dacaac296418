@@ -1,0 +1,35 @@
+cc-viewer-alignment/B4-implementation.md
+  s_f3ce02ff91d9cf::t_f7d74fa4127f09 45-54
+  s_f3ce02ff91d9cf::t_dda16aa2040f38 55
+packages/app/lib/codex-appserver-client.js
+  s_f3ce02ff91d9cf::t_a8e1e29329bfd5 1-145
+packages/app/tests/codex-appserver-client.test.js
+  s_f3ce02ff91d9cf::t_495bfc4c615e40 12,20-23,91-107
+  s_f3ce02ff91d9cf::t_a8e1e29329bfd5 1-11,13-19,24-90
+AGENTS.md
+  s_f3ce02ff91d9cf::t_bad879a6a81d9e 26
+cc-viewer-alignment/README.md
+  s_f3ce02ff91d9cf::t_3648d91d7ea6e6 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_f3ce02ff91d9cf::t_b146b407683f5e 3,15514-15517
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_f3ce02ff91d9cf::t_57df76028df1e5 3
+cc-viewer-alignment/probes/b4-appserver-compat.mjs
+  s_f3ce02ff91d9cf::t_51a05839236f9f 4,9,95-103,157
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a07132398c2291ac0fb8040dcdc4dacaac296418",
+  "prompts": {},
+  "sessions": {
+    "s_f3ce02ff91d9cf": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6e7-9606-7a33-911c-33e9b1de1cad",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
