@@ -1,0 +1,38 @@
+AGENTS.md
+  s_f3ce02ff91d9cf::t_d7470d7bf4805c 26
+cc-viewer-alignment/B4-appserver-failure-classification-2026-11-20.json
+  s_f3ce02ff91d9cf::t_d7470d7bf4805c 1-222
+packages/app/lib/sdk-manager.js
+  s_f3ce02ff91d9cf::t_9799e4035f6ed7 57,292-293,652,673,680-681,802,808-823,825,837,1025-1026
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_f3ce02ff91d9cf::t_d7470d7bf4805c 3,15584-15588
+cc-viewer-alignment/B4-implementation.md
+  s_f3ce02ff91d9cf::t_d7470d7bf4805c 240-250
+cc-viewer-alignment/probes/b4-appserver-compat.mjs
+  s_f3ce02ff91d9cf::t_8f90c8f4ef866e 76-77,275,277-282,291-303,435
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_f3ce02ff91d9cf::t_d7470d7bf4805c 3
+cc-viewer-alignment/README.md
+  s_f3ce02ff91d9cf::t_d7470d7bf4805c 5
+packages/app/tests/sdk-appserver-manager.test.js
+  s_f3ce02ff91d9cf::t_485fae2ded460d 38-44,144-148,155-171
+  s_f3ce02ff91d9cf::t_239a7bcae1b735 172-174
+cc-viewer-alignment/B4-candidate-matrix.md
+  s_f3ce02ff91d9cf::t_d7470d7bf4805c 32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "2eaa4141605b4164d0bc09d1dbb2d8ce0a1b1b0b",
+  "prompts": {},
+  "sessions": {
+    "s_f3ce02ff91d9cf": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6e7-9606-7a33-911c-33e9b1de1cad",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
