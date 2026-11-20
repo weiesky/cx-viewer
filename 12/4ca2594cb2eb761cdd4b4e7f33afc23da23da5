@@ -1,0 +1,57 @@
+apps/web/src/components/chat/ChatView.jsx
+  s_f3ce02ff91d9cf::t_484fedc5b3443c 152-159,266,1097,2467,2508,2515-2519,2523,2561-2563,2916-2951,2972-2982,2985-3012
+  s_f3ce02ff91d9cf::t_24146a85b2aa21 2524-2560
+apps/web/src/i18n.js
+  s_f3ce02ff91d9cf::t_484fedc5b3443c 4-108
+cc-viewer-alignment/probes/b4-appserver-compat.mjs
+  s_f3ce02ff91d9cf::t_484fedc5b3443c 305-306
+apps/web/tests/terminal-ws-liveness.test.js
+  s_f3ce02ff91d9cf::t_24146a85b2aa21 526-556,558-588
+  s_f3ce02ff91d9cf::t_146469d3727192 557
+cc-viewer-alignment/README.md
+  s_f3ce02ff91d9cf::t_9f919db0222378 5
+cc-viewer-alignment/B4-retry-ui-install-2026-11-20.json
+  s_f3ce02ff91d9cf::t_9f919db0222378 1-11
+cc-viewer-alignment/B4-retry-ui-protocol-2026-11-20.json
+  s_f3ce02ff91d9cf::t_76ee6a592ba1db 1-276
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_f3ce02ff91d9cf::t_9f919db0222378 3
+packages/app/lib/sdk-manager.js
+  s_f3ce02ff91d9cf::t_484fedc5b3443c 670,722-725,844
+cc-viewer-alignment/B4-implementation.md
+  s_f3ce02ff91d9cf::t_9f919db0222378 306-307
+  s_f3ce02ff91d9cf::t_f8ad7de15b9ff3 283,294-305,308
+packages/app/tests/sdk-appserver-manager.test.js
+  s_f3ce02ff91d9cf::t_484fedc5b3443c 202
+  s_f3ce02ff91d9cf::t_24146a85b2aa21 39,274-287
+  s_f3ce02ff91d9cf::t_b4075e6a9a7caf 288-289
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_f3ce02ff91d9cf::t_9f919db0222378 3
+  s_f3ce02ff91d9cf::t_f8ad7de15b9ff3 15604-15608
+AGENTS.md
+  s_f3ce02ff91d9cf::t_9f919db0222378 26
+cc-viewer-alignment/probes/b4-tasks-gui.mjs
+  s_f3ce02ff91d9cf::t_24146a85b2aa21 74-96
+cc-viewer-alignment/B4-candidate-matrix.md
+  s_f3ce02ff91d9cf::t_f8ad7de15b9ff3 32,36
+apps/web/src/components/chat/ChatView.module.css
+  s_f3ce02ff91d9cf::t_484fedc5b3443c 645-674
+packages/app/tests/sdk-workspace-connections.test.js
+  s_f3ce02ff91d9cf::t_1e0b8680580caf 603
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "124ca2594cb2eb761cdd4b4e7f33afc23da23da5",
+  "prompts": {},
+  "sessions": {
+    "s_f3ce02ff91d9cf": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6e7-9606-7a33-911c-33e9b1de1cad",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
