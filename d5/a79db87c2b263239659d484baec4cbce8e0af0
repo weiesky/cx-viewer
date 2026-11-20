@@ -1,0 +1,40 @@
+packages/app/lib/sdk-manager.js
+  s_f3ce02ff91d9cf::t_2d05ede458e83a 698-701,705,910-912,919
+  s_f3ce02ff91d9cf::t_b0c82600257a5c 702-704,708
+  s_f3ce02ff91d9cf::t_270e50846118a1 302,833,913-918,1139
+packages/app/tests/sdk-manager.test.js
+  s_f3ce02ff91d9cf::t_91b9a12abbd3f2 263,265-268,282-283,299,303-307
+cc-viewer-alignment/probes/b4-tasks-gui.mjs
+  s_f3ce02ff91d9cf::t_81ebd03a2d8f8f 47-51
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_f3ce02ff91d9cf::t_0e56dec9eaa099 15658-15663
+packages/app/tests/sdk-queue.test.js
+  s_f3ce02ff91d9cf::t_8e0008acce04ac 21,155-169
+  s_f3ce02ff91d9cf::t_ecab8b05ff02cf 170-171
+cc-viewer-alignment/B4-implementation.md
+  s_f3ce02ff91d9cf::t_0e56dec9eaa099 420,435-449
+AGENTS.md
+  s_f3ce02ff91d9cf::t_0e56dec9eaa099 26
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_f3ce02ff91d9cf::t_0e56dec9eaa099 45,101
+cc-viewer-alignment/README.md
+  s_f3ce02ff91d9cf::t_0e56dec9eaa099 5,21
+cc-viewer-alignment/B4-exec-eof-2026-11-20.json
+  s_f3ce02ff91d9cf::t_5c87c914a0fa04 1-44
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d5a79db87c2b263239659d484baec4cbce8e0af0",
+  "prompts": {},
+  "sessions": {
+    "s_f3ce02ff91d9cf": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6e7-9606-7a33-911c-33e9b1de1cad",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
