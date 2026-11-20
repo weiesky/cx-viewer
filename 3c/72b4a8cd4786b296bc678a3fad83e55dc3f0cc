@@ -1,0 +1,33 @@
+AGENTS.md
+  s_f3ce02ff91d9cf::t_e1d2283befe348 26
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_f3ce02ff91d9cf::t_e1d2283befe348 3
+cc-viewer-alignment/B4-turn-loading-reuse-2026-11-20.json
+  s_f3ce02ff91d9cf::t_e1d2283befe348 1-30
+cc-viewer-alignment/README.md
+  s_f3ce02ff91d9cf::t_e1d2283befe348 5
+cc-viewer-alignment/B4-implementation.md
+  s_f3ce02ff91d9cf::t_e1d2283befe348 251-261
+cc-viewer-alignment/migration-code-first.md
+  s_f3ce02ff91d9cf::t_e1d2283befe348 152-156
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_f3ce02ff91d9cf::t_e1d2283befe348 3,15589-15593
+cc-viewer-alignment/B4-candidate-matrix.md
+  s_f3ce02ff91d9cf::t_e1d2283befe348 20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "3c72b4a8cd4786b296bc678a3fad83e55dc3f0cc",
+  "prompts": {},
+  "sessions": {
+    "s_f3ce02ff91d9cf": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6e7-9606-7a33-911c-33e9b1de1cad",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
