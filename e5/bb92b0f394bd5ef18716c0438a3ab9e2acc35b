@@ -1,0 +1,41 @@
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_f3ce02ff91d9cf::t_f57e54feefad50 15684-15689
+cc-viewer-alignment/B4-candidate-matrix.md
+  s_f3ce02ff91d9cf::t_f57e54feefad50 33
+AGENTS.md
+  s_f3ce02ff91d9cf::t_f57e54feefad50 26
+apps/web/src/AppBase.jsx
+  s_f3ce02ff91d9cf::t_68d837650a477a 19,2554-2555,2560-2562
+cc-viewer-alignment/probes/b4-tasks-gui.mjs
+  s_f3ce02ff91d9cf::t_6822c43adc5564 199-203
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_f3ce02ff91d9cf::t_68d837650a477a 159-179
+apps/web/tests/approval-dismissal.test.js
+  s_f3ce02ff91d9cf::t_ecba70c722ba09 1-56
+apps/web/src/utils/approvalDismissal.js
+  s_f3ce02ff91d9cf::t_ecba70c722ba09 1-35
+cc-viewer-alignment/B4-approval-dismissal-2026-11-20.json
+  s_f3ce02ff91d9cf::t_f57e54feefad50 1-24
+cc-viewer-alignment/B4-implementation.md
+  s_f3ce02ff91d9cf::t_f57e54feefad50 496-506
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_f3ce02ff91d9cf::t_f57e54feefad50 3
+cc-viewer-alignment/README.md
+  s_f3ce02ff91d9cf::t_f57e54feefad50 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "e5bb92b0f394bd5ef18716c0438a3ab9e2acc35b",
+  "prompts": {},
+  "sessions": {
+    "s_f3ce02ff91d9cf": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6e7-9606-7a33-911c-33e9b1de1cad",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
