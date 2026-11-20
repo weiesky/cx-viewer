@@ -1,0 +1,69 @@
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_f3ce02ff91d9cf::t_e4857d887f1466 3,49,101
+apps/web/src/components/chat/ChatInputBar.module.css
+  s_f3ce02ff91d9cf::t_73e2f35b94837b 69,76-82,299-314
+apps/web/src/Mobile.jsx
+  s_f3ce02ff91d9cf::t_70025e631618b1 719-724
+packages/app/tests/sdk-session-registry.test.js
+  s_f3ce02ff91d9cf::t_c1c6d1579a2c0e 10,314-328
+  s_f3ce02ff91d9cf::t_672a4a7fa0a2f2 329
+apps/web/src/components/chat/ProxyChip.jsx
+  s_f3ce02ff91d9cf::t_73e2f35b94837b 2-15,17,19-60
+  s_f3ce02ff91d9cf::t_8cef5abad00ab2 1,16,18
+apps/web/src/AppBase.jsx
+  s_f3ce02ff91d9cf::t_70025e631618b1 131,1750
+  s_f3ce02ff91d9cf::t_b78ad80dbd0633 1767
+  s_f3ce02ff91d9cf::t_272eea82a0b235 1857-1858,1862-1868,2388
+cc-viewer-alignment/probes/b4-tasks-gui.mjs
+  s_f3ce02ff91d9cf::t_c1c6d1579a2c0e 184-186
+apps/web/src/i18n.js
+  s_f3ce02ff91d9cf::t_70025e631618b1 4-23
+apps/web/src/components/chat/ProxyChip.module.css
+  s_f3ce02ff91d9cf::t_73e2f35b94837b 1-42
+apps/web/src/utils/sdkModelChip.js
+  s_f3ce02ff91d9cf::t_73e2f35b94837b 1-21
+apps/web/src/App.jsx
+  s_f3ce02ff91d9cf::t_70025e631618b1 473
+apps/web/src/components/settings/ProxyModal.jsx
+  s_f3ce02ff91d9cf::t_70025e631618b1 2,6,283,285-286,301
+AGENTS.md
+  s_f3ce02ff91d9cf::t_e4857d887f1466 26
+cc-viewer-alignment/B4-implementation.md
+  s_f3ce02ff91d9cf::t_e4857d887f1466 660,671-685
+apps/web/src/components/chat/ChatView.jsx
+  s_f3ce02ff91d9cf::t_73e2f35b94837b 49-50
+  s_f3ce02ff91d9cf::t_f93842cc6c5d28 269,640-645,3655-3666
+  s_f3ce02ff91d9cf::t_70025e631618b1 4288,4296-4306
+apps/web/src/components/chat/ChatInputBar.jsx
+  s_f3ce02ff91d9cf::t_73e2f35b94837b 50,581-583
+packages/app/lib/sdk-manager.js
+  s_f3ce02ff91d9cf::t_70025e631618b1 1066
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_f3ce02ff91d9cf::t_e4857d887f1466 4016-4017,5212-5213,15764-15769
+apps/web/src/components/dashboard/AppHeader.jsx
+  s_f3ce02ff91d9cf::t_70025e631618b1 1328
+cc-viewer-alignment/B4-candidate-matrix.md
+  s_f3ce02ff91d9cf::t_e4857d887f1466 17,25
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_f3ce02ff91d9cf::t_c1c6d1579a2c0e 37-38,219,972-1034
+cc-viewer-alignment/B4-model-chip-2026-11-20.json
+  s_f3ce02ff91d9cf::t_e4857d887f1466 1-61
+cc-viewer-alignment/README.md
+  s_f3ce02ff91d9cf::t_e4857d887f1466 5,21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "08db3816b23807ce251d30ba5a201709128cb330",
+  "prompts": {},
+  "sessions": {
+    "s_f3ce02ff91d9cf": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6e7-9606-7a33-911c-33e9b1de1cad",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
