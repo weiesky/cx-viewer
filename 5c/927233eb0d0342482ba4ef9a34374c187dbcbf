@@ -1,0 +1,38 @@
+cc-viewer-alignment/probes/b4-tasks-gui.mjs
+  s_f3ce02ff91d9cf::t_87146a8a054067 47-48,137-138,140-143
+  s_f3ce02ff91d9cf::t_67d719935f4a08 139
+cc-viewer-alignment/B4-thinking-history-2026-11-20.json
+  s_f3ce02ff91d9cf::t_881a1bc84b7f18 1-36
+cc-viewer-alignment/B4-implementation.md
+  s_f3ce02ff91d9cf::t_881a1bc84b7f18 509,518-530
+AGENTS.md
+  s_f3ce02ff91d9cf::t_881a1bc84b7f18 26
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_f3ce02ff91d9cf::t_881a1bc84b7f18 15694-15699
+cc-viewer-alignment/README.md
+  s_f3ce02ff91d9cf::t_881a1bc84b7f18 5
+tests/sdk-thinking-history.test.js
+  s_f3ce02ff91d9cf::t_b72b56591a70ae 61
+  s_f3ce02ff91d9cf::t_87146a8a054067 1-36,41-57,59-60,62-67
+  s_f3ce02ff91d9cf::t_2ce03066676f39 37-40,58
+cc-viewer-alignment/B4-candidate-matrix.md
+  s_f3ce02ff91d9cf::t_881a1bc84b7f18 26
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_f3ce02ff91d9cf::t_881a1bc84b7f18 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "5c927233eb0d0342482ba4ef9a34374c187dbcbf",
+  "prompts": {},
+  "sessions": {
+    "s_f3ce02ff91d9cf": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6e7-9606-7a33-911c-33e9b1de1cad",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
