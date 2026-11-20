@@ -1,6 +1,6 @@
 # B3 交接：长会话、存储和实时传输
 
-2026-11-20最终更新：B3本地迁移已完成，用户选择渐进启用已实施；最终状态、验证与环境边界见[B3完成矩阵](./B3-completion-matrix.md)，分片逐笔映射见[B3分片实施](./B3-sharding.md)。下文为先前轮次的历史证据，其中“待选择/尚未实施/仍待”等不是当前待办。
+2026-11-20最终更新：B3已收口，原30笔已合并为[7c3d849](https://github.com/weiesky/cx-viewer/commit/7c3d849b9e7acda1c974077843406c23627dbdcb)并推送GitHub main，远端hash已核对。用户选择的渐进启用已实施；最终验证与未覆盖环境见[B3完成矩阵](./B3-completion-matrix.md)，逐笔映射见[B3分片实施](./B3-sharding.md)，发布结果见[提交合并记录](./local-commit-consolidation-2026-11-20.md)。**下一工作包B4，准备中；本轮没有B4新增实现。** 下文为原B3实施前/过程中的历史交接，“待选择/尚未实施/仍待”等不是当前待办；B4入口见[对齐规划](./cc-viewer-alignment-plan.md)。
 
 2026-11-20：B3继续实施，冷加载/response首轮后已补浏览器恢复与真实窗口、最终WS mux、列表分页和工具增量扫描，见[B3实施](./B3-implementation.md)与[第二轮证据](./B3-transport-and-pagination.md)。分片接入政策待选择，尚未迁移真实日志；本页后续清单保留为原交接索引，最新状态以上述实施页为准。B2保持用户验收收口及原未覆盖边界。
 

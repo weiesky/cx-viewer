@@ -1,6 +1,6 @@
 # cc-viewer 逐提交对齐台账
 
-2026-11-20 B3本地迁移完成（第4/12工作包），B2保持用户验收完成；固定上游74cd752d99caf122e750216d2af3bb9f467c4de1。按用户选择渐进启用2000-prompt分片，已完成writer/reader恢复、旧写者版本隔离、按需历史与对象授权、cold gate/live重放、完整ZIP/归档删除保护、原按钮/CSS、mux背压、分页及增量工具扫描；真实Safari桌面/强制移动布局与重启、2001轮冷窗口/20页完整历史已验证。最终源码1410/1410、0 skip、构建通过；最终新生产安装结果见B3-completion-matrix.md。没有转换真实用户日志；用户现已确认B3收口并要求30笔合并推送main，见[提交合并记录](./local-commit-consolidation-2026-11-20.md)。下一工作包B4；真实模型/外部慢网、Windows/Linux/最低Node、物理设备和断电等仍未验证，保留原验证边界，不整体勾选混合提交其他子项。详见[B3完成矩阵](./B3-completion-matrix.md)与[B3分片实施](./B3-sharding.md)。
+2026-11-20 B3已完成并推送main（第4/12工作包），B2保持用户验收完成；固定上游74cd752d99caf122e750216d2af3bb9f467c4de1。按用户选择渐进启用2000-prompt分片，已完成writer/reader恢复、旧写者版本隔离、按需历史与对象授权、cold gate/live重放、完整ZIP/归档删除保护、原按钮/CSS、mux背压、分页及增量工具扫描；真实Safari桌面/强制移动布局与重启、2001轮冷窗口/20页完整历史已验证。最终源码1410/1410、0 skip、构建通过；最终新生产安装结果见B3-completion-matrix.md。没有转换真实用户日志；用户已确认B3收口，30笔已合并为[7c3d849](https://github.com/weiesky/cx-viewer/commit/7c3d849b9e7acda1c974077843406c23627dbdcb)并快进推送main，远端hash已核对，见[提交合并记录](./local-commit-consolidation-2026-11-20.md)。下一工作包B4；真实模型/外部慢网、Windows/Linux/最低Node、物理设备和断电等仍未验证，保留原验证边界，不整体勾选混合提交其他子项。详见[B3完成矩阵](./B3-completion-matrix.md)与[B3分片实施](./B3-sharding.md)。
 
 2026-11-18 GitHub 同步：已按用户请求将 main 6045b53 与 codex/pnpm-workspace 2c0edc8 原子推送到 origin 同名分支，远端完整 hash 已读回核对，上游跟踪已设置。未执行强推、分支合并或活动安装切换；未提交的 AGENTS.md 与 cc-viewer-alignment 文档仍保留本地。
 
@@ -15496,4 +15496,4 @@
 
 ## 2026-11-20 用户确认B3收口与提交合并
 
-用户要求B3提交合并后提交GitHub；原30笔均映射至[本次main聚合提交](./local-commit-consolidation-2026-11-20.md)。原完整历史保留本地archive引用及已校验bundle；只更新进度文档，应用/测试/依赖/探针树保持原末端精确字节。推送采用正常快进，远端完整hash读回结果保存本地consolidation.json，不强推或改写旧远端历史。B3验证及未覆盖环境维持完成矩阵原结论，下一工作包B4。
+用户确认B3收口；原30笔已合并为[7c3d849](https://github.com/weiesky/cx-viewer/commit/7c3d849b9e7acda1c974077843406c23627dbdcb)并正常快进推送origin/main（父提交41d95af）。2026-11-20 10:41:52（Asia/Shanghai）通过git ls-remote读回完整hash `7c3d849b9e7acda1c974077843406c23627dbdcb`，与本地一致；当时工作区干净。原完整历史保留本地archive引用及已校验bundle；除6个收口文档外，应用/测试/依赖/探针树与原末端精确一致。完整映射和回执见[提交合并记录](./local-commit-consolidation-2026-11-20.md)，没有强推。B3验证及未覆盖环境维持完成矩阵原结论；当前下一工作包B4（准备中），本轮仅同步进度文档，无B4实现。

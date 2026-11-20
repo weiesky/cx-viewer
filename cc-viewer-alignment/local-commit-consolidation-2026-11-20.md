@@ -1,23 +1,23 @@
 # B3本地30笔提交合并与GitHub收口（2026-11-20）
 
-用户确认B3收口，要求将B3工作的commit合并后提交GitHub。聚合范围仅为远端main之后的30笔B3提交，不改写既有远端历史，不夹带B4实现。
+用户确认B3收口；原30笔已合并为[7c3d849](https://github.com/weiesky/cx-viewer/commit/7c3d849b9e7acda1c974077843406c23627dbdcb)并普通快进推送GitHub main，完整远端hash已核对。聚合范围仅为远端main之后的30笔B3提交，不改写既有远端历史，不夹带B4实现。
 
 ## 范围、备份与映射
 
 - 唯一父提交/推送前远端main：`41d95af54189cfaa9d0816244ec1ae7366d43939`。
 - 原B3末端：`1b3d46cbb1ee11f32784e915c39dabb5e9fe761d`；原文件树：`1cbd6e00e0cf11cdb6d206e402034d8fceb8ceea`。
-- 聚合目标：本文件所属的main提交；不在文件内写入自引用hash。
+- 已完成的聚合提交：`7c3d849b9e7acda1c974077843406c23627dbdcb`（[7c3d849](https://github.com/weiesky/cx-viewer/commit/7c3d849b9e7acda1c974077843406c23627dbdcb)）；唯一父提交仍为上述41d95af，已有远端历史未改写。
 - 原历史本地归档：`refs/archive/b3-closeout/20261120T023942Z/main`。
 - 本地备份：`/Users/sky/.npm-global/lib/node_modules/cx-viewer/.git/local-consolidations/20261120T023942Z`，含`before.bundle`、`bundle-verify.txt`及`consolidation.json`；bundle已校验。
-- 原上游hash→本地小笔hash继续保留于[B3实施](./B3-implementation.md)、[第二轮](./B3-transport-and-pagination.md)、[分片实施](./B3-sharding.md)和[台账](./cc-viewer-alignment-commit-ledger.md)。下表30笔均映射至本文件所属聚合提交，原对象仍可通过归档引用访问。
+- 原上游hash→本地小笔hash继续保留于[B3实施](./B3-implementation.md)、[第二轮](./B3-transport-and-pagination.md)、[分片实施](./B3-sharding.md)和[台账](./cc-viewer-alignment-commit-ledger.md)。下表30笔均映射至7c3d849聚合提交，原对象仍可通过归档引用访问。
 
 ## 文件树和验证口径
 
-聚合保留原B3应用、测试、依赖、工程文件与探针的精确Git文件树；仅更新AGENTS及专项进度文档，并新增本记录。提交前后逐路径核对，完整结果和新hash写入本地`consolidation.json`。本轮是历史整理，不重复运行应用测试，也不把历史整理写成一次新功能验证。
+聚合保留原B3应用、测试、依赖、工程文件与探针的精确Git文件树；仅更新AGENTS及专项进度文档，并新增本记录。提交前后已逐路径核对，除6个收口文档外完全一致；完整结果和新hash已写入本地`consolidation.json`。本轮是历史整理，不重复运行应用测试，也不把历史整理写成一次新功能验证。
 
 最后应用代码已经验证：1410/1410、0 skip，构建通过；实际689文件tarball、202Web资产/关键源码精确字节、144/144安装后运行时、B1.2合成回归和隔离CLI通过。原始结果及未覆盖环境见[B3完成矩阵](./B3-completion-matrix.md)。真实用户日志、活动Viewer实例和其他工作树/分支不切换。
 
-仅推送`refs/heads/main`，使用普通快进，不强推；推送前复核远端父提交，推送后通过`git ls-remote`读回完整hash。推送回执保存于上述本地`consolidation.json`；本地archive引用与bundle不额外推送。
+已仅推送`refs/heads/main`，使用普通快进（41d95af→7c3d849），没有强推。2026-11-20 10:41:52（Asia/Shanghai；02:41:52 UTC）通过`git ls-remote origin refs/heads/main`读回`7c3d849b9e7acda1c974077843406c23627dbdcb`，与本地HEAD一致；当时工作区干净。推送回执保存在上述本地`consolidation.json`；本地archive引用与bundle没有额外推送。当前这次仅补进度文档，将另作普通文档提交，不改写已发布的B3聚合提交。
 
 ## 原提交映射
 

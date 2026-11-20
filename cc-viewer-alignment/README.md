@@ -1,8 +1,8 @@
 # cc-viewer 功能对齐专项
 
-**迁移约束：优先参考 PR 的实际代码，禁止根据文档自由改版。** B2已按上游组件/CSS/交互纠偏并经用户验收收口；后续B3继续遵守该规则，运行性测试不能单独代表视觉对齐。必读[源码优先迁移规范与已确认偏差](./migration-code-first.md)。
+**迁移约束：优先参考 PR 的实际代码，禁止根据文档自由改版。** B2已按上游组件/CSS/交互纠偏并经用户验收收口；B4及后续工作包继续遵守该规则，运行性测试不能单独代表视觉对齐。必读[源码优先迁移规范与已确认偏差](./migration-code-first.md)。
 
-2026-11-20 B3本地迁移完成（第4/12工作包），B2保持用户验收完成；固定上游74cd752d99caf122e750216d2af3bb9f467c4de1。按用户选择渐进启用2000-prompt分片，已完成writer/reader恢复、旧写者版本隔离、按需历史与对象授权、cold gate/live重放、完整ZIP/归档删除保护、原按钮/CSS、mux背压、分页及增量工具扫描；真实Safari桌面/强制移动布局与重启、2001轮冷窗口/20页完整历史已验证。最终源码1410/1410、0 skip、构建通过；689文件新生产安装、202Web精确字节、144/144运行时、B1.2合成回归及隔离CLI通过，见B3-completion-matrix.md。没有转换真实用户日志；用户现已确认B3收口，要求原30笔提交合并后推送main，记录见[提交合并](./local-commit-consolidation-2026-11-20.md)。下一工作包B4；真实模型/外部慢网、Windows/Linux/最低Node、物理设备和断电等仍未验证，保留原验证边界，不整体勾选混合提交其他子项。详见[B3完成矩阵](./B3-completion-matrix.md)与[B3分片实施](./B3-sharding.md)。
+2026-11-20 B3已完成并推送main（第4/12工作包），B2保持用户验收完成；固定上游74cd752d99caf122e750216d2af3bb9f467c4de1。按用户选择渐进启用2000-prompt分片，已完成writer/reader恢复、旧写者版本隔离、按需历史与对象授权、cold gate/live重放、完整ZIP/归档删除保护、原按钮/CSS、mux背压、分页及增量工具扫描；真实Safari桌面/强制移动布局与重启、2001轮冷窗口/20页完整历史已验证。最终源码1410/1410、0 skip、构建通过；689文件新生产安装、202Web精确字节、144/144运行时、B1.2合成回归及隔离CLI通过，见B3-completion-matrix.md。没有转换真实用户日志；用户已确认B3收口，原30笔提交已合并为[7c3d849](https://github.com/weiesky/cx-viewer/commit/7c3d849b9e7acda1c974077843406c23627dbdcb)并快进推送至GitHub main，远端完整hash已读回核对；记录见[提交合并](./local-commit-consolidation-2026-11-20.md)。下一工作包B4；真实模型/外部慢网、Windows/Linux/最低Node、物理设备和断电等仍未验证，保留原验证边界，不整体勾选混合提交其他子项。详见[B3完成矩阵](./B3-completion-matrix.md)与[B3分片实施](./B3-sharding.md)。
 
 2026-11-18 GitHub 同步：已按用户请求将 main 6045b53 与 codex/pnpm-workspace 2c0edc8 原子推送到 origin 同名分支，远端完整 hash 已读回核对，上游跟踪已设置。未执行强推、分支合并或活动安装切换；未提交的 AGENTS.md 与 cc-viewer-alignment 文档仍保留本地。
 
@@ -17,17 +17,18 @@
 | B0 | 已完结：337 条台账、归属与迁移准入复核；产品验收由各实施包负责。 |
 | B1 | 本地实现与隔离安装验收完成（b549125）；保留现场并拒绝覆盖策略已确认，真实用户/目标环境验收仍待。 |
 | B2 | 已完成：2026-11-19用户验收收口 |
-| B3 | 本地迁移完成：渐进分片、存储/实时恢复与1410项验证，见[B3完成矩阵](./B3-completion-matrix.md) |
-| B4–B10 | 尚未逐包完成，按台账独立核验 |
+| B3 | 已完成并推送main：[7c3d849](https://github.com/weiesky/cx-viewer/commit/7c3d849b9e7acda1c974077843406c23627dbdcb)；1410项通过，见[B3完成矩阵](./B3-completion-matrix.md) |
+| B4 | 下一工作包，准备中（第5/12工作包）；Agent生命周期、任务与状态反馈，尚未新增实现。 |
+| B5–B10 | 尚未逐包完成，按台账独立核验 |
 | B11 / 工程前置 | A1 6287d2a 已主线；A2 3b15a6d 已提交工作树并通过本地验证，当前全局实例未切换。 |
 
 pnpm/workspace 已按用户选择前置实施，先稳定结构，再继续功能对齐；见 [提交、边界与验收](./A1-A2-engineering.md)。
 
-- [B3提交合并记录](./local-commit-consolidation-2026-11-20.md)：原30笔完整映射、可恢复备份与快进推送范围。
+- [B3提交合并记录](./local-commit-consolidation-2026-11-20.md)：原30笔完整映射、可恢复备份、实际聚合hash与GitHub推送回执。
 - [B3完成矩阵](./B3-completion-matrix.md)：完成条件、交叉候选处置、最终验证与未覆盖环境。
 - [B3渐进分片](./B3-sharding.md)：13笔独立映射、格式适配、2001轮基准和Safari证据。
 - [B3实施与证据](./B3-implementation.md)：四笔hash映射、源码依据、最终验证与基准/剩余边界。
-- [B3实施交接](./B3-handoff.md)：固定源码、已知问题、首轮阅读/复现与验收边界。
+- [B3历史交接](./B3-handoff.md)：原实施入口；B3已收口，当前下一包B4，以上述完成矩阵为准。
 - [本轮提交压缩映射](./local-commit-consolidation-2026-11-19.md)：原63笔提交、备份与main聚合范围。
 - [B2完成矩阵](./B2-completion-matrix.md)：六项完成条件、80候选及产品/GUI待办。
 - [B2 SDK状态与取消复核](./B2-sdk-state-review.md)：启动取消窗口、协议差异、getContextUsage清理不适用及残余场景。
