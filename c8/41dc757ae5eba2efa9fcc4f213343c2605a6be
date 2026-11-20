@@ -1,0 +1,54 @@
+AGENTS.md
+  s_f3ce02ff91d9cf::t_251d6ff429041e 26
+packages/app/server/lib/voice-pack-events.js
+  s_f3ce02ff91d9cf::t_da84f62e07225e 22-23,31-34,39-40,64-65,71-72
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_f3ce02ff91d9cf::t_6c6da25ef4c712 131-159,163-167,169-172,174-229
+  s_f3ce02ff91d9cf::t_95088ca80555e3 32-34
+  s_f3ce02ff91d9cf::t_7d344913a4fb9b 160-162
+  s_f3ce02ff91d9cf::t_5b2b723ddd905a 168,173
+apps/web/src/AppBase.jsx
+  s_f3ce02ff91d9cf::t_da84f62e07225e 86-87,1602-1619,1621-1635,1822-1828,1830-1840
+  s_f3ce02ff91d9cf::t_95088ca80555e3 1620
+cc-viewer-alignment/probes/b3-installed-check.py
+  s_f3ce02ff91d9cf::t_3d05630f3e05b6 23,29
+apps/web/src/i18n.js
+  s_f3ce02ff91d9cf::t_da84f62e07225e 8851-8866
+cc-viewer-alignment/B4-implementation.md
+  s_f3ce02ff91d9cf::t_251d6ff429041e 377,388-404
+apps/web/public/voice-packs/default/pack.json
+  s_f3ce02ff91d9cf::t_da84f62e07225e 17-24,31-33
+apps/web/public/voice-packs/sanguo/pack.json
+  s_f3ce02ff91d9cf::t_da84f62e07225e 17-24,31-33
+cc-viewer-alignment/B4-loop-voice-2026-11-20.json
+  s_f3ce02ff91d9cf::t_b47ad2450e8ab4 1-117
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_f3ce02ff91d9cf::t_251d6ff429041e 45,101
+cc-viewer-alignment/probes/b4-tasks-gui.mjs
+  s_f3ce02ff91d9cf::t_3d05630f3e05b6 155-163
+  s_f3ce02ff91d9cf::t_da84f62e07225e 148-149
+cc-viewer-alignment/B4-candidate-matrix.md
+  s_f3ce02ff91d9cf::t_251d6ff429041e 68
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_f3ce02ff91d9cf::t_251d6ff429041e 15643-15648
+apps/web/src/utils/voicePackPlayer.js
+  s_f3ce02ff91d9cf::t_da84f62e07225e 141
+cc-viewer-alignment/README.md
+  s_f3ce02ff91d9cf::t_251d6ff429041e 5,21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "c841dc757ae5eba2efa9fcc4f213343c2605a6be",
+  "prompts": {},
+  "sessions": {
+    "s_f3ce02ff91d9cf": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6e7-9606-7a33-911c-33e9b1de1cad",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
