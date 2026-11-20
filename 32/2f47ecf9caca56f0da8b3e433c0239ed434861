@@ -1,0 +1,45 @@
+cc-viewer-alignment/probes/b4-tasks-gui.mjs
+  s_f3ce02ff91d9cf::t_9b1d34b5b6c7ce 178,223-236
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_f3ce02ff91d9cf::t_9e3bc05f40aea3 7810-7811,15797-15801
+cc-viewer-alignment/README.md
+  s_f3ce02ff91d9cf::t_9e3bc05f40aea3 5,21
+apps/web/tests/session-model-state.test.js
+  s_f3ce02ff91d9cf::t_eecc73d6ede269 212-225,227-229,240
+  s_f3ce02ff91d9cf::t_35d88fb55757d7 226,230-239
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_f3ce02ff91d9cf::t_9e3bc05f40aea3 3,45,49,101
+apps/web/src/utils/sessionMerge.js
+  s_f3ce02ff91d9cf::t_40271568d8bd6f 84,132,362-369,371-381,385
+  s_f3ce02ff91d9cf::t_35d88fb55757d7 370,382-384
+cc-viewer-alignment/B4-candidate-matrix.md
+  s_f3ce02ff91d9cf::t_9e3bc05f40aea3 3,11
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_f3ce02ff91d9cf::t_eecc73d6ede269 1035-1051
+  s_f3ce02ff91d9cf::t_a880cee8fdde94 1052-1062,1066-1070
+  s_f3ce02ff91d9cf::t_274ab525eb6bd7 1064-1065
+  s_f3ce02ff91d9cf::t_ed0e0c688dd93e 701
+  s_f3ce02ff91d9cf::t_77eab69c923499 1063
+cc-viewer-alignment/B4-implementation.md
+  s_f3ce02ff91d9cf::t_9e3bc05f40aea3 710,719-731
+cc-viewer-alignment/B4-interrupt-merge-2026-11-21.json
+  s_f3ce02ff91d9cf::t_9e3bc05f40aea3 1-66
+AGENTS.md
+  s_f3ce02ff91d9cf::t_9e3bc05f40aea3 26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "322f47ecf9caca56f0da8b3e433c0239ed434861",
+  "prompts": {},
+  "sessions": {
+    "s_f3ce02ff91d9cf": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6e7-9606-7a33-911c-33e9b1de1cad",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
