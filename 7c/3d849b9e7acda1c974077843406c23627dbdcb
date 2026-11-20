@@ -1,0 +1,258 @@
+cc-viewer-alignment/probes/b3-window-benchmark.mjs
+  s_55198d5dd9a4c0::t_0b429b5cfa145b 7,15-19,47-57,67-68,71,76-82,101,108,112
+  s_55198d5dd9a4c0::t_096f0b918b5232 1-6,8-14,20-46,58-66,69-70,72-75,83-100,102-107,109-111,113
+apps/web/src/utils/errorReport.js
+  s_55198d5dd9a4c0::t_3f7ae07fcfaf5c 1
+apps/web/src/i18n.js
+  s_55198d5dd9a4c0::t_9234cff313ecbe 24-43
+  s_55198d5dd9a4c0::t_1c26233dd9ac15 4-23
+apps/web/src/App.jsx
+  s_55198d5dd9a4c0::t_20f7531a0ebb72 559-569,571-572,575
+  s_55198d5dd9a4c0::t_1c26233dd9ac15 472
+  s_55198d5dd9a4c0::t_28d7d5593abead 540-541,558,576
+packages/app/lib/log-v2/archive-zip.js
+  s_55198d5dd9a4c0::t_2f23f38b5203cd 32-33,431
+cc-viewer-alignment/B3-install-2026-11-20.json
+  s_55198d5dd9a4c0::t_f6c572af4dc485 1-11
+cc-viewer-alignment/probes/b3-log-picker-gui.mjs
+  s_55198d5dd9a4c0::t_8b2d16047d6a38 1-24
+apps/web/src/components/chat/ChatView.jsx
+  s_55198d5dd9a4c0::t_2dfe5489df71f1 967
+  s_55198d5dd9a4c0::t_36101e6e117045 35,206,976-984
+  s_55198d5dd9a4c0::t_1c26233dd9ac15 626-627,641-670,985,987,1864,3517-3532,3544,3561,3602
+cc-viewer-alignment/B3-handoff.md
+  s_55198d5dd9a4c0::t_da0c8f40f3cbf2 16-18
+  s_55198d5dd9a4c0::t_9b688d7c73b110 5
+  s_55198d5dd9a4c0::t_082f1d40bccf4b 3-4
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_55198d5dd9a4c0::t_324e1af49dae87 318,2265,4179,4617,4686,4776,4893,4919,7027,14941,15488-15491
+  s_55198d5dd9a4c0::t_b2feaad3773501 15495
+  s_55198d5dd9a4c0::t_da0c8f40f3cbf2 6241,6528,15484-15487
+  s_55198d5dd9a4c0::t_e5e2f1ce3c471c 3,1470,1622,2326,3561,6240,6527,7238,14837,15091,15492-15494
+  s_55198d5dd9a4c0::t_af7ae59596c999 15496-15499
+cc-viewer-alignment/B3-shard-install-2026-11-20.json
+  s_55198d5dd9a4c0::t_b2feaad3773501 1-11
+cc-viewer-alignment/probes/b0-cold-ingest.mjs
+  s_55198d5dd9a4c0::t_469fdad29bfe93 105-108,196-197,224-243
+  s_55198d5dd9a4c0::t_1df0d71404c7c1 1,34,199-201,203-206,209-210,217-221,244-245
+  s_55198d5dd9a4c0::t_3ec96d4aa5f290 10-24,26,41,96
+  s_55198d5dd9a4c0::t_647069e5e60276 101
+packages/app/lib/log-v2/inspect.js
+  s_55198d5dd9a4c0::t_2f23f38b5203cd 6,37
+cc-viewer-alignment/probes/b0-live-failure.mjs
+  s_55198d5dd9a4c0::t_da7891d8513f2d 1,96-98
+  s_55198d5dd9a4c0::t_784cd7d0328420 8-12,14
+  s_55198d5dd9a4c0::t_a9a4066dc3ab75 47-48,50,53-54
+apps/web/src/utils/wsMuxTransport.js
+  s_55198d5dd9a4c0::t_eda96e9bba02c9 1-586
+packages/app/lib/log-v2/timeline-watcher.js
+  s_55198d5dd9a4c0::t_064b197093c826 2,41,162,170
+apps/web/src/components/viewers/LogTable.jsx
+  s_55198d5dd9a4c0::t_28d7d5593abead 10,102-103
+apps/web/src/components/chat/controllers/toolFileChangeController.js
+  s_55198d5dd9a4c0::t_af1b6ef6840d2f 64,75-76,217,231
+  s_55198d5dd9a4c0::t_2dfe5489df71f1 63,65-74,77-86,161-163,167-170,173-181,183,185-192,198,200-205,211,215-216,218-220,225,229-230,232-234,239,241
+cc-viewer-alignment/migration-code-first.md
+  s_55198d5dd9a4c0::t_da0c8f40f3cbf2 3
+packages/app/tests/log-v2-shards.test.js
+  s_55198d5dd9a4c0::t_f106ac70f3baaa 1-2,4-7,14-16,18-25,27-33,36-74
+  s_55198d5dd9a4c0::t_35388efb9b2952 3,17
+  s_55198d5dd9a4c0::t_199875e40e3aff 8-12,26,75-109
+  s_55198d5dd9a4c0::t_f160ca15256605 111-145
+  s_55198d5dd9a4c0::t_82727aa64c5b9d 110
+  s_55198d5dd9a4c0::t_3dcf6f4cc4f06b 13,34-35
+cc-viewer-alignment/B3-implementation.md
+  s_55198d5dd9a4c0::t_082f1d40bccf4b 3-4
+  s_55198d5dd9a4c0::t_f9d22aec6202f9 1-2,5-25
+  s_55198d5dd9a4c0::t_324e1af49dae87 76-77
+  s_55198d5dd9a4c0::t_abdc8a35cbabb5 26-62,64-67
+  s_55198d5dd9a4c0::t_9b688d7c73b110 63,68-75
+packages/app/lib/log-v2/schema.js
+  s_55198d5dd9a4c0::t_3dcf6f4cc4f06b 2,123-126
+apps/web/tests/session-model-state.test.js
+  s_55198d5dd9a4c0::t_c64d3e4832825b 162-211
+cc-viewer-alignment/B3-transport-and-pagination.md
+  s_55198d5dd9a4c0::t_324e1af49dae87 34,42-43
+  s_55198d5dd9a4c0::t_5e3f9a26993cb8 1-2,5-33,35-41
+  s_55198d5dd9a4c0::t_082f1d40bccf4b 3-4
+cc-viewer-alignment/B3-completion-matrix.md
+  s_55198d5dd9a4c0::t_e5e2f1ce3c471c 35
+  s_55198d5dd9a4c0::t_9f7bc972fa9b75 1-34,36-39,45-48
+  s_55198d5dd9a4c0::t_b2feaad3773501 40-44
+packages/app/server.js
+  s_55198d5dd9a4c0::t_7cd9bf2bb4604d 2-3,829,4858,4883-4964,5028-5031,5815-5816
+  s_55198d5dd9a4c0::t_5aecea2d1a04df 55,4255-4267
+packages/app/lib/log-v2/writer.js
+  s_55198d5dd9a4c0::t_1e122c986f9e5b 31,49,217-219,221-232,250-256,265-266,320,330-332,447-449,529,531,536-538,723,732,739
+  s_4d84bc3b7d6aec::t_03f5ef470d10b8 600-601
+  s_55198d5dd9a4c0::t_199875e40e3aff 220,248
+  s_55198d5dd9a4c0::t_7872461d99105f 30,32,46,62,365,380-381,548,561-599
+  s_55198d5dd9a4c0::t_35388efb9b2952 236-242
+packages/app/tests/log-v2-object-api.test.js
+  s_55198d5dd9a4c0::t_1a5f264e70ed05 3,11,367-453
+packages/app/tests/ws-mux-routes.test.js
+  s_55198d5dd9a4c0::t_3df38eaab4e7f2 177-180
+  s_55198d5dd9a4c0::t_95bfe8ace1b117 1-3,5,7-32,41-69,91-174
+  s_55198d5dd9a4c0::t_647069e5e60276 33-40
+  s_55198d5dd9a4c0::t_aa190be10c40b3 245
+  s_55198d5dd9a4c0::t_c4de0d2a9e562a 220
+  s_55198d5dd9a4c0::t_4ab67a737c7476 4,6,175-176,181-219,221-244
+  s_55198d5dd9a4c0::t_da387e36382e48 70-90
+apps/web/src/utils/sessionMerge.js
+  s_55198d5dd9a4c0::t_1e591a6a99708d 264-265,293,371-372
+apps/web/tests/tool-file-change-controller.test.js
+  s_55198d5dd9a4c0::t_af1b6ef6840d2f 28,33,85-92,113-182
+  s_55198d5dd9a4c0::t_d7f61c28111473 93-112
+packages/app/tests/ws-mux.test.js
+  s_55198d5dd9a4c0::t_ebf8d6673145c8 1-463
+AGENTS.md
+  s_55198d5dd9a4c0::t_082f1d40bccf4b 20
+  s_55198d5dd9a4c0::t_b2feaad3773501 26
+tests/log-v2-shards-client.test.js
+  s_55198d5dd9a4c0::t_25c4a57b15d3db 14,68-108
+  s_55198d5dd9a4c0::t_6a0e8d63f4514b 109
+  s_55198d5dd9a4c0::t_60d55fd4605b9b 31-36
+  s_55198d5dd9a4c0::t_aa96f77a0b0561 1-13,15-30,37-67
+packages/app/tests/ws-mux-backpressure.test.js
+  s_55198d5dd9a4c0::t_ebf8d6673145c8 1-361
+cc-viewer-alignment/B3-shard-benchmark-2026-11-20.json
+  s_55198d5dd9a4c0::t_0b429b5cfa145b 1-64
+apps/web/src/utils/commandValidator.js
+  s_55198d5dd9a4c0::t_d7f61c28111473 22,37
+packages/app/server/lib/error-report.js
+  s_55198d5dd9a4c0::t_2b581d1b7c68db 1-26
+packages/app/lib/log-v2/transport.js
+  s_55198d5dd9a4c0::t_064b197093c826 461-463,650-654
+  s_55198d5dd9a4c0::t_af30f7f70eedf6 494-499,506,520,602
+  s_55198d5dd9a4c0::t_4437998eaeaeac 4-5,99,151-168,170-172,176-190,429-430,432-436,440-443,481,505,519,562-567,600
+  s_55198d5dd9a4c0::t_a4097db49a80ab 473-475,614
+cc-viewer-alignment/B3-browser-recovery.md
+  s_55198d5dd9a4c0::t_324e1af49dae87 49
+  s_55198d5dd9a4c0::t_2842796782358d 1-48
+cc-viewer-alignment/README.md
+  s_55198d5dd9a4c0::t_b2feaad3773501 5
+  s_55198d5dd9a4c0::t_082f1d40bccf4b 20,26-27
+  s_55198d5dd9a4c0::t_da0c8f40f3cbf2 28
+  s_55198d5dd9a4c0::t_610eb673477133 29
+cc-viewer-alignment/B3-sharding.md
+  s_55198d5dd9a4c0::t_9f7bc972fa9b75 1-60
+packages/app/lib/log-v2/entry-codec.js
+  s_55198d5dd9a4c0::t_7872461d99105f 93
+apps/web/src/Mobile.jsx
+  s_55198d5dd9a4c0::t_28d7d5593abead 891-892,910
+  s_55198d5dd9a4c0::t_1c26233dd9ac15 723
+cc-viewer-alignment/probes/b3-browser-recovery.mjs
+  s_55198d5dd9a4c0::t_5487700c2d0d45 6-12,15-17
+  s_55198d5dd9a4c0::t_4ddfd1271ca711 1-5,18-19,21-68
+  s_55198d5dd9a4c0::t_ca47afa52e078f 13-14
+  s_55198d5dd9a4c0::t_7cd624aa11d2e8 20
+cc-viewer-alignment/B0-cold-ingest-review.md
+  s_55198d5dd9a4c0::t_da0c8f40f3cbf2 3-4
+apps/web/src/AppBase.jsx
+  s_55198d5dd9a4c0::t_f8ed2196c82b68 1821,1830,1921
+  s_55198d5dd9a4c0::t_45eb0e133f6455 140-141,782-786,797-801,1188,1193-1194,1200-1203,1206-1213,1215-1222,1224-1230,1232,1234,1240-1241,1243,1245-1246,1250-1251,1264,1318,1545,1853,1950,1953
+  s_55198d5dd9a4c0::t_a4df197f3fc41f 47,2700,2752,2754
+  s_55198d5dd9a4c0::t_72df67fbcd8952 1530,1548,1932,1938,1940-1941
+  s_55198d5dd9a4c0::t_9b8781fce5b5e7 300,547,702-720,725-736,745-746,748-768,770-781,787-796,802-813,1359,1364,1377-1379,1381-1384,1904-1906
+  s_55198d5dd9a4c0::t_28d7d5593abead 100-104,2696-2699,2701-2709,2711-2718,2720,2723-2724,2728-2737,2743-2747,2751,2753,2755-2760,2769,2808
+  s_55198d5dd9a4c0::t_11c7ebc021356d 1260-1261
+  s_55198d5dd9a4c0::t_4f84655056bbe8 19,187-195,1041,1416,1597,1841
+  s_55198d5dd9a4c0::t_f8109766c2b8b5 737-743
+packages/app/tests/log-v2-concurrency.test.js
+  s_55198d5dd9a4c0::t_189336703378a2 11,31,47,58-59,76
+apps/web/src/utils/logV2Archive.js
+  s_55198d5dd9a4c0::t_af30f7f70eedf6 46-48,75-79,121-134,137
+apps/web/src/App.module.css
+  s_55198d5dd9a4c0::t_9234cff313ecbe 103-137,755
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_55198d5dd9a4c0::t_da0c8f40f3cbf2 76
+  s_55198d5dd9a4c0::t_e98a2f1c54ae66 96
+  s_55198d5dd9a4c0::t_8c05aa03089de6 37
+  s_55198d5dd9a4c0::t_b2feaad3773501 3
+  s_55198d5dd9a4c0::t_082f1d40bccf4b 44,88,183
+apps/web/tests/terminal-ws-liveness.test.js
+  s_55198d5dd9a4c0::t_36101e6e117045 123-148
+packages/app/lib/log-v2/session-summary.js
+  s_55198d5dd9a4c0::t_2f23f38b5203cd 14,230,341
+packages/app/src/utils/errorReport.js
+  s_701ec3b89ba9ea::t_3fe129b7771b74 1-40
+cc-viewer-alignment/B3-sharding-proposal.md
+  s_55198d5dd9a4c0::t_082f1d40bccf4b 11,13,20
+  s_55198d5dd9a4c0::t_acd06b22818ad6 3-4
+  s_55198d5dd9a4c0::t_18ae3cba7e064c 1-2,5-10,12,14-19
+cc-viewer-alignment/probes/b3-live-benchmark.mjs
+  s_55198d5dd9a4c0::t_e577a2b3caf93b 1-100
+cc-viewer-alignment/B3-benchmark-2026-11-19.json
+  s_55198d5dd9a4c0::t_5c659fc884d3c1 1-159
+packages/app/tests/log-v2-materializer.test.js
+  s_55198d5dd9a4c0::t_4054784a6b1fb7 76
+  s_55198d5dd9a4c0::t_54ce0bd2a8b223 105
+  s_55198d5dd9a4c0::t_da387e36382e48 18,64-75,77-104
+apps/web/tests/ws-mux-channel.test.js
+  s_55198d5dd9a4c0::t_eda96e9bba02c9 1-493
+  s_55198d5dd9a4c0::t_d2fdf93887363d 494-512
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_55198d5dd9a4c0::t_11c7ebc021356d 435-502
+  s_55198d5dd9a4c0::t_f8109766c2b8b5 503-514
+  s_55198d5dd9a4c0::t_81e8f026ddd085 367-369,412-434,515-627
+  s_55198d5dd9a4c0::t_6f725279d113d6 370-411
+  s_55198d5dd9a4c0::t_3c6a0e1849c6e9 628-666
+cc-viewer-alignment/probes/b3-installed-check.py
+  s_55198d5dd9a4c0::t_2fb72e30afa2d6 23,29
+  s_55198d5dd9a4c0::t_f1e8558c9eef34 1-22,24-28,30-92
+packages/app/server/lib/ws-mux.js
+  s_55198d5dd9a4c0::t_ebf8d6673145c8 1-626
+cc-viewer-alignment/B3-window-benchmark-2026-11-20.json
+  s_55198d5dd9a4c0::t_766632e291cf00 1-40
+packages/app/lib/log-v2/shards.js
+  s_55198d5dd9a4c0::t_fa7643ba79249a 1-3,5-8,10-18,23-48,56-78,83-90,95,97,99-106,110-129,139,141-148,152-155
+  s_55198d5dd9a4c0::t_1e122c986f9e5b 4,79-82,130-138,140
+  s_55198d5dd9a4c0::t_3dcf6f4cc4f06b 9,149-151
+  s_55198d5dd9a4c0::t_4437998eaeaeac 49-52
+  s_55198d5dd9a4c0::t_35388efb9b2952 53-55
+  s_55198d5dd9a4c0::t_acd06b22818ad6 96
+  s_55198d5dd9a4c0::t_f106ac70f3baaa 19-22,91-94,98,107-109
+packages/app/server/lib/log-v2-routes.js
+  s_55198d5dd9a4c0::t_da7891d8513f2d 643-663,684-688,691-715,717,723,729,736
+  s_55198d5dd9a4c0::t_064b197093c826 500,512
+  s_55198d5dd9a4c0::t_a4097db49a80ab 487
+packages/app/lib/log-v2/materializer.js
+  s_55198d5dd9a4c0::t_75f1ebb68657a5 461
+  s_55198d5dd9a4c0::t_1e122c986f9e5b 356-357
+  s_55198d5dd9a4c0::t_5aecea2d1a04df 397-409,422,431-460
+  s_55198d5dd9a4c0::t_2f23f38b5203cd 5,190,229,264,355,508,531,820,870,943-944
+cc-viewer-alignment/local-commit-consolidation-2026-11-20.md
+  s_55198d5dd9a4c0::t_f28f2414968b97 1-55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "7c3d849b9e7acda1c974077843406c23627dbdcb",
+  "prompts": {},
+  "sessions": {
+    "s_4d84bc3b7d6aec": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f4f8-1aa3-7512-84b7-a10a4ade135c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    },
+    "s_55198d5dd9a4c0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f258-d147-7a10-bf0d-07ee52baa90b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    },
+    "s_701ec3b89ba9ea": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ea5f-68db-7b91-870f-dfe371f94c5d",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
