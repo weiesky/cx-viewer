@@ -1,0 +1,43 @@
+packages/app/lib/sdk-manager.js
+  s_f3ce02ff91d9cf::t_a82c4f3acdd167 47-48,1063-1066,1132-1134
+  s_f3ce02ff91d9cf::t_6c4cf0cb0c515d 1077
+  s_f3ce02ff91d9cf::t_20ca08c4cf8afe 1141-1143,1149
+  s_f3ce02ff91d9cf::t_053430dde7ae1a 60,64,74,156,253,348,363,537,968,1042,1053-1054,1073-1076,1078-1079,1095-1097,1106,1160,1178,1182-1190,1207
+packages/app/tests/sdk-appserver-manager.test.js
+  s_f3ce02ff91d9cf::t_300ddef8c44870 151-152
+  s_f3ce02ff91d9cf::t_6c4cf0cb0c515d 3,7-8,17-18,26,52
+  s_f3ce02ff91d9cf::t_801b2ea88ee15f 124-150,153-158
+packages/app/lib/sdk-appserver-transport.js
+  s_f3ce02ff91d9cf::t_053430dde7ae1a 82,183
+  s_f3ce02ff91d9cf::t_13ad4d640a9fee 88-91,184-185
+cc-viewer-alignment/probes/b4-appserver-compat.mjs
+  s_f3ce02ff91d9cf::t_00120276a16e87 278-279,330
+AGENTS.md
+  s_f3ce02ff91d9cf::t_de954f7075eafb 26
+cc-viewer-alignment/B4-appserver-options-2026-11-20.json
+  s_f3ce02ff91d9cf::t_8d4a28e555bbdf 1-133
+cc-viewer-alignment/B4-implementation.md
+  s_f3ce02ff91d9cf::t_b11b9a2f0560c6 110-123
+cc-viewer-alignment/README.md
+  s_f3ce02ff91d9cf::t_ef9c8f0eef512b 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_f3ce02ff91d9cf::t_0eeb42975a0545 15534-15537
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_f3ce02ff91d9cf::t_19f7647988f51d 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "400a27b872c5ffccd37e9f3e309735ae8501c933",
+  "prompts": {},
+  "sessions": {
+    "s_f3ce02ff91d9cf": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6e7-9606-7a33-911c-33e9b1de1cad",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
