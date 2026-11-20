@@ -1,0 +1,49 @@
+apps/web/src/components/chat/TaskProgressHud.jsx
+  s_f3ce02ff91d9cf::t_2be94788070637 1-199
+apps/web/src/components/chat/TaskProgressHud.module.css
+  s_f3ce02ff91d9cf::t_2be94788070637 1-251
+apps/web/src/components/terminal/TerminalWsContext.jsx
+  s_f3ce02ff91d9cf::t_b1cb21aa935108 19,164,171
+  s_f3ce02ff91d9cf::t_913560105e7467 47,192,201-202,213-214
+  s_f3ce02ff91d9cf::t_f5ee49b93fcbfe 215
+apps/web/src/i18n.js
+  s_f3ce02ff91d9cf::t_2be94788070637 690-696
+apps/web/src/components/chat/ChatView.jsx
+  s_f3ce02ff91d9cf::t_913560105e7467 49,253,2413-2422,2553,3877-3878
+  s_f3ce02ff91d9cf::t_1c39d08020e090 3879
+apps/web/tests/terminal-ws-liveness.test.js
+  s_f3ce02ff91d9cf::t_48177f1d0f8740 15-16,50,59
+  s_f3ce02ff91d9cf::t_71309d2749f99f 299-370
+AGENTS.md
+  s_f3ce02ff91d9cf::t_3fcf71cf36f44a 26
+cc-viewer-alignment/B4-implementation.md
+  s_f3ce02ff91d9cf::t_0d6a34b160411d 7,15-28,31
+cc-viewer-alignment/B4-tasks-install-2026-11-20.json
+  s_f3ce02ff91d9cf::t_ac27cc243d60d0 1-11
+cc-viewer-alignment/README.md
+  s_f3ce02ff91d9cf::t_a9d65a8c796815 5,21
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_f3ce02ff91d9cf::t_09dd4bf55f5d02 3,1358,2174,4502,6116,6644,7210
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_f3ce02ff91d9cf::t_b5eed84e6266bc 3,45,101
+cc-viewer-alignment/probes/b3-installed-check.py
+  s_f3ce02ff91d9cf::t_4135ea5b21bedf 29
+cc-viewer-alignment/probes/b4-tasks-gui.mjs
+  s_f3ce02ff91d9cf::t_e5ad04e5cbb2d4 1-88
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "fab7d5fe71fbc6a49680cfa7ade731177bdb1689",
+  "prompts": {},
+  "sessions": {
+    "s_f3ce02ff91d9cf": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6e7-9606-7a33-911c-33e9b1de1cad",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
