@@ -1,0 +1,67 @@
+packages/app/lib/appserver-bridge.js
+  s_f3ce02ff91d9cf::t_de705ea0a21853 2566-2567
+  s_f3ce02ff91d9cf::t_175f389d2247c1 91-93,2360-2362
+  s_f3ce02ff91d9cf::t_da2c5e4f60ea94 70-90,94-104,385,1824,1846-1853,1969-1973,2268,2312-2316,2399,2401-2402,2429-2430,2441-2442,2494,2499-2500,2588,2617,2648,2660,2684,2690,2718-2719
+  s_f3ce02ff91d9cf::t_c01b5b839e840b 113-115
+cc-viewer-alignment/probes/b4-pty-loop-gui.mjs
+  s_f3ce02ff91d9cf::t_e7f91ee1593e74 16-19
+  s_f3ce02ff91d9cf::t_3e9f2c25b68610 26,38,42,45,53,55
+  s_f3ce02ff91d9cf::t_38961c5f182fec 65
+  s_f3ce02ff91d9cf::t_8d72acce6f627b 1-15,20-25,27-37,39-41,43-44,46-52,54,56-64,66-91
+cc-viewer-alignment/probes/b4-pty-loop-real.mjs
+  s_f3ce02ff91d9cf::t_e15ce1c3bd376d 106
+  s_f3ce02ff91d9cf::t_95dc1da34ef706 1-87,90-98,102-103,109-136
+  s_f3ce02ff91d9cf::t_64e79615438823 88-89,99-101,105,107-108
+  s_f3ce02ff91d9cf::t_59900fe0d52fb9 104
+cc-viewer-alignment/B4-implementation.md
+  s_f3ce02ff91d9cf::t_70eb1f5ea6b6c9 471
+  s_f3ce02ff91d9cf::t_2e3f7a50a88e35 457-470
+tests/appserver-bridge.test.js
+  s_f3ce02ff91d9cf::t_26209fce5d9712 605-631
+  s_f3ce02ff91d9cf::t_09fdf51c2e608b 18,547-603
+  s_f3ce02ff91d9cf::t_d60033d17bb2d9 604
+cc-viewer-alignment/probes/b3-installed-check.py
+  s_f3ce02ff91d9cf::t_723131fe45f0b4 23
+AGENTS.md
+  s_f3ce02ff91d9cf::t_70eb1f5ea6b6c9 26
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_f3ce02ff91d9cf::t_70eb1f5ea6b6c9 15673
+  s_f3ce02ff91d9cf::t_2e3f7a50a88e35 15669-15672
+packages/app/server.js
+  s_f3ce02ff91d9cf::t_c01b5b839e840b 95,4762-4768
+  s_f3ce02ff91d9cf::t_de705ea0a21853 2538-2539,2541,5819-5824,5827,5840-5841,5941-5988
+  s_f3ce02ff91d9cf::t_97193e2b98d732 5989
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_f3ce02ff91d9cf::t_fd6d2079c534b6 230-248
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_f3ce02ff91d9cf::t_70eb1f5ea6b6c9 3,45,101
+apps/web/src/AppBase.jsx
+  s_f3ce02ff91d9cf::t_de705ea0a21853 1841-1847,1865
+cc-viewer-alignment/README.md
+  s_f3ce02ff91d9cf::t_70eb1f5ea6b6c9 5,21
+cc-viewer-alignment/B4-pty-loop-2026-11-20.json
+  s_f3ce02ff91d9cf::t_70eb1f5ea6b6c9 114-124
+  s_f3ce02ff91d9cf::t_2e3f7a50a88e35 1-113,125-132
+packages/app/cli.js
+  s_f3ce02ff91d9cf::t_de705ea0a21853 449-450
+packages/app/tests/voice-pack-api.test.js
+  s_f3ce02ff91d9cf::t_fd6d2079c534b6 14,37-42,46-132
+cc-viewer-alignment/B4-candidate-matrix.md
+  s_f3ce02ff91d9cf::t_70eb1f5ea6b6c9 20,68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "9d4d43723708f77075dbf8c78f8b3b03ed87382c",
+  "prompts": {},
+  "sessions": {
+    "s_f3ce02ff91d9cf": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6e7-9606-7a33-911c-33e9b1de1cad",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
