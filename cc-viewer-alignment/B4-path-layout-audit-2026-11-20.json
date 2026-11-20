@@ -1,0 +1,225 @@
+{
+  "upstream": "f9467bfc838a6ef724c0f7144e0ef302e1256523",
+  "files": 94,
+  "exactCodeMoves": [
+    "packages/app/server/lib/ask/ask-bridge.js",
+    "packages/app/server/lib/ask/ask-constants.js",
+    "packages/app/server/lib/ask/ask-reaper.js",
+    "packages/app/server/lib/im/dingtalk-config.js",
+    "packages/app/server/lib/im/im-deny.js",
+    "packages/app/server/lib/im/im-log-watcher.js",
+    "packages/app/server/lib/proxy/proxy-env.js",
+    "packages/app/server/lib/proxy/proxy-errors.js"
+  ],
+  "relativeSpecifierOnlyCode": [
+    "packages/app/cli.js",
+    "packages/app/server/interceptor.js",
+    "packages/app/server/lib/ask/ask-store.js",
+    "packages/app/server/lib/ask/perm-bridge.js",
+    "packages/app/server/lib/im/dingtalk-bridge.js",
+    "packages/app/server/lib/im/im-append-system.js",
+    "packages/app/server/lib/im/im-bridge-core.js",
+    "packages/app/server/lib/im/im-config.js",
+    "packages/app/server/lib/im/im-lang.js",
+    "packages/app/server/lib/im/im-lock.js",
+    "packages/app/server/lib/im/im-senders.js",
+    "packages/app/server/lib/im/im-skills.js",
+    "packages/app/server/lib/project-prefs.js",
+    "packages/app/server/lib/proxy/proxy-retry.js",
+    "packages/app/server/lib/proxy/proxy-stats.js",
+    "packages/app/server/lib/stats-worker.js",
+    "packages/app/server/proxy.js",
+    "packages/app/server/routes/ask-perm.js",
+    "packages/app/server/routes/im.js",
+    "packages/app/server/routes/preferences.js",
+    "test/api-ask-perm-extra.test.js",
+    "test/api-dingtalk-gap.test.js",
+    "test/api-im.test.js",
+    "test/branch-lib-proxy-env.test.js",
+    "test/branch-routes-im.test.js",
+    "test/dingtalk-bridge.test.js",
+    "test/dingtalk-config.test.js",
+    "test/discord-bridge.test.js",
+    "test/discord-config.test.js",
+    "test/feishu-bridge.test.js",
+    "test/feishu-config.test.js",
+    "test/im-append-system-seed.test.js",
+    "test/im-bridge-core-deep.test.js",
+    "test/im-bridge-core.test.js",
+    "test/im-connection-state.test.js",
+    "test/im-deny.test.js",
+    "test/im-lock-gap.test.js",
+    "test/im-lock.test.js",
+    "test/im-process-manager.test.js",
+    "test/im-routes-gap.test.js",
+    "test/im-senders.test.js",
+    "test/im-spawn-test-guard.test.js",
+    "test/pending-asks-filter.test.js",
+    "test/proxy-env.test.js",
+    "test/proxy-errors.test.js",
+    "test/proxy-retry-cancel.test.js",
+    "test/server-im-worker.test.js",
+    "test/wecom-bridge.test.js",
+    "test/wecom-config.test.js"
+  ],
+  "remainingCode": [
+    {
+      "old": "apps/web/src/utils/imOrigin.js",
+      "new": "apps/web/src/utils/imOrigin.js"
+    },
+    {
+      "old": "packages/app/server/lib/adapters/dingtalk-adapter.js",
+      "new": "packages/app/server/lib/adapters/dingtalk-adapter.js"
+    },
+    {
+      "old": "packages/app/server/lib/adapters/discord-adapter.js",
+      "new": "packages/app/server/lib/adapters/discord-adapter.js"
+    },
+    {
+      "old": "packages/app/server/lib/adapters/feishu-adapter.js",
+      "new": "packages/app/server/lib/adapters/feishu-adapter.js"
+    },
+    {
+      "old": "packages/app/server/lib/adapters/wecom-adapter.js",
+      "new": "packages/app/server/lib/adapters/wecom-adapter.js"
+    },
+    {
+      "old": "packages/app/server/lib/ensure-hooks.js",
+      "new": "packages/app/server/lib/ensure-hooks.js"
+    },
+    {
+      "old": "packages/app/server/lib/im-process-manager.js",
+      "new": "packages/app/server/lib/im/im-process-manager.js"
+    },
+    {
+      "old": "packages/app/server/lib/prefs-store.js",
+      "new": "packages/app/server/lib/prefs-store.js"
+    },
+    {
+      "old": "packages/app/server/lib/sdk-manager.js",
+      "new": "packages/app/server/lib/sdk-manager.js"
+    },
+    {
+      "old": "packages/app/server/routes/dingtalk.js",
+      "new": "packages/app/server/routes/dingtalk.js"
+    },
+    {
+      "old": "packages/app/server/server.js",
+      "new": "packages/app/server/server.js"
+    },
+    {
+      "old": "test/api-dingtalk.test.js",
+      "new": "test/api-dingtalk.test.js"
+    },
+    {
+      "old": "test/ask-bridge.test.js",
+      "new": "test/ask-bridge.test.js"
+    },
+    {
+      "old": "test/ask-no-timeout-invariants.test.js",
+      "new": "test/ask-no-timeout-invariants.test.js"
+    },
+    {
+      "old": "test/ask-reaper.test.js",
+      "new": "test/ask-reaper.test.js"
+    },
+    {
+      "old": "test/ask-store.test.js",
+      "new": "test/ask-store.test.js"
+    },
+    {
+      "old": "test/branch-lib-ask-bridge.test.js",
+      "new": "test/branch-lib-ask-bridge.test.js"
+    },
+    {
+      "old": "test/branch-lib-ask-store.test.js",
+      "new": "test/branch-lib-ask-store.test.js"
+    },
+    {
+      "old": "test/branch-lib-im-bridge-core.test.js",
+      "new": "test/branch-lib-im-bridge-core.test.js"
+    },
+    {
+      "old": "test/branch-lib-im-deny.test.js",
+      "new": "test/branch-lib-im-deny.test.js"
+    },
+    {
+      "old": "test/branch-lib-im-log-watcher.test.js",
+      "new": "test/branch-lib-im-log-watcher.test.js"
+    },
+    {
+      "old": "test/branch-lib-im-process-manager.test.js",
+      "new": "test/branch-lib-im-process-manager.test.js"
+    },
+    {
+      "old": "test/branch-lib-im-senders.test.js",
+      "new": "test/branch-lib-im-senders.test.js"
+    },
+    {
+      "old": "test/branch-lib-perm-bridge.test.js",
+      "new": "test/branch-lib-perm-bridge.test.js"
+    },
+    {
+      "old": "test/branch-routes-ask-perm.test.js",
+      "new": "test/branch-routes-ask-perm.test.js"
+    },
+    {
+      "old": "test/cli-deep.test.js",
+      "new": "test/cli-deep.test.js"
+    },
+    {
+      "old": "test/ensure-hooks-deep.test.js",
+      "new": "test/ensure-hooks-deep.test.js"
+    },
+    {
+      "old": "test/ensure-hooks.test.js",
+      "new": "test/ensure-hooks.test.js"
+    },
+    {
+      "old": "test/im-lang.test.js",
+      "new": "test/im-lang.test.js"
+    },
+    {
+      "old": "test/im-skills.test.js",
+      "new": "test/im-skills.test.js"
+    },
+    {
+      "old": "test/perm-bridge.test.js",
+      "new": "test/perm-bridge.test.js"
+    },
+    {
+      "old": "test/proxy-retry-stream-idle.test.js",
+      "new": "test/proxy-retry-stream-idle.test.js"
+    },
+    {
+      "old": "test/proxy-retry.test.js",
+      "new": "test/proxy-retry.test.js"
+    },
+    {
+      "old": "test/proxy-stats.test.js",
+      "new": "test/proxy-stats.test.js"
+    },
+    {
+      "old": "test/windows-hide.test.js",
+      "new": "test/windows-hide.test.js"
+    }
+  ],
+  "metadataOrDocs": [
+    ".changeset/lib-subdirs-batch1.md",
+    "scripts/tarball-baseline.json"
+  ],
+  "reviewedRemainingCode": true,
+  "remainingCodeCount": 35,
+  "remainingRuntimeCodeCount": 11,
+  "workerCliTarget": "packages/app/cli.js",
+  "fixedBaselinePathsChecked": [
+    "packages/app/server/lib/ask/ask-bridge.js",
+    "packages/app/server/lib/ask/perm-bridge.js",
+    "packages/app/server/lib/im/im-process-manager.js"
+  ],
+  "date": "2026-11-20",
+  "disposition": "No new B4 behavior. Directory grouping, generated hook paths, package baseline and test locator maintenance remain B8/B11 per B0/B2 ownership. No local runtime migration claimed.",
+  "manualReview": "All35 non-equivalent normalized code pairs reviewed as actual diffs:11 runtime,24 tests. Remaining changes are path references/comments, generated ask-hook subdirectory and worker CLI parent depth; worker target unchanged.",
+  "metadataReview": "Changeset and tarball file-list delta only; changeset locale-doc statement is not counted as an actual locale-doc diff.",
+  "lastVerifiedCheckpoint": "E41 1543/full, build,702files/204exactWeb/280runtime; no runtime change or new test/build claim."
+}

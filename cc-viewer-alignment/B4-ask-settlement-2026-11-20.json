@@ -1,0 +1,42 @@
+{
+  "date": "2026-11-20",
+  "upstream": "dd8709356b",
+  "subitem": "Question terminal frames under React batching",
+  "implementation": "Port original functional id-addressed terminal update and post-commit routing/meta cleanup. Preserve native request-id/item-id separation and resolved transcript answers.",
+  "unchanged": "No DOM/CSS, permission tier, automatic-answer setting or cross-workspace broadcast expansion.",
+  "red": "Seven added cases fail before production fix; original13 pass.",
+  "target": "20/20,0 skip",
+  "full": "1539/1539 (5+303+1019+212),0 skip",
+  "build": "passed",
+  "installed": {
+    "fixture": "cxv-b3-runtime-au2wctr6",
+    "files": 702,
+    "exactWebFiles": 204,
+    "runtime": "280/280",
+    "b12": "passed",
+    "relativeCdCli": "passed"
+  },
+  "safari": {
+    "fixture": "cxv-b4-tasks-gui-ZRCjWJ",
+    "ownedPid": 16712,
+    "nativePendingVisible": true,
+    "productionResolveApprovalReplyA": true,
+    "terminalClosesModal": true,
+    "nextQuestionOpens": true,
+    "manualCancelClosesAndRepliesEmptyAnswers": true,
+    "syntheticNativeCli": true,
+    "ownedProcessesStopped": true
+  },
+  "limits": [
+    "Same-batch race is deterministic controller regression evidence; Safari verifies real WS/manager/renderer settlement, not a guaranteed browser batching schedule.",
+    "Plan/permission and upstream global-clears routing subitems remain independently pending.",
+    "No real model network or real user approval."
+  ],
+  "logs": [
+    "/tmp/cxv-b4-ask-settlement-red.log",
+    "/tmp/cxv-b4-ask-settlement-target.log",
+    "/tmp/cxv-b4-ask-settlement-full.log",
+    "/tmp/cxv-b4-ask-settlement-build.log",
+    "/tmp/cxv-b4-ask-settlement-installed.log"
+  ]
+}

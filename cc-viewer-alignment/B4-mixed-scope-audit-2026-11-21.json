@@ -1,0 +1,43 @@
+{
+  "date": "2026-11-21",
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "subitem": "Mixed candidate lifecycle ownership audit; no runtime changes.",
+  "records": {
+    "add350bc526ad9352dc1a715dee8c7d3909dc9ee": {
+      "read": "Entire actual Mobile/ChatView/Header/ProxyModal diff and fixed-final roleKeys/badge; local ProxyModal contract checked.",
+      "b4": "No new agent lifecycle. E9/E24/E33 native subagent identity remains authoritative.",
+      "other": "B8 role-source UI: local ProxyModal has no role assignment rows or role badges yet, so no phantom Teammate row to hide. Do not introduce an unused sdkMode prop or mark the role-source feature complete; B8 adoption must carry this gate. Release text B11."
+    },
+    "8f1d345309b10c289ee14825fea8d24f07eb534f": {
+      "read": "Actual ChatView prompt-nav state/reset/shared content/slot; ChatInputBar mic/nav slots and CSS; promptNav predicate; ActiveAgentsBar/activeAgents count-fix diff, including nested transcript scan and promptSnippet gate. Fixed baseline is this branch tip.",
+      "b4": "Existing E9/E10/E24 native thread-keyed agent Map, proved parent chain and native nickname already avoids tool-count inflation; tool events update the owned child, do not create arbitrary description tasks. Reuse actual nested identity tests and real native fixture evidence; do not require a Claude promptSnippet absent from Codex metadata.",
+      "other": "Composer prompt nav/mic reposition/layout state are B7 and NOT newly migrated or visually verified by E55. No whole-commit completion."
+    },
+    "ac56c9c6d56ca7e9fd5d3bf7f55c273d3e0f6a5d": {
+      "read": "8f is ancestor; combined diff has no new resolution files.",
+      "b4": "No independent merge behavior or duplicate migration; branch subitems remain separately owned."
+    },
+    "c29af25e64d3491fe7c58dc80bf859eda7831ba4": {
+      "read": "All runtime diff: AppBase reason filter; ChatView per-slot synthetic clear; ToolFileChangeController LRU map trim; FileBrowserModal rooted path; meta-rows single-pass seq coverage.",
+      "b4": "E35/E36 already cover approval state and per-instance keyed roots; do not add broad project matching.",
+      "other": "Local LRU deletion matches already in B3 commit7c3d849 and actual20001→15000 patch-payload test. FileBrowserModal is absent locally, so rooted-tree opening remains B5. Legacy upstream convSeqs loop is not local canonical V2 transport; preserve B3 snapshot/cursor evidence rather than copy another storage loop. Other subitems not globally complete."
+    },
+    "5e5011238822bcd7efe4e8558b81545cc97e40ef": {
+      "read": "Actual auto-approve helper full160lines and SDK pending/resolve/replay/cancel diff, server WS and ask-perm hook lifetime changes. UI timer widgets not newly fully audited in this round.",
+      "b4": "Missing instanceKey on ask/perm and resolved-on-real-answer only correspond to existing E5 fixed-anchor native approval bridge plus E39/E40/E54 first-wins/terminal cleanup. Native UUID UI ids map real RPC ids; do not copy raw-id regex as authorization.",
+      "other": "Wall-clock automatic approval and durable cancellation are B9; readPrefs/fork defaults,300s cap,N+1s fallback and -1 instant not enabled by this B4 audit. UI and policy need their own B9 verification; not whole commit done."
+    },
+    "6081b5d01a1ae5a12063cfdc15959c392c5f37ba": {
+      "read": "Actual SDK pending fields/selected answer/timer first-wins/replay/cancel diff; ask-auto-answer helper full153lines. AskFlow/meta/cached-ask/slot patches inspected, remaining UI/picker implementation not claimed complete.",
+      "b4": "Use existing E5/E39/E40 exact pending/id/terminal and answer history. Do not auto-pick responses or treat cancel-hosting as cancelling the question.",
+      "other": "B9 timed hosting: null/absent off,0 instant,N minutes with1439 cap; durable hosted cancellation distinct from approval. Not migrated here; full helper/policy/UI integration and tests remain B9."
+    },
+    "187583787d8b87cbbb558a601ae1e963bbcc21a0": {
+      "read": "SDK -2 permission branch and auto-approve helper changes, approval-policy hard-gate exception; hook/route/UI changes only partially reviewed, not globally audited.",
+      "b4": "No new native lifecycle producer. Keep existing native request/available-decision/profile contract.",
+      "other": "B9 explicit permission-only -2 policy changes the publish exception and automatic directory grants. Do not silently adopt as a B4 lifecycle fix; B11 hook and release changes remain separate."
+    }
+  },
+  "validation": "No new test/build/install rerun: runtime is unchanged from b276e7f,1575 source/287 installed with build and package bytes passed. Existing nested-agent/LRU tests and earlier native fixtures reused only within recorded scope.",
+  "pending": "B4 still has Context choices, browser verification and remaining efc7 launch/protocol/other candidates. No completion/squash/push/PR."
+}

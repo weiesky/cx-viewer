@@ -102,6 +102,7 @@ test('SDK CLI restores the exact workspace archive before serving without execut
   const sessions = (await (await state.http('/api/workspaces')).json()).sessions;
   assert.equal(sessions[0].cwd, f.cwd);
   assert.equal(sessions[0].sessionId, 'wanted-thread');
+  assert.equal(sessions[0].transport, 'exec');
   assert.equal(existsSync(join(f.home, 'calls')), false, 'restoring must not execute a model turn');
   const frames = (await (await state.http('/api/log-v2/snapshot')).text()).trim().split('\n').map(JSON.parse);
   assert.equal(frames[0].archive.sessionId, 'wanted-thread', 'selected old archive is pinned before the first new turn');
@@ -141,7 +142,7 @@ test('SDK CLI --last/legacy continue retain config and execute only the new prom
 
 test('bare SDK resume opens the browser history picker without a model turn', { timeout: 30000 }, async () => fixture(async f => {
   f.seed('picker-thread');
-  const state = await f.start(['-C', 'same', 'resume', '--profile', 'picker-profile']); await state.ready();
+  const state = await f.start(['-C', 'same', 'resume']); await state.ready();
   assert.equal(new URL(readFileSync(join(f.home, 'opened'), 'utf8')).searchParams.get('resume'), '1');
   const sessions = (await (await state.http('/api/workspaces')).json()).sessions;
   assert.equal(sessions[0].sessionId, null);
@@ -183,4 +184,86 @@ test('SDK CLI --last refuses a damaged selected archive without falling back or 
   assert.deepEqual(readFileSync(manifest), metadataBefore);
   assert.equal(existsSync(join(f.home, 'opened')), false);
   assert.equal(existsSync(join(f.logs, 'workspaces.json')), false);
+}));
+
+test('explicit native CLI resumes before sending only literal new input and retains transport for new workspaces', { timeout: 30000 }, async () => fixture(async f => {
+  writeFileSync(join(f.root, 'bin', 'codex.mjs'), `#!${process.execPath}
+import { createInterface } from 'node:readline';
+import { appendFileSync } from 'node:fs';
+const log = value => appendFileSync(process.env.HOME + '/calls', JSON.stringify(value) + '\\n');
+const send = value => process.stdout.write(JSON.stringify(value) + '\\n');
+log({ argv: process.argv, cwd: process.cwd() });
+let threadId;
+for await (const line of createInterface({ input: process.stdin })) {
+ const frame = JSON.parse(line), p = frame.params || {}; log(frame);
+ if (!frame.method || frame.method === 'initialized') continue;
+ if (frame.method === 'initialize') { send({ id: frame.id, result: {} }); continue; }
+ if (frame.method === 'thread/start' || frame.method === 'thread/resume') {
+  threadId = p.threadId || 'native-new'; send({ id: frame.id, result: { thread: { id: threadId } } }); continue;
+ }
+ if (frame.method === 'turn/start') {
+  send({ id: frame.id, result: { turn: { id: 'turn' } } });
+  send({ method: 'item/completed', params: { threadId, turnId: 'turn', item: { id: 'answer', type: 'agentMessage', text: 'native continued' } } });
+  send({ method: 'turn/completed', params: { threadId, turn: { id: 'turn', status: 'completed' } } }); continue;
+ }
+ send({ id: frame.id, result: {} });
+}
+`);
+  f.seed('native-resume');
+  const literal = '--sdk-transport=exec --sdk';
+  const state = await f.start(['--sdk-transport=appserver', '-C', 'same', 'resume', 'native-resume',
+    '-m', 'kept-model', '-s', 'read-only', '-c', 'fixture=["literal space"]', '--', literal]);
+  await state.ready();
+  await state.wait(() => existsSync(join(f.home, 'calls')));
+  await state.wait(async () => !(await (await state.http('/api/workspaces')).json()).sessions[0].busy);
+  const sessions = (await (await state.http('/api/workspaces')).json()).sessions;
+  assert.equal(sessions[0].transport, 'appserver'); assert.equal(sessions[0].sessionId, 'native-resume');
+  const calls = readFileSync(join(f.home, 'calls'), 'utf8').trim().split('\n').map(JSON.parse);
+  assert.equal(calls[0].cwd, f.cwd);
+  assert.ok(calls[0].argv.includes('app-server')); assert.ok(calls[0].argv.includes('fixture=["literal space"]'));
+  assert.equal(calls[0].argv.some(arg => arg.startsWith('--sdk')), false);
+  const resume = calls.find(frame => frame.method === 'thread/resume');
+  assert.equal(resume.params.threadId, 'native-resume'); assert.equal(resume.params.model, 'kept-model');
+  assert.equal(resume.params.cwd, f.cwd); assert.equal(resume.params.sandbox, 'read-only');
+  const turns = calls.filter(frame => frame.method === 'turn/start');
+  assert.equal(turns.length, 1); assert.deepEqual(turns[0].params.input, [{ type: 'text', text: literal }]);
+  const launched = await fetch(`http://127.0.0.1:${state.port}/api/workspaces/launch`, {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: f.sibling }),
+  });
+  assert.equal(launched.status, 200, await launched.clone().text());
+  const next = await launched.json();
+  assert.equal((await (await state.http('/api/workspaces')).json()).sessions
+    .find(session => session.instanceKey === next.instanceKey).transport, 'appserver');
+  const { readSdkResumeHistory } = await import('../lib/sdk-resume-history.js');
+  const { resolveProjectIdForCwd } = await import('../lib/log-v2/project-id.js');
+  const { findV2SessionFileBySessionId } = await import('../lib/log-v2/materializer.js');
+  const projectId = resolveProjectIdForCwd(f.logs, f.cwd);
+  const file = findV2SessionFileBySessionId(f.logs, 'native-resume', { projectId, canonicalCwd: f.cwd });
+  const history = await readSdkResumeHistory(f.logs, file, { cwd: f.cwd, projectId });
+  assert.equal(history.messages[0].content, 'historic native-resume');
+  assert.ok(history.messages.some(message => message.content === literal));
+}));
+
+test('invalid native selection or unsupported native options fail before workspace, browser or process creation', { timeout: 30000 }, async () => fixture(async f => {
+  for (const args of [['--sdk-transport=unknown'], ['--sdk-transport=appserver', '--profile', 'fixture'],
+    ['--sdk-transport=appserver', '--image', 'fixture.png'], ['--sdk-transport=appserver', '--add-dir', f.sibling]]) {
+    const state = await f.start(args);
+    assert.equal((await state.exited)[0], 1, state.output);
+    assert.equal(existsSync(join(f.home, 'calls')), false);
+    assert.equal(existsSync(join(f.home, 'opened')), false);
+    assert.equal(existsSync(join(f.logs, 'workspaces.json')), false);
+  }
+}));
+
+
+test('exec CLI rejects unsupported or incomplete launch flags before workspace, browser or model creation', { timeout: 30000 }, async () => fixture(async f => {
+  for (const args of [['--profile', 'fixture'], ['--image', 'fixture.png'], ['exec', '--profile', 'fixture'],
+    ['review', '--uncommitted'], ['-m'], ['-c', 'not-an-assignment'], ['resume', '--profile', 'fixture']]) {
+    const state = await f.start(args);
+    assert.equal((await state.exited)[0], 1, state.output);
+    assert.match(state.output, /Unsupported|Missing value|requires key=value/);
+    assert.equal(existsSync(join(f.home, 'calls')), false);
+    assert.equal(existsSync(join(f.home, 'opened')), false);
+    assert.equal(existsSync(join(f.logs, 'workspaces.json')), false);
+  }
 }));

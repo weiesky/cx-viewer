@@ -1,5 +1,6 @@
 
 import { createServer } from 'node:http';
+import { randomUUID } from 'node:crypto';
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { DEFAULT_API_BASE } from './lib/constants.js';
@@ -328,7 +329,7 @@ function safeUpstreamLabel(value) {
   }
 }
 
-function startProxyServer({ captureContext = null, onResponseModel = null, port = 0, health = null, readiness = null, maxRequestBodyBytes = 64 * 1024 * 1024 } = {}, owner) {
+function startProxyServer({ captureContext = null, onResponseModel = null, onSlowUpstream = null, slowUpstreamMs = 30_000, port = 0, health = null, readiness = null, maxRequestBodyBytes = 64 * 1024 * 1024 } = {}, owner) {
   if (!Number.isSafeInteger(port) || port < 0 || port > 65535) {
     throw new TypeError('proxy port must be an integer between 0 and 65535');
   }
@@ -405,6 +406,11 @@ function startProxyServer({ captureContext = null, onResponseModel = null, port 
       req.once('aborted', abortUpstream);
       res.once('close', abortUpstream);
 
+      // Only an owned SDK model request gets an advisory. Discovery/health,
+      // compact and other utility traffic cannot create a user-visible wait.
+      let watchingSlowUpstream = false;
+      let settleSlowUpstream = () => {};
+      res.once('close', () => settleSlowUpstream());
       // Use the patched fetch (which logs to cx-viewer)
       try {
         // Convert incoming headers, stripping hop-by-hop + length/encoding headers.
@@ -445,7 +451,35 @@ function startProxyServer({ captureContext = null, onResponseModel = null, port 
           fetchOptions.body = body;
         }
 
-        const response = await captureRequestContext.run(captureContext, () => fetch(fullUrl, fetchOptions));
+        if (typeof onSlowUpstream === 'function' && captureContext?.instanceKey
+            && req.method === 'POST' && /^\/(?:v1\/)?(?:responses|chat\/completions|completions)\/?$/.test(reqPath.split('?')[0])) {
+          watchingSlowUpstream = true;
+          const requestId = randomUUID(), startedAt = Date.now();
+          let model = null;
+          try { const value = JSON.parse(body.toString()).model; if (typeof value === 'string') model = value; } catch {}
+          let fired = false, settled = false;
+          const emit = info => { try { onSlowUpstream({ requestId, ...captureContext, ...info }); } catch {} };
+          const timer = setTimeout(() => {
+            if (settled) return;
+            fired = true;
+            emit({ type: 'slow', waitingMs: Date.now() - startedAt, model });
+          }, slowUpstreamMs);
+          timer.unref?.();
+          settleSlowUpstream = () => {
+            if (settled) return;
+            settled = true; clearTimeout(timer);
+            if (fired) emit({ type: 'resolved' });
+          };
+        }
+        let response = await captureRequestContext.run(captureContext, () => fetch(fullUrl, fetchOptions));
+        // fetch resolves at headers. Keep waiting until the first BODY byte,
+        // including error bodies; the native transform preserves backpressure.
+        if (watchingSlowUpstream && response.body) {
+          response = new Response(response.body.pipeThrough(new TransformStream({
+            transform(chunk, controller) { if (chunk.byteLength > 0) settleSlowUpstream(); controller.enqueue(chunk); },
+            flush() { settleSlowUpstream(); },
+          })), { status: response.status, statusText: response.statusText, headers: response.headers });
+        } else if (!response.body) settleSlowUpstream();
 
         // The downstream can close between fetch resolution and response
         // handoff (notably while the interceptor inspects a cloned JSON body).
@@ -510,6 +544,7 @@ function startProxyServer({ captureContext = null, onResponseModel = null, port 
           res.end();
         }
       } catch (err) {
+        settleSlowUpstream();
         // Client cancellation is expected during Codex startup (the app-server
         // and TUI can supersede each other's models request). It is not an
         // upstream forwarding failure and the downstream is no longer writable.

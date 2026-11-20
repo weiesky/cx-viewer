@@ -130,3 +130,21 @@ test('getReasoningSummaryConfigArgs enables detailed summaries by default', () =
     'model_reasoning_summary="detailed"',
   ]);
 });
+
+test('explicit SDK transport selection preserves native arguments and literal flags without changing the exec default', async () => {
+  const { extractSdkTransportOptions } = await import('../lib/cli-args.js');
+  assert.deepEqual(extractSdkTransportOptions(['--sdk', '--sdk-transport=appserver', '-c', 'x=[1,2]', '--', '--sdk', '--sdk-transport=exec']),
+    { sdkMode: true, transport: 'appserver', codexArgs: ['-c', 'x=[1,2]', '--', '--sdk', '--sdk-transport=exec'] });
+  assert.deepEqual(extractSdkTransportOptions(['-SDK', '-m', 'model']),
+    { sdkMode: true, transport: 'exec', codexArgs: ['-m', 'model'] });
+  assert.deepEqual(extractSdkTransportOptions(['--sdk-transport', 'exec', '--sdk']),
+    { sdkMode: true, transport: 'exec', codexArgs: [] });
+  assert.deepEqual(extractSdkTransportOptions(['--', '--sdk']),
+    { sdkMode: false, transport: 'exec', codexArgs: ['--', '--sdk'] });
+  assert.deepEqual(extractSdkTransportOptions(['-c', '--sdk-transport=appserver', '-m', '--sdk']),
+    { sdkMode: false, transport: 'exec', codexArgs: ['-c', '--sdk-transport=appserver', '-m', '--sdk'] });
+  for (const args of [['--sdk-transport', 'appserver'], ['--sdk', '--sdk-transport'],
+    ['--sdk', '--sdk-transport=unknown'], ['--sdk', '--sdk-transport=exec', '--sdk-transport=appserver']]) {
+    assert.throws(() => extractSdkTransportOptions(args), /--sdk-transport/);
+  }
+});

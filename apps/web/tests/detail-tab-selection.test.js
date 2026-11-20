@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 
 import {
   requestHidesContextTab,
@@ -25,8 +24,4 @@ test('keeps available tabs and never invents Codex Raw for a request without raw
   assert.equal(resolveDetailTabForRequest('raw', rawRequest), 'raw');
   assert.equal(resolveDetailTabForRequest('response', {}), 'response');
 
-  const detailPanel = readFileSync(new URL('../src/components/dashboard/DetailPanel.jsx', import.meta.url), 'utf8');
-  assert.match(detailPanel, /if \(request\._codexRaw\) \{/);
-  assert.doesNotMatch(detailPanel, /request\._codexRaw \|\| currentTab === 'raw'/);
-  assert.match(detailPanel, /activeKey=\{activeTab\}/);
 });

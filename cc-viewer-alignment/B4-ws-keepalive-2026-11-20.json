@@ -1,0 +1,15 @@
+{
+  "date": "2026-11-20",
+  "upstream": "ec14cd02346074fa3e81032cbf304564dc7e334b",
+  "subitems": "Terminal WS keepalive/watchdog and queued input retention only; specialized Context fetch/reducer remains separate.",
+  "implementation": "Reuse existing immediate/25s server ping,10s dial deadline,5s watchdog/45s silence/2s reconnect, per-socket identity, monotonic clock and visibility grace. No new runtime or UI.",
+  "newRegression": "Actual provider+ChatView, synthetic socket and clock: accepted item and uncertain receipt survive a46s ping-proven half-open retirement/reconnect; typed draft and attachment references survive; no retransmit; duplicate authoritative snapshot reconciles exactly two IDs.",
+  "target": "32/32,0 skip",
+  "log": "/tmp/cxv-b4-ws-keepalive-target.log",
+  "lastFullBuildInstallation": "E41 1543/full, build,702files/204exactWeb/280runtime; production unchanged, no repeat claim.",
+  "limits": [
+    "No new physical NAT/sleep-wake/Safari half-open claim.",
+    "Context15s HTTP deadline/future-ts self-heal remains unimplemented pending Context source-contract choice.",
+    "Existing B2 accepted immutable scope/queue behavior retained; no second parked queue cache added."
+  ]
+}

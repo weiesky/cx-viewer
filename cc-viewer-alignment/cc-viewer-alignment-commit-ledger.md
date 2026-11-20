@@ -1,6 +1,6 @@
 # cc-viewer 逐提交对齐台账
 
-2026-11-20 B3已完成并推送main（第4/12工作包），B2保持用户验收完成；固定上游74cd752d99caf122e750216d2af3bb9f467c4de1。按用户选择渐进启用2000-prompt分片，已完成writer/reader恢复、旧写者版本隔离、按需历史与对象授权、cold gate/live重放、完整ZIP/归档删除保护、原按钮/CSS、mux背压、分页及增量工具扫描；真实Safari桌面/强制移动布局与重启、2001轮冷窗口/20页完整历史已验证。最终源码1410/1410、0 skip、构建通过；最终新生产安装结果见B3-completion-matrix.md。没有转换真实用户日志；用户已确认B3收口，30笔已合并为[7c3d849](https://github.com/weiesky/cx-viewer/commit/7c3d849b9e7acda1c974077843406c23627dbdcb)并快进推送main，远端hash已核对，见[提交合并记录](./local-commit-consolidation-2026-11-20.md)。下一工作包B4；真实模型/外部慢网、Windows/Linux/最低Node、物理设备和断电等仍未验证，保留原验证边界，不整体勾选混合提交其他子项。详见[B3完成矩阵](./B3-completion-matrix.md)与[B3分片实施](./B3-sharding.md)。
+2026-11-20 B4实施中（第5/12工作包），固定上游74cd752d99caf122e750216d2af3bb9f467c4de1；B2/B3已收口。默认exec/显式AppServer渐进启用，任务HUD、原审批/问答/子Agent卡片、输入区/角色浮层、整轮loading和错误条已实现。E18 9e7a83a修复最终回复浮层残留，E19 36af884单次续接，E20 124ca25原重试UI/用户所选Codex原文已验。E21 f7b13af/E22 7a50079原慢请求提示、首body/逐请求清理/重连回放已实现，GUI发现的冷hydration清掉回放已纠正。最终1480/1480、0 skip、构建通过；新生产安装199/199、695文件/202 Web精确字节及B1.2/隔离CLI通过；Safari生产30s提示/切出/返回/刷新/首字节收起通过。E23 a51bd1a首轮JSON分段展开Web279/构建已过；E24真实Codex本机38请求补齐child中断/复用/隔离深度2嵌套的生产tracker/transport验证；Context SDK占位说明待用户选择。E25 SDK独立agent_loop边界/SSE/JS插件钩子与公开CLI已接线，26+11定向/构建和真实Codex本机34请求通过；下一笔原语音设置/播放接线，随后核活性/丢result，66候选不整体勾选。B4未收口、未推送。保留IM并发测试一次偶发失败（定向/5轮/最终全测通过，原因未定）；原生profile/image-input/add-dir/review不支持，真实命令/文件/permissions审批、dynamic图像、外部慢网模型、物理/其他平台仍未验。详见[B4实施](./B4-implementation.md)。
 
 2026-11-18 GitHub 同步：已按用户请求将 main 6045b53 与 codex/pnpm-workspace 2c0edc8 原子推送到 origin 同名分支，远端完整 hash 已读回核对，上游跟踪已设置。未执行强推、分支合并或活动安装切换；未提交的 AGENTS.md 与 cc-viewer-alignment 文档仍保留本地。
 
@@ -77,6 +77,8 @@
   - `history.md` → 无直接路径匹配
   - `pnpm-lock.yaml` → 无直接路径匹配
 
+- 2026-11-21 B4 E57：本笔实际运行时子项的阅读边界/本地复用/后续工作包归属见[B4.60](./B4-implementation.md#b460-e57-混合候选的生命周期与输入代理自动化边界源码审计无运行时变动)及[B4混合scope回执](./B4-mixed-scope-audit-2026-11-21.json)。无运行时改动，不将B7/B8/B9及其他混合子项整体勾选。
+
 <a id="commit-8f1d345309"></a>
 ## [8f1d345309](https://github.com/weiesky/cc-viewer/commit/8f1d345309b10c289ee14825fea8d24f07eb534f) — feat(web): move prompt-nav into composer and relocate mic in --sdk layout
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-8f1d345309)
@@ -99,6 +101,8 @@
   - `apps/web/src/utils/promptNav.js` → 本地候选：`src/utils/promptNav.js`
   - `apps/web/test/activeAgents.test.js` → 无直接路径匹配
   - `history.md` → 无直接路径匹配
+
+- 2026-11-21 B4 E57：本笔实际运行时子项的阅读边界/本地复用/后续工作包归属见[B4.60](./B4-implementation.md#b460-e57-混合候选的生命周期与输入代理自动化边界源码审计无运行时变动)及[B4混合scope回执](./B4-mixed-scope-audit-2026-11-21.json)。无运行时改动，不将B7/B8/B9及其他混合子项整体勾选。
 
 <a id="commit-13ad396d5e"></a>
 ## [13ad396d5e](https://github.com/weiesky/cc-viewer/commit/13ad396d5ec0a26ab69583f494f6ff56c23ea97f) — chore(star-history): refresh chart [skip ci]
@@ -251,6 +255,7 @@
 
 <a id="commit-975313773a"></a>
 ## [975313773a](https://github.com/weiesky/cc-viewer/commit/975313773a2edfcd0f8f640cdfe4c1681048f954) — feat(web): 重构 --sdk 活跃 SubAgent/Teammate 浮条为可折叠卡片列表
+- 2026-11-20 B4.3：用户选择AppServer评估；活跃卡实际diff/最终组件/CSS已读，真实0.169.0本机合成stdio/计划/中断/恢复验证通过。尚未生产切换或验证子Agent生命周期，见[评估方案](./B4-appserver-proposal.md)。
 - B0 本地关键代码对照：上游把 SDK 活跃代理头像过滤条改为可折叠状态卡，移除点击过滤并在重连保留工具与耗时；本地 appserver-bridge.js 追踪子线程，但未证实等效 UI。需以真实 Codex 代理生命周期和同名隔离适配，归 B2/B4。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-975313773a)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-975313773a)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-975313773a)
@@ -312,6 +317,8 @@
   - `apps/web/src/components/dashboard/AppHeader.jsx` → 本地候选：`src/components/dashboard/AppHeader.jsx`
   - `apps/web/src/components/settings/ProxyModal.jsx` → 本地候选：`src/components/settings/ProxyModal.jsx`
   - `history.md` → 无直接路径匹配
+
+- 2026-11-21 B4 E57：本笔实际运行时子项的阅读边界/本地复用/后续工作包归属见[B4.60](./B4-implementation.md#b460-e57-混合候选的生命周期与输入代理自动化边界源码审计无运行时变动)及[B4混合scope回执](./B4-mixed-scope-audit-2026-11-21.json)。无运行时改动，不将B7/B8/B9及其他混合子项整体勾选。
 
 <a id="commit-bde0244333"></a>
 ## [bde0244333](https://github.com/weiesky/cc-viewer/commit/bde0244333a14245e5889deafca622cdb97bbff9) — fix(server): WS-mux cold-load backpressure stall (1011 queue-overflow blank chat)
@@ -620,8 +627,11 @@
   - `packages/app/test/sdk-manager-auto-approve.test.js` → 无直接路径匹配
   - `packages/app/test/sdk-manager-query.test.js` → 无直接路径匹配
 
+- 2026-11-21 B4 E57：本笔实际运行时子项的阅读边界/本地复用/后续工作包归属见[B4.60](./B4-implementation.md#b460-e57-混合候选的生命周期与输入代理自动化边界源码审计无运行时变动)及[B4混合scope回执](./B4-mixed-scope-audit-2026-11-21.json)。无运行时改动，不将B7/B8/B9及其他混合子项整体勾选。
+
 <a id="commit-ec14cd0234"></a>
 ## [ec14cd0234](https://github.com/weiesky/cc-viewer/commit/ec14cd02346074fa3e81032cbf304564dc7e334b) — fix(sdk+web): blood bar (context usage) freeze — keepalive, watchdog, fetch deadline, ts self-heal
+- 2026-11-21 B4 E60：已选原Context分类入口/居中不可用态，Codex无真实分类producer、现有用量条保持；相关Provider/fetch/timer/palette不新增空实现。55组件+7用量/1579完整/构建，新安装702文件/204Web精确字节/290运行时、B1.2/CLI通过；GUI待、其他混合范围不整体勾选。具体源码阅读/适配边界见[B4.63](./B4-implementation.md)及[B4分类回执](./B4-context-unavailable-2026-11-21.json)。
 - 2026-11-19 B2部分实施：本地`07caca3`完成terminal应用心跳、拨号/静默期限、前台宽限、旧连接隔离及失败发送保留原文；后端17/17、组件fixture4/4，全量1262/1262、0 skip、构建通过。GUI未验收，上下文fetch/ts仍待B8核对，不标整条完成。
 - B0 本地关键代码对照：上游 terminal WS ping、客户端 idle watchdog、拨号/上下文请求期限、时间戳修复与发送文本保留；本地 TerminalWsContext.jsx 有重连定时，appserver 捕获上下文。需测试半开、睡眠、重放、未来时间戳和用户输入不丢，归 B2/B3/B7。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-ec14cd0234)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-ec14cd0234)
@@ -1323,6 +1333,8 @@
   - `packages/core/test/ask-auto-answer.test.js` → 无直接路径匹配
   - `scripts/tarball-baseline.json` → 无直接路径匹配
 
+- 2026-11-21 B4 E57：本笔实际运行时子项的阅读边界/本地复用/后续工作包归属见[B4.60](./B4-implementation.md#b460-e57-混合候选的生命周期与输入代理自动化边界源码审计无运行时变动)及[B4混合scope回执](./B4-mixed-scope-audit-2026-11-21.json)。无运行时改动，不将B7/B8/B9及其他混合子项整体勾选。
+
 <a id="commit-1ae82a825b"></a>
 ## [1ae82a825b](https://github.com/weiesky/cc-viewer/commit/1ae82a825b512a8d1fbe745e0a9a2e911f74e29f) — chore(history): archive Unreleased entries under 1.9.23
 - B0 本地关键代码对照：仅整理上游 history.md 到 1.9.23，不直接复制为本地发布事实；涉及的功能提交照常审计，归 B11。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-1ae82a825b)。
@@ -1355,6 +1367,9 @@
 
 <a id="commit-2914d6479d"></a>
 ## [2914d6479d](https://github.com/weiesky/cc-viewer/commit/2914d6479d2845e0b193ba1c09aa6667c66850a6) — feat(web): quick-fill time buttons for one-time scheduled tasks (#169)
+- 2026-11-20 B4.3：任务快照/HUD子项本地61c3d78/fab7d5f；活跃代理数据源已完成AppServer兼容评估，无生产切换或实际子Agent生命周期结论，见[方案与边界](./B4-appserver-proposal.md)。
+- 2026-11-20 B4.2：任务HUD组件/CSS与SDK快照子项已迁入，全量1417/1417、隔离Safari刷新/切换/停止通过；其余混合子项仍待，见[B4实施](./B4-implementation.md)。
+- 2026-11-20 B4.1：Codex SDK任务快照及重连子项已实施，29/29通过；尚无HUD/活跃Agent/其他混合子项结论，见[B4实施](./B4-implementation.md)。
 - B0 本地关键代码对照：大型 squash 实际包含 SDK 活跃代理、任务表重连、Claude 钉钉信任对话、定时任务附件/UltraPlan、空草稿与时间快捷项；后续 975313773a 改成卡片并移除 avatar 点击过滤。分归 B4/B9/B11，不能只实现标题快捷按钮。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-2914d6479d)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-2914d6479d)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-2914d6479d)
@@ -1716,6 +1731,7 @@
 
 <a id="commit-1bfc1585e8"></a>
 ## [1bfc1585e8](https://github.com/weiesky/cc-viewer/commit/1bfc1585e833d037a7dab6fe23e5a8c0aac48c08) — fix(web): persist --sdk scratch terminal open state across refresh
+- 2026-11-20 B4 E12：真实terminalVisible与sdkMode分传、原输入区/portal门控；持久化复用B2。Web267/267、构建、隔离Safari展开/编辑/开关刷新通过；录音未实例化。见[B4.15](./B4-implementation.md#b415-e12-scratch-输入区原始状态与可见性)。
 - 2026-11-18 B2：`afd5103` 桌面SDK开关独立持久化/刷新恢复、两个入口统一setter及存储失败回落；保留上游全局面板偏好约定，未混用PTY嵌套开关。全量1203/1203、构建、681文件安装33/33+B1.2+CLI通过；GUI host不可用，真实GUI待验收。**本地适配及安装验证完成，未标真实验收完成**。见[B2记录](./B2-session-isolation.md)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-1bfc1585e8)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-1bfc1585e8)
@@ -2169,6 +2185,8 @@
 
 <a id="commit-0cde7d1df8"></a>
 ## [0cde7d1df8](https://github.com/weiesky/cc-viewer/commit/0cde7d1df8f15fdbac23be941e367e5d577159de) — feat(web): SDK mode task checklist HUD via sdk-task WS relay
+- 2026-11-20 B4.2：任务HUD组件/CSS与SDK快照子项已迁入，全量1417/1417、隔离Safari刷新/切换/停止通过；其余混合子项仍待，见[B4实施](./B4-implementation.md)。
+- 2026-11-20 B4.1：Codex SDK任务快照及重连子项已实施，29/29通过；尚无HUD/活跃Agent/其他混合子项结论，见[B4实施](./B4-implementation.md)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-0cde7d1df8)
 - B0 status: Adapt in B4 using actual Codex events: no corresponding task HUD was found.
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-0cde7d1df8)
@@ -2284,6 +2302,8 @@
   - `packages/app/server/lib/v2/meta-rows.js` → 无直接路径匹配
   - `packages/app/test/sdk-manager-lost-result.test.js` → 无直接路径匹配
   - `packages/app/test/sdk-manager-query.test.js` → 无直接路径匹配
+
+- 2026-11-21 B4 E57：本笔实际运行时子项的阅读边界/本地复用/后续工作包归属见[B4.60](./B4-implementation.md#b460-e57-混合候选的生命周期与输入代理自动化边界源码审计无运行时变动)及[B4混合scope回执](./B4-mixed-scope-audit-2026-11-21.json)。无运行时改动，不将B7/B8/B9及其他混合子项整体勾选。
 
 <a id="commit-66bfeb8c18"></a>
 ## [66bfeb8c18](https://github.com/weiesky/cc-viewer/commit/66bfeb8c18ab80c70d5731827a2c05b748c01124) — chore(release): 1.9.19
@@ -2447,6 +2467,7 @@
 
 <a id="commit-88995a1046"></a>
 ## [88995a1046](https://github.com/weiesky/cc-viewer/commit/88995a10461973689656841a8476ee4e6c60281b) — style(web): cap SDK error bar width at 800px
+- 2026-11-20 B4 E14：原持久错误条、800px CSS逐字对齐、去重×N/3条上限/清理/读屏与SDK反馈投影。全量1462/1462、构建、Safari空/非空/隔离/入库单份展示通过；重试另待84e，发布元数据归B11。见B4.17。
 - B0 本地关键代码对照：上游 SDK error/retry 行上限 800px；本地暂无同名 retry 行，依赖错误反馈能力落地后核验桌面及窄屏，归 B7。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-88995a1046)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-88995a1046)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-88995a1046)
@@ -2869,6 +2890,8 @@
   - `packages/app/server/server.js` → 本地候选：`server.js`
 
 <a id="commit-7a75e1be81"></a>
+- 2026-11-20 B4 E51源码/协议范围核定：实际diff及固定最终PlanApprovalForm/target helper、后续fallback倒计时已核。Claude canUseTool ExitPlanMode与Codex原生plan通知不同；实际0.169 experimental全11种ServerRequest无计划审批，保持E41只读与通道守卫。通用隔离/重连/最小化/终态复用B2/E5/E35–41既验；自动策略B9、元数据等B11单列，不伪造UI或勾整条。仅审计/实际schema生成，无新运行时或重跑声明，见[B4.54](./B4-implementation.md#b454-e51-计划审批协议与候选范围核定源码审计无运行时变动)。
+
 ## [7a75e1be81](https://github.com/weiesky/cc-viewer/commit/7a75e1be81b3e90f55f8888c423e66e05c1cde64) — feat(web+server): context menu and preview editing in the CLAUDE.md/skill file browser
 - B0 本地关键代码对照：上游为 instruction/skill 目标浏览器增加文件写入、删除、重命名并检查 admin、same-origin、realpath 和敏感目录；本地有 AGENTS/skills UI 和 lib/file-api.js，若增加写操作须构造 symlink、递归删除和敏感配置拒绝测试，归 B5/B6。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-7a75e1be81)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-7a75e1be81)
@@ -2904,6 +2927,7 @@
 
 <a id="commit-3d65bedcd1"></a>
 ## [3d65bedcd1](https://github.com/weiesky/cc-viewer/commit/3d65bedcd1b47a8de7f0ff1bdfec3a11efbc9fa0) — fix(web): keep the composer blood bar visible when the SDK scratch terminal opens
+- 2026-11-20 B4 E12：真实terminalVisible与sdkMode分传、原输入区/portal门控；持久化复用B2。Web267/267、构建、隔离Safari展开/编辑/开关刷新通过；录音未实例化。见[B4.15](./B4-implementation.md#b415-e12-scratch-输入区原始状态与可见性)。
 - B0 本地关键代码对照：上游 SDK scratch 打开时保留血条 portal；本地 ChatInputBar.jsx 的 context bar slot 受 terminalVisible 控制，App.jsx 的 SDK 传值另有分支，需真实交互确认，归 B7。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-3d65bedcd1)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-3d65bedcd1)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-3d65bedcd1)
@@ -3159,6 +3183,8 @@
   - `packages/app/test/server-ws-branches.test.js` → 无直接路径匹配
   - `scripts/tarball-baseline.json` → 无直接路径匹配
 
+- 2026-11-21 B4 E57：本笔实际运行时子项的阅读边界/本地复用/后续工作包归属见[B4.60](./B4-implementation.md#b460-e57-混合候选的生命周期与输入代理自动化边界源码审计无运行时变动)及[B4混合scope回执](./B4-mixed-scope-audit-2026-11-21.json)。无运行时改动，不将B7/B8/B9及其他混合子项整体勾选。
+
 <a id="commit-15751cf49c"></a>
 ## [15751cf49c](https://github.com/weiesky/cc-viewer/commit/15751cf49c2539fcbb9cef6684751f77969d2787) — chore(server): kimi-k3 preset forbids unrequested real-environment verification
 - B0 本地关键代码对照：上游仅修改 Kimi preset，禁止未请求真实环境验证；本地未发现同名 preset，此产品级限制不自动适用于 Codex 或覆盖现有任务授权，归 B8。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-15751cf49c)。
@@ -3393,6 +3419,7 @@
 
 <a id="commit-1aca9b5f8f"></a>
 ## [1aca9b5f8f](https://github.com/weiesky/cc-viewer/commit/1aca9b5f8f207903a7516a8036a7fa590808ca16) — fix(chat): restore queued prompts and queue dispatch state
+- 2026-11-21 B4 E63：补实际SDK full-surface与PTY队列范围对照，B4中断/身份/审批/提示等见既有E笔；普通PTY队列原B0/规划B7尚未迁入、旧IM B11/promptpin B8等保持未完成。G1–G5最终GUI因双CUA通道失败待验，不整笔勾选，见[B4.66](./B4-implementation.md)与[B4收口矩阵](./B4-completion-matrix.md)。
 - 467fbf3补SDK规范回合时间戳及冷热pending回声一致性，现代Viewer恢复反馈带明确标记；全量1281/1281、构建、685文件新生产安装66/66通过。实际GUI立即发送顺序和占位清理通过，其他GUI及用户最新预期差异仍待核实。
 - 持续收尾`671547d`补Stop暂停保留/立即发送/单派发锁，`c11609f`运行中输入及epoch重放，`a8df3db`模式发现前冷加载快照，`8246408`失败后续发历史前缀。全量最新1277/1277、构建；实际Safari暂停/刷新与Chrome运行中刷新通过，剩余GUI继续。
 - 2026-11-19继续部分实施：`3a6ea4e`逐发送回执，`b3922ef`权威队列/重连/拒绝草稿恢复，`94d4558`按实例ID移除，`285e51f`补compact布局。全量最终1269/1269、构建，683文件新生产安装61/61通过。删除不影响当前turn和重复文本；Stop/立即发送策略待用户选择、GUI未验收，不标整条完成。
@@ -3503,7 +3530,10 @@
   - `packages/app/test/sdk-manager-query.test.js` → 无直接路径匹配
 
 <a id="commit-5ee6739cba"></a>
+- 2026-11-20 B4 E51源码/协议范围核定：实际diff及固定最终PlanApprovalForm/target helper、后续fallback倒计时已核。Claude canUseTool ExitPlanMode与Codex原生plan通知不同；实际0.169 experimental全11种ServerRequest无计划审批，保持E41只读与通道守卫。通用隔离/重连/最小化/终态复用B2/E5/E35–41既验；自动策略B9、元数据等B11单列，不伪造UI或勾整条。仅审计/实际schema生成，无新运行时或重跑声明，见[B4.54](./B4-implementation.md#b454-e51-计划审批协议与候选范围核定源码审计无运行时变动)。
+
 ## [5ee6739cba](https://github.com/weiesky/cc-viewer/commit/5ee6739cbaba22a6a6d341c020bb7d54c493e5d0) — feat: merge SDK context usage into blood bars
+- 2026-11-21 B4 E60：已选原Context分类入口/居中不可用态，Codex无真实分类producer、现有用量条保持；相关Provider/fetch/timer/palette不新增空实现。55组件+7用量/1579完整/构建，新安装702文件/204Web精确字节/290运行时、B1.2/CLI通过；GUI待、其他混合范围不整体勾选。具体源码阅读/适配边界见[B4.63](./B4-implementation.md)及[B4分类回执](./B4-context-unavailable-2026-11-21.json)。
 - B0 本地关键代码对照：上游把 SDK 用量并入多处血条及详情；本地 appserver-bridge.js 捕获 modelContextWindow，helpers.js 使用固定 353K 合约。须按实际 Codex usage 明确数值优先级、断线和多会话归属，归 B2/B8。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-5ee6739cba)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-5ee6739cba)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-5ee6739cba)
@@ -3579,6 +3609,7 @@
 
 <a id="commit-9c36b5b5a7"></a>
 ## [9c36b5b5a7](https://github.com/weiesky/cc-viewer/commit/9c36b5b5a74eff61c88d27bdea1537666e771a73) — fix(web): stabilize context usage colors and scrolling
+- 2026-11-21 B4 E60：已选原Context分类入口/居中不可用态，Codex无真实分类producer、现有用量条保持；相关Provider/fetch/timer/palette不新增空实现。55组件+7用量/1579完整/构建，新安装702文件/204Web精确字节/290运行时、B1.2/CLI通过；GUI待、其他混合范围不整体勾选。具体源码阅读/适配边界见[B4.63](./B4-implementation.md)及[B4分类回执](./B4-context-unavailable-2026-11-21.json)。
 - B0 本地关键代码对照：上游调整 SDK 详细上下文用量颜色与滚动；本地 src/utils/helpers.js 和 dashboard 上下文展示为 Codex 数据，需用长列表、不同主题及空数据对照，归 B7/B8。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-9c36b5b5a7)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-9c36b5b5a7)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-9c36b5b5a7)
@@ -4004,6 +4035,8 @@
   - `history.md` → 无直接路径匹配
 
 <a id="commit-c6f887c385"></a>
+- 2026-11-20 B4 E49：133原模型状态/chip与c66固定最终输入slot迁位、原CSS/helper、iPad portal/closed inert已核并适配Codex既有模型快照；完整1564/1564、构建、安装285、Safari空闲刷新/同名隔离/代理优先/强制pad-phone通过，总模型turn0。角色代理B8及Context/文档等混合项仍待，不整条完成；见[B4.52](./B4-implementation.md#b452-e49-模型chip按固定最终位置接入)。
+
 ## [c6f887c385](https://github.com/weiesky/cc-viewer/commit/c6f887c3853dd30d4f91728a275c41ae0d9c4bd8) — chore(release): 1.9.10
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-c6f887c385)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-c6f887c385)
@@ -4150,6 +4183,8 @@
 
 <a id="commit-9b1bb4e729"></a>
 ## [9b1bb4e729](https://github.com/weiesky/cc-viewer/commit/9b1bb4e729473360cbe60e508f0558a702370a08) — fix(sdk): render turn/query failures as persistent rows in the dialogue tail
+- 2026-11-20 B4 E14：原持久错误条、800px CSS逐字对齐、去重×N/3条上限/清理/读屏与SDK反馈投影。全量1462/1462、构建、Safari空/非空/隔离/入库单份展示通过；重试另待84e，发布元数据归B11。见B4.17。
+- 2026-11-20 B4 E13：最终失败帧携带所属会话cwd/sessionId/instanceKey；复用严格WS实例隔离。24/24、构建通过；主动Stop不报警，历史保留。原持久错误条仍待，非整条完成，见B4.16。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-9b1bb4e729)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-9b1bb4e729)
 
@@ -4285,6 +4320,8 @@
   - `packages/app/test/sdk-manager-query.test.js` → 无直接路径匹配
 
 <a id="commit-3cf3e9585f"></a>
+- 2026-11-20 B4 E52：实际SDK manager/server/AppBase/projectKey/CLI差异核定技能拉取与scope/replay边界，固定最终与84e65缓存/活性区别已读；67祖先/merge combined无新增resolution。B4复用B2/E5/E29/E40/E46既有实例/重连/真实探测，技能metadata与菜单留B7/B8，Codex真实skills/list存在但未迁。不以审计等于整条实现；无运行时或重跑声明，见[B4.55](./B4-implementation.md#b455-e52-斜杠菜单混合提交的sdk生命周期归属源码审计无运行时变动)。
+
 ## [3cf3e9585f](https://github.com/weiesky/cc-viewer/commit/3cf3e9585f9f93cb59b021a81d789c8f4ef5e528) — fix(web): (+) 菜单顶层「上传文件」行 hover 时收起残留的级联子菜单
 - B0 本地关键代码对照：上游上传行 hover 清理级联菜单状态；本地 ChatInputBar.jsx 有 quickExpanded 与 hover controller，若上传行迁入菜单须测试斜向移动、焦点和子菜单收起，归 B7。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-3cf3e9585f)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-3cf3e9585f)
@@ -4301,6 +4338,7 @@
 
 <a id="commit-9dbf4e295a"></a>
 ## [9dbf4e295a](https://github.com/weiesky/cc-viewer/commit/9dbf4e295a08e472c0b15cfb66de1cc80c77cfa3) — fix(web): SDK 模式打开终端不再隐藏对话输入框
+- 2026-11-20 B4 E12：真实terminalVisible与sdkMode分传、原输入区/portal门控；持久化复用B2。Web267/267、构建、隔离Safari展开/编辑/开关刷新通过；录音未实例化。见[B4.15](./B4-implementation.md#b415-e12-scratch-输入区原始状态与可见性)。
 - B0 本地关键代码对照：本地 ChatInputBar.jsx 在 terminalVisible 时早返回，且其 props 无 sdkMode；App.jsx 当前对 SDK 传 terminalVisible=false。应实测 scratch 终端开关的完整数据流，不能仅凭组件分支断言复现，归 B2/B7。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-9dbf4e295a)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-9dbf4e295a)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-9dbf4e295a)
@@ -4379,6 +4417,8 @@
   - `packages/app/test/sdk-manager-query.test.js` → 无直接路径匹配
 
 <a id="commit-3d4f098f08"></a>
+- 2026-11-20 B4 E52：实际SDK manager/server/AppBase/projectKey/CLI差异核定技能拉取与scope/replay边界，固定最终与84e65缓存/活性区别已读；67祖先/merge combined无新增resolution。B4复用B2/E5/E29/E40/E46既有实例/重连/真实探测，技能metadata与菜单留B7/B8，Codex真实skills/list存在但未迁。不以审计等于整条实现；无运行时或重跑声明，见[B4.55](./B4-implementation.md#b455-e52-斜杠菜单混合提交的sdk生命周期归属源码审计无运行时变动)。
+
 ## [3d4f098f08](https://github.com/weiesky/cc-viewer/commit/3d4f098f08211b53f5d5f58d4c17b603027f3899) — fix(web): stop askUserQuestion 'Other' input from triggering browser password save (#155)
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-3d4f098f08)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-3d4f098f08)
@@ -4436,6 +4476,8 @@
   - `scripts/tarball-baseline.json` → 无直接路径匹配
 
 <a id="commit-51dec0fbe1"></a>
+- 2026-11-20 B4 E50：实际运行时diff拆出权限hook超1MB重复响应安全修复，复用既有readStrictUtf8JsonBody，ASCII/声明/中文多字节超限、坏编码/JSON拒绝后正常审批仍通。红测复现；定向21、完整1565、构建、安装285及额外实际安装HTTP5通过。目录自动信任策略B9、hooks维护B11未迁，不勾整条。见[B4.53](./B4-implementation.md#b453-e50-权限hook超限请求体纠正)。
+
 ## [51dec0fbe1](https://github.com/weiesky/cc-viewer/commit/51dec0fbe1135cdf72fe89e34bb40e1ddc75c283) — chore(star-history): refresh chart [skip ci]
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-51dec0fbe1)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-51dec0fbe1)
@@ -4495,6 +4537,7 @@
 
 <a id="commit-d906edb3de"></a>
 ## [d906edb3de](https://github.com/weiesky/cc-viewer/commit/d906edb3de840208944bbca9d33ec037bdeb6bc5) — feat(web): skill scope rows + frosted glass bars
+- 2026-11-20 B4.2：任务HUD组件/CSS与SDK快照子项已迁入，全量1417/1417、隔离Safari刷新/切换/停止通过；其余混合子项仍待，见[B4实施](./B4-implementation.md)。
 - B0 本地关键代码对照：混合 Skills 全局/项目/插件分组与 role/task 区玻璃样式；本地 AppHeader 有 skills modal，须按 Codex skills 来源与任务 HUD 状态验证分组、滚动补偿与可读性，拆归 B4/B7。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-d906edb3de)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-d906edb3de)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-d906edb3de)
@@ -5135,6 +5178,7 @@
 
 <a id="commit-133bc219df"></a>
 ## [133bc219df](https://github.com/weiesky/cc-viewer/commit/133bc219df78920cdc3a5cb56f48cbe067e467e5) — feat(sdk): SDK 模式 MCP 状态面板 + sdkModel chip + 修双面板无限拉取环
+- 2026-11-21 B4 E60：已选原Context分类入口/居中不可用态，Codex无真实分类producer、现有用量条保持；相关Provider/fetch/timer/palette不新增空实现。55组件+7用量/1579完整/构建，新安装702文件/204Web精确字节/290运行时、B1.2/CLI通过；GUI待、其他混合范围不整体勾选。具体源码阅读/适配边界见[B4.63](./B4-implementation.md)及[B4分类回执](./B4-context-unavailable-2026-11-21.json)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-133bc219df)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-133bc219df)
 
@@ -5192,7 +5236,12 @@
   - `scripts/tarball-baseline.json` → 无直接路径匹配
 
 <a id="commit-ad369d2856"></a>
+- 2026-11-20 B4 E47本地8b59016原生MCP控制服务，E48原面板/CSS/稳定dispatch已验：完整1561/1561、构建、702文件/204Web/284运行时安装、Safari手动刷新/WS重连/同名隔离及exec准确不可用态通过。只完成MCP子项，model chip/Context/发布文档继续，见[B4.50–51](./B4-implementation.md#b451-e48-原mcp状态面板)。
+
+- 2026-11-20 B4 E49：133原模型状态/chip与c66固定最终输入slot迁位、原CSS/helper、iPad portal/closed inert已核并适配Codex既有模型快照；完整1564/1564、构建、安装285、Safari空闲刷新/同名隔离/代理优先/强制pad-phone通过，总模型turn0。角色代理B8及Context/文档等混合项仍待，不整条完成；见[B4.52](./B4-implementation.md#b452-e49-模型chip按固定最终位置接入)。
+
 ## [ad369d2856](https://github.com/weiesky/cc-viewer/commit/ad369d285677dd0b08c3be7126abd2132c797324) — chore(sdk): getContextUsage 超时定时器 unref + settle 后 clearTimeout
+- 2026-11-21 B4 E60：已选原Context分类入口/居中不可用态，Codex无真实分类producer、现有用量条保持；相关Provider/fetch/timer/palette不新增空实现。55组件+7用量/1579完整/构建，新安装702文件/204Web精确字节/290运行时、B1.2/CLI通过；GUI待、其他混合范围不整体勾选。具体源码阅读/适配边界见[B4.63](./B4-implementation.md)及[B4分类回执](./B4-context-unavailable-2026-11-21.json)。
 - 2026-11-19 B2决议：**不适用（当前Codex SDK 0.142.5链路）**。已读完整diff，仅Claude activeQuery.getContextUsage control RPC的请求timer清理；已核对安装的Codex/Thread公开接口与sdk-manager/sdk-adapter/server不存在此调用链，不增加无调用方实现。本地沿用192f63d基线，无对应新功能代码。上下文用量/血条刷新仍按ec14cd0234等提交另验，不据此判完成。见[状态复核](./B2-sdk-state-review.md)。
 - B0 本地关键代码对照：上游 Claude SDK getContextUsage 定时器 clear/unref；本地 lib/sdk-manager.js 未见同名调用，其 proxy 启动超时已有 finally 清理，需检查实际 Codex 其他定时器的退出和取消，不直接移植，归 B2。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-ad369d2856)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-ad369d2856)
@@ -5223,6 +5272,8 @@
 
 <a id="commit-04d05a5824"></a>
 ## [04d05a5824](https://github.com/weiesky/cc-viewer/commit/04d05a58240132f057eeef6e830794190b10bc04) — feat(sdk): SDK 模式健壮性修正 + 新增「Context 用量」面板
+- 2026-11-21 B4 E66：用户明确指定临时Playwright后，G1–G5实际Chromium/WebKit/phone-pad仿真GUI已通过，12原截图/哈希；最终1580全量、0skip、构建与pack:dry-run通过。仅B4范围收口，其他混合工作包未迁项仍独立。见[B4完成矩阵](./B4-completion-matrix.md)及[最终GUI回执](./B4-final-gui-2026-11-21.json)。
+- 2026-11-21 B4 E60：已选原Context分类入口/居中不可用态，Codex无真实分类producer、现有用量条保持；相关Provider/fetch/timer/palette不新增空实现。55组件+7用量/1579完整/构建，新安装702文件/204Web精确字节/290运行时、B1.2/CLI通过；GUI待、其他混合范围不整体勾选。具体源码阅读/适配边界见[B4.63](./B4-implementation.md)及[B4分类回执](./B4-context-unavailable-2026-11-21.json)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-04d05a5824)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-04d05a5824)
 
@@ -6108,6 +6159,7 @@
 
 <a id="commit-01ff6d85e8"></a>
 ## [01ff6d85e8](https://github.com/weiesky/cc-viewer/commit/01ff6d85e8aa565c81b6b3c3c92f7e24c06c53a7) — feat: task HUD antd detail popovers, IM stop/save buttons, fix stop wiping config
+- 2026-11-20 B4.2：任务HUD组件/CSS与SDK快照子项已迁入，全量1417/1417、隔离Safari刷新/切换/停止通过；其余混合子项仍待，见[B4实施](./B4-implementation.md)。
 - B0 本地关键代码对照：混合提交：上游 IM 停止曾清空配置，本地 lib/dingtalk-im-config.js 的 saveDingTalkImConfig 合并已有配置并保留空 secret；dingtalk-im-routes.js 支持 applyProcess:false。隔离目录已验证仅设置 enabled:false 后标识、密钥、允许名单保持；完整 API、并发及异常 body 仍待验证；HUD Popover 单独归 B4，IM 归 B11。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-01ff6d85e8)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-01ff6d85e8)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-01ff6d85e8)
@@ -6635,6 +6687,7 @@
 
 <a id="commit-bf2d6f2ad8"></a>
 ## [bf2d6f2ad8](https://github.com/weiesky/cc-viewer/commit/bf2d6f2ad8fba572239cc8ee9ccc7d22f4b6d6ab) — feat(chat): task-list HUD progress dots + reset task list on new prompt
+- 2026-11-20 B4.2：任务HUD组件/CSS与SDK快照子项已迁入，全量1417/1417、隔离Safari刷新/切换/停止通过；其余混合子项仍待，见[B4实施](./B4-implementation.md)。
 - B0 本地关键代码对照：上游任务 HUD 进度点与新 prompt 重置依赖 Task 状态和 session gate；本地 Codex update_plan 与上游 hook 不同，任务 HUD 先构建事件映射后测试跨代理重置，归 B4。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-bf2d6f2ad8)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-bf2d6f2ad8)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-bf2d6f2ad8)
@@ -7200,6 +7253,7 @@
 
 <a id="commit-1c5fadafbf"></a>
 ## [1c5fadafbf](https://github.com/weiesky/cc-viewer/commit/1c5fadafbf730e1e4a0639d238809dfefd710347) — feat(chat): Claude Code task checklist HUD docked above the chat composer
+- 2026-11-20 B4.2：任务HUD组件/CSS与SDK快照子项已迁入，全量1417/1417、隔离Safari刷新/切换/停止通过；其余混合子项仍待，见[B4实施](./B4-implementation.md)。
 - B0 本地关键代码对照：上游任务 HUD 的状态通过 Claude TaskCreate/TaskUpdate 与 hooks 收集；本地 appserver-bridge.js 使用 Codex update_plan，须以真实线程事件映射并验证会话隔离与重连重放，归 B3/B4。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-1c5fadafbf)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-1c5fadafbf)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-1c5fadafbf)
@@ -7431,6 +7485,7 @@
 
 <a id="commit-3a2159219b"></a>
 ## [3a2159219b](https://github.com/weiesky/cc-viewer/commit/3a2159219b0d02858bb385ebc12a5009397b7b36) — feat(context): default unrecognized model context window to 1M
+- 2026-11-21 B4 E61：实际runtime范围已核；角色分源/模型窗口策略归B8尚未迁入，B4仅复用已验真实身份/保持用户既选用量条，不将整笔勾选。无运行时改动，具体阅读边界/后续责任见[B4.64](./B4-implementation.md)与[B4代理窗口回执](./B4-role-window-scope-2026-11-21.json)。
 - B0 本地关键代码对照：上游未知模型默认 1M；本地 server/lib/context-rules.js 使用 Codex 固定血条基准并有模型规则，appserver-bridge.js 也捕获 modelContextWindow；不可直接照搬 1M，须验证实际窗口来源与未知模型回退，归 B2/B4。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-3a2159219b)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-3a2159219b)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-3a2159219b)
@@ -7740,6 +7795,8 @@
 
 <a id="commit-dafe2bce37"></a>
 ## [dafe2bce37](https://github.com/weiesky/cc-viewer/commit/dafe2bce374df1daf3e81526a4b42c9189e620f0) — feat(chat): busy-queue floating bubbles with send-now + two interrupt fixes
+- 2026-11-21 B4 E66：用户明确指定临时Playwright后，G1–G5实际Chromium/WebKit/phone-pad仿真GUI已通过，12原截图/哈希；最终1580全量、0skip、构建与pack:dry-run通过。仅B4范围收口，其他混合工作包未迁项仍独立。见[B4完成矩阵](./B4-completion-matrix.md)及[最终GUI回执](./B4-final-gui-2026-11-21.json)。
+- 2026-11-21 B4 E63：补实际SDK full-surface与PTY队列范围对照，B4中断/身份/审批/提示等见既有E笔；普通PTY队列原B0/规划B7尚未迁入、旧IM B11/promptpin B8等保持未完成。G1–G5最终GUI因双CUA通道失败待验，不整笔勾选，见[B4.66](./B4-implementation.md)与[B4收口矩阵](./B4-completion-matrix.md)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-dafe2bce37)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-dafe2bce37)
 
@@ -7774,8 +7831,14 @@
   - `packages/core/test/branch-lib-delta-reconstructor.test.js` → 无直接路径匹配
   - `scripts/tarball-baseline.json` → 无直接路径匹配
 
+- 2026-11-21 B4 E54：按dafe及后续1aca/固定最终实际中断链补send-now先取消native root审批，复用Stop同一clearThread；双实例红测复现，28定向/1571完整/构建通过，新安装702文件/204Web精确字节/286运行时、B1.2/隔离CLI通过。B2队列原能力复用，PTY和其他混合未完成；orphan/helper所在旧IM消费链当前未接齐，归B11待处理，不记主V2已修。见[B4.57](./B4-implementation.md#b457-e54-立即发送先清理被中断的原生审批)。
+
+- 2026-11-21 B4 E53消息保留子项：原LCP修中断分叉丢queued user，最初测试/产物过但Safari失败，进一步补实际cached ChatView红测并仅在prefix改写时更换数组身份；91定向/1570完整/构建/新安装285通过。最终GUI两次CUA native pipe失败待复验，保留失败与步骤，不记通过；SDK/PTY/IM/orphan等混合继续。见[B4.56](./B4-implementation.md#b456-e53-中断分叉后的排队prompt保留实现已验最终gui复验待)。
+
 <a id="commit-7a2dd6162e"></a>
 ## [7a2dd6162e](https://github.com/weiesky/cc-viewer/commit/7a2dd6162e1465071a755606d77de22d7c0caa90) — fix(sdk): expand all system segments in request JSON view on first-turn MainAgent requests
+- 2026-11-21 B4 E66：用户明确指定临时Playwright后，G1–G5实际Chromium/WebKit/phone-pad仿真GUI已通过，12原截图/哈希；最终1580全量、0skip、构建与pack:dry-run通过。仅B4范围收口，其他混合工作包未迁项仍独立。见[B4完成矩阵](./B4-completion-matrix.md)及[最终GUI回执](./B4-final-gui-2026-11-21.json)。
+- 2026-11-21 B4 E59：用户已选原位准确占位说明；严格SDK来源+缺省文本才加原separator/markdown、raw不变、18语言。52组件/1579完整/构建，新安装702文件/204Web精确字节/290运行时、B1.2/CLI通过；E23分段展开继续复用，GUI待。见[B4.62](./B4-implementation.md)与[B4说明回执](./B4-sdk-notice-2026-11-21.json)。
 - B0 本地关键代码对照：上游针对 Claude SDK 首轮 system 数组默认展开与提示；本地 DetailPanel.jsx 有 getRequestExpandNode，Codex 请求结构不同，须核验首轮展开和上下文提示，归 B3/B7。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-7a2dd6162e)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-7a2dd6162e)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-7a2dd6162e)
@@ -7848,6 +7911,10 @@
 
 <a id="commit-efc7f8eab1"></a>
 ## [efc7f8eab1](https://github.com/weiesky/cc-viewer/commit/efc7f8eab199a04f3b8dcb660a5bfde593138f66) — feat(chat): floating composer overlay + SDK full-surface parity
+- 2026-11-21 B4 E66：用户明确指定临时Playwright后，G1–G5实际Chromium/WebKit/phone-pad仿真GUI已通过，12原截图/哈希；最终1580全量、0skip、构建与pack:dry-run通过。仅B4范围收口，其他混合工作包未迁项仍独立。见[B4完成矩阵](./B4-completion-matrix.md)及[最终GUI回执](./B4-final-gui-2026-11-21.json)。
+- 2026-11-21 B4 E63：补实际SDK full-surface与PTY队列范围对照，B4中断/身份/审批/提示等见既有E笔；普通PTY队列原B0/规划B7尚未迁入、旧IM B11/promptpin B8等保持未完成。G1–G5最终GUI因双CUA通道失败待验，不整笔勾选，见[B4.66](./B4-implementation.md)与[B4收口矩阵](./B4-completion-matrix.md)。
+- 2026-11-21 B4 E62：补原SDK主WS四类PTY消息门控，真实WS红测1次隐藏shell→0spawn；scratch独立通道保持。22定向/1580完整/构建，新安装702文件/204Web精确字节/291运行时、B1.2/CLI通过，无UI变更。见[B4.65](./B4-implementation.md)与[B4门控回执](./B4-sdk-pty-gate-2026-11-21.json)。
+- 2026-11-21 B4 E58：默认exec未知/缺值参数提前拒绝，exec后支持参数正常解析，不静默丢弃；35定向/1578完整/构建，新安装702文件/204Web精确字节/290运行时、B1.2/CLI通过。仅启动子项，见[B4.61](./B4-implementation.md)与[B4启动回执](./B4-sdk-launch-2026-11-21.json)。
 - 2026-11-18 B2 scratch子项：`a9197c2` 复用scratchOnly面板、按实例保存tabs、SDK聊天输入并存、Mobile单宿主/手机tab/keybar；`b1b3c7a` 后端实例归属与关闭。仅以上子项适配；floating composer、触控/固定列/软键盘及其他diff仍待逐项核验。全量1201/1201、构建/组件探针/生产安装通过，GUI未验收，**不标整条完成**。见[B2记录](./B2-session-isolation.md)。
 - B0 本地关键代码对照：上游混合浮动输入、SDK 审批与 slash、WS 清理及重放。本地 ChatView.jsx 已有 inputStack、SDK ask 和 plan 卡片，仍须逐项核对浮动布局、断线重连和 Codex 能力，拆归 B2/B3/B7/B11。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-efc7f8eab1)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-efc7f8eab1)
@@ -7920,6 +7987,10 @@
   - `packages/core/src/teammateDetector.js` → 本地候选：`src/utils/teammateDetector.js`
   - `packages/core/test/native-teammate-detector.test.js` → 无直接路径匹配
   - `test/content-filter-unit.test.js` → 无直接路径匹配
+
+- 2026-11-21 B4 E55：迁固定最终浮动composer及117ee滚动条bleed，三分支spacer/helper/CSS原样；50定向/1573完整/构建通过，新安装702文件/204Web/286运行时、B1.2/CLI通过，GUI再次native pipe失败待。仅该子项；SDK compact/launch/protocol继续。见[B4.58](./B4-implementation.md#b458-e55-固定最终浮动输入区与滚动条留白实现已验gui待)。
+
+- 2026-11-21 B4 E56：原生contextCompaction完成后发scoped生命周期提示，原banner/CSS/18语言逐字复用、无虚构token；双实例/去重/异thread-turn、UI限10/切会话通过，63定向/1575完整/构建及新安装702文件/204Web字节/287运行时、B1.2/CLI通过，GUI待；其他混合不整条完成，见B4.59/B4-compact-notice-2026-11-21.json。
 
 <a id="commit-72551f625b"></a>
 ## [72551f625b](https://github.com/weiesky/cc-viewer/commit/72551f625b26eccd2db74f2aefd93e1d2b0e67b4) — fix(system-prompt): drop 7 loop-volatile dynamic prompt variables
@@ -14512,6 +14583,7 @@
 
 <a id="commit-3cc05b496d"></a>
 ## [3cc05b496d](https://github.com/weiesky/cc-viewer/commit/3cc05b496dd2c0535df492455001b2524d091ef4) — feat(proxy): per-role proxy sources for Main Agent / Sub-Agent / Teammate (1.7.22)
+- 2026-11-21 B4 E61：实际runtime范围已核；角色分源/模型窗口策略归B8尚未迁入，B4仅复用已验真实身份/保持用户既选用量条，不将整笔勾选。无运行时改动，具体阅读边界/后续责任见[B4.64](./B4-implementation.md)与[B4代理窗口回执](./B4-role-window-scope-2026-11-21.json)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-3cc05b496d)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-3cc05b496d)
 
@@ -15497,3 +15569,331 @@
 ## 2026-11-20 用户确认B3收口与提交合并
 
 用户确认B3收口；原30笔已合并为[7c3d849](https://github.com/weiesky/cx-viewer/commit/7c3d849b9e7acda1c974077843406c23627dbdcb)并正常快进推送origin/main（父提交41d95af）。2026-11-20 10:41:52（Asia/Shanghai）通过git ls-remote读回完整hash `7c3d849b9e7acda1c974077843406c23627dbdcb`，与本地一致；当时工作区干净。原完整历史保留本地archive引用及已校验bundle；除6个收口文档外，应用/测试/依赖/探针树与原末端精确一致。完整映射和回执见[提交合并记录](./local-commit-consolidation-2026-11-20.md)，没有强推。B3验证及未覆盖环境维持完成矩阵原结论；当前下一工作包B4（准备中），本轮仅同步进度文档，无B4实现。
+
+## B4 E1 exec transport extraction
+
+Upstream lifecycle/snapshot subitems: `2914d6479d2845e0b193ba1c09aa6667c66850a6`, `975313773a2edfcd0f8f640cdfe4c1681048f954`. Local: `feat(sdk): isolate existing exec transport without changing behavior`. SDK regressions 53/53 and real CLI local synthetic compatibility probe passed; no production transport switch or agent-card completion. See [B4.4](./B4-implementation.md).
+
+## B4 E2 owned App Server stdio client
+
+Upstream lifecycle/card prerequisites: `2914d6479d2845e0b193ba1c09aa6667c66850a6`, `975313773a2edfcd0f8f640cdfe4c1681048f954`. Local: `feat(sdk): add owned App Server stdio RPC client`. Client 5/5 and real CLI local synthetic probe passed; manager/default transport unchanged. E1 local commit: `c65f3f9`. See [B4.5](./B4-implementation.md).
+
+## B4 E3 native transport and observed child lifecycle
+
+Upstream task/card subitems: `0cde7d1df8f15fdbac23be941e367e5d577159de`, `2914d6479d2845e0b193ba1c09aa6667c66850a6`, `975313773a2edfcd0f8f640cdfe4c1681048f954`. Local: `feat(sdk): implement isolated native App Server transport`. Client/transport 12/12; real CLI local synthetic 15 requests passed, including child completion after root ended. No manager/public CLI integration or card completion yet. See [B4.6](./B4-implementation.md).
+
+## B4 E4 manager/archive integration
+
+Upstream task/card prerequisites: `0cde7d1df8f15fdbac23be941e367e5d577159de`, `2914d6479d2845e0b193ba1c09aa6667c66850a6`, `975313773a2edfcd0f8f640cdfe4c1681048f954`. Local: `feat(sdk): preserve manager and archive contracts for native transport`. SDK/client integration 66/66; real CLI local synthetic 21 requests, including V2 exec/native bidirectional resume, passed. Approval/image/public CLI admission still pending. See [B4.7](./B4-implementation.md).
+
+## B4 E5 instance-owned native approvals and questions
+
+Upstream attach/lifecycle prerequisites: `84e65cddc6` (restore approvals on attach), `2914d6479d2845e0b193ba1c09aa6667c66850a6` (session replay); full hashes in commit trailers. Local: `feat(sdk): route instance-owned native approvals and questions`. Existing Codex TUI request descriptions and question normalizer reused without layout/CSS changes. Full 1443/1443; final real HTTP/WS 8/8 and Safari reply/refresh/cancel/deny passed; actual Codex local synthetic 25 requests include native request_user_input. Real command/file/permissions model approvals and public CLI remain unverified/pending. E4 local: `820c662`. See [B4.8](./B4-implementation.md).
+
+## B4 E6 native structured tool images
+
+Upstream existing image-pipeline contract: `fc68e850f23ad28a453eb5219c8113c7165086f9`; native transport prerequisites remain `2914d6479d2845e0b193ba1c09aa6667c66850a6`/`975313773a2edfcd0f8f640cdfe4c1681048f954`. Local: `fix(sdk): retain structured native tool image results`. SDK/native 20/20 and image/history 18/18, build passed; real local MCP/CLI image receipt in B4.9. No UI redesign or whole mixed-commit completion. E5 local: `6102667`. Next: native option fidelity and explicit transport CLI.
+
+## B4 E7 native configuration fidelity and explicit option rejection
+
+Codex-specific prerequisite to existing upstream lifecycle/task/card subitems `2914d6479d2845e0b193ba1c09aa6667c66850a6`/`975313773a2edfcd0f8f640cdfe4c1681048f954`. Local: `fix(sdk): preserve native TOML overrides and reject unsupported options`. 77/77 regressions, final boundary 16/16, build and real CLI local 27 requests passed. Raw TOML array/feature flags/launch defaults/resume covered; native profile/image-input/add-dir remain explicitly unsupported. E6 local `3576cf8`; see B4.10.
+
+## B4 E8 explicit native CLI rollout
+
+Prerequisites for upstream lifecycle/task/card subitems `2914d6479d2845e0b193ba1c09aa6667c66850a6`/`975313773a2edfcd0f8f640cdfe4c1681048f954`; Codex-specific transport selection follows the user's confirmed gradual rollout. Local: `feat(cli): expose explicit opt-in App Server transport`. Default exec retained. Full 1449/1449; build; fresh installed 183/183, B1.2/CLI regression; real CLI local synthetic 28 requests passed. E7 local `400a27b`. B4.11 records exact boundaries; agent card still pending, no whole mixed-commit completion.
+
+## B4 E9 authoritative native child state
+
+Upstream card/lifecycle contract: `975313773a2edfcd0f8f640cdfe4c1681048f954`, `2914d6479d2845e0b193ba1c09aa6667c66850a6`. Local: `feat(sdk): track owned native child lifecycles and replay snapshots`. 25/25 module/SDK/HTTP tests plus final WS 8/8; build; real CLI local 33 requests including root-idle child/tool/next-root/independent terminal passed. Native real nested/reuse/interrupt and UI card still pending. E8 local `65729db`; see B4.12.
+
+## B4 deterministic native RPC / SSE test receipts
+
+Local: `test(sdk): match explicit RPC and SSE receipts`. Supporting the existing `2914d6479d2845e0b193ba1c09aa6667c66850a6` replay/isolation prerequisite: two parallel-test ordering assumptions removed; default-denial and scoped-stream assertions retained. 13/13 targeted passed; first failed full log and cause recorded in B4.12a. No product behavior changes; E9 local `d04fd15`, E10 full/install still pending.
+
+## B4 E10 baseline active-agent card
+
+Upstream `975313773a2edfcd0f8f640cdfe4c1681048f954` and `2914d6479d2845e0b193ba1c09aa6667c66850a6` card/lifecycle subitems → local `feat(chat): restore baseline active-agent card for native snapshots`. Full CSS/render tail exact; 1457/1457 full, build, new installed 188/188/B1.2/CLI, isolated Safari refresh/WS reconnect/collapse/scope/root-next/child-end passed. Exact scope and remaining role-filter glass correction in B4.13. E9 local `d04fd15`, deterministic receipt tests `61e1701`; no whole mixed-commit completion.
+
+## B4 E11 frosted role-filter correction
+
+Upstream `d906edb3de840208944bbca9d33ec037bdeb6bc5` RoleFilterBar float/glass/41px compensation → local `style(chat): restore baseline floating frosted role filter`. Full CSS exact except existing Codex monochrome avatar rule; no component DOM/filter change. Web 267/267/build and isolated Safari filtering/scroll/agent-card mutual exclusion passed; other mixed subitems pending. E10 local `f29f9b3`; details B4.14.
+
+
+## B4 E12 scratch composer signal and visibility
+
+Upstream `9dbf4e295a08e472c0b15cfb66de1cc80c77cfa3` / `3d65bedcd1b47a8de7f0ff1bdfec3a11efbc9fa0` → local `fix(chat): preserve scratch state with baseline SDK composer guards`. Exact raw terminalVisible + sdkMode props retain effects while original SDK guards keep composer/portal. Reused B2 global persistence for `1bfc1585e833d037a7dab6fe23e5a8c0aac48c08`; no storage rewrite. Web267/267/build and isolated Safari open/edit/refresh open/closed passed; voice not exercised. E11 local `9e35157`. See B4.15; no whole B4 completion.
+
+
+## B4 E13 owned terminal failure frames
+
+Upstream `9b1bb4e729473360cbe60e508f0558a702370a08` failure routing subitem → local `fix(sdk): broadcast terminal failures to their owning workspace`. Reused existing scoped WS broadcaster, retained durable archives and retry-success precedence; intentional Stop suppresses alert. 24/24 including actual local HTTP/WS same-name isolation and pre-thread failure; build passed. Persistent baseline error UI and retry metadata pending. E12 local `8d6dafd`; see B4.16.
+
+
+## B4 E14 baseline persistent terminal errors
+
+Upstream `9b1bb4e729473360cbe60e508f0558a702370a08` / `88995a10461973689656841a8476ee4e6c60281b` → local `feat(chat): restore baseline persistent SDK error rows`. Original non-retry render/merge/count/a11y plus exact final CSS; structured Viewer-only failure projection avoids duplicate assistant bubbles while retaining raw/cumulative archive contracts. Full1462/1462/build; isolated Safari empty/populated/cap/count/scope/clear/post-archive single row passed. Retry/recovering and physical/external-model verification pending. E13 local `0d5732d`; see B4.17.
+
+
+## B4 E15 native error facts and turn identity
+
+Prerequisite for upstream `84e65cddc629e8b442e866c303883444901d5c19` retry subitem → local `fix(sdk): retain native error metadata and turn identity`. Transport now keeps native TurnError/willRetry and exact thread/turn IDs, without text inference, retries or UI changes. Targeted24/24/build; actual Codex loopback27 requests include 503 recovery/exhaustion and actual normalized400 metadata. Attempt/max are absent as structured fields; user copy choice pending. E14 local `ba06166`; E14 full1462/installed190 checkpoint remains scoped to that commit. See B4.18.
+
+
+## B4 E16 native terminal failure classification
+
+Upstream `84e65cddc629e8b442e866c303883444901d5c19` retry prerequisites → local `fix(sdk): classify native failures from owned retry facts`. Exact native turn + observed willRetry + structured network/status governs retryable, raw TurnError preserved; no text parsing, retry operation or UI changes. Targeted29/29/build; actual loopback32 requests cover manager503 exhaustion/recovery and400 exclusion. E15 local `41e379f`; user retry-copy choice and manual continuation still pending. See B4.19.
+
+
+## B4 E17 reuse existing SDK turn-level loading
+
+Upstream `c4529a6ed7a81c7ddd4564915735a06e123890ab` / Stop subitem of `84e65cddc629e8b442e866c303883444901d5c19` → reuse B2 `41d95af54189cfaa9d0816244ec1ae7366d43939` whole-query streaming/SSE scope. Actual isolated Safari exec hold139s, same-name idle sibling, refresh/forced mobile Stop, queued send/drain/terminal passed. No product change or repeated test claim. Found persistent duplicate streaming overlay after final queued entry, explicitly pending correction; whole mixed commits remain open. E16 local `2eaa414`; see B4.20.
+
+
+## B4 E18 settle streaming overlays at both final commit paths
+
+Frozen source contract `5c28d4c50a952110c32b04922cee56bdf9bd8560` / `74cd752d99caf122e750216d2af3bb9f467c4de1` AppBase stream/final handling → local `fix(chat): settle streaming overlays with canonical final commits`. Necessary Codex/V2 correction for E17-observed duplicate: deferred paints recheck final state and cold baseline commits clear an already-painted matching overlay. Before-fix tests fail; initial rAF-only fix still failed GUI and was not accepted; final1465/1465/build and new isolated Safari first-archive/queue single replies passed. No DOM/CSS changes or whole mixed-commit completion. E17 audit `3c72b4a`; see B4.21.
+
+
+## B4 E19 exact-failure manual continuation
+
+Upstream `84e65cddc629e8b442e866c303883444901d5c19` manual retry contract → local `feat(sdk): continue an owned failed native turn without replaying input`. Exact failed turn/session/generation and empty idle queue required; synchronous claim prevents duplicates; original continue prompt, metadata-hidden user row, directed WS rejection and native recovering/recovered lineage. 21/21 SDK/history, real HTTP/WS10/10, Web273/273/build; real Codex loopback33 requests include one successful continuation on the same thread. User chose native raw retry message; UI next. E18 local `9e7a83a`; see B4.22.
+
+
+## B4 E20 baseline retry feedback and button
+
+Upstream `84e65cddc629e8b442e866c303883444901d5c19` / `ee3545344eff8c9969f6de63631d2181844cbfb0` / `88995a10461973689656841a8476ee4e6c60281b` → local `feat(chat): restore baseline retry controls with native notices`. Exact final retry CSS/row DOM; raw native retry message per user choice, owned success/cancel settlement, manual recovery hiding/lineage cleanup and existing false-return-aware send helper. Full1473/1473/build; real Codex loopback33 + isolated Safari manual/automatic recovery passed. E19 local `36af884`; activity probe and mixed-commit remainder pending. See B4.23.
+
+
+## B4 E21 owned slow-upstream backend
+
+Upstream `6b340326c6a43d5020b74ec1d20ae6c8f44cbe4d` + final corrections `2ea5181df8c2d4e8385b76ca4507b74b8e409231` / `a3cc12619f441e2ab04885ad85a4ce99901fc1d9` / `919fded8456a518eb667a105b0550fd6d42cb978` → local `feat(sdk): relay owned slow upstream requests and replay pending waits`. Original 30s/body-byte/request settlement/replay contract through existing per-instance proxy callback; utility excluded, generation-owned snapshots, strict scoped WS. HTTP9/9, actual SDK child+HTTP+WS11/11 including production30s wait/reconnect/isolation, build passed. UI pending; mixed commits remain open. E20 local `124ca25`; see B4.24.
+
+
+## B4 E22 baseline slow-upstream feedback
+
+Frozen `6b340326c6` / `2ea5181df8` / `a3cc12619f` / `919fded845` → local `feat(chat): restore baseline slow upstream notices and lifecycle`. Exact original toast helpers/i18n, scoped pending requests and complete teardown; necessary shared-provider late-mount snapshot and cold-hydration correction found by actual Safari. Final1480/1480/build/fresh-install199,695files/202Web byte match/B1.2/isolatedCLI passed. Safari real30s threshold, wait tick, view exit/return, full reload and first-byte settlement passed. Initial credential-concurrency failure retained (correct-cwd7/7 + five repeats + full pass, root cause unconfirmed); no credential changes. E21 local `f7b13af`; see B4.25.
+
+
+## B4 E23 first-turn instructions expansion
+
+Upstream `7a2dd6162e1465071a755606d77de22d7c0caa90` request JSON subitem → local `fix(detail): expand every first turn instruction segment`. Existing local collectAll/expandRefs reused with native input/instructions fields; no DOM/CSS changes or classifier weakening. Web279/279/build and verbatim actual-method/real-classifier boundary probe passed. Claude-specific SDK notice awaits user choice, so whole commit remains open. E22 local `7a50079`; E22 full1480/install199 remains the latest broad checkpoint. See B4.26.
+
+
+## B4 E24 real nested agent lifecycle evidence
+
+Frozen `975313773a` lifecycle contract → local `test(alignment): verify real native child interruption reuse and nesting`. Production native transport/tracker/recursive ownership + actual Codex0.169 on isolated loopback model:38 requests, exact child interrupt, same-thread new turn, captured stale terminal ignored and proved grandchild independent settlement passed. Isolated max_depth=2 only; defaults/UI unchanged. Raw frames/12 snapshots retained. E23 local `a51bd1a`; see B4.27.
+
+
+## B4 remaining lifecycle audit after E24
+
+Read actual/final `bc669f59cc` state test contract and local SDK/SSE ownership flow; existing whole-turn state reuse does not close activity/lost-result items. Initial `ef5fc8b168` diff/final server inspection located independent agent-loop SSE/plugin/voice producers absent from the local SDK path; full-chain reading and migration remain next. No product changes or new test claim. E24 local `62b8ea9`; see B4 implementation closing audit. B4 remains open, no push.
+
+
+## B4 E25 SDK accepted-turn boundaries
+
+Upstream `ef5fc8b1689ac56ec67fd2d797f5577cdb2dd99f` boundary subitem → local `f2c87f6` / `feat(sdk): emit owned agent loop boundaries and plugin hooks`. Only accepted executor streams emit start; exact one terminal/end with captured generation/scope/callback. Original SSE/hook names via existing precise SDK routing; real CLI launch wiring retained. SDK/native/queue26, startup6 (overlapping), HTTP/SSE/WS/plugin11 and build passed; actual Codex loopback34 includes public CLI plugin receipt. Voice/PTy/service event bus/activity/lost-result remain open. See B4.28.
+
+
+### B4 E26 voice-pack backend prerequisite
+
+Upstream `eec2d1673aa527572ce9764c7092227e9a3831df` + `372dfd670a72d7ba39fa6b62bf4815b1ae763e7b`, fixed snapshot manager/routes/preferences contract → local `dc88897` / `feat(voice): restore audio storage routes and preference merging`. Four original API endpoints, built-in manifests, range/cache, bounded validated upload and deletion; existing locked preferences writer now uses original deep merge/reconcile. Reuses local multipart and private-file read policies; preserves existing loopback mutation authorization. Real isolated HTTP5 plus auth/preferences regression33 total, build passed. No UI, loop voice wiring or whole mixed upstream completion claimed; see B4.29.
+
+
+### B4 E27 original loop voice wiring
+
+Upstream `ef5fc8b1689ac56ec67fd2d797f5577cdb2dd99f` voice subitem → local `c841dc7` / `feat(web): wire original opt-in agent loop voice cues`. Original two event rows, off-by-default locale seeds,18-language text and exact bundled assets; root-instance scoped SSE callbacks, turn epoch/ID guards, original player dedupe and1500ms legacy end suppression. Existing whole-turn loading stays the single state source. Full1494/1494, build, new installation701files/204exactWeb/208runtime/B1.2/isolatedCLI; Safari actual206 audio/refresh settings and desktop/forced-mobile original panel inspected. See B4.30 and B4-loop-voice-2026-11-20.json. Activity/PTy/service bus and other mixed subitems remain open.
+
+
+### B4 E28 native missing-terminal recovery
+
+Upstream `84e65cddc629e8b442e866c303883444901d5c19` / `ef5fc8b1689ac56ec67fd2d797f5577cdb2dd99f` lost-result subitem → local `70ab160` / `fix(sdk): recover missing native terminal from exact turn history`. Five-second native idle grace; bounded one-turn full page must prove exact native ID and terminal before existing normalization/manager settlement. No guessing from idle, failed reads, partial histories or old turns; client/run/activity/signal guards and pending approval rearm. Target38/build passed; real Codex local24, two real completions dropped and recovered on same thread with one input each. See B4.31/B4-lost-result-2026-11-20.json. Activity, exec missing terminal and other mixed subitems pending.
+
+
+### B4 E29 native activity probe and lazy replacement
+
+Upstream `84e65cddc629e8b442e866c303883444901d5c19` / `ef5fc8b1689ac56ec67fd2d797f5577cdb2dd99f` activity subitem → local `d9747d0` / `fix(sdk): probe native turn liveness before lazy recovery`. Original10min/3min/10s/two-timeout thresholds, fresh metadata RPC, activity/run/client guards, pending approval park and last-resolution rearm. Suspect child retained until next authorized input; original failure/retry/loop hooks reused. Real production manager26 local requests:1ms healthy control, owned SIGSTOP causes10001/10002ms failures, child retained, explicit single continuation rebuilds same thread; original input not replayed. Full1502/build/new installed701files/204exactWeb/216runtime/B1.2/isolatedCLI passed. No exec silence conviction, UI redesign or whole mixed completion; see B4.32.
+
+
+### B4 E30 exec stream exit without terminal
+
+Upstream `84e65cddc629e8b442e866c303883444901d5c19` / fixed ef5 resident-death semantics → local `d5a79db` / `fix(sdk): persist missing-terminal failures and park unsent input`. Exhausted iterator/transport failure with no terminal becomes original session-ended feedback and parks backlog; explicit abort/send-now authorization preserved. Reuses pending assistant flush to keep actual partial text/thinking without duplicating completed items. Target27/full1503/build/new installed701files/204exactWeb/217runtime/B1.2/isolatedCLI passed; Safari partial/error/park/resume/no-replay verified. Refresh retains text and queue but loses error row, explicitly OPEN for next source-first audit; see B4.33/B4-exec-eof-2026-11-20.json. No whole mixed completion claimed.
+
+
+### B4 E31 source audit of error row persistence
+
+Upstream `9b1bb4e729473360cbe60e508f0558a702370a08` actual diff plus fixed constructor/error branch/clear/render and complete attach replay: sdkErrors is page-local, empty after reload; historical error replay is absent upstream too. E30 reload observation matches baseline source, so previous OPEN classification is resolved without inventing a new product capability. Raw observation preserved with baselineAudit in B4-exec-eof-2026-11-20.json; no code or new test claim. See B4.34.
+
+
+### B4 E32 ordinary TUI accepted-turn boundaries
+
+Upstream `c4529a6ed7a81c7ddd4564915735a06e123890ab` / `ef5fc8b1689ac56ec67fd2d797f5577cdb2dd99f` PTY lifecycle subitems → local `9d4d437` / `feat(pty): emit accepted native turn lifecycle boundaries`. Actual TUI WS connection+RPC acceptance and exact native terminal, scoped teardown, silent attach/restart state, original10s normal end/instant interrupt, SSE/JS plugins and existing loading/voice consumers. Real public Codex0.169 TUI revealed temporary title-start reset; exact ephemeral thread_title exclusion now retains root lifecycle/transcript,35 bridge regressions. Full1511/build/new installed701files/204exactWeb/220runtime/B1.2/isolatedCLI, real local3 requests with10004ms tail and exact Escape end passed; Safari loading/refresh/restart/canonical reply verified with explicitly synthetic PTY. No whole mixed completion or real GUI Stop claim; see B4.35/B4-pty-loop-2026-11-20.json. Native utility canonical classification remains next audit. E31 local `a0da408`.
+
+
+### B4 E33 canonical native agent classification
+
+Upstream `f3a8413db9f99691ef94f54279cedc2913e0c1f0` wire-identity/classification subitems → local `53126f5` / `fix(chat): preserve canonical native agent identities`. Reuse Codex producer flags and persisted names instead of Claude-only header formats; explicit native child vetoes team/tool heuristics, canonical agent labels remain shared, named canonical teammate labels resist heuristic downgrades. Existing Master and local full-body lookahead path retained. Target52/full1514/build/new installed701files/204exactWeb/238runtime/B1.2/isolatedCLI; real captured128-frame production bridge/writer/cold-reader replay keeps3 child records SubAgent with supplied label. No new UI/metadata schema or claimed missing nickname reconstruction. See B4.36/B4-agent-identity-2026-11-20.json. Temporary native title classification remains separate; release metadata B11.
+
+
+### B4 E34 native temporary title classification
+
+Existing upstream Synthetic contract `4455bef641c171701fdd6d0251826c139d2e0ff9` / shared-filter correction `4384b7ca67c60c0680a6dba370c1b2d7c5a67c31`, and f3a wire-identity priority → local `7d2642f` / `fix(chat): classify native title threads as synthetic`. Evidence-driven Codex adapter for exact ephemeral/thread_title metadata: auxiliary archive role, existing Synthetic:Title/muted label, no chat projection or user prompt/root-main activity; raw/network records and physical native turns retained. Live and rebuilt summaries agree. Target99/full1519/build/new installed702files/204exactWeb/279runtime/B1.2/isolatedCLI; real public TUI3 local requests/10001ms tail/native Escape/current-user archive and Safari original label/empty title chat passed. No old-log rewriting or text inference. See B4.37/B4-native-title-2026-11-20.json; no whole mixed upstream completion claimed.
+
+
+
+### B4 E35 approval minimisation replay policy
+
+Upstream `469a995ad8d6222f2fb092a7c1c3d5bb8fe7b349` / c29af25e64 approval-reason guard → local `e5bb92b` / `fix(web): retain minimised approvals during repeated pending frames`. Original helper/eight tests reused; actual AppBase ask/ptyPlan transitions covered. Target45/build and Safari native fixture repeated-pending minimisation passed. Actual A→B→A still reopens because local roots unmount: explicitly OPEN for next independent scope-memory repair; no whole469/c29 completion. Complete/install checkpoints remain E34 1519/279. E34 final receipt commit `0f34e85`; see B4.38.
+
+
+### B4 E36 exact-instance minimisation through keyed remounts
+
+Upstream `469a995ad8d6222f2fb092a7c1c3d5bb8fe7b349` view-switch subitem → local `f3cdb9e` / `fix(web): restore minimised approvals per workspace instance`. Reuses the existing keyed root teardown; stable parent holds only bounded page-local string-id sets under exact live SDK scope. New roots reconstruct approvals/handlers from their own replay, never from cached action objects. Target46/full1529/build/new installed702files/204exactWeb/279runtime/B1.2/isolatedCLI; Safari same-name A/B round-trip, sibling popup, explicit reopen, local fixture answer and new-pending reset passed. E35 original failure retained with followup resolution. No persistence across page reload or new UI/CSS; history metadata remains B11. See B4.39/B4-approval-scope-2026-11-20.json.
+
+
+### B4 E37 per-turn SDK thinking reuse
+
+Upstream `d89aa3b9af9703c2c350dcfa14eefbcd3215ecc5` SDK thinking-retention subitem → local `5c92723` (`test(alignment): verify per-turn SDK thinking retention`). Existing Codex completed-item accumulation retains response reasoning in its own next-turn history, so the upstream Claude-specific stripped-history recovery cache is unnecessary here. Official SDK/fake CLI, production writer/cold reader/normalizer/session merge test plus existing SDK suite7 passed; Safari exec and AppServer synthetic two-turn live/refresh content each once. No runtime/DOM/CSS change; last full/build/install checkpoint remains E36 1529/279. See B4.40/B4-thinking-history-2026-11-20.json; fixture-schema/test-environment corrections recorded rather than treated as product defects.
+
+
+### B4 E38 first-turn result and cold-attach reuse
+
+Upstream7641f5181af91a3ca06912d687a8dee678bfb85d functional subitems, later bde02443 drain/UTF-8 correction → local c8b6afd (test(alignment): verify native turn and cold attach isolation). Reuse exact native turn/client ownership and B3 durable cursor replay; no runtime/DOM/CSS changes. Added recovered-turn→next-turn stale/missing terminal and retry coverage, plus production writer/snapshot/live-route pre-subscribe and backpressure-gap delivery once. Target47, full1532 (5+296+1019+212),0 skip. Initial inherited bypass-env full failure retained; cleared-env full passes. Build/install checkpoint E36 unchanged. B11 wire/release/history files remain separate. See B4.41 and B4-first-turn-guard-2026-11-20.json.
+
+
+### B4 E39 question terminal batching and post-commit routing
+
+Upstream dd8709356b question terminal subitem → local 3e31052 (fix(web): settle batched question terminal frames). Port functional latest-state matching and post-commit routing/meta cleanup; preserve Codex request/item identity and resolved transcript answers. Seven regressions reproduce red, target20/full1539/installed280 pass, build and Safari real manager/WS synthetic-native reply/next-question/cancel checked. Production package702files/204exactWeb, B1.2/isolated CLI pass. No DOM/CSS or permission/auto-answer policy change; plan/permission/global clear routing and release files remain separate. See B4.42 and B4-ask-settlement-2026-11-20.json.
+
+
+### B4 E40 plan/permission terminals and immutable connection scope
+
+Upstream dd8709356b27c7ce3321269fc68466f051c613bf remaining functional terminal consumers → local f1c1970 (fix(web): match approval terminals against current state). Port original functional plan clear, normalized permission IDs and unmatched no-op; three actual ChatView cases reproduce red, combined target61/full1542/installed280/build pass. Safari synthetic-native production decline clears permission card. Actual immutable connection scope, native producer scope and strengthened1 HTTP/WS test justify retaining scoped terminal answers instead of global broadcast; no UI, approval policy or update_plan gating added. Release/history B11 remains separate. See B4.43 and B4-approval-terminal-2026-11-20.json.
+
+
+### B4 E41 final effective SDK/PTY plan-channel guards
+
+Upstream51c23e9090f349b983a2dba52c738c559da5bf1b, final guards retained through91b005/282306 at74cd752d → local b58d2b6 (fix(web): keep SDK approvals off PTY keystroke paths). Actual ChatView stale-state lifecycle regression red first; !sdkMode derivation and two early returns ported. Existing native nonInteractive plan renderer reused. Target43/full1543/install280/build pass; Safari native synthetic plan+steps live and refresh remain read-only, owned process stopped. No hidePlan rollback, new plan RPC/permission policy or CSS. Later structured-plan/auto-approval/release subitems remain separate. See B4.44 and B4-plan-guard-2026-11-20.json.
+
+
+### B4 E42 directory-refactor ownership evidence
+
+Upstream f9467bfc838a6ef724c0f7144e0ef302e1256523 → local81e7189 documentation-only source audit:94 files,8 exact code moves/49 canonical relative-specifier-only/35 manually reviewed remaining code pairs/2 metadata. Remaining runtime differences are comments/import/generated hook paths and worker CLI depth (same target). Fixed baseline moved hooks/worker exist. No new B4 behavior; B0/B2 B8/B11 ownership confirmed, local directory/hook/package migration remains pending there. No runtime/DOM/CSS or new test/build claim. See B4.45 and B4-path-layout-audit-2026-11-20.json.
+
+
+### B4 E43 resumed-history first-turn live replay
+
+Upstream bd32d02884082a6d15f2b213855537e667cdefd0, later b23c1373 shard distinction → local13bd023 (test(alignment): verify live replay after historical resume), reusing B3 canonical cursor/publisher instead of raw V3 suppressed feed. Actual HTTP resume test now completes first continued turn on old archive BEFORE opening SSE with pre-turn snapshot cursor: newer own-session commit arrives without another snapshot/refresh/reset, same-name sibling isolated. Initial companion41 passed; forced pre-attach HTTP file11 passed. No runtime/DOM/CSS; E41 full1543/build/install280 checkpoint retained. B11 metadata remains separate. See B4.46/B4-resumed-live-2026-11-20.json.
+
+
+### B4 E44 accepted B2 subitems and task-relay scope reconciliation
+
+Local documentation commit:884b620.
+
+Documentation-only reconciliation of3079040494/a30d8c92a7/a84385b5a8/0a9ad5d767/99256ac1d8/bc669f59cc against accepted B2 matrices and B3/B4 later evidence; no newly claimed full diff migration. Merge ancestry/empty combined resolution checked, independent branch work still tracked. Actual d6cab4869a task relay + final normalize read: background-agent lifecycle is distinct from todo HUD; native counterpart uses E9/E10/E24 facts, no invented Claude fields. Mixed resident/switch/live-empty/metadata work stays partial. No runtime/UI/tests or new verification claim. See B4.47 and per-row B4 candidate matrix.
+
+
+### B4 E45 release-only and prompt-asset source boundaries
+
+Local documentation commit:ea3b128.
+
+Read actual23e4273a37/0d067a1b7c diffs: release metadata/history only, B11; no local version/default-permission change. Read72c059f6b9 preset/manifest/test deltas, GLM5.3 full prompt and fixed final manifest/teammate sections: B8 assets remain unmigrated, no inferred lifecycle implementation. Read134a0de7ac template/JSON content; verify18 locale app/content mirrors plus JSON parity, identify unrelated permission countdown i18n addition. Review prompt workflow stays B7/B11, countdown B9; native named subAgent classification is not changed to Claude Teammate semantics. No runtime/UI/config/tests or new validation claim. See B4.48/candidate matrix.
+
+
+### B4 E46 terminal keepalive and queue retention reuse
+
+Upstream ec14cd0234 terminal WS/watchdog/queue-retention subitems → local test(alignment): verify queued input survives half-open reconnect. Existing server ping and provider deadlines/scope/monotonic state reused; actual Provider+ChatView synthetic half-open regression proves accepted+uncertain input/draft/attachments survive without retransmission, duplicate snapshot reconciles once. Target32 pass, no runtime/DOM/CSS change or new full/build/install claim. Specialized Context fetch15s and future-ts reducer clauses remain pending the Context contract choice. See B4.49/B4-ws-keepalive-2026-11-20.json.
+
+
+### B4 E47 native MCP control-service prerequisite
+
+Upstream133bc219df collector/HTTP/WS snapshot subitem → local8b59016 feat(sdk): expose native MCP status on scoped control API. Use actual0.169 mcpServerStatus/list on owned active root thread, explicit runtime status/tools normalization, paginated bounded10s read, same client/generation, exact HTTP/WS instance and snapshot copy/reset/replay. Default exec unsupported; cold read starts nothing. Target32 plus corrected close1/full1548/build/fresh install284 pass; real isolated Codex+MCP connected/version/tool count, no added model request. Invalid closed-registry test expectation and failed initial full/install retained; corrected strict404 test passes without weakening identity. UI pending next independent migration, no DOM/CSS. See B4.50/B4-mcp-service-2026-11-20.json.
+
+
+### B4 E48 original MCP panel
+
+Upstream133bc219df78920cdc3a5cb56f48cbe067e467e5 MCP UI/stable dispatch subitem → local2ad4e0d feat(web): restore original MCP status panel. Original component/list/position and byte-identical fixed-baseline CSS; reuse original useReducer identity. Necessary exec unsupported text, SDK mode update guard and existing request/context fallback. Target58/full1561/build/new package702files/204exactWeb/284runtime/B1.2/isolatedCLI pass. Safari native A reads1→2refresh→3reconnect; B1→2browser refresh, no cross-instance state/infinite fetch; exec panel adds0 CLI turns. Retained old-source-regex failures and legitimate stale-build packaging block; corrected actual component assertions/full pass and rebuilt without bypass. See B4.51/B4-mcp-panel-2026-11-20.json. Model chip/Context/mixed items and whole B4 remain pending; no push.
+
+
+### B4 E49 final model-chip slot and scoped idle state
+
+Upstream133bc219df78920cdc3a5cb56f48cbe067e467e5 + c66b5fe2ed6e855f0610127eba3de96ac821adea → local08db381 feat(web): restore model chip in final composer slot. Reuse native model/streaming_status rather than fake sdk-init; idle/root-scoped snapshot and current-source guard, clear on resume/workspace changes. Original ProxyChip DOM/CSS/helper/slot geometry and modal ownership, final desktop/iPad/phone/Electron gates; existing Codex selected-profile visibility retained without unsupported role assignments. Target64/full1564/build/package702/204exactWeb/285runtime/B1.2/isolatedCLI pass. Safari model idle/refreshed A vs same-name B, proxy priority/open, forced pad drawer and phone absence;0 model turns. Actual drawer coordinate-close not established; physical/narrow/PTY GUI not newly claimed. See B4.52/B4-model-chip-2026-11-20.json. B4 and mixed commits remain in progress; no push.
+
+
+### B4 E50 permission-hook request-body guard
+
+Upstream2847027b548c8eefde55fd7910639bc8d623e429 oversize permHook crash subitem → local1ca16df fix(server): reject oversized permission hook bodies once. Reuse existing strict bounded byte/UTF-8 reader in async route; never register pending approval after rejected payload, preserve ordinary approval/reviewer/forceManual behavior. Actual HTTP red reproduced two ERR_HTTP_HEADERS_SENT plus multibyte wait; final target21/full1565/build/package702/204exactWeb/285runtime/B1.2/CLI plus installed HTTP5 pass. No DOM/CSS/new GUI/model/command execution. Automatic directory trusts/policy B9 and hook maintenance B11 remain independent, not enabled or whole-commit complete. See B4.53/B4-perm-body-2026-11-20.json. B4/Context decisions remain pending; no push.
+
+
+### B4 E51 plan approval protocol audit
+
+Upstream91b0055f2d +282306a950 and later208f1348/6081b5d0 plan-related runtime subitems audited against fixed74cd752d. Form/helper unchanged; obsolete inline ToolApprovalPanel replaced upstream by plan card/modal; actual Claude producer is canUseTool ExitPlanMode. Fresh isolated actual Codex0.169 experimental schema has11 server-request methods and no plan approval request; plan item/plan update are notifications. Reuse B2/E5 scoped native approval ownership/replay, E35–40 minimisation/terminal cleanup, E41 read-only plan and PTY guards. Countdown/automatic policy stays B9, unrelated mixed B11 separately. No runtime/tests/DOM/CSS changed; no test/build/install rerun claim; last E50 full1565/installed285+HTTP5 retained. See B4.54/B4-plan-protocol-audit-2026-11-20.json; B4 and Context choices pending, no push.
+
+
+### B4 E52 slash-menu SDK lifecycle scope audit
+
+Upstream67ceb5b7f0 and merge3c77d9a8ed: actual SDK/server/AppBase/project-key/CLI runtime differences and fixed-final skills loader reviewed, later84e65 distinguishes cached commands from real liveness probe. Reuse B2/E5/E40/E46 exact instance/replay and E29 real thread/read; do not add basename project authorization or fake Claude supportedCommands. Actual Codex skills/list and skills/changed exist, so metadata/menu remain future B7/B8 integration rather than protocol-unavailable claims.67 is merge ancestor, combined diff no new manual resolution. No runtime/tests/UI changes or rerun claim; E50 full1565/build/install285+HTTP5 retained. See B4.55/B4-skill-scope-audit-2026-11-20.json; remaining mixed candidates/Context choices and B4 pending, no push.
+
+
+### B4 E53 interrupted cumulative transcript merge
+
+Upstreamdafe2bce37 longest-common-prefix subitem → local322f47e fix(web): retain queued prompts after transcript divergence. Actual AppBase cold/live red proves old partial replaces queued user. LCP-only89/full1568/first package pass but actual Safari still stale: rejected. Actual cached ChatView red then fixed by reusing array-identity invalidation only on rewritten prefix; pure append keeps cache. Final91/full1570/build/new package702/204exactWeb/285runtime/B1.2/CLI pass. Final browser repetition blocked by two CUA native-pipe startup failures, not passed; isolated fixture90869 stopped,0 model calls. Repro and failed checkpoints retained in B4.56/B4-interrupt-merge-2026-11-21.json. Other dafe mixed subitems and B4 remain pending; no push.
+
+
+### B4 E54 send-now native approval cancellation
+
+Upstreamdafe2bce37 and later1aca9b5f8f fixed-final send-now interrupt first cancels approvals. Local Stop did so, send-now did not. Reuse native clearThread before abort in one production line. Real two-child stdio red proves stale approval replayable;28 target/full1571(5+328+1026+212),0skip/build pass. Old approval immediately gone, late allow false, sibling pending retained, next input once on same thread. Fresh production installation1t48zxa3:702files/204exactWeb/286runtime/B1.2/isolatedCLI pass. No new UI/CSS or browser pass; E53 GUI still pending. Existing B2 queue evidence reused; Codex PTY queue not yet demonstrated. Legacy orphan checkpoint helper still missing patch but unmounted IM consumer/list routes not integrated; B11 IM pending, B10 service bus separate. See B4.57/B4-send-now-approval-2026-11-21.json; B4 not complete, no push.
+
+
+### B4 E55 floating composer and scrollbar bleed
+
+Upstreamefc7f8eab1 plus117ee25d → fixed-final measuring refs/observers,3 transcript spacers, gradient and pointer-events CSS ported without layout redesign. Exact helper/CSS SHA256 retained. Two red cases then50 actual component tests/full1573(5+330+1026+212),0skip/build pass. Fresh production installation s0nutgg9:702files/204exactWeb/286runtime/B1.2/isolatedCLI pass. Native Safari selection failed again before page observation; geometry/scrollbar drag/phone/pad and E53 final GUI pending. Other SDK full-surface/launch/compact items remain independent. B4 not complete; no squash/push/PR. See B4.58/B4-floating-composer-2026-11-21.json.
+
+
+### B4 E56 native context-compaction notice
+
+Upstreamefc7f8eab1 compact notice subitem: actual Codex0.169 contextCompaction schema exposes id only. Native completed root item → existing dedup → scoped sdk-compact; original latest-only/10-record banner DOM/CSS/18locale text, existing instance/unmount guards and resume cleanup. Native/web reds reproduce omission,63target/full1575(5+331+1027+212),0skip/build pass; actual fake-stdio instances prove foreign/duplicate rejection and unknown counts omitted. Fresh production installation6_pzxhk6:702files/204exactWeb/287runtime/B1.2/isolatedCLI pass; GUI still blocked by native pipe and browser access host unavailable, no real-model compaction claim. Existing exec SDK declaration lacks item, no inference from token drops/text. Remaining mixed/Context and B4 pending. User authorized squash current main changes into1commit+PR to GitHub main AFTER B4 completion, no direct merge. See B4.59/B4-compact-notice-2026-11-21.json.
+
+
+### B4 E57 mixed-candidate lifecycle ownership audit
+
+See B4.60/B4-mixed-scope-audit-2026-11-21.json for7 exact hashes and explicit full/partial read boundaries. Proxy SDK Teammate-row gate remains B8 with absent local role UI; prompt-nav/mic B7, native agent count/nested names reuse E9/E24 proved thread Map; merge no resolution. c29 runtime fully read, approval guards already covered, LRU payload trim already7c3d849 with20001→15000 test, rooted FileBrowser B5 and legacy conv coverage separate. Auto-approve/hosting/-2 SDK/helper changes inspected; existing E5/E39/E40/E54 handles scoped real answers, B9 timers/answer picking/defaults/full UI not newly enabled or complete. No runtime/UI changes or rerun claim; latest b276e7f1575source/287installed/build remains. Context/browser and other B4 candidates pending; no squash/push/PR.
+
+### B4 E58 SDK exec launch arguments
+
+Upstream efc7f8eab199a04f3b8dcb660a5bfde593138f66 launch intent adapted to official Codex SDK supported fields: reject unsupported/missing options before session/browser/workspace/model side effects; parse supported flags after actual exec/e; preserve ordinary words and literal --. Two red cases;35 target,2 final guard checks,1578 full(5+331+1030+212),0skip/build pass. Fresh production4ukn9qex:702files/204exactWeb/290runtime/B1.2/isolatedCLI pass. User Context choices now settled,implementation next;GUI and remaining mixed candidates pending,B4 not complete,no squash/push/PR. See B4.61/B4-sdk-launch-2026-11-21.json.
+
+### B4 E59 SDK placeholder notice
+
+Upstream7a2dd6162e1465071a755606d77de22d7c0caa90 notice subitem,user selected original position with accurate Codex facts. Strict SDK marker plus default instructions appends original separator/markdown in system section;18locales,raw unchanged,real HTTP/custom instructions not mislabeled. Actual adapter/DetailPanel/ContextTab selection/raw red→52component checks/full1579(5+332+1030+212),0skip/build pass. Fresh production85bb4dif:702files/204exactWeb/290runtime/B1.2/isolatedCLI pass. E23a51bd1a expansion reused;no GUI pass,both CUA channels unavailable. Next chosen unavailable Context categories,B4 pending,no squash/push/PR. E58 local76bff2c.
+
+### B4 E60 explicit unavailable Context categories
+
+User selected original SDK-only Context Usage entry with accurate unavailable state;current usage bar unchanged. Fixed-final original centered Empty/secondary Text and exact center CSS,18original labels plus18truthful messages. Official exec/native protocol exposes token totals,not Claude get_context_usage categories;no synthetic classifier or dead control/fetch/WS/timer pipeline. Red→55 actual component/boundary checks+7 usage regressions/full1579(5+332+1030+212),0skip/build pass. Fresh productionm9b0az2f:702files/204exactWeb/290runtime/B1.2/isolatedCLI pass. GUI pending,both CUA channels unavailable;other mixed work packages and B4 not globally complete,no squash/push/PR. See B4.63/B4-context-unavailable-2026-11-21.json. E59localf0bfc21.
+
+### B4 E61 role routing and model-window scope audit
+
+3cc05b496dd2c0535df492455001b2524d091ef4 runtime diff fully read across role helpers/storage/watchers/proxy auth/model/retry/PTY env/preferences/React/CSS/V2-V3metadata;fixed-final role helper retained. B4 native identity alreadyE9/E24/E33;role assignments/routing/statistics remain B8 unimplemented,not complete. 3a2159219b0d02858bb385ebc12a5009397b7b36 all7file diff/final rules/later DeepSeek-Kimi alias changes read. Unknown1M is model policy;user retained existing usage bar,353Kunchanged;Workflow capacity helper B8 still pending. Documentation only,no new runtime/test/GUI claim. LatestE60f825be3/full1579/installed290/build remains. B4 pending,continue PTY/efc7,no squash/push/PR. See B4.64/B4-role-window-scope-2026-11-21.json.
+
+### B4 E62 SDK main WS no-PTY gate
+
+Actual efc7server diff exposed missing no-op boundary:SDK main socket rawinput/input-sequential could spawn hidden main shell. Original4type gate restored after shape validation;independent scratch handler unchanged. Real loopbackWS/fakePTY red1spawn→green0spawn/0runningPTY/no sequence ack;22target/full1580(5+332+1031+212),0skip/build pass. Fresh productionznsc0qsh:702files/204exactWeb/291runtime/B1.2/isolatedCLI pass. NoUI,shell command,real model/credentials/log changes. B4 pending,GUI unavailable;remaining scope matrix next,no squash/push/PR. See B4.65/B4-sdk-pty-gate-2026-11-21.json. E61local6f8f1e1.
+
+### B4 E63 closure matrix and remaining mixed scopes
+
+Actual efc7fullSDK/CLI/server/adapter/policy/identity/modeldiffs mapped to existing B4 entries;PTY normalized semantic diff confirms shared prompt launch extraction. Codex canonical SDK events remain durable viaB3,not blindly deleted as Claude synthetic path. Original dafequeue341/CLI/IM/ChatView/server and fixed-final core1–606/dispatch restoration read;local ordinaryPTY queue absent,originalB0/planB7 input scope remains unimplemented. E53/E54 B4 defects fixed;oldIM B11/prompt assetsB8 etc remain explicit. B4-completion-matrix.md lists5remainingGUI groups;finalCUA inventory againempty apps/browsers with nativepipe/browserhost failures. Doc-only,no new testclaim;latestE62 34fdb58 source1580/installed291/build remains. B4not complete,no squash/push/PR.
+
+### B4 E64 PR preflight and EOF-only cleanup
+
+Read-only fetch/GitHub API confirm main e268ec0039f26276c9aa75d0a5a95b3aa26d2b62;at parent94ec764,0remote-only/69local-only commits and no open main PR. Full-hash/file lists and body draft prepared in/tmp,not submitted. Full diff whitespace check found one excess EOF newline in local E5 6102667 native request descriptor;remove exactly1LF,all other bytes identical,no new upstream functional mapping. Node syntax/full main-diff whitespace checks,6approval regressions/build pass;fresh production289e7o01:702files/204exactWeb/291runtime/B1.2/isolatedCLI pass. Latest full1580source remains E62 34fdb58,not rerun or newly claimed. CUA inventory againempty/nativepipe+browserhost failure;G1–G5 still pending,B4 incomplete,no squash/push/PR. See B4.67/B4-pr-preflight-2026-11-21.json.
+
+### B4 E65 GUI fixture readiness while browser access is unavailable
+
+Reused full existing isolated b4-tasks-gui probe;add native completed contextCompaction with foreign+duplicate rejection and3Context variants on current thread. Real production HTTP/WS/fake child:compact A1/B0/no invented tokens;canonical cold materialization SDK/custom/HTTPshape markers true/true/false with original instructions;actual queue/send-now closes old approval via perm-hook-timeout,rejects late old ID,and isolates sibling. Initial assertion mistakes (undefined TOOL input/wrong close-event expectation) corrected and rerun,not production fixes. Syntax/diff checks pass;no new full/build/installed/GUI pass. CUA inventory and directiab creation both fail;temporary Playwright alternative requested interactively,not yet explicitly chosen or used. G1–G5/B4 pending,no squash/push/PR. See B4.68/B4-gui-readiness-2026-11-21.json.
+
+### B4 E66 actual GUI acceptance and work-package completion
+
+User explicitly approved temporary Playwright and later PR self-review/merge. Actual production UI on Chromium159.0.8154.6/WebKit27.2:allG1–G5 pass,including live/cold divergence,approval queue preemption/isolation,classic11px scrollbar drag0→2472,HUD159→queue197px spacers,emptyerror/longreply,phone390/pad834 emulation,compact originalslot/resume clear,placeholder raw/source boundaries,andContext unavailable/PTY/offline gates.12original screenshots+hashes committed;no production UI/protocol changes to pass. Automation setup/locator misconceptions corrected against DOM/source,not counted as product defects. All owned browsers/4fixtures stopped. Final release:check full1580(5+332+1031+212),0skip/build/packdryrun passed;E64 installed291/702files/204exactWeb/B1.2/CLI remains,not rerun. B4complete,othermixed packages explicitly pending. Next preservefullhash/backup,1commit/1PR,self-check actual checks then mergeviaPR perlatestauthorization. See B4.69/B4-completion-matrix.md/B4-final-gui-2026-11-21.json.
+
+### B4 original-history consolidation and PR delivery
+
+B4 E66 completion tip 78448bb32e50dfe6b51c30bd4fd5f60fa8f4e64f contains all72 local commits after GitHub main e268ec0039f26276c9aa75d0a5a95b3aa26d2b62. Preserve full original history in backup/b4-before-squash-2026-11-21-78448bb and verified local bundle; all72 fullhash/title entries retained in B4-original-commits-2026-11-21.tsv. New codex/b4-baseline-alignment branch squashes this exact tree into one PR commit; only delivery docs/mapping intentionally differ. Production/test/asset/probe blobs remain exact; actual PR checks and merge outcome are read back on GitHub and stored in local consolidation receipt, not claimed in advance. See local-commit-consolidation-2026-11-21.md.

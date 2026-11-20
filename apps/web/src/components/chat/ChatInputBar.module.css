@@ -1,7 +1,12 @@
-.chatInputBar {
+/* 宽屏下用 max() 把卡片限宽 1000px 并居中，窄屏退化为 16px 边距。
+   背景透明：渐变由外层 .inputStack 承担，卡片自身保持不透明。
+   pointer-events:none 让透明 padding 区不拦截滚动条拖拽；交互由 .chatInputWrapper 恢复。
+   注意：特异性必须高于 .inputStack > * (0,1,1)，故用双类选择器 (0,2,0)。 */
+.chatInputBar.chatInputBar {
   padding: 8px max(16px, calc((100% - 1000px) / 2)) 12px;
-  background: var(--bg-input-strip);
+  background: transparent;
   flex-shrink: 0;
+  pointer-events: none;
 }
 
 .chatInputWrapper {
@@ -13,6 +18,7 @@
   box-shadow: var(--shadow-composer);
   transition: border-color 0.2s;
   overflow: visible;
+  pointer-events: auto;
 }
 
 .chatInputWrapper:focus-within {
@@ -66,14 +72,20 @@
    - .chatInputBottomLeft 紧贴左边界（+ / mic 等操作按钮组）
    - .ctxBarSlot 中段，flex-basis 200 + flex-shrink 1 自适应填充至 200px
    - .chatInputBottomRight 用 margin-left:auto 抢占剩余空间贴右边界（hint + send） */
-.chatInputBottomLeft,
-.chatInputBottomRight {
+.chatInputBottomLeft {
   display: flex;
   align-items: center;
   gap: 4px;
   flex: 0 0 auto;
 }
 .chatInputBottomRight {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  /* Shrinkable so the proxy chip yields (instead of pushing send/stop off-screen) in narrow
+     chat columns; min-width:0 lets the slot's flex-shrink actually engage. */
+  flex: 0 1 auto;
+  min-width: 0;
   margin-left: auto;
 }
 
@@ -290,6 +302,22 @@
   color: var(--border-light);
   user-select: none;
   padding: 0 4px;
+  /* Never shrink or wrap — when the right group shrinks, only the proxy chip yields, so the
+     hint stays one line and the input-bar height (and --chat-input-bar-height) is undisturbed. */
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.proxyChipSlot {
+  display: flex;
+  align-items: center;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: min(220px, 40vw);
+  margin: 0 2px;
+}
+.proxyChipSlot:empty {
+  display: none;
 }
 
 /* 血条 portal slot：3 段式中段。flex-basis 200 + flex-shrink 1，把左/右段之间的空间填满至 200px 上限；
@@ -526,7 +554,6 @@
 @media (max-width: 768px) {
   .chatInputBar {
     padding: 10px 21px 16px;
-    background: transparent;
   }
 
   .chatInputWrapper {

@@ -61,6 +61,24 @@ function writerOptions(rootDir) {
   };
 }
 
+test('typed native titles retain physical turns without user prompt or root activity counts, including rebuild', () => {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-title-summary-'));
+  try {
+    const writer = LogV2Writer.open(writerOptions(root));
+    const identity = resolveAppServerThreadIdentity({ id: 'summary-session', sessionId: 'summary-session',
+      ephemeral: true, threadSource: 'thread_title' });
+    const title = entry('2026-07-15T08:01:00.000Z', [user('Generate an internal title')], 'title-turn');
+    title._appServerSource = true;
+    Object.assign(title.body.metadata, { ephemeral: true, threadSource: 'thread_title' });
+    writer.append(title, identity);
+    for (const summary of [readSessionSummary(writer.sessionDir), rebuildSessionSummary(writer.sessionDir)]) {
+      assert.equal(summary.turns, 1);
+      assert.equal(summary.rootMainEvents, 0);
+      assert.deepEqual(summary.userPrompts, []);
+    }
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
 test('summary prompt projection keeps user text while dropping synthetic chrome and image sources', () => {
   assert.equal(projectPromptItemForSummary({ role: 'developer', content: 'developer secret' }), null);
   assert.equal(projectPromptItemForSummary({ role: 'assistant', content: 'assistant output' }), null);

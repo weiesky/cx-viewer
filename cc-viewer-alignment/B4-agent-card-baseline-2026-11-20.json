@@ -1,0 +1,10 @@
+{
+  "upstream": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "css_exact": true,
+  "css_sha256": "52762ae1a8ab4629913b5680d3091e90a4c695848bb315f428a3e2c122a58a27",
+  "component_render_clock_collapse_tail_exact": true,
+  "render_tail_sha256": "e92526d912357dd79592188400d28abd5a280bb08631153f57af2437338f670f",
+  "necessary_adaptation": "native instance-owned snapshot and proved native identities replace Claude taskStore/transcript heuristics",
+  "gui_fixture": "cxv-b4-tasks-gui-r2PrO4",
+  "real_model_gui": false
+}

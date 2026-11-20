@@ -15,6 +15,7 @@ import {
   setAppServerAgentMessageDeltaListener,
   _writeAppServerEntryForTests,
   resetRawCaptureBoundary,
+  getAppServerAgentLoopSnapshot,
 } from '../packages/app/lib/appserver-bridge.js';
 import { getDefaultSystemPrompt, saveDefaultSystemPrompt, saveModelSystemPrompt } from '../packages/app/lib/model-system-prompts.js';
 import { buildSingleToolResultCore } from '../apps/web/src/utils/toolResultCore.js';
@@ -542,6 +543,99 @@ function client(method, params = {}) {
 function clientResponse(id, result, error = null) {
   _parseAppServerClientMessageForTests(error ? { id, error } : { id, result });
 }
+
+test('ordinary TUI loop boundaries require a matching connection RPC acceptance and own terminal', () => {
+  const events = [];
+  _resetAppServerBridgeForTests({ cwd: '/tmp/loop-owned', project: 'loop-owned',
+    onAgentLoopStart: data => events.push({ phase: 'start', ...data }),
+    onAgentLoopEnd: data => events.push({ phase: 'end', ...data }) });
+  const send = (connection, id, threadId) => _parseAppServerClientMessageForTests({ id, method: 'turn/start', params: { threadId, input: [] } }, connection);
+  const ack = (connection, id, turnId, error) => _parseAppServerServerMessageForTests(error ? { id, error }
+    : { id, result: { turn: { id: turnId, status: 'inProgress' } } }, connection);
+  send('one', 1, 'root-one'); send('two', 1, 'root-two');
+  server('turn/started', { threadId: 'root-one', turn: { id: 'one' } });
+  assert.deepEqual(events, [], 'notifications alone cannot invent an accepted user loop');
+  ack('two', 1, 'two'); ack('one', 1, 'one'); ack('one', 1, 'one');
+  assert.deepEqual(events.map(event => [event.phase, event.sessionId, event.turnId]), [
+    ['start', 'root-two', 'two'], ['start', 'root-one', 'one'] ]);
+  server('turn/completed', { threadId: 'child', turn: { id: 'one', status: 'completed' } });
+  server('turn/completed', { threadId: 'root-one', turn: { id: 'old', status: 'completed' } });
+  assert.equal(events.length, 2);
+  server('turn/completed', { threadId: 'root-one', turn: { id: 'one', status: 'completed' } });
+  server('turn/completed', { threadId: 'root-one', turn: { id: 'one', status: 'completed' } });
+  assert.equal(events.length, 3); assert.equal(events[2].reason, 'stop-hook');
+  assert.deepEqual(getAppServerAgentLoopSnapshot().map(data => data.turnId), ['two']);
+  send('one', 2, 'root-one'); ack('one', 2, 'unused', { code: -1, message: 'not accepted' });
+  assert.equal(events.length, 3);
+  _resetAppServerBridgeForTests();
+  assert.equal(events.at(-1).reason, 'session-ended'); assert.equal(events.at(-1).turnId, 'two');
+  assert.ok(events.every(event => event.cwd === '/tmp/loop-owned' && event.turnStartedAt > 0));
+});
+
+test('TUI children and history never start loops; a completion before acceptance still closes exactly once', () => {
+  const events = [];
+  _resetAppServerBridgeForTests({ cwd: '/tmp/loop-order',
+    onAgentLoopStart: data => events.push({ phase: 'start', ...data }),
+    onAgentLoopEnd: data => events.push({ phase: 'end', ...data }) });
+  server('thread/started', { thread: { id: 'child', parentThreadId: 'root' } });
+  _parseAppServerClientMessageForTests({ id: 3, method: 'turn/start', params: { threadId: 'child', input: [] } });
+  serverResponse(3, { turn: { id: 'child-turn' } });
+  serverResponse(4, { thread: { id: 'history', turns: [{ id: 'past', status: 'completed', items: [] }] } });
+  assert.deepEqual(events, []);
+  _parseAppServerClientMessageForTests({ id: 5, method: 'turn/start', params: { threadId: 'root', input: [] } });
+  server('turn/started', { threadId: 'root', turn: { id: 'fast' } });
+  server('turn/completed', { threadId: 'root', turn: { id: 'fast', status: 'interrupted' } });
+  serverResponse(5, { turn: { id: 'fast' } });
+  assert.deepEqual(events.map(event => event.phase), ['start', 'end']); assert.equal(events[1].reason, 'interrupted');
+  assert.deepEqual(getAppServerAgentLoopSnapshot(), []);
+  _resetAppServerBridgeForTests(); assert.equal(events.length, 2);
+});
+
+test('TUI loop observer errors cannot break parser ownership, snapshot copies or teardown', () => {
+  let started = 0, ended = 0;
+  _resetAppServerBridgeForTests({ onAgentLoopStart() { started++; throw new Error('observer'); },
+    onAgentLoopEnd() { ended++; throw new Error('observer'); } });
+  _parseAppServerClientMessageForTests({ id: 8, method: 'turn/start', params: { threadId: 'root', input: [] } });
+  serverResponse(8, { turn: { id: 'turn' } });
+  const snapshot = getAppServerAgentLoopSnapshot(); snapshot[0].turnId = 'mutated';
+  assert.equal(getAppServerAgentLoopSnapshot()[0].turnId, 'turn');
+  _resetAppServerBridgeForTests(); assert.equal(started, 1); assert.equal(ended, 1);
+});
+
+test('native temporary title generation cannot reset or start a user loop', () => {
+  const events = [];
+  _resetAppServerBridgeForTests({ cwd: '/tmp/title-loop',
+    onAgentLoopStart: data => events.push({ phase: 'start', ...data }),
+    onAgentLoopEnd: data => events.push({ phase: 'end', ...data }) });
+  server('thread/started', { thread: { id: 'user', sessionId: 'user', threadSource: 'user' } });
+  _parseAppServerClientMessageForTests({ id: 1, method: 'turn/start', params: {
+    threadId: 'user', input: [{ type: 'text', text: 'retained prompt' }] } });
+  serverResponse(1, { turn: { id: 'owned' } });
+  server('turn/started', { threadId: 'user', turn: { id: 'owned', status: 'inProgress' } });
+  _parseAppServerClientMessageForTests({ id: 'temporary', method: 'thread/start', params: {
+    ephemeral: true, threadSource: 'thread_title', cwd: '/tmp/title-loop' } });
+  serverResponse('temporary', { thread: { id: 'title', ephemeral: true, threadSource: 'thread_title' } });
+  _parseAppServerClientMessageForTests({ id: 'title-turn', method: 'turn/start', params: { threadId: 'title', input: [] } });
+  serverResponse('title-turn', { turn: { id: 'utility' } });
+  assert.deepEqual(events.map(event => event.phase), ['start']);
+  assert.equal(getAppServerAgentLoopSnapshot()[0].turnId, 'owned');
+  server('turn/started', { threadId: 'title', turn: { id: 'utility', status: 'inProgress' } });
+  server('item/completed', { threadId: 'title', item: { id: 'title-answer', type: 'agentMessage', text: 'Internal title' } });
+  server('turn/completed', { threadId: 'title', turn: { id: 'utility', status: 'completed' } });
+  const titleEntry = capturedEntries.find(entry => entry.body?.metadata?.thread_id === 'title');
+  assert.equal(titleEntry.mainAgent, false); assert.equal(titleEntry.subAgent, false);
+  assert.equal(titleEntry.body.metadata.threadSource, 'thread_title');
+  assert.equal(titleEntry.body.metadata.ephemeral, true);
+  assert.deepEqual(events.map(event => event.phase), ['start']);
+  server('item/completed', { threadId: 'user', item: { id: 'reply', type: 'agentMessage', text: 'retained reply' } });
+  server('turn/completed', { threadId: 'user', turn: { id: 'owned', status: 'completed' } });
+  assert.deepEqual(events.map(event => event.phase), ['start', 'end']);
+  assert.equal(events[1].reason, 'stop-hook');
+  const entry = capturedEntries.find(entry => entry.body?.metadata?.thread_id === 'user');
+  assert.match(JSON.stringify(entry.body.input), /retained prompt/);
+  assert.match(JSON.stringify(entry.response.body), /retained reply/);
+  _resetAppServerBridgeForTests(); assert.equal(events.length, 2);
+});
 
 test('app-server bridge exposes main-agent message deltas for IM card streaming', () => {
   const events = [];

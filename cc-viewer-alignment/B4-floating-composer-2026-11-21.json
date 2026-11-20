@@ -1,0 +1,65 @@
+{
+  "date": "2026-11-21",
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": [
+    "efc7f8eab199a04f3b8dcb660a5bfde593138f66",
+    "117ee25de22e82dd4891e98c88117a7d5c704ffe"
+  ],
+  "subitem": "Restore the baseline floating composer and subsequent scrollbar bleed correction, including empty-error spacing.",
+  "audit": [
+    "Actual original App/Mobile/ChatView/TerminalPanel and CSS diffs read;117ee scrollbar/pointer-events correction and fixed-final helpers/CSS/all three list branches read. Local constructor/mount/update/unmount/scroller refs/render/input CSS traced.",
+    "This shared layout supports B4 SDK surfaces and was previously deferred under the B2/B7 mixed candidate; does not mark all B7 prompt-navigation/input changes complete."
+  ],
+  "implementation": "Port baseline helpers/lifecycle and CSS verbatim. Add measuring ref, classic/overlay scrollbar bleed, three list spacers, gutter callback and cleanup. Keep current canonical history/native identity and composer contents.",
+  "baselineRegionSha256": {
+    "apps/web/src/components/chat/ChatView.jsx": "c5bff416367d14e8dec070a3b641a8f83d75a8c508a9ed4883cef19ff873dcf9",
+    "apps/web/src/components/chat/ChatView.module.css": "0cafffe26911394224b3aa1c844dcbd8ce92eb93b1cb3be8ed21dcd2e3e464db",
+    "apps/web/src/components/chat/ChatInputBar.module.css": "40161d57e8ed87ef89cf89375c6d8c11ac508f831769b0d3861e016e66a28c75"
+  },
+  "red": {
+    "failed": 2,
+    "log": "/tmp/cxv-b4-floating-composer-red.log"
+  },
+  "target": {
+    "passed": 50,
+    "skipped": 0,
+    "log": "/tmp/cxv-b4-floating-composer-target.log"
+  },
+  "full": {
+    "passed": 1573,
+    "groups": [
+      5,
+      330,
+      1026,
+      212
+    ],
+    "skipped": 0,
+    "log": "/tmp/cxv-b4-floating-composer-full.log"
+  },
+  "build": {
+    "status": "passed",
+    "log": "/tmp/cxv-b4-floating-composer-build.log"
+  },
+  "installed": {
+    "status": "passed",
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-s0nutgg9",
+    "files": 702,
+    "source_bytes_match": true,
+    "web_asset_files": 204,
+    "runtime_tests": "286/286",
+    "b12_regression": "passed",
+    "installed_cli_relative_cd_boot": "passed",
+    "uses_fake_codex": true,
+    "uses_real_model_network": false,
+    "log": "/tmp/cxv-b4-floating-composer-installed.log"
+  },
+  "instanceAttempt": {
+    "gui": "Native Safari selection again failed: Sky Computer Use native pipe startup failed. No page observed for this revision; visual geometry/scrollbar dragging/phone/pad not passed.",
+    "repro": "pnpm run build; node cc-viewer-alignment/probes/b4-tasks-gui.mjs; open emitted A URL; enter hold tasks, queue follow-up, expand task rows and grow textarea. Verify input overlay fades while last message/error stays above composer and right scrollbar stays reachable. Repeat mobile=1/ipad=1 and empty/error state.",
+    "requires": "Working native CUA browser connection or manual browser validation; isolated fixture only."
+  },
+  "limits": [
+    "No new GUI success claimed; E53 final repetition also still pending.",
+    "Remaining efc7 SDK compact/protocol/launch metadata and other mixed subitems remain independent; no overall B4 completion or PR."
+  ]
+}

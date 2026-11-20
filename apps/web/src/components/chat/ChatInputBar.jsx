@@ -47,7 +47,7 @@ const SPEECH_LANG_MAP = {
   tr: 'tr-TR', uk: 'uk-UA',
 };
 
-function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, onKeyDown, onChange, onSend, onStop, onSuggestionClick, onUploadPath, presetItems, onPresetSend, onOpenPresetModal, onOpenUltraPlan, onClearContext, isStreaming, pendingImages, onRemovePendingImage, uploadingItems, sendDeferred, onUploadStart, onUploadEnd, setContextBarSlot, approvalsReviewer, onApprovalsReviewerChange, planAutoApproveSeconds, onPlanAutoApproveChange, onClearContextNow, ultraplanPopover, onResumeSession, resumeInstanceKey, projectName }) {
+function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, sdkMode, onKeyDown, onChange, onSend, onStop, onSuggestionClick, onUploadPath, presetItems, onPresetSend, onOpenPresetModal, onOpenUltraPlan, onClearContext, isStreaming, pendingImages, onRemovePendingImage, uploadingItems, sendDeferred, onUploadStart, onUploadEnd, setContextBarSlot, approvalsReviewer, onApprovalsReviewerChange, planAutoApproveSeconds, onPlanAutoApproveChange, onClearContextNow, ultraplanPopover, onResumeSession, resumeInstanceKey, projectName, proxyChip }) {
   const [plusOpen, setPlusOpen] = useState(false);
   // 桌面四芒星菜单的级联展开行（与终端工具栏同款交互）：null | 'perm' | 'plan' | 'agentteam'
   const [quickExpanded, setQuickExpanded] = useState(null);
@@ -301,7 +301,9 @@ function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, 
     input.click();
   };
 
-  if (terminalVisible) {
+  // SDK 模式：terminalVisible 是 scratchOpen（伴随 scratch 终端开关），对话输入框必须始终可见，
+  // 不随终端开合隐藏。仅 PTY 模式（terminalVisible = 主 PTY 面板）才在终端打开时让位。
+  if (terminalVisible && !sdkMode) {
     if (!inputSuggestion) return null;
     return (
       <div className={styles.suggestionChip} onClick={onSuggestionClick}>
@@ -563,9 +565,11 @@ function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, 
             </button>
           )}
           </div>
-          {/* 中段：血条 portal slot；终端关闭 + 非纯移动端时挂在左/右控件之间，
-              flex-basis 200 + flex-shrink 1 自适应填充至 200px 上限；AppHeader 通过 createPortal 把 LiveTagPopover 渲染进来 */}
-          {!(isMobile && !isPad) && !terminalVisible && setContextBarSlot && (
+          {/* Middle: blood-bar portal slot. Mounted with the composer (hidden only on pure phones);
+              in SDK mode terminalVisible is the scratch toggle, so the slot survives scratch open/close
+              (same predicate as the early return above). flex-basis 200 + flex-shrink 1 fills up to
+              200px; AppHeader portals LiveTagPopover in via createPortal. */}
+          {!(isMobile && !isPad) && !(terminalVisible && !sdkMode) && setContextBarSlot && (
             <div className={styles.ctxBarSlot} ref={setContextBarSlot} />
           )}
           <div className={styles.chatInputBottomRight}>
@@ -574,6 +578,9 @@ function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, 
               ? null
               : (inputSuggestion && inputEmpty ? t('ui.chatInput.hintTab') : t('ui.chatInput.hintEnter'))}
           </div>
+          {proxyChip && (
+            <div className={styles.proxyChipSlot}>{proxyChip}</div>
+          )}
           <div className={styles.sendBtnWrap}>
             {isStreaming && onStop ? (
               <button

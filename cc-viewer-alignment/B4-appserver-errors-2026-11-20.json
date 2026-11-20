@@ -1,0 +1,194 @@
+{
+  "root": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-uL4kH4",
+  "realCodex": "codex-cli 0.169.0",
+  "officialSdk": "0.142.5",
+  "externalModelNetwork": false,
+  "credentials": "isolated fixture-only",
+  "productionDefaultTransportChanged": false,
+  "threadConfigJson": false,
+  "agentsSpawned": false,
+  "agents": null,
+  "appServer": {
+    "stdioHandshake": true,
+    "sameNameSeparateProcesses": true,
+    "independentTurns": true,
+    "plan": [
+      {
+        "step": "Read baseline",
+        "status": "completed"
+      },
+      {
+        "step": "Verify protocol",
+        "status": "inProgress"
+      },
+      {
+        "step": "Record evidence",
+        "status": "pending"
+      }
+    ],
+    "streamingDeltas": true,
+    "exactTurnInterrupt": true,
+    "failedTurn": true,
+    "restartNativeResume": true
+  },
+  "sdk": {
+    "realTodoListReplay": true,
+    "statuses": [
+      "completed",
+      "pending",
+      "pending"
+    ]
+  },
+  "normalizedTransport": {
+    "actualModule": true,
+    "textAndPlan": true,
+    "cancellation": true,
+    "continueAfterCancel": true,
+    "restartResume": true
+  },
+  "managerIntegration": {
+    "explicitOnly": true,
+    "archiveIdentityRetained": true,
+    "genuinePlanStatus": true,
+    "independentQueue": true,
+    "interruptionParksQueue": true,
+    "sendNowOnSameNativeThread": true,
+    "busyTransportSwitchRejected": true,
+    "v2ExecArchiveToNativeResume": true,
+    "v2NativeArchiveToExecResume": true
+  },
+  "nativeQuestions": {
+    "answer": true,
+    "cancelEmptyAnswers": true,
+    "exactInstanceReply": true,
+    "transcriptToolResult": true
+  },
+  "nativeMcpImages": null,
+  "nativeConfig": {
+    "rawTomlArray": false,
+    "featureFlag": true
+  },
+  "errorEvidence": [
+    {
+      "prompt": "B4 RETRY SUCCESS",
+      "turnId": "01a1f7ac-cade-70b2-ba55-fe1582934e6e",
+      "status": "completed",
+      "error": null,
+      "notices": [
+        {
+          "error": {
+            "message": "Reconnecting... 1/1",
+            "codexErrorInfo": {
+              "responseStreamDisconnected": {
+                "httpStatusCode": 503
+              }
+            },
+            "additionalDetails": "unexpected status 503 Service Unavailable: B4 local retry fixture, url: http://127.0.0.1:52821/v1/responses",
+            "misalignment": null
+          },
+          "willRetry": true,
+          "threadId": "01a1f7ac-cad2-7692-aa70-72d917f6fdc9",
+          "turnId": "01a1f7ac-cade-70b2-ba55-fe1582934e6e"
+        }
+      ],
+      "requests": 2
+    },
+    {
+      "prompt": "B4 RETRY EXHAUSTED",
+      "turnId": "01a1f7ac-ccf5-7730-9da3-8ea937b47b78",
+      "status": "failed",
+      "error": {
+        "message": "unexpected status 503 Service Unavailable: B4 local retry fixture, url: http://127.0.0.1:52821/v1/responses",
+        "codexErrorInfo": {
+          "httpConnectionFailed": {
+            "httpStatusCode": 503
+          }
+        },
+        "additionalDetails": null,
+        "misalignment": null
+      },
+      "notices": [
+        {
+          "error": {
+            "message": "Reconnecting... 1/1",
+            "codexErrorInfo": {
+              "responseStreamDisconnected": {
+                "httpStatusCode": 503
+              }
+            },
+            "additionalDetails": "unexpected status 503 Service Unavailable: B4 local retry fixture, url: http://127.0.0.1:52821/v1/responses",
+            "misalignment": null
+          },
+          "willRetry": true,
+          "threadId": "01a1f7ac-cad2-7692-aa70-72d917f6fdc9",
+          "turnId": "01a1f7ac-ccf5-7730-9da3-8ea937b47b78"
+        },
+        {
+          "error": {
+            "message": "unexpected status 503 Service Unavailable: B4 local retry fixture, url: http://127.0.0.1:52821/v1/responses",
+            "codexErrorInfo": {
+              "httpConnectionFailed": {
+                "httpStatusCode": 503
+              }
+            },
+            "additionalDetails": null,
+            "misalignment": null
+          },
+          "willRetry": false,
+          "threadId": "01a1f7ac-cad2-7692-aa70-72d917f6fdc9",
+          "turnId": "01a1f7ac-ccf5-7730-9da3-8ea937b47b78"
+        }
+      ],
+      "requests": 2
+    }
+  ],
+  "normalizedFailure": {
+    "type": "turn.failed",
+    "thread_id": "01a1f7ac-d027-7c00-9728-f5233f161e31",
+    "turn_id": "01a1f7ac-d28d-7682-90a1-1ddbaa144d5a",
+    "status": "failed",
+    "error": {
+      "message": "{\"error\":{\"message\":\"B4 local synthetic failure\",\"type\":\"invalid_request_error\"}}",
+      "codexErrorInfo": "other",
+      "additionalDetails": null,
+      "misalignment": null
+    }
+  },
+  "managerAgents": null,
+  "publicCli": null,
+  "schema": {
+    "planStatuses": [
+      "pending",
+      "inProgress",
+      "completed"
+    ],
+    "agentStatuses": [
+      "pendingInit",
+      "running",
+      "interrupted",
+      "completed",
+      "errored",
+      "shutdown",
+      "notFound"
+    ],
+    "collabRequiredFields": [
+      "agentsStates",
+      "id",
+      "receiverThreadIds",
+      "senderThreadId",
+      "status",
+      "tool",
+      "type"
+    ]
+  },
+  "requestCount": 27,
+  "unverified": [
+    "real agent lifecycle execution",
+    "real native command/file/permissions approval requests",
+    "image output",
+    "all CLI options",
+    "OS process descendants",
+    "WebSocket reconnect",
+    "Windows/Linux/minimum Node"
+  ]
+}

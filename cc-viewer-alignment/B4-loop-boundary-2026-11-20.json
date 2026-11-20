@@ -1,0 +1,444 @@
+{
+  "root": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-vxAHDB",
+  "realCodex": "codex-cli 0.169.0",
+  "officialSdk": "0.142.5",
+  "externalModelNetwork": false,
+  "credentials": "isolated fixture-only",
+  "productionDefaultTransportChanged": false,
+  "threadConfigJson": false,
+  "agentsSpawned": false,
+  "agents": null,
+  "appServer": {
+    "stdioHandshake": true,
+    "sameNameSeparateProcesses": true,
+    "independentTurns": true,
+    "plan": [
+      {
+        "step": "Read baseline",
+        "status": "completed"
+      },
+      {
+        "step": "Verify protocol",
+        "status": "inProgress"
+      },
+      {
+        "step": "Record evidence",
+        "status": "pending"
+      }
+    ],
+    "streamingDeltas": true,
+    "exactTurnInterrupt": true,
+    "failedTurn": true,
+    "restartNativeResume": true
+  },
+  "sdk": {
+    "realTodoListReplay": true,
+    "statuses": [
+      "completed",
+      "pending",
+      "pending"
+    ]
+  },
+  "normalizedTransport": {
+    "actualModule": true,
+    "textAndPlan": true,
+    "cancellation": true,
+    "continueAfterCancel": true,
+    "restartResume": true
+  },
+  "managerIntegration": {
+    "explicitOnly": true,
+    "archiveIdentityRetained": true,
+    "genuinePlanStatus": true,
+    "independentQueue": true,
+    "interruptionParksQueue": true,
+    "sendNowOnSameNativeThread": true,
+    "busyTransportSwitchRejected": true,
+    "v2ExecArchiveToNativeResume": true,
+    "v2NativeArchiveToExecResume": true
+  },
+  "nativeQuestions": {
+    "answer": true,
+    "cancelEmptyAnswers": true,
+    "exactInstanceReply": true,
+    "transcriptToolResult": true
+  },
+  "nativeMcpImages": null,
+  "nativeConfig": {
+    "rawTomlArray": false,
+    "featureFlag": true
+  },
+  "errorEvidence": [
+    {
+      "prompt": "B4 RETRY SUCCESS",
+      "turnId": "01a1f8ba-f520-7420-80cb-ec873d6a2902",
+      "status": "completed",
+      "error": null,
+      "notices": [
+        {
+          "error": {
+            "message": "Reconnecting... 1/1",
+            "codexErrorInfo": {
+              "responseStreamDisconnected": {
+                "httpStatusCode": 503
+              }
+            },
+            "additionalDetails": "unexpected status 503 Service Unavailable: B4 local retry fixture, url: http://127.0.0.1:57309/v1/responses",
+            "misalignment": null
+          },
+          "willRetry": true,
+          "threadId": "01a1f8ba-f515-7723-8a2b-102e56d49dc3",
+          "turnId": "01a1f8ba-f520-7420-80cb-ec873d6a2902"
+        }
+      ],
+      "requests": 2
+    },
+    {
+      "prompt": "B4 RETRY EXHAUSTED",
+      "turnId": "01a1f8ba-f724-74b1-826e-a4270bb066bd",
+      "status": "failed",
+      "error": {
+        "message": "unexpected status 503 Service Unavailable: B4 local retry fixture, url: http://127.0.0.1:57309/v1/responses",
+        "codexErrorInfo": {
+          "httpConnectionFailed": {
+            "httpStatusCode": 503
+          }
+        },
+        "additionalDetails": null,
+        "misalignment": null
+      },
+      "notices": [
+        {
+          "error": {
+            "message": "Reconnecting... 1/1",
+            "codexErrorInfo": {
+              "responseStreamDisconnected": {
+                "httpStatusCode": 503
+              }
+            },
+            "additionalDetails": "unexpected status 503 Service Unavailable: B4 local retry fixture, url: http://127.0.0.1:57309/v1/responses",
+            "misalignment": null
+          },
+          "willRetry": true,
+          "threadId": "01a1f8ba-f515-7723-8a2b-102e56d49dc3",
+          "turnId": "01a1f8ba-f724-74b1-826e-a4270bb066bd"
+        },
+        {
+          "error": {
+            "message": "unexpected status 503 Service Unavailable: B4 local retry fixture, url: http://127.0.0.1:57309/v1/responses",
+            "codexErrorInfo": {
+              "httpConnectionFailed": {
+                "httpStatusCode": 503
+              }
+            },
+            "additionalDetails": null,
+            "misalignment": null
+          },
+          "willRetry": false,
+          "threadId": "01a1f8ba-f515-7723-8a2b-102e56d49dc3",
+          "turnId": "01a1f8ba-f724-74b1-826e-a4270bb066bd"
+        }
+      ],
+      "requests": 2
+    }
+  ],
+  "normalizedFailure": {
+    "type": "turn.failed",
+    "thread_id": "01a1f8ba-faac-7d42-af46-6b5593cd92ae",
+    "turn_id": "01a1f8ba-fc91-7b81-ba9b-4e1d2618c878",
+    "status": "failed",
+    "error": {
+      "message": "{\"error\":{\"message\":\"B4 local synthetic failure\",\"type\":\"invalid_request_error\"}}",
+      "codexErrorInfo": "other",
+      "additionalDetails": null,
+      "misalignment": null
+    }
+  },
+  "managerFailures": [
+    {
+      "type": "sdk-error",
+      "message": "unexpected status 503 Service Unavailable: B4 local retry fixture, url: http://127.0.0.1:57309/v1/responses",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-vxAHDB/native-manager/same",
+      "sessionId": "01a1f8bb-028e-7ff1-8056-18f5910aad39",
+      "instanceKey": "cxv-f99746de53d5f80fbc245715f79a4c02",
+      "turnId": "01a1f8bb-0479-7210-bade-75936d456ece",
+      "codexErrorInfo": {
+        "httpConnectionFailed": {
+          "httpStatusCode": 503
+        }
+      },
+      "apiStatus": 503,
+      "retryable": true
+    },
+    {
+      "type": "sdk-error",
+      "message": "{\"error\":{\"message\":\"B4 local synthetic failure\",\"type\":\"invalid_request_error\"}}",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-vxAHDB/native-manager/same",
+      "sessionId": "01a1f8bb-028e-7ff1-8056-18f5910aad39",
+      "instanceKey": "cxv-f99746de53d5f80fbc245715f79a4c02",
+      "turnId": "01a1f8bb-086c-71c0-9719-ec18538b635a",
+      "codexErrorInfo": "other",
+      "apiStatus": null,
+      "retryable": false
+    }
+  ],
+  "managerRetryStates": [
+    {
+      "type": "sdk-retry-state",
+      "phase": "retrying",
+      "turnId": "01a1f8bb-0479-7210-bade-75936d456ece",
+      "retryOf": null,
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-vxAHDB/native-manager/same",
+      "sessionId": "01a1f8bb-028e-7ff1-8056-18f5910aad39",
+      "instanceKey": "cxv-f99746de53d5f80fbc245715f79a4c02",
+      "ts": 1795174368507,
+      "error": "Reconnecting... 1/1"
+    },
+    {
+      "type": "sdk-retry-state",
+      "phase": "recovering",
+      "turnId": "01a1f8bb-05e2-7a51-aed9-364a17713abc",
+      "retryOf": "01a1f8bb-0479-7210-bade-75936d456ece",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-vxAHDB/native-manager/same",
+      "sessionId": "01a1f8bb-028e-7ff1-8056-18f5910aad39",
+      "instanceKey": "cxv-f99746de53d5f80fbc245715f79a4c02",
+      "ts": 1795174368740
+    },
+    {
+      "type": "sdk-retry-state",
+      "phase": "recovered",
+      "turnId": "01a1f8bb-05e2-7a51-aed9-364a17713abc",
+      "retryOf": "01a1f8bb-0479-7210-bade-75936d456ece",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-vxAHDB/native-manager/same",
+      "sessionId": "01a1f8bb-028e-7ff1-8056-18f5910aad39",
+      "instanceKey": "cxv-f99746de53d5f80fbc245715f79a4c02",
+      "ts": 1795174368954
+    },
+    {
+      "type": "sdk-retry-state",
+      "phase": "retrying",
+      "turnId": "01a1f8bb-06c6-7a81-98e4-a4e896f96ded",
+      "retryOf": null,
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-vxAHDB/native-manager/same",
+      "sessionId": "01a1f8bb-028e-7ff1-8056-18f5910aad39",
+      "instanceKey": "cxv-f99746de53d5f80fbc245715f79a4c02",
+      "ts": 1795174369102,
+      "error": "Reconnecting... 1/1"
+    },
+    {
+      "type": "sdk-retry-state",
+      "phase": "recovered",
+      "turnId": "01a1f8bb-06c6-7a81-98e4-a4e896f96ded",
+      "retryOf": null,
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-vxAHDB/native-manager/same",
+      "sessionId": "01a1f8bb-028e-7ff1-8056-18f5910aad39",
+      "instanceKey": "cxv-f99746de53d5f80fbc245715f79a4c02",
+      "ts": 1795174369387
+    }
+  ],
+  "managerAgents": null,
+  "managerLoops": [
+    {
+      "phase": "start",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-vxAHDB/native-manager/same",
+      "instanceKey": "cxv-f99746de53d5f80fbc245715f79a4c02",
+      "turnId": "sdk_1795174367832_sflw8x",
+      "turnStartedAt": 1795174367832,
+      "sessionId": "01a1f8bb-028e-7ff1-8056-18f5910aad39",
+      "ts": 1795174367898
+    },
+    {
+      "phase": "end",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-vxAHDB/native-manager/same",
+      "instanceKey": "cxv-f99746de53d5f80fbc245715f79a4c02",
+      "turnId": "sdk_1795174367832_sflw8x",
+      "turnStartedAt": 1795174367832,
+      "sessionId": "01a1f8bb-028e-7ff1-8056-18f5910aad39",
+      "ts": 1795174368376,
+      "reason": "success"
+    },
+    {
+      "phase": "start",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-vxAHDB/native-manager/same",
+      "instanceKey": "cxv-f99746de53d5f80fbc245715f79a4c02",
+      "turnId": "sdk_1795174368377_ij9wd4",
+      "turnStartedAt": 1795174368377,
+      "sessionId": "01a1f8bb-028e-7ff1-8056-18f5910aad39",
+      "ts": 1795174368377
+    },
+    {
+      "phase": "end",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-vxAHDB/native-manager/same",
+      "instanceKey": "cxv-f99746de53d5f80fbc245715f79a4c02",
+      "turnId": "sdk_1795174368377_ij9wd4",
+      "turnStartedAt": 1795174368377,
+      "sessionId": "01a1f8bb-028e-7ff1-8056-18f5910aad39",
+      "ts": 1795174368738,
+      "reason": "error"
+    },
+    {
+      "phase": "start",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-vxAHDB/native-manager/same",
+      "instanceKey": "cxv-f99746de53d5f80fbc245715f79a4c02",
+      "turnId": "sdk_1795174368738_o34g2q",
+      "turnStartedAt": 1795174368738,
+      "sessionId": "01a1f8bb-028e-7ff1-8056-18f5910aad39",
+      "ts": 1795174368738
+    },
+    {
+      "phase": "end",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-vxAHDB/native-manager/same",
+      "instanceKey": "cxv-f99746de53d5f80fbc245715f79a4c02",
+      "turnId": "sdk_1795174368738_o34g2q",
+      "turnStartedAt": 1795174368738,
+      "sessionId": "01a1f8bb-028e-7ff1-8056-18f5910aad39",
+      "ts": 1795174368954,
+      "reason": "success"
+    },
+    {
+      "phase": "start",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-vxAHDB/native-manager/same",
+      "instanceKey": "cxv-f99746de53d5f80fbc245715f79a4c02",
+      "turnId": "sdk_1795174368965_jb2ixh",
+      "turnStartedAt": 1795174368965,
+      "sessionId": "01a1f8bb-028e-7ff1-8056-18f5910aad39",
+      "ts": 1795174368965
+    },
+    {
+      "phase": "end",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-vxAHDB/native-manager/same",
+      "instanceKey": "cxv-f99746de53d5f80fbc245715f79a4c02",
+      "turnId": "sdk_1795174368965_jb2ixh",
+      "turnStartedAt": 1795174368965,
+      "sessionId": "01a1f8bb-028e-7ff1-8056-18f5910aad39",
+      "ts": 1795174369387,
+      "reason": "success"
+    },
+    {
+      "phase": "start",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-vxAHDB/native-manager/same",
+      "instanceKey": "cxv-f99746de53d5f80fbc245715f79a4c02",
+      "turnId": "sdk_1795174369387_279nax",
+      "turnStartedAt": 1795174369387,
+      "sessionId": "01a1f8bb-028e-7ff1-8056-18f5910aad39",
+      "ts": 1795174369387
+    },
+    {
+      "phase": "end",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-vxAHDB/native-manager/same",
+      "instanceKey": "cxv-f99746de53d5f80fbc245715f79a4c02",
+      "turnId": "sdk_1795174369387_279nax",
+      "turnStartedAt": 1795174369387,
+      "sessionId": "01a1f8bb-028e-7ff1-8056-18f5910aad39",
+      "ts": 1795174369516,
+      "reason": "error"
+    },
+    {
+      "phase": "start",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-vxAHDB/native-manager/same",
+      "instanceKey": "cxv-f99746de53d5f80fbc245715f79a4c02",
+      "turnId": "sdk_1795174369516_a6qpfs",
+      "turnStartedAt": 1795174369516,
+      "sessionId": "01a1f8bb-028e-7ff1-8056-18f5910aad39",
+      "ts": 1795174369516
+    },
+    {
+      "phase": "end",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-vxAHDB/native-manager/same",
+      "instanceKey": "cxv-f99746de53d5f80fbc245715f79a4c02",
+      "turnId": "sdk_1795174369516_a6qpfs",
+      "turnStartedAt": 1795174369516,
+      "sessionId": "01a1f8bb-028e-7ff1-8056-18f5910aad39",
+      "ts": 1795174369650,
+      "reason": "interrupted"
+    },
+    {
+      "phase": "start",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-vxAHDB/native-manager/same",
+      "instanceKey": "cxv-f99746de53d5f80fbc245715f79a4c02",
+      "turnId": "sdk_1795174369650_lnp9oo",
+      "turnStartedAt": 1795174369650,
+      "sessionId": "01a1f8bb-028e-7ff1-8056-18f5910aad39",
+      "ts": 1795174369650
+    },
+    {
+      "phase": "end",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-vxAHDB/native-manager/same",
+      "instanceKey": "cxv-f99746de53d5f80fbc245715f79a4c02",
+      "turnId": "sdk_1795174369650_lnp9oo",
+      "turnStartedAt": 1795174369650,
+      "sessionId": "01a1f8bb-028e-7ff1-8056-18f5910aad39",
+      "ts": 1795174369858,
+      "reason": "success"
+    }
+  ],
+  "publicCliLoopEvidence": [
+    {
+      "phase": "start",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-vxAHDB/public-cli",
+      "instanceKey": "cxv-c6d2909eb0e2f36fec5aa92a60042a2a",
+      "turnId": "sdk_1795174373863_12app9",
+      "turnStartedAt": 1795174373863,
+      "sessionId": "01a1f8bb-1a1e-7f02-b095-1c707d7e8987",
+      "ts": 1795174373929,
+      "mode": "sdk",
+      "project": "public-cli",
+      "instance": "cxv-c6d2909eb0e2f36fec5aa92a60042a2a"
+    },
+    {
+      "phase": "end",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-vxAHDB/public-cli",
+      "instanceKey": "cxv-c6d2909eb0e2f36fec5aa92a60042a2a",
+      "turnId": "sdk_1795174373863_12app9",
+      "turnStartedAt": 1795174373863,
+      "sessionId": "01a1f8bb-1a1e-7f02-b095-1c707d7e8987",
+      "ts": 1795174374359,
+      "reason": "success",
+      "mode": "sdk",
+      "project": "public-cli",
+      "instance": "cxv-c6d2909eb0e2f36fec5aa92a60042a2a"
+    }
+  ],
+  "lifecycleEvidence": null,
+  "publicCli": {
+    "explicitAppServer": true,
+    "isolatedBrowserOpen": true,
+    "actualModelRequest": true,
+    "settled": true
+  },
+  "schema": {
+    "planStatuses": [
+      "pending",
+      "inProgress",
+      "completed"
+    ],
+    "agentStatuses": [
+      "pendingInit",
+      "running",
+      "interrupted",
+      "completed",
+      "errored",
+      "shutdown",
+      "notFound"
+    ],
+    "collabRequiredFields": [
+      "agentsStates",
+      "id",
+      "receiverThreadIds",
+      "senderThreadId",
+      "status",
+      "tool",
+      "type"
+    ]
+  },
+  "requestCount": 34,
+  "unverified": [
+    "real agent lifecycle execution",
+    "real native command/file/permissions approval requests",
+    "image output",
+    "all CLI options",
+    "OS process descendants",
+    "WebSocket reconnect",
+    "Windows/Linux/minimum Node"
+  ]
+}

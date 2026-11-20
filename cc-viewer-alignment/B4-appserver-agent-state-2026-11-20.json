@@ -1,0 +1,149 @@
+{
+  "root": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-nFA7sD",
+  "realCodex": "codex-cli 0.169.0",
+  "officialSdk": "0.142.5",
+  "externalModelNetwork": false,
+  "credentials": "isolated fixture-only",
+  "productionDefaultTransportChanged": false,
+  "threadConfigJson": false,
+  "agentsSpawned": true,
+  "agents": {
+    "childThreadId": "01a1f781-6056-7403-8ad1-b02e186f91d9",
+    "rootTurnAlreadyCompleted": true,
+    "rawFramesBeforeSubscribe": 10,
+    "identityRead": "thread/read",
+    "childTerminal": "completed",
+    "spawnStatus": {
+      "01a1f781-6056-7403-8ad1-b02e186f91d9": {
+        "status": "pendingInit",
+        "message": null
+      }
+    },
+    "source": {
+      "subAgent": {
+        "thread_spawn": {
+          "parent_thread_id": "01a1f781-58d0-7630-b678-3fa47dced895",
+          "depth": 1,
+          "agent_path": null,
+          "agent_nickname": "Turing",
+          "agent_role": "default"
+        }
+      }
+    }
+  },
+  "appServer": {
+    "stdioHandshake": true,
+    "sameNameSeparateProcesses": true,
+    "independentTurns": true,
+    "plan": [
+      {
+        "step": "Read baseline",
+        "status": "completed"
+      },
+      {
+        "step": "Verify protocol",
+        "status": "inProgress"
+      },
+      {
+        "step": "Record evidence",
+        "status": "pending"
+      }
+    ],
+    "streamingDeltas": true,
+    "exactTurnInterrupt": true,
+    "failedTurn": true,
+    "restartNativeResume": true
+  },
+  "sdk": {
+    "realTodoListReplay": true,
+    "statuses": [
+      "completed",
+      "pending",
+      "pending"
+    ]
+  },
+  "normalizedTransport": {
+    "actualModule": true,
+    "textAndPlan": true,
+    "cancellation": true,
+    "continueAfterCancel": true,
+    "restartResume": true
+  },
+  "managerIntegration": {
+    "explicitOnly": true,
+    "archiveIdentityRetained": true,
+    "genuinePlanStatus": true,
+    "independentQueue": true,
+    "interruptionParksQueue": true,
+    "sendNowOnSameNativeThread": true,
+    "busyTransportSwitchRejected": true,
+    "v2ExecArchiveToNativeResume": true,
+    "v2NativeArchiveToExecResume": true
+  },
+  "nativeQuestions": {
+    "answer": true,
+    "cancelEmptyAnswers": true,
+    "exactInstanceReply": true,
+    "transcriptToolResult": true
+  },
+  "nativeMcpImages": {
+    "realCli": true,
+    "structuredTranscript": true,
+    "rawToolOutput": true
+  },
+  "nativeConfig": {
+    "rawTomlArray": true,
+    "featureFlag": true
+  },
+  "managerAgents": {
+    "rootAlreadyIdle": true,
+    "nativeName": "Pauli",
+    "nativeStartedAt": 1795153820000,
+    "lastActualTool": "fixture.image",
+    "threadId": "01a1f781-7b17-78f2-9eeb-28ad1ee69cd0",
+    "nextRootTurnPreservesChild": true,
+    "independentChildTerminal": true,
+    "snapshotTimestampStable": true
+  },
+  "publicCli": {
+    "explicitAppServer": true,
+    "isolatedBrowserOpen": true,
+    "actualModelRequest": true,
+    "settled": true
+  },
+  "schema": {
+    "planStatuses": [
+      "pending",
+      "inProgress",
+      "completed"
+    ],
+    "agentStatuses": [
+      "pendingInit",
+      "running",
+      "interrupted",
+      "completed",
+      "errored",
+      "shutdown",
+      "notFound"
+    ],
+    "collabRequiredFields": [
+      "agentsStates",
+      "id",
+      "receiverThreadIds",
+      "senderThreadId",
+      "status",
+      "tool",
+      "type"
+    ]
+  },
+  "requestCount": 33,
+  "unverified": [
+    "child interrupt/reuse/nested lifecycle",
+    "real native command/file/permissions approval requests",
+    "real dynamicToolCall image output",
+    "all CLI options",
+    "OS process descendants",
+    "WebSocket reconnect",
+    "Windows/Linux/minimum Node"
+  ]
+}

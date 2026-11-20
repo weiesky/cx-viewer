@@ -1,6 +1,6 @@
 import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { request } from 'node:http';
+import { createServer, request } from 'node:http';
 import { appendFileSync, chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -44,15 +44,15 @@ function inbox() {
   const messages = [], waiters = [];
   return { messages,
     push(message) {
-      const index = waiters.findIndex(waiter => waiter.type === message.type);
+      const index = waiters.findIndex(waiter => waiter.type === message.type && waiter.matches(message));
       if (index >= 0) waiters.splice(index, 1)[0].resolve(message);
       else messages.push(message);
     },
-    receive(type) {
-      const index = messages.findIndex(message => message.type === type);
+    receive(type, matches = () => true) {
+      const index = messages.findIndex(message => message.type === type && matches(message));
       if (index >= 0) return Promise.resolve(messages.splice(index, 1)[0]);
       return new Promise((resolve, reject) => {
-        const waiter = { type, resolve(message) { clearTimeout(timer); resolve(message); } };
+        const waiter = { type, matches, resolve(message) { clearTimeout(timer); resolve(message); } };
         const timer = setTimeout(() => {
           waiters.splice(waiters.indexOf(waiter), 1);
           reject(new Error(`timed out waiting for ${type}`));
@@ -73,7 +73,7 @@ async function openWs(instance, scratchId) {
   });
   ws.on('message', raw => box.push(JSON.parse(raw)));
   ws.on('error', () => {});
-  clients.push({ close: () => ws.terminate() });
+  clients.push({ ws, close: () => ws.terminate() });
   await new Promise((resolve, reject) => { ws.once('open', resolve); ws.once('error', reject); });
   return { ...box, ws, send: message => ws.send(JSON.stringify(message)) };
 }
@@ -126,6 +126,9 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 let input = ''; for await (const chunk of process.stdin) input += chunk;
 const cwd = process.env.CXV_PROJECT_DIR;
+process.stdout.write(JSON.stringify({ type: 'item.updated', item: {
+ id: 'plan', type: 'todo_list', items: [{ text: input, completed: false }],
+} }) + '\\n');
 writeFileSync(join(cwd, 'ready'), input);
 while (!existsSync(join(cwd, 'release'))) await new Promise(resolve => setTimeout(resolve, 10));
 const resumeIndex = process.argv.indexOf('resume');
@@ -146,10 +149,18 @@ for (const event of [
   (await import('../interceptor.js')).initForWorkspace(a);
   const options = { codexPath, onEntry: server.pushSdkEntry,
     onStreamingStatus: server.setSdkStreamingState, onStreamProgress: server.sendSdkStreamProgress,
+    onAgentLoopStart: server.broadcastAgentLoopStart, onAgentLoopEnd: server.broadcastAgentLoopEnd,
     broadcastWs: server.broadcastWsMessage };
   sdk.setSdkLaunchConfig(options);
   infoA = sdk.initSdkSession(a, 'same', options);
   process.env.CXV_PROJECT_DIR = b;
+  const pluginDir = join(root, 'logs', 'plugins'); mkdirSync(pluginDir, { recursive: true });
+  writeFileSync(join(pluginDir, 'loop-observer.mjs'), `import { appendFileSync } from 'node:fs';
+const record = (phase, data) => appendFileSync(${JSON.stringify(join(root, 'loop-hooks.jsonl'))}, JSON.stringify({ phase, ...data }) + '\\n');
+export default { name: 'isolated loop observer', hooks: {
+ onAgentLoopStart(data) { record('start', data); throw new Error('fixture isolated plugin failure'); },
+ onAgentLoopEnd(data) { record('end', data); }
+} };`);
   await server.startViewer(); port = server.getPort();
   const launched = await http('/api/workspaces/launch', { path: b });
   assert.equal(launched.status, 200, launched.text);
@@ -163,6 +174,29 @@ after(async () => {
   await server?.stopViewer();
   scratch?._resetScratchPtysForTests();
   rmSync(root, { recursive: true, force: true });
+});
+
+test('SDK main WebSocket ignores PTY input, sequential input, resize and resync without spawning a hidden shell', async t => {
+  const pty = await import('../pty-manager.js');
+  const spawns = [];
+  pty._setPtyImportForTests(async () => ({ spawn(...args) {
+    spawns.push(args);
+    return { onData() {}, onExit() {}, write() {}, resize() {}, kill() {} };
+  } }));
+  const ws = await openWs(infoA.instanceKey);
+  t.after(() => { ws.ws.terminate(); pty.killPty(); pty._setPtyImportForTests(null); });
+  await ws.receive('sdk-workspace');
+  for (const frame of [
+    { type: 'input', data: 'synthetic-raw-input' },
+    { type: 'input-sequential', seq: 'synthetic-seq', chunks: ['synthetic-paste', '\r'], settleMs: 0 },
+    { type: 'resize', cols: 75, rows: 25 },
+    { type: 'resync-request', reason: 'requested' },
+  ]) ws.send(frame);
+  ws.send({ type: 'sdk-user-message', text: 'scope barrier', instanceKey: infoB.instanceKey });
+  assert.equal((await ws.receive('sdk-error')).code, 'SDK_SCOPE_MISMATCH');
+  assert.equal(spawns.length, 0, 'SDK control channel must never reach main-PTY spawn');
+  assert.equal(pty.getPtyState().running, false);
+  assert.equal(ws.messages.some(frame => frame.type === 'input-sequential-done'), false);
 });
 
 test('SDK WebSocket controls and SSE replay stay bound to each browser workspace', { timeout: 20000 }, async () => {
@@ -187,7 +221,17 @@ test('SDK WebSocket controls and SSE replay stay bound to each browser workspace
     instanceKey: infoA.instanceKey, cwd: a,
   });
   wb.send({ type: 'sdk-user-message', text: 'hold B' });
+  const loopA = await sa.receive('agent_loop_start'), loopB = await sb.receive('agent_loop_start');
+  assert.equal(loopA.data.instanceKey, infoA.instanceKey); assert.equal(loopB.data.instanceKey, infoB.instanceKey);
+  assert.notEqual(loopA.data.turnId, loopB.data.turnId);
   await Promise.all([ready(a), ready(b)]);
+  let tasksA, tasksB;
+  do { tasksA = await wa.receive('sdk-task-snapshot'); } while (!tasksA.tasks.length);
+  do { tasksB = await wb.receive('sdk-task-snapshot'); } while (!tasksB.tasks.length);
+  assert.equal(tasksA.tasks[0].subject, 'hold A');
+  assert.equal(tasksB.tasks[0].subject, 'hold B');
+  assert.equal(tasksA.instanceKey, infoA.instanceKey);
+  assert.equal(tasksB.instanceKey, infoB.instanceKey);
   assert.ok((await http('/api/workspaces')).json().sessions.every(session => session.busy));
   assert.equal((await sa.receive('streaming_status')).data.instanceKey, infoA.instanceKey);
   assert.equal((await sb.receive('streaming_status')).data.instanceKey, infoB.instanceKey);
@@ -207,6 +251,7 @@ test('SDK WebSocket controls and SSE replay stay bound to each browser workspace
   assert.equal(queuedA.items[0].requestId, 'queued-A');
   const reconnected = await openWs(infoA.instanceKey);
   const replayedQueue = await reconnected.receive('queue-state');
+  assert.deepEqual((await reconnected.receive('sdk-task-snapshot')).tasks, tasksA.tasks);
   assert.deepEqual(replayedQueue.items, queuedA.items);
   assert.equal(replayedQueue.activeInput.text, 'hold A');
   assert.equal(replayedQueue.activeInput.requestId, 'first-A');
@@ -230,8 +275,8 @@ test('SDK WebSocket controls and SSE replay stay bound to each browser workspace
   server.sendSdkStreamProgress({ instanceKey: infoB.instanceKey, cwd: a, content: 'conflicting identity' });
   server.sendSdkStreamProgress({ instanceKey: infoA.instanceKey, cwd: a, content: 'only A' });
   server.sendSdkStreamProgress({ instanceKey: infoB.instanceKey, cwd: b, content: 'only B' });
-  assert.equal((await sa.receive('stream-progress')).data.content, 'only A');
-  assert.equal((await sb.receive('stream-progress')).data.content, 'only B');
+  assert.equal((await sa.receive('stream-progress', frame => frame.data.content === 'only A')).data.content, 'only A');
+  assert.equal((await sb.receive('stream-progress', frame => frame.data.content === 'only B')).data.content, 'only B');
   server.broadcastWsMessage({ type: 'sdk-notice', instanceKey: infoA.instanceKey, marker: 'A' });
   server.broadcastWsMessage({ type: 'sdk-notice', instanceKey: infoB.instanceKey, marker: 'B' });
   assert.equal((await wa.receive('sdk-notice')).marker, 'A');
@@ -251,6 +296,8 @@ test('SDK WebSocket controls and SSE replay stay bound to each browser workspace
   const idleA = (await sa.receive('streaming_status')).data;
   assert.equal(idleA.instanceKey, infoA.instanceKey);
   assert.equal(idleA.active, false);
+  const endedA = (await sa.receive('agent_loop_end')).data;
+  assert.equal(endedA.turnId, loopA.data.turnId); assert.equal(endedA.reason, 'interrupted');
   assert.equal(sdk.getSdkStreamingState({ cwd: b }).active, true, 'A interruption cannot abort B');
   const closed = new Promise(resolve => wa.ws.once('close', resolve));
   assert.equal((await http('/api/workspaces/close', { instanceKey: infoA.instanceKey })).status, 200);
@@ -262,12 +309,20 @@ test('SDK WebSocket controls and SSE replay stay bound to each browser workspace
   await assert.rejects(sdk.sendUserMessage('after close', { instanceKey: infoA.instanceKey }), { code: 'SDK_SESSION_NOT_FOUND' });
   writeFileSync(join(b, 'release'), 'go');
   assert.equal((await sb.receive('streaming_status')).data.active, false);
+  const endedB = (await sb.receive('agent_loop_end')).data;
+  assert.equal(endedB.turnId, loopB.data.turnId); assert.equal(endedB.reason, 'success');
+  const hooks = readFileSync(join(root, 'loop-hooks.jsonl'), 'utf8').trim().split('\n').map(JSON.parse);
+  assert.deepEqual(hooks.filter(frame => frame.instanceKey === infoA.instanceKey).map(frame => [frame.phase, frame.turnId]),
+    [['start', loopA.data.turnId], ['end', loopA.data.turnId]]);
+  assert.deepEqual(hooks.filter(frame => frame.instanceKey === infoB.instanceKey).map(frame => [frame.phase, frame.turnId]),
+    [['start', loopB.data.turnId], ['end', loopB.data.turnId]]);
   for (const channel of [sa, replay]) {
     assert.ok(channel.messages.filter(message => message.data?.instanceKey).every(message => message.data.instanceKey === infoA.instanceKey));
   }
   assert.ok(sb.messages.filter(message => message.data?.instanceKey).every(message => message.data.instanceKey === infoB.instanceKey));
   assert.ok(!wa.messages.some(message => message.marker === 'B'));
   assert.ok(!wb.messages.some(message => message.marker === 'A'));
+  assert.ok(!wb.messages.some(message => message.type === 'sdk-task-snapshot' && message.instanceKey === infoA.instanceKey));
 });
 
 test('unknown, empty and closed default SDK connection anchors cannot fall back to another workspace', async () => {
@@ -442,10 +497,25 @@ test('SDK HTTP resume selects exact history before the next turn and keeps same-
   assert.ok(!siblingEvents.messages.some(message => message.type === 'sdk_session_resumed'));
   assert.equal((await live.receive('v2_reset')).data.code, 'CXV_LOG_V2_ARCHIVE_CHANGED');
   live.close();
-  assert.equal((await http(scope('/api/log-v2/snapshot'))).frames()[0].archive.sessionId, oldId,
+  const restoredFrames = (await http(scope('/api/log-v2/snapshot'))).frames();
+  assert.equal(restoredFrames[0].archive.sessionId, oldId,
     'snapshot must select restored history before any model turn writes a new pointer');
   assert.equal((await http(`/api/log-v2/snapshot?instance=${infoB.instanceKey}`)).frames()[0].archive.sessionId, siblingId);
+  const restoredCursor = restoredFrames.at(-1).cursor;
+  const restoredLiveQuery = new URLSearchParams({ instance: infoA.instanceKey,
+    generation: restoredFrames[0].archive.generation, handle: restoredFrames[0].objectHandle,
+    afterSeq: String(restoredCursor.throughSeq) });
+  // Complete the first resumed turn before attaching the live reader. It must
+  // replay from the frozen cursor without treating these new bytes as history.
   await sdk.sendUserMessage('continue restored A', { cwd: a });
+  const restoredLive = startSse(`/api/log-v2/live?${restoredLiveQuery}`);
+  try {
+    await restoredLive.ready;
+    const resumedCommit = (await restoredLive.receive('v2_commit')).data;
+    assert.equal(resumedCommit.frame.archive.sessionId, oldId);
+    assert.ok(resumedCommit.frame.timeline.seq > restoredCursor.throughSeq);
+    assert.equal(restoredLive.messages.some(frame => frame.type === 'v2_reset'), false);
+  } finally { restoredLive.close(); }
   const { readV2LogEntries, resolveV2SessionFile } = await import('../lib/log-v2/materializer.js');
   const history = readV2LogEntries(join(root, 'logs'), oldFile).filter(entry => entry.mainAgent);
   const input = history.at(-1).body.input;
@@ -525,4 +595,241 @@ test('SDK stop-all closes every resident session and scratch shell while preserv
   assert.equal(launched.status, 200, launched.text);
   assert.equal(launched.json().reused, false);
   assert.equal(launched.json().instanceKey, infoB.instanceKey);
+});
+
+test('query failures reach only their owning same-name WebSocket, including failures before thread creation', { timeout: 15000 }, async () => {
+  const cwd = join(root, 'failures', 'same'); mkdirSync(cwd, { recursive: true });
+  const script = join(root, 'failed-codex.mjs');
+  writeFileSync(script, `#!/usr/bin/env node
+let input = ''; for await (const chunk of process.stdin) input += chunk;
+if (input === 'before-thread') { process.stderr.write('fixture startup failed'); process.exit(7); }
+for (const frame of [
+ { type: 'thread.started', thread_id: 'failure-thread' },
+ { type: 'turn.failed', error: { message: 'fixture terminal failure' } },
+ { type: 'error', message: 'must not duplicate terminal failure' },
+]) process.stdout.write(JSON.stringify(frame) + '\\n');
+`);
+  chmodSync(script, 0o755);
+  const view = sdk.initSdkSession(cwd, 'same', { codexPath: script, broadcastWs: server.broadcastWsMessage });
+  const own = await openWs(view.instanceKey), other = await openWs(infoB.instanceKey);
+  await own.receive('sdk-workspace'); await other.receive('sdk-workspace');
+  for (const text of ['before-thread', 'failed-turn']) {
+    await sdk.sendUserMessage(text, view);
+    const failure = await own.receive('sdk-error');
+    assert.equal(failure.instanceKey, view.instanceKey); assert.equal(failure.cwd, cwd);
+    assert.equal(failure.sessionId, text === 'before-thread' ? null : 'failure-thread');
+    assert.match(failure.message, text === 'before-thread' ? /fixture startup failed/ : /^fixture terminal failure$/);
+    // A same-socket barrier proves the other client has consumed everything before it.
+    server.broadcastWsMessage({ type: 'failure-barrier', cwd: infoB.cwd, instanceKey: infoB.instanceKey });
+    await other.receive('failure-barrier');
+    assert.equal(other.messages.some(frame => frame.type === 'sdk-error'), false);
+  }
+  server.broadcastWsMessage({ type: 'failure-barrier', cwd, instanceKey: view.instanceKey });
+  await own.receive('failure-barrier');
+  assert.equal(own.messages.some(frame => frame.type === 'sdk-error'), false, 'each terminal failure broadcasts exactly once');
+});
+
+test('native retry WebSocket requests are scoped, reject stale failures and deliver one continuation', { timeout: 15000 }, async () => {
+  const cwd = join(root, 'retry', 'same'); mkdirSync(cwd, { recursive: true });
+  const script = join(root, 'retry-codex.mjs');
+  writeFileSync(script, String.raw`import { createInterface } from 'node:readline';
+import { appendFileSync } from 'node:fs';
+const send = f => process.stdout.write(JSON.stringify(f) + '\n');
+let turn = 0;
+for await (const line of createInterface({ input: process.stdin })) {
+ const f = JSON.parse(line), p = f.params || {};
+ if (f.method === 'initialized') continue;
+ if (f.method === 'initialize') { send({ id: f.id, result: {} }); continue; }
+ if (f.method === 'thread/start') { send({ id: f.id, result: { thread: { id: 'retry-thread' } } }); continue; }
+ if (f.method !== 'turn/start') { send({ id: f.id, error: { code: -32601, message: 'unsupported' } }); continue; }
+ const turnId = 'retry-turn-' + ++turn, text = p.input[0].text;
+ appendFileSync('inputs.jsonl', JSON.stringify({ text }) + '\n');
+ send({ id: f.id, result: { turn: { id: turnId } } });
+ send({ method: 'turn/started', params: { threadId: 'retry-thread', turn: { id: turnId } } });
+ if (text === 'fail') {
+  const error = { message: 'fixture retryable failure', codexErrorInfo: { httpConnectionFailed: { httpStatusCode: 503 } } };
+  send({ method: 'error', params: { threadId: 'retry-thread', turnId, error, willRetry: true } });
+  send({ method: 'turn/completed', params: { threadId: 'retry-thread', turn: { id: turnId, status: 'failed', error } } });
+ } else send({ method: 'turn/completed', params: { threadId: 'retry-thread', turn: { id: turnId, status: 'completed' } } });
+}
+`);
+  const view = sdk.initSdkSession(cwd, 'same', { transport: 'appserver', codexPath: script, broadcastWs: server.broadcastWsMessage });
+  const own = await openWs(view.instanceKey), other = await openWs(infoB.instanceKey);
+  await own.receive('sdk-workspace'); await other.receive('sdk-workspace');
+  await sdk.sendUserMessage('fail', view); const failed = await own.receive('sdk-error');
+  own.send({ type: 'sdk-retry-turn', turnId: 'old-turn' });
+  assert.equal((await own.receive('sdk-retry-state', frame => frame.phase === 'rejected')).reason, 'stale');
+  other.send({ type: 'sdk-retry-turn', turnId: failed.turnId, instanceKey: view.instanceKey });
+  assert.equal((await other.receive('sdk-error')).code, 'SDK_SCOPE_MISMATCH');
+  own.send({ type: 'sdk-retry-turn', turnId: failed.turnId });
+  const recovering = await own.receive('sdk-retry-state', frame => frame.phase === 'recovering');
+  const recovered = await own.receive('sdk-retry-state', frame => frame.phase === 'recovered');
+  assert.equal(recovering.retryOf, failed.turnId); assert.equal(recovered.retryOf, failed.turnId);
+  assert.equal(recovered.instanceKey, view.instanceKey);
+  const inputs = readFileSync(join(cwd, 'inputs.jsonl'), 'utf8').trim().split('\n').map(JSON.parse);
+  assert.equal(inputs.length, 2); assert.equal(inputs[0].text, 'fail'); assert.ok(inputs[1].text.startsWith('[cc-viewer:retry] '));
+  server.broadcastWsMessage({ type: 'retry-barrier', cwd: infoB.cwd, instanceKey: infoB.instanceKey });
+  await other.receive('retry-barrier');
+  assert.equal(other.messages.some(frame => frame.type === 'sdk-retry-state'), false);
+});
+
+test('native approvals replay across real WebSocket reconnects and answers stay bound to the owning instance', { timeout: 15000 }, async () => {
+  const cwd = join(root, 'native', 'same'); mkdirSync(cwd, { recursive: true });
+  const script = join(root, 'native-codex.mjs');
+  writeFileSync(script, `import { createInterface } from 'node:readline';
+const send = f => process.stdout.write(JSON.stringify(f) + '\\n');
+let threadId = 'native-thread', turnId, sequence = 0;
+for await (const line of createInterface({ input: process.stdin })) {
+ const f = JSON.parse(line), p = f.params || {};
+ if (!f.method) {
+  send({ method: 'item/completed', params: { threadId, turnId, item: { id: 'answer', type: 'agentMessage', text: JSON.stringify(f) } } });
+  send({ method: 'turn/completed', params: { threadId, turn: { id: turnId, status: 'completed' } } }); continue;
+ }
+ if (f.method === 'initialized') continue;
+ if (f.method === 'initialize') { send({ id: f.id, result: {} }); continue; }
+ if (f.method === 'thread/start') { send({ id: f.id, result: { thread: { id: threadId } } }); continue; }
+ if (f.method === 'mcpServerStatus/list') {
+  send({ id: f.id, result: { data: [{ name: 'fixture-mcp', runtimeStatus: 'connected', authStatus: 'unsupported',
+   tools: { read: { name: 'read' } }, resources: [], resourceTemplates: [], serverInfo: { name: 'fixture', version: '1' } }], nextCursor: null } }); continue;
+ }
+ if (f.method === 'thread/read') { send({ id: f.id, result: { thread: { id: p.threadId,
+  source: { subAgent: { thread_spawn: { parent_thread_id: threadId, agent_nickname: 'Native Child' } } } } } }); continue; }
+ if (f.method === 'turn/start') {
+  turnId = 'turn-' + ++sequence;
+  send({ id: f.id, result: { turn: { id: turnId } } });
+  const kind = p.input[0].text;
+  if (kind === 'agents' || kind === 'finish agents') {
+   send({ method: kind === 'agents' ? 'turn/started' : 'turn/completed', params: { threadId: 'agent-child',
+    turn: { id: 'child-turn', status: kind === 'agents' ? 'inProgress' : 'completed', startedAt: 123 } } });
+   send({ method: 'turn/completed', params: { threadId, turn: { id: turnId, status: 'completed' } } }); continue;
+  }
+  const method = kind === 'ask' ? 'item/tool/requestUserInput' : 'item/' + kind + '/requestApproval';
+  send({ id: 7, method, params: { threadId, turnId, itemId: 'question-' + sequence, command: 'synthetic', cwd: ${JSON.stringify(cwd)},
+    permissions: { network: { enabled: true } }, questions: [{ id: 'choice', question: 'Choose', options: [{ label: 'A' }, { label: 'B' }] }] } }); continue;
+ }
+ send({ id: f.id, result: {} });
+}
+`);
+  const entries = [];
+  const view = sdk.initSdkSession(cwd, 'same', { transport: 'appserver', codexPath: script,
+    onEntry(entry) { entries.push(entry); server.pushSdkEntry(entry); }, broadcastWs: server.broadcastWsMessage });
+  const other = await openWs(infoB.instanceKey);
+  let client = await openWs(view.instanceKey);
+  assert.equal((await http(`/api/sdk-mcp-server-status?instance=${view.instanceKey}`)).json().reason, 'session-inactive');
+  assert.equal((await http(`/api/sdk-mcp-server-status?instance=${infoB.instanceKey}`)).json().reason, 'unsupported');
+  let previousId;
+  for (const [kind, value, expected] of [
+    ['commandExecution', { decision: 'allow' }, { decision: 'accept' }],
+    ['fileChange', { decision: 'deny' }, { decision: 'decline' }],
+    ['permissions', { decision: 'allow', allowSession: true }, { permissions: { network: { enabled: true } }, scope: 'session' }],
+    ['ask', { answers: { choice: { answers: ['B'] } } }, { answers: { choice: { answers: ['B'] } } }],
+    ['ask', { answers: {} }, { answers: {} }],
+  ]) {
+    const running = sdk.sendUserMessage(kind, view);
+    const type = kind === 'ask' ? 'sdk-ask' : 'perm-hook';
+    const pending = await client.receive(type + '-pending');
+    const mcp = (await http(`/api/sdk-mcp-server-status?instance=${view.instanceKey}`)).json();
+    assert.equal(mcp.ok, true);
+    assert.equal(mcp.snapshot.instanceKey, view.instanceKey);
+    assert.equal(mcp.snapshot.cwd, cwd);
+    assert.deepEqual(mcp.snapshot.servers.map(server => [server.name, server.status, server.tools.length]), [['fixture-mcp', 'connected', 1]]);
+    assert.equal((await client.receive('sdk-mcp-status')).servers[0].name, 'fixture-mcp');
+    const copy = sdk.getMcpStatusSnapshot(view); copy.servers[0].name = 'modified copy';
+    assert.equal(sdk.getMcpStatusSnapshot(view).servers[0].name, 'fixture-mcp');
+    assert.notEqual(pending.id, previousId, 'native numeric ID reuse must receive a new browser nonce');
+    other.send({ type: type === 'sdk-ask' ? 'sdk-ask-answer' : 'perm-hook-answer', id: pending.id, ...value });
+    assert.equal((await other.receive('sdk-error')).code, 'SDK_APPROVAL_NOT_PENDING');
+    const closed = new Promise(resolve => client.ws.once('close', resolve)); client.ws.close(); await closed;
+    client = await openWs(view.instanceKey);
+    assert.equal((await client.receive('sdk-mcp-status')).servers[0].name, 'fixture-mcp');
+    assert.equal((await client.receive(type + '-pending')).id, pending.id);
+    client.send({ type: type === 'sdk-ask' ? 'sdk-ask-answer' : 'perm-hook-answer', id: pending.id, ...value });
+    const resolved = await client.receive(type + '-resolved');
+    if (kind === 'ask') assert.equal(resolved.itemId, pending.itemId);
+    await running;
+    const final = entries.filter(entry => entry.mainAgent && !entry.inProgress).at(-1);
+    assert.equal(client.messages.some(frame => frame.type === 'sdk-error'), false, 'an accepted native reply must not also report rejection');
+    const reply = JSON.parse(final.response.body.content.find(block => block.type === 'text').text);
+    assert.deepEqual(reply, { id: 7, result: expected });
+    assert.deepEqual(sdk.getSdkPendingApprovals(view), []);
+    assert.equal(other.messages.some(frame => frame.id === pending.id
+      && [type + '-pending', type + '-resolved', type + '-timeout'].includes(frame.type)), false,
+    'pending payloads and terminal answers remain on their owning immutable connection scope');
+    assert.equal(other.messages.some(frame => frame.type === 'sdk-mcp-status'), false);
+    previousId = pending.id;
+  }
+  await sdk.sendUserMessage('agents', view);
+  let active;
+  do { active = await client.receive('sdk-agent-snapshot'); } while (!active.agents.length);
+  assert.equal(active.agents[0].name, 'Native Child'); assert.equal(active.agents[0].createdAt, 123000);
+  assert.equal(sdk.getSdkStreamingState(view).active, false);
+  const closed = new Promise(resolve => client.ws.once('close', resolve)); client.ws.close(); await closed;
+  const resumed = await openWs(view.instanceKey);
+  assert.deepEqual((await resumed.receive('sdk-agent-snapshot')).agents, active.agents);
+  assert.equal((await resumed.receive('sdk-mcp-status')).servers[0].name, 'fixture-mcp');
+  assert.equal(other.messages.some(frame => frame.type === 'sdk-agent-snapshot' && frame.agents.length), false);
+  await sdk.sendUserMessage('finish agents', view);
+  assert.deepEqual((await resumed.receive('sdk-agent-snapshot')).agents, []);
+  sdk.stopSession(view);
+  assert.equal((await resumed.receive('sdk-mcp-status')).servers, null);
+  assert.throws(() => sdk.getMcpStatusSnapshot(view), { code: 'SDK_SESSION_NOT_FOUND' });
+  assert.equal((await http(`/api/sdk-mcp-server-status?instance=${view.instanceKey}`)).status, 404);
+});
+
+test('owned slow model requests replay on reconnect and settle by request id without reaching a same-name sibling', { timeout: 45000 }, async () => {
+  // Prior cases deliberately retain sockets. Retire these fixture clients before
+  // this reconnect case so the real per-IP connection cap remains enforced.
+  await Promise.all(clients.map(client => client.ws && client.ws.readyState !== WebSocket.CLOSED
+    ? new Promise(resolve => { client.ws.once('close', resolve); client.close(); })
+    : Promise.resolve(client.close())));
+  const previous = process.env.CXV_ORIGINAL_BASE_URL;
+  let response;
+  const upstream = createServer((req, res) => { req.resume(); response = res; res.writeHead(200, { 'content-type': 'text/event-stream' }); res.flushHeaders(); });
+  await new Promise(resolve => upstream.listen(0, '127.0.0.1', resolve));
+  process.env.CXV_ORIGINAL_BASE_URL = `http://127.0.0.1:${upstream.address().port}/v1`;
+  const cwd = join(root, 'slow', 'same'); mkdirSync(cwd, { recursive: true });
+  const script = join(root, 'slow-codex.mjs');
+  writeFileSync(script, String.raw`let input = ''; for await (const part of process.stdin) input += part;
+const send = frame => process.stdout.write(JSON.stringify(frame) + '\n');
+send({ type: 'thread.started', thread_id: 'slow-owned-thread' }); send({ type: 'turn.started' });
+const response = await fetch(process.env.OPENAI_BASE_URL + '/responses', { method: 'POST',
+ headers: { 'content-type': 'application/json', 'x-cx-viewer-instance': 'forged' }, body: JSON.stringify({ model: 'slow-fixture', input }) });
+await response.text();
+send({ type: 'item.completed', item: { id: 'answer', type: 'agent_message', text: 'slow request finished' } });
+send({ type: 'turn.completed', usage: {} });
+`);
+  const view = sdk.initSdkSession(cwd, 'same', { codexPath: script, broadcastWs: server.broadcastWsMessage });
+  const sibling = sdk.initSdkSession(b, 'same', {});
+  let pending;
+  try {
+    const own = await openWs(view.instanceKey), other = await openWs(sibling.instanceKey);
+    await own.receive('sdk-workspace'); await other.receive('sdk-workspace');
+    pending = sdk.sendUserMessage('owned slow HTTP fixture', view);
+    // Production threshold remains 30 seconds; unlike proxy unit tests this uses
+    // the actual manager, child transport, forwarding proxy and WebSocket stack.
+    const deadline = Date.now() + 35000;
+    while (!sdk.getSdkSlowUpstreams(view).length) {
+      assert.ok(Date.now() < deadline, 'production slow threshold must emit');
+      await new Promise(resolve => setTimeout(resolve, 25));
+    }
+    const slow = await own.receive('sdk-slow-upstream');
+    assert.equal(slow.instanceKey, view.instanceKey); assert.equal(slow.cwd, cwd); assert.equal(slow.model, 'slow-fixture');
+    assert.ok(slow.waitingMs >= 29000); assert.equal(sdk.getSdkSlowUpstreams(sibling).length, 0);
+    own.ws.terminate(); const reconnected = await openWs(view.instanceKey);
+    const replay = await reconnected.receive('sdk-slow-upstream');
+    assert.equal(replay.requestId, slow.requestId); assert.ok(replay.waitingMs >= slow.waitingMs);
+    response.end('data: local first byte\n\n');
+    const resolved = await reconnected.receive('sdk-slow-upstream-resolved');
+    assert.equal(resolved.requestId, slow.requestId); await pending;
+    assert.deepEqual(sdk.getSdkSlowUpstreams(view), []);
+    const after = await openWs(view.instanceKey); await after.receive('sdk-workspace');
+    server.broadcastWsMessage({ type: 'slow-barrier', cwd, instanceKey: view.instanceKey }); await after.receive('slow-barrier');
+    assert.equal(after.messages.some(frame => frame.type === 'sdk-slow-upstream'), false);
+    server.broadcastWsMessage({ type: 'slow-barrier', cwd: sibling.cwd, instanceKey: sibling.instanceKey }); await other.receive('slow-barrier');
+    assert.equal(other.messages.some(frame => frame.type.startsWith('sdk-slow-upstream')), false);
+  } finally {
+    response?.end(); sdk.closeSdkSession(view); await pending?.catch(() => {});
+    upstream.closeAllConnections(); await new Promise(resolve => upstream.close(resolve));
+    if (previous === undefined) delete process.env.CXV_ORIGINAL_BASE_URL; else process.env.CXV_ORIGINAL_BASE_URL = previous;
+  }
 });

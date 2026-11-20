@@ -13,6 +13,8 @@ import { requestHidesContextTab, resolveDetailTabForRequest } from '../../utils/
 import { isMainAgent } from '../../../../../packages/app/src/utils/contentFilter';
 import { restoreSlimmedEntry } from '../../utils/entry-slim.js';
 import ContextTab from './ContextTab';
+import SdkContextUsageTab from './SdkContextUsageTab';
+import SdkMcpStatusTab from './SdkMcpStatusTab';
 import styles from './DetailPanel.module.css';
 
 const { Text, Paragraph } = Typography;
@@ -183,6 +185,7 @@ class DetailPanel extends React.Component {
     }
     return (
       nextProps.request !== this.props.request ||
+      nextProps.sdkMode !== this.props.sdkMode ||
       nextProps.currentTab !== this.props.currentTab ||
       nextProps.onTabChange !== this.props.onTabChange ||
       nextProps.selectedIndex !== this.props.selectedIndex ||
@@ -394,6 +397,8 @@ class DetailPanel extends React.Component {
       expandRefs.add(data.input);
       if (msg && typeof msg === 'object') expandRefs.add(msg);
       if (contentArr) expandRefs.add(contentArr);
+      // First-turn instructions include every captured segment, as in the baseline.
+      if (Array.isArray(data.instructions)) collectAll(data.instructions);
       return (level, value, field) => {
         if (level < 2) return true;
         if (expandRefs.has(value)) return true;
@@ -858,6 +863,7 @@ class DetailPanel extends React.Component {
             {toolOverview || metadataOverview || (
               <ContextTab
                 body={request.body}
+                sdkSource={request._sdkSource === true}
                 response={request.response?.body}
                 // `getResponseTools(undefined)` returns [], which looks like a
                 // real empty baseline and marks every tool as newly added.
@@ -866,6 +872,23 @@ class DetailPanel extends React.Component {
                   ? getResponseToolDeclaration(prevMainAgent.body).tools : null}
               />
             )}
+          </div>
+        ),
+      }] : []),
+      ...(this.props.sdkMode ? [{
+        key: 'context-usage',
+        label: t('ui.contextUsage.tab'),
+        children: (
+          <div className={`${styles.tabContent} ${styles.cacheTabContent}`}>
+            <SdkContextUsageTab />
+          </div>
+        ),
+      }, {
+        key: 'mcp-status',
+        label: t('ui.mcpStatus.tab'),
+        children: (
+          <div className={`${styles.tabContent} ${styles.cacheTabContent}`}>
+            <SdkMcpStatusTab />
           </div>
         ),
       }] : []),
@@ -965,7 +988,7 @@ class DetailPanel extends React.Component {
         </div>
 
         <Tabs
-          activeKey={activeTab}
+          activeKey={tabItems.some(item => item.key === activeTab) ? activeTab : resolveDetailTabForRequest('context', request)}
           onChange={(key) => {
             if (key === 'raw') this.loadRawFrames(request);
             if (onTabChange) onTabChange(key);

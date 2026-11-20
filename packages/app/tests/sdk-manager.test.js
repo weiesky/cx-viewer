@@ -122,13 +122,15 @@ test('sdk-manager consumes Codex SDK events and emits viewer entries', async () 
 test('interrupt during proxy startup cancels the prompt and parks accepted queue before a Codex child can run', async () => {
   const tmp = mkdtempSync(join(tmpdir(), 'cxv-sdk-interrupt-startup-'));
   const fakeCodex = createFakeCodexScript(tmp);
-  const entries = [], statuses = [];
+  const entries = [], statuses = [], frames = [], loops = [];
   const previousCodexHome = process.env.CODEX_HOME;
   try {
     process.env.CODEX_HOME = tmp;
     const info = initSdkSession(tmp, 'startup-cancel', {
       codexPath: fakeCodex, onEntry: entry => entries.push(entry),
       onStreamingStatus: status => statuses.push(status),
+      onAgentLoopStart: data => loops.push(data), onAgentLoopEnd: data => loops.push(data),
+      broadcastWs: frame => frames.push(frame),
     });
     const running = sendUserMessage('hello sdk should never run', { instanceKey: info.instanceKey });
     await sendUserMessage('hello sdk queued should never run', { instanceKey: info.instanceKey });
@@ -136,12 +138,14 @@ test('interrupt during proxy startup cancels the prompt and parks accepted queue
     const interrupted = interruptTurn({ instanceKey: info.instanceKey });
     await running;
     assert.equal(interrupted, true);
+    assert.deepEqual(loops, [], "undelivered startup cancellation has no accepted loop");
     assert.equal(getSessionId({ instanceKey: info.instanceKey }), null, 'cancelled prompt must not start a native thread');
     assert.equal(existsSync(join(tmp, 'spawned')), false);
     assert.equal(getSdkStreamingState({ instanceKey: info.instanceKey }).active, false);
     assert.deepEqual(statuses.map(status => status.active), [true, false]);
     assert.equal(entries.length, 1);
     assert.equal(entries[0].response.body.content[0].text, 'Error: Turn interrupted');
+    assert.equal(frames.some(frame => frame.type === 'sdk-error'), false, 'intentional Stop does not alert as a failed query');
     const parked = getSdkQueueState({ instanceKey: info.instanceKey });
     assert.equal(parked.paused, true);
     assert.equal(parked.items.length, 1);
@@ -256,7 +260,12 @@ test('stream error notices cannot suppress a later successful turn, and final fa
   writeFileSync(executable, String.raw`#!/usr/bin/env node
 let mode='';for await(const chunk of process.stdin)mode+=chunk;
 const emit=value=>process.stdout.write(JSON.stringify(value)+'\n');
+if(mode==='silent-eof')process.exit(0);
 emit({type:'thread.started',thread_id:'stream-errors-thread'});emit({type:'turn.started'});
+if(mode==='partial-eof'){
+ emit({type:'item.updated',item:{id:'partial',type:'agent_message',text:'partial answer before exit'}});
+ process.exit(0);
+}
 emit({type:'error',message:'Reconnecting... 1/5 (local temporary failure)'});
 if(mode==='recover'){
  emit({type:'item.completed',item:{id:'answer',type:'agent_message',text:'recovered answer'}});
@@ -270,17 +279,32 @@ else if(mode==='exit')process.exitCode=7;
     for (const [mode, status, content] of [
       ['recover', 200, 'recovered answer'], ['fail', 500, 'final failure'],
       ['error-only', 500, 'Reconnecting...'], ['exit', 500, 'Reconnecting...'],
+      ['silent-eof', 500, 'session ended before the turn completed'],
+      ['partial-eof', 500, 'session ended before the turn completed'],
     ]) {
-      const entries = [], statuses = [];
-      initSdkSession(root, 'stream-errors', { codexPath: executable,
-        onEntry: entry => entries.push(entry), onStreamingStatus: state => statuses.push(state) });
+      const entries = [], statuses = [], frames = [];
+      const view = initSdkSession(root, 'stream-errors', { codexPath: executable,
+        onEntry: entry => entries.push(entry), onStreamingStatus: state => statuses.push(state),
+        broadcastWs: frame => frames.push(frame) });
       await sendUserMessage(mode);
       const rows = entries.filter(entry => entry.mainAgent);
       assert.equal(rows.length, 1, mode);
       assert.equal(rows[0].response.status, status, mode);
       assert.ok(rows[0].response.body.content.some(block => block.text?.includes(content)), mode);
       assert.equal(statuses[0].active, true); assert.equal(statuses.at(-1).active, false);
+      const errors = frames.filter(frame => frame.type === 'sdk-error');
+      assert.equal(errors.length, status === 500 ? 1 : 0, 'only the terminal failure alerts, once');
+      if (errors.length) {
+        assert.equal(errors[0].cwd, root); assert.equal(errors[0].instanceKey, view.instanceKey);
+        assert.equal(errors[0].sessionId, mode === 'silent-eof' ? null : 'stream-errors-thread');
+        assert.ok(errors[0].message.includes(content));
+      }
       if (mode === 'recover') assert.ok(!JSON.stringify(rows[0].response).includes('Reconnecting'));
+      if (mode === 'partial-eof') {
+        const partial = rows[0].body.input.find(message => message.role === 'assistant'
+          && message.content.some(block => block.text === 'partial answer before exit'));
+        assert.ok(partial, 'partial output must remain in the canonical failed transcript');
+      }
       if (mode === 'fail') {
         await sendUserMessage('recover');
         assert.equal(entries.length, 2);

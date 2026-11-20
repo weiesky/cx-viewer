@@ -12,6 +12,7 @@ import {
   getResponseTools,
 } from '../../lib/openai-body.js';
 import { isOpenAiResponsesMasterEntry } from '../../lib/openai-responses-url.js';
+import { isNativeTitleEntry } from '../../lib/codex-thread-source.js';
 import { getEntryUpstreamLane } from './clearCheckpoint.js';
 import { parseUltraplanPrompt } from './ultraplanTemplates.js';
 export { getInstructionsText };
@@ -140,8 +141,15 @@ const _isTeammateCache = new WeakMap();
  */
 export function isTeammate(req) {
   if (!req) return false;
+  if (isNativeTitleEntry(req)) return false;
   const cached = _isTeammateCache.get(req);
   if (cached !== undefined) return cached;
+  // Codex producers already resolved the native child thread. Communication
+  // tools and inherited team instructions cannot turn it into a teammate.
+  if (req.subAgent === true && (req._appServerSource === true || req._sdkSource === true)) {
+    _isTeammateCache.set(req, false);
+    return false;
+  }
   // interceptor 模式：通过 process.argv 写入的 teammate 字段
   if (req.teammate) { _isTeammateCache.set(req, true); return true; }
   // native teammate：同进程内 Agent 子代理（instructions 包含 "You are a Codex agent"）
@@ -178,6 +186,7 @@ export function isMainAgent(req) {
 
 function _isMainAgentImpl(req) {
   if (!req) return false;
+  if (isNativeTitleEntry(req)) return false;
 
   // Direct OpenAI Responses requests are neutral Master records. This veto is
   // intentionally before persisted flags and body heuristics for old logs.

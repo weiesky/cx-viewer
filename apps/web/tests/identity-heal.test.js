@@ -2,7 +2,21 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import React from 'react';
 
-import { refreshResolvedModelInfo } from '../src/utils/identityHeal.js';
+import { refreshResolvedModelInfo, healUnresolvedTeammateEntries } from '../src/utils/identityHeal.js';
+
+test('teammate healing preserves a canonical name and still upgrades unnamed or legacy rows', () => {
+  const entry = (tag, descriptor = {}) => ({ unresolved: true, label: 'Teammate: authoritative',
+    req: { _v2Descriptor: descriptor, _classification: tag, teammate: 'heuristic-name', body: {} } });
+  const named = entry({ type: 'Teammate', subType: 'authoritative' });
+  const unnamed = entry({ type: 'Teammate', subType: null });
+  const legacy = entry({ type: 'Teammate', subType: 'stale' }, null);
+  healUnresolvedTeammateEntries([named, unnamed, legacy]);
+  assert.equal(named.label, 'Teammate: authoritative');
+  assert.equal(named.unresolved, true);
+  assert.equal(unnamed.label, 'Teammate: heuristic-name');
+  assert.equal(legacy.label, 'Teammate: heuristic-name');
+  assert.equal(unnamed.unresolved, false);
+});
 
 test('cached assistant identity reconciles a wrong non-null model via producer timestamp', () => {
   const stale = { name: 'gpt-old' };

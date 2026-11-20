@@ -45,3 +45,20 @@ for (const mode of ['live', 'cold']) test(`SDK turn timestamps remain authoritat
     React.createElement('chat-message', { key: index, role: 'user', text: message.content, timestamp: message._timestamp }));
   assert.deepEqual(reconcilePendingInputs([record], rows), []);
 });
+
+test('SDK terminal feedback retains the canonical history prefix without impersonating model output', () => {
+  const content = [{ type: 'text', text: 'Error: terminal failure' }];
+  const input = [user('task', 0), { role: 'assistant', content }];
+  const raw = sdkToJSONLEntry({ message: { content, error: { message: 'terminal failure' } } }, input, 'fixture', 'same', {
+    timestamp: stamps[0], threadId: 'thread', status: 500, stopReason: 'error',
+  });
+  const before = JSON.stringify(raw), entry = normalizeConversationEntry(raw);
+  assert.equal(JSON.stringify(raw), before, 'raw archive/detail data must remain intact');
+  assert.equal(entry.body.input.length, 3, 'identical genuine assistant text cannot be relabeled as Viewer feedback');
+  assert.equal(entry.body.input[1]._sdkFeedback, undefined);
+  assert.equal(entry.body.input[2]._sdkFeedback, true);
+  assert.deepEqual(entry.body.input[2].content, content);
+  const ordinary = sdkToJSONLEntry({ message: { content } }, [user('task', 0)], 'fixture', 'same');
+  assert.equal(normalizeConversationEntry(ordinary).body.input.at(-1)._sdkFeedback, undefined,
+    'an Error-prefixed model answer is still ordinary assistant output');
+});

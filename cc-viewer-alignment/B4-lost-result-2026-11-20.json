@@ -1,0 +1,243 @@
+{
+  "root": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-mKgWcY",
+  "realCodex": "codex-cli 0.169.0",
+  "officialSdk": "0.142.5",
+  "externalModelNetwork": false,
+  "credentials": "isolated fixture-only",
+  "productionDefaultTransportChanged": false,
+  "threadConfigJson": false,
+  "agentsSpawned": false,
+  "agents": null,
+  "appServer": {
+    "stdioHandshake": true,
+    "sameNameSeparateProcesses": true,
+    "independentTurns": true,
+    "plan": [
+      {
+        "step": "Read baseline",
+        "status": "completed"
+      },
+      {
+        "step": "Verify protocol",
+        "status": "inProgress"
+      },
+      {
+        "step": "Record evidence",
+        "status": "pending"
+      }
+    ],
+    "streamingDeltas": true,
+    "exactTurnInterrupt": true,
+    "failedTurn": true,
+    "restartNativeResume": true
+  },
+  "sdk": {
+    "realTodoListReplay": true,
+    "statuses": [
+      "completed",
+      "pending",
+      "pending"
+    ]
+  },
+  "normalizedTransport": {
+    "actualModule": true,
+    "textAndPlan": true,
+    "cancellation": true,
+    "continueAfterCancel": true,
+    "restartResume": true
+  },
+  "managerIntegration": {
+    "explicitOnly": true,
+    "archiveIdentityRetained": true,
+    "genuinePlanStatus": true,
+    "independentQueue": true,
+    "interruptionParksQueue": true,
+    "sendNowOnSameNativeThread": true,
+    "busyTransportSwitchRejected": true,
+    "v2ExecArchiveToNativeResume": true,
+    "v2NativeArchiveToExecResume": true
+  },
+  "nativeQuestions": {
+    "answer": true,
+    "cancelEmptyAnswers": true,
+    "exactInstanceReply": true,
+    "transcriptToolResult": true
+  },
+  "nativeMcpImages": null,
+  "nativeConfig": {
+    "rawTomlArray": false,
+    "featureFlag": true
+  },
+  "errorEvidence": null,
+  "normalizedFailure": null,
+  "managerFailures": null,
+  "managerRetryStates": null,
+  "managerAgents": null,
+  "managerLoops": [
+    {
+      "phase": "start",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-mKgWcY/native-manager/same",
+      "instanceKey": "cxv-48d5a995f3f20aea3d9e94b9dbc8802a",
+      "turnId": "sdk_1795175637468_y8f3cu",
+      "turnStartedAt": 1795175637468,
+      "sessionId": "01a1f8ce-621b-7182-a86f-6571f829c6f5",
+      "ts": 1795175637543
+    },
+    {
+      "phase": "end",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-mKgWcY/native-manager/same",
+      "instanceKey": "cxv-48d5a995f3f20aea3d9e94b9dbc8802a",
+      "turnId": "sdk_1795175637468_y8f3cu",
+      "turnStartedAt": 1795175637468,
+      "sessionId": "01a1f8ce-621b-7182-a86f-6571f829c6f5",
+      "ts": 1795175638028,
+      "reason": "success"
+    },
+    {
+      "phase": "start",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-mKgWcY/native-manager/same",
+      "instanceKey": "cxv-48d5a995f3f20aea3d9e94b9dbc8802a",
+      "turnId": "sdk_1795175638028_quqyd3",
+      "turnStartedAt": 1795175638028,
+      "sessionId": "01a1f8ce-621b-7182-a86f-6571f829c6f5",
+      "ts": 1795175638028
+    },
+    {
+      "phase": "end",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-mKgWcY/native-manager/same",
+      "instanceKey": "cxv-48d5a995f3f20aea3d9e94b9dbc8802a",
+      "turnId": "sdk_1795175638028_quqyd3",
+      "turnStartedAt": 1795175638028,
+      "sessionId": "01a1f8ce-621b-7182-a86f-6571f829c6f5",
+      "ts": 1795175638182,
+      "reason": "interrupted"
+    },
+    {
+      "phase": "start",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-mKgWcY/native-manager/same",
+      "instanceKey": "cxv-48d5a995f3f20aea3d9e94b9dbc8802a",
+      "turnId": "sdk_1795175638182_gg5r0s",
+      "turnStartedAt": 1795175638182,
+      "sessionId": "01a1f8ce-621b-7182-a86f-6571f829c6f5",
+      "ts": 1795175638182
+    },
+    {
+      "phase": "end",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-mKgWcY/native-manager/same",
+      "instanceKey": "cxv-48d5a995f3f20aea3d9e94b9dbc8802a",
+      "turnId": "sdk_1795175638182_gg5r0s",
+      "turnStartedAt": 1795175638182,
+      "sessionId": "01a1f8ce-621b-7182-a86f-6571f829c6f5",
+      "ts": 1795175638410,
+      "reason": "success"
+    }
+  ],
+  "publicCliLoopEvidence": null,
+  "lifecycleEvidence": null,
+  "lostResultEvidence": {
+    "actualTransport": true,
+    "actualCodex": true,
+    "droppedTerminalNotifications": 2,
+    "productionGraceMs": 5000,
+    "nativeIdleObserved": true,
+    "sameNativeThread": "01a1f8ce-6b2c-7153-99a6-07b3a7e3ceed",
+    "boundedReads": [
+      {
+        "method": "thread/turns/list",
+        "params": {
+          "threadId": "01a1f8ce-6b2c-7153-99a6-07b3a7e3ceed",
+          "limit": 1,
+          "sortDirection": "desc",
+          "itemsView": "full"
+        }
+      },
+      {
+        "method": "thread/turns/list",
+        "params": {
+          "threadId": "01a1f8ce-6b2c-7153-99a6-07b3a7e3ceed",
+          "limit": 1,
+          "sortDirection": "desc",
+          "itemsView": "full"
+        }
+      }
+    ],
+    "recovered": [
+      {
+        "turnId": "01a1f8ce-6b3a-7b40-8ce8-867ddf3a47b0",
+        "status": "completed",
+        "elapsedMs": 5408,
+        "terminalEvent": {
+          "type": "turn.completed",
+          "usage": {
+            "totalTokens": 5,
+            "inputTokens": 3,
+            "cachedInputTokens": 0,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 2,
+            "reasoningOutputTokens": 0
+          },
+          "thread_id": "01a1f8ce-6b2c-7153-99a6-07b3a7e3ceed",
+          "turn_id": "01a1f8ce-6b3a-7b40-8ce8-867ddf3a47b0"
+        },
+        "events": 6
+      },
+      {
+        "turnId": "01a1f8ce-8014-76d3-9479-cda13c5d62c7",
+        "status": "completed",
+        "elapsedMs": 5230,
+        "terminalEvent": {
+          "type": "turn.completed",
+          "usage": {
+            "totalTokens": 5,
+            "inputTokens": 3,
+            "cachedInputTokens": 0,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 2,
+            "reasoningOutputTokens": 0
+          },
+          "thread_id": "01a1f8ce-6b2c-7153-99a6-07b3a7e3ceed",
+          "turn_id": "01a1f8ce-8014-76d3-9479-cda13c5d62c7"
+        },
+        "events": 6
+      }
+    ],
+    "noInputReplay": true,
+    "noExternalModelNetwork": true
+  },
+  "publicCli": null,
+  "schema": {
+    "planStatuses": [
+      "pending",
+      "inProgress",
+      "completed"
+    ],
+    "agentStatuses": [
+      "pendingInit",
+      "running",
+      "interrupted",
+      "completed",
+      "errored",
+      "shutdown",
+      "notFound"
+    ],
+    "collabRequiredFields": [
+      "agentsStates",
+      "id",
+      "receiverThreadIds",
+      "senderThreadId",
+      "status",
+      "tool",
+      "type"
+    ]
+  },
+  "requestCount": 24,
+  "unverified": [
+    "real agent lifecycle execution",
+    "real native command/file/permissions approval requests",
+    "image output",
+    "all CLI options",
+    "OS process descendants",
+    "WebSocket reconnect",
+    "Windows/Linux/minimum Node"
+  ]
+}

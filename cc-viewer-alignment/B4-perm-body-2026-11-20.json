@@ -1,0 +1,52 @@
+{
+  "date": "2026-11-20",
+  "upstream": "2847027b548c8eefde55fd7910639bc8d623e429",
+  "subitem": "Permission hook oversize request-body handling; directory auto-trust/policy/hooks are independent pending B9/B11 scope.",
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "codeAudit": [
+    "Read actual approval-policy, permission bridge/new PermissionRequest bridge, ensure-hooks, SDK canUseTool and ask-perm runtime diffs.",
+    "Fixed-baseline permHook retains the oversize stop guard, no later replacement;187 only changes policy docs in bridge/guard files.",
+    "Local Codex PermissionRequest already differs from Claude Read/Glob/Grep + addDirectories; no second Claude bridge or automatic grants added."
+  ],
+  "localFix": "Reuse existing readStrictUtf8JsonBody(req,1_000_000): bounded bytes and fatal UTF-8, one rejection before queue/timer/WS registration; reuse async route and guarded error response.",
+  "red": "Original route reproduced ERR_HTTP_HEADERS_SENT twice and timed out on the multibyte payload;0/1, not accepted.",
+  "cases": [
+    "chunked ASCII above1MB",
+    "declared Content-Length above1MB",
+    "multibyte UTF-8 above1MB with fewer than1M characters",
+    "malformed UTF-8",
+    "invalid JSON",
+    "server still answers following GET",
+    "no pending approval frame for rejected body",
+    "subsequent valid permission request answered deny through actual WS/HTTP"
+  ],
+  "target": "21/21,0 skip",
+  "full": "1565/1565 (5+323+1025+212),0 skip",
+  "build": "passed",
+  "installed": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-t_iah_z9",
+    "files": 702,
+    "source_bytes_match": true,
+    "web_asset_files": 204,
+    "runtime_tests": "285/285",
+    "b12_regression": "passed",
+    "installed_cli_relative_cd_boot": "passed",
+    "uses_fake_codex": true,
+    "uses_real_model_network": false
+  },
+  "additionalInstalledHttp": "5/5,0 skip; copied actual codex-ask-server suite into fresh installed package and ran in isolated HOME",
+  "logs": [
+    "/tmp/cxv-b4-perm-body-red.log",
+    "/tmp/cxv-b4-perm-body-target-final.log",
+    "/tmp/cxv-b4-perm-body-full.log",
+    "/tmp/cxv-b4-perm-body-build.log",
+    "/tmp/cxv-b4-perm-body-installed.log",
+    "/tmp/cxv-b4-perm-body-installed-http.log"
+  ],
+  "limits": [
+    "No UI/DOM/CSS change or new GUI claim.",
+    "Real loopback HTTP/WS, no external model traffic or actual command execution.",
+    "Auto-trust, countdown, full-auto and hooks installation behavior not enabled by this subitem.",
+    "Whole284 and B4 remain in progress; Context choices pending; no push."
+  ]
+}

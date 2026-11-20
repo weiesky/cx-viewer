@@ -25,6 +25,13 @@ test('root App Server thread maps to its session archive', () => {
   });
 });
 
+test('only a native temporary title thread has auxiliary archive identity', () => {
+  const thread = { id: 'title', sessionId: 'title', ephemeral: true, threadSource: 'thread_title' };
+  assert.equal(resolveAppServerThreadIdentity(thread).agentRole, 'auxiliary');
+  assert.equal(resolveAppServerThreadIdentity({ ...thread, ephemeral: false }).agentRole, 'main');
+  assert.equal(resolveAppServerThreadIdentity({ ...thread, threadSource: 'user' }).agentRole, 'main');
+});
+
 test('child App Server thread shares session and retains parent relation', () => {
   const identity = resolveAppServerThreadIdentity({
     id: 'child-1',

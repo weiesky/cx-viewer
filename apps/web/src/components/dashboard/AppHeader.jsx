@@ -1325,7 +1325,7 @@ class AppHeader extends React.Component {
             </Popover>
             );
           })()}
-          {!isElectronTab && this.props.activeProxyId && this.props.activeProxyId !== 'max' && (() => {
+          {!isElectronTab && terminalVisible && !this.props.sdkMode && this.props.activeProxyId && this.props.activeProxyId !== 'max' && (() => {
             const p = (this.props.proxyProfiles || []).find(x => x.id === this.props.activeProxyId);
             return p ? (
               <Tag className={styles.proxyProfileTag} onClick={() => this.setState({ proxyModalVisible: true })}>

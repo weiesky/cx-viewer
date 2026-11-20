@@ -1,0 +1,249 @@
+{
+  "guiResults": {
+    "chromium": {
+      "G1": {
+        "liveRewrite": true,
+        "reloadRewrite": true,
+        "onePrompt": true,
+        "oneReply": true,
+        "pendingApprovalClosed": true,
+        "siblingIsolated": true
+      },
+      "G4": {
+        "sdkNotice": true,
+        "rawUnchanged": true,
+        "customNoNotice": true,
+        "httpNoNotice": true
+      },
+      "G5": {
+        "originalTabOrder": true,
+        "unavailableText": true,
+        "noRefreshControl": true,
+        "ptyHidden": true,
+        "localLogHidden": true
+      },
+      "G2": {
+        "dynamicHeight": true,
+        "spacerMatches": true,
+        "lastReplyAboveComposer": true,
+        "overlayBleed": "12px",
+        "dragBefore": 0,
+        "dragAfter": 0,
+        "classicDrag": {
+          "gutter": 11,
+          "scrollTop": 2472,
+          "css": "11px",
+          "stackRight": 1440,
+          "scrollerRight": 1440,
+          "backgroundSize": "calc(100% - 11px) 100%",
+          "pointerEvents": "none",
+          "rightHit": "_container_chx5c_10",
+          "passed": true
+        },
+        "hudHeight": 159,
+        "queueHeight": {
+          "stack": 197,
+          "spacer": 197,
+          "css": 197
+        },
+        "hudQueueDynamic": true,
+        "emptyErrorVisible": true
+      },
+      "G3": {
+        "originalComposerSlot": true,
+        "oneNotice": true,
+        "noInventedCounts": true,
+        "siblingIsolated": true,
+        "resumeClears": true
+      }
+    },
+    "webkit": {
+      "version": "27.2",
+      "G1": {
+        "liveRewrite": true,
+        "reloadRewrite": true,
+        "onePrompt": true,
+        "oneReply": true,
+        "noStalePartial": true,
+        "preemption": true,
+        "pendingApprovalClosed": true,
+        "siblingIsolated": true
+      },
+      "G3": {
+        "originalComposerSlot": true,
+        "oneNotice": true,
+        "noInventedCounts": true,
+        "siblingIsolated": true,
+        "resumeClears": true
+      },
+      "G4": {
+        "sdkNotice": true,
+        "rawUnchanged": true,
+        "customNoNotice": true,
+        "httpNoNotice": true
+      },
+      "G5": {
+        "originalTabOrder": true,
+        "unavailableText": true,
+        "noRefreshControl": true,
+        "contextControlRequests": 0
+      },
+      "G2": {
+        "lastReplyAboveComposer": true,
+        "spacerMatches": true,
+        "dynamicHeight": true,
+        "initialHeight": 121,
+        "expandedHeight": 189,
+        "phone": {
+          "lastBottom": 549.2281494140625,
+          "stackTop": 573.2562255859375,
+          "stack": 90.74066162109375,
+          "spacer": 90.60003662109375,
+          "width": 390,
+          "scrollWidth": 390,
+          "multiline": true
+        },
+        "pad": {
+          "lastBottom": 1108.934326171875,
+          "stackTop": 1132.653076171875,
+          "stack": 61.3406982421875,
+          "spacer": 61.2000732421875,
+          "width": 834,
+          "scrollWidth": 834,
+          "multiline": true,
+          "initialHeight": 102,
+          "expandedHeight": 201
+        }
+      }
+    }
+  },
+  "monitoredPageErrors": [],
+  "permission": "User explicitly answered yes to temporary Playwright",
+  "playwright": "1.65.1",
+  "chromiumVersion": "159.0.8154.6",
+  "webkitVersion": "27.2",
+  "phone": {
+    "viewport": {
+      "width": 390,
+      "height": 664
+    },
+    "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Mobile/15E148 Safari/604.1"
+  },
+  "pad": {
+    "viewport": {
+      "width": 834,
+      "height": 1194
+    },
+    "userAgent": "Mozilla/5.0 (iPad; CPU OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Mobile/15E148 Safari/604.1"
+  },
+  "date": "2026-11-21",
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstreams": [
+    "efc7f8eab199a04f3b8dcb660a5bfde593138f66",
+    "7a2dd6162e1465071a755606d77de22d7c0caa90",
+    "04d05a58240132f057eeef6e830794190b10bc04",
+    "dafe2bce374df1daf3e81526a4b42c9189e620f0"
+  ],
+  "status": "G1-G5 actual GUI passed",
+  "productionChangesDuringGui": false,
+  "fixtureBoundaries": {
+    "temporaryHomes": true,
+    "fakeCodexChildren": true,
+    "productionManagerServerWriterUI": true,
+    "realModelTraffic": false,
+    "realUserLogsOrCredentials": false,
+    "httpVariant": "Synthetic captured-request-shaped record,not an actual model HTTP capture.",
+    "mobile": "WebKit phone/pad emulation,not physical hardware."
+  },
+  "initialAttemptsNotCountedAsPass": [
+    "CUA inventory and direct iab creation failed;user explicitly chose temporary Playwright.",
+    "Node REPL ESM default-export interop failed;loaded official package via createRequire.",
+    "An inline approval card was initially queried as a dialog;used actual card controls after inspecting DOM.",
+    "Icon and Pin text contributed to accessible names;fixed locators without changing app.",
+    "Headless Chromium initially hid native scrollbars;ignoreDefaultArgs hide-scrollbars plus classic mode exposed11px gutter and actual drag moved scrollTop0→2472.",
+    "Baseline paints scrollbar bleed via background-size and pointer-events rather than shrinking the wrapper;corrected geometric expectation to actual original CSS.",
+    "Local log Open opens a new tab;selected that tab and used loopback URL for same isolated logfile instead of generated LAN URL.",
+    "Node REPL strict deepEqual crosses realms;compared literal tab-label JSON values."
+  ],
+  "images": [
+    {
+      "file": "cc-viewer-alignment/evidence/B4-final-gui-2026-11-21/webkit-g1-merge-reload.png",
+      "bytes": 93700,
+      "sha256": "7f28c980bd2efd871ce2bc96e8ff510bc8215f25a84e69f3bafabfc7cfbdb076"
+    },
+    {
+      "file": "cc-viewer-alignment/evidence/B4-final-gui-2026-11-21/webkit-g1-send-now-reload.png",
+      "bytes": 105332,
+      "sha256": "b78aa71aeaa4923ba0ee583f0e782399e3684c69f46052f853a9353bf166c3e4"
+    },
+    {
+      "file": "cc-viewer-alignment/evidence/B4-final-gui-2026-11-21/chromium-g2-classic-scrollbar-drag.png",
+      "bytes": 192930,
+      "sha256": "b0ce4674e00d5737a2352d4570fdbd6d44fcfba73a47a7620b2956d1e0cda250"
+    },
+    {
+      "file": "cc-viewer-alignment/evidence/B4-final-gui-2026-11-21/chromium-g2-hud-queue.png",
+      "bytes": 48729,
+      "sha256": "3582ca319025c80e22a3134ad60fe89b97bad08f74f79dff0da616fb7a857328"
+    },
+    {
+      "file": "cc-viewer-alignment/evidence/B4-final-gui-2026-11-21/chromium-g2-empty-error.png",
+      "bytes": 36075,
+      "sha256": "3eaf7de7f93c8feb7bf10ab24503db3ec218a82bd37c9f09e1e3cb5d7d3a9f4b"
+    },
+    {
+      "file": "cc-viewer-alignment/evidence/B4-final-gui-2026-11-21/webkit-g2-phone-multiline.png",
+      "bytes": 69877,
+      "sha256": "5853fa4150f5c94a6c45c040defc042f897918089cd63879343c43b9b24d218f"
+    },
+    {
+      "file": "cc-viewer-alignment/evidence/B4-final-gui-2026-11-21/webkit-g2-pad-multiline.png",
+      "bytes": 269386,
+      "sha256": "00f61119f3b990f23f8610d6d2258aabd16b9932942a37372185b0a5d0506d33"
+    },
+    {
+      "file": "cc-viewer-alignment/evidence/B4-final-gui-2026-11-21/webkit-g3-compact.png",
+      "bytes": 96021,
+      "sha256": "bb8a4cd454db4b2bd9460af90000c08e28ea2c56ea6e1c26273feb9d532f0081"
+    },
+    {
+      "file": "cc-viewer-alignment/evidence/B4-final-gui-2026-11-21/webkit-g4-sdk-notice.png",
+      "bytes": 112465,
+      "sha256": "a0b203881717c460281d72136050bf1da9ebfa6d4f9f6a7655383869f73c9e62"
+    },
+    {
+      "file": "cc-viewer-alignment/evidence/B4-final-gui-2026-11-21/webkit-g5-context-unavailable.png",
+      "bytes": 95910,
+      "sha256": "0419f526a44801f398491ba87022aade3558a19e3e77061a84f3fdc01a57f653"
+    },
+    {
+      "file": "cc-viewer-alignment/evidence/B4-final-gui-2026-11-21/chromium-g5-pty-hidden.png",
+      "bytes": 47645,
+      "sha256": "109971b794166cc440b0e6f8bc9f26c5e65a0e094dcfa241e880846487812acd"
+    },
+    {
+      "file": "cc-viewer-alignment/evidence/B4-final-gui-2026-11-21/chromium-g5-local-log-hidden.png",
+      "bytes": 52870,
+      "sha256": "7a4a287e876ed45aa576ab2f122013819c64aa7962c91f2f742a8f129ee052c0"
+    }
+  ],
+  "cleanup": {
+    "ownedBrowsersClosed": true,
+    "allFourOwnedFixturesStopped": true
+  },
+  "finalReleaseCheck": {
+    "status": "passed",
+    "sourceTests": 1580,
+    "groups": [
+      5,
+      332,
+      1031,
+      212
+    ],
+    "skipped": 0,
+    "build": "passed",
+    "packDryRun": "passed",
+    "log": "/tmp/cxv-b4-final-release-check.log"
+  },
+  "scopeStatus": "B4 complete; other mixed work-package subitems retain their explicit pending ownership."
+}

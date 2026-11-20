@@ -49,6 +49,22 @@ npm install -g cx-viewer --registry=https://registry.npmjs.org
 
 Everything else should be treated as standard Codex CLI syntax.
 
+For SDK mode, `cxv --sdk` keeps the existing exec transport. To opt into the
+native App Server transport, use `cxv --sdk --sdk-transport=appserver` (tested
+with Codex CLI 0.169.0). The selection also applies to workspaces opened from
+that viewer; `--sdk-transport=exec` selects the original transport explicitly.
+Native mode supports model, cwd, sandbox, approval, `-c` TOML overrides,
+search and feature flags. It currently rejects profile, image-input and
+`--add-dir` options; configure writable roots in Codex instead. Use `--` before
+literal prompt arguments that look like viewer options.
+
+Both SDK transports validate launch options before creating a workspace or
+starting a model turn. Unsupported options (including profile, image-input and
+review mode in exec SDK) and missing option values are reported explicitly.
+Supported options after `exec`/`e` are parsed normally; put literal prompts
+after `--` to preserve option-like text. SDK mode does not forward arbitrary
+Codex CLI flags through the SDK API.
+
 ```bash
 cxv                                         # == codex (interactive mode)
 cxv continue                                # == codex resume --last

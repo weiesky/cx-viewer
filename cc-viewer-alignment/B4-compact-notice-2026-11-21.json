@@ -1,0 +1,67 @@
+{
+  "date": "2026-11-21",
+  "baseline": {
+    "bannerSha256": "a984df28f807cb24f54a7be3dff76eb304c8d06400100e034ca85c451cf48443",
+    "cssSha256": "8a04eeaef2049dd4f67731c000a7606295940e792929e4090cae97dc065b38a3"
+  },
+  "upstream": "efc7f8eab199a04f3b8dcb660a5bfde593138f66",
+  "subitem": "Native context-compaction completion cue in the original composer slot.",
+  "audit": [
+    "Original SDK compact event producer and ChatView/CSS/i18n diff; fixed-final producer/10-item history/latest-only banner and later lifecycle resets reviewed.",
+    "Actual isolated Codex0.169 experimental ThreadItem schema has contextCompaction with id only. Native normalizer/processFrame root-turn filter, manager complete-tool dedup and UI scope/resume traced."
+  ],
+  "implementation": "Emit scoped sdk-compact only for completed native contextCompaction item, after existing per-turn item dedup. Reuse strict current-instance WS guard and unmount guard; retain10/latest-only original banner/CSS/18-language text, clear on explicit resume. No fabricated trigger/token counts, no compaction RPC or model input.",
+  "red": {
+    "nativeFailed": 1,
+    "webFailed": 1,
+    "logs": [
+      "/tmp/cxv-b4-compact-notice-red.log",
+      "/tmp/cxv-b4-compact-notice-web-red.log"
+    ]
+  },
+  "target": {
+    "passed": 63,
+    "skipped": 0,
+    "log": "/tmp/cxv-b4-compact-notice-target.log"
+  },
+  "full": {
+    "passed": 1575,
+    "groups": [
+      5,
+      331,
+      1027,
+      212
+    ],
+    "skipped": 0,
+    "log": "/tmp/cxv-b4-compact-notice-full.log"
+  },
+  "build": {
+    "status": "passed",
+    "log": "/tmp/cxv-b4-compact-notice-build.log"
+  },
+  "installed": {
+    "status": "passed",
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-6_pzxhk6",
+    "files": 702,
+    "source_bytes_match": true,
+    "web_asset_files": 204,
+    "runtime_tests": "287/287",
+    "b12_regression": "passed",
+    "installed_cli_relative_cd_boot": "passed",
+    "uses_fake_codex": true,
+    "uses_real_model_network": false,
+    "log": "/tmp/cxv-b4-compact-notice-installed.log"
+  },
+  "instanceAttempt": {
+    "passed": "Isolated two same-name native stdio processes through real production transport/manager. Started event alone not a cue; foreign root/turn dropped, duplicate completion emits1, native TOOL archive remains1, sibling sees0, absent before/after token fields.",
+    "frontend": "Actual ChatView: foreign/unmounted frames ignored,15 events bounded to10,one latest banner in original pre-input slot,unknown counts omitted,explicit resume clears.",
+    "gui": "No new pass: native Safari pipe unavailable; separate browser inventory also returned The browser access host is unavailable. No usable CUA browser channel observed; real-model automatic compaction not verified.",
+    "realModelNetwork": false,
+    "commandsExecuted": false
+  },
+  "limits": [
+    "Default exec SDK has no declared contextCompaction item; do not infer completion from text or token decreases. Existing canonical capture/history remains unchanged.",
+    "Compaction notice is ephemeral upstream lifecycle metadata, not a new durable-history/source-of-truth or replay API.",
+    "Other efc7 launch/protocol, remaining mixed candidates and Context decisions remain pending; no overall B4 completion/squash/push/PR."
+  ]
+}

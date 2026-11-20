@@ -1,0 +1,67 @@
+{
+  "date": "2026-11-20",
+  "upstream": [
+    "91b0055f2d781bbde687cc11d90b47baa22b23e4",
+    "282306a9507f1794fd3a9f35f4aef696e542b68b"
+  ],
+  "followups": [
+    "208f1348279758d95b72798442105c3236fa1dd3",
+    "6081b5d01a1ae5a12063cfdc15959c392c5f37ba"
+  ],
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "auditedRuntime": [
+    "91 SDK canUseTool plan ownership stamp, WS replay/view attach/cancel, ChatView view/transport/timer/resolve guards and pure target selector.",
+    "282 original PlanApprovalForm, ApprovalModal fallback/portal, ChatView authoritative pending-id/transcript/last-response/cache/handler wiring and PC/mobile removal of obsolete bottom panel.",
+    "Final form/helper byte-equal;208 adds server-deadline fallback countdown;6081 only adds ask-hosting props in ApprovalModal."
+  ],
+  "nativeProtocol": {
+    "base": "/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-plan-schema-40fwvn4p",
+    "version": "codex-cli 0.169.0",
+    "serverRequestMethods": [
+      "item/commandExecution/requestApproval",
+      "item/fileChange/requestApproval",
+      "item/tool/requestUserInput",
+      "mcpServer/elicitation/request",
+      "item/permissions/requestApproval",
+      "item/tool/call",
+      "account/chatgptAuthTokens/refresh",
+      "attestation/generate",
+      "currentTime/read",
+      "applyPatchApproval",
+      "execCommandApproval"
+    ],
+    "planItem": {
+      "type": "plan",
+      "fields": [
+        "id",
+        "text"
+      ]
+    },
+    "planUpdatedFields": [
+      "threadId",
+      "turnId",
+      "explanation",
+      "plan"
+    ],
+    "sha256": {
+      "ServerRequest.ts": "1c5837adbfbdd005f387478ba87840808d1353b47b82dcf63739a78bb1c8d3be",
+      "v2/ThreadItem.ts": "55b1c9faf87ac8827c690566df253a7de5b5f3df5a2391f3b3696162e24b3380",
+      "v2/TurnPlanUpdatedNotification.ts": "9f7505555f199125bc2774878d488a3dcbc4d7304a54967993e68053d9915d01"
+    },
+    "modelTurns": 0,
+    "generationExit": 0,
+    "warning": "Temporary CODEX_HOME did not exist during version invocation; PATH alias warning only; schema generation completed successfully.",
+    "originalFormAndHelperUnchangedAtBaseline": true
+  },
+  "disposition": {
+    "sharedOwnershipAndReplay": "Reuse accepted B2/E5 native per-instance request table, nonce/generation and scope-bound WS reconnect; E35/36 minimisation; E39/40 functional terminal cleanup; E41 SDK/PTY guards and actual read-only plan GUI.",
+    "claudeExitPlanModeUi": "No corresponding native approval request in current actual0.169 schema. Native plan item/turn plan update maps to codexTurnPlan/nonInteractive; do not fabricate a canUseTool approval or PTY keystroke sink.",
+    "autoApproval": "Countdown/cancel/deadline policy remains separate B9, default not newly enabled; generic reply and notification are not grants.",
+    "otherMixed": "Release metadata/docs/B11 and unrelated file-terminal test changes remain independent, not whole-commit complete."
+  },
+  "validation": "No runtime/test/DOM/CSS mutation in this iteration; actual fresh schema generation only. Keep E50 full1565/build/installed285+HTTP5 as the last runtime checkpoint, no rerun claim.",
+  "limits": [
+    "No native ExitPlanMode GUI or countdown claimed. Future native protocol support would require a fresh audit.",
+    "Context choices and remaining input/SDK mixed candidates still pending; B4 not complete; no push."
+  ]
+}

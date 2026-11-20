@@ -532,7 +532,7 @@ function AccordionSection({ sectionKey, title, items, historyItems = [], onSelec
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function ContextTab({ body, prevTools }) {
+export default function ContextTab({ body, prevTools, sdkSource = false }) {
   const [selectedItem, setSelectedItem] = useState(null);
   // 「原文」模式：右侧面板显示选中节点的原始 JSON 纯文本；切换节点时保持
   const [rawMode, setRawMode] = useState(false);
@@ -655,10 +655,13 @@ export default function ContextTab({ body, prevTools }) {
   // Instructions
   const instructionsBlocks = parseInstructionsBlocks(instructions);
   if (instructionsBlocks != null) {
+    const displayBlocks = sdkSource && instructions === 'You are Codex'
+      ? [...instructionsBlocks, { type: 'separator' }, { type: 'markdown', text: t('ui.context.sdkSystemPromptNotice') }]
+      : instructionsBlocks;
     accordionSections.push({
       key: 'instructions',
       title: t('ui.context.systemPrompt'),
-      items: [{ id: 'instructions__0', label: t('ui.context.systemPrompt'), blocks: instructionsBlocks, raw: instructions }],
+      items: [{ id: 'instructions__0', label: t('ui.context.systemPrompt'), blocks: displayBlocks, raw: instructions }],
     });
   }
 

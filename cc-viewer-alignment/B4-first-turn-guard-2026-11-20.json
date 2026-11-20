@@ -1,0 +1,29 @@
+{
+  "date": "2026-11-20",
+  "upstream": "7641f5181af91a3ca06912d687a8dee678bfb85d",
+  "laterFix": "bde02443 (UTF-8 byte accounting and drain-aware buffered replay)",
+  "implementation": "Reuse exact native thread/turn IDs, owned run/client generation and canonical snapshot cursor replay. No runtime/DOM/CSS change.",
+  "target": "47/47,0 skip",
+  "full": "1532/1532 (5+296+1019+212),0 skip",
+  "commands": [
+    "env -u CXV_BYPASS_PERMISSIONS CXV_TEST=1 CXV_LOG_DIR=tmp node --test packages/app/tests/sdk-appserver-transport.test.js packages/app/tests/log-v2-object-api.test.js packages/app/tests/log-v2-transport.test.js",
+    "env -u CXV_BYPASS_PERMISSIONS pnpm test"
+  ],
+  "newCoverage": [
+    "After exact missing-terminal recovery, both never-arriving and late old terminal/error/item cases preserve the next turn retry and terminal; only two explicit inputs execute.",
+    "Real production writer/snapshot/object handle/live route: commits2/3 written before subscribe and commit4 appended during blocked output are delivered exactly once in order."
+  ],
+  "existingRealEvidence": "B4-lost-result-2026-11-20.json: real Codex0.169, two dropped terminals recovered by exact bounded history reads on one thread; no automatic replay.",
+  "initialFullFailure": "Inherited CXV_BYPASS_PERMISSIONS made one permission bridge expectation take the bypass branch. Original full log retained; cleared-env complete rerun passes.",
+  "logs": [
+    "/tmp/cxv-b4-first-turn-guard-target.log",
+    "/tmp/cxv-b4-first-turn-guard-full.log",
+    "/tmp/cxv-b4-first-turn-guard-full-clean.log"
+  ],
+  "buildInstallation": "Production code unchanged; E36 build and 702files/204exactWeb/279runtime retained, not rerun.",
+  "limits": [
+    "No new Safari claim or external model request.",
+    "B11 release/history/wire research documentation subitems not marked complete.",
+    "B4 remains in progress."
+  ]
+}

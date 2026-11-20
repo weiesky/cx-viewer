@@ -91,6 +91,10 @@ import {
 } from './lib/auth.js';
 import { handleAuthRoute } from './lib/auth-routes.js';
 import { readPreferences, updatePreferences } from './lib/preferences.js';
+import { handleVoicePackRoute } from './lib/voice-pack-routes.js';
+import { getAppServerAgentLoopSnapshot } from './lib/appserver-bridge.js';
+import { reconcileVoicePackPrefs } from './server/lib/voice-pack-manager.js';
+import { mergeApprovalModalPrefs } from './server/lib/approval-modal-prefs.js';
 import {
   getDefaultSystemPrompt,
   getModelSystemPrompts,
@@ -1591,6 +1595,7 @@ async function handleViewerRequest(req, res) {
   }
 
   if (handleUltraAgentsRoute(req, res, parsedUrl)) return;
+  if (await handleVoicePackRoute(req, res, parsedUrl, { isLocal, readUpload: readMultipartUpload })) return;
 
   if (url === '/api/search' && method === 'POST') {
     try {
@@ -1846,6 +1851,9 @@ async function handleViewerRequest(req, res) {
       delete prefs.auth;
       delete prefs.authByProject;
     }
+    if (prefs.approvalModal?.voicePack) {
+      prefs.approvalModal.voicePack = reconcileVoicePackPrefs(LOG_DIR, prefs.approvalModal.voicePack);
+    }
     prefs.logDir = LOG_DIR; // 始终返回当前运行时的日志目录
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(prefs));
@@ -1878,7 +1886,16 @@ async function handleViewerRequest(req, res) {
             return;
           }
         }
-        const prefs = updatePreferences(current => Object.assign(current, incoming));
+        const prefs = updatePreferences(current => {
+          const { approvalModal, ...rest } = incoming;
+          Object.assign(current, rest);
+          if (approvalModal && typeof approvalModal === 'object') {
+            current.approvalModal = mergeApprovalModalPrefs(current.approvalModal, approvalModal, {
+              reconcile: vp => reconcileVoicePackPrefs(LOG_DIR, vp),
+            });
+          }
+          return current;
+        });
         const reviewerState = Object.prototype.hasOwnProperty.call(incoming, 'approvalsReviewer')
           ? applyRuntimeApprovalsReviewer(incoming.approvalsReviewer)
           : null;
@@ -2414,6 +2431,14 @@ async function handleViewerRequest(req, res) {
     return;
   }
 
+  if (url === '/api/sdk-mcp-server-status' && method === 'GET') {
+    const result = requestSdkView
+      ? await sdkManager.fetchMcpStatus({ instanceKey: requestSdkView.instanceKey })
+      : { ok: false, reason: 'session-inactive' };
+    sendJson(res, 200, result);
+    return;
+  }
+
   // SSE endpoint
   if (url === '/api/log-v2/snapshot' && method === 'GET') {
     const limit = Math.min(Math.max(parseInt(parsedUrl.searchParams.get('limit'), 10) || 0, 0), 5000);
@@ -2518,7 +2543,10 @@ async function handleViewerRequest(req, res) {
     if (res.cxvSdkSession) {
       sendEventToClients([res], 'sdk_workspace', res.cxvSdkSession);
       sendEventToClients([res], 'streaming_status', sdkManager.getSdkStreamingState({ instanceKey: res.cxvSdkSession.instanceKey }));
+    } else {
+      sendEventToClients([res], 'turn_active', { active: _ptyAgentLoops.size > 0, project: _projectName });
     }
+    sendEventToClients([res], 'server_config', { turnEndDebounceMs: TURN_END_DEBOUNCE_MS });
     req.on("close", () => {
       clearInterval(pingTimer);
       const idx = clients.indexOf(res);
@@ -3569,86 +3597,76 @@ async function handleViewerRequest(req, res) {
 
   // Permission hook bridge: receive tool permission request from perm-bridge.js, long-poll for user decision
   if (url === '/api/perm-hook' && method === 'POST') {
-    let body = '';
-    req.on('data', (chunk) => {
-      body += chunk;
-      if (body.length > 1000000) {
-        res.writeHead(413, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Request body too large' }));
+    try {
+      const { toolName, input, forceManual = false } = await readStrictUtf8JsonBody(req, 1_000_000);
+      if (!toolName) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Missing toolName' }));
         return;
       }
-    });
-    req.on('end', () => {
-      try {
-        const { toolName, input, forceManual = false } = JSON.parse(body);
-        if (!toolName) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Missing toolName' }));
-          return;
-        }
 
 
-        // In Codex auto-review mode the native reviewer agent owns the decision.
-        // A hook with no decision lets Codex continue its normal approval path.
-        // Publish commands remain a deliberate human-only safety boundary in
-        // every mode and opt out through forceManual.
-        if (!forceManual && _codexNativeReviewerAvailable && shouldDeferPermissionHookToCodex(_runtimeApprovalsReviewer)) {
-          sendJson(res, 200, { deferToCodex: true });
-          return;
-        }
+      // In Codex auto-review mode the native reviewer agent owns the decision.
+      // A hook with no decision lets Codex continue its normal approval path.
+      // Publish commands remain a deliberate human-only safety boundary in
+      // every mode and opt out through forceManual.
+      if (!forceManual && _codexNativeReviewerAvailable && shouldDeferPermissionHookToCodex(_runtimeApprovalsReviewer)) {
+        sendJson(res, 200, { deferToCodex: true });
+        return;
+      }
 
-        const HOOK_TIMEOUT = HOOK_TIMEOUT_MS;
-        const id = `perm_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-        const timer = setTimeout(() => {
-          const pending = pendingPermHooks.get(id);
-          if (pending) {
-            pendingPermHooks.delete(id);
-            try {
-              if (!res.headersSent) {
-                res.writeHead(408, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ error: 'Timeout' }));
-              }
-            } catch {}
-            if (terminalWss) {
-              const tmsg = JSON.stringify({ type: 'perm-hook-timeout', id });
-              terminalWss.clients.forEach((c) => {
-                if (c.readyState === 1) try { c.send(tmsg); } catch {}
-              });
+      const HOOK_TIMEOUT = HOOK_TIMEOUT_MS;
+      const id = `perm_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const timer = setTimeout(() => {
+        const pending = pendingPermHooks.get(id);
+        if (pending) {
+          pendingPermHooks.delete(id);
+          try {
+            if (!res.headersSent) {
+              res.writeHead(408, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Timeout' }));
             }
+          } catch {}
+          if (terminalWss) {
+            const tmsg = JSON.stringify({ type: 'perm-hook-timeout', id });
+            terminalWss.clients.forEach((c) => {
+              if (c.readyState === 1) try { c.send(tmsg); } catch {}
+            });
           }
-        }, HOOK_TIMEOUT);
-
-        pendingPermHooks.set(id, { id, toolName, input, res, timer, createdAt: Date.now() });
-
-        // Broadcast to all terminal WS clients
-        if (terminalWss) {
-          const pmsg = JSON.stringify({ type: 'perm-hook-pending', id, toolName, input });
-          terminalWss.clients.forEach((client) => {
-            if (client.readyState === 1) {
-              try { client.send(pmsg); } catch {}
-            }
-          });
         }
+      }, HOOK_TIMEOUT);
 
-        // Handle perm-bridge.js disconnection
-        res.on('close', () => {
-          const pending = pendingPermHooks.get(id);
-          if (pending) {
-            clearTimeout(pending.timer);
-            pendingPermHooks.delete(id);
-            if (terminalWss) {
-              const tmsg = JSON.stringify({ type: 'perm-hook-timeout', id });
-              terminalWss.clients.forEach((c) => {
-                if (c.readyState === 1) try { c.send(tmsg); } catch {}
-              });
-            }
+      pendingPermHooks.set(id, { id, toolName, input, res, timer, createdAt: Date.now() });
+
+      // Broadcast to all terminal WS clients
+      if (terminalWss) {
+        const pmsg = JSON.stringify({ type: 'perm-hook-pending', id, toolName, input });
+        terminalWss.clients.forEach((client) => {
+          if (client.readyState === 1) {
+            try { client.send(pmsg); } catch {}
           }
         });
-      } catch {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Invalid request body' }));
       }
-    });
+
+      // Handle perm-bridge.js disconnection
+      res.on('close', () => {
+        const pending = pendingPermHooks.get(id);
+        if (pending) {
+          clearTimeout(pending.timer);
+          pendingPermHooks.delete(id);
+          if (terminalWss) {
+            const tmsg = JSON.stringify({ type: 'perm-hook-timeout', id });
+            terminalWss.clients.forEach((c) => {
+              if (c.readyState === 1) try { c.send(tmsg); } catch {}
+            });
+          }
+        }
+      });
+    } catch (error) {
+      if (!res.headersSent) sendJson(res, error.status || 400, {
+        error: error.status === 413 ? 'Request body too large' : 'Invalid request body',
+      });
+    }
     return;
   }
 
@@ -4739,6 +4757,13 @@ async function handleViewerRequest(req, res) {
 }
 
 export async function startViewer() {
+  if (_stoppingPromise) { await _stoppingPromise; _stoppingPromise = null; }
+  if (!isSdkMode) {
+    _ptyAgentLoops.clear();
+    for (const data of getAppServerAgentLoopSnapshot()) {
+      if (ownedPtyLoopData(data)) _ptyAgentLoops.set(ptyLoopKey(data), data);
+    }
+  }
   pluginRoutes = [];
   // 加载插件（需要在创建服务器之前，以便通过 hook 获取 HTTPS 证书）
   if (process.env.CXV_IM_WORKER !== '1') await loadPlugins();
@@ -5331,6 +5356,12 @@ async function setupTerminalWebSocket(httpServer) {
       if (ws.cxvSdkSession) {
         safeSend({ type: 'sdk-workspace', ...ws.cxvSdkSession });
         safeSend(sdkManager.getSdkQueueState({ instanceKey: ws.cxvSdkSession.instanceKey }));
+        safeSend(sdkManager.getSdkTaskState({ instanceKey: ws.cxvSdkSession.instanceKey }));
+        for (const approval of sdkManager.getSdkPendingApprovals({ instanceKey: ws.cxvSdkSession.instanceKey })) safeSend(approval);
+        safeSend(sdkManager.getSdkAgentState({ instanceKey: ws.cxvSdkSession.instanceKey }));
+        const mcpStatus = sdkManager.getMcpStatusSnapshot({ instanceKey: ws.cxvSdkSession.instanceKey });
+        if (mcpStatus) safeSend(mcpStatus);
+        for (const frame of sdkManager.getSdkSlowUpstreams({ instanceKey: ws.cxvSdkSession.instanceKey })) safeSend(frame);
       }
 
       // PTY 输出 → WebSocket
@@ -5400,6 +5431,9 @@ async function setupTerminalWebSocket(httpServer) {
             || !consumeRate('wireBytes', rawBytes, 4 * 1024 * 1024)) return;
           const msg = JSON.parse(raw.toString());
           if (!msg || typeof msg !== 'object' || Array.isArray(msg) || typeof msg.type !== 'string') return;
+          // SDK sessions have no main PTY. Scratch terminals own a separate WS handler.
+          if (isSdkMode && (msg.type === 'input' || msg.type === 'input-sequential'
+            || msg.type === 'resync-request' || msg.type === 'resize')) return;
           if (msg.type === 'sdk-user-message' && msg.requestId !== undefined) {
             if (typeof msg.requestId !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(msg.requestId)) {
               throw Object.assign(new Error('Invalid SDK message request id'), { code: 'SDK_INVALID_REQUEST_ID' });
@@ -5424,15 +5458,25 @@ async function setupTerminalWebSocket(httpServer) {
               await sdkManager.sendSdkQueuedNow(msg.id, anchor);
             } else if (msg.type === 'sdk-interrupt') {
               (_sdkInterruptTurn || sdkManager.interruptTurn)(anchor);
+            } else if (msg.type === 'sdk-retry-turn') {
+              const result = sdkManager.retryInterruptedTurn(msg.turnId, anchor);
+              if (!result.ok) safeSend({ type: 'sdk-retry-state', phase: 'rejected', reason: result.reason,
+                turnId: typeof msg.turnId === 'string' ? msg.turnId : null,
+                cwd: ws.cxvSdkSession.cwd, instanceKey: anchor.instanceKey, ts: Date.now() });
             } else if (msg.type === 'perm-hook-answer' || msg.type === 'sdk-ask-answer' || msg.type === 'sdk-plan-answer') {
               const value = msg.type === 'sdk-ask-answer' ? msg.answers
                 : msg.type === 'sdk-plan-answer' ? { approve: msg.approve !== false, feedback: msg.feedback || '' }
                   : msg.allowSession ? { decision: msg.decision || 'allow', allowSession: true } : (msg.decision || 'deny');
               const resolved = (_sdkResolveApproval || sdkManager.resolveApproval)(msg.id, value, anchor);
-              if (resolved) broadcastWsMessage({
+              // Native requests publish their item/answer metadata through the
+              // instance-owned bridge; do not send a second empty resolution.
+              if (resolved && !String(msg.id).startsWith('native_')) broadcastWsMessage({
                 type: msg.type === 'perm-hook-answer' ? 'perm-hook-resolved' : msg.type.replace('-answer', '-resolved'),
                 id: msg.id, cwd: ws.cxvSdkSession.cwd, instanceKey: anchor.instanceKey,
               });
+              else if (!resolved && typeof msg.id === 'string' && msg.id.startsWith('native_')) {
+                throw Object.assign(new Error('Approval is no longer pending or the decision is not available'), { code: 'SDK_APPROVAL_NOT_PENDING' });
+              }
             }
             return;
           }
@@ -5775,13 +5819,15 @@ function startStreamingStatusTimer() {
   _streamingStatusTimer = setInterval(() => {
     // SDK mode uses its own streaming state (pushed directly via setSdkStreamingState)
     if (isSdkMode) return;
-    const changed = streamingState.active !== _lastStreamingActive;
-    if (changed || streamingState.active) {
-      const data = streamingState.active
-        ? { ...streamingState, elapsed: Date.now() - streamingState.startTime }
+    const loop = [..._ptyAgentLoops.values()].at(-1);
+    const active = !!loop || streamingState.active;
+    const changed = active !== _lastStreamingActive;
+    if (changed || active) {
+      const data = active
+        ? { ...streamingState, active: true, elapsed: Date.now() - (loop?.turnStartedAt || streamingState.startTime) }
         : { active: false };
       if (clients.length > 0 && sendEventToClients) sendEventToClients(clients, 'streaming_status', data);
-      _lastStreamingActive = streamingState.active;
+      _lastStreamingActive = active;
     }
   }, 500);
   _streamingStatusTimer.unref();
@@ -5794,6 +5840,8 @@ export function stopViewer({ deadlineAt = Date.now() + SHUTDOWN_DEADLINE_MS } = 
   return _stoppingPromise;
 }
 async function _doStop(deadlineAt) {
+  for (const timer of _ptyLoopEndTimers.values()) clearTimeout(timer);
+  _ptyLoopEndTimers.clear(); _ptyAgentLoops.clear();
   const remaining = () => Math.max(0, deadlineAt - Date.now());
   if (_dingtalkImBridge) {
     try { await _dingtalkImBridge.stop(); } catch {}
@@ -5880,6 +5928,66 @@ export function setSdkStreamingState(data) {
 /** Push live SDK text/thinking blocks without polluting the JSONL request list. */
 export function sendSdkStreamProgress(data) {
   sendSdkEvent('stream-progress', data);
+}
+
+// SDK boundaries are per accepted turn, independent of API request activity.
+// Retain the baseline event/hook names; use the existing exact SDK scope route.
+function emitSdkAgentLoopBoundary(phase, data) {
+  if (_stoppingPromise || !data?.cwd || !data?.instanceKey || !data?.turnId) return;
+  const payload = { ...data, mode: 'sdk', project: basename(data.cwd), instance: data.instanceKey };
+  sendSdkEvent(phase === 'start' ? 'agent_loop_start' : 'agent_loop_end', payload);
+  void runParallelHook(phase === 'start' ? 'onAgentLoopStart' : 'onAgentLoopEnd', payload).catch(() => {});
+}
+export function broadcastAgentLoopStart(data) { emitSdkAgentLoopBoundary('start', data); }
+export function broadcastAgentLoopEnd(data) { emitSdkAgentLoopBoundary('end', data); }
+
+// Ordinary TUI uses its owned App Server bridge instead of Claude's hooks. Keep
+// the baseline PTY voice boundary: normal ends wait for ten seconds of quiet,
+// while loading ends immediately and a new accepted turn cancels old tail cues.
+const TURN_END_DEBOUNCE_MS = (() => {
+  const raw = process.env.CXV_TURN_END_DEBOUNCE_MS;
+  if (raw == null || !raw.trim()) return 10000;
+  const n = Number(raw);
+  if (Number.isFinite(n) && n >= 100 && n <= 60000) return n;
+  console.warn('[turn-end] CXV_TURN_END_DEBOUNCE_MS out of [100,60000]; using 10000');
+  return 10000;
+})();
+const _ptyAgentLoops = new Map(), _ptyLoopEndTimers = new Map();
+const ptyLoopKey = data => `${data.sessionId}\0${data.turnId}`;
+function ownedPtyLoopData(data) {
+  return !isSdkMode && !_stoppingPromise && data?.cwd === currentProjectDir()
+    && typeof data.sessionId === 'string' && data.sessionId && typeof data.turnId === 'string' && data.turnId;
+}
+function emitPtyAgentLoopBoundary(phase, data) {
+  if (_stoppingPromise) return;
+  const payload = { ...data, mode: 'pty', project: basename(data.cwd), instance: null };
+  sendEventToClients(clients, phase === 'start' ? 'agent_loop_start' : 'agent_loop_end', payload);
+  void runParallelHook(phase === 'start' ? 'onAgentLoopStart' : 'onAgentLoopEnd', payload).catch(() => {});
+}
+export function broadcastPtyAgentLoopStart(data) {
+  if (!ownedPtyLoopData(data) || _ptyAgentLoops.has(ptyLoopKey(data))) return;
+  for (const timer of _ptyLoopEndTimers.values()) clearTimeout(timer);
+  _ptyLoopEndTimers.clear();
+  _ptyAgentLoops.set(ptyLoopKey(data), { ...data });
+  sendEventToClients(clients, 'turn_active', { ...data, active: true, project: basename(data.cwd) });
+  emitPtyAgentLoopBoundary('start', data);
+}
+export function broadcastPtyAgentLoopEnd(data) {
+  if (!ownedPtyLoopData(data)) return;
+  const key = ptyLoopKey(data), rec = _ptyAgentLoops.get(key);
+  if (!rec) return;
+  _ptyAgentLoops.delete(key);
+  const ended = { ...rec, ts: data.ts || Date.now(), reason: data.reason || 'stop-hook' };
+  sendEventToClients(clients, 'turn_active', { ...ended, active: _ptyAgentLoops.size > 0, project: basename(data.cwd) });
+  if (['interrupted', 'session-ended'].includes(ended.reason)) {
+    emitPtyAgentLoopBoundary('end', ended); return;
+  }
+  const timer = setTimeout(() => {
+    _ptyLoopEndTimers.delete(key);
+    emitPtyAgentLoopBoundary('end', ended);
+    sendEventToClients(clients, 'turn_end', { ...ended, project: basename(data.cwd), instance: null });
+  }, TURN_END_DEBOUNCE_MS);
+  timer.unref?.(); _ptyLoopEndTimers.set(key, timer);
 }
 
 /** Broadcast a message to all terminal WS clients (for SDK canUseTool). */

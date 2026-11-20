@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { isOpenAiResponsesMasterEntry } from '../openai-responses-url.js';
+import { isTemporaryTitleThread } from '../codex-thread-source.js';
 
 function firstNonEmpty(...values) {
   return values.find((value) => typeof value === 'string' && value.trim() !== '')?.trim() ?? null;
@@ -115,7 +116,7 @@ export function resolveAppServerThreadIdentity(thread) {
     threadId,
     parentThreadId,
     isRoot,
-    agentRole: isRoot ? 'main' : 'subagent',
+    agentRole: isTemporaryTitleThread(thread) ? 'auxiliary' : isRoot ? 'main' : 'subagent',
   });
 }
 

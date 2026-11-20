@@ -97,6 +97,45 @@ after(async () => {
   rmSync(temp, { recursive: true, force: true });
 });
 
+test('oversized permission hook bodies never register approvals or break subsequent HTTP requests', async () => {
+  const post = (chunks, declaredLength) => new Promise((resolve, reject) => {
+    const req = request({ hostname: '127.0.0.1', port, path: '/api/perm-hook', method: 'POST',
+      headers: { 'content-type': 'application/json', ...(declaredLength ? { 'content-length': declaredLength } : {}) } }, res => {
+      let body = '';
+      res.on('data', chunk => { body += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode, body: JSON.parse(body) }));
+    });
+    req.on('error', reject);
+    req.setTimeout(3000, () => req.destroy(new Error('permission body rejection must not wait for an approval')));
+    for (const chunk of chunks) req.write(chunk);
+    req.end();
+  });
+  const prefix = '{"toolName":"shell_command","forceManual":true,"input":{"command":"';
+  const suffix = '"}}';
+  const ascii = Buffer.from('x'.repeat(600000));
+  const unicode = Buffer.from('字'.repeat(400000));
+  const cases = [
+    { chunks: [prefix, ascii, ascii, suffix] },
+    { chunks: [prefix, ascii, ascii, suffix], length: Buffer.byteLength(prefix + suffix) + ascii.length * 2 },
+    { chunks: [prefix, unicode, suffix] },
+  ];
+  for (const { chunks, length } of cases) {
+    const result = await post(chunks, length);
+    assert.equal(result.status, 413);
+    assert.equal(result.body.error, 'Request body too large');
+    assert.deepEqual(await pendingAsks(), [], 'the same server remains available after rejection');
+    assert.equal(messages.some(message => message.type === 'perm-hook-pending'), false);
+  }
+  assert.equal((await post([prefix, Buffer.from([0xff]), suffix])).status, 400);
+  assert.equal((await post(['{'])).status, 400);
+  assert.deepEqual(await pendingAsks(), []);
+  const ordinary = post([JSON.stringify({ toolName: 'shell_command', forceManual: true, input: { command: 'fixture only' } })]);
+  const pending = await receive('perm-hook-pending');
+  assert.equal(pending.input.command, 'fixture only');
+  ws.send(JSON.stringify({ type: 'perm-hook-answer', id: pending.id, decision: 'deny' }));
+  assert.deepEqual(await ordinary, { status: 200, body: { decision: 'deny' } });
+});
+
 test('browser WebSocket answers Codex app-server asks with the structured id map', async () => {
   assert.equal(server.offerCodexRequestUserInput(ask('ask-answer')), true);
   const pending = await receive('ask-hook-pending');

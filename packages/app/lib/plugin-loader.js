@@ -15,6 +15,8 @@ const HOOK_TYPES = {
   serverStarted: 'parallel',
   serverStopping: 'parallel',
   onNewEntry: 'parallel',
+  onAgentLoopStart: 'parallel',
+  onAgentLoopEnd: 'parallel',
 };
 
 let _plugins = [];

@@ -1,0 +1,276 @@
+{
+  "root": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-flNjm6",
+  "realCodex": "codex-cli 0.169.0",
+  "officialSdk": "0.142.5",
+  "externalModelNetwork": false,
+  "credentials": "isolated fixture-only",
+  "productionDefaultTransportChanged": false,
+  "threadConfigJson": false,
+  "agentsSpawned": false,
+  "agents": null,
+  "appServer": {
+    "stdioHandshake": true,
+    "sameNameSeparateProcesses": true,
+    "independentTurns": true,
+    "plan": [
+      {
+        "step": "Read baseline",
+        "status": "completed"
+      },
+      {
+        "step": "Verify protocol",
+        "status": "inProgress"
+      },
+      {
+        "step": "Record evidence",
+        "status": "pending"
+      }
+    ],
+    "streamingDeltas": true,
+    "exactTurnInterrupt": true,
+    "failedTurn": true,
+    "restartNativeResume": true
+  },
+  "sdk": {
+    "realTodoListReplay": true,
+    "statuses": [
+      "completed",
+      "pending",
+      "pending"
+    ]
+  },
+  "normalizedTransport": {
+    "actualModule": true,
+    "textAndPlan": true,
+    "cancellation": true,
+    "continueAfterCancel": true,
+    "restartResume": true
+  },
+  "managerIntegration": {
+    "explicitOnly": true,
+    "archiveIdentityRetained": true,
+    "genuinePlanStatus": true,
+    "independentQueue": true,
+    "interruptionParksQueue": true,
+    "sendNowOnSameNativeThread": true,
+    "busyTransportSwitchRejected": true,
+    "v2ExecArchiveToNativeResume": true,
+    "v2NativeArchiveToExecResume": true
+  },
+  "nativeQuestions": {
+    "answer": true,
+    "cancelEmptyAnswers": true,
+    "exactInstanceReply": true,
+    "transcriptToolResult": true
+  },
+  "nativeMcpImages": null,
+  "nativeConfig": {
+    "rawTomlArray": false,
+    "featureFlag": true
+  },
+  "errorEvidence": [
+    {
+      "prompt": "B4 RETRY SUCCESS",
+      "turnId": "01a1f7e0-0ad6-75c3-a12c-97eae0463ee7",
+      "status": "completed",
+      "error": null,
+      "notices": [
+        {
+          "error": {
+            "message": "Reconnecting... 1/1",
+            "codexErrorInfo": {
+              "responseStreamDisconnected": {
+                "httpStatusCode": 503
+              }
+            },
+            "additionalDetails": "unexpected status 503 Service Unavailable: B4 local retry fixture, url: http://127.0.0.1:58928/v1/responses",
+            "misalignment": null
+          },
+          "willRetry": true,
+          "threadId": "01a1f7e0-0ac5-7731-956c-13ae97401c3c",
+          "turnId": "01a1f7e0-0ad6-75c3-a12c-97eae0463ee7"
+        }
+      ],
+      "requests": 2
+    },
+    {
+      "prompt": "B4 RETRY EXHAUSTED",
+      "turnId": "01a1f7e0-0d15-7383-94ac-4a5c80713465",
+      "status": "failed",
+      "error": {
+        "message": "unexpected status 503 Service Unavailable: B4 local retry fixture, url: http://127.0.0.1:58928/v1/responses",
+        "codexErrorInfo": {
+          "httpConnectionFailed": {
+            "httpStatusCode": 503
+          }
+        },
+        "additionalDetails": null,
+        "misalignment": null
+      },
+      "notices": [
+        {
+          "error": {
+            "message": "Reconnecting... 1/1",
+            "codexErrorInfo": {
+              "responseStreamDisconnected": {
+                "httpStatusCode": 503
+              }
+            },
+            "additionalDetails": "unexpected status 503 Service Unavailable: B4 local retry fixture, url: http://127.0.0.1:58928/v1/responses",
+            "misalignment": null
+          },
+          "willRetry": true,
+          "threadId": "01a1f7e0-0ac5-7731-956c-13ae97401c3c",
+          "turnId": "01a1f7e0-0d15-7383-94ac-4a5c80713465"
+        },
+        {
+          "error": {
+            "message": "unexpected status 503 Service Unavailable: B4 local retry fixture, url: http://127.0.0.1:58928/v1/responses",
+            "codexErrorInfo": {
+              "httpConnectionFailed": {
+                "httpStatusCode": 503
+              }
+            },
+            "additionalDetails": null,
+            "misalignment": null
+          },
+          "willRetry": false,
+          "threadId": "01a1f7e0-0ac5-7731-956c-13ae97401c3c",
+          "turnId": "01a1f7e0-0d15-7383-94ac-4a5c80713465"
+        }
+      ],
+      "requests": 2
+    }
+  ],
+  "normalizedFailure": {
+    "type": "turn.failed",
+    "thread_id": "01a1f7e0-1067-7c03-ac9c-c1b6d78ac690",
+    "turn_id": "01a1f7e0-128a-7de1-8394-57fe9526a918",
+    "status": "failed",
+    "error": {
+      "message": "{\"error\":{\"message\":\"B4 local synthetic failure\",\"type\":\"invalid_request_error\"}}",
+      "codexErrorInfo": "other",
+      "additionalDetails": null,
+      "misalignment": null
+    }
+  },
+  "managerFailures": [
+    {
+      "type": "sdk-error",
+      "message": "unexpected status 503 Service Unavailable: B4 local retry fixture, url: http://127.0.0.1:58928/v1/responses",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-flNjm6/native-manager/same",
+      "sessionId": "01a1f7e0-197c-7923-b08b-8c0c2e119153",
+      "instanceKey": "cxv-b462f79c5a3319ce286fde875acde10e",
+      "turnId": "01a1f7e0-1ba5-7971-a7a1-79518c14c75c",
+      "codexErrorInfo": {
+        "httpConnectionFailed": {
+          "httpStatusCode": 503
+        }
+      },
+      "apiStatus": 503,
+      "retryable": true
+    },
+    {
+      "type": "sdk-error",
+      "message": "{\"error\":{\"message\":\"B4 local synthetic failure\",\"type\":\"invalid_request_error\"}}",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-flNjm6/native-manager/same",
+      "sessionId": "01a1f7e0-197c-7923-b08b-8c0c2e119153",
+      "instanceKey": "cxv-b462f79c5a3319ce286fde875acde10e",
+      "turnId": "01a1f7e0-1fbc-76f3-a009-6f96d1ed2ea3",
+      "codexErrorInfo": "other",
+      "apiStatus": null,
+      "retryable": false
+    }
+  ],
+  "managerRetryStates": [
+    {
+      "type": "sdk-retry-state",
+      "phase": "retrying",
+      "turnId": "01a1f7e0-1ba5-7971-a7a1-79518c14c75c",
+      "retryOf": null,
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-flNjm6/native-manager/same",
+      "sessionId": "01a1f7e0-197c-7923-b08b-8c0c2e119153",
+      "instanceKey": "cxv-b462f79c5a3319ce286fde875acde10e",
+      "ts": 1795160022080,
+      "error": "Reconnecting... 1/1"
+    },
+    {
+      "type": "sdk-retry-state",
+      "phase": "recovering",
+      "turnId": "01a1f7e0-1d0c-7b72-900b-eb37003eb37e",
+      "retryOf": "01a1f7e0-1ba5-7971-a7a1-79518c14c75c",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-flNjm6/native-manager/same",
+      "sessionId": "01a1f7e0-197c-7923-b08b-8c0c2e119153",
+      "instanceKey": "cxv-b462f79c5a3319ce286fde875acde10e",
+      "ts": 1795160022287
+    },
+    {
+      "type": "sdk-retry-state",
+      "phase": "recovered",
+      "turnId": "01a1f7e0-1d0c-7b72-900b-eb37003eb37e",
+      "retryOf": "01a1f7e0-1ba5-7971-a7a1-79518c14c75c",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-flNjm6/native-manager/same",
+      "sessionId": "01a1f7e0-197c-7923-b08b-8c0c2e119153",
+      "instanceKey": "cxv-b462f79c5a3319ce286fde875acde10e",
+      "ts": 1795160022520
+    },
+    {
+      "type": "sdk-retry-state",
+      "phase": "retrying",
+      "turnId": "01a1f7e0-1dfb-72a0-88af-b7554c12f16a",
+      "retryOf": null,
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-flNjm6/native-manager/same",
+      "sessionId": "01a1f7e0-197c-7923-b08b-8c0c2e119153",
+      "instanceKey": "cxv-b462f79c5a3319ce286fde875acde10e",
+      "ts": 1795160022660,
+      "error": "Reconnecting... 1/1"
+    },
+    {
+      "type": "sdk-retry-state",
+      "phase": "recovered",
+      "turnId": "01a1f7e0-1dfb-72a0-88af-b7554c12f16a",
+      "retryOf": null,
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-flNjm6/native-manager/same",
+      "sessionId": "01a1f7e0-197c-7923-b08b-8c0c2e119153",
+      "instanceKey": "cxv-b462f79c5a3319ce286fde875acde10e",
+      "ts": 1795160022971
+    }
+  ],
+  "managerAgents": null,
+  "publicCli": null,
+  "schema": {
+    "planStatuses": [
+      "pending",
+      "inProgress",
+      "completed"
+    ],
+    "agentStatuses": [
+      "pendingInit",
+      "running",
+      "interrupted",
+      "completed",
+      "errored",
+      "shutdown",
+      "notFound"
+    ],
+    "collabRequiredFields": [
+      "agentsStates",
+      "id",
+      "receiverThreadIds",
+      "senderThreadId",
+      "status",
+      "tool",
+      "type"
+    ]
+  },
+  "requestCount": 33,
+  "unverified": [
+    "real agent lifecycle execution",
+    "real native command/file/permissions approval requests",
+    "image output",
+    "all CLI options",
+    "OS process descendants",
+    "WebSocket reconnect",
+    "Windows/Linux/minimum Node"
+  ]
+}

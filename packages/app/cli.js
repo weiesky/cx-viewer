@@ -10,7 +10,7 @@ import { homedir } from 'node:os';
 import { spawn } from 'node:child_process';
 import { t } from './i18n.js';
 import { INJECT_IMPORT, LOG_DIR, resolveCliPath, resolveNativePath, resolveNpmCodexPath } from './findcx.js';
-import { appendCxvFinalConfigArgs, getDefaultModeRequestUserInputConfigArgs, normalizeCodexArgs, hasBypassPermissions, getReasoningSummaryConfigArgs, parseCodexInvocation } from './lib/cli-args.js';
+import { appendCxvFinalConfigArgs, getDefaultModeRequestUserInputConfigArgs, normalizeCodexArgs, hasBypassPermissions, getReasoningSummaryConfigArgs, parseCodexInvocation, extractSdkTransportOptions } from './lib/cli-args.js';
 import { ensureHooks } from './lib/ensure-hooks.js';
 import { APPROVALS_REVIEWER_DEFAULT } from './lib/approval-reviewer.js';
 import { inspectCodexSystemPromptSupport } from './lib/codex-appserver-capabilities.js';
@@ -446,6 +446,8 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
       onApprovalsReviewerActive: (reviewer) => serverMod.setActiveCodexApprovalsReviewer(reviewer, true),
       onRequestUserInput: serverMod.offerCodexRequestUserInput,
       onRequestUserInputCleared: serverMod.clearCodexRequestUserInput,
+      onAgentLoopStart: serverMod.broadcastPtyAgentLoopStart,
+      onAgentLoopEnd: serverMod.broadcastPtyAgentLoopEnd,
       writeLogEntry: interceptorMod.appendLogEntry,
       systemPromptCapability,
       systemPromptLogDir: LOG_DIR,
@@ -592,7 +594,7 @@ async function runDingTalkImMode() {
   }
 }
 
-async function runSdkMode(extraCodexArgs = [], cwd) {
+async function runSdkMode(extraCodexArgs = [], cwd, transport = 'exec') {
   let codexPath = resolveNpmCodexPath();
   if (!codexPath) {
     codexPath = resolveNativePath();
@@ -609,13 +611,13 @@ async function runSdkMode(extraCodexArgs = [], cwd) {
     sdkManager = await import('./lib/sdk-manager.js');
     if (!sdkManager.isSdkAvailable()) throw new Error('query not available');
   } catch (err) {
-    if (parseCodexInvocation(extraCodexArgs).kind === 'resume') throw err;
+    if (transport === 'appserver' || parseCodexInvocation(extraCodexArgs).kind === 'resume') throw err;
     console.warn(`[CX Viewer] Codex SDK not available (${err.message}), falling back to PTY mode`);
     return runCliMode(extraCodexArgs, cwd);
   }
 
   const sdkCwd = cwd || process.cwd();
-  const workingDir = sdkManager.getSdkWorkingDirectory(sdkCwd, extraCodexArgs);
+  const workingDir = sdkManager.getSdkWorkingDirectory(sdkCwd, extraCodexArgs, transport);
   const { resolveSdkCliResume } = await import('./lib/sdk-resume-history.js');
   const { resolveProjectIdForCwd } = await import('./lib/log-v2/project-id.js');
   const resume = await resolveSdkCliResume(LOG_DIR, extraCodexArgs, {
@@ -632,8 +634,7 @@ async function runSdkMode(extraCodexArgs = [], cwd) {
   const { registerWorkspace } = await import('./workspace-registry.js');
   registerWorkspace(workingDir);
 
-  // SDK 0.142.5 does not expose a request_user_input callback; sdk-manager
-  // explicitly disables that native feature until the interaction is serviceable.
+  // The exec SDK retains its question guard; native stdio owns its requests.
 
   // 设置环境标记（必须在 import server.js 之前）
   process.env.CXV_CLI_MODE = '1';
@@ -665,9 +666,12 @@ async function runSdkMode(extraCodexArgs = [], cwd) {
   }
 
   const sdkLaunchConfig = {
+    transport,
     onEntry: (entry) => serverMod.pushSdkEntry(entry),
     onStreamingStatus: (data) => serverMod.setSdkStreamingState(data),
     onStreamProgress: (data) => serverMod.sendSdkStreamProgress(data),
+    onAgentLoopStart: (data) => serverMod.broadcastAgentLoopStart(data),
+    onAgentLoopEnd: (data) => serverMod.broadcastAgentLoopEnd(data),
     broadcastWs: (msg) => serverMod.broadcastWsMessage(msg),
     permissionMode,
     codexPath,
@@ -780,6 +784,9 @@ async function runCliModeWorkspaceSelector(extraCodexArgs = []) {
 // === 主逻辑 ===
 
 const args = process.argv.slice(2);
+let sdkTransportOptions;
+try { sdkTransportOptions = extractSdkTransportOptions(args); }
+catch (error) { console.error(error.message); process.exit(1); }
 
 // cxv 自有命令判断
 const isLogger = args.includes('-logger');
@@ -1009,11 +1016,11 @@ if (imArgIndex >= 0 && !imPlatform) {
   });
 } else if (args[0] === 'run') {
   runProxyCommand(args);
-} else if (args.includes('-SDK') || args.includes('--sdk')) {
+} else if (sdkTransportOptions.sdkMode) {
   // SDK 模式（显式 -SDK 切换）
-  const { codexArgs } = normalizeCodexArgs(args.filter(a => a !== '-SDK' && a !== '--sdk'));
+  const { codexArgs } = normalizeCodexArgs(sdkTransportOptions.codexArgs);
 
-  runSdkMode(codexArgs, process.cwd()).catch(err => {
+  runSdkMode(codexArgs, process.cwd(), sdkTransportOptions.transport).catch(err => {
     console.error('SDK mode error:', err);
     process.exit(1);
   });

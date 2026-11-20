@@ -511,3 +511,7 @@
 .container :global(.ant-tabs-tabpane-active) {
   height: 100%;
 }
+.cacheTabContent {
+  padding-top: 0;
+  overflow: hidden;
+}

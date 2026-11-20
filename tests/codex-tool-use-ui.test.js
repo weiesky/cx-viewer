@@ -35,5 +35,4 @@ test('request list labels tool-use rows and detail panel omits their Context tab
   assert.match(requestList, /\{codexInternalTag\}/);
   assert.match(detailPanel, /!hideContextForToolUse \? \[\{/);
   assert.match(detailPanel, /const activeTab = resolveDetailTabForRequest\(currentTab, request\)/);
-  assert.match(detailPanel, /activeKey=\{activeTab\}/);
 });

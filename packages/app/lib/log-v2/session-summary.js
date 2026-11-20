@@ -10,6 +10,7 @@ import {
   unlinkSync,
 } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { isNativeTitleEntry } from '../codex-thread-source.js';
 
 import { activeTimelinePath } from './shards.js';
 import { projectUserPromptItem, projectedPromptFingerprint } from '../../src/utils/userPromptContent.js';
@@ -298,7 +299,7 @@ function rebuildUnlocked(sessionDir, { durable = true, write = true } = {}) {
         state.lastRootMainActivity = activity;
       }
     }
-    if (record.threadId !== state.rootThreadId) return;
+    if (record.threadId !== state.rootThreadId || isNativeTitleEntry(entry)) return;
     const input = splitEntryParts(entry).input?.items;
     const turnHash = record.turnId ? opaqueFingerprint(record.turnId) : null;
     const promptCountBefore = state.userPrompts.length;

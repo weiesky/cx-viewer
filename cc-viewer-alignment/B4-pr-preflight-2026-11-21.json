@@ -1,0 +1,83 @@
+{
+  "date": "2026-11-21",
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "preflightSnapshot": {
+    "localHead": "94ec764",
+    "remoteMain": "e268ec0039f26276c9aa75d0a5a95b3aa26d2b62",
+    "repo": "weiesky/cx-viewer",
+    "defaultBranch": "main",
+    "remoteOnly": 0,
+    "localOnly": 69,
+    "remoteIsAncestor": true,
+    "openMainPRs": 0,
+    "note": "Captured before E64;export full-hash/file lists again after this commit and refetch before actual consolidation."
+  },
+  "cleanup": {
+    "file": "packages/app/lib/codex-server-request.js",
+    "localOrigin": "6102667",
+    "reason": "git diff --check found a new blank line at EOF",
+    "delta": "Remove exactly the final1LF;all other bytes identical. No upstream behavior migration.",
+    "beforeSha256": "a7679816c230f2d8ac932bf36ab40b735a3ac9d08d3b766db6af311ac8574ac0",
+    "afterSha256": "e6c2898b4edb161c50ff51bdd86862728e904038e92bd6b599da8410a7fbf302"
+  },
+  "validation": {
+    "syntax": "passed",
+    "wholeMainDiffWhitespace": "passed",
+    "target": {
+      "passed": 6,
+      "skipped": 0,
+      "log": "/tmp/cxv-b4-pr-preflight-target.log"
+    },
+    "build": {
+      "status": "passed",
+      "log": "/tmp/cxv-b4-pr-preflight-build.log"
+    },
+    "installed": {
+      "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-289e7o01",
+      "files": 702,
+      "source_bytes_match": true,
+      "web_asset_files": 204,
+      "runtime_tests": "291/291",
+      "b12_regression": "passed",
+      "installed_cli_relative_cd_boot": "passed",
+      "uses_fake_codex": true,
+      "uses_real_model_network": false
+    },
+    "fullSourceTests": {
+      "passed": 1580,
+      "entry": "E62",
+      "commit": "34fdb58",
+      "rerunThisIteration": false
+    }
+  },
+  "gui": {
+    "status": "unverified",
+    "pending": [
+      "G1",
+      "G2",
+      "G3",
+      "G4",
+      "G5"
+    ],
+    "actualInventory": {
+      "apps": [],
+      "browsers": [],
+      "errors": [
+        "Sky Computer Use native pipe startup failed",
+        "The browser access host is unavailable"
+      ]
+    }
+  },
+  "prepared": [
+    "/tmp/cxv-b4-pr-commits.tsv",
+    "/tmp/cxv-b4-pr-files.tsv",
+    "/tmp/cxv-b4-pr-body.md"
+  ],
+  "publication": {
+    "consolidated": false,
+    "pushed": false,
+    "prCreated": false,
+    "mainMerged": false,
+    "authorization": "Existing1commit/1PR instruction applies only after actual B4 closure."
+  }
+}

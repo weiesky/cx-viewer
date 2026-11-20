@@ -1,0 +1,72 @@
+61c3d78682507d98ba9bb0f0ab7ef128ae4a5b79	feat(sdk): replay instance-scoped Codex task snapshots
+fab7d5fe71fbc6a49680cfa7ade731177bdb1689	feat(chat): restore baseline task HUD for Codex SDK plans
+047b26618fe0f2f56ad269706d4d695510e1fbb6	docs(alignment): evaluate B4 App Server transport with real CLI probe
+c65f3f9e022587020c27b43afc356133b87c62a1	refactor(sdk): isolate existing exec transport without changing behavior
+a07132398c2291ac0fb8040dcdc4dacaac296418	feat(sdk): add owned App Server stdio RPC client
+f4015875d02780fcccc3c0737c20f6fba9a6ab99	feat(sdk): implement isolated native App Server transport
+820c662bff353cc97464d862241b452a11e4772c	feat(sdk): preserve manager and archive contracts for native transport
+61026670b7a85a50bf1658031a4e398f8d75759c	feat(sdk): route instance-owned native approvals and questions
+3576cf883e77b2a233f8d3409fe0fa99c7a0062e	fix(sdk): retain structured native tool image results
+400a27b872c5ffccd37e9f3e309735ae8501c933	fix(sdk): preserve native TOML overrides and reject unsupported options
+65729db6b58182c04112e1ca1816193588e8e180	feat(cli): expose explicit opt-in App Server transport
+d04fd1524f7de6e6e54c3ab05ad4e7d6f16d0345	feat(sdk): track owned native child lifecycles and replay snapshots
+61e17017886a89260f303215ed1d7daa467d3c59	test(sdk): match explicit RPC and SSE receipts
+f29f9b3947519b1eb0f8fc19fd1af92731ea2177	feat(chat): restore baseline active-agent card for native snapshots
+9e351573b3afdae906d3904e25bbc06925e7e894	style(chat): restore baseline floating frosted role filter
+8d6dafd9d45fd336273440f141dea45e217e93c3	fix(chat): preserve scratch state with baseline SDK composer guards
+0d5732dbff92c902fe682ea5db30d224555c6852	fix(sdk): broadcast terminal failures to their owning workspace
+ba061664d021377986ff5b9c207e2cce9c0785c1	feat(chat): restore baseline persistent SDK error rows
+41e379fa23d666f07ff41f276970cd87ea7cb01a	fix(sdk): retain native error metadata and turn identity
+2eaa4141605b4164d0bc09d1dbb2d8ce0a1b1b0b	fix(sdk): classify native failures from owned retry facts
+3c72b4a8cd4786b296bc678a3fad83e55dc3f0cc	docs(alignment): verify SDK turn loading and record stale overlay
+9e7a83a0fbc5c8439f3d54c07b945b6185e17047	fix(chat): settle streaming overlays with canonical final commits
+36af8845f8e2b5c75a7d3024d9e7ca0e337ddcfb	feat(sdk): continue an owned failed native turn without replaying input
+124ca2594cb2eb761cdd4b4e7f33afc23da23da5	feat(chat): restore baseline retry controls with native notices
+f7b13af92d09fc4a29172c42a9d09b5f16515cf9	feat(sdk): relay owned slow upstream requests and replay pending waits
+7a5007917f09f98669aeb3fdd7620ecdc7da7235	feat(chat): restore baseline slow upstream notices and lifecycle
+a51bd1afb646ea54ae0caf96ff5efdc0b0ab2f17	fix(detail): expand every first turn instruction segment
+62b8ea9c4f3eb0f5af1b5b4f78cd968991c708de	test(alignment): verify real native child interruption reuse and nesting
+bb0217222c00dc122cd1bc5f2cadb128da52842b	docs(alignment): record remaining lifecycle feedback gaps
+f2c87f632ff646b4bc1c15e2de886a5156b8cf88	feat(sdk): emit owned agent loop boundaries and plugin hooks
+dc888977ff5dd9105bd900ddaf84100b91eb9aef	feat(voice): restore audio storage routes and preference merging
+c841dc757ae5eba2efa9fcc4f213343c2605a6be	feat(web): wire original opt-in agent loop voice cues
+70ab160eabd2ad1d9192f74f79f54616cf520a5e	fix(sdk): recover missing native terminal from exact turn history
+d9747d0365c30054783091436cf9fd55b895eaed	fix(sdk): probe native turn liveness before lazy recovery
+d5a79db87c2b263239659d484baec4cbce8e0af0	fix(sdk): persist missing-terminal failures and park unsent input
+a0da40844b7c78254b30fc88ca4e5c3a9ddb5392	docs(alignment): bound error persistence to upstream page state
+9d4d43723708f77075dbf8c78f8b3b03ed87382c	feat(pty): emit accepted native turn lifecycle boundaries
+53126f592451abf27a97f480e399a3693f098b7a	fix(chat): preserve canonical native agent identities
+7d2642f97496aaba960763f86124a1a063da01f9	fix(chat): classify native title threads as synthetic
+0f34e856cd276b9b30e2e5ee8a5a628cb828cc60	docs(alignment): record native title installation acceptance
+e5bb92b0f394bd5ef18716c0438a3ab9e2acc35b	fix(web): retain minimised approvals during repeated pending frames
+f3cdb9e563cfd871edf041469e7aaee1211a00e5	fix(web): restore minimised approvals per workspace instance
+5c927233eb0d0342482ba4ef9a34374c187dbcbf	test(alignment): verify per-turn SDK thinking retention
+c8b6afd28bd2bb6778d327db3a598cd4ad1db5fb	test(alignment): verify native turn and cold attach isolation
+3e3105200498a584dcd2706749ccad21aa8e90b2	fix(web): settle batched question terminal frames
+f1c197090c8da44254829756d6f730e3e671f285	fix(web): match approval terminals against current state
+b58d2b6a4d207defa5524257ff963b40cd359d0e	fix(web): keep SDK approvals off PTY keystroke paths
+81e71897f4cde540934b1a90ebdd5b2ba0d66bcf	docs(alignment): resolve directory-refactor B4 ownership
+13bd0231f801f82a7cf8b45eeebd0b6e420276e1	test(alignment): verify live replay after historical resume
+884b62085ac4c78f389d8e146985590a45bb5a42	docs(alignment): reconcile accepted session and agent scopes
+ea3b128aeb14b8819591a3f5922b27b294dd9eda	docs(alignment): separate release and prompt asset candidates
+27b6ac56e6c2962b4f230359d1c99fa4a141927e	test(alignment): verify queued input survives half-open reconnect
+8b59016d5b06b5dc9bd83bb96ae9a680723c454d	feat(sdk): expose native MCP status on scoped control API
+2ad4e0de626db45a7c647338115710ad27d18b98	feat(web): restore original MCP status panel
+08db3816b23807ce251d30ba5a201709128cb330	feat(web): restore model chip in final composer slot
+1ca16dfcd3a2d7cf9cfb66e8db412ddd04d3e4cc	fix(server): reject oversized permission hook bodies once
+df9952f7f05d2a0e66d108ca9fbf145ad93a1667	docs(alignment): reconcile plan approval protocol boundaries
+6d154906e59a38ec63564385e9fbc56ddc422672	docs(alignment): map slash skill lifecycle subitems
+322f47ecf9caca56f0da8b3e433c0239ed434861	fix(web): retain queued prompts after transcript divergence
+576abb59ce77f83d475902999046595061587f9e	fix(sdk): cancel pending approvals before queued preemption
+060afe3555aed12e475768c4e62039a84a6176e9	fix(web): restore baseline floating composer and scrollbar bleed
+b276e7f0bce4b2cc9e8167c11dce5db363d9c7d7	feat(sdk): show native context compaction completion notice
+7af2a85396d201ae2554132ea3385e4eabcb2c8d	docs(alignment): reconcile mixed lifecycle candidate ownership
+76bff2c4025299d23a1c0ccefd1dfc0f4329c648	fix(sdk): reject unsupported launch flags before execution
+f0bfc21d30a483b65fc857489b8b877c0355828c	fix(web): disclose Codex SDK placeholder instructions in Context
+f825be39d230d505ac1dc9a44117d3b03e2f59fa	feat(web): retain Context Usage entry with explicit Codex availability
+6f8f1e10fc89b7b83da25ffc8650cc7e50b35c22	docs(alignment): audit role-routing and model-window ownership
+34fdb58b5615e296c930c0311d01cec786b6d51f	fix(server): ignore main PTY messages in SDK mode
+94ec764a291d5be68061e3ea00c4484a411e9d45	docs(alignment): record B4 closure matrix and pending GUI checks
+98b2304b9619366a1f3193058f8679c5cca48c32	chore(alignment): clear B4 PR whitespace preflight
+29e33f068bf3960fe7ac61b6a18be756613790d3	test(alignment): prepare remaining B4 GUI scenarios
+78448bb32e50dfe6b51c30bd4fd5f60fa8f4e64f	test(alignment): complete B4 browser acceptance and release checks

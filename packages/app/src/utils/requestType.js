@@ -13,6 +13,7 @@
 import { getInputItemText, getResponseConversationItems, getResponseInputItems, getResponseInstructions, getResponseTools } from '../../lib/openai-body.js';
 import { isMainAgent, isTeammate, getInstructionsText, getEntryUpstreamLane, extractTeammateName, SYNTHETIC_PROMPTS } from './contentFilter.js';
 import { isOpenAiResponsesMasterEntry } from '../../lib/openai-responses-url.js';
+import { isNativeTitleEntry } from '../../lib/codex-thread-source.js';
 
 function isMetadataModelsEntry(entry) {
   if (!entry || String(entry.method || 'GET').toUpperCase() !== 'GET') return false;
@@ -231,6 +232,13 @@ function isPreflightRequest(req, nextReq) {
 export function classifyRequest(req, nextReq) {
   if (isOpenAiResponsesMasterEntry(req)) {
     return { type: 'Master', subType: null };
+  }
+  if (isNativeTitleEntry(req)) return { type: 'Synthetic', subType: 'Title' };
+
+  // Canonical lightweight rows retain the server's full-body agent identity.
+  // Lookahead-dependent tags still use the existing adjacent full-body path.
+  if (req?._v2Descriptor && ['SubAgent', 'Teammate'].includes(req._classification?.type)) {
+    return req._classification;
   }
 
   // Teammate 子进程的请求优先识别（收敛于 contentFilter.isTeammate）

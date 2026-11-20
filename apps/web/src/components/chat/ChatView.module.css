@@ -96,10 +96,36 @@
   flex-direction: column;
 }
 
+/* When the frosted-glass role filter bar floats at the top, the message scroll area
+   must extend beneath it (so the blur has content to reveal) while keeping the first
+   rows visible — pad the top by exactly the bar's height. */
+.messageListWrap.withRoleFilter > .container,
+.messageListWrap.withRoleFilter > .mobileVirtuoso {
+  padding-top: 41px; /* RoleFilterBar height */
+}
+
+/* Same compensation for the active-agents card, reserving only its COLLAPSED
+   footprint (top:4 + header ≈30 + 6px breathing room); expanding overlays the
+   top of the conversation (the card is frosted and collapses). Mutually
+   exclusive with .withRoleFilter (ChatView picks one). */
+.messageListWrap.withActiveAgents > .container,
+.messageListWrap.withActiveAgents > .mobileVirtuoso {
+  padding-top: 40px; /* ActiveAgentsBar collapsed footprint */
+}
+
+/* Mobile enlarges the card header (top:6 + padding/font bumps) — match it so
+   the first row isn't tucked under the card. */
+@media (max-width: 768px) {
+  .messageListWrap.withActiveAgents > .container,
+  .messageListWrap.withActiveAgents > .mobileVirtuoso {
+    padding-top: 48px;
+  }
+}
+
 .stickyBottomBtn {
   position: absolute;
   right: 12px;
-  bottom: 0;
+  bottom: var(--input-stack-height, 0px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -376,11 +402,46 @@
   position: relative;
 }
 
-/* 审批面板 + ChatInputBar 的共享定位容器。面板用 absolute bottom:100% 贴在输入栏之上。 */
+/* 审批面板 + ChatInputBar 的共享定位容器。面板用 absolute bottom:100% 贴在输入栏之上。
+   悬浮覆盖在消息列表上方，背景从下往上由原色渐变到透明。
+   pointer-events:none 让透明渐变区域不拦截消息区的点击/滚动。 */
 .inputStack {
-  position: relative;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 15;
+  /* Paint the fade only up to the message list's scrollbar gutter
+     (--chat-scrollbar-width is measured from the live scroller; 0 for
+     overlay scrollbars). Keeps the vertical scrollbar fully visible.
+     The first gradient is a color-mix-free fallback for older browsers;
+     the second overrides it where color-mix is supported. */
+  background-image: linear-gradient(
+    to top,
+    var(--bg-input-strip) 0%,
+    transparent 100%
+  );
+  background-image: linear-gradient(
+    to top,
+    var(--bg-input-strip) 0%,
+    color-mix(in srgb, var(--bg-input-strip) 85%, transparent) 55%,
+    transparent 100%
+  );
+  background-repeat: no-repeat;
+  background-position: left bottom;
+  background-size: calc(100% - var(--chat-scrollbar-width, 0px)) 100%;
+  pointer-events: none;
+}
+
+/* Interactive children re-enable pointer events (card, buttons, panels). */
+.inputStack > * {
+  pointer-events: auto;
+}
+
+/* Equal-height spacer: prevents the floating inputStack from covering bottom messages. */
+.inputStackSpacer {
   flex-shrink: 0;
-  background: var(--bg-input-strip);
+  height: var(--input-stack-height, 0px);
 }
 
 .overlayPanel {
@@ -550,4 +611,109 @@
 .queueBubbleRemove:hover {
   color: var(--text-primary);
   background: rgba(128, 128, 128, 0.12);
+}
+
+/* SDK turn/query failure pinned in the dialogue tail (sdk-error WS frame) — a
+   persistent explanation where the failed turn would have answered, not a toast.
+   .container > * gives children width:100%/max-width:1400px/margin auto, so the row
+   insets via calc instead of a horizontal margin (which would shift + clip it). */
+.sdkErrorStack {
+  display: flex;
+  flex-direction: column;
+  /* Cap the bar at 800px; below that keep a 20px-per-side floor via
+     calc(100% - 40px). Also covers the Virtuoso footer, which is not under
+     .container's max-width rule. */
+  width: calc(100% - 40px);
+  max-width: min(800px, calc(100% - 40px));
+  margin: 4px auto 8px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+/* Empty-state (noData/loading) branch only: pin the rows to the dialogue tail of the
+   column-flex .container. Kept off the list branches so a short non-empty conversation
+   does not get a gap between the last message and the error. */
+.sdkErrorStackEmpty {
+  margin-top: auto;
+}
+
+.sdkErrorRow {
+  font-size: 12px;
+  color: var(--color-error);
+  background: var(--color-error-bg-light);
+  border: 1px solid var(--color-error-border);
+  border-radius: 6px;
+  padding: 6px 12px;
+  margin: 2px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 20vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.sdkErrorCount {
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 6px;
+}
+
+/* Visually hidden but present to screen readers (live-region announcer). */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.sdkErrorTs {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: 8px;
+}
+
+/* 502/retry inline feedback: the CLI's own retry progress line plus the manual [retry]
+   button on an exhausted retryable error row. */
+.sdkRetryRow {
+  font-size: 12px;
+  color: var(--color-warning, #d48806);
+  background: var(--color-warning-bg-light, var(--color-error-bg-light));
+  border: 1px solid var(--color-warning-border, var(--color-error-border));
+  border-radius: 6px;
+  padding: 6px 12px;
+  margin: 2px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.sdkRetryBtn {
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--color-error-border);
+  background: transparent;
+  color: var(--color-error);
+  cursor: pointer;
+}
+
+.sdkRetryBtn:hover {
+  background: var(--color-error-bg-light);
+}
+
+.sdkNoticeBanner {
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-secondary);
+  border-radius: 6px;
+  padding: 4px 12px;
+  margin: 2px 16px 6px;
 }

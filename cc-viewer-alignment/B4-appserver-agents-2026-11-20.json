@@ -1,0 +1,106 @@
+{
+  "root": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-iK9AYs",
+  "realCodex": "codex-cli 0.169.0",
+  "officialSdk": "0.142.5",
+  "externalModelNetwork": false,
+  "credentials": "isolated fixture-only",
+  "productionTransportChanged": false,
+  "threadConfigJson": false,
+  "agentsSpawned": true,
+  "agents": {
+    "childThreadId": "01a1f72a-9854-7933-8d8c-f0d56e020823",
+    "rootTurnAlreadyCompleted": true,
+    "rawFramesBeforeSubscribe": 10,
+    "identityRead": "thread/read",
+    "childTerminal": "completed",
+    "spawnStatus": {
+      "01a1f72a-9854-7933-8d8c-f0d56e020823": {
+        "status": "pendingInit",
+        "message": null
+      }
+    },
+    "source": {
+      "subAgent": {
+        "thread_spawn": {
+          "parent_thread_id": "01a1f72a-923d-79f3-820c-77d1a6708adb",
+          "depth": 1,
+          "agent_path": null,
+          "agent_nickname": "Dirac",
+          "agent_role": "default"
+        }
+      }
+    }
+  },
+  "appServer": {
+    "stdioHandshake": true,
+    "sameNameSeparateProcesses": true,
+    "independentTurns": true,
+    "plan": [
+      {
+        "step": "Read baseline",
+        "status": "completed"
+      },
+      {
+        "step": "Verify protocol",
+        "status": "inProgress"
+      },
+      {
+        "step": "Record evidence",
+        "status": "pending"
+      }
+    ],
+    "streamingDeltas": true,
+    "exactTurnInterrupt": true,
+    "failedTurn": true,
+    "restartNativeResume": true
+  },
+  "sdk": {
+    "realTodoListReplay": true,
+    "statuses": [
+      "completed",
+      "pending",
+      "pending"
+    ]
+  },
+  "normalizedTransport": {
+    "actualModule": true,
+    "textAndPlan": true,
+    "cancellation": true,
+    "continueAfterCancel": true,
+    "restartResume": true
+  },
+  "schema": {
+    "planStatuses": [
+      "pending",
+      "inProgress",
+      "completed"
+    ],
+    "agentStatuses": [
+      "pendingInit",
+      "running",
+      "interrupted",
+      "completed",
+      "errored",
+      "shutdown",
+      "notFound"
+    ],
+    "collabRequiredFields": [
+      "agentsStates",
+      "id",
+      "receiverThreadIds",
+      "senderThreadId",
+      "status",
+      "tool",
+      "type"
+    ]
+  },
+  "requestCount": 15,
+  "unverified": [
+    "child interrupt/reuse/nested lifecycle",
+    "approval requests and timeout",
+    "images and all CLI options",
+    "OS process descendants",
+    "WebSocket reconnect",
+    "Windows/Linux/minimum Node"
+  ]
+}

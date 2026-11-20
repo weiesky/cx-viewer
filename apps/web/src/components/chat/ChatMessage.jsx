@@ -462,7 +462,7 @@ class ChatMessage extends React.Component {
         : null;
 
       if (isInteractive) {
-        const interactive = this.renderAskQuestionInteractive(tu.id, questions);
+        const interactive = this.renderAskQuestionInteractive(tu.id, questions, inp.cxvSdkAskId);
         return validationError ? (
           <div key={tu.id}>
             <AskValidationBadge resultText={validationError} />
@@ -811,7 +811,7 @@ class ChatMessage extends React.Component {
     );
   }
 
-  renderAskQuestionInteractive(toolId, questions) {
+  renderAskQuestionInteractive(toolId, questions, sdkRequestId) {
     const meta = this.props.askMetaMap && this.props.askMetaMap[toolId];
     const node = (
       <AskQuestionForm
@@ -821,11 +821,11 @@ class ChatMessage extends React.Component {
         timeoutMs={meta?.timeoutMs}
         onSubmit={(answers) => {
           if (this.props.onAskQuestionSubmit) {
-            this.props.onAskQuestionSubmit(answers, toolId, questions);
+            this.props.onAskQuestionSubmit(answers, toolId, questions, sdkRequestId);
           }
         }}
         onCancel={this.props.onAskQuestionCancel
-          ? () => this.props.onAskQuestionCancel(toolId, 'User aborted')
+          ? () => this.props.onAskQuestionCancel(toolId, 'User aborted', sdkRequestId)
           : undefined}
       />
     );
@@ -837,7 +837,7 @@ class ChatMessage extends React.Component {
         {(ctx) => {
           // 决策细节与三种 activeAskId 形态的解释：见 src/utils/askPortalMatcher.js
           if (!ctx || !ctx.askSlot) return node;
-          if (shouldPortalAskForm(ctx.activeAskId, toolId, this.props.lastPendingAskId)) {
+          if (shouldPortalAskForm(ctx.activeAskId === sdkRequestId ? toolId : ctx.activeAskId, toolId, this.props.lastPendingAskId)) {
             return ReactDOM.createPortal(node, ctx.askSlot);
           }
           return node;

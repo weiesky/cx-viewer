@@ -1,0 +1,31 @@
+{
+  "date": "2026-11-20",
+  "upstream": [
+    "469a995ad8d6222f2fb092a7c1c3d5bb8fe7b349",
+    "c29af25e64"
+  ],
+  "targetTests": "45/45 (8 original policy + 37 actual component suite)",
+  "build": "passed",
+  "fullCheckpoint": "E34 1519/1519; not rerun for this isolated policy change",
+  "installedCheckpoint": "E34 279/279; no new installation claim",
+  "safari": {
+    "fixture": "cxv-b4-tasks-gui-en3vgI",
+    "ownedPid": 11047,
+    "syntheticNativeAppServer": true,
+    "minimisedAskStaysMinimisedAfterTwoSameIdReplays": true,
+    "replayedId": "native_8c4931b5-8a2d-4ca5-96a1-32a0d8c2f052",
+    "workspaceRoundTripReopensModal": true,
+    "workspaceRoundTripStatus": "OPEN; separate root-unmount restoration next",
+    "fixtureRetainedForNextValidation": true
+  },
+  "noNewDomOrCss": true,
+  "externalModelNetwork": false,
+  "realUserData": false,
+  "followupResolution": {
+    "iteration": "E36",
+    "source": "B4-approval-scope-2026-11-20.json",
+    "originalWorkspaceReopenGapResolved": true,
+    "initialFailureObservationRetained": true,
+    "ownedViewer11047Stopped": true
+  }
+}

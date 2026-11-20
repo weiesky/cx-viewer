@@ -1,0 +1,42 @@
+{
+  "date": "2026-11-20",
+  "upstream": "51c23e9090f349b983a2dba52c738c559da5bf1b",
+  "fixedBaseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "laterEvolution": "91b0055f2d restores SDK plan settings; 282306a950 unifies structured plan modal; three PTY guards remain in final source.",
+  "implementation": "Port only final effective !sdkMode PTY modal derivation and two SDK keystroke-sink guards. Reuse existing nonInteractive/codexTurnPlan source identity and renderer.",
+  "red": "Actual ChatView componentDidUpdate reproduces stale-plan PTY modal in SDK before fix.",
+  "target": "43/43,0 skip",
+  "full": "1543/1543 (5+307+1019+212),0 skip",
+  "build": "passed",
+  "installed": {
+    "fixture": "cxv-b3-runtime-ykyv9r8a",
+    "files": 702,
+    "exactWebFiles": 204,
+    "runtime": "280/280",
+    "b12": "passed",
+    "relativeCdCli": "passed"
+  },
+  "safari": {
+    "fixture": "cxv-b4-tasks-gui-kt6zZ8",
+    "pid": 63573,
+    "nativePlanAndCompletedStepsVisible": true,
+    "noApprovalLive": true,
+    "planAndStepsRetainedAfterRefresh": true,
+    "noApprovalAfterRefresh": true,
+    "ownedProcessStopped": true,
+    "syntheticNativeCli": true
+  },
+  "limits": [
+    "No Claude ExitPlanMode approval or timer invented for Codex update_plan.",
+    "Original temporary hidePlan settings change was later reversed and is not copied.",
+    "Structured plan modal/auto-approval clauses of later mixed commits remain separately audited.",
+    "No DOM/CSS or actual approval policy change."
+  ],
+  "logs": [
+    "/tmp/cxv-b4-plan-guard-red.log",
+    "/tmp/cxv-b4-plan-guard-target.log",
+    "/tmp/cxv-b4-plan-guard-full.log",
+    "/tmp/cxv-b4-plan-guard-build.log",
+    "/tmp/cxv-b4-plan-guard-installed.log"
+  ]
+}

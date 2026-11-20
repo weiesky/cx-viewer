@@ -1,0 +1,11 @@
+{
+  "actualMethodExtractedVerbatim": true,
+  "realClassifier": true,
+  "allInstructionSegments": true,
+  "nestedInstruction": true,
+  "unrelatedCollapsed": true,
+  "responseUnchanged": true,
+  "multiTurnUnchanged": true,
+  "stringUnchanged": true,
+  "domCssChanged": false
+}

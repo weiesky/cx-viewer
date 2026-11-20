@@ -209,3 +209,32 @@ test('new identities and authoritative compact rewrites never inherit an unrelat
   const cleared = mergeMainAgentSessions(baseline(), explicitNull);
   assert.equal(cleared[0].response, null, 'only undefined is omitted; explicit null remains authoritative');
 });
+
+
+test('an interrupted cumulative transcript keeps queued prompts when its partial tail is replaced', () => {
+  for (const [before, after] of [
+    [['user:q1', 'assistant:a1', 'assistant:partial'], ['user:q1', 'assistant:a1', 'user:queued', 'assistant:answer']],
+    [['user:q1', 'assistant:partial'], ['user:q1', 'user:queued-1', 'assistant:answer-1', 'user:queued-2', 'assistant:answer-2']],
+    [['user:old', 'assistant:partial'], ['user:replacement', 'assistant:one', 'user:next', 'assistant:two']],
+  ]) {
+    const messages = rows => rows.map(row => { const i = row.indexOf(':'); return message(row.slice(0, i), row.slice(i + 1)); });
+    let sessions = mergeMainAgentSessions([], entry({ timestamp: '2026-11-21T00:00:00Z', input: messages(before) }));
+    const reference = sessions[0].messages;
+    const incoming = entry({ timestamp: '2026-11-21T00:00:01Z', input: messages(after) });
+    sessions = mergeMainAgentSessions(sessions, incoming);
+    assert.deepEqual(sessions[0].messages.map(m => m.role + ':' + m.content[0].text), after);
+    assert.notEqual(sessions[0].messages, reference, 'rewriting a rendered prefix invalidates its identity-keyed caches');
+    sessions = mergeMainAgentSessions(sessions, structuredClone(incoming));
+    assert.deepEqual(sessions[0].messages.map(m => m.role + ':' + m.content[0].text), after, 'replay has no duplicate prompt/reply');
+  }
+});
+
+
+test('ordinary cumulative append preserves the existing transcript cache identity', () => {
+  const first = entry({ timestamp: '2026-11-21T00:00:00Z', input: [message('user', 'first'), message('assistant', 'prior')] });
+  let sessions = mergeMainAgentSessions([], first);
+  const reference = sessions[0].messages;
+  sessions = mergeMainAgentSessions(sessions, entry({ timestamp: '2026-11-21T00:00:01Z',
+    input: [message('user', 'first'), message('assistant', 'prior'), message('user', 'next'), message('assistant', 'reply')] }));
+  assert.equal(sessions[0].messages, reference);
+});

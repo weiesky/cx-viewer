@@ -36,3 +36,25 @@ test('sdk adapter normalizes snake_case and camelCase token usage', () => {
     input_tokens_details: { cached_tokens: 9, cache_write_tokens: 4 },
   });
 });
+
+test('SDK tool results retain validated native images and all text while ordinary or unsafe results stay JSON', async () => {
+  const { sdkToolResultContent } = await import('../lib/sdk-adapter.js');
+  const { extractToolResultImages, extractToolResultText } = await import('../../../apps/web/src/utils/toolResultCore.js');
+  const original = { content: [{ type: 'text', text: 'fixture preview' },
+    { type: 'image', mimeType: 'image/png', data: 'aGVsbG8=' }], structuredContent: { retained: 'raw TOOL output' } };
+  const result = sdkToolResultContent(original);
+  assert.equal(extractToolResultText({ content: result }), 'fixture preview');
+  assert.equal(extractToolResultImages({ content: result })[0].src, 'data:image/png;base64,aGVsbG8=');
+  assert.equal(original.content[1].source, undefined, 'normalization cannot mutate the native artifact');
+  const dynamic = sdkToolResultContent([{ type: 'inputText', text: 'dynamic' },
+    { type: 'inputImage', imageUrl: 'https://fixture.invalid/preview.png' }]);
+  assert.equal(extractToolResultImages({ content: dynamic })[0].src, 'https://fixture.invalid/preview.png');
+  assert.equal(extractToolResultText({ content: dynamic }), 'dynamic');
+  for (const unsafe of [
+    [{ type: 'image', mimeType: 'image/svg+xml', data: 'aGVsbG8=' }],
+    [{ type: 'image', mimeType: 'image/png', data: 'bad' }],
+    [{ type: 'inputImage', imageUrl: 'file:///private/fixture.png' }],
+    [{ type: 'inputImage', imageUrl: 'javascript:fixture' }],
+    [{ type: 'text', text: 'ordinary' }], { output: 'plain' },
+  ]) assert.equal(sdkToolResultContent(unsafe), JSON.stringify(unsafe, null, 2));
+});

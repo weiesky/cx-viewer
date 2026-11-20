@@ -1,0 +1,315 @@
+{
+  "root": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-Pf5Ud9",
+  "realCodex": "codex-cli 0.169.0",
+  "officialSdk": "0.142.5",
+  "externalModelNetwork": false,
+  "credentials": "isolated fixture-only",
+  "productionDefaultTransportChanged": false,
+  "threadConfigJson": false,
+  "agentsSpawned": false,
+  "agents": null,
+  "appServer": {
+    "stdioHandshake": true,
+    "sameNameSeparateProcesses": true,
+    "independentTurns": true,
+    "plan": [
+      {
+        "step": "Read baseline",
+        "status": "completed"
+      },
+      {
+        "step": "Verify protocol",
+        "status": "inProgress"
+      },
+      {
+        "step": "Record evidence",
+        "status": "pending"
+      }
+    ],
+    "streamingDeltas": true,
+    "exactTurnInterrupt": true,
+    "failedTurn": true,
+    "restartNativeResume": true
+  },
+  "sdk": {
+    "realTodoListReplay": true,
+    "statuses": [
+      "completed",
+      "pending",
+      "pending"
+    ]
+  },
+  "normalizedTransport": {
+    "actualModule": true,
+    "textAndPlan": true,
+    "cancellation": true,
+    "continueAfterCancel": true,
+    "restartResume": true
+  },
+  "managerIntegration": {
+    "explicitOnly": true,
+    "archiveIdentityRetained": true,
+    "genuinePlanStatus": true,
+    "independentQueue": true,
+    "interruptionParksQueue": true,
+    "sendNowOnSameNativeThread": true,
+    "busyTransportSwitchRejected": true,
+    "v2ExecArchiveToNativeResume": true,
+    "v2NativeArchiveToExecResume": true
+  },
+  "nativeQuestions": {
+    "answer": true,
+    "cancelEmptyAnswers": true,
+    "exactInstanceReply": true,
+    "transcriptToolResult": true
+  },
+  "nativeMcpImages": null,
+  "nativeConfig": {
+    "rawTomlArray": false,
+    "featureFlag": true
+  },
+  "errorEvidence": null,
+  "normalizedFailure": null,
+  "managerFailures": null,
+  "managerRetryStates": null,
+  "managerAgents": null,
+  "managerLoops": [
+    {
+      "phase": "start",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-Pf5Ud9/native-manager/same",
+      "instanceKey": "cxv-089988fa789781fda575a24305b37fa9",
+      "turnId": "sdk_1795175963734_znurbz",
+      "turnStartedAt": 1795175963734,
+      "sessionId": "01a1f8d3-5c98-7e50-aa8f-758328e2d284",
+      "ts": 1795175963811
+    },
+    {
+      "phase": "end",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-Pf5Ud9/native-manager/same",
+      "instanceKey": "cxv-089988fa789781fda575a24305b37fa9",
+      "turnId": "sdk_1795175963734_znurbz",
+      "turnStartedAt": 1795175963734,
+      "sessionId": "01a1f8d3-5c98-7e50-aa8f-758328e2d284",
+      "ts": 1795175964310,
+      "reason": "success"
+    },
+    {
+      "phase": "start",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-Pf5Ud9/native-manager/same",
+      "instanceKey": "cxv-089988fa789781fda575a24305b37fa9",
+      "turnId": "sdk_1795175964310_p83j7v",
+      "turnStartedAt": 1795175964310,
+      "sessionId": "01a1f8d3-5c98-7e50-aa8f-758328e2d284",
+      "ts": 1795175964310
+    },
+    {
+      "phase": "end",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-Pf5Ud9/native-manager/same",
+      "instanceKey": "cxv-089988fa789781fda575a24305b37fa9",
+      "turnId": "sdk_1795175964310_p83j7v",
+      "turnStartedAt": 1795175964310,
+      "sessionId": "01a1f8d3-5c98-7e50-aa8f-758328e2d284",
+      "ts": 1795175964453,
+      "reason": "interrupted"
+    },
+    {
+      "phase": "start",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-Pf5Ud9/native-manager/same",
+      "instanceKey": "cxv-089988fa789781fda575a24305b37fa9",
+      "turnId": "sdk_1795175964453_gxg5w3",
+      "turnStartedAt": 1795175964453,
+      "sessionId": "01a1f8d3-5c98-7e50-aa8f-758328e2d284",
+      "ts": 1795175964453
+    },
+    {
+      "phase": "end",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-Pf5Ud9/native-manager/same",
+      "instanceKey": "cxv-089988fa789781fda575a24305b37fa9",
+      "turnId": "sdk_1795175964453_gxg5w3",
+      "turnStartedAt": 1795175964453,
+      "sessionId": "01a1f8d3-5c98-7e50-aa8f-758328e2d284",
+      "ts": 1795175964669,
+      "reason": "success"
+    }
+  ],
+  "publicCliLoopEvidence": null,
+  "lifecycleEvidence": null,
+  "lostResultEvidence": {
+    "actualTransport": true,
+    "actualCodex": true,
+    "droppedTerminalNotifications": 2,
+    "productionGraceMs": 5000,
+    "nativeIdleObserved": true,
+    "sameNativeThread": "01a1f8d3-65e0-71c2-a39a-638161710e31",
+    "boundedReads": [
+      {
+        "method": "thread/turns/list",
+        "params": {
+          "threadId": "01a1f8d3-65e0-71c2-a39a-638161710e31",
+          "limit": 1,
+          "sortDirection": "desc",
+          "itemsView": "full"
+        }
+      },
+      {
+        "method": "thread/turns/list",
+        "params": {
+          "threadId": "01a1f8d3-65e0-71c2-a39a-638161710e31",
+          "limit": 1,
+          "sortDirection": "desc",
+          "itemsView": "full"
+        }
+      }
+    ],
+    "recovered": [
+      {
+        "turnId": "01a1f8d3-65ed-7900-a892-0055dd416457",
+        "status": "completed",
+        "elapsedMs": 5410,
+        "terminalEvent": {
+          "type": "turn.completed",
+          "usage": {
+            "totalTokens": 5,
+            "inputTokens": 3,
+            "cachedInputTokens": 0,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 2,
+            "reasoningOutputTokens": 0
+          },
+          "thread_id": "01a1f8d3-65e0-71c2-a39a-638161710e31",
+          "turn_id": "01a1f8d3-65ed-7900-a892-0055dd416457"
+        },
+        "events": 6
+      },
+      {
+        "turnId": "01a1f8d3-7acc-7043-b8a5-2355d3da11bc",
+        "status": "completed",
+        "elapsedMs": 5352,
+        "terminalEvent": {
+          "type": "turn.completed",
+          "usage": {
+            "totalTokens": 5,
+            "inputTokens": 3,
+            "cachedInputTokens": 0,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 2,
+            "reasoningOutputTokens": 0
+          },
+          "thread_id": "01a1f8d3-65e0-71c2-a39a-638161710e31",
+          "turn_id": "01a1f8d3-7acc-7043-b8a5-2355d3da11bc"
+        },
+        "events": 6
+      }
+    ],
+    "noInputReplay": true,
+    "noExternalModelNetwork": true
+  },
+  "activityEvidence": {
+    "actualManager": true,
+    "actualNativeControlRpc": true,
+    "productionIdleMs": 600000,
+    "productionReprobeMs": 180000,
+    "productionTimeoutMs": 10000,
+    "acceleratedClockOnlyForLongIdle": true,
+    "healthyRoundTripMs": 1,
+    "realStoppedChildTimeoutMs": [
+      10001,
+      10002
+    ],
+    "ownedPid": 7094,
+    "nativeCommandVerified": true,
+    "noKillAtConviction": true,
+    "noAutomaticInputReplay": true,
+    "explicitContinueRebuiltPid": 7747,
+    "sameThreadId": "01a1f8d3-93e7-7832-8307-846433f84b94",
+    "duplicateContinueRejected": true,
+    "loops": [
+      {
+        "phase": "start",
+        "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-Pf5Ud9/activity/same",
+        "instanceKey": "cxv-5c248e1ec19593d04ea04b1cfe664faa",
+        "turnId": "sdk_1795175976895_b56pxo",
+        "turnStartedAt": 1795175976895,
+        "sessionId": "01a1f8d3-93e7-7832-8307-846433f84b94",
+        "ts": 1795175977972
+      },
+      {
+        "phase": "end",
+        "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-Pf5Ud9/activity/same",
+        "instanceKey": "cxv-5c248e1ec19593d04ea04b1cfe664faa",
+        "turnId": "sdk_1795175976895_b56pxo",
+        "turnStartedAt": 1795175976895,
+        "sessionId": "01a1f8d3-93e7-7832-8307-846433f84b94",
+        "ts": 1795175998226,
+        "reason": "turn-stuck"
+      },
+      {
+        "phase": "start",
+        "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-Pf5Ud9/activity/same",
+        "instanceKey": "cxv-5c248e1ec19593d04ea04b1cfe664faa",
+        "turnId": "sdk_1795175998227_obay9x",
+        "turnStartedAt": 1795175998227,
+        "sessionId": "01a1f8d3-93e7-7832-8307-846433f84b94",
+        "ts": 1795175998340
+      },
+      {
+        "phase": "end",
+        "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-Pf5Ud9/activity/same",
+        "instanceKey": "cxv-5c248e1ec19593d04ea04b1cfe664faa",
+        "turnId": "sdk_1795175998227_obay9x",
+        "turnStartedAt": 1795175998227,
+        "sessionId": "01a1f8d3-93e7-7832-8307-846433f84b94",
+        "ts": 1795175999034,
+        "reason": "success"
+      }
+    ],
+    "failure": {
+      "type": "sdk-error",
+      "message": "The turn became unresponsive; the SDK session will restart on the next message.",
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-Pf5Ud9/activity/same",
+      "sessionId": "01a1f8d3-93e7-7832-8307-846433f84b94",
+      "instanceKey": "cxv-5c248e1ec19593d04ea04b1cfe664faa",
+      "turnId": "01a1f8d3-93f4-7ed3-b6e7-38c10cc0bd1a",
+      "codexErrorInfo": null,
+      "apiStatus": null,
+      "code": "turn-stuck",
+      "retryable": true
+    }
+  },
+  "publicCli": null,
+  "schema": {
+    "planStatuses": [
+      "pending",
+      "inProgress",
+      "completed"
+    ],
+    "agentStatuses": [
+      "pendingInit",
+      "running",
+      "interrupted",
+      "completed",
+      "errored",
+      "shutdown",
+      "notFound"
+    ],
+    "collabRequiredFields": [
+      "agentsStates",
+      "id",
+      "receiverThreadIds",
+      "senderThreadId",
+      "status",
+      "tool",
+      "type"
+    ]
+  },
+  "requestCount": 26,
+  "unverified": [
+    "real agent lifecycle execution",
+    "real native command/file/permissions approval requests",
+    "image output",
+    "all CLI options",
+    "OS process descendants",
+    "WebSocket reconnect",
+    "Windows/Linux/minimum Node"
+  ]
+}

@@ -7,6 +7,7 @@ import { mkdtempSync, mkdirSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SDK_WORKSPACE_ORDER_KEY, SDK_WORKSPACE_ORDER_DRAG } from '../src/utils/sdkWorkspaceOrder.js';
+import { sdkToJSONLEntry } from '../../../packages/app/lib/sdk-adapter.js';
 
 const web = dirname(dirname(fileURLToPath(import.meta.url)));
 const require = createRequire(join(web, 'package.json'));
@@ -24,17 +25,178 @@ await build({ stdin: { contents: `export { default as Component } from './src/co
 export { default as TerminalPanel } from './src/components/terminal/TerminalPanel.jsx';
 export { default as WorkspaceRoot } from './src/components/dashboard/WorkspaceRoot.jsx';
 export { SettingsProvider } from './src/contexts/SettingsContext.jsx';
-export { getLang } from './src/i18n.js';
+export { getLang, setLang, t as translate } from './src/i18n.js';
 export { ResumeSessionsList } from './src/components/chat/ResumeSessionsPopover.jsx';
 export { default as QuickAutoApproveRows } from './src/components/common/QuickAutoApproveRows.jsx';
 export { default as WorkspaceList } from './src/components/dashboard/WorkspaceList.jsx';
 export { default as NewProjectModal } from './src/components/dashboard/NewProjectModal.jsx';
-export { default as AppBase } from './src/AppBase.jsx';`, resolveDir: web },
+export { default as VoicePackSettings } from './src/components/settings/VoicePackSettings.jsx';
+export { _resetForTests as resetVoice, playEvent as playVoiceEvent } from './src/utils/voicePackPlayer.js';
+export { DEFAULT_BINDINGS, getDefaultBindingsForLocale } from '../../packages/app/server/lib/voice-pack-events.js';
+export { default as AppBase } from './src/AppBase.jsx';
+export { default as ChatView } from './src/components/chat/ChatView.jsx';
+export { default as DetailPanel } from './src/components/dashboard/DetailPanel.jsx';
+export { default as ContextTab } from './src/components/dashboard/ContextTab.jsx';
+export { default as ProxyChip } from './src/components/chat/ProxyChip.jsx';`, resolveDir: web },
   bundle: true, platform: 'node', format: 'cjs', packages: 'external', outfile: output,
   loader: { '.css': 'empty', '.svg': 'text', '.png': 'dataurl', '.gif': 'dataurl' }, logLevel: 'error' });
 test.after(() => rmSync(directory, { recursive: true, force: true }));
 
 const session = (instanceKey, busy = false) => ({ instanceKey, cwd: `/${instanceKey}/same`, projectName: 'same', busy });
+
+test('SDK placeholder notice stays in the instructions section and never changes raw or captured instructions', t => {
+  const walk = (node, predicate) => {
+    if (!node || typeof node !== 'object') return null;
+    if (predicate(node)) return node;
+    for (const child of require('react').Children.toArray(node.props?.children)) {
+      const found = walk(child, predicate); if (found) return found;
+    }
+    return null;
+  };
+  const sdk = sdkToJSONLEntry({ message: { content: [] } }, [], 'fixture', 'fixture');
+  const f = fixture(t, { component: 'ContextTab', props: { body: sdk.body, sdkSource: true } });
+  f.draw();
+  const section = walk(f.tree, node => node.props?.sectionKey === 'instructions');
+  const item = section.props.items[0];
+  assert.equal(item.raw, 'You are Codex');
+  assert.equal(item.blocks[0].text, 'You are Codex');
+  assert.equal(item.blocks[1]?.type, 'separator');
+  assert.equal(item.blocks[2]?.type, 'markdown');
+  assert.match(item.blocks[2].text, /Codex/);
+  assert.match(item.blocks[2].text, /HTTP/);
+  assert.notEqual(item.blocks[2].text, 'ui.context.sdkSystemPromptNotice');
+  section.props.onSelect(item); f.draw();
+  const display = walk(f.tree, node => node.props?.blocks === item.blocks);
+  assert.ok(display, 'the original content pane displays the annotated blocks');
+  const toggle = walk(f.tree, node => typeof node.props?.checked === 'boolean' && node.props?.onChange);
+  toggle.props.onChange(true); f.draw();
+  assert.equal(walk(f.tree, node => node.type === 'pre').props.children, 'You are Codex');
+  assert.equal(sdk.body.instructions, 'You are Codex');
+  assert.deepEqual(f.requests, [], 'viewing instructions never launches a control/model request');
+
+  for (const request of [sdk, { ...sdk, _sdkSource: undefined }, { ...sdk, _sdkSource: 'true' },
+    sdkToJSONLEntry({ message: { content: [] } }, [], 'fixture', 'fixture', { systemPrompt: 'Actual captured instructions' })]) {
+    const panel = new f.DetailPanel({ request, requests: [request], allRequests: [request], selectedIndex: 0, sdkMode: true });
+    const tabs = walk(panel.render(), node => Array.isArray(node.props?.items) && node.props.items.some(tab => tab.key === 'context'));
+    const context = walk(tabs.props.items.find(tab => tab.key === 'context').children, node => node.type?.name === 'ContextTab');
+    assert.equal(context.props.sdkSource, request._sdkSource === true);
+    const c = fixture(t, { component: 'ContextTab', props: context.props }); c.draw();
+    const blocks = walk(c.tree, node => node.props?.sectionKey === 'instructions').props.items[0].blocks;
+    assert.equal(blocks.length, request._sdkSource === true && request.body.instructions === 'You are Codex' ? 3 : 1);
+    assert.equal(blocks[0].text, request.body.instructions);
+  }
+});
+
+for (const terminal of ['sdk-plan-resolved', 'perm-hook-resolved', 'perm-hook-timeout']) {
+  test(`${terminal} clears same-batch pending by normalized id without affecting a different request`, t => {
+    const f = fixture(t), chat = new f.ChatView({ sdkMode: true });
+    const updates = [];
+    chat.setState = (update, callback) => updates.push([update, callback]);
+    const flush = () => {
+      while (updates.length) {
+        const batch = updates.splice(0);
+        for (const [update] of batch) {
+          const patch = typeof update === 'function' ? update(chat.state) : update;
+          if (patch) Object.assign(chat.state, patch);
+        }
+        for (const [, callback] of batch) callback?.();
+      }
+    };
+    const plan = terminal === 'sdk-plan-resolved';
+    const pendingType = plan ? 'sdk-plan-pending' : 'perm-hook-pending';
+    const stateKey = plan ? 'pendingPlanApproval' : 'pendingPermission';
+    for (const id of [0, 'request']) {
+      chat._onTerminalWsMessage({ type: pendingType, id, toolName: 'fixture', input: {} });
+      chat._onTerminalWsMessage({ type: terminal, id: String(id) });
+      flush();
+      assert.equal(chat.state[stateKey], null);
+    }
+    chat._onTerminalWsMessage({ type: pendingType, id: 'head', toolName: 'fixture', input: {} });
+    if (!plan) chat._onTerminalWsMessage({ type: pendingType, id: 'queued', toolName: 'fixture', input: {} });
+    chat._onTerminalWsMessage({ type: terminal, id: 'foreign' });
+    flush();
+    assert.equal(chat.state[stateKey].id, 'head');
+    chat._onTerminalWsMessage({ type: terminal, id: 'head' }); flush();
+    assert.equal(chat.state[stateKey]?.id || null, plan ? null : 'queued');
+    chat._onTerminalWsMessage({ type: terminal, id: 'head' }); flush();
+    assert.equal(chat.state[stateKey]?.id || null, plan ? null : 'queued');
+  });
+}
+
+test('SDK plan surfaces never derive a PTY approval or enter its keystroke sinks', t => {
+  const f = fixture(t), bubbles = [];
+  const chat = new f.ChatView({ sdkMode: true, cliMode: true, onPendingPtyPlan: value => bubbles.push(value) });
+  chat.setState = (update, callback) => {
+    const patch = typeof update === 'function' ? update(chat.state) : update;
+    if (patch) Object.assign(chat.state, patch);
+    callback?.();
+  };
+  chat._currentLastPendingPlanId = 'stale-plan';
+  const previous = { ...chat.state };
+  chat.componentDidUpdate(chat.props, previous);
+  assert.equal(chat.state.pendingPtyPlan, null, 'SDK does not derive a keystroke modal from a stale tool id');
+  assert.deepEqual(bubbles, []);
+  Object.defineProperty(chat, '_inputWs', { get() { assert.fail('SDK accessed the PTY keystroke transport'); } });
+  chat.handlePromptOptionClick(1);
+  chat.handlePlanFeedbackSubmit(1, 'fixture feedback');
+  assert.equal(chat._promptSubmitting, undefined);
+});
+
+test('the original SDK context-usage and MCP tabs follow Context and fall back on mode changes', t => {
+  const f = fixture(t), request = { timestamp: '2026-11-20T00:00:00Z', url: 'codex://sdk/fixture',
+    mainAgent: true, _sdkSource: true, headers: {}, body: { model: 'fixture', input: [{ role: 'user', content: 'fixture' }] },
+    response: { status: 200, body: { content: [] } } };
+  const panel = new f.DetailPanel({ request, requests: [request], allRequests: [request], selectedIndex: 0,
+    sdkMode: true, currentTab: 'mcp-status' });
+  const tabs = node => {
+    if (!node || typeof node !== 'object') return null;
+    if (Array.isArray(node.props?.items) && node.props.items.some(item => item.key === 'request')) return node;
+    for (const child of require('react').Children.toArray(node.props?.children)) {
+      const found = tabs(child); if (found) return found;
+    }
+    return null;
+  };
+  const enabled = tabs(panel.render());
+  assert.deepEqual(enabled.props.items.map(item => item.key), ['request', 'response', 'context', 'context-usage', 'mcp-status']);
+  assert.equal(enabled.props.activeKey, 'mcp-status');
+  const usage = enabled.props.items.find(item => item.key === 'context-usage');
+  const originalLanguage = require(output).getLang();
+  t.after(() => require(output).setLang(originalLanguage));
+  const renderUsage = () => usage.children.props.children.type();
+  for (const language of ['zh', 'en', 'zh-TW', 'ko', 'ja', 'de', 'es', 'fr', 'it', 'da', 'pl', 'ru', 'ar', 'no', 'pt-BR', 'th', 'tr', 'uk']) {
+    const { setLang, translate } = require(output);
+    setLang(language);
+    const root = renderUsage(), empty = root.props.children;
+    assert.equal(empty.type, require('antd').Empty, 'original centered Empty branch');
+    assert.equal(empty.props.description.props.type, 'secondary');
+    const description = empty.props.description.props.children;
+    assert.match(description, /Codex/);
+    assert.notEqual(description, 'ui.contextUsage.unavailable');
+    assert.notEqual(translate('ui.contextUsage.tab'), 'ui.contextUsage.tab');
+    assert.equal(empty.props.children, undefined, 'no fabricated composition or refresh control');
+  }
+  require(output).setLang('en');
+  assert.match(renderUsage().props.children.props.description.props.children, /unavailable/);
+  assert.deepEqual(f.requests, [], 'rendering and revisiting an unsupported detail never sends HTTP/model controls');
+  panel.props = { ...panel.props, currentTab: 'context-usage' };
+  assert.equal(tabs(panel.render()).props.activeKey, 'context-usage');
+  const nextProps = { ...panel.props, sdkMode: false };
+  assert.equal(panel.shouldComponentUpdate(nextProps, panel.state), true);
+  panel.props = nextProps;
+  const disabled = tabs(panel.render());
+  assert.equal(disabled.props.items.some(item => item.key === 'mcp-status'), false);
+  assert.equal(disabled.props.items.some(item => item.key === 'context-usage'), false);
+  assert.equal(disabled.props.activeKey, 'context');
+  panel.props = { ...nextProps, currentTab: 'raw' };
+  assert.equal(tabs(panel.render()).props.activeKey, 'context');
+  assert.equal(tabs(panel.render()).props.items.some(item => item.key === 'raw'), false);
+  panel.props = { ...nextProps, currentTab: 'mcp-status', request: { ...request, url: 'codex://tool/shell_command', mainAgent: false } };
+  assert.equal(tabs(panel.render()).props.activeKey, 'request');
+  panel.props = { ...panel.props, currentTab: 'raw', request: { ...panel.props.request, _codexRaw: { fromSeq: 1, toSeq: 2 } } };
+  assert.equal(tabs(panel.render()).props.items.some(item => item.key === 'raw'), true);
+  assert.equal(tabs(panel.render()).props.activeKey, 'raw');
+});
+
 function fixture(t, { blocked = false, component = 'Component', props = {} } = {}) {
   const restoreGlobals = [];
   let cleanup = () => {};
@@ -52,7 +214,7 @@ function fixture(t, { blocked = false, component = 'Component', props = {} } = {
     self: globalThis, localStorage: storage,
     PopStateEvent: class { constructor(type) { this.type = type; } },
     navigator: { userAgent: 'Desktop', platform: 'Linux', maxTouchPoints: 1 },
-    document: { hidden: false, documentElement: { style: {}, getAttribute() { return 'dark'; }, classList: { add() {} } },
+    document: { hidden: false, documentElement: { style: { setProperty() {}, removeProperty() {} }, getAttribute() { return 'dark'; }, classList: { add() {} } },
       body: { style: {} }, createElement() { return { style: {} }; },
       addEventListener: (type, fn) => documentEvents.set(type, fn),
       removeEventListener: type => documentEvents.delete(type) },
@@ -121,9 +283,148 @@ function fixture(t, { blocked = false, component = 'Component', props = {} } = {
   const event = () => ({ prevented: false, stopped: false,
     preventDefault() { this.prevented = true; }, stopPropagation() { this.stopped = true; } });
   const reload = () => { cleanup(); hooks.length = 0; return draw(); };
-  return { draw, reload, tick, event, cleanup, AppBase, values, windowEvents, documentEvents, timers, requests, focused, navigations,
+  return { draw, reload, tick, event, cleanup, AppBase, ChatView: components.ChatView, DetailPanel: components.DetailPanel, ProxyChip: components.ProxyChip, values, windowEvents, documentEvents, timers, requests, focused, navigations,
     get tree() { return tree; }, set live(rows) { live = rows; }, set listed(rows) { listed = rows; }, set history(data) { history = data; } };
 }
+
+function voiceFixture(t) {
+  const f = fixture(t), exports = require(output), plays = [], sources = [];
+  exports.resetVoice();
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'Audio');
+  Object.defineProperty(globalThis, 'Audio', { configurable: true, value: class {
+    listeners = new Map();
+    addEventListener(name, fn) { this.listeners.set(name, fn); }
+    play() { plays.push(this.src); queueMicrotask(() => this.listeners.get('ended')?.()); return Promise.resolve(); }
+    pause() {}
+  } });
+  t.after(() => { exports.resetVoice(); if (original) Object.defineProperty(globalThis, 'Audio', original); else delete globalThis.Audio; });
+  const app = new f.AppBase({});
+  app.state.projectName = 'same'; app.state.sdkMode = true;
+  app._resetSSETimeout = () => {};
+  app._streamTransport = { open() {
+    const handlers = new Map(), source = { addEventListener(name, fn) { handlers.set(name, fn); },
+      fire(name, data) { handlers.get(name)?.({ data: typeof data === 'string' ? data : JSON.stringify(data) }); } };
+    sources.push(source); return source;
+  } };
+  app._initControlSSE();
+  const emit = (name, data = {}, index = sources.length - 1) => sources[index].fire(name, {
+    project: 'same', instanceKey: 'a', turnId: 't1', turnStartedAt: 100, ts: 200, sessionId: 's1', ...data,
+  });
+  const enable = (events = {}) => { app.state.approvalPrefs.voicePack = { enabled: true, volume: 0.3,
+    events: { agentLoopStart: 'default', agentLoopEnd: 'sanguo', turnEnd: 'default', ...events } }; };
+  return { ...f, app, plays, sources, emit, enable, exports };
+}
+
+test('actual approval transitions preserve minimisation on replay and only synthetic view clears', t => {
+  const f = fixture(t), app = new f.AppBase({}); app.state.projectName = 'same';
+  app.setState = patch => Object.assign(app.state, typeof patch === 'function' ? patch(app.state) : patch);
+  for (const kind of ['ask', 'ptyPlan']) {
+    const pending = { [kind]: { id: `${kind}-one` }, handlers: { submit() {} } };
+    app._setApprovalKind(kind, pending); app.handleApprovalDismiss(kind, pending[kind].id);
+    const dismissed = app.state.approvalDismissedIds;
+    app._setApprovalKind(kind, { ...pending });
+    assert.equal(app.state.approvalDismissedIds, dismissed, 'same id replay must preserve minimisation');
+    app._setApprovalKind(kind, { reason: 'view-switch' });
+    assert.equal(app.state.approvalGlobal[kind], null); assert.equal(app.state.approvalDismissedIds, dismissed);
+    app._setApprovalKind(kind, { ...pending, reason: 'unknown-transport-detail' });
+    assert.equal(app.state.approvalGlobal[kind][kind].id, pending[kind].id);
+    assert.equal(app.state.approvalDismissedIds, dismissed, 'unknown reasons cannot clear a real approval');
+    app._setApprovalKind(kind, { [kind]: { id: `${kind}-two` } });
+    assert.equal(app.state.approvalDismissedIds.has(`${kind}:${kind}-one`), false);
+    app.handleApprovalDismiss(kind, `${kind}-two`); app._setApprovalKind(kind, null);
+    assert.equal(app.state.approvalDismissedIds.has(`${kind}:${kind}-two`), false, 'real clear must re-arm reused ids');
+  }
+});
+
+test('original voice settings add two opt-in rows and locale seeds never enable loop cues', async t => {
+  const changes = [], f = fixture(t, { component: 'VoicePackSettings', props: {
+    prefs: { enabled: true, volume: 0.3, events: {} }, onChange: patch => changes.push(patch),
+  } });
+  const { DEFAULT_BINDINGS, getDefaultBindingsForLocale } = require(output);
+  for (const bindings of [DEFAULT_BINDINGS, ...['zh', 'zh-TW', 'en'].map(getDefaultBindingsForLocale)]) {
+    assert.equal(bindings.agentLoopStart, null); assert.equal(bindings.agentLoopEnd, null);
+  }
+  f.draw(); await f.tick(); f.draw();
+  const rows = descendants(f.tree, node => node.type === 'div' && ['agentLoopStart', 'agentLoopEnd'].some(key => String(node.key).endsWith('$' + key)));
+  assert.equal(rows.length, 2);
+  for (const row of rows) {
+    assert.equal(row.props.children[1].props.value, 'disabled');
+    row.props.children[1].props.onChange('sanguo');
+    assert.deepEqual(changes.at(-1), { events: { [row.key.endsWith('$agentLoopStart') ? 'agentLoopStart' : 'agentLoopEnd']: 'sanguo' } });
+    assert.equal(row.props.children[2].props.children.props.disabled, true);
+  }
+});
+
+test('accepted loop cues ring once per turnId and suppress only the same legacy end boundary', async t => {
+  const f = voiceFixture(t); f.enable();
+  f.emit('agent_loop_start'); f.emit('agent_loop_start');
+  f.emit('agent_loop_end'); f.emit('agent_loop_end'); f.emit('turn_end');
+  await f.tick();
+  assert.equal(f.plays.length, 2);
+  assert.ok(f.plays[0].includes('/default/agentLoopStart?'));
+  assert.ok(f.plays[1].includes('/sanguo/agentLoopEnd?'));
+  f.emit('turn_end', { ts: 1800 }); await f.tick();
+  assert.equal(f.plays.length, 3, 'a later boundary outside 1500ms retains legacy playback');
+});
+
+test('disabled or unaccepted end cue leaves legacy turnEnd intact and next start clears suppression', async t => {
+  const f = voiceFixture(t); f.enable({ agentLoopEnd: null });
+  f.emit('agent_loop_end'); f.emit('turn_end'); await f.tick();
+  assert.equal(f.plays.length, 1); assert.ok(f.plays[0].includes('/turnEnd?'));
+  f.exports.resetVoice(); f.plays.length = 0; f.enable();
+  f.emit('agent_loop_end', { turnId: 't2', turnStartedAt: 300, ts: 400 }); await f.tick();
+  f.enable({ agentLoopEnd: null, agentLoopStart: null });
+  f.emit('agent_loop_start', { turnId: 't3', turnStartedAt: 500, ts: 500 });
+  f.emit('agent_loop_end', { turnId: 't3', turnStartedAt: 500, ts: 600 });
+  f.emit('turn_end', { ts: 600 }); await f.tick();
+  assert.equal(f.plays.length, 2, 'next turn rings legacy end even inside the prior suppression window');
+});
+
+test('foreign scope, older turn, old source, changed URL, history and unmounted callbacks stay silent', async t => {
+  const f = voiceFixture(t); f.enable();
+  f.emit('agent_loop_start', { instanceKey: 'b' });
+  f.emit('agent_loop_start', { project: 'other' });
+  f.emit('agent_loop_start', { turnId: 'new', turnStartedAt: 300 });
+  f.emit('agent_loop_end', { turnId: 'old', turnStartedAt: 100 });
+  f.emit('agent_loop_end', { turnId: 'wrong', turnStartedAt: 300 });
+  await f.tick(); assert.equal(f.plays.length, 1);
+  f.app._initControlSSE(); f.emit('agent_loop_end', { turnId: 'new', turnStartedAt: 300 }, 0);
+  window.location.search = '?instance=b'; f.emit('agent_loop_end', { turnId: 'new', turnStartedAt: 300 });
+  window.location.search = '?instance=a'; f.app._isLocalLog = true;
+  f.emit('agent_loop_end', { turnId: 'new', turnStartedAt: 300 });
+  f.app._isLocalLog = false; f.app._unmounted = true;
+  f.emit('agent_loop_end', { turnId: 'new', turnStartedAt: 300 });
+  await f.tick(); assert.equal(f.plays.length, 1);
+  f.app._unmounted = false; f.emit('agent_loop_end', { turnId: 'new', turnStartedAt: 300 });
+  f.emit('agent_loop_start', { turnId: 'new', turnStartedAt: 300 });
+  f.sources.at(-1).fire('agent_loop_end', '{broken');
+  await f.tick(); assert.equal(f.plays.length, 2);
+});
+
+test('legacy end from a different session is not suppressed by a played loop end', async t => {
+  const f = voiceFixture(t); f.enable({ agentLoopStart: null });
+  f.emit('agent_loop_end'); f.emit('turn_end', { sessionId: 's2' }); await f.tick();
+  assert.equal(f.plays.length, 2); assert.ok(f.plays.at(-1).includes('/turnEnd?'));
+});
+
+test('ordinary TUI turn activity keeps loading through API gaps and clears immediately at its own terminal', t => {
+  const f = voiceFixture(t), callbacks = [];
+  const originalSet = globalThis.setTimeout, originalClear = globalThis.clearTimeout;
+  globalThis.setTimeout = fn => { callbacks.push(fn); return callbacks.length; };
+  globalThis.clearTimeout = () => {};
+  t.after(() => { globalThis.setTimeout = originalSet; globalThis.clearTimeout = originalClear; });
+  f.app.setState = patch => Object.assign(f.app.state, patch);
+  f.app.state.sdkMode = false; f.app.state.contextBarLocked = true;
+  f.emit('turn_active', { active: true });
+  assert.equal(f.app.state.isStreaming, true); assert.equal(f.app.state.contextBarLocked, false);
+  f.emit('streaming_status', { active: false }); callbacks.at(-1)();
+  assert.equal(f.app.state.isStreaming, true, 'per-API quiet time cannot end the accepted TUI turn');
+  f.emit('turn_active', { active: false, project: 'foreign' });
+  assert.equal(f.app.state.isStreaming, true);
+  f.emit('turn_active', { active: false }); assert.equal(f.app.state.isStreaming, false);
+  f.app.state.sdkMode = true; f.emit('turn_active', { active: true });
+  assert.equal(f.app.state.isStreaming, false, 'native SDK keeps its existing whole-turn source');
+});
 
 test('baseline pills reorder exact instances and preserve focus, current identity and saved order', async t => {
   const f = fixture(t);
@@ -316,6 +617,41 @@ test('a retired settings provider cannot overwrite global language with a late w
   await f.tick(); assert.equal(getLang(), previous);
 });
 
+test('keyed workspace remounts retain only exact-instance approval UI ids within the current page', t => {
+  const React = require('react');
+  const f = fixture(t, { component: 'WorkspaceRoot', props: { children: React.createElement('view') } });
+  const drawApp = () => {
+    f.draw();
+    const app = new f.AppBase(f.tree.props.children.props); app._maintainPinState = () => {};
+    app.setState = patch => {
+      const prev = { ...app.state };
+      Object.assign(app.state, typeof patch === 'function' ? patch(app.state) : patch);
+      app.componentDidUpdate(app.props, prev);
+    };
+    return app;
+  };
+  const go = search => { window.location.search = search; f.windowEvents.get('popstate')(); return drawApp(); };
+  const a = drawApp(); a._setApprovalKind('ask', { ask: { id: 'same-id' }, handlers: { submit() {} } });
+  a.handleApprovalDismiss('ask', 'same-id'); a._unmounted = true;
+  const b = go('?instance=b'); assert.equal(b.state.approvalDismissedIds.size, 0);
+  b._setApprovalKind('ask', { ask: { id: 'same-id' } });
+  assert.equal(b.state.approvalDismissedIds.has('ask:same-id'), false, 'same pending id in a sibling remains visible');
+  a._setApprovalKind('ask', null); // A retired callback cannot erase the remembered choice.
+  const history = go('?instance=a&logfile=history'); assert.equal(history.state.approvalDismissedIds.size, 0);
+  const restored = go('?instance=a');
+  assert.deepEqual([...restored.state.approvalDismissedIds], ['ask:same-id']);
+  assert.equal(restored.state.approvalGlobal.ask, null, 'pending data and action handlers are never cached');
+  restored._setApprovalKind('ask', { ask: { id: 'same-id' } });
+  assert.equal(restored.state.approvalDismissedIds.has('ask:same-id'), true);
+  restored._setApprovalKind('ask', null);
+  assert.equal(go('?instance=a').state.approvalDismissedIds.size, 0, 'real resolution clears UI memory');
+  const dismissAgain = go('?instance=a'); dismissAgain.handleApprovalDismiss('ask', 'closed');
+  dismissAgain.props.onForgetApprovalDismissals();
+  assert.equal(go('?instance=a').state.approvalDismissedIds.size, 0);
+  dismissAgain.handleApprovalDismiss('ask', 'refresh'); f.reload();
+  assert.equal(new f.AppBase(f.tree.props.children.props).state.approvalDismissedIds.size, 0, 'page reload discards memory');
+});
+
 test('scratch storage binds to each mounted instance rather than the first module import', async t => {
   const f = fixture(t), { TerminalPanel } = require(output);
   f.values.set('cx-viewer-scratch-tabs:instance:a', '[{"id":"tab-a"},{"id":"second-a"}]');
@@ -429,8 +765,44 @@ function coldIngestFixture(t) {
   const row = (timestamp, text = timestamp) => ({ timestamp, url: 'codex://fixture/turn',
     mainAgent: true, body: { model: 'fixture', input: [{ role: 'user', content: text }] } });
   const ingest = rows => app._runSseColdIngest(rows, { isIncremental: false, unlockContextBar: false });
-  return { app, row, ingest, raf };
+  return { app, row, ingest, raf, ChatView: f.ChatView };
 }
+
+test('a queued stream paint cannot revive an overlay after its canonical final entry commits', t => {
+  const { app, row, raf } = coldIngestFixture(t), handlers = new Map();
+  app._streamTransport = { open: () => ({ addEventListener: (name, fn) => handlers.set(name, fn) }) };
+  app._resetSSETimeout = () => {};
+  app._initControlSSE();
+  handlers.get('stream-progress')({ data: JSON.stringify({ timestamp: 'settled', content: [{ type: 'text', text: 'reply' }] }) });
+  const paint = raf.get(app._streamingRaf);
+  app.handleEntryObject(row('settled')); app._flushPendingEntries();
+  assert.equal(app.state.requests[0].timestamp, 'settled');
+  paint();
+  assert.equal(app.state.streamingLatest, null, 'the later rAF must observe the finalized entry, not the receipt-time state');
+  handlers.get('stream-progress')({ data: JSON.stringify({ timestamp: 'next', content: [{ type: 'text', text: 'new reply' }] }) });
+  raf.get(app._streamingRaf)();
+  assert.equal(app.state.streamingLatest.timestamp, 'next', 'a different live turn must remain visible');
+  app.handleEntryObject(row('next')); app._flushPendingEntries();
+  assert.equal(app.state.streamingLatest, null, 'a committed overlay still clears atomically with its own final entry');
+  handlers.get('stream-progress')({ data: JSON.stringify({ timestamp: 'transition', content: [{ type: 'text', text: 'deferred reply' }] }) });
+  const commit = app.setState, deferred = [];
+  app.setState = patch => deferred.push(patch);
+  raf.get(app._streamingRaf)(); // The transition scheduled its state update before the final entry.
+  app.setState = commit;
+  app.handleEntryObject(row('transition')); app._flushPendingEntries();
+  deferred.forEach(patch => commit(patch));
+  assert.equal(app.state.streamingLatest, null, 'a deferred transition also rechecks the final entry when rebased');
+});
+
+test('a cold V2 baseline clears an already-painted final overlay while preserving a different running turn', async t => {
+  const { app, row, ingest } = coldIngestFixture(t);
+  app.state.streamingLatest = { timestamp: 'cold-final', content: [{ type: 'text', text: 'settled reply' }] };
+  await ingest([row('cold-final')]);
+  assert.equal(app.state.streamingLatest, null, 'bootstrap completion is also a final-entry commit');
+  const live = app.state.streamingLatest = { timestamp: 'still-running', content: [{ type: 'text', text: 'partial reply' }] };
+  await ingest([row('older-final')]);
+  assert.equal(app.state.streamingLatest, live, 'an unrelated final baseline cannot erase a running turn');
+});
 
 function historyFixture(t) {
   const fixture = coldIngestFixture(t), { app, row } = fixture;
@@ -663,4 +1035,190 @@ test('accepted live frames acknowledge once, including while the cold gate buffe
   assert.equal(app._v2AppliedSeq, 2);
   assert.equal(app._liveGateBuffer.length, 1);
   assert.equal(app._pendingEntries.length, 0);
+});
+
+
+test('SDK model snapshot survives idle/reconnect, rejects a sibling or retired source, and clears on resume', t => {
+  const f = voiceFixture(t), app = f.app;
+  app.setState = (patch, done) => { Object.assign(app.state, typeof patch === 'function' ? patch(app.state) : patch); done?.(); };
+  t.after(() => clearTimeout(app._streamingOffTimer));
+  assert.equal(app.state.sdkModel, null);
+  f.emit('streaming_status', { active: false, model: 'fixture-A' });
+  assert.equal(app.state.sdkModel, 'fixture-A');
+  f.emit('streaming_status', { active: true, model: 'fixture-B', instanceKey: 'b' });
+  assert.equal(app.state.sdkModel, 'fixture-A');
+  app._initControlSSE();
+  f.emit('streaming_status', { active: true, model: 'retired' }, 0);
+  assert.equal(app.state.sdkModel, 'fixture-A');
+  f.emit('streaming_status', { active: true, model: 'new-A' });
+  assert.equal(app.state.sdkModel, 'new-A');
+  app._teardownTransientLiveState = () => {}; app._resetV2Communication = () => {};
+  app.handleSdkSessionResumed({ instanceKey: 'a', resumeId: 'resume-model' });
+  assert.equal(app.state.sdkModel, null);
+  f.emit('streaming_status', { active: false, model: null });
+  assert.equal(app.state.sdkModel, null, 'unknown stays unknown');
+  app._unmounted = true;
+  f.emit('streaming_status', { active: true, model: 'unmounted' });
+  assert.equal(app.state.sdkModel, null);
+});
+
+test('final input-bar chip prefers the active profile, stays read-only for SDK model, and uses existing modal callbacks', t => {
+  const f = fixture(t), React = require('react');
+  const chat = new f.ChatView({ cliMode: true, sdkMode: true, terminalVisible: true,
+    mainAgentSessions: [], requests: [], sdkModel: 'fixture-A', activeProxyId: 'max',
+    proxyProfiles: [{ id: 'fixture', name: 'Local Profile', activeModel: 'profile-model' }] });
+  chat.setState = patch => Object.assign(chat.state, typeof patch === 'function' ? patch(chat.state) : patch);
+  const find = (node, predicate) => {
+    if (!node || typeof node !== 'object') return null;
+    if (predicate(node)) return node;
+    for (const child of React.Children.toArray(node.props?.children)) {
+      const hit = find(child, predicate); if (hit) return hit;
+    }
+    return null;
+  };
+  const input = () => find(chat.render(), node => node.type?.name === 'ChatInputBar');
+  const sdk = f.ProxyChip(input().props.proxyChip.props);
+  assert.equal(sdk.props.children, 'fixture-A');
+  assert.equal(sdk.props.onClick, undefined);
+  assert.equal(sdk.props.role, undefined);
+  const changed = { ...chat.props, activeProxyId: 'fixture' };
+  assert.equal(chat.shouldComponentUpdate(changed, chat.state), true);
+  chat.props = changed;
+  const profile = f.ProxyChip(input().props.proxyChip.props);
+  assert.equal(profile.props.role, 'button');
+  assert.ok(React.Children.toArray(profile.props.children).includes('Local Profile · profile-model'));
+  profile.props.onKeyDown({ key: 'Enter', preventDefault() {} });
+  assert.equal(chat.state.proxyModalVisible, true);
+  const modal = find(chat.render(), node => node.type?.name === 'ProxyModal');
+  assert.equal(modal.props.activeProxyId, 'fixture');
+  modal.props.onClose(); assert.equal(chat.state.proxyModalVisible, false);
+  window.tabBridge = {};
+  assert.equal(input().props.proxyChip, null, 'native Electron tabs keep their existing entry');
+  delete window.tabBridge;
+  chat.props = { ...chat.props, isLocalLog: true };
+  assert.equal(input().props.proxyChip, null, 'history cannot expose a live model');
+  assert.equal(f.ProxyChip({ sdkMode: true, sdkModel: null, activeProxyId: 'max' }), null);
+});
+
+
+for (const mode of ['live', 'cold']) {
+  test(mode + ' AppBase ingestion retains the queued user message replacing an interrupted tail', async t => {
+    const { app, ingest } = coldIngestFixture(t);
+    const msg = (role, text) => ({ role, content: [{ type: 'text', text }] });
+    const row = (timestamp, input) => ({ timestamp, url: 'codex://sdk/interrupt-merge', mainAgent: true,
+      _sdkSource: true, body: { model: 'fixture', metadata: { thread_id: 'interrupt-merge', user_id: 'fixture-user' }, input } });
+    const first = row('2026-11-21T00:00:00Z', [msg('user', 'FIRST'), msg('assistant', 'PRIOR'), msg('assistant', 'ABORTED_PARTIAL')]);
+    const next = row('2026-11-21T00:00:01Z', [msg('user', 'FIRST'), msg('assistant', 'PRIOR'), msg('user', 'QUEUED_USER'), msg('assistant', 'QUEUED_REPLY')]);
+    if (mode === 'cold') await ingest([first, next]);
+    else for (const entry of [first, next]) { app.handleEntryObject(entry); app._flushPendingEntries(); }
+    assert.equal(app.state.mainAgentSessions.length, 1);
+    assert.deepEqual(app.state.mainAgentSessions[0].messages.map(m => m.content[0].text),
+      ['FIRST', 'PRIOR', 'QUEUED_USER', 'QUEUED_REPLY']);
+  });
+}
+
+
+test('cached ChatView rebuilds the rewritten prefix before appending the resumed reply', t => {
+  const { app, ChatView } = coldIngestFixture(t);
+  const message = (role, text) => ({ role, content: [{ type: 'text', text }] });
+  const row = (timestamp, input) => ({ timestamp, url: 'codex://sdk/cached-interrupt', mainAgent: true,
+    _sdkSource: true, body: { model: 'fixture', metadata: { thread_id: 'cached-interrupt', user_id: 'fixture-user' }, input } });
+  const first = row('2026-11-21T00:00:00Z', [message('user', 'FIRST'), message('assistant', 'PRIOR'), message('assistant', 'ABORTED_PARTIAL')]);
+  const next = row('2026-11-21T00:00:01Z', [message('user', 'FIRST'), message('assistant', 'PRIOR'), message('user', 'QUEUED_USER'), message('assistant', 'QUEUED_REPLY')]);
+  app.handleEntryObject(first); app._flushPendingEntries();
+  const chat = new ChatView({ cliMode: true, sdkMode: true, mainAgentSessions: app.state.mainAgentSessions, requests: app.state.requests });
+  const text = items => items.flatMap(item => typeof item.props?.text === 'string' ? [item.props.text] : Array.isArray(item.props?.content)
+    ? item.props.content.filter(block => block.type === 'text').map(block => block.text)
+    : typeof item.props?.content === 'string' ? [item.props.content] : []);
+  assert.deepEqual(text(chat.buildAllItems()), ['FIRST', 'PRIOR', 'ABORTED_PARTIAL']);
+  app.handleEntryObject(next); app._flushPendingEntries();
+  chat.props = { ...chat.props, mainAgentSessions: app.state.mainAgentSessions, requests: app.state.requests };
+  assert.deepEqual(text(chat.buildAllItems()), ['FIRST', 'PRIOR', 'QUEUED_USER', 'QUEUED_REPLY']);
+});
+
+
+test('floating composer measures live height, tracks scroller replacement, and disposes its layout observers', t => {
+  const f = fixture(t), chat = new f.ChatView({ cliMode: true, sdkMode: true, mainAgentSessions: [], requests: [] });
+  const vars = new Map(), observers = [];
+  document.documentElement.style = { setProperty: (key, value) => vars.set(key, value), removeProperty: key => vars.delete(key) };
+  const previous = globalThis.ResizeObserver;
+  globalThis.ResizeObserver = class {
+    constructor(callback) { this.callback = callback; observers.push(this); }
+    observe(node) { this.node = node; }
+    disconnect() { this.disconnected = true; }
+  };
+  t.after(() => { if (previous === undefined) delete globalThis.ResizeObserver; else globalThis.ResizeObserver = previous; });
+  const stack = { isConnected: true, offsetHeight: 120 };
+  const first = { isConnected: true, offsetWidth: 600, clientWidth: 583 };
+  chat.inputStackRef.current = stack; chat.containerRef.current = first;
+  chat._bindInputStackRO(); chat._bindChatScrollbarRO();
+  assert.equal(vars.get('--input-stack-height'), '120px');
+  assert.equal(vars.get('--chat-scrollbar-width'), '17px');
+  chat._bindInputStackRO(); chat._bindChatScrollbarRO();
+  assert.equal(observers.length, 2, 'unrelated updates must not accumulate observers');
+  stack.offsetHeight = 248; observers[0].callback();
+  assert.equal(vars.get('--input-stack-height'), '248px', 'queue/task/multiline growth must move the spacer and bottom control');
+  const next = { isConnected: true, offsetWidth: 600, clientWidth: 588 };
+  chat.containerRef.current = next; chat._bindChatScrollbarRO();
+  assert.equal(observers[1].disconnected, true);
+  assert.equal(vars.get('--chat-scrollbar-width'), '12px');
+  chat.componentWillUnmount();
+  assert.equal(observers[0].disconnected, true); assert.equal(observers[2].disconnected, true);
+  assert.equal(vars.size, 0, 'leaving a workspace must not retain composer offsets');
+});
+
+test('floating composer preserves the overlay scrollbar bleed and space after empty or populated transcripts', t => {
+  const f = fixture(t), React = require('react');
+  const chat = new f.ChatView({ cliMode: true, sdkMode: true, mainAgentSessions: [], requests: [] });
+  const probes = [];
+  document.body.appendChild = el => probes.push(el);
+  document.body.removeChild = el => probes.splice(probes.indexOf(el), 1);
+  document.createElement = () => ({ style: {}, offsetWidth: 100, clientWidth: 100 });
+  delete f.ChatView._cachedOverlayBleed;
+  assert.equal(f.ChatView._overlayScrollbarBleed(), 12);
+  assert.equal(probes.length, 0);
+  const walk = node => {
+    if (!node || typeof node !== 'object') return [];
+    return [node, ...React.Children.toArray(node.props?.children).flatMap(walk)];
+  };
+  for (const loading of [true, false]) {
+    chat.state.loading = loading;
+    chat.state.allItems = loading ? [] : [React.createElement('fixture-row', { key: 'row' })];
+    const nodes = walk(chat.render());
+    const scroller = nodes.find(node => node.ref === chat.containerRef);
+    assert.ok(scroller);
+    const tail = React.Children.toArray(scroller.props.children).at(-1);
+    assert.equal(tail.type, 'div'); assert.equal(tail.props['aria-hidden'], 'true');
+    assert.ok(nodes.some(node => node.ref === chat.inputStackRef), 'composer must expose its own measuring ref');
+  }
+  delete f.ChatView._cachedOverlayBleed;
+});
+
+
+test('SDK compaction notice uses the original composer slot, keeps ten records and rejects foreign or unmounted frames', t => {
+  const f = fixture(t), React = require('react');
+  const chat = new f.ChatView({ cliMode: true, sdkMode: true, mainAgentSessions: [], requests: [] });
+  chat.setState = patch => { if (patch) Object.assign(chat.state, typeof patch === 'function' ? patch(chat.state) : patch); };
+  chat._onTerminalWsMessage({ type: 'sdk-compact', instanceKey: 'b' });
+  assert.deepEqual(chat.state.sdkCompactNotices, []);
+  for (let i = 0; i < 15; i++) chat._onTerminalWsMessage({ type: 'sdk-compact', instanceKey: 'a', trigger: 'native-' + i });
+  assert.equal(chat.state.sdkCompactNotices.length, 10);
+  assert.equal(chat.state.sdkCompactNotices.at(-1).trigger, 'native-14');
+  const walk = node => !node || typeof node !== 'object' ? []
+    : [node, ...React.Children.toArray(node.props?.children).flatMap(walk)];
+  const notices = walk(chat.render()).filter(node => String(node.key).includes('sdkc-'));
+  assert.equal(notices.length, 1);
+  assert.doesNotMatch(React.Children.toArray(notices[0].props.children).join(''), /\d+k|→/, 'unknown counts must not become numbers');
+  const container = walk(chat.render()).find(node => node.ref === chat.inputStackRef);
+  const children = React.Children.toArray(container.props.children);
+  const noticeIndex = children.findIndex(node => String(node.key).includes('sdkc-'));
+  assert.ok(noticeIndex >= 0 && noticeIndex < children.findIndex(node => node.type?.name === 'ChatInputBar'));
+  chat._unmounted = true;
+  chat._onTerminalWsMessage({ type: 'sdk-compact', instanceKey: 'a', trigger: 'late' });
+  assert.equal(chat.state.sdkCompactNotices.at(-1).trigger, 'native-14');
+  chat._unmounted = false;
+  const prevProps = chat.props;
+  chat.props = { ...chat.props, sdkResumeId: 'resumed-thread' };
+  chat.componentDidUpdate(prevProps, { ...chat.state });
+  assert.deepEqual(chat.state.sdkCompactNotices, []);
 });

@@ -1,0 +1,54 @@
+{
+  "date": "2026-11-20",
+  "root": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-tasks-gui-lg99wW",
+  "pid": 36477,
+  "browser": "Safari native CUA, explicit current fixture navigation",
+  "transport": "official SDK exec + isolated fake Codex",
+  "observed": {
+    "partialReplyRetainedOnceAfterZeroExit": true,
+    "originalErrorRowBeforeRefresh": true,
+    "queueParked": true,
+    "partialAndParkedQueueRetainedAfterRefresh": true,
+    "freshPromptResumesBacklog": true,
+    "originalPromptNeverReplayed": true,
+    "idleSendButtonAtEnd": true
+  },
+  "calls": [
+    "hold eof fixture",
+    "fresh explicit prompt",
+    "saved backlog"
+  ],
+  "knownUnclosed": {
+    "errorRowDisappearsAfterPageRefresh": "Observed; next audit must compare upstream error restoration and local synthesized feedback. Do not treat refresh as error UI passed.",
+    "initialPartialDuringNoCanonicalEntry": "Not observed before exit; no streaming-paint claim from this fixture"
+  },
+  "fullTests": "1503/1503 (5+284+1008+206),0 skip",
+  "installed": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-9jgol6o9",
+    "files": 701,
+    "source_bytes_match": true,
+    "web_asset_files": 204,
+    "runtime_tests": "217/217",
+    "b12_regression": "passed",
+    "installed_cli_relative_cd_boot": "passed",
+    "uses_fake_codex": true,
+    "uses_real_model_network": false
+  },
+  "externalModelNetwork": false,
+  "realUserLogsOrCredentials": false,
+  "limitations": [
+    "No new physical/mobile/platform claim",
+    "No exec silence timeout/control RPC invented",
+    "No new native permission/image/product choice inferred"
+  ],
+  "baselineAudit": {
+    "upstream": "9b1bb4e729473360cbe60e508f0558a702370a08 / fixed 74cd752d99caf122e750216d2af3bb9f467c4de1",
+    "errorRowIsPageLocal": true,
+    "constructorInitializesEmptyAndOnlySdkErrorFramesPopulate": true,
+    "upstreamAttachReplayHasNoHistoricalErrorRow": true,
+    "refreshObservationMatchesBaselineSource": true,
+    "priorOpenClassificationResolvedBySourceAudit": true,
+    "noProductChangeOrHistoricalReplayAdded": true,
+    "upstreamBrowserRuntimeNotClaimed": true
+  }
+}

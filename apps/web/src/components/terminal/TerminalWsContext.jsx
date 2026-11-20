@@ -16,7 +16,7 @@ import { now } from '../../utils/monotime';
  * - 内部封装重连(2s 退避),消费者无感
  * - `addMessageHandler` 把单条 onmessage 派发给所有注册者(各自 switch type)
  * - `addStateListener` 通知 open/close,TerminalPanel 用它在 onopen 后立即 sendResize
- * - 只缓存 state；PTY 字节不在 Provider 或服务端积累。晚挂载的 TerminalPanel
+ * - 缓存 state 和 SDK 的队列/任务全量快照；PTY 字节不在 Provider 或服务端积累。晚挂载的 TerminalPanel
  *   从 state 携带的当前序号开始接收实时输出
  *
  * 默认值是 no-op,纯 web 模式 / 未包 Provider 时调用不报错。
@@ -44,6 +44,10 @@ export class TerminalWsProvider extends React.Component {
     this.pingSeen = false;
     this.lastStateMessage = null;
     this.lastQueueState = null;
+    this.lastTaskState = null;
+    this.lastAgentState = null;
+    this.nativeApprovals = new Map();
+    this.slowUpstreams = new Map();
     this._unmounted = false;
     this._ctxValue = {
       send: this.send,
@@ -160,12 +164,20 @@ export class TerminalWsProvider extends React.Component {
     if (this.ws !== ws) return;
     this.ws = null;
     this._clearSocketTimers();
+    this.lastTaskState = null;
+    this.lastAgentState = null;
+    this.nativeApprovals.clear();
+    this.slowUpstreams.clear();
     try { ws.close(); } catch {}
     this._notifyState('close');
     if (!this._unmounted && this.props.open) this._scheduleReconnect();
   };
 
   disconnect = () => {
+    this.lastTaskState = null;
+    this.lastAgentState = null;
+    this.nativeApprovals.clear();
+    this.slowUpstreams.clear();
     this._clearSocketTimers();
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
@@ -186,14 +198,31 @@ export class TerminalWsProvider extends React.Component {
   _resetStateCache = () => {
     this.lastStateMessage = null;
     this.lastQueueState = null;
+    this.lastTaskState = null;
+    this.lastAgentState = null;
+    this.nativeApprovals.clear();
+    this.slowUpstreams.clear();
   };
 
   _rememberMessage = (msg) => {
     if (!msg || typeof msg.type !== 'string') return;
+    if (typeof msg.id === 'string' && msg.id.startsWith('native_') && msg.instanceKey) {
+      if (msg.type === 'perm-hook-pending' || msg.type === 'sdk-ask-pending') this.nativeApprovals.set(msg.id, msg);
+      if (['perm-hook-resolved', 'perm-hook-timeout', 'sdk-ask-resolved', 'sdk-ask-timeout'].includes(msg.type)) this.nativeApprovals.delete(msg.id);
+    }
+    if (typeof msg.requestId === 'string' && msg.instanceKey) {
+      if (msg.type === 'sdk-slow-upstream') this.slowUpstreams.set(msg.requestId, { ...msg,
+        startedAt: Number.isFinite(msg.startedAt) ? msg.startedAt : Date.now() - Math.max(0, Number.isFinite(msg.waitingMs) ? msg.waitingMs : 0) });
+      if (msg.type === 'sdk-slow-upstream-resolved') this.slowUpstreams.delete(msg.requestId);
+    }
     if (msg.type === 'state') {
       this.lastStateMessage = msg;
     } else if (msg.type === 'queue-state') {
       this.lastQueueState = msg;
+    } else if (msg.type === 'sdk-agent-snapshot') {
+      this.lastAgentState = msg;
+    } else if (msg.type === 'sdk-task-snapshot') {
+      this.lastTaskState = msg;
     }
   };
 
@@ -203,6 +232,19 @@ export class TerminalWsProvider extends React.Component {
     }
     if (this.lastQueueState) {
       try { fn(this.lastQueueState); } catch (e) { console.warn('[TerminalWsProvider] replay queue handler error:', e); }
+    }
+    if (this.lastTaskState) {
+      try { fn(this.lastTaskState); } catch (e) { console.warn('[TerminalWsProvider] replay task handler error:', e); }
+    }
+    if (this.lastAgentState) {
+      try { fn(this.lastAgentState); } catch (e) { console.warn('[TerminalWsProvider] replay agent handler error:', e); }
+    }
+    for (const frame of this.slowUpstreams.values()) {
+      try { fn({ ...frame, waitingMs: Math.max(0, Date.now() - frame.startedAt) }); }
+      catch (e) { console.warn('[TerminalWsProvider] replay slow request handler error:', e); }
+    }
+    for (const approval of this.nativeApprovals.values()) {
+      try { fn(approval); } catch (e) { console.warn('[TerminalWsProvider] replay approval handler error:', e); }
     }
   };
 

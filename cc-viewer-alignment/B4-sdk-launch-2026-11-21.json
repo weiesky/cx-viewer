@@ -1,0 +1,55 @@
+{
+  "date": "2026-11-21",
+  "upstream": "efc7f8eab199a04f3b8dcb660a5bfde593138f66",
+  "audit": [
+    "Actual upstream CLI/SDK launch diffs, complete launch-config and fixed-final; local CLI/picker/parser/registry and installed official Codex SDK0.142.5 options traced.",
+    "No raw extraArgs/profile/image/review SDK contract. Full mixed commit not claimed complete."
+  ],
+  "implementation": "Validate unknown/missing flags in both transports before replacing a session or launching browser/workspace/model; parse flags after actual exec/e, reject review subcommand, retain literal -- and ordinary sentence words.",
+  "red": {
+    "failed": 2,
+    "log": "/tmp/cxv-b4-sdk-launch-red.log"
+  },
+  "target": {
+    "passed": 35,
+    "skipped": 0,
+    "log": "/tmp/cxv-b4-sdk-launch-target.log",
+    "final_guard_checks": 2,
+    "final_log": "/tmp/cxv-b4-sdk-launch-final-target.log"
+  },
+  "full": {
+    "passed": 1578,
+    "groups": [
+      5,
+      331,
+      1030,
+      212
+    ],
+    "skipped": 0,
+    "log": "/tmp/cxv-b4-sdk-launch-full.log"
+  },
+  "build": {
+    "status": "passed",
+    "log": "/tmp/cxv-b4-sdk-launch-build.log"
+  },
+  "installed": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-4ukn9qex",
+    "files": 702,
+    "source_bytes_match": true,
+    "web_asset_files": 204,
+    "runtime_tests": "290/290",
+    "b12_regression": "passed",
+    "installed_cli_relative_cd_boot": "passed",
+    "uses_fake_codex": true,
+    "uses_real_model_network": false
+  },
+  "instanceAttempt": "Actual isolated fake-child SDK and CLI prove supported model/config/prompt propagation, rejection before child/workspace launch, and existing session retained on invalid replacement.",
+  "choices": {
+    "sdkNotice": "Keep original position,accurate Codex placeholder/real HTTP distinction.",
+    "contextCategories": "Keep original entry,explicit unavailable details,current usage bar unchanged."
+  },
+  "limits": [
+    "No real-model network or real credentials. No new GUI claim,both CUA channels unavailable.",
+    "Other mixed candidates/Context and B4 remain in progress;no squash/push/PR."
+  ]
+}

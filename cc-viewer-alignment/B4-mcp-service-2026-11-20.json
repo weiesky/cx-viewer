@@ -1,0 +1,101 @@
+{
+  "date": "2026-11-20",
+  "upstream": "133bc219df",
+  "subitem": "Native MCP status control service; original frontend remains next independent change.",
+  "implementation": "Reuse SDK instance registry, existing native JSON-RPC client and original MCP snapshot/route contract. Active root thread only, no initialization on read;10s total deadline, paginated inventory, bounded pages/bytes/servers, same native client and manager generation required.",
+  "nativeMapping": "Explicit runtimeStatus maps to original status enum; tools dictionary becomes array. Missing/cancelled/unknown runtime state is unknown; auth/tools alone do not imply connected.",
+  "scoping": "HTTP exact instance, WS snapshot/reconnect replay and reset clear; clone snapshots; unsupported default exec distinguished from inactive native.",
+  "target": "32/32,0 skip; final close/reset assertion separately1/1",
+  "full": "1548/1548 (5+308+1023+212),0 skip",
+  "build": "passed",
+  "installed": {
+    "fixture": "cxv-b3-runtime-ldi5bnni",
+    "files": 702,
+    "exactWebFiles": 204,
+    "runtime": "284/284",
+    "b12": "passed",
+    "relativeCdCli": "passed"
+  },
+  "real": {
+    "root": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-l2CYjP",
+    "codex": "codex-cli 0.169.0",
+    "officialSdk": "0.142.5",
+    "localModelRequests": 22,
+    "mcp": {
+      "actualCodex": true,
+      "actualTransportAndManager": true,
+      "inactiveDoesNotStart": true,
+      "activeThread": "01a1f955-c4b5-71e1-99cb-c6ab35a3096b",
+      "snapshot": {
+        "type": "sdk-mcp-status",
+        "sessionId": "01a1f955-c4b5-71e1-99cb-c6ab35a3096b",
+        "ts": 1795184510711,
+        "trigger": "request",
+        "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-l2CYjP/native-manager/same",
+        "instanceKey": "cxv-b21e18d0708c9c9ca3988f0336482824",
+        "servers": [
+          {
+            "name": "fixture",
+            "runtimeStatus": "connected",
+            "pluginId": null,
+            "httpOrigin": null,
+            "serverInfo": {
+              "name": "fixture",
+              "title": null,
+              "version": "0.0.0",
+              "description": null,
+              "icons": null,
+              "websiteUrl": null
+            },
+            "serverCapabilities": {
+              "tools": {}
+            },
+            "toolListMeta": null,
+            "tools": [
+              {
+                "name": "image",
+                "description": "Return a local synthetic image",
+                "inputSchema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "annotations": {
+                  "readOnlyHint": true,
+                  "destructiveHint": false,
+                  "idempotentHint": true,
+                  "openWorldHint": false
+                }
+              }
+            ],
+            "toolsError": null,
+            "resources": [],
+            "resourceTemplates": [],
+            "authStatus": "unsupported",
+            "status": "connected"
+          }
+        ]
+      },
+      "noAdditionalModelRequests": true,
+      "execUnsupported": true
+    },
+    "externalModelNetwork": false
+  },
+  "testCorrection": "An added assertion incorrectly expected null/inactive after stopSession removed the registry entry; corrected to SDK_SESSION_NOT_FOUND/HTTP404, preserving strict identity. Initial full and first installed fixture ftx9z7iz fail on old assertion; retained logs. Corrected scope1/full1548/new installation284 pass. No product change made to satisfy the invalid expectation.",
+  "logs": [
+    "/tmp/cxv-b4-mcp-native-target.log",
+    "/tmp/cxv-b4-mcp-service-target.log",
+    "/tmp/cxv-b4-mcp-service-scope.log",
+    "/tmp/cxv-b4-mcp-service-scope-final.log",
+    "/tmp/cxv-b4-mcp-native-real.log",
+    "/tmp/cxv-b4-mcp-service-full.log",
+    "/tmp/cxv-b4-mcp-service-full-final.log",
+    "/tmp/cxv-b4-mcp-service-build.log",
+    "/tmp/cxv-b4-mcp-service-installed.log",
+    "/tmp/cxv-b4-mcp-service-installed-final.log"
+  ],
+  "limits": [
+    "No new frontend/DOM/CSS or MCP panel browser acceptance yet.",
+    "Native real MCP is isolated stdio fixture; no real OAuth/remote MCP or external model.",
+    "Model chip/Context/fetch-loop mixed subitems are not marked complete."
+  ]
+}
