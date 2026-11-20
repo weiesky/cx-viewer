@@ -1,0 +1,40 @@
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_f3ce02ff91d9cf::t_8a64037b265264 7810,15803-15806
+  s_f3ce02ff91d9cf::t_b9b939d9d46fbb 7809,7813,15808
+  s_f3ce02ff91d9cf::t_ec6d3748d73737 15807
+cc-viewer-alignment/README.md
+  s_f3ce02ff91d9cf::t_b9b939d9d46fbb 5,21
+packages/app/tests/sdk-appserver-manager.test.js
+  s_f3ce02ff91d9cf::t_2fb786211c9462 8-9,39-40,142-173
+  s_f3ce02ff91d9cf::t_b6bac0fd91bf5e 174-176
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_f3ce02ff91d9cf::t_b9b939d9d46fbb 3,45,101
+packages/app/lib/sdk-manager.js
+  s_f3ce02ff91d9cf::t_644dbf47a77b94 572
+AGENTS.md
+  s_f3ce02ff91d9cf::t_b9b939d9d46fbb 26
+cc-viewer-alignment/B4-candidate-matrix.md
+  s_f3ce02ff91d9cf::t_8a64037b265264 11
+cc-viewer-alignment/B4-send-now-approval-2026-11-21.json
+  s_f3ce02ff91d9cf::t_8a64037b265264 1-43,55-76
+  s_f3ce02ff91d9cf::t_b9b939d9d46fbb 44-54
+cc-viewer-alignment/B4-implementation.md
+  s_f3ce02ff91d9cf::t_8a64037b265264 732-737,739-742
+  s_f3ce02ff91d9cf::t_b9b939d9d46fbb 723,738
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "576abb59ce77f83d475902999046595061587f9e",
+  "prompts": {},
+  "sessions": {
+    "s_f3ce02ff91d9cf": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6e7-9606-7a33-911c-33e9b1de1cad",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
