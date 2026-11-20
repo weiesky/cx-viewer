@@ -1,0 +1,29 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "commits": [
+    "9b1bb4e729473360cbe60e508f0558a702370a08",
+    "88995a10461973689656841a8476ee4e6c60281b"
+  ],
+  "errorCssExact": true,
+  "errorCssSha256": "8defe7df583bc248f4bb1c27488c537be265f6ac1ef767983101371344d7abc2",
+  "baseRenderExactExceptFinalTitleAria": true,
+  "retryNotImplemented": true,
+  "feedbackAdaptation": "UI projection marks structured SDK terminal errors; keeps cumulative prefix and raw archives intact; ChatView skips _sdkFeedback only",
+  "webTests": "270/270",
+  "finalTargeted": "26/26",
+  "gui": {
+    "browser": "Safari",
+    "fixture": "cxv-b4-tasks-gui-GbnuHs",
+    "pid": 92755,
+    "stopped": true,
+    "nativeCli": "fake",
+    "emptyTailAnd800pxStyle": true,
+    "cap3AndRecurrence": true,
+    "sameNameIsolation": true,
+    "explicitSendClears": true,
+    "workspaceSwitchClears": true,
+    "initialDuplicateBubbleFoundThenCorrected": true,
+    "postArchiveSingleErrorRow": true,
+    "physicalOrNarrowMobileNotTested": true
+  }
+}

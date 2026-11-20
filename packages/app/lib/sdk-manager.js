@@ -15,16 +15,17 @@ import {
   sdkToJSONLEntry,
   sdkToolName,
   sdkToolOutput,
+  sdkToolResultContent,
 } from './sdk-adapter.js';
 import { createProxy } from '../proxy.js';
 import { readCodexGlobalConfig } from './codex-config.js';
 import { parseCodexInvocation, stripResumeInvocation } from './cli-args.js';
 import { createHash, randomUUID } from 'node:crypto';
 import { basename, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const SDK_EXEC_LAUNCHER = fileURLToPath(new URL('./sdk-exec-launcher.sh', import.meta.url));
-const SDK_EXEC_RUNNER = fileURLToPath(new URL('./sdk-exec-runner.mjs', import.meta.url));
+import { createSdkExecTransport } from './sdk-exec-transport.js';
+import { createSdkAppServerTransport } from './sdk-appserver-transport.js';
+import { createSdkAppServerApprovals } from './sdk-appserver-approvals.js';
+import { createSdkAppServerAgents } from './sdk-appserver-agents.js';
 
 let _Codex = null;
 let _sdkImportError = null;
@@ -44,8 +45,8 @@ export function getSdkUnavailableReason() {
   return _sdkImportError?.message || null;
 }
 
-export function getSdkWorkingDirectory(cwd, codexArgs = []) {
-  return resolve(cwd, parseSdkCodexArgs(codexArgs).threadOptions.workingDirectory || '.');
+export function getSdkWorkingDirectory(cwd, codexArgs = [], transport = 'exec') {
+  return resolve(cwd, parseSdkCodexArgs(codexArgs, {}, transport).threadOptions.workingDirectory || '.');
 }
 
 // Resolve paths without realpath: symlink spellings follow the existing workspace
@@ -53,15 +54,20 @@ export function getSdkWorkingDirectory(cwd, codexArgs = []) {
 const sessions = new Map();
 let activeKey = null;
 let launchConfig = null;
+const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504, 529]);
+const RETRY_CONTINUE_PROMPT =
+  '[cc-viewer:retry] The previous response was interrupted by an API error. ' +
+  'Continue the same task from where it stopped. Do not repeat completed work; ' +
+  'finish the remaining steps and reply concisely.';
 
 export function setSdkLaunchConfig(options) {
   if (options == null) { launchConfig = null; return; }
   const { codexArgs = [], ...config } = options;
-  const parsed = parseSdkCodexArgs(codexArgs);
+  const parsed = parseSdkCodexArgs(codexArgs, {}, config.transport);
   delete parsed.threadOptions.workingDirectory;
   // Resume targets and prompts belong to the boot workspace only.
   launchConfig = { options: config, defaults: {
-    threadOptions: parsed.threadOptions, codexOptions: parsed.codexOptions,
+    threadOptions: parsed.threadOptions, codexOptions: parsed.codexOptions, configOverrides: parsed.configOverrides,
   } };
 }
 
@@ -71,7 +77,7 @@ export function launchSdkSession(cwd, projectName, codexArgs = []) {
     error.status = 503;
     throw error;
   }
-  const parsed = parseSdkCodexArgs(codexArgs, launchConfig.defaults);
+  const parsed = parseSdkCodexArgs(codexArgs, launchConfig.defaults, launchConfig.options.transport);
   if (parsed.threadOptions.workingDirectory
       && resolve(cwd, parsed.threadOptions.workingDirectory) !== resolve(cwd)) {
     const error = new Error('Workspace path and --cd must identify the same directory');
@@ -91,6 +97,7 @@ function sessionInfo(session) {
     sessionId: session.getSessionId(),
     busy: session.getStreamingState().active,
     active: session.cwd === activeKey,
+    transport: session.transportKind,
   };
 }
 
@@ -141,16 +148,38 @@ export function getSdkQueueState(anchor) {
   return sessionForAnchor(anchor)?.getQueueState() || null;
 }
 
+export function getSdkTaskState(anchor) {
+  return sessionForAnchor(anchor)?.getTaskState() || null;
+}
+
+export function getSdkPendingApprovals(anchor) {
+  return sessionForAnchor(anchor)?.getPendingApprovals() || [];
+}
+
+export function getSdkSlowUpstreams(anchor) {
+  return sessionForAnchor(anchor)?.getSlowUpstreams() || [];
+}
+
+export function getSdkAgentState(anchor) {
+  return sessionForAnchor(anchor)?.getAgentState() || null;
+}
+
 // Explicit initialization resets this cwd only. Workspace switches use attach so
 // background turns, queued messages and resume IDs survive.
 export function initSdkSession(cwd, projectName, options = {}) {
-  return registerSdkSession(cwd, projectName, options, parseSdkCodexArgs(options.codexArgs));
+  return registerSdkSession(cwd, projectName, options, parseSdkCodexArgs(options.codexArgs, {}, options.transport));
 }
 
 function registerSdkSession(cwd, projectName, options, parsed) {
   if (typeof cwd !== 'string' || !cwd.trim()) throw new TypeError('SDK cwd is required');
+  const transport = options.transport ?? 'exec';
+  if (!['exec', 'appserver'].includes(transport)) throw new TypeError('Unsupported SDK transport');
   const key = resolve(cwd, parsed.threadOptions.workingDirectory || '.');
   let session = sessions.get(key);
+  if (session && session.transportKind !== transport
+      && (session.getStreamingState().active || session.getQueueState().items.length)) {
+    throw Object.assign(new Error('Cannot change the transport of a busy workspace'), { code: 'SDK_TRANSPORT_BUSY', status: 409 });
+  }
   if (!session) {
     const instanceKey = `cxv-${createHash('sha256').update(key).digest('hex').slice(0, 32)}`;
     session = createSdkSession(instanceKey);
@@ -183,6 +212,10 @@ export async function sendUserMessage(text, anchor, options) {
   return sessionForAnchor(anchor)?.sendUserMessage(text, options);
 }
 
+export function retryInterruptedTurn(turnId, anchor) {
+  return sessionForAnchor(anchor)?.retryInterruptedTurn(turnId) || { ok: false, reason: 'unavailable' };
+}
+
 export function removeSdkQueuedMessage(id, anchor) {
   return sessionForAnchor(anchor)?.removeQueuedMessage(id);
 }
@@ -201,6 +234,14 @@ export function resolveApproval(id, value, anchor) {
 
 export function getSessionId(anchor) {
   return sessionForAnchor(anchor)?.getSessionId() || null;
+}
+
+export async function fetchMcpStatus(anchor) {
+  return sessionForAnchor(anchor)?.fetchMcpStatus() || { ok: false, reason: 'session-inactive' };
+}
+
+export function getMcpStatusSnapshot(anchor) {
+  return sessionForAnchor(anchor)?.getMcpStatusSnapshot() || null;
 }
 
 export function getInitialPrompt(anchor) {
@@ -232,8 +273,11 @@ export function stopSession() {
 }
 
 function createSdkSession(instanceKey) {
-  let _codex = null;
-  let _thread = null;
+  let _transport = null;
+  let _transportKind = 'exec';
+  let _nativeApprovals = null;
+  let _nativeAgents = null;
+  let _configOverrides = [];
   let _sessionId = null;
   let _model = null;
   let _cwd = null;
@@ -263,13 +307,23 @@ function createSdkSession(instanceKey) {
   let _currentItems = new Map();
   let _itemOrder = [];
   let _completedToolIds = new Set();
+  let _completedAssistantIds = new Set();
   let _finalEntryEmittedThisTurn = false;
   let _turnStreamError = null;
+  let _nativeTurnId = null;
+  let _nativeRetrySeen = false;
+  const _slowUpstreams = new Map();
+  let _lastMcpStatus = null;
+  let _lastFailedTurn = null;
+  let _retryOf = null;
+  let _taskTurnFailed = false;
+  let _taskItemId = null;
 
   let _onEntry = null;
   let _onStreamingStatus = null;
   let _onStreamProgress = null;
   let _broadcastWs = null;
+  let _onAgentLoopStart = null, _onAgentLoopEnd = null, _agentLoop = null;
   let _sdkProxy = createProxy();
   let _sdkProxyPort = null;
   let _sdkProxyPromise = null;
@@ -321,11 +375,13 @@ function createSdkSession(instanceKey) {
     onEntry,
     onStreamingStatus,
     onStreamProgress,
+    onAgentLoopStart, onAgentLoopEnd,
     broadcastWs,
     permissionMode,
     codexPath,
     codexArgs = [],
-  } = {}, parsed = parseSdkCodexArgs(codexArgs)) {
+    transport = 'exec',
+  } = {}, parsed = parseSdkCodexArgs(codexArgs, {}, transport)) {
     _sdkProxy.stop();
     _sdkProxy = createProxy();
     _sdkProxyPort = null;
@@ -335,13 +391,17 @@ function createSdkSession(instanceKey) {
     _onEntry = onEntry;
     _onStreamingStatus = onStreamingStatus;
     _onStreamProgress = onStreamProgress;
+    _onAgentLoopStart = onAgentLoopStart;
+    _onAgentLoopEnd = onAgentLoopEnd;
     _broadcastWs = broadcastWs;
     _codexPath = codexPath || null;
+    _transportKind = transport;
 
     _codexOptions = parsed.codexOptions;
-    // SDK 0.142.5 has no request_user_input callback. Override both persisted
-    // config and user-provided -c flags until the SDK bridge can service it.
-    _codexOptions.config = {
+    _configOverrides = [...(parsed.configOverrides || [])];
+    // The pinned exec SDK has no request_user_input callback. Native stdio
+    // owns and services those requests without changing exec's existing guard.
+    if (_transportKind === 'exec') _codexOptions.config = {
       ...(_codexOptions.config || {}),
       features: {
         ...(_codexOptions.config?.features || {}),
@@ -371,6 +431,18 @@ function createSdkSession(instanceKey) {
       const generation = _sessionGeneration;
       const proxyPromise = proxy.start({
         captureContext: { cwd: _cwd, instanceKey },
+        onSlowUpstream: info => {
+          if (generation !== _sessionGeneration) return;
+          const resolved = info.type === 'resolved';
+          const frame = { type: resolved ? 'sdk-slow-upstream-resolved' : 'sdk-slow-upstream',
+            requestId: info.requestId, cwd: _cwd, instanceKey, ts: Date.now(),
+            ...(!resolved ? { waitingMs: info.waitingMs, model: info.model,
+              startedAt: Date.now() - Math.max(0, Number(info.waitingMs) || 0) } : {}),
+          };
+          if (resolved) _slowUpstreams.delete(frame.requestId);
+          else _slowUpstreams.set(frame.requestId, frame);
+          try { _broadcastWs?.(frame); } catch {}
+        },
         onResponseModel: model => {
           if (generation === _sessionGeneration) observeSdkModel(model);
         },
@@ -413,11 +485,36 @@ function createSdkSession(instanceKey) {
     return _runTurns(String(text), requestId);
   }
 
-  async function _runTurns(text = null, requestId = null) {
+  function retryInterruptedTurn(turnId) {
+    if (_transportKind !== 'appserver') return { ok: false, reason: 'unavailable' };
+    if (_queryBusy || _dispatchingQueueItem || _messageQueue.length) return { ok: false, reason: 'busy' };
+    const failed = _lastFailedTurn;
+    if (!failed) return { ok: false, reason: 'nothing-to-retry' };
+    if (typeof turnId !== 'string' || turnId !== failed.turnId) return { ok: false, reason: 'stale' };
+    if (!failed.retryable) return { ok: false, reason: 'not-retryable' };
+    if (!_sessionId || failed.sessionId !== _sessionId || failed.generation !== _sessionGeneration) {
+      return { ok: false, reason: 'stale' };
+    }
+    _lastFailedTurn = null;
+    _activityRevision++;
+    _suppressDrain = false;
+    // Claim busy synchronously before returning: duplicate clicks cannot enqueue
+    // another continue instruction, and a retry never replays the original input.
+    void _runTurns(RETRY_CONTINUE_PROMPT, null, turnId).catch(error => console.warn('[SDK] Retry failed:', error.message));
+    return { ok: true };
+  }
+
+  function _broadcastRetryState(phase, extra = {}) {
+    try { _broadcastWs?.({ type: 'sdk-retry-state', phase, turnId: _nativeTurnId, retryOf: _retryOf,
+      cwd: _cwd, sessionId: _sessionId, instanceKey, ts: Date.now(), ...extra }); }
+    catch (error) { console.warn('[SDK] Retry status callback failed:', error.message); }
+  }
+
+  async function _runTurns(text = null, requestId = null, retryOf = null) {
     const generation = _sessionGeneration;
     _queryBusy = true;
     try {
-      if (text !== null) await _executeTurn(text, generation, null, requestId);
+      if (text !== null) await _executeTurn(text, generation, null, requestId, retryOf);
       while (generation === _sessionGeneration && !_suppressDrain && (_dispatchingQueueItem || _messageQueue.length)) {
         if (!_dispatchingQueueItem) _dispatchingQueueItem = _messageQueue.shift();
         const next = _dispatchingQueueItem;
@@ -472,6 +569,7 @@ function createSdkSession(instanceKey) {
     _suppressDrain = false;
     _broadcastQueueState();
     if (_queryBusy) {
+      if (_transportKind === 'appserver') _nativeApprovals?.clearThread(_transport?.threadId);
       _abortController?.abort();
       return { dispatching: true };
     }
@@ -483,23 +581,50 @@ function createSdkSession(instanceKey) {
     catch (error) { console.warn('[SDK] Queue status callback failed:', error.message); }
   }
 
-  async function _executeTurn(text, generation, queuedItem = null, requestId = null) {
+  // Emit boundaries only for an accepted executor stream. Capture the end
+  // callback and scope so a reset cannot report an old turn through new wiring.
+  function _startAgentLoop() {
+    const rec = { cwd: _cwd, instanceKey, turnId: _streamingRequestId, turnStartedAt: _turnStartTime,
+      onEnd: _onAgentLoopEnd };
+    _agentLoop = rec;
+    try { _onAgentLoopStart?.({ cwd: rec.cwd, instanceKey, turnId: rec.turnId,
+      turnStartedAt: rec.turnStartedAt, sessionId: _sessionId || _transport?.threadId || null, ts: Date.now() }); }
+    catch (error) { console.warn('[SDK] Loop start callback failed:', error.message); }
+  }
+
+  function _finishAgentLoop(reason) {
+    const rec = _agentLoop;
+    if (!rec) return;
+    _agentLoop = null; // before calling the host: re-entry cannot end it twice
+    try { rec.onEnd?.({ cwd: rec.cwd, instanceKey, turnId: rec.turnId,
+      turnStartedAt: rec.turnStartedAt, sessionId: _sessionId || _transport?.threadId || null,
+      ts: Date.now(), reason }); }
+    catch (error) { console.warn('[SDK] Loop end callback failed:', error.message); }
+  }
+
+  async function _executeTurn(text, generation, queuedItem = null, requestId = null, retryOf = null) {
     if (queuedItem) _dispatchingStarting = true;
     _resetTurnState();
+    _lastFailedTurn = null;
+    _retryOf = retryOf;
     _turnTimestamp = new Date().toISOString();
     _turnStartTime = Date.now();
     _streamingRequestId = `sdk_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
-    _accumulatedMessages.push({ role: 'user', content: text, _sdkTimestamp: _turnTimestamp });
+    _accumulatedMessages.push({ role: 'user', content: text, _sdkTimestamp: _turnTimestamp,
+      ...(retryOf ? { _sdkRetryOf: retryOf } : {}) });
 
     const controller = new AbortController();
     _abortController = controller;
     _activeInput = { id: queuedItem?.id || _streamingRequestId, text,
-      timestamp: _turnTimestamp, requestId: queuedItem?.requestId || requestId || null };
+      timestamp: _turnTimestamp, requestId: queuedItem?.requestId || requestId || null,
+      ...(retryOf ? { retryOf } : {}) };
     _broadcastQueueState();
+    _broadcastTaskState();
     _sendStreamingStatus(true);
+    let endReason = 'session-ended';
     try {
-      if (!_codex) {
+      if (!_transport) {
         // Proxy startup is async, but the SDK client captures its environment only
         // once. Wait for that startup before constructing the singleton client so
         // an immediate initial prompt cannot permanently bypass capture/model
@@ -507,37 +632,70 @@ function createSdkSession(instanceKey) {
         await waitForSdkProxyStartup(controller.signal);
         if (generation !== _sessionGeneration) return;
         controller.signal.throwIfAborted();
-        const options = {
-          ..._codexOptions,
-          ...(_codexPath ? { codexPathOverride: _codexPath } : {}),
-          env: {
-            ...process.env,
-            CXV_SDK_MODE: '1',
-            CXV_PROJECT_DIR: _cwd,
-            CXV_INSTANCE_KEY: instanceKey,
-            ...(_sdkProxyPort ? { OPENAI_BASE_URL: `http://127.0.0.1:${_sdkProxyPort}` } : {}),
-          },
-        };
-        _codex = new _Codex(options);
-        // CLI supplies the executable. For library callers, reuse the resolver
-        // of our pinned SDK 0.142.5 rather than duplicating its platform lookup.
-        const executable = _codexPath || _codex.exec?.executablePath;
-        if (process.platform !== 'win32' && typeof executable === 'string') {
-          _codex = new _Codex({ ...options, codexPathOverride: SDK_EXEC_LAUNCHER,
-            env: { ...options.env, CXV_SDK_NODE: process.execPath,
-              CXV_SDK_RUNNER: SDK_EXEC_RUNNER, CXV_SDK_EXECUTABLE: executable,
-              ...(process.versions.electron ? { ELECTRON_RUN_AS_NODE: '1' } : {}),
+        const options = { Codex: _Codex, cwd: _cwd, instanceKey,
+          codexPath: _codexPath, codexOptions: _codexOptions, threadOptions: _threadOptions, proxyPort: _sdkProxyPort };
+        if (_transportKind === 'appserver') {
+          const native = createSdkAppServerTransport({ ...options,
+            configOverrides: _configOverrides,
+            codexPath: _codexPath || new _Codex().exec?.executablePath,
+            onSessionReady: () => {
+              if (generation !== _sessionGeneration) return;
+              _nativeApprovals?.close();
+              _nativeAgents?.close();
+              _nativeAgents = createSdkAppServerAgents({ scope: { cwd: _cwd, instanceKey }, rootThreadId: native.threadId,
+                readThread: id => native.readThread(id), ownsThread: id => native.ownsThread(id),
+                broadcast: _broadcastWs || (() => {}) });
+              _nativeApprovals = createSdkAppServerApprovals({
+                scope: { cwd: _cwd, instanceKey, sessionId: native.threadId },
+                broadcast: _broadcastWs || (() => {}), ownsThread: id => native.ownsThread(id),
+                onPending: (frame, message) => {
+                  if (generation !== _sessionGeneration || message.type !== 'sdk-ask-pending' || frame.params.threadId !== native.threadId) return;
+                  const item = { id: message.itemId, type: 'codex_tool', toolName: 'request_user_input',
+                    input: { questions: message.questions, codexRequestUserInput: true, cxvSdkAskId: message.id } };
+                  _upsertItem(item);
+                  // The pending tool belongs in the transcript too, including
+                  // when a browser first connects while Codex awaits an answer.
+                  _onEntry?.(sdkToJSONLEntry(null, [...cloneJson(_accumulatedMessages),
+                    { role: 'assistant', _sdkTimestamp: _turnTimestamp,
+                      content: [..._stripInternalFields(_pendingAssistantContent), sdkItemToToolUseBlock(item)] }],
+                  _model, _projectName, { timestamp: _turnTimestamp, requestId: _streamingRequestId,
+                    threadId: native.threadId, cwd: _cwd, inProgress: true,
+                    metadata: { source: 'codex-sdk', instance_key: instanceKey, transport: _transportKind } }));
+                  _scheduleStreamProgress();
+                },
+                onResolved: (frame, result, message) => {
+                  if (generation !== _sessionGeneration || message?.type !== 'sdk-ask-pending' || frame.params.threadId !== native.threadId) return;
+                  const item = _currentItems.get(message.itemId);
+                  if (!item || item.input?.cxvSdkAskId !== message.id) return;
+                  const completed = { ...item, output: result, status: 'completed' };
+                  _upsertItem(completed); _completeToolItem(completed); _scheduleStreamProgress();
+                },
+              });
+            },
+            onServerRequest: (frame, reply) => {
+              if (generation !== _sessionGeneration || !_nativeApprovals) {
+                reply(null, { code: -32000, message: 'Workspace is not available' }); return;
+              }
+              void _nativeApprovals.handle(frame, reply).catch(() => reply(null, { code: -32000, message: 'Approval bridge failed' }));
+            },
+            onNotification: frame => {
+              if (generation !== _sessionGeneration) return;
+              void _nativeAgents?.handle(frame);
+              if (frame.method === 'serverRequest/resolved') _nativeApprovals?.resolvedNative(frame.params?.requestId);
+              if (frame.method === 'turn/completed') _nativeApprovals?.clearTurn(frame.params?.threadId, frame.params?.turn?.id);
+            },
+            onDisconnected: () => {
+              if (generation !== _sessionGeneration) return;
+              _nativeApprovals?.close(); _nativeAgents?.close();
             },
           });
-        }
-      }
-      if (!_thread) {
-        _thread = _sessionId
-          ? _codex.resumeThread(_sessionId, _threadOptions)
-          : _codex.startThread(_threadOptions);
+          _transport = native;
+        } else _transport = createSdkExecTransport(options);
       }
       controller.signal.throwIfAborted();
-      const streamed = await _thread.runStreamed(text, { signal: controller.signal });
+      const streamed = await _transport.runStreamed(text, { signal: controller.signal, threadId: _sessionId });
+      if (generation !== _sessionGeneration) return;
+      _startAgentLoop();
       for await (const event of streamed.events) {
         if (generation !== _sessionGeneration) break;
         if (queuedItem && _dispatchingQueueItem === queuedItem) {
@@ -547,9 +705,18 @@ function createSdkSession(instanceKey) {
         }
         _processEvent(event);
       }
-      if (generation === _sessionGeneration && _turnStreamError) _emitErrorEntry(_turnStreamError);
+      if (generation === _sessionGeneration && !_finalEntryEmittedThisTurn) {
+        // An exhausted iterator with no terminal is an ended session, even when
+        // the supervised child exited zero. Park other inputs; never guess that
+        // this accepted prompt succeeded or automatically replay it.
+        if (!controller.signal.aborted) _suppressDrain = true;
+        _emitErrorEntry(_turnStreamError || (controller.signal.aborted ? 'Turn interrupted'
+          : 'Agent SDK session ended before the turn completed'));
+      }
     } catch (err) {
       if (generation !== _sessionGeneration) return;
+      if (!_finalEntryEmittedThisTurn && !controller.signal.aborted) _suppressDrain = true;
+      endReason = controller.signal.aborted ? 'interrupted' : 'error';
       if (err?.name === 'AbortError') {
         _emitErrorEntry('Turn interrupted');
       } else {
@@ -558,6 +725,7 @@ function createSdkSession(instanceKey) {
       }
     } finally {
       if (generation === _sessionGeneration) {
+        _finishAgentLoop(controller.signal.aborted ? 'interrupted' : endReason);
         if (queuedItem && _dispatchingQueueItem === queuedItem) {
           _dispatchingQueueItem = null;
           _dispatchingStarting = false;
@@ -565,6 +733,7 @@ function createSdkSession(instanceKey) {
         }
         _flushStreamProgress();
         _clearStreamThrottle();
+        if ((_retryOf || _nativeRetrySeen) && controller.signal.aborted) _broadcastRetryState('rejected', { reason: 'interrupted' });
         _abortController = null;
         _activeInput = null;
         _broadcastQueueState();
@@ -582,9 +751,12 @@ function createSdkSession(instanceKey) {
     switch (event.type) {
       case 'thread.started':
         _sessionId = event.thread_id || _sessionId;
+        _broadcastTaskState();
         break;
 
       case 'turn.started':
+        if (_transportKind === 'appserver') _nativeTurnId = event.turn_id || null;
+        if (_retryOf) _broadcastRetryState('recovering');
         _sendStreamingStatus(true);
         break;
 
@@ -601,17 +773,24 @@ function createSdkSession(instanceKey) {
         break;
 
       case 'turn.completed':
-        _emitCompletedEntry(event.usage);
+        try { _emitCompletedEntry(event.usage); } finally { _finishAgentLoop('success'); }
         break;
 
       case 'turn.failed':
-        _emitErrorEntry(event.error?.message || 'Codex turn failed');
+        try { _emitErrorEntry(event.error?.message || 'Codex turn failed', event); }
+        finally { _finishAgentLoop(_abortController?.signal.aborted || event.status === 'interrupted' ? 'interrupted'
+          : event.recovery === 'control-unresponsive' ? 'turn-stuck' : 'error'); }
         break;
 
       case 'error':
         // Codex 0.169 also uses error frames for retry notices. A later
         // turn.completed must win; persist failures only at terminal settlement.
         _turnStreamError = event.message || 'Codex SDK error';
+        if (_transportKind === 'appserver' && event.willRetry === true
+          && event.turn_id === _nativeTurnId && event.thread_id === _sessionId) {
+          _nativeRetrySeen = true;
+          _broadcastRetryState('retrying', { error: String(event.error?.message || event.message || '') });
+        }
         break;
     }
   }
@@ -621,6 +800,31 @@ function createSdkSession(instanceKey) {
     const id = item.id || `${item.type || 'item'}_${_itemOrder.length}`;
     if (!_currentItems.has(id)) _itemOrder.push(id);
     _currentItems.set(id, { ...item, id });
+    if (item.type === 'todo_list' || item.type === 'todoList') {
+      _taskItemId = id;
+      _broadcastTaskState();
+    }
+  }
+
+  // Reuse the SDK's authoritative item table. todo_list is a replacement list,
+  // not a delta; its boolean completion field cannot identify a running step.
+  function getTaskState() {
+    const item = _currentItems.get(_taskItemId);
+    const tasks = [];
+    for (const [index, todo] of (Array.isArray(item?.items) ? item.items : []).entries()) {
+      if (!todo || typeof todo.text !== 'string' || typeof todo.completed !== 'boolean') continue;
+      const nativeStatus = _transportKind === 'appserver' && item._appServerPlan
+        && ['pending', 'in_progress'].includes(todo.status) ? todo.status : 'pending';
+      tasks.push({ taskId: `${item.id}:${index}`, subject: todo.text,
+        status: todo.completed ? 'completed' : (_taskTurnFailed ? 'failed' : nativeStatus) });
+    }
+    return { type: 'sdk-task-snapshot', sessionId: _sessionId,
+      cwd: _cwd, instanceKey, tasks };
+  }
+
+  function _broadcastTaskState() {
+    try { _broadcastWs?.(getTaskState()); }
+    catch (error) { console.warn('[SDK] Task status callback failed:', error.message); }
   }
 
   function _handleCompletedItem(item) {
@@ -636,6 +840,7 @@ function createSdkSession(instanceKey) {
     // Replace older block for the same item if an item.completed arrives after
     // repeated item.updated events. Only completed items enter durable history.
     const id = item.id || '';
+    _completedAssistantIds.add(id);
     _pendingAssistantContent = _pendingAssistantContent.filter(b => b._sdkItemId !== id);
     _pendingAssistantContent.push({ ...block, _sdkItemId: id });
   }
@@ -644,6 +849,14 @@ function createSdkSession(instanceKey) {
     const id = item.id || `${item.type || 'tool'}_${Date.now()}`;
     if (_completedToolIds.has(id)) return;
     _completedToolIds.add(id);
+
+    // Native contextCompaction has only an id; do not infer token counts from usage.
+    if (_transportKind === 'appserver' && item.type === 'codex_tool'
+        && item.toolName === 'contextCompaction' && item.input?.type === 'contextCompaction') {
+      try { _broadcastWs?.({ type: 'sdk-compact', sessionId: _sessionId,
+        cwd: _cwd, instanceKey, turnId: _nativeTurnId }); }
+      catch (error) { console.warn('[SDK] Compact notice callback failed:', error.message); }
+    }
 
     const toolUse = sdkItemToToolUseBlock({ ...item, id });
     if (!toolUse) return;
@@ -657,7 +870,7 @@ function createSdkSession(instanceKey) {
       content: [{
         type: 'tool_result',
         tool_use_id: toolUse.id,
-        content: typeof output === 'string' ? output : JSON.stringify(output, null, 2),
+        content: sdkToolResultContent(output),
         is_error: item.status === 'failed' || !!item.error,
       }],
     });
@@ -692,11 +905,11 @@ function createSdkSession(instanceKey) {
     const entry = sdkToJSONLEntry(assistantMsg, messagesSnapshot, _model, _projectName, {
       timestamp: _turnTimestamp,
       requestId: _streamingRequestId,
-      threadId: _sessionId || _thread?.id || null,
+      threadId: _sessionId || _transport?.threadId || null,
       cwd: _cwd,
       tools: DEFAULT_CODEX_TOOLS,
       duration: _turnStartTime ? Date.now() - _turnStartTime : 0,
-      metadata: { source: 'codex-sdk', instance_key: instanceKey },
+      metadata: { source: 'codex-sdk', instance_key: instanceKey, transport: _transportKind },
     });
 
     if (_onEntry) _onEntry(entry);
@@ -705,10 +918,48 @@ function createSdkSession(instanceKey) {
     }
     _pendingAssistantContent = [];
     _finalEntryEmittedThisTurn = true;
+    if (_retryOf || _nativeRetrySeen) _broadcastRetryState('recovered');
   }
 
-  function _emitErrorEntry(message) {
-    if (_finalEntryEmittedThisTurn || !_onEntry) return;
+  function _emitErrorEntry(message, failure = null) {
+    if (_finalEntryEmittedThisTurn) return;
+    _taskTurnFailed = true;
+    _broadcastTaskState();
+    // The upstream wire path already persists assistant frames before a death.
+    // Our synthesized request must retain them too, including partial text and
+    // thinking received before the result/transport was lost.
+    for (const id of _itemOrder) {
+      const item = _currentItems.get(id);
+      if (_completedAssistantIds.has(id) || !['agent_message', 'agentMessage', 'reasoning'].includes(item?.type)) continue;
+      const block = sdkItemToAssistantBlock(item);
+      if (block) _pendingAssistantContent.push({ ...block, _sdkItemId: id });
+    }
+    _flushPendingAssistantContent();
+    // Failures belong to this resident session, even before a thread was created.
+    // Retry notices and intentional Stop actions must not become failure alerts.
+    const ownedNativeFailure = _transportKind === 'appserver' && _nativeTurnId
+      && failure?.turn_id === _nativeTurnId && failure?.thread_id === _sessionId;
+    let failureMeta = {};
+    if (ownedNativeFailure) {
+      const info = failure.error?.codexErrorInfo;
+      const network = ['httpConnectionFailed', 'responseStreamConnectionFailed',
+        'responseStreamDisconnected', 'responseTooManyFailedAttempts'].find(key => info && typeof info === 'object'
+          && Object.hasOwn(info, key) && info[key] && typeof info[key] === 'object');
+      const status = network ? info[network].httpStatusCode : undefined;
+      const validStatus = status == null || (Number.isInteger(status) && status >= 100 && status <= 599);
+      failureMeta = { turnId: _nativeTurnId, codexErrorInfo: cloneJson(info ?? null),
+        apiStatus: validStatus && Number.isInteger(status) ? status : null,
+        ...(failure.recovery === 'control-unresponsive' ? { code: 'turn-stuck' } : {}),
+        retryable: failure.status === 'failed' && (failure.recovery === 'control-unresponsive'
+          || (_nativeRetrySeen && !!network && validStatus && (status == null || RETRYABLE_STATUS.has(status)))) };
+      _lastFailedTurn = { ...failureMeta, sessionId: _sessionId, generation: _sessionGeneration };
+    }
+    if (!_abortController?.signal.aborted && !(ownedNativeFailure && failure.status === 'interrupted')) {
+      try { _broadcastWs?.({ type: 'sdk-error', message: String(message || ''),
+        cwd: _cwd, sessionId: _sessionId || _transport?.threadId || null, instanceKey, ...failureMeta }); }
+      catch (error) { console.warn('[SDK] Error status callback failed:', error.message); }
+    }
+    if (!_onEntry) { _finalEntryEmittedThisTurn = true; return; }
     const content = message ? [{ type: 'text', text: `Error: ${message}` }] : [];
     const assistantMsg = {
       message: {
@@ -717,19 +968,19 @@ function createSdkSession(instanceKey) {
         role: 'assistant',
         model: _model,
         content,
-        error: { message },
+        error: { ...(ownedNativeFailure ? cloneJson(failure.error) : {}), message },
         usage: null,
       },
     };
     const entry = sdkToJSONLEntry(assistantMsg, cloneJson(_accumulatedMessages), _model, _projectName, {
       timestamp: _turnTimestamp || new Date().toISOString(),
-      threadId: _sessionId || _thread?.id || null,
+      threadId: _sessionId || _transport?.threadId || null,
       cwd: _cwd,
       status: 500,
       statusText: 'Error',
       stopReason: 'error',
       duration: _turnStartTime ? Date.now() - _turnStartTime : 0,
-      metadata: { source: 'codex-sdk', instance_key: instanceKey },
+      metadata: { source: 'codex-sdk', instance_key: instanceKey, transport: _transportKind },
     });
     _onEntry(entry);
     // The next synthetic request must retain the same prefix the transcript
@@ -752,7 +1003,7 @@ function createSdkSession(instanceKey) {
         tool_name: name,
         tool_input: toolUse.input || {},
         _callId: toolUse.id,
-        _threadId: _sessionId || _thread?.id || null,
+        _threadId: _sessionId || _transport?.threadId || null,
         _cwd,
         _itemType: item.type,
         status: item.status,
@@ -791,7 +1042,7 @@ function createSdkSession(instanceKey) {
     _streamingChunkCount += 1;
     _onStreamProgress({
       timestamp: _turnTimestamp,
-      url: `codex://sdk/${encodeURIComponent(_sessionId || _thread?.id || _model || 'thread')}`,
+      url: `codex://sdk/${encodeURIComponent(_sessionId || _transport?.threadId || _model || 'thread')}`,
       content,
       model: _model,
       cwd: _cwd,
@@ -821,6 +1072,7 @@ function createSdkSession(instanceKey) {
       }),
       cwd: _cwd,
       instanceKey,
+      model: _model,
     };
   }
 
@@ -847,6 +1099,7 @@ function createSdkSession(instanceKey) {
       _dispatchingQueueItem = null;
     }
     _broadcastQueueState();
+    if (_transportKind === 'appserver') _nativeApprovals?.clearThread(_transport?.threadId);
     if (_abortController) {
       try { _abortController.abort(); } catch {}
       return true;
@@ -854,7 +1107,26 @@ function createSdkSession(instanceKey) {
     return false;
   }
 
+  async function fetchMcpStatus() {
+    if (_transportKind !== 'appserver') return { ok: false, reason: 'unsupported' };
+    const owned = _transport, generation = _sessionGeneration;
+    if (!owned) return { ok: false, reason: 'session-inactive' };
+    try {
+      const servers = await owned.getMcpServerStatus();
+      if (generation !== _sessionGeneration || _transport !== owned || servers === null) return { ok: false, reason: 'session-inactive' };
+      _lastMcpStatus = { type: 'sdk-mcp-status', sessionId: _sessionId, ts: Date.now(), trigger: 'request',
+        cwd: _cwd, instanceKey, servers };
+      try { _broadcastWs?.(cloneJson(_lastMcpStatus)); }
+      catch (error) { console.warn('[SDK] MCP status broadcast failed:', error.message); }
+      return { ok: true, snapshot: cloneJson(_lastMcpStatus) };
+    } catch (error) {
+      console.warn('[SDK] MCP status read failed:', error.message);
+      return { ok: false, reason: 'control-failed' };
+    }
+  }
+
   function resolveApproval(id, value) {
+    if (_nativeApprovals?.resolve(id, value)) return true;
     const pending = _pendingApprovals.get(id);
     if (pending) {
       pending.resolve(value);
@@ -886,8 +1158,9 @@ function createSdkSession(instanceKey) {
     // this workspace's model, permissions, executable and callbacks.
     initSdkSession(_cwd, _projectName, {
       onEntry: _onEntry, onStreamingStatus: _onStreamingStatus,
-      onStreamProgress: _onStreamProgress, broadcastWs: _broadcastWs, codexPath: _codexPath,
-    }, { codexOptions: _codexOptions, threadOptions: _threadOptions, resumeThreadId: history.threadId });
+      onStreamProgress: _onStreamProgress, onAgentLoopStart: _onAgentLoopStart, onAgentLoopEnd: _onAgentLoopEnd, broadcastWs: _broadcastWs, codexPath: _codexPath,
+      transport: _transportKind,
+    }, { codexOptions: _codexOptions, threadOptions: _threadOptions, configOverrides: _configOverrides, resumeThreadId: history.threadId });
     _accumulatedMessages = messages;
   }
 
@@ -900,20 +1173,36 @@ function createSdkSession(instanceKey) {
     _currentItems = new Map();
     _itemOrder = [];
     _completedToolIds = new Set();
+    _completedAssistantIds = new Set();
     _finalEntryEmittedThisTurn = false;
     _turnStreamError = null;
+    _nativeTurnId = null;
+    _nativeRetrySeen = false;
+    _retryOf = null;
+    _taskTurnFailed = false;
+    _taskItemId = null;
     _clearStreamThrottle();
   }
 
   function _resetFullState({ keepConfig } = {}) {
+    _finishAgentLoop('session-ended');
     // Invalidate continuations before aborting: proxy startup and SDK events may
     // settle after init/stop has installed another session's state and callbacks.
     _sessionGeneration += 1;
+    if (_lastMcpStatus) {
+      const clear = { ..._lastMcpStatus, servers: null, ts: Date.now(), trigger: 'session-switched' };
+      _lastMcpStatus = null;
+      try { _broadcastWs?.(clear); } catch {}
+    }
+    _slowUpstreams.clear();
+    _lastFailedTurn = null;
+    _nativeAgents?.close(); _nativeAgents = null;
+    _nativeApprovals?.close(); _nativeApprovals = null;
     _queueEpoch = randomUUID();
     _activeInput = null;
     interruptTurn({ discardQueue: true });
-    _codex = null;
-    _thread = null;
+    const retiringTransport = _transport; _transport = null;
+    void Promise.resolve(retiringTransport?.stop?.()).catch(error => console.warn('[SDK] Transport cleanup failed:', error.message));
     _sessionId = null;
     _model = keepConfig ? (_threadOptions.model || null) : null;
     _queryBusy = false;
@@ -921,6 +1210,7 @@ function createSdkSession(instanceKey) {
     _suppressDrain = false;
     _accumulatedMessages = [];
     _resetTurnState();
+    _broadcastTaskState();
     for (const [, pending] of _pendingApprovals) {
       pending.resolve(null);
     }
@@ -931,10 +1221,17 @@ function createSdkSession(instanceKey) {
     instanceKey,
     get cwd() { return _cwd; },
     get projectName() { return _projectName; },
+    get transportKind() { return _transportKind; },
+    getSlowUpstreams: () => [..._slowUpstreams.values()].map(frame => ({ ...frame,
+      waitingMs: Math.max(0, Date.now() - frame.startedAt), ts: Date.now() })),
+    getPendingApprovals: () => _nativeApprovals?.replay() || [],
+    getMcpStatusSnapshot: () => cloneJson(_lastMcpStatus),
+    getAgentState: () => _nativeAgents?.snapshot() || { type: 'sdk-agent-snapshot', sessionId: _sessionId,
+      cwd: _cwd, instanceKey, available: true, agents: [] },
     get revision() { return `${_sessionGeneration}:${_activityRevision}`; },
     resume,
-    initSdkSession, sendUserMessage, interruptTurn, resolveApproval, stopSession,
-    getSessionId, getInitialPrompt, getStreamingState, getQueueState, removeQueuedMessage, sendQueuedNow,
+    initSdkSession, sendUserMessage, retryInterruptedTurn, interruptTurn, resolveApproval, stopSession,
+    getSessionId, getInitialPrompt, getStreamingState, getQueueState, getTaskState, removeQueuedMessage, sendQueuedNow, fetchMcpStatus,
   };
 }
 
@@ -955,7 +1252,7 @@ function _stripInternalFields(blocks) {
   });
 }
 
-function parseSdkCodexArgs(args = [], defaults = {}) {
+function parseSdkCodexArgs(args = [], defaults = {}, transport = 'exec') {
   if (!Array.isArray(args) || args.length > 512
       || args.some(arg => typeof arg !== 'string')
       || args.reduce((bytes, arg) => bytes + Buffer.byteLength(arg), 0) > 1024 * 1024) {
@@ -966,6 +1263,8 @@ function parseSdkCodexArgs(args = [], defaults = {}) {
   const threadOptions = cloneJson(defaults.threadOptions || {});
   const codexOptions = cloneJson(defaults.codexOptions || {});
   const config = codexOptions.config || {};
+  const native = transport === 'appserver';
+  const configOverrides = [...(defaults.configOverrides || [])];
   const additionalDirectories = [...(threadOptions.additionalDirectories || [])];
   const promptParts = [];
   const invocation = parseCodexInvocation(args);
@@ -974,13 +1273,23 @@ function parseSdkCodexArgs(args = [], defaults = {}) {
 
   const setConfig = (path, value) => {
     const keys = String(path || '').split('.').filter(Boolean);
-    if (keys.length === 0) return;
+    if (keys.length === 0) {
+      if (native) throw Object.assign(new TypeError('Native config requires a key'), { status: 400, code: 'SDK_INVALID_OPTION' });
+      return;
+    }
     if (keys.some(key => ['__proto__', 'prototype', 'constructor'].includes(key))) {
       const error = new TypeError('Invalid SDK config key');
       error.status = 400;
       throw error;
     }
     const parsedValue = parseConfigValue(value);
+    if (native) {
+      // Codex owns TOML parsing (arrays, inline tables, escapes and literal
+      // fallback). Do not round-trip a native override through the pinned SDK.
+      configOverrides.push(`${path}=${value}`);
+      if (path === 'model') delete threadOptions.model;
+      return;
+    }
     if (keys.length === 1 && keys[0] === 'model' && typeof parsedValue === 'string') {
       threadOptions.model = parsedValue;
     }
@@ -996,6 +1305,9 @@ function parseSdkCodexArgs(args = [], defaults = {}) {
   };
 
   const takeValue = (argv, index, inline) => {
+    if (!(inline ?? argv[index + 1]) || (inline === undefined && argv[index + 1].startsWith('-'))) {
+      throw Object.assign(new TypeError(`Missing value for ${argv[index]}`), { status: 400, code: 'SDK_INVALID_OPTION' });
+    }
     if (inline !== undefined) return { value: inline, nextIndex: index };
     return { value: argv[index + 1], nextIndex: index + 1 };
   };
@@ -1004,9 +1316,9 @@ function parseSdkCodexArgs(args = [], defaults = {}) {
     const arg = args[i];
     if (!arg) continue;
 
-    if (arg === 'exec' || arg === 'review') {
-      promptParts.push(...args.slice(i + 1));
-      break;
+    if (invocation.kind === 'new' && invocation.subcommandIndex === i && (arg === 'exec' || arg === 'e')) continue;
+    if (invocation.kind === 'new' && invocation.subcommandIndex === i && arg === 'review') {
+      throw Object.assign(new TypeError(`Unsupported ${native ? 'App Server' : 'SDK exec'} option: ${arg}`), { status: 400, code: 'SDK_UNSUPPORTED_OPTION' });
     }
 
     if (arg === '--') {
@@ -1030,17 +1342,24 @@ function parseSdkCodexArgs(args = [], defaults = {}) {
     }
     if (flag === '-s' || flag === '--sandbox') {
       const taken = takeValue(args, i, inline);
+      if (native && !['read-only', 'workspace-write', 'danger-full-access'].includes(taken.value)) {
+        throw Object.assign(new TypeError('Unsupported App Server sandbox mode'), { status: 400, code: 'SDK_UNSUPPORTED_OPTION' });
+      }
       if (taken.value) threadOptions.sandboxMode = taken.value;
       i = taken.nextIndex;
       continue;
     }
     if (flag === '-a' || flag === '--ask-for-approval') {
       const taken = takeValue(args, i, inline);
+      if (native && !['untrusted', 'on-request', 'never'].includes(normalizeApprovalPolicy(taken.value))) {
+        throw Object.assign(new TypeError('Unsupported App Server approval policy'), { status: 400, code: 'SDK_UNSUPPORTED_OPTION' });
+      }
       if (taken.value) threadOptions.approvalPolicy = normalizeApprovalPolicy(taken.value);
       i = taken.nextIndex;
       continue;
     }
     if (flag === '--add-dir') {
+      if (native) throw Object.assign(new TypeError('App Server --add-dir is not supported; configure writable roots in Codex'), { status: 400, code: 'SDK_UNSUPPORTED_OPTION' });
       const taken = takeValue(args, i, inline);
       if (taken.value) additionalDirectories.push(taken.value);
       i = taken.nextIndex;
@@ -1051,7 +1370,7 @@ function parseSdkCodexArgs(args = [], defaults = {}) {
       if (taken.value && String(taken.value).includes('=')) {
         const [key, value] = String(taken.value).split(/=(.*)/s, 2);
         setConfig(key, value);
-      }
+      } else throw Object.assign(new TypeError(`${native ? 'Native' : 'SDK exec'} config requires key=value`), { status: 400, code: 'SDK_INVALID_OPTION' });
       i = taken.nextIndex;
       continue;
     }
@@ -1069,12 +1388,18 @@ function parseSdkCodexArgs(args = [], defaults = {}) {
       continue;
     }
     if (arg === '--full-auto') {
-      threadOptions.approvalPolicy = 'on-failure';
+      threadOptions.approvalPolicy = native ? 'on-request' : 'on-failure';
       threadOptions.sandboxMode = 'workspace-write';
       continue;
     }
+    if (native && (flag === '--enable' || flag === '--disable')) {
+      const taken = takeValue(args, i, inline);
+      if (!/^[A-Za-z0-9_-]+$/.test(taken.value)) throw Object.assign(new TypeError('Invalid feature name'), { status: 400, code: 'SDK_INVALID_OPTION' });
+      configOverrides.push(`features.${taken.value}=${flag === '--enable'}`);
+      i = taken.nextIndex; continue;
+    }
     if (arg.startsWith('-')) {
-      continue;
+      throw Object.assign(new TypeError(`Unsupported ${native ? 'App Server' : 'SDK exec'} option: ${arg}`), { status: 400, code: 'SDK_UNSUPPORTED_OPTION' });
     }
     promptParts.push(arg);
   }
@@ -1089,6 +1414,7 @@ function parseSdkCodexArgs(args = [], defaults = {}) {
   return {
     threadOptions,
     codexOptions,
+    configOverrides,
     resumeThreadId,
     initialPrompt: promptParts.join(' ').trim(),
   };

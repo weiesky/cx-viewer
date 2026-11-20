@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { isMainAgent } from '../src/utils/contentFilter.js';
+import { isMainAgent, isTeammate } from '../src/utils/contentFilter.js';
 import { classifyRequest, formatRequestTag } from '../src/utils/requestType.js';
 
 test('frontend classification respects Codex root and subagent flags', () => {
@@ -33,6 +33,44 @@ test('frontend classification respects Codex root and subagent flags', () => {
   assert.equal(isMainAgent(sub), false);
   assert.deepEqual(classifyRequest(sub), { type: 'SubAgent', subType: 'researcher' });
   assert.equal(formatRequestTag('SubAgent', 'researcher'), 'SubAgent:researcher');
+});
+
+test('native child ownership vetoes inherited teammate instructions and communication tools', () => {
+  for (const source of ['_appServerSource', '_sdkSource']) {
+    const entry = { [source]: true, subAgent: true, mainAgent: false, subAgentName: 'researcher',
+      body: { instructions: 'You are a Codex agent running as an agent in a team.',
+        tools: [{ name: 'send_input' }], input: [] } };
+    assert.equal(isTeammate(entry), false);
+    assert.deepEqual(classifyRequest(entry), { type: 'SubAgent', subType: 'researcher' });
+    assert.equal(entry.teammate, undefined);
+  }
+  assert.equal(isTeammate({ teammate: 'external-reviewer', body: {} }), true);
+});
+
+test('canonical agent tags survive lightweight bodies without overriding lookahead or Master rules', () => {
+  for (const type of ['SubAgent', 'Teammate']) {
+    const tag = { type, subType: 'wire-name' };
+    const entry = { _v2Descriptor: { agentRole: type === 'SubAgent' ? 'subagent' : 'teammate' },
+      _classification: tag, body: { model: 'fixture', input: [] } };
+    assert.equal(classifyRequest(entry), tag);
+    assert.deepEqual(classifyRequest({ ...entry, url: 'https://api.openai.com/v1/responses' }), { type: 'Master', subType: null });
+    assert.deepEqual(classifyRequest({ ...entry, _v2Descriptor: undefined }), { type: 'Metadata', subType: null });
+  }
+  const root = { mainAgent: true, _v2Descriptor: {}, _classification: { type: 'Preflight', subType: null }, body: {} };
+  assert.deepEqual(classifyRequest(root), { type: 'MainAgent', subType: null });
+});
+
+test('native title classification follows exact producer metadata rather than user prompt text', () => {
+  const entry = { _appServerSource: true, mainAgent: true, body: { metadata: { ephemeral: true, threadSource: 'thread_title' },
+    input: [{ role: 'user', content: 'Generate a concise, single-line task title of at most 36 characters.' }] } };
+  assert.deepEqual(classifyRequest(entry), { type: 'Synthetic', subType: 'Title' });
+  assert.equal(isMainAgent(entry), false);
+  assert.equal(isTeammate(entry), false);
+  for (const metadata of [{}, { ephemeral: false, threadSource: 'thread_title' }, { ephemeral: true, threadSource: 'user' }]) {
+    assert.deepEqual(classifyRequest({ ...entry, body: { ...entry.body, metadata } }), { type: 'MainAgent', subType: null });
+  }
+  assert.deepEqual(classifyRequest({ ...entry, _appServerSource: false }), { type: 'MainAgent', subType: null });
+  assert.deepEqual(classifyRequest({ ...entry, url: 'https://api.openai.com/v1/responses' }), { type: 'Master', subType: null });
 });
 
 test('explicit MainAgent identity wins over subagent words in root instructions', () => {

@@ -81,7 +81,7 @@ function findReverseAnchor(newMsgs, curMsgs, newFps, sharedCurFpsCache) {
   // 反向扫到第一个 role|empty 会误锚到错误位置，导致 overlapLen 计算偏差。
   // 若 newMsgs[0..N-1] 是"newMsgs[0] 空 + 后续有效"的混合序列：放弃以 newMsgs[0] 为锚点，
   // 由调用方 fallback 路径（newLen<curLen → rebuild / newLen===curLen → 等长内容感知 /
-  // newLen>curLen → push tail）兜底；这条防线保的是"全 empty 新序列误复用旧 curMsgs 末尾"。
+  // newLen>curLen → LCP tail replacement）兜底；这条防线保的是"全 empty 新序列误复用旧 curMsgs 末尾"。
   if (!fp0 || fp0.endsWith('|empty')) return null;
   // curMsgs fp 懒缓存：sparse Array 仅记录被访问过的位置，避免上来就 map 整段长 session
   // （curLen 可能 > 5000，但实际访问命中的 p 通常 < 50 个）。
@@ -129,7 +129,7 @@ export function isColdIngestMergeBlockedEntry(entry) {
  *  - 命中且 overlapLen === newLen：流式 no-op / suffix subset，messages 引用稳定（保 WeakMap 缓存）。
  *  - 命中且 overlapLen <  newLen：push `newMessages[overlapLen..]`，引用稳定。
  *  - 未命中：newLen<curLen → rebuild（/compact summary）；newLen===curLen → 整段 append（Plan Mode 全新片段）；
- *           newLen>curLen → 严格前缀扩展语义（push tail），fp 加固后真正存在重叠的窗口必被 anchor 命中。
+ *           newLen>curLen → 最深公共前缀扩展（截断分叉后的旧尾部，再追加权威新尾部）。
  *
  * 顶部守卫（isPostClearCheckpoint / userId / transient filter）维持 1.6.245 行为不变。
  *
@@ -359,10 +359,30 @@ export function mergeMainAgentSessions(prevSessions, entry, options = {}) {
         }
       }
     } else {
-      // newLen > curLen 且 anchor (单点 newMsgs[0]) 未命中：保守回退至"严格前缀扩展"语义——
-      // 只 push newMessages[curLen..]。fp 加固后真正存在重叠的窗口必被 anchor 命中走上面分支；
-      // 这里 anchor 未命中意味着确实无重叠（罕见，仅艺测/再快照场景），保留旧推 tail 行为防回归。
-      for (let i = curLen; i < newLen; i++) {
+      // newLen > curLen 且 anchor (单点 newMsgs[0]) 未命中：最深公共前缀扩展——
+      // 逐位找双方 fp 相等的最长前缀 L，截断到 L 后 push newMessages[L..]。
+      // 中断场景（Esc/Stop/排队消息"立即追加"）：客户端会话尾部是被打断的 partial
+      // assistant，而下一轮 wire replay 丢弃该 partial、在 curLen-1 处放的是排队的
+      // user prompt——anchor 因窗口末位失配而 miss，旧的"严格前缀扩展"只 push
+      // [curLen..]，会把排在 curLen-1 的用户消息永久丢掉（prompt 不渲染、回复变孤儿）。
+      // 退化性质：无分叉时 L===curLen（与旧行为逐字节等价）；零公共前缀时 L=0 →
+      // 整段内容为 wire 真相（内容上等价于 _partialData / newLen<curLen 分支的整段替换；
+      // 分叉改写时更换 messages 引用，使本地按数组身份缓存的气泡/工具索引一并失效）。
+      let L = 0;
+      const limit = Math.min(curLen, newLen);
+      while (L < limit) {
+        let cfp = curFpsCache[L];
+        if (cfp === undefined) {
+          cfp = messageFingerprint(lastSession.messages[L]);
+          curFpsCache[L] = cfp;
+        }
+        if (newFps[L] !== cfp) break;
+        L++;
+      }
+      // Pure appends keep their cache; rewriting a previously rendered prefix
+      // must invalidate the existing identity-keyed transcript and tool caches.
+      if (L < curLen) lastSession.messages = lastSession.messages.slice(0, L);
+      for (let i = L; i < newLen; i++) {
         if (!newMessages[i]._timestamp) newMessages[i]._timestamp = entryTimestamp;
         lastSession.messages.push(newMessages[i]);
       }

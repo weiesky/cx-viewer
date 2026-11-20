@@ -1,0 +1,55 @@
+{
+  "date": "2026-11-20",
+  "upstream": "f3a8413db9f99691ef94f54279cedc2913e0c1f0",
+  "fixed": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "nativeSourceAdaptation": "Reuse existing Codex producer subAgent/subAgentName fields; no Claude header parser or invented teammate identity.",
+  "canonicalTagScope": [
+    "SubAgent",
+    "Teammate"
+  ],
+  "lookaheadTagsRemainOnExistingFullBodyPath": true,
+  "directOpenAiMasterRulePreserved": true,
+  "realCapturedFrameReplay": {
+    "root": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-agent-identity-caMAqp",
+    "framesFile": "/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-orG0q6/agent-lifecycle-frames.json",
+    "frameCount": 128,
+    "productionBridgeWriterAndColdReader": true,
+    "externalModelNetwork": false,
+    "realUserData": false,
+    "results": [
+      {
+        "file": "same/20261120_01a1f7fe-bfef-7243-8078-e07ec14391e1.cxvsession/timeline.jsonl",
+        "entries": 11,
+        "childEntries": 3,
+        "childNames": [
+          "spawnAgent"
+        ],
+        "coldTypes": [
+          "SubAgent"
+        ]
+      }
+    ]
+  },
+  "targetTests": "52/52",
+  "fullTests": "1514/1514 (5+286+1013+210),0 skip",
+  "build": "passed",
+  "installation": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-p5sd1lji",
+    "files": 701,
+    "source_bytes_match": true,
+    "web_asset_files": 204,
+    "runtime_tests": "238/238",
+    "b12_regression": "passed",
+    "installed_cli_relative_cd_boot": "passed",
+    "uses_fake_codex": true,
+    "uses_real_model_network": false
+  },
+  "gui": "No DOM/CSS change; no new visual acceptance claimed.",
+  "externalModelNetwork": false,
+  "realUserData": false,
+  "unverified": [
+    "Explicit native title-thread canonical classification is next independent change.",
+    "No claim that a missing native nickname was reconstructed; replay preserves the supplied spawnAgent label.",
+    "No external model, physical device or other platform claim."
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "date": "2026-11-21",
+  "upstream": "efc7f8eab199a04f3b8dcb660a5bfde593138f66",
+  "audit": "Complete upstream server actual diff and original4type no-op gate;local upgrade authentication/SDK scoped handshake/main WS handler/scratch separate handler/PTY spawnShell/write and fake loader traced.",
+  "implementation": "Original SDK-only input/input-sequential/resync-request/resize no-op immediately after message shape validation;normal SDK controls,scratch separate WS and ordinaryPTY unchanged.",
+  "red": {
+    "failed": 1,
+    "observed_hidden_main_shell_spawns": 1,
+    "log": "/tmp/cxv-b4-sdk-pty-gate-red.log"
+  },
+  "target": {
+    "passed": 22,
+    "skipped": 0,
+    "log": "/tmp/cxv-b4-sdk-pty-gate-target.log"
+  },
+  "full": {
+    "passed": 1580,
+    "groups": [
+      5,
+      332,
+      1031,
+      212
+    ],
+    "skipped": 0,
+    "log": "/tmp/cxv-b4-sdk-pty-gate-full.log"
+  },
+  "build": {
+    "status": "passed",
+    "log": "/tmp/cxv-b4-sdk-pty-gate-build.log"
+  },
+  "installed": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-znsc0qsh",
+    "files": 702,
+    "source_bytes_match": true,
+    "web_asset_files": 204,
+    "runtime_tests": "291/291",
+    "b12_regression": "passed",
+    "installed_cli_relative_cd_boot": "passed",
+    "uses_fake_codex": true,
+    "uses_real_model_network": false
+  },
+  "instanceAttempt": {
+    "transport": "real loopback HTTP/WS;injected fake nativePTY loader",
+    "barrier": "Same-socket invalid-scope SDK control reply after4rawPTY frames.",
+    "mainShellSpawns": 0,
+    "mainPtyRunning": false,
+    "sequentialAck": false,
+    "existingRegression": "SDK workspace controls and independent scratch create/write/close plus ordinaryPTY tests pass.",
+    "realModelNetwork": false,
+    "shellCommandsExecuted": false
+  },
+  "limits": [
+    "NoUI changes or new browser pass;CUA native pipe/browser host unavailable.",
+    "Remaining scope matrix and B4 closure pending;no squash/push/PR."
+  ]
+}

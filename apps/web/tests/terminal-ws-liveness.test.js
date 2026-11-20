@@ -12,7 +12,9 @@ mkdirSync(join(web, 'node_modules/.cache'), { recursive: true });
 const directory = mkdtempSync(join(web, 'node_modules/.cache/ws-liveness-')), output = join(directory, 'components.cjs');
 const css = require.extensions['.css']; require.extensions['.css'] = () => {};
 await build({ stdin: { contents: `export { TerminalWsProvider as Provider } from './src/components/terminal/TerminalWsContext.jsx';
-export { default as Chat } from './src/components/chat/ChatView.jsx';`, resolveDir: web },
+export { default as Chat } from './src/components/chat/ChatView.jsx';
+export { default as TaskHud } from './src/components/chat/TaskProgressHud.jsx';
+export { default as AgentHud } from './src/components/chat/ActiveAgentsBar.jsx';`, resolveDir: web },
   bundle: true, platform: 'node', format: 'cjs', packages: 'external', outfile: output,
   loader: { '.css': 'empty', '.svg': 'text', '.png': 'dataurl', '.gif': 'dataurl' }, logLevel: 'error' });
 test.after(() => { rmSync(directory, { recursive: true, force: true });
@@ -46,7 +48,7 @@ function fixture(t) {
     Object.defineProperty(globalThis, key, { configurable: true, writable: true, value });
     restores.push(() => { if (old) Object.defineProperty(globalThis, key, old); else delete globalThis[key]; });
   }
-  const { Provider, Chat } = require(output);
+  const { Provider, Chat, TaskHud, AgentHud } = require(output);
   const provider = new Provider({ open: true }); provider.addStateListener(state => states.push(state));
   provider.componentDidMount(); cleanup = () => provider.componentWillUnmount();
   const open = (socket = sockets.at(-1)) => { socket.readyState = 1; socket.onopen(); return socket; };
@@ -55,7 +57,7 @@ function fixture(t) {
     const entry = [...timeouts].find(([, value]) => value.delay === delay);
     assert.ok(entry, `expected timeout ${delay}`); timeouts.delete(entry[0]); entry[1].fn();
   };
-  return { provider, Chat, states, sockets, open, frame, timeout, timeouts, intervals, events,
+  return { provider, Chat, TaskHud, AgentHud, states, sockets, open, frame, timeout, timeouts, intervals, events,
     set clock(value) { clock = value; } };
 }
 
@@ -206,6 +208,38 @@ test('a reconnect snapshot acknowledges a queued send even when its original rec
   assert.equal(sent.length, 1);
 });
 
+test('half-open reconnect retains accepted and unacknowledged queued text, drafts and attachments without replay', t => {
+  const f = fixture(t), old = f.open(), chat = new f.Chat({ sdkMode: true, requests: [] });
+  chat.setState = (patch, callback) => { Object.assign(chat.state, typeof patch === 'function' ? patch(chat.state) : patch); callback?.(); };
+  chat.scrollToBottom = () => {};
+  chat.context = f.provider._ctxValue;
+  f.provider.addMessageHandler(chat._onTerminalWsMessage);
+  f.provider.addStateListener(chat._onTerminalWsState);
+  chat._sendUserMessageImmediate('accepted queue');
+  const first = { id: 'first', requestId: old.sent[0].requestId, text: 'accepted queue', ts: Date.now(), status: 'queued' };
+  f.frame(old, { type: 'queue-state', instanceKey: 'a', items: [first] });
+  chat._sendUserMessageImmediate('receipt lost');
+  const second = { id: 'second', requestId: old.sent[1].requestId, text: 'receipt lost', ts: Date.now(), status: 'queued' };
+  const images = chat.state.pendingImages = [{ path: '/synthetic/draft.png' }];
+  const textarea = chat._inputRef.current = { value: 'new unsent draft', style: {} };
+  f.frame(old, { type: 'ping' }); f.clock = 46_000;
+  [...f.intervals.values()][0].fn();
+  assert.equal(chat.state.sdkQueuedInputs[0].id, 'first');
+  assert.equal(chat.state.pendingInputs.length, 1);
+  f.timeout(2000); const next = f.open();
+  assert.equal(textarea.value, 'new unsent draft');
+  assert.equal(chat.state.pendingImages, images);
+  assert.deepEqual(next.sent, [], 'reconnect must not retransmit an accepted or uncertain input');
+  const snapshot = { type: 'queue-state', instanceKey: 'a', items: [first, second] };
+  f.frame(next, snapshot); f.frame(next, snapshot);
+  assert.deepEqual(chat.state.pendingInputs, []);
+  assert.deepEqual(chat.state.sdkQueuedInputs.map(item => item.id), ['first', 'second']);
+  assert.equal(textarea.value, 'new unsent draft');
+  assert.equal(chat.state.pendingImages, images);
+  assert.equal(old.sent.length, 2);
+  assert.deepEqual(next.sent, []);
+});
+
 test('queue removal uses the exact id and waits for authoritative state without interrupting the turn', t => {
   const f = fixture(t), sent = [], chat = new f.Chat({ sdkMode: true, lang: 'en' });
   chat.context = { isOpen: () => true, send: value => { sent.push(value); return true; } };
@@ -294,4 +328,347 @@ test('conversation role filtering cannot hide the live queue controls above the 
   assert.equal(contains(chat.render()), true);
   chat.props = { ...chat.props, sdkMode: false };
   assert.equal(contains(chat.render()), false, 'a native/read-only view must not expose an SDK queue');
+});
+
+test('late-mounted task consumers receive the authoritative list and disconnect discards its replay', t => {
+  const f = fixture(t), socket = f.open();
+  const snapshot = { type: 'sdk-task-snapshot', instanceKey: 'a', sessionId: 's',
+    tasks: [{ taskId: '1', subject: 'Verify', status: 'pending' }] };
+  f.frame(socket, snapshot);
+  const chat = new f.Chat({ sdkMode: false });
+  chat.setState = change => Object.assign(chat.state, change);
+  f.provider.addMessageHandler(chat._onTerminalWsMessage);
+  f.provider.addStateListener(chat._onTerminalWsState);
+  assert.deepEqual(chat.state.sdkTaskSnapshot.tasks, snapshot.tasks, 'mode discovery must not discard early replay');
+  chat._onTerminalWsMessage({ ...snapshot, instanceKey: 'b', tasks: [] });
+  assert.equal(chat.state.sdkTaskSnapshot.tasks.length, 1);
+  chat._onTerminalWsMessage({ ...snapshot, tasks: [{ taskId: 'bad', subject: 'No', status: 'unknown' }] });
+  assert.deepEqual(chat.state.sdkTaskSnapshot.tasks, [], 'unknown states cannot turn into a pending task');
+  f.frame(socket, snapshot);
+  socket.onclose();
+  assert.deepEqual(chat.state.sdkTaskSnapshot.tasks, []);
+  f.timeout(2000); f.open();
+  const replay = []; f.provider.addMessageHandler(value => replay.push(value));
+  assert.deepEqual(replay, []);
+  chat._unmounted = true;
+  chat._onTerminalWsMessage(snapshot);
+  assert.deepEqual(chat.state.sdkTaskSnapshot.tasks, [], 'retired view callbacks cannot resurrect tasks');
+});
+
+test('the baseline task strip expands in creation order and hides after every task settles', t => {
+  const f = fixture(t), React = require('react');
+  const dispatcher = React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentDispatcher;
+  let expanded = false;
+  const draw = snapshot => {
+    const previous = dispatcher.current, effects = [];
+    dispatcher.current = {
+      useState() { return [expanded, value => { expanded = typeof value === 'function' ? value(expanded) : value; }]; },
+      useEffect(fn) { effects.push(fn); },
+    };
+    try { const tree = f.TaskHud({ snapshot }); effects.forEach(fn => fn()); return tree; }
+    finally { dispatcher.current = previous; }
+  };
+  const tasks = [{ taskId: '1', subject: 'Read', status: 'completed' },
+    { taskId: '2', subject: 'Verify', status: 'pending' }];
+  const collapsed = draw({ tasks });
+  const summary = collapsed.props.children.props.children[0];
+  assert.equal(summary.props.role, 'status');
+  assert.match(summary.props.children[0].props.children, /^✓ 1\/2 (tasks|任务)$/);
+  assert.equal(summary.props.children[1].props.children.props.children, 'Verify');
+  const button = summary.props.children.at(-1).props.children;
+  assert.equal(button.props['aria-expanded'], false);
+  button.props.onClick();
+  const open = draw({ tasks });
+  const rows = open.props.children.props.children[1];
+  assert.equal(rows.props.id, button.props['aria-controls']);
+  assert.deepEqual(rows.props.children.map(row => row.props.task.taskId), ['1', '2']);
+  assert.equal(draw({ tasks: tasks.map(task => ({ ...task, status: 'failed' })) }), null);
+  assert.equal(expanded, false);
+  assert.equal(draw({ tasks: [] }), null);
+});
+
+test('live task HUD is independent of role filtering and hidden in pinned or local history', t => {
+  const f = fixture(t), React = require('react');
+  const chat = new f.Chat({ sdkMode: true, cliMode: true, mainAgentSessions: [], requests: [] });
+  chat.state.allItems = [React.createElement('message', { key: 'u', role: 'user' }),
+    React.createElement('message', { key: 'a', role: 'assistant' })];
+  chat.state.roleFilterSelected = new Set(['assistant']);
+  const contains = node => !!node?.props && (node.type === f.TaskHud
+    || React.Children.toArray(node.props.children).some(contains));
+  assert.equal(contains(chat.render()), true);
+  for (const change of [{ isLocalLog: true }, { sessionUpperBoundTs: 'old' }, { sdkMode: false }]) {
+    const before = chat.props; chat.props = { ...before, ...change };
+    assert.equal(contains(chat.render()), false); chat.props = before;
+  }
+});
+
+test('native pending requests replay to late consumers once, reject foreign views, and clear on resolution or disconnect', t => {
+  const f = fixture(t), socket = f.open();
+  const pending = { type: 'sdk-ask-pending', id: 'native_fixture', itemId: 'card', instanceKey: 'a',
+    questions: [{ id: 'choice', question: 'Choose', options: [{ label: 'A' }] }] };
+  f.frame(socket, pending);
+  const chat = new f.Chat({ sdkMode: true });
+  chat.setState = change => Object.assign(chat.state, typeof change === 'function' ? change(chat.state) : change);
+  f.provider.addMessageHandler(chat._onTerminalWsMessage);
+  assert.equal(chat.state.pendingAsk.id, pending.id);
+  f.frame(socket, pending); assert.equal(chat.state.askQueue.length, 0);
+  chat._onTerminalWsMessage({ ...pending, id: 'native_foreign', instanceKey: 'b' });
+  assert.equal(chat.state.askQueue.length, 0);
+  f.frame(socket, { type: 'sdk-ask-resolved', id: pending.id, itemId: 'card', questions: pending.questions,
+    instanceKey: 'a', codexAnswers: { choice: { answers: ['A'] } } });
+  assert.equal(chat.state.pendingAsk, null);
+  assert.deepEqual(chat.state.localAskAnswers.card, { Choose: 'A' });
+  let replay = []; f.provider.addMessageHandler(frame => replay.push(frame)); assert.deepEqual(replay, []);
+  f.frame(socket, pending); socket.onclose(); f.timeout(2000); f.open();
+  replay = []; f.provider.addMessageHandler(frame => replay.push(frame)); assert.deepEqual(replay, []);
+});
+
+test('agent snapshots survive late SDK discovery, reject another instance and replay their original timestamp after reconnect', t => {
+  const f = fixture(t), socket = f.open();
+  const frame = { type: 'sdk-agent-snapshot', instanceKey: 'a', sessionId: 'native-root', available: true,
+    agents: [{ taskId: 'native-child', title: 'Native Name', status: 'in_progress', createdAt: 123000, lastToolName: 'fixture.image' }] };
+  f.frame(socket, frame);
+  const chat = new f.Chat({ sdkMode: false });
+  chat.setState = change => Object.assign(chat.state, typeof change === 'function' ? change(chat.state) : change);
+  f.provider.addMessageHandler(chat._onTerminalWsMessage); f.provider.addStateListener(chat._onTerminalWsState);
+  assert.deepEqual(chat.state.sdkAgentSnapshot.agents, frame.agents);
+  chat._onTerminalWsMessage({ ...frame, instanceKey: 'b', agents: [] });
+  assert.equal(chat.state.sdkAgentSnapshot.agents.length, 1);
+  socket.onclose(); assert.deepEqual(chat.state.sdkAgentSnapshot.agents, []);
+  assert.equal(chat.state.activeAgentsBarVisible, false);
+  f.timeout(2000); const next = f.open();
+  f.frame(next, frame);
+  assert.equal(chat.state.sdkAgentSnapshot.agents[0].createdAt, 123000);
+  f.frame(next, { ...frame, available: false }); assert.deepEqual(chat.state.sdkAgentSnapshot.agents, []);
+  chat._unmounted = true; f.frame(next, frame); assert.deepEqual(chat.state.sdkAgentSnapshot.agents, []);
+});
+
+test('the baseline agent card keeps creation order, pending/tool/time semantics and only its header is interactive', t => {
+  const f = fixture(t), React = require('react');
+  f.open();
+  const dispatcher = React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentDispatcher;
+  let collapsed = false, cleanups = [];
+  const visible = [];
+  const onVisibleChange = value => visible.push(value);
+  const draw = snapshot => {
+    cleanups.forEach(fn => fn()); cleanups = [];
+    let index = 0; const effects = [], old = dispatcher.current;
+    dispatcher.current = { useMemo: fn => fn(), useEffect: fn => effects.push(fn),
+      useState: () => index++ === 0 ? [collapsed, update => { collapsed = typeof update === 'function' ? update(collapsed) : update; }] : [0, () => {}] };
+    try {
+      const tree = f.AgentHud({ snapshot, onVisibleChange });
+      cleanups = effects.map(fn => fn()).filter(fn => typeof fn === 'function'); return tree;
+    } finally { dispatcher.current = old; }
+  };
+  t.after(() => cleanups.forEach(fn => fn()));
+  const agents = [{ taskId: 'one', title: 'One', status: 'pending', createdAt: 1, lastToolName: 'must remain hidden' },
+    { taskId: 'two', title: 'Two', status: 'in_progress', createdAt: Date.now() - 10000, lastToolName: 'fixture.image' }];
+  const tree = draw({ agents });
+  const header = tree.props.children[0], rows = tree.props.children[1];
+  assert.equal(header.type, 'button'); assert.equal(header.props['aria-expanded'], true);
+  assert.deepEqual(rows.props.children.map(row => row.props.row.taskId), ['one', 'two']);
+  const first = rows.props.children[0], firstRow = first.type(first.props);
+  assert.equal(firstRow.props.children[1].props.children[1], '');
+  assert.equal(firstRow.props.children[2].props.children, '');
+  const second = rows.props.children[1], secondRow = second.type(second.props);
+  assert.equal(secondRow.props.children[1].props.children[1].props.title, 'fixture.image');
+  assert.match(secondRow.props.children[2].props.children, /10s/);
+  assert.equal(secondRow.props.onClick, undefined, 'the removed avatar/focus interaction must not return');
+  assert.equal(f.intervals.size, 2, 'one Provider watchdog and one visible-card clock');
+  header.props.onClick(); const folded = draw({ agents });
+  assert.equal(folded.props.children[0].props['aria-expanded'], false); assert.equal(folded.props.children[1], false);
+  assert.equal(f.intervals.size, 1, 'collapse releases the card clock');
+  assert.equal(draw({ agents: [] }), null); assert.equal(visible.at(-1), false);
+});
+
+test('agent card stays in both message branches and hides with role filter, historical pin or local history', t => {
+  const f = fixture(t), React = require('react');
+  const chat = new f.Chat({ sdkMode: true, cliMode: true, mainAgentSessions: [], requests: [] });
+  const contains = node => !!node?.props && (node.type === f.AgentHud || React.Children.toArray(node.props.children).some(contains));
+  assert.equal(contains(chat.render()), true);
+  chat.state.allItems = [React.createElement('message', { key: 'u', role: 'user' })];
+  assert.equal(contains(chat.render()), true);
+  chat.state.roleFilterOpen = true; assert.equal(contains(chat.render()), false); chat.state.roleFilterOpen = false;
+  for (const patch of [{ sessionUpperBoundTs: 1 }, { attachedSid: 'history' }, { sdkMode: false }]) {
+    const old = chat.props; chat.props = { ...old, ...patch }; assert.equal(contains(chat.render()), false); chat.props = old;
+  }
+  chat._getIsHistoryLog = () => true; assert.equal(contains(chat.render()), false);
+});
+
+test('owned SDK errors remain at the tail, merge recurrences and announce only the latest failure', t => {
+  const f = fixture(t), React = require('react'), { message } = require('antd'), alerts = [], old = message.error;
+  message.error = text => alerts.push(text); t.after(() => { message.error = old; });
+  const chat = new f.Chat({ sdkMode: true, cliMode: true, mainAgentSessions: [], requests: [] });
+  chat.setState = change => Object.assign(chat.state, typeof change === 'function' ? change(chat.state) : change);
+  const error = (text, instanceKey = 'a') => chat._onTerminalWsMessage({ type: 'sdk-error', message: text, instanceKey });
+  error('other workspace', 'b'); assert.deepEqual(chat.state.sdkErrors, []); assert.deepEqual(alerts, []);
+  for (const text of ['first', 'second', 'third', 'fourth', 'second']) error(text);
+  assert.deepEqual(chat.state.sdkErrors.map(row => [row.message, row.count]), [['third', 1], ['fourth', 1], ['second', 2]]);
+  const stack = chat._renderSdkErrors(), rows = React.Children.toArray(stack.props.children);
+  assert.equal(rows.length, 3); assert.equal(rows.at(-1).props.title, 'second');
+  assert.equal(rows.at(-1).props['aria-label'], 'second');
+  assert.equal(React.Children.toArray(rows.at(-1).props.children)[1].props.children.join(''), '×2');
+  assert.equal(chat._renderSdkErrorAnnouncer().props.role, 'status');
+  assert.ok(chat._renderSdkErrorAnnouncer().props.children.includes('second'));
+  const contains = node => !!node?.props && ((node.props['aria-label'] === 'second')
+    || React.Children.toArray(node.props.children).some(contains));
+  assert.equal(contains(chat.render()), true, 'empty view still contains its terminal failure');
+  chat.state.allItems = [React.createElement('message', { key: 'u', role: 'user' })]; chat.state.visibleCount = 1;
+  assert.equal(contains(chat.render()), true, 'the populated desktop tail also contains its failure');
+  const visible = chat.renderSessionMessages([
+    { role: 'user', content: 'task' },
+    { role: 'assistant', content: [{ type: 'text', text: 'Error: genuine model answer' }] },
+    { role: 'assistant', content: [{ type: 'text', text: 'Error: Viewer failure' }], _sdkFeedback: true },
+    { role: 'user', content: '[cc-viewer:retry] internal continuation', _sdkRetryOf: 'failed-turn' },
+  ], 's0', () => null, {}).items;
+  assert.equal(visible.length, 2, 'Viewer feedback is not a duplicate assistant bubble');
+  assert.equal(visible[1].props.content[0].text, 'Error: genuine model answer');
+  chat._unmounted = true; error('late frame'); assert.equal(chat.state.sdkErrors.at(-1).message, 'second');
+});
+
+test('native retry instructions stay out of active-input bubbles even for late-mount queue replay', t => {
+  const f = fixture(t), chat = new f.Chat({ sdkMode: true, requests: [] });
+  chat.setState = change => Object.assign(chat.state, typeof change === 'function' ? change(chat.state) : change);
+  const active = { id: 'retry-input', text: '[cc-viewer:retry] hidden continuation',
+    timestamp: '2026-11-20T00:00:00.000Z', retryOf: 'failed-turn' };
+  chat._onTerminalWsMessage({ type: 'queue-state', instanceKey: 'a', epoch: 'process', items: [], activeInput: active });
+  assert.deepEqual(chat.state.pendingInputs, []);
+  chat._onTerminalWsMessage({ type: 'queue-state', instanceKey: 'a', epoch: 'process', items: [],
+    activeInput: { ...active, id: 'user-input', retryOf: undefined } });
+  assert.equal(chat.state.pendingInputs.length, 1, 'ordinary user text is not hidden by a sentinel prefix');
+});
+
+test('failed sends retain the terminal explanation, accepted sends and history resume clear it', t => {
+  const f = fixture(t), { message } = require('antd'), old = message.error;
+  message.error = () => {}; t.after(() => { message.error = old; });
+  const chat = new f.Chat({ sdkMode: true, cliMode: true, mainAgentSessions: [], requests: [] });
+  chat.setState = (change, cb) => { Object.assign(chat.state, typeof change === 'function' ? change(chat.state) : change); cb?.(); };
+  chat.scrollToBottom = () => {};
+  chat.state.sdkErrors = [{ message: 'retained failure', count: 1, ts: Date.now() }];
+  chat.context = { isOpen: () => true, send: () => false };
+  chat._sendUserMessageImmediate('unsent'); assert.equal(chat.state.sdkErrors.length, 1);
+  chat.context = { isOpen: () => true, send: () => true };
+  chat._sendUserMessageImmediate('accepted'); assert.deepEqual(chat.state.sdkErrors, []);
+  chat.state.sdkErrors = [{ message: 'old session', count: 1, ts: Date.now() }];
+  const previousProps = chat.props, previousState = { ...chat.state };
+  chat.props = { ...chat.props, sdkResumeId: 'new-session' }; chat.componentDidUpdate(previousProps, previousState);
+  assert.deepEqual(chat.state.sdkErrors, []);
+  assert.equal(chat._renderSdkErrorAnnouncer().props.children, '', 'live region remains mounted after clear');
+});
+
+
+test('native retry notices preserve raw text and exact-turn settlement without clearing unrelated error rows', t => {
+  const f = fixture(t), React = require('react'), chat = new f.Chat({ sdkMode: true });
+  chat.setState = change => Object.assign(chat.state, typeof change === 'function' ? change(chat.state) : change);
+  const frame = body => chat._onTerminalWsMessage({ type: 'sdk-retry-state', instanceKey: 'a', turnId: 't1', ...body });
+  chat.state.sdkErrors = [{ message: 'older failure', turnId: 'old', retryable: true, ts: Date.now() }];
+  frame({ phase: 'retrying', instanceKey: 'b', error: 'foreign' }); assert.equal(chat.state.sdkRetry, null);
+  frame({ phase: 'retrying', error: { message: 'invalid' } }); assert.equal(chat.state.sdkRetry, null);
+  const raw = 'Reconnecting... 1/1 (native wording, unknown maximum)';
+  frame({ phase: 'retrying', error: raw });
+  assert.equal(React.Children.toArray(chat._renderSdkErrors().props.children)[0].props.children, raw);
+  assert.equal(Object.hasOwn(chat.state.sdkRetry, 'maxRetries'), false);
+  frame({ phase: 'recovered', turnId: 'other' }); assert.equal(chat.state.sdkRetry.error, raw);
+  frame({ phase: 'recovered' }); assert.equal(chat.state.sdkRetry, null); assert.equal(chat.state.sdkErrors.length, 1);
+  frame({ phase: 'retrying', error: raw }); f.timeout(15000); assert.equal(chat.state.sdkRetry, null);
+  chat._unmounted = true; frame({ phase: 'retrying', error: raw }); assert.equal(chat.state.sdkRetry, null);
+});
+
+test('manual retry uses original recovery row, hides the whole failure, and clears only its lineage on success', t => {
+  const f = fixture(t), React = require('react'), { message } = require('antd'), oldError = message.error, oldWarning = message.warning;
+  message.error = message.warning = () => {}; t.after(() => { message.error = oldError; message.warning = oldWarning; });
+  const chat = new f.Chat({ sdkMode: true, viewInstance: 'a' }), sent = [];
+  chat.setState = change => Object.assign(chat.state, typeof change === 'function' ? change(chat.state) : change);
+  chat.context = { isOpen: () => true, send: body => { sent.push(body); return true; } };
+  const fail = turnId => chat._onTerminalWsMessage({ type: 'sdk-error', instanceKey: 'a', message: 'native exhausted', turnId, retryable: true, apiStatus: 503 });
+  fail('failed');
+  const row = chat.state.sdkErrors[0];
+  const rows = () => React.Children.toArray(chat._renderSdkErrors()?.props.children);
+  const button = React.Children.toArray(rows()[0].props.children).find(node => node.type === 'button');
+  button.props.onClick();
+  assert.deepEqual(sent, [{ type: 'sdk-retry-turn', instanceKey: 'a', turnId: 'failed' }]);
+  assert.equal(rows().length, 1); assert.equal(rows()[0].props.role, 'status');
+  assert.equal(chat.state.sdkErrors[0].recovering, true);
+  chat._onTerminalWsMessage({ type: 'sdk-retry-state', instanceKey: 'a', phase: 'recovering', retryOf: 'failed', turnId: 'continuation' });
+  fail('failed-again'); assert.equal(chat.state.sdkRetry, null); assert.equal(chat.state.sdkErrors[0].count, 2);
+  assert.equal(chat.state.sdkErrors[0].recovering, undefined); assert.ok(React.Children.toArray(rows()[0].props.children).some(node => node.type === 'button'));
+  chat._handleSdkRetry(chat.state.sdkErrors[0]);
+  chat.state.sdkErrors.push({ ...row, message: 'unrelated', turnId: 'different' });
+  chat._onTerminalWsMessage({ type: 'sdk-retry-state', instanceKey: 'a', phase: 'recovered', retryOf: 'failed-again', turnId: 'continued' });
+  assert.equal(chat.state.sdkRetry, null); assert.deepEqual(chat.state.sdkErrors.map(row => row.turnId), ['different']);
+  assert.equal(chat._sdkRetryResetTimer, null);
+});
+
+test('retry send failures roll back only their row, rejection and the fallback restore the button, explicit clear cancels its timer', t => {
+  const f = fixture(t), { message } = require('antd'), old = message.warning;
+  message.warning = () => {}; t.after(() => { message.warning = old; });
+  const chat = new f.Chat({ sdkMode: true });
+  chat.setState = change => Object.assign(chat.state, typeof change === 'function' ? change(chat.state) : change);
+  const row = { message: 'failed', turnId: 'failed', retryable: true, ts: Date.now() }, other = { ...row, turnId: 'other', recovering: true };
+  chat.state.sdkErrors = [row, other];
+  for (const send of [() => false, () => { throw new Error('closed'); }]) {
+    chat.context = { isOpen: () => true, send }; chat._handleSdkRetry(row);
+    assert.equal(chat.state.sdkRetry, null); assert.equal(chat.state.sdkErrors[0].recovering, false);
+    assert.equal(chat.state.sdkErrors[1].recovering, true);
+  }
+  chat.context = { isOpen: () => true, send: () => true }; chat._handleSdkRetry(row);
+  chat._onTerminalWsMessage({ type: 'sdk-retry-state', instanceKey: 'a', phase: 'rejected', turnId: 'failed', reason: 'stale' });
+  assert.equal(chat.state.sdkErrors[0].recovering, false); assert.equal(chat._sdkRetryResetTimer, null);
+  chat._handleSdkRetry(row); f.timeout(15000); assert.equal(chat.state.sdkErrors[0].recovering, false);
+  chat._handleSdkRetry(row); const timer = chat._sdkRetryResetTimer; chat._clearSdkErrors();
+  assert.equal(f.timeouts.has(timer), false); assert.deepEqual(chat.state.sdkErrors, []); assert.equal(chat.state.sdkRetry, null);
+});
+
+test('slow upstream toasts preserve concurrent request waits, tick elapsed time, and clear on disconnect, view switch and Stop', t => {
+  const f = fixture(t), { message } = require('antd'), opened = [], destroyed = [], oldOpen = message.open, oldDestroy = message.destroy;
+  message.open = options => opened.push(options); message.destroy = key => destroyed.push(key);
+  t.after(() => { message.open = oldOpen; message.destroy = oldDestroy; });
+  const sent = [], chat = new f.Chat({ sdkMode: true, cliMode: true, mainAgentSessions: [], requests: [], viewInstance: 'a' });
+  chat.setState = (patch, cb) => { Object.assign(chat.state, typeof patch === 'function' ? patch(chat.state) : patch); cb?.(); };
+  chat.startRender = () => {}; chat._toolFileMonitor.check = () => {}; chat._updateSuggestion = () => {}; chat.scrollToBottom = () => {};
+  chat.context = { isOpen: () => true, send: body => { sent.push(body); return true; } };
+  const slow = (requestId, instanceKey = 'a') => chat._onTerminalWsMessage({ type: 'sdk-slow-upstream', instanceKey, requestId, waitingMs: 30000 });
+  slow('foreign', 'b'); assert.equal(opened.length, 0);
+  slow('one'); slow('two'); assert.equal(chat._slowUpstreamPending.size, 2);
+  assert.equal(opened.at(-1).duration, 90); assert.ok(opened.at(-1).content.includes('30'));
+  chat._slowUpstreamPending.get('one').startedAt -= 10000;
+  f.intervals.get(chat._slowUpstreamTickTimer).fn(); assert.ok(opened.at(-1).content.includes('40'));
+  chat._onTerminalWsMessage({ type: 'sdk-slow-upstream-resolved', instanceKey: 'a', requestId: 'one' });
+  assert.deepEqual([...chat._slowUpstreamPending.keys()], ['two']);
+  chat._sendUserMessageImmediate('follow-up'); assert.equal(chat._slowUpstreamPending.size, 1);
+  chat._onTerminalWsState('close'); assert.equal(chat._slowUpstreamPending.size, 0); assert.equal(chat._slowUpstreamTickTimer, null);
+  slow('replayed'); chat._onTerminalWsState('open'); assert.equal(chat._slowUpstreamPending.size, 0);
+  slow('current'); const previous = chat.props, state = { ...chat.state };
+  chat.props = { ...previous, viewInstance: 'b' }; chat.componentDidUpdate(previous, state);
+  assert.equal(chat._slowUpstreamPending.size, 0); assert.equal(chat._slowUpstreamTickTimer, null);
+  slow('stopped'); chat.handleInputStop(); assert.equal(chat._slowUpstreamPending.size, 0);
+  assert.equal(sent.at(-1).type, 'sdk-interrupt'); assert.ok(destroyed.includes('sdk-slow-upstream'));
+  chat._unmounted = true; slow('late'); assert.equal(chat._slowUpstreamPending.size, 0);
+});
+
+test('a late-mounted slow request consumer sees only outstanding requests and socket replacement drops the cache', t => {
+  const f = fixture(t), socket = f.open();
+  const slow = { type: 'sdk-slow-upstream', requestId: 'pending', instanceKey: 'a', waitingMs: 30000, startedAt: Date.now() - 30000 };
+  f.frame(socket, slow); f.frame(socket, { ...slow, requestId: 'settled' });
+  f.frame(socket, { type: 'sdk-slow-upstream-resolved', instanceKey: 'a', requestId: 'settled' });
+  const messages = []; f.provider.addMessageHandler(frame => messages.push(frame));
+  assert.equal(messages.length, 1); assert.equal(messages[0].requestId, 'pending'); assert.ok(messages[0].waitingMs >= 30000);
+  socket.onclose(); assert.equal(f.provider.slowUpstreams.size, 0);
+  f.timeout(2000); f.open(); const later = []; f.provider.addMessageHandler(frame => later.push(frame));
+  assert.deepEqual(later, []);
+});
+
+
+test('cold SDK identity hydration preserves the wait replayed before the mode and project HTTP responses', t => {
+  const f = fixture(t), { message } = require('antd'), oldOpen = message.open, oldDestroy = message.destroy;
+  message.open = message.destroy = () => {}; t.after(() => { message.open = oldOpen; message.destroy = oldDestroy; });
+  const chat = new f.Chat({ sdkMode: false, projectName: '', mainAgentSessions: [], requests: [] });
+  chat.setState = patch => Object.assign(chat.state, typeof patch === 'function' ? patch(chat.state) : patch);
+  chat.startRender = () => {}; chat._toolFileMonitor.check = () => {}; chat._updateSuggestion = () => {};
+  chat._onTerminalWsMessage({ type: 'sdk-slow-upstream', instanceKey: 'a', requestId: 'cold', waitingMs: 30000 });
+  const previous = chat.props, state = { ...chat.state };
+  chat.props = { ...previous, sdkMode: true, projectName: 'same', viewProject: 'same', viewInstance: 'a', attachedSid: 'thread' };
+  chat.componentDidUpdate(previous, state);
+  assert.deepEqual([...chat._slowUpstreamPending.keys()], ['cold']);
+  chat._clearSlowUpstreamToast();
 });

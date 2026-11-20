@@ -1,0 +1,22 @@
+{
+  "fixture": "cxv-b4-tasks-gui-1Y28sC",
+  "pid": 47891,
+  "stopped": true,
+  "browser": "native Safari desktop",
+  "externalModelNetwork": false,
+  "productionThresholdSeconds": 30,
+  "observedWaitSeconds": [
+    40,
+    45,
+    76,
+    87
+  ],
+  "headersAloneDoNotSettle": true,
+  "viewSwitchClears": true,
+  "pendingReturnReplay": true,
+  "pageReloadReplay": true,
+  "firstByteSettles": true,
+  "singleFinalReply": true,
+  "initialHydrationBug": "Found by GUI; fixed before acceptance; null/false to owned SDK identity retains replay",
+  "physicalDevicesVerified": false
+}

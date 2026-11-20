@@ -1,6 +1,7 @@
 import React from 'react';
 import { Empty, Typography, Divider, Spin, Popover, Modal, Button, message } from 'antd';
 import ChatMessage from './ChatMessage';
+import ActiveAgentsBar from './ActiveAgentsBar';
 import TerminalPanel, { uploadFileAndGetPath } from '../terminal/TerminalPanel';
 import FileExplorer from '../files/FileExplorer';
 import SearchPanel from '../search/SearchPanel';
@@ -12,7 +13,7 @@ import GitChanges from '../git/GitChanges';
 import GitDiffView from '../git/GitDiffView';
 import ToolApprovalPanel from '../approval/ToolApprovalPanel';
 import { getModelInfo, getEffectiveModel, getDisplayedSessionModelName, getSessionIdentityCandidates, resolveProducerModelInfo, AUTO_APPROVE_INSTANT } from '../../utils/helpers';
-import { formatPromptNavTime } from '../../utils/formatters';
+import { formatPromptNavTime, formatHms } from '../../utils/formatters';
 import { buildPromptNavItems } from '../../utils/promptNav';
 import { getTeammateAvatar } from '../../utils/teammateAvatars';
 import { applyAvatarAnimationTargets } from '../../utils/avatarAnimationPostPass';
@@ -45,7 +46,10 @@ import { WorkflowButton, WorkflowRunsModal } from '../dashboard/WorkflowRunsPane
 import SnapLineOverlay from '../common/SnapLineOverlay';
 import RoleFilterBar from './RoleFilterBar';
 import ChatInputBar, { resizeChatTextarea } from './ChatInputBar';
+import ProxyChip from './ProxyChip';
+import ProxyModal from '../settings/ProxyModal';
 import WorkflowLiveHud from '../viewers/WorkflowLiveHud';
+import TaskProgressHud from './TaskProgressHud';
 import PresetModal from '../terminal/PresetModal';
 import UltraPlanModal from '../terminal/UltraPlanModal';
 import UltraplanPanel, { readUltraplanPopoverSize, ultraplanOverlayInnerStyle } from '../terminal/UltraplanPanel';
@@ -147,6 +151,14 @@ function randomInterval() {
   return 100 + Math.random() * 50;
 }
 
+// Map a server sdk-retry-turn rejection reason to a localized label, falling back to the
+// generic "unavailable" for reasons without a dedicated key.
+function _sdkRetryReasonText(reason) {
+  const key = `ui.sdkRetry.${reason}`;
+  const v = t(key);
+  return (v && v !== key) ? v : t('ui.sdkRetry.unavailable');
+}
+
 // UltraPlan modal 拖拽尺寸持久化 helper —— 单值 key,与 PanelResizer 风格一致。
 // 手机模式(isMobile && !isPad)不读 localStorage,初值 null,保留 modal CSS 默认尺寸。
 const _ULTRAPLAN_W_KEY = 'cx-viewer-ultraplan-modal-width';
@@ -197,6 +209,10 @@ class ChatView extends React.Component {
     this.virtuosoRef = React.createRef();
     this.splitContainerRef = React.createRef();
     this.innerSplitRef = React.createRef();
+    this.inputStackRef = React.createRef();
+    this._inputStackRO = null;
+    this._chatScrollbarRO = null;
+    this._chatScrollbarROEl = null;
 
     // 增量 tool result 状态
     this._incToolState = null;
@@ -249,6 +265,13 @@ class ChatView extends React.Component {
       visibleCount: 0,
       loading: false,
       allItems: [],
+      sdkTaskSnapshot: { sessionId: null, tasks: [] },
+      sdkAgentSnapshot: { sessionId: null, agents: [] },
+      activeAgentsBarVisible: false,
+      sdkCompactNotices: [],
+      sdkErrors: [],
+      sdkRetry: null,
+      proxyModalVisible: false,
       highlightTs: null,
       highlightFading: false,
       highlightVisibleIdx: -1,
@@ -338,6 +361,8 @@ class ChatView extends React.Component {
     this._prevItemsLen = 0;
     this._scrollTargetIdx = null;
     this._scrollTargetRef = React.createRef();
+    this._slowUpstreamPending = new Map();
+    this._slowUpstreamTickTimer = null;
     // _inputWs 现在是 getter(挂在原型),不在 constructor 上设字段,避免覆盖 getter
     this._unsubWsHandler = null;
     this._unsubWsState = null;
@@ -592,6 +617,8 @@ class ChatView extends React.Component {
     if (!useVirtuoso && this.containerRef.current) {
       this._stickyController.bind(this.containerRef.current);
     }
+    this._bindInputStackRO();
+    this._bindChatScrollbarRO();
     // 初始化时吸附到 60cols
     if (this.state.needsInitialSnap && this.props.cliMode && !this.props.sdkMode && this.props.terminalVisible) {
       this._snapToInitialPosition();
@@ -600,6 +627,77 @@ class ChatView extends React.Component {
     // 否则 componentDidUpdate 接力。preset 写入由 SettingsContext.updatePreferences
     // setState 触发 props 变化,无需 window event)
     this._loadPresets();
+  }
+
+  // Measure inputStack height → root CSS variable (consumed by .inputStackSpacer and .stickyBottomBtn).
+  // Uses offsetHeight (layout px) — both consumers live in the same layout coordinate system.
+  // Called from componentDidMount and componentDidUpdate (ref may be null on first mount if loading).
+  _bindInputStackRO() {
+    const stackEl = this.inputStackRef.current;
+    if (!stackEl || !stackEl.isConnected) return;
+    if (this._inputStackRO) return; // already bound
+    const setInputStackVar = () => {
+      const el = this.inputStackRef.current;
+      if (!el || !el.isConnected) {
+        document.documentElement.style.removeProperty('--input-stack-height');
+        return;
+      }
+      document.documentElement.style.setProperty('--input-stack-height', (el.offsetHeight || 0) + 'px');
+    };
+    setInputStackVar();
+    if (typeof ResizeObserver !== 'undefined') {
+      this._inputStackRO = new ResizeObserver(setInputStackVar);
+      this._inputStackRO.observe(stackEl);
+    }
+  }
+
+  // Measure the chat scroller's scrollbar gutter into --chat-scrollbar-width.
+  // Classic scrollbars: offsetWidth - clientWidth is exact for the borderless
+  // .container/Virtuoso scroller. Overlay scrollbars (macOS default, mobile) report 0,
+  // so we fall back to a fixed minimum bleed to keep the floating scrollbar visible.
+  // Reset to 0 when the scroller is missing so a stale inset never lingers.
+  _measureChatScrollbarWidth() {
+    const el = this._getScrollContainer();
+    if (!el || !el.isConnected) {
+      document.documentElement.style.setProperty('--chat-scrollbar-width', '0px');
+      return;
+    }
+    const gutter = Math.max(0, el.offsetWidth - el.clientWidth);
+    const w = gutter > 0 ? gutter : ChatView._overlayScrollbarBleed();
+    document.documentElement.style.setProperty('--chat-scrollbar-width', w + 'px');
+  }
+
+  // Detect overlay-scrollable platform by probing a temporary overflow:scroll element.
+  // Returns the fixed bleed width for overlay scrollbars, 0 for classic scrollbars.
+  static _overlayScrollbarBleed() {
+    if (ChatView._cachedOverlayBleed != null) return ChatView._cachedOverlayBleed;
+    const probe = document.createElement('div');
+    probe.style.overflow = 'scroll';
+    probe.style.visibility = 'hidden';
+    probe.style.position = 'absolute';
+    probe.style.top = '-9999px';
+    document.body.appendChild(probe);
+    const gutter = probe.offsetWidth - probe.clientWidth;
+    document.body.removeChild(probe);
+    // Overlay scrollbars (macOS, mobile) report 0 → use a fixed bleed so the
+    // floating scrollbar is not covered by the input-stack gradient.
+    ChatView._cachedOverlayBleed = gutter === 0 ? 12 : 0;
+    return ChatView._cachedOverlayBleed;
+  }
+
+  // (Re)bind when the scroller node is swapped (loading ↔ loaded, Virtuoso mount).
+  // A classic scrollbar appearing/disappearing shrinks/grows the content box, which
+  // ResizeObserver reports; only rebinding/mount does the direct measurement.
+  _bindChatScrollbarRO() {
+    const el = this._getScrollContainer();
+    if (!el || !el.isConnected || this._chatScrollbarROEl === el) return;
+    if (this._chatScrollbarRO) { this._chatScrollbarRO.disconnect(); this._chatScrollbarRO = null; }
+    this._chatScrollbarROEl = el;
+    this._measureChatScrollbarWidth();
+    if (typeof ResizeObserver !== 'undefined') {
+      this._chatScrollbarRO = new ResizeObserver(() => this._measureChatScrollbarWidth());
+      this._chatScrollbarRO.observe(el);
+    }
   }
 
   shouldComponentUpdate(nextProps, nextState) {
@@ -617,6 +715,12 @@ class ChatView extends React.Component {
       nextProps.cliMode !== this.props.cliMode ||
       nextProps.sdkMode !== this.props.sdkMode ||
       nextProps.sdkResumeId !== this.props.sdkResumeId ||
+      nextProps.sdkModel !== this.props.sdkModel ||
+      nextProps.proxyProfiles !== this.props.proxyProfiles ||
+      nextProps.activeProxyId !== this.props.activeProxyId ||
+      nextProps.defaultConfig !== this.props.defaultConfig ||
+      nextProps.proxyProfilesLoadError !== this.props.proxyProfilesLoadError ||
+      nextProps.onProxyProfileChange !== this.props.onProxyProfileChange ||
       nextProps.terminalVisible !== this.props.terminalVisible ||
       nextProps.userProfile !== this.props.userProfile ||
       nextProps.pendingUploadPaths !== this.props.pendingUploadPaths ||
@@ -638,6 +742,8 @@ class ChatView extends React.Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
+    this._bindInputStackRO();
+    this._bindChatScrollbarRO();
     // Sharding (2026-11): a "load earlier history" prepend landed — expand the
     // render window by the number of items it added and anchor the viewport, or
     // the older history lands above the visible tail and the click looks like a
@@ -669,6 +775,9 @@ class ChatView extends React.Component {
     }
 
     if (this.props.sdkResumeId && prevProps.sdkResumeId !== this.props.sdkResumeId) {
+      this.setState({ sdkCompactNotices: [] });
+      this._clearSdkErrors();
+      this._clearSlowUpstreamToast();
       // Keep the draft and uploads, but require another explicit send after a
       // conversation switch instead of draining an old deferred submission.
       this._clearDeferSend();
@@ -699,7 +808,25 @@ class ChatView extends React.Component {
         if (this.state.pendingInputs.length > 0) this.setState({ pendingInputs: [] });
       }
       this._fileScrollSnapshot = null;
+      this._clearSdkErrors();
+      if (prevProps.projectName) this._clearSlowUpstreamToast();
     }
+    if (prevProps.isLocalLog !== this.props.isLocalLog
+      || prevProps.sdkMode !== this.props.sdkMode
+      || prevProps.sessionUpperBoundTs !== this.props.sessionUpperBoundTs
+      || prevProps.attachedSid !== this.props.attachedSid
+      || prevProps.viewInstance !== this.props.viewInstance
+      || prevProps.viewProject !== this.props.viewProject) {
+      this._clearSdkErrors();
+    }
+    // Cold view hydration can follow the WS replay. Only leaving an established
+    // identity clears its wait; false/null -> the current SDK identity preserves it.
+    if (prevProps.isLocalLog !== this.props.isLocalLog
+      || (prevProps.sdkMode && !this.props.sdkMode)
+      || prevProps.sessionUpperBoundTs !== this.props.sessionUpperBoundTs
+      || (prevProps.attachedSid && prevProps.attachedSid !== this.props.attachedSid)
+      || (prevProps.viewInstance && prevProps.viewInstance !== this.props.viewInstance)
+      || (prevProps.viewProject && prevProps.viewProject !== this.props.viewProject)) this._clearSlowUpstreamToast();
     // currentFile 变（含切到 null）→ 上一文件的 scroll 快照失效，集中在 cdU 一处清，
     // 比在 8 个 setState({currentFile:...}) 站点各加一行更稳。fileVersion bump 走的是同
     // currentFile 的 remount 路径，currentFile 不变 → 快照保留 → 用于 restore，正合需求。
@@ -740,14 +867,14 @@ class ChatView extends React.Component {
       }
     }
     // 派生 pendingPtyPlan from _currentLastPendingPlanId（与 inline 卡片同源）。
-    // _currentLastPendingPlanId 由 buildAllItems 末尾镜像；只在 cliMode 下生效（红线 2：sdkMode 走 inline-only）。
+    // SDK approvals use their structured channel; PTY input has no SDK consumer.
     // _resolvedPlanIds 守用户已操作但 JSONL 还没回写 planApprovalMap 的短暂窗口（提交后到 tool_result 落盘之间），
     // 防 CDU 把 modal 重弹；过期项在 lpid 变化时（即旧 plan 真正 resolve）下面分支自动清出。
     {
       const lpid = this._currentLastPendingPlanId || null;
       const curPtyPlan = this.state.pendingPtyPlan;
       const skipped = lpid && this._resolvedPlanIds.has(lpid);
-      if (this.props.cliMode && lpid && !skipped) {
+      if (this.props.cliMode && !this.props.sdkMode && lpid && !skipped) {
         if (!curPtyPlan || curPtyPlan.id !== lpid) {
           this.setState({ pendingPtyPlan: { id: lpid, prompt: null } });
         }
@@ -890,6 +1017,10 @@ class ChatView extends React.Component {
     // 同样：Live streaming overlay 变化时也要重新吸底（丝滑缓动，避免每个 chunk 画面硬跳）。
     // pin 锁在更早会话时（sessionUpperBoundTs != null），streaming 来自未展示的更新会话，不应抢滚动。
     if (prevProps.streamingLatest !== this.props.streamingLatest && this.state.stickyBottom && this.props.sessionUpperBoundTs == null) {
+      const el = useVirtuoso ? this._virtuosoScrollerEl : this.containerRef.current;
+      if (el) this._stickyController.startSmoothFollow(el);
+    }
+    if (prevState.sdkErrors !== this.state.sdkErrors && this.state.sdkErrors.length > 0 && this.state.stickyBottom) {
       const el = useVirtuoso ? this._virtuosoScrollerEl : this.containerRef.current;
       if (el) this._stickyController.startSmoothFollow(el);
     }
@@ -1066,7 +1197,50 @@ class ChatView extends React.Component {
     if (!useVirtuoso) this._stickyController.bind(this.containerRef.current);
   }
 
+  // ── Slow-upstream toast helpers (review P2-1) ───────────────────────────
+  // The toast shows the OLDEST pending wait. duration:90 is a bounded fallback
+  // so a lost sdk-slow-upstream-resolved frame can never pin it forever (P1-1);
+  // the tick re-opens it with fresh elapsed time (re-open resets duration).
+  _renderSlowUpstreamToast() {
+    if (this._slowUpstreamPending.size === 0) return;
+    let oldest = Infinity;
+    for (const { startedAt } of this._slowUpstreamPending.values()) oldest = Math.min(oldest, startedAt);
+    const seconds = Math.max(0, Math.round((Date.now() - oldest) / 1000));
+    try {
+      message.open({
+        key: 'sdk-slow-upstream',
+        type: 'info',
+        content: t('ui.sdkSlowUpstream', { seconds }),
+        duration: 90,
+      });
+    } catch {}
+  }
+
+  _armSlowUpstreamTick() {
+    if (this._slowUpstreamTickTimer) return;
+    this._slowUpstreamTickTimer = setInterval(() => {
+      if (this._slowUpstreamPending.size === 0) { this._stopSlowUpstreamTick(); return; }
+      this._renderSlowUpstreamToast();
+    }, 5000);
+  }
+
+  _stopSlowUpstreamTick() {
+    if (this._slowUpstreamTickTimer) { clearInterval(this._slowUpstreamTickTimer); this._slowUpstreamTickTimer = null; }
+  }
+
+  // Single teardown for the slow-upstream toast (review P1-1): stop the tick,
+  // clear pending requestIds, and destroy the toast. Called on every
+  // project/instance transition AND on unmount, so a lost resolved frame can
+  // never leave a toast (or a tick that revives it) behind.
+  _clearSlowUpstreamToast() {
+    this._stopSlowUpstreamTick();
+    this._slowUpstreamPending.clear();
+    try { message.destroy('sdk-slow-upstream'); } catch {}
+  }
+
   componentWillUnmount() {
+    this._clearSlowUpstreamToast();
+    if (this._sdkRetryResetTimer) { clearTimeout(this._sdkRetryResetTimer); this._sdkRetryResetTimer = null; }
     this._unmounted = true;
     this._failPendingSequentialInputs(false);
     this._splitDrag.dispose();
@@ -1118,6 +1292,11 @@ class ChatView extends React.Component {
     this._scrollHighlight.dispose();
     // 流式吸底统一清理：dispose 内会卸 RO + scroll listener + document touch + cancel 全部 rAF
     if (this._stickyController) this._stickyController.dispose();
+    if (this._inputStackRO) { this._inputStackRO.disconnect(); this._inputStackRO = null; }
+    document.documentElement.style.removeProperty('--input-stack-height');
+    if (this._chatScrollbarRO) { this._chatScrollbarRO.disconnect(); this._chatScrollbarRO = null; }
+    this._chatScrollbarROEl = null;
+    document.documentElement.style.removeProperty('--chat-scrollbar-width');
     if (this._unsubWsHandler) { try { this._unsubWsHandler(); } catch {} this._unsubWsHandler = null; }
     if (this._unsubWsState) { try { this._unsubWsState(); } catch {} this._unsubWsState = null; }
   }
@@ -1466,6 +1645,7 @@ class ChatView extends React.Component {
 
     for (let mi = startIdx; mi < messages.length; mi++) {
       const msg = messages[mi];
+      if (msg._sdkFeedback === true || (msg.role === 'user' && typeof msg._sdkRetryOf === 'string')) continue;
       const content = msg.content;
       const ts = msg._timestamp || null;  // carrier ts —— timestamp prop / resolveModelInfo / SubAgent 时间排序用
       // lookupTs：assistant 用 _generatedTs（producer 的 request ts），其他 role 用 _timestamp（即 carrier）。
@@ -2322,7 +2502,7 @@ class ChatView extends React.Component {
             pendingInputs: removePendingInputsById(prev.pendingInputs, [pendingRecord.id]),
           }));
           message.error(t('ui.sendFailed'));
-        }
+        } else this._clearSdkErrors();
       } else {
         this._sendBracketPasteSequential(assembled, {
           onFailure: () => {
@@ -2408,9 +2588,34 @@ class ChatView extends React.Component {
   // CPU 开销保留,但网络层 1 条 ws 是仍有收益(改前 2 条同时收同一份 PTY 流)。
   _onTerminalWsMessage = (msg) => {
     try {
+      if (msg.type === 'sdk-agent-snapshot') {
+        if (this._unmounted || !Array.isArray(msg.agents)) return;
+        const instance = new URLSearchParams(window.location.search).get('instance');
+        if (instance !== null && msg.instanceKey !== instance) return;
+        const agents = msg.available === false ? [] : msg.agents.filter(agent => agent
+          && typeof agent.taskId === 'string' && ['pending', 'in_progress'].includes(agent.status)
+          && (agent.createdAt == null || Number.isFinite(agent.createdAt)));
+        this.setState({ sdkAgentSnapshot: { sessionId: msg.sessionId || null, agents } });
+        return;
+      }
+      if (typeof msg.id === 'string' && msg.id.startsWith('native_')) {
+        if (this._unmounted) return;
+        const instance = new URLSearchParams(window.location.search).get('instance');
+        if (instance !== null && msg.instanceKey !== instance) return;
+      }
+      if (msg.type === 'sdk-task-snapshot') {
+        if (this._unmounted || !Array.isArray(msg.tasks)) return;
+        const instance = new URLSearchParams(window.location.search).get('instance');
+        if (instance !== null && msg.instanceKey !== instance) return;
+        const tasks = msg.tasks.filter(task => task && typeof task.taskId === 'string'
+          && typeof task.subject === 'string'
+          && ['pending', 'in_progress', 'completed', 'failed'].includes(task.status));
+        this.setState({ sdkTaskSnapshot: { sessionId: msg.sessionId || null, tasks } });
+        return;
+      }
       // The socket may attach before /api/cli-mode finishes. Retain its scoped
       // SDK snapshot now so cold loading cannot discard a parked queue.
-      if (['sdk-error', 'sdk-message-accepted', 'queue-state'].includes(msg.type)) {
+      if (['sdk-compact', 'sdk-error', 'sdk-retry-state', 'sdk-slow-upstream', 'sdk-slow-upstream-resolved', 'sdk-message-accepted', 'queue-state'].includes(msg.type)) {
         const instance = new URLSearchParams(window.location.search).get('instance');
         if (instance !== null && msg.instanceKey !== instance) return;
         if (msg.type === 'sdk-message-accepted') {
@@ -2433,7 +2638,7 @@ class ChatView extends React.Component {
               (!record.sdkActiveEpoch || record.sdkActiveEpoch === epoch)
               && !items.some(item => item.id === record.queueId || item.requestId === record.id)
               && !(validActive && active.requestId === record.id));
-            if (validActive && epoch && !pendingInputs.some(record => record.sdkActiveId === active.id)) {
+            if (validActive && epoch && !active.retryOf && !pendingInputs.some(record => record.sdkActiveId === active.id)) {
               const parsed = parseUltraplanPrompt(active.text);
               pendingInputs = [...pendingInputs, { ...createPendingInputRecord({
                 id: `sdk-active-${epoch}-${active.id}`, wireText: active.text,
@@ -2449,8 +2654,101 @@ class ChatView extends React.Component {
         const rejected = this.state.pendingInputs.find(record => record.id === msg.requestId);
         if (rejected) this._restoreUnsentInput(rejected.wireText, rejected.id);
       }
+      if (msg.type === 'sdk-compact') {
+        if (this._unmounted) return;
+        this.setState(prev => ({
+          sdkCompactNotices: [...(prev.sdkCompactNotices || []), {
+            ts: Date.now(), trigger: msg.trigger || null,
+            preTokens: msg.preTokens ?? null, postTokens: msg.postTokens ?? null,
+          }].slice(-10),
+        }));
+        return;
+      }
       if (msg.type === 'sdk-error') {
-        message.error(msg.message || 'SDK request failed');
+        if (this._unmounted) return;
+        if (this._sdkRetryResetTimer) { clearTimeout(this._sdkRetryResetTimer); this._sdkRetryResetTimer = null; }
+        const detail = String(msg.message || '');
+        message.error(t('ui.sdkError', { detail }));
+        const ts = Date.now();
+        this.setState(prev => {
+          const kept = (prev.sdkErrors || []).filter(e => e.message !== detail);
+          const prevEntry = (prev.sdkErrors || []).find(e => e.message === detail);
+          return { sdkRetry: null, sdkErrors: [...kept.map(e => e.recovering ? { ...e, recovering: false } : e), {
+            message: detail, ts, count: (prevEntry?.count || 0) + 1,
+            turnId: typeof msg.turnId === 'string' ? msg.turnId : null, retryable: msg.retryable === true,
+            apiStatus: typeof msg.apiStatus === 'number' ? msg.apiStatus : null, code: msg.code || null,
+          }].slice(-3) };
+        });
+        return;
+      }
+      if (msg.type === 'sdk-slow-upstream') {
+        // Proxy-side advisory: a non-utility LLM request has been waiting past
+        // the slow threshold for ANY upstream byte. Both retry layers are
+        // legitimately idle here (CLI retries a settled failure; the proxy
+        // retries a settled response) — without this frame the user only sees a
+        // bare spinner for minutes (review: the 164s ECONNRESET turn).
+        if (this._unmounted) return;
+        // Track by requestId (fallback to a synthetic key when absent) so
+        // concurrent slow requests don't clobber a single shared toast and a
+        // resolve only clears its own (review P2-1).
+        const rid = msg.requestId || `anon-${msg.cwd || ''}`;
+        const startedAt = Date.now() - Math.max(0, Number.isFinite(msg.waitingMs) ? msg.waitingMs : 0);
+        this._slowUpstreamPending.set(rid, { startedAt });
+        this._renderSlowUpstreamToast();
+        this._armSlowUpstreamTick();
+        return;
+      } else if (msg.type === 'sdk-slow-upstream-resolved') {
+        if (this._unmounted) return;
+        const rid = msg.requestId || `anon-${msg.cwd || ''}`;
+        this._slowUpstreamPending.delete(rid);
+        if (this._slowUpstreamPending.size === 0) {
+          this._stopSlowUpstreamTick();
+          try { message.destroy('sdk-slow-upstream'); } catch {}
+        } else {
+          this._renderSlowUpstreamToast();
+        }
+
+        return;
+      }
+      if (msg.type === 'sdk-retry-state') {
+        // 502/retry lifecycle: the CLI's own retry (retrying) → manual [retry] click
+        // (recovering) → success (recovered) or a refusal (rejected). Cleanup matches by
+        // retryOf = the FAILED turn's id (never the new turn's id), so a retry's success
+        // clears the failed row's progress/button.
+        if (this._unmounted) return;
+        if (msg.phase === 'retrying') {
+          if (typeof msg.error !== 'string' || !msg.error || typeof msg.turnId !== 'string') return;
+          this.setState({ sdkRetry: { phase: 'retrying', turnId: msg.turnId, retryOf: msg.retryOf || null, error: msg.error } });
+          // Re-arm the fallback so a retried turn that never resolves can't leave the
+          // progress line up forever (and a fresh window can't be wiped by an OLD timer).
+          this._armSdkRetryReset();
+        } else if (msg.phase === 'recovering') {
+          this.setState(prev => ({
+            sdkRetry: { phase: 'recovering', retryOf: msg.retryOf || null, turnId: msg.turnId || null },
+            sdkErrors: (prev.sdkErrors || []).map(e => (msg.retryOf && e.turnId === msg.retryOf) ? { ...e, recovering: true } : e),
+          }));
+          this._armSdkRetryReset();
+        } else if (msg.phase === 'recovered') {
+          const current = this.state.sdkRetry;
+          if (current && ![current.turnId, current.retryOf].some(id => id && (id === msg.turnId || id === msg.retryOf))) return;
+          if (this._sdkRetryResetTimer) { clearTimeout(this._sdkRetryResetTimer); this._sdkRetryResetTimer = null; }
+          this.setState(prev => ({
+            sdkRetry: null,
+            // Clear ONLY the failed turn's row (retryOf). A missing retryOf must NOT
+            // wipe every retryable row.
+            sdkErrors: (prev.sdkErrors || []).filter(e => !(msg.retryOf && e.retryable && e.turnId === msg.retryOf)),
+          }));
+        } else if (msg.phase === 'rejected') {
+          const current = this.state.sdkRetry;
+          if (current && ![current.turnId, current.retryOf].some(id => id && (id === msg.turnId || id === msg.retryOf))) return;
+          if (this._sdkRetryResetTimer) { clearTimeout(this._sdkRetryResetTimer); this._sdkRetryResetTimer = null; }
+          this.setState(prev => ({
+            sdkRetry: null,
+            sdkErrors: (prev.sdkErrors || []).map(e => e.recovering ? { ...e, recovering: false } : e),
+          }));
+          message.warning(_sdkRetryReasonText(msg.reason));
+        }
+
         return;
       }
       // ask / sdk-ask 类消息交给 AskFlowController；返回 true 表示已处理 → 短路。
@@ -2483,37 +2781,48 @@ class ChatView extends React.Component {
           // Queue support: if a permission panel is already showing, queue the new one.
           // Codex auto_review requests are deferred by perm-bridge and never arrive here.
           this.setState(state => {
+            if (state.pendingPermission?.id === msg.id || state.permissionQueue.some(item => item.id === msg.id)) return null;
             if (state.pendingPermission) {
               return { permissionQueue: [...state.permissionQueue, { id: msg.id, toolName: msg.toolName, input: msg.input }] };
             }
             return { pendingPermission: { id: msg.id, toolName: msg.toolName, input: msg.input } };
           });
         } else if (msg.type === 'perm-hook-timeout') {
-          // Timeout carries id — only clear if it matches the active request, or remove from queue
+          // No-id legacy timeouts clear this scoped view; addressed terminals
+          // match the latest React state, including an uncommitted pending.
+          if (msg.id == null) {
+            this.setState({ pendingPermission: null, permissionQueue: [] });
+            return;
+          }
+          const permId = String(msg.id);
           this.setState(state => {
-            if (msg.id && state.pendingPermission?.id === msg.id) {
+            if (state.pendingPermission != null && String(state.pendingPermission.id) === permId) {
               const next = state.permissionQueue[0] || null;
               return { pendingPermission: next, permissionQueue: state.permissionQueue.slice(1) };
             }
-            if (msg.id) {
-              return { permissionQueue: state.permissionQueue.filter(p => p.id !== msg.id) };
-            }
-            // Legacy timeout without id — clear all
-            return { pendingPermission: null, permissionQueue: [] };
+            const nextQueue = state.permissionQueue.filter(p => String(p.id) !== permId);
+            return nextQueue.length === state.permissionQueue.length ? null : { permissionQueue: nextQueue };
           });
         } else if (msg.type === 'perm-hook-resolved') {
           // 另一端已审批，清除本端面板 or remove from queue
+          if (msg.id == null) return;
+          const permId = String(msg.id);
           this.setState(state => {
-            if (state.pendingPermission?.id === msg.id) {
+            if (state.pendingPermission != null && String(state.pendingPermission.id) === permId) {
               const next = state.permissionQueue[0] || null;
               return { pendingPermission: next, permissionQueue: state.permissionQueue.slice(1) };
             }
-            return { permissionQueue: state.permissionQueue.filter(p => p.id !== msg.id) };
+            const nextQueue = state.permissionQueue.filter(p => String(p.id) !== permId);
+            return nextQueue.length === state.permissionQueue.length ? null : { permissionQueue: nextQueue };
           });
         } else if (msg.type === 'sdk-plan-resolved') {
-          if (this.state.pendingPlanApproval?.id === msg.id) {
-            this.setState({ pendingPlanApproval: null });
-          }
+          if (msg.id == null) return;
+          const planId = String(msg.id);
+          this.setState(state => (
+            state.pendingPlanApproval != null && String(state.pendingPlanApproval.id) === planId
+              ? { pendingPlanApproval: null }
+              : null
+          ));
         } else if (msg.type === 'image-upload-notify') {
           // 另一个视图/设备上传了图片，同步到本端 pendingImages
           this._addPendingImage(msg.path, msg.source);
@@ -2534,10 +2843,14 @@ class ChatView extends React.Component {
   // 'open' 的 ask 相关恢复逻辑（重发 _pendingCancelIds + 拉 /api/pending-asks）已搬到 AskFlowController.onWsOpen。
   _onTerminalWsState = (state) => {
     if (state === 'open') {
+      this._clearSlowUpstreamToast();
       this._askFlow.onWsOpen();
       return;
     }
     if (state !== 'close') return;
+    this._clearSlowUpstreamToast();
+    this.setState({ sdkTaskSnapshot: { sessionId: null, tasks: [] },
+      sdkAgentSnapshot: { sessionId: null, agents: [] }, activeAgentsBarVisible: false });
     this._failPendingSequentialInputs();
     this._ptyProtocol.resetConnection();
     this._ptyPrompt.resetStream();
@@ -2618,6 +2931,7 @@ class ChatView extends React.Component {
 
   handlePromptOptionClick = (number) => {
     if (this._promptSubmitting) return;
+    if (this.props.sdkMode) return;
     const ws = this._inputWs;
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     // ptyPrompt 可能为 null（plan 卡片渲染后 PTY prompt 尚未检测到），
@@ -2696,6 +3010,7 @@ class ChatView extends React.Component {
   };
 
   handlePlanFeedbackSubmit = (number, text) => {
+    if (this.props.sdkMode) return;
     const ws = this._inputWs;
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     let prompt = this.state.ptyPrompt;
@@ -2760,7 +3075,7 @@ class ChatView extends React.Component {
   };
 
   // 委托 → AskFlowController（handleAskCancel 是 public 入口：bubble handlers + ChatMessage props 引用）
-  handleAskCancel = (askId, reason) => this._askFlow.handleAskCancel(askId, reason);
+  handleAskCancel = (askId, reason, sdkRequestId) => this._askFlow.handleAskCancel(askId, reason, sdkRequestId);
 
   /**
    * Send queued user message after ack received (or 500ms timeout best effort).
@@ -2797,12 +3112,119 @@ class ChatView extends React.Component {
     </div>
   )) : [];
 
+  // An explicit user send starts a fresh turn: drop the pinned error rows (a retry's
+  // own failure re-posts a row). Cleared here — NOT on sdk-session-state 'running' —
+  // because the server's queue auto-drain announces running right after the error
+  // frame, which would wipe the row before the user ever sees it.
+  _clearSdkErrors = () => {
+    if (this._sdkRetryResetTimer) { clearTimeout(this._sdkRetryResetTimer); this._sdkRetryResetTimer = null; }
+    if ((this.state.sdkErrors || []).length || this.state.sdkRetry) this.setState({ sdkErrors: [], sdkRetry: null });
+  };
+
+  // Manual [retry] of a retryable failed turn. Sends sdk-retry-turn to the server; a
+  // rejected phase / 15s fallback restores the row's button if the server never answers.
+  _handleSdkRetry = (row) => {
+    const ws = this._inputWs;
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      try { message.warning(t('ui.sendFailed')); } catch {}
+      return;
+    }
+    this.setState(prev => ({
+      sdkRetry: { phase: 'recovering', retryOf: row.turnId || null, turnId: null },
+      sdkErrors: (prev.sdkErrors || []).map(e => (e === row || (row.turnId && e.turnId === row.turnId)) ? { ...e, recovering: true } : e),
+    }));
+    if (!sendTerminalSocketMessage(ws, { type: 'sdk-retry-turn', project: this.props.viewProject || this.props.projectName || undefined, instanceKey: this.props.viewInstance || undefined, turnId: row.turnId || null })) {
+      // Roll back ONLY the clicked row (a broadcast 'recovering' on a sibling row must
+      // not be un-locked by this send failure).
+      try { message.warning(t('ui.sendFailed')); } catch {}
+      this.setState(prev => ({ sdkRetry: null, sdkErrors: (prev.sdkErrors || []).map(e => (row.turnId && e.turnId === row.turnId) ? { ...e, recovering: false } : e) }));
+      return;
+    }
+    this._armSdkRetryReset();
+  };
+
+  _armSdkRetryReset = () => {
+    if (this._sdkRetryResetTimer) clearTimeout(this._sdkRetryResetTimer);
+    this._sdkRetryResetTimer = setTimeout(() => {
+      this._sdkRetryResetTimer = null;
+      if (this._unmounted) return;
+      this.setState(prev => ({
+        sdkRetry: null,
+        sdkErrors: (prev.sdkErrors || []).map(e => e.recovering ? { ...e, recovering: false } : e),
+      }));
+    }, 15000);
+  };
+
+  // Persistent sdk-error rows pinned at the dialogue tail (all three messageList
+  // branches render them). One live region for the stack; rows are plain divs.
+  // P2-5 a11y: a visually-hidden live region carries a one-line announcement of the
+  // LATEST error (always mounted, so the first error is reliably announced; the visible
+  // stack itself is not a live region, so recurrences never re-read 3 stack traces).
+  _renderSdkErrorAnnouncer = () => {
+    const rows = this.state.sdkErrors || [];
+    if (!this.props.sdkMode) return null;
+    const latest = rows.length ? rows[rows.length - 1] : null;
+    return (
+      <div className={styles.srOnly} role="status">
+        {latest ? t('ui.sdkError', { detail: latest.message }) : ''}
+      </div>
+    );
+  };
+
+  _renderSdkErrors = (emptyState = false) => {
+    const rows = this.state.sdkErrors || [];
+    const retry = this.state.sdkRetry;
+    if (rows.length === 0 && !retry) return null;
+    // Codex has no structured retry counters. Display its own notice verbatim in
+    // the original progress row; manual continuation uses the original localized label.
+    const retryRow = retry ? (
+      <div key="sdk-retry" className={styles.sdkRetryRow} role="status">
+        {retry.phase === 'recovering'
+          ? t('ui.sdkRetry.recovering')
+          : retry.error}
+      </div>
+    ) : null;
+    return (
+      <div className={emptyState ? `${styles.sdkErrorStack} ${styles.sdkErrorStackEmpty}` : styles.sdkErrorStack}>
+        {retryRow}
+        {rows.map((row) => {
+          const { message: detail, ts, count, turnId, retryable, code, recovering } = row;
+          // A row whose retry is in progress is hidden ENTIRELY (error text, [retry]
+          // button, timestamp) — only the top recovering/retrying progress line shows.
+          // Showing the error beside a "recovering" tag reads as two parallel states.
+          // The row reappears only when the retry settles to a failure (recovering reset
+          // to false) or is cleared on success.
+          if (recovering) return null;
+          // A localized code label replaces the raw detail in the visible text, but the
+          // raw detail is preserved on title/aria-label for diagnosis.
+          const codeKey = code ? `ui.sdkErrorCode.${code}` : null;
+          const codeLabel = codeKey && t(codeKey) !== codeKey ? t(codeKey) : null;
+          const label = codeLabel || t('ui.sdkError', { detail });
+          const showRetry = retryable && turnId;
+          return (
+            <div key={detail} className={styles.sdkErrorRow} title={detail} aria-label={detail}>
+              {label}
+              {count > 1 ? <span className={styles.sdkErrorCount}>×{count}</span> : null}
+              {showRetry ? (
+                <button type="button" className={styles.sdkRetryBtn} onClick={() => this._handleSdkRetry(row)}>
+                  {t('ui.sdkRetry.retry')}
+                </button>
+              ) : null}
+              <span className={styles.sdkErrorTs}>{formatHms(new Date(ts))}</span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   _removeSdkQueuedInput = id => {
     if (!sendTerminalSocketMessage(this._inputWs, { type: 'sdk-queue-remove', id })) message.error(t('ui.sendFailed'));
   };
 
   _sendSdkQueuedNow = id => {
     if (!sendTerminalSocketMessage(this._inputWs, { type: 'sdk-queue-send-now', id })) message.error(t('ui.sendFailed'));
+    else this._clearSdkErrors();
   };
 
   _sendUserMessageImmediate = (text, textareaToReset, skipUiState, pendingId) => {
@@ -2817,6 +3239,7 @@ class ChatView extends React.Component {
       return false;
     }
     // Only a successful send unlocks the optimistic context-bar state.
+    if (this.props.sdkMode) this._clearSdkErrors();
     if (!/^\s*\/clear(\s|$)/.test(text)) this.props.onUserMessageSent?.();
     if (!this.props.sdkMode) {
       setTimeout(() => {
@@ -2840,7 +3263,7 @@ class ChatView extends React.Component {
   };
 
   // 委托 → AskFlowController
-  handleAskQuestionSubmit = (answers, askId, questions) => this._askFlow.handleAskQuestionSubmit(answers, askId, questions);
+  handleAskQuestionSubmit = (answers, askId, questions, sdkRequestId) => this._askFlow.handleAskQuestionSubmit(answers, askId, questions, sdkRequestId);
 
   // 清除乐观停止标志 + 兜底定时器。收口 4 处重复（流式下降沿/上升沿、会话切换、发起新一轮）；
   // 各调用点自带触发条件，这里只统一做 timer + state 清理。
@@ -2876,6 +3299,7 @@ class ChatView extends React.Component {
     // SDK 模式模型不在 PTY 里，ESC 无效 → 发 sdk-interrupt 让服务端 close 当前 query（保留会话）；
     // CLI/PTY 模式 → ESC 打断 Codex TUI 当前生成。
     if (this.props.sdkMode) {
+      this._clearSlowUpstreamToast();
       this._inputWs.send(JSON.stringify({ type: 'sdk-interrupt' }));
     } else {
       // CLI/PTY 模式：ESC 打断 Codex TUI 当前生成。
@@ -2967,6 +3391,10 @@ class ChatView extends React.Component {
       e.preventDefault();
       this.handleInputSend();
     }
+  };
+
+  _handleActiveAgentsVisibility = (visible) => {
+    if (visible !== this.state.activeAgentsBarVisible) this.setState({ activeAgentsBarVisible: visible });
   };
 
   handleInputChange = (e) => {
@@ -3320,6 +3748,18 @@ class ChatView extends React.Component {
     const { mainAgentSessions, cliMode, terminalVisible, onToggleTerminal } = this.props;
     const { allItems, visibleCount, loading, terminalWidth, sidebarWidth } = this.state;
     const streamSpinnerUrl = this._streamSpinnerUrl || shimmerUrl;
+    const isElectronTab = typeof window !== 'undefined' && !!window.tabBridge;
+    const showProxyChip = !this.props.isLocalLog && (this.props.sdkMode || !terminalVisible)
+      && !(isMobile && !isPad) && !isElectronTab;
+    const proxyChipNode = showProxyChip ? (
+      <ProxyChip
+        proxyProfiles={this.props.proxyProfiles}
+        activeProxyId={this.props.activeProxyId}
+        sdkMode={this.props.sdkMode}
+        sdkModel={this.props.sdkModel}
+        onOpenProxyModal={() => this.setState({ proxyModalVisible: true })}
+      />
+    ) : null;
 
     // 计算 SnapLineOverlay 的 currentLeft（侧栏拖拽时用侧栏宽度，终端拖拽时用终端位置）
     let snapCurrentLeft = 0;
@@ -3538,6 +3978,12 @@ class ChatView extends React.Component {
       })} />
     ) : null;
 
+    const showActiveAgentsBar = this.props.sdkMode && !this.state.roleFilterOpen
+      && this.props.sessionUpperBoundTs == null && this.props.attachedSid == null && !this._getIsHistoryLog();
+    const activeAgentsBar = showActiveAgentsBar ? (
+      <ActiveAgentsBar snapshot={this.state.sdkAgentSnapshot} onVisibleChange={this._handleActiveAgentsVisibility} />
+    ) : null;
+
     const messageList = (noData || loading) ? (
       <div className={styles.messageListWrap}>
         <div ref={this.containerRef} className={styles.container}>
@@ -3548,12 +3994,18 @@ class ChatView extends React.Component {
             </div>
           ) : null}
           {pendingBubbles}
+          {this._renderSdkErrors(true)}
+          <div className={styles.inputStackSpacer} aria-hidden="true" />
         </div>
+        {activeAgentsBar}
         {stickyBtn}
       </div>
     ) : (
-      <div className={styles.messageListWrap} onClick={this.handleMdImageClick}>
+      <div className={roleFilterBar ? `${styles.messageListWrap} ${styles.withRoleFilter}`
+        : (activeAgentsBar && this.state.activeAgentsBarVisible
+          ? `${styles.messageListWrap} ${styles.withActiveAgents}` : styles.messageListWrap)} onClick={this.handleMdImageClick}>
         {roleFilterBar}
+        {activeAgentsBar}
         {this.state.mdLightboxSrc && (
           <ImageLightbox src={this.state.mdLightboxSrc} alt="" onClose={() => this.setState({ mdLightboxSrc: null })} />
         )}
@@ -3562,11 +4014,13 @@ class ChatView extends React.Component {
           this._virtuosoFooter = <>
             {spinnerNode}
             {pendingBubbles}
+            {this._renderSdkErrors()}
             {streamingLiveItem && (
               targetIdx != null && targetIdx >= visible.length
                 ? <div key="stream-resp-anchor" ref={this._scrollTargetRef}>{streamingLiveItem}</div>
                 : streamingLiveItem
             )}
+            <div className={styles.inputStackSpacer} aria-hidden="true" />
           </>,
           <Virtuoso
             ref={this.virtuosoRef}
@@ -3586,7 +4040,7 @@ class ChatView extends React.Component {
               if (needsHighlight) el = React.cloneElement(el, { highlight: highlightFading ? 'fading' : 'active' });
               return isScrollTarget ? <div ref={this._scrollTargetRef}>{el}</div> : el;
             }}
-            scrollerRef={(ref) => { this._virtuosoScrollerEl = ref; this._stickyController.bind(ref); }}
+            scrollerRef={(ref) => { this._virtuosoScrollerEl = ref; this._stickyController.bind(ref); this._bindChatScrollbarRO(); }}
             context={{ header: this._virtuosoHeader, footer: this._virtuosoFooter }}
             components={this._virtuosoComponents || (this._virtuosoComponents = {
               Scroller: VirtuosoScroller,
@@ -3614,11 +4068,13 @@ class ChatView extends React.Component {
             })}
             {spinnerNode}
             {pendingBubbles}
+            {this._renderSdkErrors()}
             {streamingLiveItem && (
               targetIdx != null && targetIdx >= visible.length
                 ? <div key="stream-resp-anchor" ref={this._scrollTargetRef}>{streamingLiveItem}</div>
                 : streamingLiveItem
             )}
+            <div className={styles.inputStackSpacer} aria-hidden="true" />
           </div>
         )}
         {stickyBtn}
@@ -3825,7 +4281,7 @@ class ChatView extends React.Component {
             {messageList}
             {/* inputStack 把审批面板 + 输入栏包成同一个定位容器，
                 面板用 position:absolute; bottom:100% 自动贴在输入栏顶部之上，不遮挡 */}
-            <div className={styles.inputStack}>
+            <div className={styles.inputStack} ref={this.inputStackRef}>
             {/* 如果父组件处理全局渲染（移动端通过 suppressInlineApprovalPanels），跳过本地渲染 */}
             {!this.props.suppressInlineApprovalPanels && (
               <ToolApprovalPanel
@@ -3855,11 +4311,26 @@ class ChatView extends React.Component {
               />
             )}
             <WorkflowLiveHud />
+            {this._renderSdkErrorAnnouncer()}
+            {this.props.sdkMode && this.state.sdkCompactNotices.length > 0 && (() => {
+              const n = this.state.sdkCompactNotices[this.state.sdkCompactNotices.length - 1];
+              const tokens = (n.preTokens != null && n.postTokens != null)
+                ? ` (${Math.round(n.preTokens / 1000)}k → ${Math.round(n.postTokens / 1000)}k)`
+                : '';
+              return (
+                <div className={styles.sdkNoticeBanner} key={`sdkc-${n.ts}`}>
+                  {t('ui.sdkCompacted')}{tokens}
+                </div>
+              );
+            })()}
             {this.props.sdkMode && this.state.sdkQueuedInputs.length > 0 && (
               <div className={styles.queueBubbleStack} role="status"
                 aria-label={t(this.state.sdkQueuePaused ? 'ui.sdkQueue.paused' : 'ui.chatInput.queueHint')}>
                 {this._renderSdkQueueBubbles()}
               </div>
+            )}
+            {this.props.sdkMode && !this.props.isLocalLog && this.props.sessionUpperBoundTs == null && (
+              <TaskProgressHud snapshot={this.state.sdkTaskSnapshot} />
             )}
             <ChatInputBar
               onResumeSession={this.props.onResumeSession} resumeInstanceKey={this.props.resumeInstanceKey}
@@ -3867,7 +4338,8 @@ class ChatView extends React.Component {
               inputRef={this._inputRef}
               inputEmpty={this.state.inputEmpty}
               inputSuggestion={this.state.inputSuggestion}
-              terminalVisible={terminalVisible && !this.props.sdkMode}
+              terminalVisible={terminalVisible}
+              sdkMode={this.props.sdkMode}
               onKeyDown={this.handleInputKeyDown}
               onChange={this.handleInputChange}
               onSend={this.handleInputSend}
@@ -3923,6 +4395,7 @@ class ChatView extends React.Component {
               sendDeferred={this.state.sendDeferred}
               onUploadStart={this.handleUploadStart}
               onUploadEnd={this.handleUploadEnd}
+              proxyChip={proxyChipNode}
               setContextBarSlot={this.props.setContextBarSlot}
               approvalsReviewer={this.props.approvalsReviewer}
               onApprovalsReviewerChange={this.props.onApprovalsReviewerChange}
@@ -3930,6 +4403,17 @@ class ChatView extends React.Component {
               onPlanAutoApproveChange={this.props.onPlanAutoApproveChange}
             />
             </div>
+            {!(isMobile && !isPad) && (
+              <ProxyModal
+                open={this.state.proxyModalVisible}
+                onClose={() => this.setState({ proxyModalVisible: false })}
+                proxyProfiles={this.props.proxyProfiles}
+                activeProxyId={this.props.activeProxyId}
+                proxyProfilesLoadError={this.props.proxyProfilesLoadError}
+                defaultConfig={this.props.defaultConfig}
+                onProxyProfileChange={this.props.onProxyProfileChange}
+              />
+            )}
             <UltraPlanModal
               open={this.state.ultraplanModalOpen}
               variant={this.state.ultraplanVariant}

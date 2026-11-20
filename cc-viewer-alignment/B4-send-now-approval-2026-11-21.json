@@ -1,0 +1,76 @@
+{
+  "date": "2026-11-21",
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": [
+    "dafe2bce374df1daf3e81526a4b42c9189e620f0",
+    "1aca9b5f8f207903a7516a8036a7fa590808ca16"
+  ],
+  "subitem": "Send-now preemption must synchronously cancel pending native root approvals before interrupt unwinds.",
+  "sourceAudit": [
+    "dafe actual SDK interrupt/send-now and server/CLI wiring, chat-queue/IM exports and core orphan-checkpoint diff reviewed. Fixed-final _sendQueuedNow uses _interruptTurn({keepDispatch:true}), which starts with _cancelAllApprovals.",
+    "Later1aca dispatch-selection/acceptance/park/reset diff and fixed-final dispatch/interrupt flow inspected; do not treat all queue acceptance details as newly complete.",
+    "Local manager send-now/Stop/run/queue/reset, native approval clearThread/respond/replay, transport cancellation, server fixed-anchor actions/reconnect, B2 queue tests and completion evidence traced."
+  ],
+  "implementation": "Reuse existing clearThread for appserver send-now before abort, exactly as local Stop does. One production line, no new approval policy, UI or CSS.",
+  "red": {
+    "tests": 1,
+    "failed": 1,
+    "log": "/tmp/cxv-b4-send-now-approval-red.log",
+    "failure": "Pending native approval remains replayable immediately after send-now selection."
+  },
+  "target": {
+    "tests": 28,
+    "passed": 28,
+    "skipped": 0,
+    "log": "/tmp/cxv-b4-send-now-approval-target.log"
+  },
+  "full": {
+    "tests": 1571,
+    "passed": 1571,
+    "groups": [
+      5,
+      328,
+      1026,
+      212
+    ],
+    "skipped": 0,
+    "log": "/tmp/cxv-b4-send-now-approval-full.log"
+  },
+  "build": {
+    "status": "passed",
+    "log": "/tmp/cxv-b4-send-now-approval-build.log"
+  },
+  "installed": {
+    "status": "passed",
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-1t48zxa3",
+    "files": 702,
+    "source_bytes_match": true,
+    "web_asset_files": 204,
+    "runtime_tests": "286/286",
+    "b12_regression": "passed",
+    "installed_cli_relative_cd_boot": "passed",
+    "uses_fake_codex": true,
+    "uses_real_model_network": false,
+    "log": "/tmp/cxv-b4-send-now-approval-installed.log"
+  },
+  "instanceAttempt": {
+    "environment": "Two isolated native App Server fake stdio children in same-named directories, real production manager/client/approval bridge.",
+    "passed": [
+      "invalid queue id leaves approval pending",
+      "selected preemption removes old pending approval synchronously",
+      "late allow returns false",
+      "sibling approval remains pending",
+      "existing scoped perm-hook-timeout emitted",
+      "next input once, same thread, queue empty"
+    ],
+    "realModelNetwork": false,
+    "shellCommandsExecuted": false,
+    "gui": "Not newly verified; E53 native CUA startup failure remains the latest browser boundary. Do not claim approval UI or real-model send-now GUI passed."
+  },
+  "mixedScope": {
+    "sdkQueue": "Existing B2 authority/IDs/50-cap/removal/Stop park/send-now/reconnect and E4/E5 native support reused;21 existing targeted tests rerun before the new red,28 after fix. No duplicate global queue or browser-view clear added.",
+    "ptyQueue": "Fixed chat-queue is Claude PTY-specific and has dispatch/restore/scope/idle/IM mutex guards. Local Codex PTY busy-queue parity has NOT been demonstrated; keep pending, do not call protocol-inapplicable or copy claude kind blindly.",
+    "orphanCheckpoint": "Actual core helper remains unchanged at fixed baseline. Local retained batch helper skips checkpoints too, but only imported by ImConversationModal; no mount found, required logs/senders routes absent from current DingTalk route matcher. Existing /api/im-log standalone legacy raw endpoint does not call reconstructor. No active B4 main V2 path consumes this legacy delta format. Defer the unresolved integration and orphan fix to B11 IM, not B10 service plugins; no fake completion or unused API expansion.",
+    "remaining": "E53 final GUI, PTY queue, other mixed queue/SDK full-surface, Context decisions, and B4 remain pending; no push."
+  }
+}

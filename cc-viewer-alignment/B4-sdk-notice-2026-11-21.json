@@ -1,0 +1,53 @@
+{
+  "date": "2026-11-21",
+  "upstream": "7a2dd6162e1465071a755606d77de22d7c0caa90",
+  "previous_entry": {
+    "E58": "76bff2c"
+  },
+  "choice": "Original system-prompt position,accurate Codex placeholder and real HTTP distinction.",
+  "audit": [
+    "Actual ContextTab diff,fixed-final original system section and later c185 Step rename;complete local ContextTab parsing/selection/raw/render flow and separator/markdown CSS.",
+    "Actual sdkToJSONLEntry default instructions and strict source marker;B3 request summary preserves source marker."
+  ],
+  "implementation": "Strict _sdkSource===true prop plus exact default instructions;original separator and markdown appended only in display blocks;raw/model request unchanged;18language truthful notice. No CSS/layout changes.",
+  "red": {
+    "failed": 1,
+    "log": "/tmp/cxv-b4-sdk-notice-red.log"
+  },
+  "target": {
+    "passed": 52,
+    "skipped": 0,
+    "log": "/tmp/cxv-b4-sdk-notice-target.log"
+  },
+  "full": {
+    "passed": 1579,
+    "groups": [
+      5,
+      332,
+      1030,
+      212
+    ],
+    "skipped": 0,
+    "log": "/tmp/cxv-b4-sdk-notice-full.log"
+  },
+  "build": {
+    "status": "passed",
+    "log": "/tmp/cxv-b4-sdk-notice-build.log"
+  },
+  "installed": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-85bb4dif",
+    "files": 702,
+    "source_bytes_match": true,
+    "web_asset_files": 204,
+    "runtime_tests": "290/290",
+    "b12_regression": "passed",
+    "installed_cli_relative_cd_boot": "passed",
+    "uses_fake_codex": true,
+    "uses_real_model_network": false
+  },
+  "instanceAttempt": "Actual adapter and React callbacks through DetailPanel/ContextTab,select instructions then raw switch. Placeholder display only,unchanged raw;real HTTP same text/string source flag/custom SDK instructions omitted. Zero fetch/control/model requests.",
+  "limits": [
+    "Both CUA browser/native channels unavailable;actual visual validation pending,not passed.",
+    "Other Context/mixed candidates and B4 pending;no squash/push/PR."
+  ]
+}

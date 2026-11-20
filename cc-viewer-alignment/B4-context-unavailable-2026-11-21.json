@@ -1,0 +1,71 @@
+{
+  "date": "2026-11-21",
+  "upstreams": [
+    "04d05a58240132f057eeef6e830794190b10bc04",
+    "133bc219df78920cdc3a5cb56f48cbe067e467e5",
+    "ad369d285677dd0b08c3be7126abd2132c797324",
+    "9c36b5b5a74eff61c88d27bdea1537666e771a73",
+    "5ee6739cbaba22a6a6d341c020bb7d54c493e5d0",
+    "ec14cd02346074fa3e81032cbf304564dc7e334b"
+  ],
+  "choice": "Retain original Context Usage entry,explicit unavailable category detail,current token bar unchanged.",
+  "audit": [
+    "Original04SDK/route/CLI/server/App/DetailPanel diff,fixed-final full UsageTab/full222line Provider/final route/center CSS.",
+    "133 stable dispatch,9c actual category color helper/CSS,ad369complete timer cleanup and ec14 related provider deadline. Other memory/schedule mixed changes not claimed fully audited.",
+    "Official Codex SDK0.142.5 Thread declarations and generated native ThreadTokenUsageUpdatedNotification:totals/window only,no Claude category control."
+  ],
+  "centerCssSha256": "c71bbc785c97beac915368a0ae9f6f28b833ea668563d8c3c233f0844c6317a1",
+  "implementation": "Original tab order/wrapper/SDK-only gate and Empty/secondary branch;exact center CSS;18original labels and18unavailable messages.No category numbers/refresh/control endpoint/provider/fetch/timers;existing usage bar unchanged.",
+  "red": {
+    "failed": 1,
+    "log": "/tmp/cxv-b4-context-unavailable-red.log"
+  },
+  "target": {
+    "passed": 55,
+    "usage_regressions": 7,
+    "skipped": 0,
+    "logs": [
+      "/tmp/cxv-b4-context-unavailable-target.log",
+      "/tmp/cxv-b4-context-unavailable-usage.log"
+    ]
+  },
+  "full": {
+    "passed": 1579,
+    "groups": [
+      5,
+      332,
+      1030,
+      212
+    ],
+    "skipped": 0,
+    "log": "/tmp/cxv-b4-context-unavailable-full.log"
+  },
+  "build": {
+    "status": "passed",
+    "log": "/tmp/cxv-b4-context-unavailable-build.log"
+  },
+  "installed": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-m9b0az2f",
+    "files": 702,
+    "source_bytes_match": true,
+    "web_asset_files": 204,
+    "runtime_tests": "290/290",
+    "b12_regression": "passed",
+    "installed_cli_relative_cd_boot": "passed",
+    "uses_fake_codex": true,
+    "uses_real_model_network": false
+  },
+  "instanceAttempt": "Actual bundled DetailPanel renders original ordered tabs;invoke actual UsageTab across18locales,repeated render zero fetch,mode switch validates active key.Original token usage regressions pass.No new browser pass.",
+  "gui": {
+    "status": "unverified",
+    "observed_failure": [
+      "Sky Computer Use native pipe startup failed",
+      "The browser access host is unavailable"
+    ],
+    "reproduce": "After CUA recovery,use isolated SDK fixture,open request detail then Context Usage;expect original Context/Usage/MCP order,centered unavailable text,no model control,existing bar unchanged;PTY/local log hides SDK tab."
+  },
+  "limits": [
+    "Mixed memory/schedule/hook/release work belongs separate packages and not blanket complete.",
+    "B4 still in progress;no squash/push/PR."
+  ]
+}

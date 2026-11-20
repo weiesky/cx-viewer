@@ -1,0 +1,19 @@
+{
+  "date": "2026-11-20",
+  "upstream": "bd32d02884082a6d15f2b213855537e667cdefd0",
+  "laterFix": "b23c1373 adds distinct post-shard-rotation reattach; B3 canonical generation/reset contract retained.",
+  "implementation": "Reuse canonical B3 frozen snapshot cursor, persistent commits and atomic publisher replay; no suppress-to-current-EOF feed state or new runtime code.",
+  "sourceReview": "Actual live-feed watermark/limited seed/new-conv file/follow-up read/stat failure/eviction diff and fixed final behavior; local HTTP resume pin, writer, live route and publisher chain.",
+  "additionalHttpTest": "11/11,0 skip; first resumed turn fully finishes before a new SSE attaches from frozen pre-turn snapshot cursor; receives a newer commit on restored session, no reset/no new snapshot.",
+  "companionTarget": "41/41,0 skip (wire/object routes and HTTP suite with initial concurrent-submit version); final forced pre-attach version then verified by full HTTP file11/11.",
+  "lastFullBuildInstallation": "E41 1543/full, build,702files/204exactWeb/280runtime; unchanged production code, not rerun.",
+  "logs": [
+    "/tmp/cxv-b4-resumed-live-target.log",
+    "/tmp/cxv-b4-resumed-live-http.log"
+  ],
+  "limits": [
+    "Official SDK + synthetic CLI/real local HTTP-SSE, no external model or new browser claim.",
+    "No upstream V3 raw-file suppression cache copied into canonical storage.",
+    "Release/history B11 remains separate; Windows file-error behavior not newly verified."
+  ]
+}

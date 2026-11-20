@@ -1,0 +1,36 @@
+{
+  "date": "2026-11-21",
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "candidates": [
+    {
+      "upstream": "3cc05b496dd2c0535df492455001b2524d091ef4",
+      "read": "All runtime diffs:interceptor-core/interceptor/proxy/PTY/preferences,AppBase/App/Mobile/AppHeader/ProxyModal/CSS,V2adapter/writer/live/meta,V3assembler/rows. Fixed-final role helpers retained;later wire-header identity and SDK gate traced through prior E33/E49/E57.",
+      "local": "No production proxyRole/proxyRoles/roleIds/classifyProxyRole pipeline. Existing per-instance profile and native thread/parent/header identities only.",
+      "ownership": "B8 per-role source configuration,atomic storage/watch,dormancy,proxy rewrite/auth/retry,statistics metadata still unimplemented. B4 identity reuses E9/E24/E33;no empty role UI or fake Claude heuristic."
+    },
+    {
+      "upstream": "3a2159219b0d02858bb385ebc12a5009397b7b36",
+      "read": "All7original file diffs,fixed-final shared window rules;17df4e2fbf4a5d0ec1a96431dc10df851c2afd77 DeepSeek alias and6363a51ec02f7b0518df69095dc382b26406ece4 Kimi alias changes. Complete localcontext-rules/context-watcher/percentage and Workflow callsites.",
+      "local": "353000 fixed bar explicit existing contract;helper only Workflow 1M tag. Native raw modelContextWindow retained. User selected existing usage bar unchanged.",
+      "ownership": "Unknown-name1M convention/model aliases and capacity tags are B8 model policy still pending,not a lifecycle producer and not completed by this audit."
+    }
+  ],
+  "changes": "Documentation only,no production/test/CSS/DOM changes.",
+  "latestValidation": {
+    "entry": "E60",
+    "commit": "f825be3",
+    "sourceTests": 1579,
+    "installedTests": 290,
+    "files": 702,
+    "exactWebAssets": 204,
+    "build": "passed",
+    "b12": "passed",
+    "isolatedCli": "passed",
+    "newTestRun": false
+  },
+  "pending": [
+    "PTY busy queue and remaining efc7 scope audit",
+    "GUI CUA native pipe/browser host unavailable",
+    "B4 incomplete,no squash/push/PR"
+  ]
+}

@@ -106,6 +106,14 @@ test('request summary persists direct OpenAI Responses as Master', () => {
   assert.deepEqual(summary.classification, { type: 'Master', subType: null });
 });
 
+test('native title summaries retain only the typed source hint and Synthetic tag', () => {
+  const summary = buildRequestSummary({ _appServerSource: true, mainAgent: false,
+    body: { metadata: { threadSource: 'thread_title', ephemeral: true, cwd: '/private/fixture' }, input: [] } });
+  assert.deepEqual(summary.classification, { type: 'Synthetic', subType: 'Title' });
+  assert.deepEqual(summary.body.metadata, { threadSource: 'thread_title', ephemeral: true });
+  assert.equal(JSON.stringify(summary).includes('/private/fixture'), false);
+});
+
 test('request summary keeps only usage response headers for lightweight usage display', () => {
   const summary = buildRequestSummary({
     timestamp: '2026-07-16T00:00:00.000Z',

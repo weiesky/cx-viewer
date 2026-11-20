@@ -4,6 +4,7 @@ import { projectLogV2ConversationEntry } from './logV2ConversationProjection.js'
 import { classifyRequest } from '../../../../packages/app/src/utils/requestType.js';
 import { selectUsageHeaders } from '../../../../packages/app/lib/log-v2/request-summary.js';
 import { isOpenAiResponsesMasterEntry } from '../../../../packages/app/lib/openai-responses-url.js';
+import { isNativeTitleEntry } from '../../../../packages/app/lib/codex-thread-source.js';
 
 function summaryEntry(summary, descriptor, handle) {
   const responseSummary = summary.response;
@@ -29,6 +30,7 @@ function rowHandle(descriptor) {
 }
 
 export function isV2ConversationCandidate(row) {
+  if (isNativeTitleEntry(row)) return false;
   if (isOpenAiResponsesMasterEntry(row)) return false;
   const type = row?._classification?.type;
   if (type === 'Master') return false;

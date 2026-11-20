@@ -1,0 +1,129 @@
+{
+  "root": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-KNLZMc",
+  "realCodex": "codex-cli 0.169.0",
+  "officialSdk": "0.142.5",
+  "externalModelNetwork": false,
+  "credentials": "isolated fixture-only",
+  "productionTransportChanged": false,
+  "threadConfigJson": false,
+  "agentsSpawned": true,
+  "agents": {
+    "childThreadId": "01a1f772-0f17-74b2-beb8-a7a3178af7ce",
+    "rootTurnAlreadyCompleted": true,
+    "rawFramesBeforeSubscribe": 10,
+    "identityRead": "thread/read",
+    "childTerminal": "completed",
+    "spawnStatus": {
+      "01a1f772-0f17-74b2-beb8-a7a3178af7ce": {
+        "status": "pendingInit",
+        "message": null
+      }
+    },
+    "source": {
+      "subAgent": {
+        "thread_spawn": {
+          "parent_thread_id": "01a1f772-077d-7200-853b-4b15827ab0f8",
+          "depth": 1,
+          "agent_path": null,
+          "agent_nickname": "Chandrasekhar",
+          "agent_role": "default"
+        }
+      }
+    }
+  },
+  "appServer": {
+    "stdioHandshake": true,
+    "sameNameSeparateProcesses": true,
+    "independentTurns": true,
+    "plan": [
+      {
+        "step": "Read baseline",
+        "status": "completed"
+      },
+      {
+        "step": "Verify protocol",
+        "status": "inProgress"
+      },
+      {
+        "step": "Record evidence",
+        "status": "pending"
+      }
+    ],
+    "streamingDeltas": true,
+    "exactTurnInterrupt": true,
+    "failedTurn": true,
+    "restartNativeResume": true
+  },
+  "sdk": {
+    "realTodoListReplay": true,
+    "statuses": [
+      "completed",
+      "pending",
+      "pending"
+    ]
+  },
+  "normalizedTransport": {
+    "actualModule": true,
+    "textAndPlan": true,
+    "cancellation": true,
+    "continueAfterCancel": true,
+    "restartResume": true
+  },
+  "managerIntegration": {
+    "explicitOnly": true,
+    "archiveIdentityRetained": true,
+    "genuinePlanStatus": true,
+    "independentQueue": true,
+    "interruptionParksQueue": true,
+    "sendNowOnSameNativeThread": true,
+    "busyTransportSwitchRejected": true,
+    "v2ExecArchiveToNativeResume": true,
+    "v2NativeArchiveToExecResume": true
+  },
+  "nativeQuestions": {
+    "answer": true,
+    "cancelEmptyAnswers": true,
+    "exactInstanceReply": true,
+    "transcriptToolResult": true
+  },
+  "nativeMcpImages": {
+    "realCli": true,
+    "structuredTranscript": true,
+    "rawToolOutput": true
+  },
+  "schema": {
+    "planStatuses": [
+      "pending",
+      "inProgress",
+      "completed"
+    ],
+    "agentStatuses": [
+      "pendingInit",
+      "running",
+      "interrupted",
+      "completed",
+      "errored",
+      "shutdown",
+      "notFound"
+    ],
+    "collabRequiredFields": [
+      "agentsStates",
+      "id",
+      "receiverThreadIds",
+      "senderThreadId",
+      "status",
+      "tool",
+      "type"
+    ]
+  },
+  "requestCount": 27,
+  "unverified": [
+    "child interrupt/reuse/nested lifecycle",
+    "real native command/file/permissions approval requests",
+    "real dynamicToolCall image output",
+    "all CLI options",
+    "OS process descendants",
+    "WebSocket reconnect",
+    "Windows/Linux/minimum Node"
+  ]
+}

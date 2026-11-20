@@ -1,0 +1,30 @@
+{
+  "upstream": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstreamCommits": [
+    "9dbf4e295a08e472c0b15cfb66de1cc80c77cfa3",
+    "3d65bedcd1b47a8de7f0ff1bdfec3a11efbc9fa0",
+    "1bfc1585e833d037a7dab6fe23e5a8c0aac48c08"
+  ],
+  "checks": {
+    "if (terminalVisible && !sdkMode) {": true,
+    "!(isMobile && !isPad) && !(terminalVisible && !sdkMode) && setContextBarSlot": true,
+    "if (terminalVisible && recRef.current) {": true
+  },
+  "cssUnchanged": true,
+  "cssSha256": "db09135c2528e8e693f65ee9ee969bdbaf37102014fcf465bc9c85921cd13ff8",
+  "gui": {
+    "fixture": "cxv-b4-tasks-gui-iCbUwe",
+    "pid": 59710,
+    "stopped": true,
+    "nativeCli": "fake",
+    "browser": "Safari",
+    "desktop": true,
+    "scratchOpenComposerAndContextBarVisible": true,
+    "draftEditableWhileOpen": true,
+    "refreshOpenAndClosedRestored": true,
+    "voiceCaptureNotTested": true
+  },
+  "webTests": 267,
+  "buildPassed": true,
+  "fullAndFreshInstallNotRepeated": true
+}

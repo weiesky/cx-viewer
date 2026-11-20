@@ -39,6 +39,32 @@ const RESUME_ONLY_FLAGS = new Set([
   '--include-non-interactive',
 ]);
 
+// Viewer options stop at `--`; known Codex option values remain literal too.
+export function extractSdkTransportOptions(args = []) {
+  const codexArgs = [];
+  let sdkMode = false, transport = null;
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--') { codexArgs.push(...args.slice(i)); break; }
+    if (GLOBAL_FLAGS_WITH_VALUE.has(arg)) {
+      codexArgs.push(arg);
+      if (i + 1 < args.length) codexArgs.push(args[++i]);
+      continue;
+    }
+    if (arg === '--sdk' || arg === '-SDK') { sdkMode = true; continue; }
+    if (arg === '--sdk-transport' || arg.startsWith('--sdk-transport=')) {
+      const value = arg === '--sdk-transport' ? args[++i] : arg.slice('--sdk-transport='.length);
+      if (transport !== null || !['exec', 'appserver'].includes(value)) {
+        throw new TypeError('--sdk-transport requires one value: exec or appserver');
+      }
+      transport = value; continue;
+    }
+    codexArgs.push(arg);
+  }
+  if (transport !== null && !sdkMode) throw new TypeError('--sdk-transport requires --sdk');
+  return { sdkMode, transport: transport || 'exec', codexArgs };
+}
+
 function translateLegacyCommandAlias(args) {
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];

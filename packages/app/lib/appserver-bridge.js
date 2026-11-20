@@ -22,8 +22,10 @@ import { BINARY_NAME } from '../findcx.js';
 import WebSocket, { WebSocketServer } from 'ws';
 import { getOriginalCodexBaseUrl } from './codex-config.js';
 import { DEFAULT_API_BASE } from './constants.js';
+import { isTemporaryTitleThread } from './codex-thread-source.js';
 import { isSupportedApprovalsReviewer, normalizeApprovalsReviewer } from './approval-reviewer.js';
 import { parseSupportedToolResultImage } from './tool-result-image-protocol.js';
+import { APPROVAL_SERVER_REQUEST_METHODS, describeServerRequest } from './codex-server-request.js';
 import {
   CodexRequestUserInputRelay,
   codexRequestUserInputItemId,
@@ -66,6 +68,41 @@ let _threadId = null;
 let _turnId = null;
 let _onTurnTerminal = null;
 let _onAgentMessageDelta = null;
+let _onAgentLoopStart = null, _onAgentLoopEnd = null, _loopCwd = null;
+const _pendingClientTurns = new Map(), _agentLoops = new Map();
+const turnRpcKey = (connection, id) => `${connection}\0${typeof id}:${id}`;
+
+function endAgentLoop(threadId, turnId, reason, ts = Date.now()) {
+  const rec = _agentLoops.get(threadId);
+  if (!rec || rec.turnId !== turnId) return;
+  _agentLoops.delete(threadId);
+  try { rec.onEnd?.({ ...rec.data, ts, reason }); } catch { /* observer isolation */ }
+}
+
+function clearAgentLoops(connection = null) {
+  for (const [key, pending] of _pendingClientTurns) {
+    if (connection == null || pending.connection === connection) _pendingClientTurns.delete(key);
+  }
+  for (const [threadId, rec] of _agentLoops) {
+    if (connection == null || rec.connection === connection) endAgentLoop(threadId, rec.turnId, 'session-ended');
+  }
+}
+
+function acceptAgentLoop(pending, turn) {
+  const thread = _threadMetaById.get(pending.threadId);
+  if (typeof turn?.id !== 'string' || !turn.id || getAgentIdentity(pending.threadId).subAgent
+      || isTemporaryTitleThread(thread)) return;
+  const old = _agentLoops.get(pending.threadId);
+  if (old?.turnId === turn.id) return;
+  if (old) endAgentLoop(pending.threadId, old.turnId, 'session-ended');
+  if (_agentLoops.size >= 128) return;
+  const data = { cwd: _loopCwd || _cwd, sessionId: pending.threadId, turnId: turn.id,
+    turnStartedAt: pending.startedAt, ts: Date.now() };
+  _agentLoops.set(pending.threadId, { data, turnId: turn.id, connection: pending.connection, onEnd: _onAgentLoopEnd });
+  try { _onAgentLoopStart?.({ ...data }); } catch { /* observer isolation */ }
+  const ended = getThreadState(pending.threadId).lastTerminalTurn;
+  if (ended?.id === turn.id) endAgentLoop(pending.threadId, turn.id, ended.reason, ended.ts);
+}
 
 export function setAppServerTurnTerminalListener(listener) {
   _onTurnTerminal = typeof listener === 'function' ? listener : null;
@@ -73,6 +110,9 @@ export function setAppServerTurnTerminalListener(listener) {
 
 export function setAppServerAgentMessageDeltaListener(listener) {
   _onAgentMessageDelta = typeof listener === 'function' ? listener : null;
+}
+export function getAppServerAgentLoopSnapshot() {
+  return [..._agentLoops.values()].map(rec => ({ ...rec.data }));
 }
 let _cwd = null;
 let _systemPrompt = null;
@@ -343,6 +383,7 @@ function syncGlobalsFromState(state) {
 }
 
 function resetThreadRuntimeState() {
+  clearAgentLoops();
   _threadStates.clear();
   _threadMetaById.clear();
   _pendingThreadStartByRpcId.clear();
@@ -438,6 +479,7 @@ function rememberThreadResponse(result, startContext = null) {
 
 function getAgentIdentity(threadId) {
   const thread = _threadMetaById.get(threadId) || getThreadState(threadId).threadMeta || {};
+  if (isTemporaryTitleThread(thread)) return { mainAgent: false, subAgent: false, _agentThreadId: threadId };
   const sourceInfo = getSubAgentSourceInfo(thread.source) || {};
   const registered = _subAgentThreads.get(threadId);
   if (registered || isSubAgentThreadMeta(thread)) {
@@ -1047,6 +1089,7 @@ function buildFullRequestBody(state = getThreadState(), threadId = state.threadI
       turn_id: state.turnId,
       cwd: state.cwd || _cwd || _currentProject,
       ...identity,
+      ...(isTemporaryTitleThread(state.threadMeta) ? { threadSource: 'thread_title', ephemeral: true } : {}),
       ...(state.threadMeta?.preview ? { thread_preview: state.threadMeta.preview } : {}),
       ...(_serverInfo ? { server: _serverInfo } : {}),
     },
@@ -1215,101 +1258,6 @@ function writeToolEntry(base, state, item, options = {}) {
   });
 }
 
-const APPROVAL_SERVER_REQUEST_METHODS = new Set([
-  'item/commandExecution/requestApproval',
-  'item/fileChange/requestApproval',
-  'item/permissions/requestApproval',
-  'applyPatchApproval',
-  'execCommandApproval',
-]);
-
-function describeServerRequest(method, params = {}) {
-  if (method === 'item/commandExecution/requestApproval') {
-    return {
-      kind: 'approval',
-      name: 'shell_command',
-      input: {
-        command: params.command,
-        cwd: params.cwd,
-        reason: params.reason,
-        environmentId: params.environmentId,
-        approvalId: params.approvalId,
-        commandActions: params.commandActions,
-        networkApprovalContext: params.networkApprovalContext,
-        proposedExecpolicyAmendment: params.proposedExecpolicyAmendment,
-        proposedNetworkPolicyAmendments: params.proposedNetworkPolicyAmendments,
-      },
-    };
-  }
-  if (method === 'execCommandApproval') {
-    return {
-      kind: 'approval',
-      name: 'shell_command',
-      input: {
-        command: Array.isArray(params.command) ? params.command.join(' ') : params.command,
-        cwd: params.cwd,
-        reason: params.reason,
-        approvalId: params.approvalId,
-        parsedCmd: params.parsedCmd,
-      },
-    };
-  }
-  if (method === 'item/fileChange/requestApproval') {
-    return {
-      kind: 'approval',
-      name: 'apply_patch',
-      input: {
-        reason: params.reason,
-        grantRoot: params.grantRoot,
-      },
-    };
-  }
-  if (method === 'applyPatchApproval') {
-    return {
-      kind: 'approval',
-      name: 'apply_patch',
-      input: {
-        fileChanges: params.fileChanges,
-        reason: params.reason,
-        grantRoot: params.grantRoot,
-      },
-    };
-  }
-  if (method === 'item/permissions/requestApproval') {
-    return {
-      kind: 'approval',
-      name: 'permissions',
-      input: {
-        cwd: params.cwd,
-        reason: params.reason,
-        permissions: params.permissions,
-        environmentId: params.environmentId,
-      },
-    };
-  }
-  if (method === 'mcpServer/elicitation/request') {
-    return {
-      kind: 'elicitation',
-      name: params.serverName ? `${params.serverName}.elicitation` : 'mcp.elicitation',
-      input: {
-        mode: params.mode,
-        message: params.message,
-        requestedSchema: params.requestedSchema,
-        url: params.url,
-        elicitationId: params.elicitationId,
-        _meta: params._meta,
-      },
-    };
-  }
-  if (method === 'item/tool/call') {
-    return {
-      kind: 'dynamicToolCall',
-      name: params.namespace ? `${params.namespace}.${params.tool || 'tool'}` : (params.tool || 'dynamic_tool'),
-      input: params.arguments ?? {},
-    };
-  }
-  return null;
-}
 
 function writeServerRequestEntry(base, state, requestId, method, params, descriptor) {
   const identity = getAgentIdentity(state.threadId);
@@ -1876,7 +1824,7 @@ function hydrateThreadTurnsFromResponse(thread, responseResult = {}) {
 /**
  * 解析 app-server → client 的 JSON-RPC notification
  */
-function parseServerMessage(msg) {
+function parseServerMessage(msg, connection = 'test') {
   if (!msg) return;
   captureRawServerFrame(msg);
 
@@ -1896,6 +1844,14 @@ function parseServerMessage(msg) {
     const startContext = _pendingThreadStartByRpcId.get(String(msg.id)) || null;
     rememberThreadResponse(msg.result, startContext);
     if (startContext) _pendingThreadStartByRpcId.delete(String(msg.id));
+  }
+
+  if (!msg.method && msg.id != null) {
+    const key = turnRpcKey(connection, msg.id), pending = _pendingClientTurns.get(key);
+    if (pending) {
+      _pendingClientTurns.delete(key);
+      if (!msg.error) acceptAgentLoop(pending, msg.result?.turn);
+    }
   }
 
   if (!msg.method) return; // 只处理 notifications（有 method）
@@ -2012,8 +1968,12 @@ function parseServerMessage(msg) {
 
   // turn/completed — 发出根线程或 subAgent 的完整 turn entry
   if (method === 'turn/completed') {
-    flushRawSidecars();
     const turn = params.turn || {};
+    const reason = ['interrupted', 'cancelled', 'canceled'].includes(turn.status) ? 'interrupted'
+      : turn.status === 'completed' ? 'stop-hook' : 'error';
+    state.lastTerminalTurn = { id: turn.id, reason, ts: Date.now() };
+    endAgentLoop(state.threadId, turn.id, reason, state.lastTerminalTurn.ts);
+    flushRawSidecars();
     state.turnStatus = turn.status;
     if (turn.id && state.emittedTurnIds.has(turn.id)) {
       state.pendingContent = [];
@@ -2308,7 +2268,7 @@ function parseServerMessage(msg) {
 /**
  * 解析 client → server 的 JSON-RPC request（提取用户输入）
  */
-function parseClientMessage(msg) {
+function parseClientMessage(msg, connection = 'test') {
   if (!msg) return;
 
   if (!msg.method) {
@@ -2352,6 +2312,11 @@ function parseClientMessage(msg) {
     const params = msg.params || {};
     _currentModel = params.model || _currentModel;
     const state = getThreadState(params.threadId || _threadId || _mainThreadId);
+    if (['string', 'number'].includes(typeof msg.id) && state.threadId && _pendingClientTurns.size < 128) {
+      _pendingClientTurns.set(turnRpcKey(connection, msg.id), {
+        threadId: state.threadId, connection, startedAt: Date.now(),
+      });
+    }
     state.model = params.model || state.model || _currentModel;
     state.turnStartTime = Date.now();
     state.pendingContent = [];
@@ -2395,6 +2360,9 @@ function parseClientMessage(msg) {
   if (msg.method === 'thread/start') {
     captureRawClientFrame(msg);
     const params = msg.params || {};
+    // Native TUI generates titles in a separate temporary thread. It must not
+    // reset an accepted user's transcript, approvals or whole-turn lifecycle.
+    if (isTemporaryTitleThread(params)) return;
     const previousThread = _threadMetaById.get(_mainThreadId) || {};
     const startContext = {
       sessionStartSource: params.sessionStartSource || params.session_start_source || 'startup',
@@ -2431,7 +2399,10 @@ export function _resetAppServerBridgeForTests({
   model = null,
   writeLogEntry = null,
   rawStorageOptions = null,
+  onAgentLoopStart = null, onAgentLoopEnd = null,
 } = {}) {
+  clearAgentLoops();
+  _onAgentLoopStart = onAgentLoopStart; _onAgentLoopEnd = onAgentLoopEnd; _loopCwd = cwd;
   flushRawSidecars({ force: true });
   if (_rawSidecarBuffers.size > 0) {
     _rawSidecarBuffers.clear();
@@ -2458,8 +2429,8 @@ export function _resetAppServerBridgeForTests({
   _rawDroppedFrames = 0;
 }
 
-export function _parseAppServerClientMessageForTests(msg) {
-  parseClientMessage(msg);
+export function _parseAppServerClientMessageForTests(msg, connection) {
+  parseClientMessage(msg, connection);
 }
 
 export function _injectApprovalsReviewerForTests(msg, value) {
@@ -2470,8 +2441,8 @@ export function _injectApprovalsReviewerForTests(msg, value) {
   return injected;
 }
 
-export function _parseAppServerServerMessageForTests(msg) {
-  parseServerMessage(msg);
+export function _parseAppServerServerMessageForTests(msg, connection) {
+  parseServerMessage(msg, connection);
 }
 
 export function _writeAppServerEntryForTests(entry) {
@@ -2523,10 +2494,13 @@ export async function startAppServerBridge(options) {
     onApprovalsReviewerActive = null,
     onRequestUserInput = null,
     onRequestUserInputCleared = null,
+    onAgentLoopStart = null, onAgentLoopEnd = null,
     writeLogEntry = null,
     systemPromptCapability = null,
     systemPromptLogDir = null,
   } = options;
+  clearAgentLoops();
+  _onAgentLoopStart = onAgentLoopStart; _onAgentLoopEnd = onAgentLoopEnd; _loopCwd = cwd;
   _onApprovalsReviewerActive = typeof onApprovalsReviewerActive === 'function' ? onApprovalsReviewerActive : null;
   _writeLogEntry = typeof writeLogEntry === 'function' ? writeLogEntry : null;
   _rawDir = rawDir;
@@ -2592,6 +2566,8 @@ export async function startAppServerBridge(options) {
     env: appEnv,
     stdio: ['ignore', 'pipe', 'pipe'],
   });
+  const loopProcess = _appServerProcess;
+  _appServerProcess.once('exit', () => { if (_appServerProcess === loopProcess) clearAgentLoops(); });
 
   _appServerProcess.stdout.on('data', (data) => {
     if (process.env.CXV_DEBUG) process.stderr.write(`[app-server] ${data}`);
@@ -2612,6 +2588,7 @@ export async function startAppServerBridge(options) {
   const wss = new WebSocketServer({ server: httpServer });
 
   wss.on('connection', (clientWs) => {
+    const loopConnection = randomUUID();
     // 为每个 TUI 客户端连接创建到 app-server 的上游连接
     const upstream = new WebSocket(`ws://127.0.0.1:${appServerPort}`);
     _upstreamWs = upstream;
@@ -2640,7 +2617,7 @@ export async function startAppServerBridge(options) {
           },
         );
         str = JSON.stringify(msg);
-        parseClientMessage(msg);
+        parseClientMessage(msg, loopConnection);
         if (REVIEWER_LIFECYCLE_METHODS.has(msg.method)
             && isSupportedApprovalsReviewer(msg.params?.approvalsReviewer)) {
           _onApprovalsReviewerActive?.(normalizeApprovalsReviewer(msg.params.approvalsReviewer));
@@ -2671,7 +2648,7 @@ export async function startAppServerBridge(options) {
       let msg = null;
       try {
         msg = JSON.parse(str);
-        parseServerMessage(msg);
+        parseServerMessage(msg, loopConnection);
       } catch {}
 
       // request_user_input is a server-initiated JSON-RPC request. When the
@@ -2683,7 +2660,7 @@ export async function startAppServerBridge(options) {
           msg,
           (response) => {
             if (upstream.readyState !== WebSocket.OPEN) return false;
-            parseClientMessage(response);
+            parseClientMessage(response, loopConnection);
             upstream.send(JSON.stringify(response));
             return true;
           },
@@ -2707,11 +2684,13 @@ export async function startAppServerBridge(options) {
 
     // 清理
     clientWs.on('close', () => {
+      clearAgentLoops(loopConnection);
       requestUserInputRelay.clearAll('tui-disconnected');
       upstream.close();
       _upstreamWs = null;
     });
     upstream.on('close', () => {
+      clearAgentLoops(loopConnection);
       requestUserInputRelay.clearAll('app-server-disconnected');
       clientWs.close();
     });
@@ -2739,6 +2718,8 @@ export async function startAppServerBridge(options) {
     cancelRequestUserInput: (id) => requestUserInputRelay.cancel(id),
     releaseRequestUserInputToTui: (id) => requestUserInputRelay.releaseToClient(id),
     stop() {
+      clearAgentLoops();
+      _onAgentLoopStart = null; _onAgentLoopEnd = null;
       requestUserInputRelay.clearAll('bridge-stopped');
       flushRawSidecars();
       _onApprovalsReviewerActive = null;

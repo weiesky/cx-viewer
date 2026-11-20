@@ -1,0 +1,11 @@
+{
+  "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-5w6i_3x8",
+  "files": 695,
+  "source_bytes_match": true,
+  "web_asset_files": 202,
+  "runtime_tests": "195/195",
+  "b12_regression": "passed",
+  "installed_cli_relative_cd_boot": "passed",
+  "uses_fake_codex": true,
+  "uses_real_model_network": false
+}

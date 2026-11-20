@@ -27,7 +27,7 @@ function bodyHints(body) {
     ? body.metadata
     : null;
   const metadata = nativeMetadata || legacyMetadata
-    ? pick({ ...(legacyMetadata || {}), ...(nativeMetadata || {}) }, ['thread_id', 'turn_id', 'session_id', 'conversation_id', 'user_id', 'parent_thread_id', 'agent_role'])
+    ? pick({ ...(legacyMetadata || {}), ...(nativeMetadata || {}) }, ['thread_id', 'turn_id', 'session_id', 'conversation_id', 'user_id', 'parent_thread_id', 'agent_role', 'threadSource', 'ephemeral'])
     : null;
   return {
     ...pick(body, ['model', 'tool_name', 'event_name', 'item_type', 'status', 'max_tokens']),

@@ -7,7 +7,7 @@ import {
   initSdkSession, listSdkSessions, attachSdkSession, closeSdkSession,
   sendUserMessage, getSessionId, stopSession,
   setSdkLaunchConfig, launchSdkSession, getInitialPrompt, getSdkWorkingDirectory,
-  resumeSdkSession,
+  resumeSdkSession, getSdkStreamingState,
 } from '../lib/sdk-manager.js';
 
 async function fixture(run) {
@@ -310,4 +310,49 @@ test('SDK --cd is resolved before registry identity and agrees with execution an
   await sendUserMessage('cd A', { cwd: f.a });
   assert.equal(f.entriesA[0].body.metadata.cwd, f.a);
   assert.equal(calls(f.a).length, 1);
+}));
+
+
+test('idle SDK model snapshots retain each exact instance without launching a turn', async () => fixture(async f => {
+  const a = initSdkSession(f.a, 'same name', { ...f.options(f.entriesA, f.statusesA), codexArgs: ['-m', 'fixture-A'] });
+  const b = initSdkSession(f.b, 'same name', { ...f.options(f.entriesB, f.statusesB), codexArgs: ['-m', 'fixture-B'] });
+  assert.equal(getSdkStreamingState(a).active, false);
+  assert.equal(getSdkStreamingState(a).model, 'fixture-A');
+  assert.equal(getSdkStreamingState(b).model, 'fixture-B');
+  assert.equal(existsSync(join(f.a, 'calls')), false);
+  assert.equal(existsSync(join(f.b, 'calls')), false);
+  await sendUserMessage('model snapshot fixture', a);
+  assert.equal(f.statusesA.at(-1).active, false);
+  assert.equal(f.statusesA.at(-1).model, 'fixture-A');
+  assert.equal(getSdkStreamingState(b).model, 'fixture-B');
+  assert.equal(existsSync(join(f.b, 'calls')), false);
+}));
+
+
+test('exec SDK rejects unrepresentable options before resetting a session or turning option values into prompts', async () => fixture(async f => {
+  const view = initSdkSession(f.a, 'same', { ...f.options(f.entriesA, f.statusesA), codexArgs: ['protected prompt'] });
+  for (const args of [
+    ['--profile', 'private-profile'], ['-i', 'private.png'], ['--unknown-flag', 'private value'],
+    ['exec', '--profile', 'private-profile'], ['e', '--unknown-flag'], ['review', '--uncommitted'],
+  ]) {
+    assert.throws(() => initSdkSession(f.a, 'same', { codexArgs: args }), { code: 'SDK_UNSUPPORTED_OPTION' });
+    assert.equal(getInitialPrompt(view), 'protected prompt');
+    assert.equal(listSdkSessions().length, 1);
+  }
+  for (const args of [['-m'], ['-m', '--profile', 'private-profile'], ['--cd'], ['--config'], ['-c', 'not-an-assignment']]) {
+    assert.throws(() => getSdkWorkingDirectory(f.a, args), { code: 'SDK_INVALID_OPTION' });
+  }
+  assert.equal(existsSync(join(f.a, 'calls')), false);
+}));
+
+test('exec SDK parses options after the exec alias and preserves explicit literal prompts', async () => fixture(async f => {
+  const view = initSdkSession(f.a, 'same', { ...f.options(f.entriesA, f.statusesA),
+    codexArgs: ['exec', '-m', 'selected-model', '-c', 'model_reasoning_summary="detailed"', '--', '--profile literal review exec'] });
+  assert.equal(getInitialPrompt(view), '--profile literal review exec');
+  await sendUserMessage(getInitialPrompt(view), view);
+  assert.equal(calls(f.a)[0].input, '--profile literal review exec');
+  assert.ok(calls(f.a)[0].argv.includes('selected-model'));
+  assert.ok(calls(f.a)[0].argv.some(arg => arg.includes('model_reasoning_summary')));
+  const plain = initSdkSession(f.b, 'same', { ...f.options(f.entriesB, f.statusesB), codexArgs: ['please', 'review', 'this', 'exec', 'now'] });
+  assert.equal(getInitialPrompt(plain), 'please review this exec now');
 }));

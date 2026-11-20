@@ -1,0 +1,12 @@
+{
+  "upstream": "d906edb3de840208944bbca9d33ec037bdeb6bc5",
+  "fixedBaseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "baselineCssSha256": "62cc493e307437e0ce15e989b34571904f7b1f087aaf07f91224f0875c858e0b",
+  "localCssSha256": "f5adc253439fa0001603148e31de94038d3548c32ca9146eefaf61a1db396b2e",
+  "onlyCssAdaptation": ".roleAvatar[data-model-monochrome=\"true\"] {\n  color: var(--model-logo-mono);\n}",
+  "componentMarkupChanged": false,
+  "scrollPaddingPx": 41,
+  "guiFixture": "cxv-b4-tasks-gui-4Sy98C",
+  "webTests": "267/267",
+  "build": "passed"
+}

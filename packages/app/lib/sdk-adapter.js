@@ -6,6 +6,8 @@
  * mode on the same data contract instead of adding a second frontend protocol.
  */
 
+import { parseSupportedToolResultImage } from './tool-result-image-protocol.js';
+
 export const DEFAULT_CODEX_TOOLS = [
   { name: 'shell_command' },
   { name: 'apply_patch' },
@@ -91,6 +93,7 @@ export function isSdkToolItem(item) {
     'mcpToolCall',
     'web_search',
     'webSearch',
+    'codex_tool',
   ].includes(item?.type);
 }
 
@@ -131,6 +134,8 @@ export function sdkItemToAssistantBlock(item) {
 export function sdkItemToToolUseBlock(item) {
   if (!item || typeof item !== 'object') return null;
   const id = item.id || `${item.type || 'tool'}_${Date.now()}`;
+  if (item.type === 'codex_tool') return { type: 'tool_use', id,
+    name: item.toolName || 'tool', input: cloneJson(item.input ?? {}) };
 
   if (item.type === 'command_execution' || item.type === 'commandExecution') {
     return {
@@ -179,6 +184,7 @@ export function sdkItemToToolUseBlock(item) {
 
 export function sdkToolOutput(item) {
   if (!item || typeof item !== 'object') return '';
+  if (item.type === 'codex_tool') return item.output ?? '';
 
   if (item.type === 'command_execution' || item.type === 'commandExecution') {
     const output = item.aggregated_output ?? item.aggregatedOutput ?? '';
@@ -215,6 +221,24 @@ export function sdkToolOutput(item) {
 export function sdkToolName(item) {
   const block = sdkItemToToolUseBlock(item);
   return block?.name || item?.type || 'tool';
+}
+
+// Keep native MCP/dynamic image parts in the existing viewer image pipeline.
+// Raw output remains on the TOOL entry; ordinary objects/text keep their JSON
+// representation, and the existing raster/URL validator remains authoritative.
+export function sdkToolResultContent(output) {
+  const parts = Array.isArray(output) ? output : output?.content;
+  if (Array.isArray(parts)) {
+    const content = parts.map(part => {
+      const candidate = part?.type === 'inputImage' ? { type: 'input_image', image_url: part.imageUrl }
+        : part?.type === 'image' && !part.source ? { type: 'image', source: {
+          type: 'base64', media_type: part.mimeType, data: part.data,
+        } } : part;
+      return parseSupportedToolResultImage(candidate) ? candidate : part;
+    });
+    if (content.some(part => parseSupportedToolResultImage(part))) return cloneJson(content);
+  }
+  return typeof output === 'string' ? output : JSON.stringify(output, null, 2);
 }
 
 export function sdkToJSONLEntry(assistantMsg, messages, model, projectName, opts = {}) {

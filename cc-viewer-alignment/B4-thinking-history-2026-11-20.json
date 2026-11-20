@@ -1,0 +1,36 @@
+{
+  "date": "2026-11-20",
+  "upstream": "d89aa3b9af9703c2c350dcfa14eefbcd3215ecc5",
+  "implementation": "Reuse existing completed-item reasoning accumulation, canonical history, conversation projection and original thinking renderer. No new runtime code.",
+  "targetTests": "7/7,0 skip",
+  "lastFullCheckpoint": "E36 1529/1529",
+  "lastBuildAndInstallation": "E36 build and 702files/204exactWeb/279runtime; unchanged production source, not rerun",
+  "safari": {
+    "exec": {
+      "fixture": "cxv-b4-tasks-gui-90NfZG",
+      "pid": 51848,
+      "twoDistinctThinkingBlocksLive": true,
+      "twoDistinctThinkingBlocksAfterRefresh": true,
+      "replyPerTurnNotDuplicated": true
+    },
+    "appserver": {
+      "fixture": "cxv-b4-tasks-gui-IHx0t7",
+      "pid": 57194,
+      "twoDistinctThinkingBlocksLive": true,
+      "twoDistinctThinkingBlocksAfterRefresh": true,
+      "replyPerTurnNotDuplicated": true
+    },
+    "syntheticCliForBothTransports": true,
+    "ownedProcessesStopped": true
+  },
+  "fixtureCorrections": [
+    "Initial mixed SDK unit-test command lacked app CXV_TEST/CXV_LOG_DIR environment and left a profile watcher alive; owned worker45881 was stopped, then run with explicit test environment and isolated HOME.",
+    "Initial assertion compared provenance timestamps as though they were immutable; existing merge stamps _timestamp. The final assertion protects input/response content, with provenance stamping still permitted.",
+    "Initial native fixture used Responses API summary objects, which App Server correctly expects as string arrays. Installed0.169 schema was checked and the fixture corrected; no transport expansion."
+  ],
+  "limits": [
+    "No real external model or third-party Claude SDK run.",
+    "Only reasoning actually emitted by the source is shown; missing/private provider reasoning is never invented.",
+    "No new DOM/CSS or broad old-log conversion."
+  ]
+}

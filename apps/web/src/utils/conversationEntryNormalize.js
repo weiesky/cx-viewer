@@ -9,6 +9,7 @@ import { messageFingerprint } from './sessionMerge.js';
 import { normalizeCodexUserText } from '../../../../packages/app/src/utils/userPromptContent.js';
 import { extractDirectContextCompaction, extractEntryContextCompaction } from './contextCompaction.js';
 import { hasOpenAiResponsesConversationTransport } from '../../../../packages/app/lib/openai-responses-url.js';
+import { isNativeTitleEntry } from '../../../../packages/app/lib/codex-thread-source.js';
 
 const CODEX_RESPONSE_ITEM_TYPES = new Set([
   'compaction',
@@ -28,7 +29,7 @@ const CODEX_RESPONSE_ITEM_TYPES = new Set([
 
 /** Keep OpenAI Responses transport entries inspectable, but out of chat projection. */
 export function shouldExcludeFromConversation(entry) {
-  return hasOpenAiResponsesConversationTransport(entry);
+  return isNativeTitleEntry(entry) || hasOpenAiResponsesConversationTransport(entry);
 }
 
 function cloneJson(value) {
@@ -318,12 +319,14 @@ function contentEquals(a, b) {
   try { return JSON.stringify(a) === JSON.stringify(b); } catch { return a === b; }
 }
 
-function appendViewerResponse(messages, responseContent) {
+function appendViewerResponse(messages, responseContent, feedback = false) {
   if (!Array.isArray(responseContent) || responseContent.length === 0) return messages;
   const blocks = responseContent.filter(Boolean).map(cloneJson);
   const last = messages[messages.length - 1];
-  if (last?.role === 'assistant' && contentEquals(last.content, blocks)) return messages;
-  return [...messages, { role: 'assistant', content: blocks, _codexCurrentResponse: true }];
+  if (last?.role === 'assistant' && contentEquals(last.content, blocks)
+      && (!feedback || last._sdkFeedback === true)) return messages;
+  return [...messages, { role: 'assistant', content: blocks, _codexCurrentResponse: true,
+    ...(feedback ? { _sdkFeedback: true } : {}) }];
 }
 
 /**
@@ -387,7 +390,12 @@ export function normalizeConversationEntry(entry) {
 
   if ((entry._sdkSource || entry._appServerSource) && Array.isArray(body.input)) {
     const responseContent = entry.inProgress ? null : entry.response?.body?.content;
-    const input = appendViewerResponse(body.input, responseContent);
+    // SDK terminal errors are Viewer bookkeeping, not model assistant output.
+    // Keep them in the cumulative projection for history-prefix reconciliation;
+    // ChatView presents the scoped sdk-error row instead of a second chat bubble.
+    const feedback = entry._sdkSource === true && entry.response?.status >= 400
+      && entry.response?.body?.stop_reason === 'error' && typeof entry.response?.body?.error?.message === 'string';
+    const input = appendViewerResponse(body.input, responseContent, feedback);
     if (input !== body.input) {
       return {
         ...entry,

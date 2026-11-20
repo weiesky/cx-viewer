@@ -155,32 +155,27 @@ export class AskFlowController {
   };
 
   _applyResolvedAnswersLocal = ({ askId, itemId, questions, answers, codexAnswers }) => {
-    const state = this.host.getState();
-    const pending = state.pendingAsk?.id === askId
-      ? state.pendingAsk
-      : state.askQueue.find(ask => ask.id === askId);
-    const resolvedQuestions = Array.isArray(questions) && questions.length > 0
-      ? questions
-      : (pending?.questions || []);
-    const localAnswers = buildResolvedAskAnswerMap(resolvedQuestions, answers, codexAnswers);
-    if (Object.keys(localAnswers).length === 0) return;
-    // Transport request ids and transcript tool_use ids are different in the
-    // native app-server protocol. Cards are keyed by itemId.
-    const cardId = itemId || pending?.itemId || askId;
-    if (!cardId) return;
-    this.host.setState(prev => ({
-      localAskAnswers: { ...(prev.localAskAnswers || {}), [cardId]: localAnswers },
-    }));
+    this.host.setState(state => {
+      const pending = state.pendingAsk?.id === askId
+        ? state.pendingAsk
+        : state.askQueue.find(ask => ask.id === askId);
+      const resolvedQuestions = Array.isArray(questions) && questions.length > 0
+        ? questions
+        : (pending?.questions || []);
+      const localAnswers = buildResolvedAskAnswerMap(resolvedQuestions, answers, codexAnswers);
+      if (Object.keys(localAnswers).length === 0) return null;
+      // Transport request ids and transcript tool_use ids are different in the
+      // native app-server protocol. Cards are keyed by itemId.
+      const cardId = itemId || pending?.itemId || askId;
+      if (!cardId) return null;
+      return { localAskAnswers: { ...(state.localAskAnswers || {}), [cardId]: localAnswers } };
+    });
   };
 
-  _promoteNextAskFromQueue = () => {
-    // 清当前 head 的 askMetaMap 条目（内存回收）
-    const state = this.host.getState();
-    const prevHead = state.pendingAsk;
+  // Routing and metadata side effects run after the terminal state update commits.
+  // Native request ids and transcript item ids are separate metadata keys.
+  _syncAskRouting = (prevHead, next) => {
     if (prevHead?.id) this._clearAskMeta(prevHead.id, prevHead.itemId);
-
-    const queue = state.askQueue;
-    const next = queue && queue.length > 0 ? queue[0] : null;
     if (next) {
       if (next.kind === ASK_KIND.SDK) {
         this._sdkAskId = next.id;
@@ -190,16 +185,42 @@ export class AskFlowController {
         this._askHookActive = true; this._askHookEverActive = true;
       }
       this._askHookQuestions = next.questions;
-      this.host.setState({
-        pendingAsk: { id: next.id, itemId: next.itemId || null, questions: next.questions },
-        askQueue: queue.slice(1),
-      });
     } else {
       this._askHookActive = false;
       this._sdkAskId = null;
       this._askHookQuestions = null;
-      this.host.setState({ pendingAsk: null, askQueue: [] });
     }
+  };
+
+  _promoteNextAskFromQueue = () => {
+    const state = this.host.getState();
+    const next = state.askQueue?.[0] || null;
+    this.host.setState(next
+      ? { pendingAsk: { id: next.id, itemId: next.itemId || null, questions: next.questions }, askQueue: state.askQueue.slice(1) }
+      : { pendingAsk: null, askQueue: [] });
+    this._syncAskRouting(state.pendingAsk, next);
+  };
+
+  // A pending and its terminal frame can share a React batch. Match the latest
+  // state in the updater and sync routing only in the post-commit callback.
+  _resolveAskById = (askId) => {
+    let action = null, previous = null, next = null;
+    this.host.setState(state => {
+      action = null; previous = null; next = null;
+      if (state.pendingAsk?.id === askId) {
+        action = 'head'; previous = state.pendingAsk; next = state.askQueue?.[0] || null;
+        return next
+          ? { pendingAsk: { id: next.id, itemId: next.itemId || null, questions: next.questions }, askQueue: state.askQueue.slice(1) }
+          : { pendingAsk: null, askQueue: [] };
+      }
+      const queued = state.askQueue.find(ask => ask.id === askId);
+      if (!queued) return null;
+      action = 'queue'; previous = queued;
+      return { askQueue: state.askQueue.filter(ask => ask.id !== askId) };
+    }, () => {
+      if (action === 'head') this._syncAskRouting(previous, next);
+      else if (action === 'queue') this._clearAskMeta(previous.id, previous.itemId);
+    });
   };
 
   /**
@@ -607,7 +628,9 @@ export class AskFlowController {
     if (!askId) return;
     const cancelReason = typeof reason === 'string' && reason ? reason : 'User aborted';
 
+    let action = null, previous = null, next = null;
     this.host.setState(prev => {
+      action = null; previous = null; next = null;
       const existingLocal = prev.localAskAnswers && prev.localAskAnswers[askId];
       const hasRealAnswer = existingLocal
         && !existingLocal.__cancelled__
@@ -615,28 +638,35 @@ export class AskFlowController {
         && Object.keys(existingLocal).length > 0;
       if (hasRealAnswer) return null;
       if (existingLocal && existingLocal.__cancelled__ === true) return null;
-      return {
-        localAskAnswers: { ...(prev.localAskAnswers || {}), [askId]: { __cancelled__: true, __cancelReason__: cancelReason } },
-      };
+      const localAskAnswers = { ...(prev.localAskAnswers || {}), [askId]: { __cancelled__: true, __cancelReason__: cancelReason } };
+      if (prev.pendingAsk?.id === askId) {
+        action = 'head'; previous = prev.pendingAsk; next = prev.askQueue?.[0] || null;
+        return next
+          ? { localAskAnswers, pendingAsk: { id: next.id, itemId: next.itemId || null, questions: next.questions }, askQueue: prev.askQueue.slice(1) }
+          : { localAskAnswers, pendingAsk: null, askQueue: [] };
+      }
+      const queued = prev.askQueue.find(ask => ask.id === askId);
+      if (!queued) return { localAskAnswers };
+      action = 'queue'; previous = queued;
+      return { localAskAnswers, askQueue: prev.askQueue.filter(ask => ask.id !== askId) };
+    }, () => {
+      if (action === 'head' && promoteHead) this._syncAskRouting(previous, next);
+      else if (previous) this._clearAskMeta(previous.id, previous.itemId);
     });
-
-    if (this.host.getState().pendingAsk?.id === askId) {
-      // 内存回收：head 分支无条件清 askMetaMap entry；幂等。
-      this._clearAskMeta(askId);
-      if (promoteHead) this._promoteNextAskFromQueue();
-    } else if (this.host.getState().askQueue.some(a => a.id === askId)) {
-      this._clearAskMeta(askId);
-      this.host.setState(state => ({ askQueue: state.askQueue.filter(a => a.id !== askId) }));
-    }
   };
 
   /**
    * Cancel a pending request_user_input — Cancel 按钮 / typed-interrupt 触发。
    * 乐观写 localAskAnswers + 推 head；发 WS ask-cancel；WS 不可用时缓存到 _pendingCancelIds 待重发。
    */
-  handleAskCancel = (askId, reason) => {
+  handleAskCancel = (askId, reason, sdkRequestId) => {
     if (!askId) return;
     const cancelReason = typeof reason === 'string' && reason ? reason : 'User aborted';
+    const pending = this.host.getState().pendingAsk;
+    const sdkId = sdkRequestId || (pending?.itemId === askId ? pending.id : askId);
+    const sdkCancel = this.host.getProps().sdkMode && String(sdkId).startsWith('native_');
+    const cancelFrame = sdkCancel ? { type: 'sdk-ask-answer', id: sdkId, answers: {} }
+      : { type: 'ask-cancel', id: askId, reason: cancelReason };
 
     // 通知 _waitForHookBridge 的 polling 立即停下（用户取消是唯一逃生口）。
     this._askAbortRequested = true;
@@ -645,6 +675,7 @@ export class AskFlowController {
     this._askSubmitting = false;
 
     this._applyCancelLocal(askId, cancelReason);
+    if (sdkCancel && sdkId !== askId) this._applyCancelLocal(sdkId, cancelReason);
 
     // 通知 Electron main 清 dock badge / pendingByTab[tabId].ask（host 补 tabId）
     this.host.notifyAskResolved({ id: askId, reason: 'cancel' });
@@ -652,15 +683,15 @@ export class AskFlowController {
     // 发 WS ask-cancel；WS 不可用 → 缓存到 _pendingCancelIds 让 reopen 时重发
     const ws = this.host.ws();
     if (ws && ws.readyState === WS_OPEN) {
-      try { ws.send(JSON.stringify({ type: 'ask-cancel', id: askId, reason: cancelReason })); } catch {}
+      try { ws.send(JSON.stringify(cancelFrame)); } catch {}
     } else {
       if (!this._pendingCancelIds) this._pendingCancelIds = new Map();
-      this._pendingCancelIds.set(askId, cancelReason);
+      this._pendingCancelIds.set(askId, cancelFrame);
     }
     return askId;
   };
 
-  handleAskQuestionSubmit = (answers, askId, questions) => {
+  handleAskQuestionSubmit = (answers, askId, questions, sdkRequestId) => {
     // 每次新提交入口重置 abort。
     this._askAbortRequested = false;
     // 关键：在 _promoteNextAskFromQueue 之前把当前 head 的所有提交上下文整体快照下来。
@@ -715,7 +746,7 @@ export class AskFlowController {
 
     // SDK 模式：直接通过 WS 发送结构化答案
     if (this.host.getProps().sdkMode) {
-      const resolvedId = askId || submitCtx.wasSdkAskId;
+      const resolvedId = sdkRequestId || (submitCtx.headItemId === askId ? submitCtx.headAskId : askId) || submitCtx.wasSdkAskId;
       if (!resolvedId) {
         this._lastClearedPendingAsk = null;
         this._lastAskSubmitIds = [];
@@ -738,7 +769,9 @@ export class AskFlowController {
             sdkAnswers[q.question] = (q.options || [])[answer.optionIndex]?.label || '';
           }
         }
-        ws.send(JSON.stringify({ type: 'sdk-ask-answer', id: resolvedId, answers: sdkAnswers }));
+        const encoded = String(resolvedId).startsWith('native_')
+          ? buildStructuredAskAnswers(answers, qs).codexAnswers : sdkAnswers;
+        ws.send(JSON.stringify({ type: 'sdk-ask-answer', id: resolvedId, answers: encoded }));
         this._lastClearedPendingAsk = null;
         this._lastAskSubmitIds = [];
       } else {
@@ -826,12 +859,7 @@ export class AskFlowController {
         answers: msg.answers,
         codexAnswers: msg.codexAnswers,
       });
-      if (this.host.getState().pendingAsk?.id === askId) {
-        this._promoteNextAskFromQueue();
-      } else if (this.host.getState().askQueue.some(a => a.id === askId)) {
-        this._clearAskMeta(askId);
-        this.host.setState(state => ({ askQueue: state.askQueue.filter(a => a.id !== askId) }));
-      }
+      this._resolveAskById(askId);
       return true;
     }
     if (msg.type === 'sdk-ask-pending') {
@@ -842,21 +870,23 @@ export class AskFlowController {
       }
       if (Array.isArray(msg.questions) && msg.questions.length > 0) {
         const askId = String(msg.id);
+        const itemId = msg.itemId != null ? String(msg.itemId) : null;
         if (typeof msg.startedAt === 'number' && typeof msg.timeoutMs === 'number') {
           this.host.setState(prev => ({
-            askMetaMap: { ...prev.askMetaMap, [askId]: { startedAt: msg.startedAt, timeoutMs: msg.timeoutMs } },
+            askMetaMap: { ...prev.askMetaMap, ...Object.fromEntries([askId, itemId].filter(Boolean)
+              .map(id => [id, { startedAt: msg.startedAt, timeoutMs: msg.timeoutMs }])) },
           }));
         }
         this.host.setState(state => {
           if (state.pendingAsk) {
             if (state.pendingAsk.id === askId) return null;
             if (state.askQueue.some(a => a.id === askId)) return null;
-            return { askQueue: [...state.askQueue, { id: askId, questions: msg.questions, kind: ASK_KIND.SDK }] };
+            return { askQueue: [...state.askQueue, { id: askId, itemId, questions: msg.questions, kind: ASK_KIND.SDK }] };
           }
           this._askHookActive = true; this._askHookEverActive = true;
           this._askHookQuestions = msg.questions;
           this._sdkAskId = msg.id;
-          return { pendingAsk: { id: askId, questions: msg.questions } };
+          return { pendingAsk: { id: askId, itemId, questions: msg.questions } };
         });
       }
       return true;
@@ -864,12 +894,8 @@ export class AskFlowController {
     if (msg.type === 'sdk-ask-timeout') {
       const askId = msg.id != null ? String(msg.id) : null;
       if (askId == null) return true;
-      if (this.host.getState().pendingAsk?.id === askId) {
-        this._promoteNextAskFromQueue();
-      } else if (this.host.getState().askQueue.some(a => a.id === askId)) {
-        this._clearAskMeta(askId);
-        this.host.setState(state => ({ askQueue: state.askQueue.filter(a => a.id !== askId) }));
-      }
+      if (msg.itemId) this._applyCancelLocal(String(msg.itemId), 'Request ended', { promoteHead: false });
+      this._resolveAskById(askId);
       return true;
     }
     if (msg.type === 'ask-hook-resolved' || msg.type === 'ask-hook-already-answered') {
@@ -884,22 +910,20 @@ export class AskFlowController {
       });
       if (askId == null) {
         if (this.host.getState().pendingAsk?.id === LEGACY_ASK_PLACEHOLDER_ID) this._promoteNextAskFromQueue();
-      } else if (this.host.getState().pendingAsk?.id === askId) {
-        this._promoteNextAskFromQueue();
-      } else if (this.host.getState().askQueue.some(a => a.id === askId)) {
-        this._clearAskMeta(askId);
-        this.host.setState(state => ({ askQueue: state.askQueue.filter(a => a.id !== askId) }));
+      } else {
+        this._resolveAskById(askId);
       }
       return true;
     }
     if (msg.type === 'sdk-ask-resolved') {
       const askId = msg.id != null ? String(msg.id) : null;
-      if (askId != null && this.host.getState().pendingAsk?.id === askId) {
-        this._promoteNextAskFromQueue();
-      } else if (askId != null && this.host.getState().askQueue.some(a => a.id === askId)) {
-        this._clearAskMeta(askId);
-        this.host.setState(state => ({ askQueue: state.askQueue.filter(a => a.id !== askId) }));
+      this._applyResolvedAnswersLocal({ askId, itemId: msg.itemId, questions: msg.questions, codexAnswers: msg.codexAnswers });
+      if (msg.itemId && msg.codexAnswers && !Object.keys(msg.codexAnswers).length) {
+        this._applyCancelLocal(String(msg.itemId), 'Request cancelled', { promoteHead: false });
       }
+      const entry = this.host.takePendingFlush?.(askId);
+      if (entry) this.host.sendUserMessageImmediate(entry.text, null, true, entry.pendingId);
+      if (askId != null) this._resolveAskById(askId);
       return true;
     }
     if (msg.type === 'ask-hook-cancelled') {
@@ -942,8 +966,8 @@ export class AskFlowController {
     if (this.host.isUnmounted()) return;
     const ws = this.host.ws();
     if (this._pendingCancelIds && this._pendingCancelIds.size > 0 && ws && ws.readyState === WS_OPEN) {
-      for (const [askId, reason] of this._pendingCancelIds) {
-        try { ws.send(JSON.stringify({ type: 'ask-cancel', id: askId, reason })); } catch {}
+      for (const [askId, frame] of this._pendingCancelIds) {
+        try { ws.send(JSON.stringify(typeof frame === 'string' ? { type: 'ask-cancel', id: askId, reason: frame } : frame)); } catch {}
       }
       this._pendingCancelIds.clear();
     }

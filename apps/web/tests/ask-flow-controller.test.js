@@ -61,13 +61,74 @@ function controllerHost(initialState) {
   let state = initialState;
   return {
     getState: () => state,
-    setState(update) {
+    setState(update, callback) {
       const patch = typeof update === 'function' ? update(state) : update;
       if (patch) state = { ...state, ...patch };
+      callback?.();
     },
     state: () => state,
   };
 }
+
+function batchedControllerHost() {
+  const host = controllerHost({ pendingAsk: null, askQueue: [], askMetaMap: {}, localAskAnswers: {} });
+  const apply = host.setState, queue = [];
+  host.setState = (update, callback) => queue.push([update, callback]);
+  host.takePendingFlush = () => null;
+  host.flush = () => {
+    while (queue.length) {
+      const batch = queue.splice(0);
+      for (const [update] of batch) apply(update);
+      for (const [, callback] of batch) callback?.();
+    }
+  };
+  return host;
+}
+
+for (const terminal of ['sdk-ask-resolved', 'sdk-ask-timeout', 'ask-hook-resolved', 'ask-hook-timeout', 'ask-hook-cancelled']) {
+  test(`${terminal} clears a same-batch pending ask and both native identity metadata keys`, () => {
+    const host = batchedControllerHost(), controller = new AskFlowController(host);
+    const pendingType = terminal.startsWith('sdk-') ? 'sdk-ask-pending' : 'ask-hook-pending';
+    const questions = [{ id: 'choice', question: 'Choose', options: [{ label: 'A' }] }];
+    controller.handleWsMessage({ type: pendingType, id: 'request', itemId: 'card', questions, startedAt: 1, timeoutMs: 1000 });
+    controller.handleWsMessage({ type: terminal, id: 'request', itemId: 'card', questions,
+      ...(terminal.endsWith('resolved') ? { codexAnswers: { choice: { answers: ['A'] } } } : {}) });
+    host.flush();
+    assert.equal(host.state().pendingAsk, null);
+    assert.deepEqual(host.state().askMetaMap, {});
+    assert.equal(controller._sdkAskId, null);
+    assert.equal(controller._askHookQuestions, null);
+    if (terminal.endsWith('resolved')) assert.deepEqual(host.state().localAskAnswers.card, { Choose: 'A' });
+  });
+}
+
+test('batched terminal clears promote only the surviving ask and preserve its routing and native item id', () => {
+  const host = batchedControllerHost(), controller = new AskFlowController(host);
+  for (const id of ['first', 'removed', 'survivor']) {
+    controller.handleWsMessage({ type: 'sdk-ask-pending', id, itemId: `card-${id}`,
+      questions: [{ id, question: id }], startedAt: 1, timeoutMs: 1000 });
+  }
+  controller.handleWsMessage({ type: 'sdk-ask-resolved', id: 'removed' });
+  controller.handleWsMessage({ type: 'sdk-ask-resolved', id: 'foreign' });
+  controller.handleWsMessage({ type: 'sdk-ask-resolved', id: 'first' });
+  host.flush();
+  assert.equal(host.state().pendingAsk.id, 'survivor');
+  assert.equal(host.state().pendingAsk.itemId, 'card-survivor');
+  assert.equal(controller._sdkAskId, 'survivor');
+  assert.equal(controller._askHookQuestions[0].id, 'survivor');
+  assert.deepEqual(Object.keys(host.state().askMetaMap).sort(), ['card-survivor', 'survivor']);
+  assert.deepEqual(host.state().askQueue, []);
+});
+
+test('batched hook resolution uses the pending questions when the terminal frame only carries answers', () => {
+  const host = batchedControllerHost(), controller = new AskFlowController(host);
+  controller.handleWsMessage({ type: 'ask-hook-pending', id: 'request', itemId: 'card',
+    questions: [{ id: 'choice', question: 'Choose' }] });
+  controller.handleWsMessage({ type: 'ask-hook-resolved', id: 'request', answers: { Choose: 'A' } });
+  host.flush();
+  assert.deepEqual(host.state().localAskAnswers.card, { Choose: 'A' });
+  assert.equal(host.state().pendingAsk, null);
+});
 
 test('resolved and timeout events fill the transcript item card before clearing pending', () => {
   const questions = [{ id: 'choice', question: 'Proceed?', options: [{ label: 'Yes' }] }];
@@ -372,4 +433,55 @@ test('WebSocket close and dispose idempotently clean and roll back sequential op
   assert.equal(disposing.timeout, null);
   assert.deepEqual(harness.warnings, []);
   assert.notEqual(disposing.seq, closing.seq);
+});
+
+test('native SDK questions keep card identity separate from RPC identity and preserve selected arrays', () => {
+  const questions = [{ id: 'choice', question: 'Choose', options: [{ label: 'A' }, { label: 'B' }] }];
+  const sent = [];
+  const host = controllerHost({ pendingAsk: null, askQueue: [], askMetaMap: {}, localAskAnswers: {} });
+  Object.assign(host, { getProps: () => ({ sdkMode: true }), ws: () => ({ readyState: 1,
+    send: value => sent.push(JSON.parse(value)) }) });
+  const controller = new AskFlowController(host);
+  controller.handleWsMessage({ type: 'sdk-ask-pending', id: 'native_nonce', itemId: 'card', questions, startedAt: 1, timeoutMs: 2 });
+  controller.handleWsMessage({ type: 'sdk-ask-pending', id: 'native_nonce', itemId: 'card', questions });
+  assert.equal(host.state().askQueue.length, 0);
+  assert.deepEqual(host.state().askMetaMap.card, { startedAt: 1, timeoutMs: 2 });
+  controller.handleAskQuestionSubmit([{ questionIndex: 0, type: 'multi', selectedIndices: [0, 1] }], 'card', questions, 'native_nonce');
+  assert.deepEqual(sent, [{ type: 'sdk-ask-answer', id: 'native_nonce', answers: { choice: { answers: ['A', 'B'] } } }]);
+  assert.equal(host.state().pendingAsk, null);
+  assert.deepEqual(host.state().askMetaMap, {});
+  assert.deepEqual(host.state().localAskAnswers.card, { Choose: 'A, B' });
+});
+
+test('an inline native form can answer before pending delivery and cancellation retries the same nonce after reconnect', async () => {
+  const questions = [{ id: 'choice', question: 'Choose', options: [{ label: 'A' }] }], sent = [];
+  let online = true;
+  const host = controllerHost({ pendingAsk: null, askQueue: [], askMetaMap: {}, localAskAnswers: {} });
+  Object.assign(host, { getProps: () => ({ sdkMode: true }), ws: () => ({ readyState: online ? 1 : 3,
+    send: value => sent.push(JSON.parse(value)) }), notifyAskResolved() {}, isUnmounted: () => false,
+    fetchPendingAsks: async () => ({ pendingAsks: [] }) });
+  const controller = new AskFlowController(host);
+  controller.handleAskQuestionSubmit([{ questionIndex: 0, type: 'single', optionIndex: 0 }], 'card', questions, 'native_early');
+  assert.equal(sent[0].id, 'native_early');
+  online = false;
+  controller.handleAskCancel('second-card', 'User aborted', 'native_cancel');
+  assert.equal(sent.length, 1);
+  online = true; controller.onWsOpen();
+  assert.deepEqual(sent[1], { type: 'sdk-ask-answer', id: 'native_cancel', answers: {} });
+  assert.equal(host.state().localAskAnswers['second-card'].__cancelled__, true);
+});
+
+test('native SDK resolution updates another browser card and releases typed input only after the reply', () => {
+  const questions = [{ id: 'choice', question: 'Choose', options: [{ label: 'A' }] }];
+  const host = controllerHost({ pendingAsk: { id: 'native_nonce', itemId: 'card', questions }, askQueue: [],
+    askMetaMap: {}, localAskAnswers: {} });
+  const sent = [];
+  Object.assign(host, { takePendingFlush: () => ({ text: 'next', pendingId: 'draft' }),
+    sendUserMessageImmediate: (...args) => sent.push(args) });
+  const controller = new AskFlowController(host);
+  controller.handleWsMessage({ type: 'sdk-ask-resolved', id: 'native_nonce', itemId: 'card', questions,
+    codexAnswers: { choice: { answers: ['A'] } } });
+  assert.deepEqual(host.state().localAskAnswers.card, { Choose: 'A' });
+  assert.equal(host.state().pendingAsk, null);
+  assert.deepEqual(sent, [['next', null, true, 'draft']]);
 });

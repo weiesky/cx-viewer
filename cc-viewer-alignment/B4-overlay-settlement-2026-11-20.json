@@ -1,0 +1,34 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "sourceContract": "5c28d4c50a952110c32b04922cee56bdf9bd8560:AppBase._onStreamProgress/_flushPendingEntries",
+  "adaptation": "Final-entry guard checked at deferred React state application and at canonical cold baseline commit; matching timestamps only; DOM/CSS unchanged",
+  "beforeEvidence": [
+    "/tmp/cxv-b4-overlay-race-before.log",
+    "/tmp/cxv-b4-overlay-cold-before.log"
+  ],
+  "initialRafOnlyFixFailedGui": "cxv-b4-tasks-gui-lOV4vR",
+  "finalGui": {
+    "fixture": "cxv-b4-tasks-gui-czJRdq",
+    "pid": 83521,
+    "stopped": true,
+    "fakeExec": true,
+    "SafariForcedMobile": true,
+    "firstArchiveThenQueueDrain": true,
+    "twoFinalRepliesEachOnce": true,
+    "noTrailingCursor": true,
+    "screenshotInspected": true,
+    "physicalDevice": false,
+    "externalModel": false
+  },
+  "webTests": "272/272",
+  "fullTests": "1465/1465",
+  "fullSplit": [
+    5,
+    272,
+    982,
+    206
+  ],
+  "skips": 0,
+  "build": true,
+  "appBaseSha256": "f53a3d02e017df0c4b0e972757c693cb39dedea258be52897733d19410105f78"
+}

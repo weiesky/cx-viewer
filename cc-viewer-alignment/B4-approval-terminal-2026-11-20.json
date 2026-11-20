@@ -1,0 +1,48 @@
+{
+  "date": "2026-11-20",
+  "upstream": "dd8709356b27c7ce3321269fc68466f051c613bf",
+  "subitems": [
+    "Existing plan/permission terminal consumers match latest React state and normalized id.",
+    "Preserve immutable per-connection approval routing instead of copying upstream mutable-view global terminal broadcast."
+  ],
+  "red": "Three actual ChatView regression cases fail before fix; existing38 pass.",
+  "target": "61/61,0 skip",
+  "full": "1542/1542 (5+306+1019+212),0 skip",
+  "additionalScopeTest": "1/1 real HTTP/WS native approvals test after strengthening terminal-answer non-leak assertion",
+  "build": "passed",
+  "installed": {
+    "fixture": "cxv-b3-runtime-stv_9bhb",
+    "files": 702,
+    "exactWebFiles": 204,
+    "runtime": "280/280",
+    "b12": "passed",
+    "relativeCdCli": "passed"
+  },
+  "safari": {
+    "fixture": "cxv-b4-tasks-gui-F1kELH",
+    "pid": 37953,
+    "nativePermissionVisible": true,
+    "productionResolveDecline": true,
+    "replyDecision": "decline",
+    "permissionCardRemoved": true,
+    "ownedProcessStopped": true
+  },
+  "scopeEvidence": [
+    "server sdkScopeMatches + sdkActionAnchor and upgrade/connection stamp assignments read; no mutable view reassignment.",
+    "Native approvals remove emits the same immutable scope used for pending; owning reconnect sees terminal; same-name sibling receives none of pending/resolved/timeout."
+  ],
+  "limits": [
+    "No native update_plan approval added. Native schema/manager has no Claude ExitPlanMode producer; existing compatibility consumer is tested with synthetic WS messages.",
+    "No automatic-answer/permission tier/default changes, no DOM/CSS change.",
+    "No real external model or user permission granted.",
+    "Release/history metadata still belongs to B11."
+  ],
+  "logs": [
+    "/tmp/cxv-b4-approval-terminal-red.log",
+    "/tmp/cxv-b4-approval-terminal-target.log",
+    "/tmp/cxv-b4-approval-terminal-full.log",
+    "/tmp/cxv-b4-approval-terminal-scope.log",
+    "/tmp/cxv-b4-approval-terminal-build.log",
+    "/tmp/cxv-b4-approval-terminal-installed.log"
+  ]
+}

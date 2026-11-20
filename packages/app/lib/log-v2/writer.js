@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { isNativeTitleEntry } from '../codex-thread-source.js';
 import {
   existsSync,
   lstatSync,
@@ -764,7 +765,7 @@ export class LogV2Writer {
             summary.turns = summary.turnIds.length;
           }
         }
-        if (threadId === this.rootThreadId && split.input) {
+        if (threadId === this.rootThreadId && split.input && !isNativeTitleEntry(entry)) {
           const turnHash = timelineRecord.turnId ? hashTurnId(timelineRecord.turnId) : null;
           const promptCountBefore = summary.userPrompts.length;
           if (inputBinding?.revision > summary.rootInputRevision) {

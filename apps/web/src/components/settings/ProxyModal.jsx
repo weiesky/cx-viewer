@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { Modal, Button, Input, Radio, Select, Tag, message } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { t } from '../../i18n';
-import { isMobile } from '../../env';
+import { isMobile, isPad } from '../../env';
 import { BLUR_MASK_STYLE } from '../../utils/modalMask';
 import ConceptHelp from '../common/ConceptHelp';
 import styles from './ProxyModal.module.css';
@@ -279,9 +280,10 @@ export default function ProxyModal({
   );
 
   if (isMobile) {
-    return (
+    const drawer = (
       <>
-        <div className={`${appStyles.mobileDrawerOverlay} ${open ? appStyles.mobileDrawerOverlayVisible : ''}`}>
+        <div className={`${appStyles.mobileDrawerOverlay} ${open ? appStyles.mobileDrawerOverlayVisible : ''}`}
+          inert={!open ? '' : undefined} aria-hidden={!open}>
           <div className={appStyles.mobileLogMgmtHeader}>
             <span className={appStyles.mobileLogMgmtTitle}>{titleNode}</span>
             <MobileDrawerCloseButton onClose={() => { if (!pending) onClose(); }} />
@@ -296,6 +298,7 @@ export default function ProxyModal({
         {deleteConfirmModal}
       </>
     );
+    return isPad ? ReactDOM.createPortal(drawer, document.body) : drawer;
   }
 
   return (

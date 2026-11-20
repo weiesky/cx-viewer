@@ -716,6 +716,12 @@ class Mobile extends AppBase {
                     cliMode={this.state.cliMode}
                     sdkMode={this.state.sdkMode}
                     sdkResumeId={this.state.sdkResumeId}
+                    sdkModel={this.state.sdkModel}
+                    proxyProfiles={this.state.proxyProfiles}
+                    activeProxyId={this.state.activeProxyId}
+                    defaultConfig={this.state.defaultConfig}
+                    proxyProfilesLoadError={this.state.proxyProfilesLoadError}
+                    onProxyProfileChange={this.handleProxyProfileChange}
                     terminalVisible={this.state.mobileTerminalVisible}
                     mobileChatVisible={true}
                     fileLoading={this.state.fileLoading}

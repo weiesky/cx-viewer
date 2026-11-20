@@ -1,0 +1,61 @@
+{
+  "date": "2026-11-20",
+  "upstream": [
+    "133bc219df78920cdc3a5cb56f48cbe067e467e5",
+    "c66b5fe2ed6e855f0610127eba3de96ac821adea"
+  ],
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "subitem": "SDK model chip in its final input-bar proxy slot; existing proxy chip moves with that slot.",
+  "original": [
+    "Read actual133 model lift and c66 relocation/modal diff, original components, callers, final helper/CSS and subsequent model-reset changes.",
+    "ProxyChip CSS and sdkModelChip helper byte-identical; all5 touched input CSS blocks byte-identical. Original18-language model tooltip copied.",
+    "SDK/closed PTY in composer; open PTY header fallback; desktop/iPad enabled, phone/Electron-native-tab suppressed; proxy takes priority over read-only model."
+  ],
+  "adaptations": [
+    "Reuse existing per-instance streaming_status model source; include existing _model in idle snapshots, no new RPC, process startup or CLI turn.",
+    "AppBase accepts only current SSE source/exact instance, clears resume/workspace transitions; keyed roots already isolate workspace switches. Unknown model stays null.",
+    "Existing Codex proxy contract has no per-role assignment/official-default flag: retain current selected-profile visibility and compact label/title, omit unsupported role summary; existing ProxyModal/save/errors reused.",
+    "Read-only local history hides live chip."
+  ],
+  "target": "64/64,0 skip",
+  "full": "1564/1564 (5+323+1024+212),0 skip",
+  "build": "passed",
+  "installed": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-6hieftzm",
+    "files": 702,
+    "source_bytes_match": true,
+    "web_asset_files": 204,
+    "runtime_tests": "285/285",
+    "b12_regression": "passed",
+    "installed_cli_relative_cd_boot": "passed",
+    "uses_fake_codex": true,
+    "uses_real_model_network": false
+  },
+  "gui": {
+    "fixture": "cxv-b4-tasks-gui-ld7cMz",
+    "pid": 45218,
+    "browser": "Safari",
+    "idleInitialA": "fixture-A",
+    "idleRefreshA": "fixture-A",
+    "sameNameB": "fixture-B",
+    "proxyPriorityAndModal": true,
+    "forcedIpadInputChipAndFullViewportDrawer": true,
+    "forcedPhoneInputChipAbsent": true,
+    "cliTurns": 0,
+    "ownProcessStopped": true
+  },
+  "cssSha256": "81612bf27a4923dcfc1e96a20e2ec79e6211768d55f5b2119627b183925f6dda",
+  "logs": [
+    "/tmp/cxv-b4-model-chip-existing.log",
+    "/tmp/cxv-b4-model-chip-target.log",
+    "/tmp/cxv-b4-model-chip-full.log",
+    "/tmp/cxv-b4-model-chip-build.log",
+    "/tmp/cxv-b4-model-chip-installed.log"
+  ],
+  "limits": [
+    "Forced desktop iPad/mobile layout is not physical-device or narrow-viewport acceptance.",
+    "Pad drawer opening/viewport coverage inspected in screenshot; coordinate-close outcome not established, no GUI close pass claim. Actual modal close callback covered by component test.",
+    "No new real OAuth, external model or per-role proxy routing. Existing B8 proxy scope remains pending.",
+    "Context choices remain pending; whole133/c66 and B4 not marked complete; no push."
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "date": "2026-11-20",
+  "upstream": "133bc219df78920cdc3a5cb56f48cbe067e467e5",
+  "backendCommit": "8b59016",
+  "subitem": "Original MCP status panel, fixed-baseline component/layout/CSS and stable reducer dispatch.",
+  "adaptations": [
+    "Default exec unsupported uses the original Empty layout and a truthful translated explanation.",
+    "SDK-mode prop and update guard; original active-tab existence guard reuses local request/context fallback without inventing Codex Raw."
+  ],
+  "cssSha256": "f0e4b2a12a6339549b191b78b959697738ce83a41744403415cad48ce0975b90",
+  "translations": "16 original MCP keys plus one unsupported key, all18 locales populated",
+  "target": "58/58,0 skip",
+  "full": "1561/1561 (5+321+1023+212),0 skip",
+  "build": "passed /tmp/cxv-b4-mcp-panel-build-accepted.log",
+  "installed": {
+    "fixture": "cxv-b3-runtime-fis5gnxy",
+    "files": 702,
+    "exactWebFiles": 204,
+    "runtime": "284/284",
+    "b12": "passed",
+    "relativeCdCli": "passed"
+  },
+  "gui": {
+    "native": {
+      "fixture": "cxv-b4-tasks-gui-uk3A2d",
+      "browser": "Safari",
+      "originalPosition": "Network details tab after Context",
+      "states": [
+        "connected",
+        "needs-auth",
+        "failed",
+        "disabled",
+        "unknown"
+      ],
+      "versionAndToolsAndError": true,
+      "httpReads": {
+        "A": 3,
+        "B": 2
+      },
+      "sequence": "A mount1, manual refresh2, WS reconnect3; same-name B mount1, browser refresh2. No infinite pull or extra model turn.",
+      "siblingIsolation": true,
+      "ownProcessStopped": true
+    },
+    "exec": {
+      "fixture": "cxv-b4-tasks-gui-5DNW36",
+      "browser": "Safari",
+      "unsupportedVisible": true,
+      "cliCallsBeforeAndAfterPanel": 1,
+      "ownProcessStopped": true
+    }
+  },
+  "corrections": [
+    "i18n block formatting triggered the legitimate prepack freshness check in h3q2cus7; rebuilt without bypassing.",
+    "Two existing source-regex assertions assumed literal activeKey={activeTab}; replaced by actual bundled component assertions for SDK/off/tool-row/raw fallback. Initial full-final and full-accepted logs retain these failures; full-reviewed passes."
+  ],
+  "logs": [
+    "/tmp/cxv-b4-mcp-panel-target-accepted.log",
+    "/tmp/cxv-b4-mcp-panel-full-reviewed.log",
+    "/tmp/cxv-b4-mcp-panel-build-accepted.log",
+    "/tmp/cxv-b4-mcp-panel-installed-accepted.log"
+  ],
+  "limits": [
+    "Native GUI uses official SDK/local fake stdio, not real OAuth or remote MCP. E47 separately records actual Codex/native MCP.",
+    "Model chip and Context mixed subitems remain pending. Context choices unanswered.",
+    "B4 remains in progress; no push."
+  ]
+}

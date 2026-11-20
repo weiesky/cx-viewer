@@ -1,0 +1,132 @@
+{
+  "date": "2026-11-20",
+  "upstream": [
+    "c4529a6ed7a81c7ddd4564915735a06e123890ab",
+    "ef5fc8b1689ac56ec67fd2d797f5577cdb2dd99f"
+  ],
+  "fixed": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "realPublicOrdinaryCli": {
+    "root": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-pty-loop-real-MsguB1",
+    "realCodex": "codex-cli 0.169.0",
+    "publicOrdinaryCli": true,
+    "actualTuiAndBridge": true,
+    "externalModelNetwork": false,
+    "credentials": "fixture-only",
+    "success": true,
+    "nativeEscapeInterrupted": true,
+    "endDelayMs": 10004,
+    "receipts": [
+      {
+        "phase": "start",
+        "observedAt": 1795178426204,
+        "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-pty-loop-real-MsguB1/same",
+        "sessionId": "01a1f8f8-edbc-7701-9a6d-f11c3040e7f0",
+        "turnId": "01a1f8f8-eed9-7c52-93ab-0efbe9fbf117",
+        "turnStartedAt": 1795178426072,
+        "ts": 1795178426204,
+        "mode": "pty",
+        "project": "same",
+        "instance": null
+      },
+      {
+        "phase": "end",
+        "observedAt": 1795178436574,
+        "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-pty-loop-real-MsguB1/same",
+        "sessionId": "01a1f8f8-edbc-7701-9a6d-f11c3040e7f0",
+        "turnId": "01a1f8f8-eed9-7c52-93ab-0efbe9fbf117",
+        "turnStartedAt": 1795178426072,
+        "ts": 1795178426570,
+        "reason": "stop-hook",
+        "mode": "pty",
+        "project": "same",
+        "instance": null
+      },
+      {
+        "phase": "start",
+        "observedAt": 1795178436812,
+        "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-pty-loop-real-MsguB1/same",
+        "sessionId": "01a1f8f8-edbc-7701-9a6d-f11c3040e7f0",
+        "turnId": "01a1f8f9-1893-7d63-86ac-5f66f1b82a3c",
+        "turnStartedAt": 1795178436754,
+        "ts": 1795178436812,
+        "mode": "pty",
+        "project": "same",
+        "instance": null
+      },
+      {
+        "phase": "end",
+        "observedAt": 1795178436917,
+        "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-pty-loop-real-MsguB1/same",
+        "sessionId": "01a1f8f8-edbc-7701-9a6d-f11c3040e7f0",
+        "turnId": "01a1f8f9-1893-7d63-86ac-5f66f1b82a3c",
+        "turnStartedAt": 1795178436754,
+        "ts": 1795178436916,
+        "reason": "interrupted",
+        "mode": "pty",
+        "project": "same",
+        "instance": null
+      }
+    ],
+    "requests": [
+      "B4 PTY SUCCESS",
+      "Generate a concise, single-line task title of at most 36 characters and under five words where possible. Start with an imperative verb. Capitalize only the first word unless the user's language, proper nouns, acronyms, or code terms require otherwise. Preserve ticket references exactly. Write in the user's language. Do not use quotes, markdown, or trailing punctuation. Do not answer the request.\n\nUser prompt:\nB4 PTY SUCCESS",
+      "B4 PTY HOLD"
+    ]
+  },
+  "gui": {
+    "root": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-pty-loop-gui-ezsOIL",
+    "browser": "Safari native CUA; current source bundle explicitly reloaded",
+    "syntheticPtyAdapter": true,
+    "productionPtyManagerBridgeParserWriterServer": true,
+    "stopDuringNoApiOutput": true,
+    "refreshRestoresActive": true,
+    "serverRestartRestoresActiveWithoutStartHookReplay": true,
+    "replyVisibleLiveAndAfterRefresh": true,
+    "nativeTerminalClearsSpinnerAndStop": true,
+    "normalEndDelayMs": [
+      10002,
+      10002
+    ],
+    "ownedParentPid": 85284,
+    "ownedDummyPid": 85285,
+    "ownedProcessesStopped": true,
+    "guiStopWritesEscapeObserved": true,
+    "guiStopEndToEndClaim": false
+  },
+  "fixtureCorrections": [
+    "Initial fixture lacked required thread.sessionId, so canonical write was rejected; corrected explicit sessionId.",
+    "Direct api.openai.com metadata is intentionally Master; isolated non-direct URL metadata restores normal conversation projection without changing product classification.",
+    "GUI adapter originally handled Ctrl+C only; actual Stop writes Escape. Corrected fixture; native terminal was injected for this GUI run, while real public TUI Escape end-to-end was verified separately."
+  ],
+  "realFailureAndCorrection": {
+    "initialHookReview": "Continued without trusting hooks; no permission expansion.",
+    "initialLoopFailureRoot": "cxv-b4-pty-loop-real-1rmrXg",
+    "observed": "Native temporary ephemeral thread_title request reset root runtime and generated an extra loop.",
+    "correction": "Only exact temporary title starts avoid user-session reset; exact title metadata is excluded from accepted loop notifications. Added regression retaining original prompt/reply and exact lifecycle."
+  },
+  "fullTests": "1511/1511 (5+285+1011+210), 0 skip",
+  "targetTests": {
+    "bridge": 35,
+    "web": 36,
+    "httpSsePlugins": 8
+  },
+  "build": "passed",
+  "installation": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-tucxfijb",
+    "files": 701,
+    "source_bytes_match": true,
+    "web_asset_files": 204,
+    "runtime_tests": "220/220",
+    "b12_regression": "passed",
+    "installed_cli_relative_cd_boot": "passed",
+    "uses_fake_codex": true,
+    "uses_real_model_network": false
+  },
+  "externalModelNetwork": false,
+  "realUserLogsOrCredentials": false,
+  "limitations": [
+    "No physical audibility, real external model, mobile hardware or cross-platform claim.",
+    "Temporary native title entries still have a separate canonical identity/classification audit pending; loop exclusion is verified, not a blanket conversation-classification completion.",
+    "All other mixed candidate subitems remain independently open."
+  ]
+}

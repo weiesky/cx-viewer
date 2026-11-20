@@ -18,19 +18,22 @@ const cwd=process.env.CXV_PROJECT_DIR;
 appendFileSync(join(cwd,'calls'),JSON.stringify(input)+'\n');
 for(const event of [{type:'thread.started',thread_id:'queue-native-thread'},{type:'turn.started'}])process.stdout.write(JSON.stringify(event)+'\n');
 if(input.startsWith('hold')) {writeFileSync(join(cwd,'ready'),'ready');while(!existsSync(join(cwd,'release')))await new Promise(r=>setTimeout(r,10));}
+if(input==='hold eof')process.exit(0);
 for(const event of [{type:'item.completed',item:{id:'reply',type:'agent_message',text:input}},{type:'turn.completed',usage:{input_tokens:1,output_tokens:1}}])process.stdout.write(JSON.stringify(event)+'\n');
 `);
   chmodSync(executable, 0o755);
   const previous = process.env.CODEX_HOME;
   process.env.CODEX_HOME = root;
-  const framesA = [], framesB = [], pending = [];
-  const options = frames => ({ codexPath: executable, broadcastWs: frame => frames.push(frame) });
+  const framesA = [], framesB = [], loopsA = [], loopsB = [], pending = [];
+  const options = frames => ({ codexPath: executable, broadcastWs: frame => frames.push(frame),
+    onAgentLoopStart: data => (frames === framesA ? loopsA : loopsB).push({ phase: 'start', ...data }),
+    onAgentLoopEnd: data => (frames === framesA ? loopsA : loopsB).push({ phase: 'end', ...data }) });
   const infoA = initSdkSession(a, 'same', options(framesA)), infoB = initSdkSession(b, 'same', options(framesB));
   const start = (text, info) => {
     const promise = sendUserMessage(text, { instanceKey: info.instanceKey });
     pending.push(promise); return promise;
   };
-  try { await run({ root, a, b, infoA, infoB, framesA, framesB, options, start }); }
+  try { await run({ root, a, b, infoA, infoB, framesA, framesB, loopsA, loopsB, options, start }); }
   finally {
     stopSession(); await Promise.allSettled(pending);
     if (previous === undefined) delete process.env.CODEX_HOME; else process.env.CODEX_HOME = previous;
@@ -149,6 +152,23 @@ test('Stop parks accepted messages, blocks history replacement, and a fresh prom
   assert.deepEqual(calls(f.a), ['hold A', 'fresh explicit prompt', 'queued first', 'queued second']);
 }));
 
+test('an accepted child exit without a terminal parks the backlog and never resends the failed prompt', async () => fixture(async f => {
+  const entries = [];
+  initSdkSession(f.a, 'same', { ...f.options(f.framesA), onEntry: entry => entries.push(entry) });
+  const running = f.start('hold eof', f.infoA); await ready(f.a);
+  const queued = await f.start('saved backlog', f.infoA);
+  writeFileSync(join(f.a, 'release'), 'go'); await running;
+  assert.equal(queue(f.infoA).paused, true);
+  assert.deepEqual(queue(f.infoA).items.map(item => item.id), [queued.id]);
+  assert.deepEqual(calls(f.a), ['hold eof']);
+  assert.equal(entries.filter(entry => entry.mainAgent).length, 1);
+  assert.equal(entries.at(-1).response.status, 500);
+  assert.equal(f.framesA.filter(frame => frame.type === 'sdk-error').length, 1);
+  await f.start('fresh explicit prompt', f.infoA);
+  assert.deepEqual(calls(f.a), ['hold eof', 'fresh explicit prompt', 'saved backlog']);
+  assert.deepEqual(queue(f.infoA).items, []);
+}));
+
 test('send-now preempts once, keeps the backlog and cannot act on a sibling or invalid id', async () => fixture(async f => {
   const running = f.start('hold A', f.infoA); await ready(f.a);
   const first = await f.start('first queued', f.infoA), selected = await f.start('selected queued', f.infoA);
@@ -179,4 +199,41 @@ test('Stop in the send-now cancellation window returns the selection to the park
   await sendSdkQueuedNow(selected.id, { instanceKey: f.infoA.instanceKey });
   assert.deepEqual(calls(f.a), ['hold A', 'selected queued', 'first queued']);
   assert.deepEqual(queue(f.infoA).items, []);
+}));
+
+
+test('agent-loop boundaries follow executor acceptance and real settlement, never queued or removed inputs', async () => fixture(async f => {
+  const running = f.start('hold A', f.infoA); await ready(f.a);
+  assert.deepEqual(f.loopsA.map(frame => frame.phase), ['start']);
+  const queued = await f.start('queued A', f.infoA), removed = await f.start('removed A', f.infoA);
+  removeSdkQueuedMessage(removed.id, f.infoA);
+  assert.equal(f.loopsA.length, 1); assert.deepEqual(f.loopsB, []);
+  interruptTurn(f.infoA); await running;
+  assert.deepEqual(f.loopsA.map(frame => frame.phase), ['start', 'end']);
+  assert.equal(f.loopsA[1].reason, 'interrupted'); assert.equal(f.loopsA[0].turnId, f.loopsA[1].turnId);
+  await sendSdkQueuedNow(queued.id, f.infoA);
+  assert.deepEqual(f.loopsA.map(frame => frame.phase), ['start', 'end', 'start', 'end']);
+  assert.equal(f.loopsA[3].reason, 'success'); assert.equal(f.loopsA[2].turnId, f.loopsA[3].turnId);
+  assert.notEqual(f.loopsA[0].turnId, f.loopsA[2].turnId);
+  assert.ok(f.loopsA.every(frame => frame.cwd === f.a && frame.instanceKey === f.infoA.instanceKey && frame.turnStartedAt > 0));
+}));
+
+test('session replacement ends the old accepted loop through its captured scope and callback exactly once', async () => fixture(async f => {
+  const running = f.start('hold retiring', f.infoA); await ready(f.a);
+  const next = [];
+  initSdkSession(f.a, 'new display', { ...f.options(f.framesA),
+    onAgentLoopStart: data => next.push({ phase: 'start', ...data }), onAgentLoopEnd: data => next.push({ phase: 'end', ...data }) });
+  await running;
+  assert.equal(f.loopsA.length, 2); assert.equal(f.loopsA[1].reason, 'session-ended'); assert.deepEqual(next, []);
+  await f.start('new generation', f.infoA);
+  assert.deepEqual(next.map(frame => frame.phase), ['start', 'end']);
+  assert.equal(next[1].reason, 'success'); assert.equal(f.loopsA.length, 2);
+}));
+
+test('throwing loop callbacks cannot strand a turn or prevent later accepted turns', async () => fixture(async f => {
+  let starts = 0, ends = 0;
+  initSdkSession(f.a, 'same', { ...f.options(f.framesA), onAgentLoopStart() { starts++; throw new Error('fixture start'); },
+    onAgentLoopEnd() { ends++; throw new Error('fixture end'); } });
+  await f.start('first', f.infoA); await f.start('second', f.infoA);
+  assert.equal(starts, 2); assert.equal(ends, 2); assert.equal(queue(f.infoA).activeInput, null);
 }));

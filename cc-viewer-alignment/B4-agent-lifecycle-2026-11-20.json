@@ -1,0 +1,162 @@
+{
+  "root": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-appserver-compat-orG0q6",
+  "realCodex": "codex-cli 0.169.0",
+  "officialSdk": "0.142.5",
+  "externalModelNetwork": false,
+  "credentials": "isolated fixture-only",
+  "productionDefaultTransportChanged": false,
+  "threadConfigJson": false,
+  "agentsSpawned": true,
+  "agents": {
+    "childThreadId": "01a1f7fe-a77f-7b52-8cf3-50e7bafa4683",
+    "rootTurnAlreadyCompleted": true,
+    "rawFramesBeforeSubscribe": 10,
+    "identityRead": "thread/read",
+    "childTerminal": "completed",
+    "spawnStatus": {
+      "01a1f7fe-a77f-7b52-8cf3-50e7bafa4683": {
+        "status": "pendingInit",
+        "message": null
+      }
+    },
+    "source": {
+      "subAgent": {
+        "thread_spawn": {
+          "parent_thread_id": "01a1f7fe-a171-73e0-a24e-b53142f318b1",
+          "depth": 1,
+          "agent_path": null,
+          "agent_nickname": "Ramanujan",
+          "agent_role": "default"
+        }
+      }
+    }
+  },
+  "appServer": {
+    "stdioHandshake": true,
+    "sameNameSeparateProcesses": true,
+    "independentTurns": true,
+    "plan": [
+      {
+        "step": "Read baseline",
+        "status": "completed"
+      },
+      {
+        "step": "Verify protocol",
+        "status": "inProgress"
+      },
+      {
+        "step": "Record evidence",
+        "status": "pending"
+      }
+    ],
+    "streamingDeltas": true,
+    "exactTurnInterrupt": true,
+    "failedTurn": true,
+    "restartNativeResume": true
+  },
+  "sdk": {
+    "realTodoListReplay": true,
+    "statuses": [
+      "completed",
+      "pending",
+      "pending"
+    ]
+  },
+  "normalizedTransport": {
+    "actualModule": true,
+    "textAndPlan": true,
+    "cancellation": true,
+    "continueAfterCancel": true,
+    "restartResume": true
+  },
+  "managerIntegration": {
+    "explicitOnly": true,
+    "archiveIdentityRetained": true,
+    "genuinePlanStatus": true,
+    "independentQueue": true,
+    "interruptionParksQueue": true,
+    "sendNowOnSameNativeThread": true,
+    "busyTransportSwitchRejected": true,
+    "v2ExecArchiveToNativeResume": true,
+    "v2NativeArchiveToExecResume": true
+  },
+  "nativeQuestions": {
+    "answer": true,
+    "cancelEmptyAnswers": true,
+    "exactInstanceReply": true,
+    "transcriptToolResult": true
+  },
+  "nativeMcpImages": null,
+  "nativeConfig": {
+    "rawTomlArray": false,
+    "featureFlag": true
+  },
+  "errorEvidence": null,
+  "normalizedFailure": null,
+  "managerFailures": null,
+  "managerRetryStates": null,
+  "managerAgents": {
+    "rootAlreadyIdle": true,
+    "nativeName": "Averroes",
+    "nativeStartedAt": 1795162029000,
+    "lastActualTool": null,
+    "threadId": "01a1f7fe-bbd8-7c13-8507-d81e8cf29dc0",
+    "snapshotTimestampStable": true,
+    "nextRootTurnPreservesChild": true,
+    "independentChildTerminal": true
+  },
+  "lifecycleEvidence": {
+    "actualTransport": true,
+    "actualAgentTracker": true,
+    "actualRecursiveOwnership": true,
+    "childThreadId": "01a1f7fe-c12e-7bd2-9e38-95f1ca1d4564",
+    "interruptedTurnId": "01a1f7fe-c130-78c1-8967-edeed24473c9",
+    "nativeInterruptedStatus": "interrupted",
+    "reusedTurnId": "01a1f7fe-c3d6-70c3-8c4f-6cce6105da16",
+    "sameChildReused": true,
+    "capturedOldTerminalIgnored": true,
+    "grandchildThreadId": "01a1f7fe-c8ab-7702-bdda-564b80d1adf0",
+    "nestedParentId": "01a1f7fe-c5cf-7d22-afd1-74cb2addf7d2",
+    "rootThreadId": "01a1f7fe-bfef-7243-8078-e07ec14391e1",
+    "independentNestedTerminal": true,
+    "controlRoundTripMs": 1,
+    "snapshotCount": 12,
+    "isolatedMaxDepth": 2,
+    "externalModelNetwork": false
+  },
+  "publicCli": null,
+  "schema": {
+    "planStatuses": [
+      "pending",
+      "inProgress",
+      "completed"
+    ],
+    "agentStatuses": [
+      "pendingInit",
+      "running",
+      "interrupted",
+      "completed",
+      "errored",
+      "shutdown",
+      "notFound"
+    ],
+    "collabRequiredFields": [
+      "agentsStates",
+      "id",
+      "receiverThreadIds",
+      "senderThreadId",
+      "status",
+      "tool",
+      "type"
+    ]
+  },
+  "requestCount": 38,
+  "unverified": [
+    "real native command/file/permissions approval requests",
+    "image output",
+    "all CLI options",
+    "OS process descendants",
+    "WebSocket reconnect",
+    "Windows/Linux/minimum Node"
+  ]
+}

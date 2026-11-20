@@ -144,3 +144,15 @@
 发现已安装Xcode/iOS18.6后创建隔离iPhone16e，用原生CUA启动Safari访问自有fixture B。实际软键输入pwd/stty size、网页触控Enter/Up通过，Enter不收起键盘；展开20×60、收起37×60；新scratch空shell、切回旧shell保留输出。仅补充验收证据，无代码变更；不重复运行已通过全量。CUA拖动/scroll未产生可确认位移，原因未定；最终指针跨项落点与物理多指惯性仍未通过。详见B2-gui-acceptance.md，不把模拟器等同真机。
 
 拖动对照：同一CUA drag在隔离iOS原生主屏幕也无法翻页（仍第1/2页，光标停起点），故不能提供可靠的连续拖动/多指验收。保留基线实现，等待人工/可用设备补验，不再为工具另造交互。模拟器已退出并清理自有设备，原自动启动的既有设备恢复Shutdown。
+
+
+## B4 角色筛选条纠偏完成（2026-11-20）
+
+E10读取975313773a最终卡片接线时，确认本地RoleFilterBar.module.css仍为旧flex内联行（41px、solid背景），而固定d906edb3de以后为玻璃浮层，并由ChatView.withRoleFilter给滚动区补41px。E10仅迁原ActiveAgentsBar及互斥，不把该差异当视觉通过。E11已读取d906实际diff/完整组件/CSS与后续975313773a接线，并恢复浮层/玻璃/41px补偿；CSS仅保留既有Codex单色avatar规则，267/267、构建与Safari筛选/滚动/代理卡互斥通过。该待纠偏项已修正，对应Skills scope等混合内容仍未整体完成。
+
+
+## B4 E17/E18：最终入库后实时回复残留已纠偏（2026-11-20）
+
+隔离Safari exec fixture cxv-b4-tasks-gui-ZX7AIz 长静默139s后释放并自动续发队列，Stop已回发送且manager idle；第二轮持久回复之外仍有一份实时回复和cursor，两次AX检查确认。已有loading复用通过不代表此UI通过。记录见B4.20与B4-turn-loading-reuse-2026-11-20.json；下一笔先追踪真实stream-progress→rAF/startTransition与V2 final入口，不先重设计或删除历史。
+
+E18完成：先分别复现rAF/transition延迟和V2冷基线两条路径，再在state提交时按精确final判据清理。初次rAF-only全测过而GUI失败，未接受；最终1465/1465/构建及新Safari首次建档+自动队列两条各一次、无残留cursor通过。原始失败与最终证据见B4.21；不扩大为B4整体完成。

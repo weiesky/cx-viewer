@@ -1,0 +1,29 @@
+{
+  "date": "2026-11-20",
+  "upstream": "67ceb5b7f0dcb7027843ef8d5e1cd2b5b4d1a506",
+  "merge": "3c77d9a8ed200dc8a2dfa4976ad22e20714e57f1",
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "audited": [
+    "Actual SDK manager115-line and server46-line diff: init skill allowlist, once-per-query supportedCommands,10s bounded/stale guard/finally timer clear, sdk-skills snapshot/reset/replay, exact-instance view attach.",
+    "AppBase actual5-line session-state project-key fix, full projectKeyFromCwd15-line helper and CLI snapshot setter.",
+    "Fixed-final _loadSupportedCommands retained,84e65 lifecycle reset keeps cache semantics and explicitly distinguishes cached supportedCommands from a real activity probe.",
+    "67 is ancestor of3c77 merge, combined merge diff empty; no new manual resolution files claimed."
+  ],
+  "codex": {
+    "officialSdk": "0.142.5 Thread exposes id/runStreamed/run, no supportedCommands",
+    "native": "0.169 experimental schema already generated in E51",
+    "actualReadMethod": "skills/list",
+    "listParams": [
+      "cwds",
+      "forceReload"
+    ],
+    "notification": "skills/changed",
+    "notImplementedInB4": "Native skills list integration and slash menu remain B7/B8, not unavailable-protocol claims."
+  },
+  "b4Disposition": "Project-key sanitization existed because upstream compares sanitized project to raw cwd basename. Local keyed instance roots and strict immutable server scope route by exact instance, no raw project-name authorization match. B2/E5/E40/E46 already verify exact ownership/reconnect/retired callbacks; E29 uses real native thread/read for liveness, never cached commands.",
+  "validation": "Audit only; no runtime/UI/test changes or new full/build/install claim. Retain E50 full1565/build/install285+additionalHTTP5.",
+  "limits": [
+    "Whole67/merge/menu and B4 not complete. Context choices pending; remaining mixed candidates continue.",
+    "No fake Claude sdk-skills payload, no extra process/query/permission change; no push."
+  ]
+}

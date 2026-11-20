@@ -68,6 +68,8 @@ export function refreshResolvedModelInfo(items, resolveModelInfo) {
 export function healUnresolvedTeammateEntries(entries) {
   for (const entry of entries) {
     if (!entry || !entry.unresolved || !entry.req || !entry.req.teammate) continue;
+    const tag = entry.req._v2Descriptor && entry.req._classification;
+    if (tag?.type === 'Teammate' && tag.subType) continue;
     const label = formatTeammateLabel(entry.req.teammate, entry.req.body?.model);
     if (label !== entry.label) entry.label = label;
     entry.unresolved = false;

@@ -16,6 +16,7 @@ import { isMainAgent, classifySessionTransition, getEntryUserId, getMainAgentCon
 import { apiUrl, getBasePath } from './utils/apiUrl';
 import { publish as publishWorkflowUpdate } from './utils/workflowStore';
 import { reportSwallowed } from './utils/errorReport';
+import { shouldWipeApprovalDismissal } from './utils/approvalDismissal';
 import { createMuxTransport } from './utils/wsMuxTransport';
 import { playEvent as playVoiceEvent, unlockAudio, setTurnEndCooldownMs } from './utils/voicePackPlayer';
 import { getDefaultBindingsForLocale as vpDefaultBindingsForLocale } from '../../../packages/app/server/lib/voice-pack-events';
@@ -83,6 +84,8 @@ const DARK_THEME_CONFIG = Object.freeze({
  * setLang / setCodexConfigDir 这两个全局副作用已搬到 SettingsProvider 的 fetch 回调。
  * AppBase 仍保留本地 state 副本用于即时 UI 反馈,POST 写入走 this.context.updatePreferences。
  */
+const AGENT_LOOP_END_SUPPRESS_MS = 1500;
+
 class AppBase extends React.Component {
   static contextType = SettingsContext;
 
@@ -125,6 +128,7 @@ class AppBase extends React.Component {
       githubStars: null,
       cliMode: false,
       sdkMode: false,
+      sdkModel: null,
       sdkResumeId: null,
       workspaceMode: false,
       newProjectOpen: false,
@@ -153,7 +157,7 @@ class AppBase extends React.Component {
       // Permission and SDK plan approval stay inline-only — they do NOT pop the global modal.
       approvalGlobal: { ptyPlan: null, ask: null },
       // approvalDismissedIds: pending ids the user has chosen to minimize. Reopens via bell / chip.
-      approvalDismissedIds: new Set(),
+      approvalDismissedIds: new Set(props.initialApprovalDismissedIds || []),
       // approvalOtherTabs: aggregated state from other Electron tabs, pushed by main via tabBridge.onApprovalBroadcast.
       approvalOtherTabs: [],
       // approvalOwnPending: 当前 tab 在 main 进程聚合的 pending 计数（来自 approval-broadcast.ownPending）。
@@ -458,7 +462,11 @@ class AppBase extends React.Component {
   }
 
   // App / Mobile 子类的 componentDidUpdate 都 `super.componentDidUpdate(...)`，故 pin 维护集中在此。
-  componentDidUpdate() {
+  componentDidUpdate(prevProps, prevState) {
+    if (this._unmounted) return;
+    if (prevState && prevState.approvalDismissedIds !== this.state.approvalDismissedIds) {
+      this.props.onApprovalDismissedIdsChange?.(this.state.approvalDismissedIds);
+    }
     this._maintainPinState();
   }
 
@@ -667,7 +675,12 @@ class AppBase extends React.Component {
   _commitColdIngest(myToken, newState, after) {
     return new Promise((resolve) => {
       if (this._ingestToken !== myToken || this._unmounted) { resolve(false); return; }
-      this.setState(newState, () => {
+      this.setState(prev => ({
+        ...newState,
+        ...(prev.streamingLatest && Array.isArray(newState.requests) && newState.requests.some(r =>
+          r && r.timestamp === prev.streamingLatest.timestamp && !r.inProgress
+        ) ? { streamingLatest: null } : {}),
+      }), () => {
         if (this._ingestToken !== myToken) { resolve(false); return; }
         this._ingestRunning = false;
         const buffered = this._liveGateBuffer;
@@ -1592,6 +1605,40 @@ class AppBase extends React.Component {
     this._initControlSSE();
   }
 
+  _onTurnEndVoice(data) {
+    const vp = this.state.approvalPrefs?.voicePack;
+    if (!vp?.enabled || !vp.events?.turnEnd) return;
+    const serverTs = data.ts || null;
+    const last = this._lastAgentLoopEnd;
+    if (last && (!serverTs || serverTs <= last.ts + AGENT_LOOP_END_SUPPRESS_MS)
+      && (!data.sessionId || !last.sessionId || data.sessionId === last.sessionId)) return;
+    try { playVoiceEvent('turnEnd', vp, { dedupeKey: `turnEnd:${serverTs || Date.now()}` }); } catch { /* isolated */ }
+  }
+
+  _onAgentLoopVoice(phase, data) {
+    // Unlike API activity, these frames carry the accepted logical turn identity.
+    // An old end must not ring in a newer turn. SDK loading already uses the
+    // authoritative whole-turn WS state; do not add a competing loading writer.
+    const old = this._voiceLoop;
+    const epoch = Number.isFinite(data.turnStartedAt) ? data.turnStartedAt : 0;
+    if (epoch && old?.epoch && epoch < old.epoch) return;
+    if (phase === 'end' && old?.phase === 'start' && old.turnId && data.turnId && old.turnId !== data.turnId) return;
+    if (phase === 'start' && old && old.turnId === data.turnId && old.phase === 'end') return;
+    if (phase === 'start' && (!old || old.turnId !== data.turnId)) this._lastAgentLoopEnd = null;
+    this._voiceLoop = { turnId: data.turnId, epoch, phase };
+    const eventKey = phase === 'start' ? 'agentLoopStart' : 'agentLoopEnd';
+    const vp = this.state.approvalPrefs?.voicePack;
+    if (!vp?.enabled || !vp.events?.[eventKey]) return;
+    try {
+      const played = playVoiceEvent(eventKey, vp, { dedupeKey: `${eventKey}:${data.turnId || data.ts || Date.now()}` });
+      // Same contract as upstream: true means the existing player accepted the
+      // cue (possibly queued), not proof that the device speaker was audible.
+      if (phase === 'end' && played) {
+        this._lastAgentLoopEnd = { ts: data.ts || Date.now(), sessionId: data.sessionId || null };
+      }
+    } catch { /* voice must never affect the turn */ }
+  }
+
   _initControlSSE() {
     try {
       this.eventSource = this._streamTransport.open(apiUrl('/events?controlOnly=1'));
@@ -1630,7 +1677,11 @@ class AppBase extends React.Component {
             this._pendingStreamingLatest = null;
             if (!pending) return;
             React.startTransition(() => {
-              this.setState({ streamingLatest: pending });
+              // The canonical final entry can commit between receipt and this
+              // deferred paint (or while React rebases the transition).
+              this.setState(prev => prev.requests.some(r =>
+                r && r.timestamp === pending.timestamp && !r.inProgress
+              ) ? null : { streamingLatest: pending });
             });
           });
         } catch (e) { reportSwallowed('sse.stream-progress', e); }
@@ -1696,6 +1747,7 @@ class AppBase extends React.Component {
             isStreaming: false,
             // workspace 切换 = cwd 切换 → codex 的 lastModelUsage 也要重查；
             // 后端在 workspace_started 一并塞了新 cwd 对应的 hint，没有就清空。
+            sdkModel: null,
             codexProjectModel: (typeof data.codexProjectModel === 'string' && data.codexProjectModel) ? data.codexProjectModel : null,
           });
           if (isMobile) clearEntries();
@@ -1712,6 +1764,7 @@ class AppBase extends React.Component {
         this._currentSessionId = null; // 同 workspace_started：清旧会话 id，避免 lazy-lock 误锁
         this.setState({
           workspaceMode: true,
+          sdkModel: null,
           requests: [],
           mainAgentSessions: [],
           projectName: '',
@@ -1774,34 +1827,45 @@ class AppBase extends React.Component {
           if (typeof cfg.turnEndDebounceMs === 'number') setTurnEndCooldownMs(cfg.turnEndDebounceMs);
         } catch { /* tolerate parse error */ }
       });
-      // turn_end SSE — broadcast by /api/turn-end-notify whenever Codex's Stop hook
-      // fires (real end of a user-prompt turn). This is the **authoritative** turnEnd
-      // signal — far more accurate than isStreaming falling-edge, which resets per-API-call
-      // and would mis-fire during slow tool execution. 30s cooldown lives in voicePackPlayer.
-      this.eventSource.addEventListener('turn_end', (event) => {
-        // Guard against a teardown race: SSE chunks in flight when _reconnectSSE
-        // closes the current EventSource can still fire here before the listener
-        // unbinds (round-3 quality P1).
-        if (!this.eventSource) return;
+      // This app mounts one root per SDK instance. Keep voice receipts local to
+      // that root and reject callbacks from a replaced source or navigated view.
+      const voiceSource = this.eventSource;
+      const voiceInstance = new URLSearchParams(window.location.search).get('instance');
+      const voiceListener = handler => event => {
+        if (this._unmounted || this._isLocalLog || this.eventSource !== voiceSource
+          || new URLSearchParams(window.location.search).get('instance') !== voiceInstance) return;
         this._resetSSETimeout();
-        const vp = this.state.approvalPrefs && this.state.approvalPrefs.voicePack;
-        if (vp && vp.enabled && vp.events && vp.events.turnEnd) {
-          let serverTs = null;
-          try { serverTs = (JSON.parse(event?.data || '{}'))?.ts || null; } catch { /* fine */ }
-          try {
-            playVoiceEvent('turnEnd', vp, {
-              // Prefer the server-supplied ts so a re-broadcast (server bug, two
-              // SSE delivery paths) is deduped by the player. Falls back to a
-              // unique key if absent — relies on COOLDOWN_MS.turnEnd to suppress.
-              dedupeKey: `turnEnd:${serverTs || Date.now()}`,
-            });
-          } catch { /* never propagate */ }
-        }
-      });
+        let data;
+        try { data = JSON.parse(event?.data || '{}'); } catch { return; }
+        if (!data || typeof data !== 'object') return;
+        const instance = data.instanceKey || data.instance;
+        if (instance && voiceInstance && instance !== voiceInstance) return;
+        if (data.project && this.state.projectName && data.project !== this.state.projectName) return;
+        handler(data);
+      };
+      this.eventSource.addEventListener('turn_end', voiceListener(data => this._onTurnEndVoice(data)));
+      this.eventSource.addEventListener('agent_loop_start', voiceListener(data => this._onAgentLoopVoice('start', data)));
+      this.eventSource.addEventListener('agent_loop_end', voiceListener(data => this._onAgentLoopVoice('end', data)));
+      this.eventSource.addEventListener('turn_active', voiceListener(data => {
+        if (this.state.sdkMode) return;
+        this._ptyTurnActive = data.active === true;
+        clearTimeout(this._streamingOffTimer);
+        this.setState({ isStreaming: this._ptyTurnActive,
+          ...(this._ptyTurnActive && this.state.contextBarLocked ? { contextBarLocked: false } : {}) });
+      }));
       this.eventSource.addEventListener('streaming_status', (e) => {
+        if (this._unmounted || this.eventSource !== voiceSource
+          || new URLSearchParams(window.location.search).get('instance') !== voiceInstance) return;
         this._resetSSETimeout();
         try {
           const data = JSON.parse(e.data);
+          if (typeof data.instanceKey === 'string') {
+            if (voiceInstance && data.instanceKey !== voiceInstance) return;
+            if (!this._isLocalLog) {
+              const model = typeof data.model === 'string' ? data.model.trim() : '';
+              this.setState({ sdkModel: model && model.length <= 256 ? model : null });
+            }
+          }
           if (data.active) {
             // 立即显示 loading
             clearTimeout(this._streamingOffTimer);
@@ -1815,7 +1879,7 @@ class AppBase extends React.Component {
             // 延迟隐藏，避免工具调用间隙导致 spinner 频繁闪烁
             clearTimeout(this._streamingOffTimer);
             this._streamingOffTimer = setTimeout(() => {
-              this.setState({ isStreaming: false });
+              if (!this._ptyTurnActive) this.setState({ isStreaming: false });
             }, 2000);
           }
         } catch (err) { reportSwallowed('sse.streaming_status', err); }
@@ -2275,6 +2339,7 @@ class AppBase extends React.Component {
     if (this._unmounted || !data?.instanceKey) return;
     const params = new URLSearchParams(window.location.search);
     if (params.has('logfile') || params.get('instance') !== data.instanceKey) return;
+    this.props.onForgetApprovalDismissals?.();
     // The scoped close event precedes SSE teardown. Use the same server-picked
     // survivor as the initiating client's response before the Header unmounts.
     navigateSdkWorkspace(data.reattachedTo || null);
@@ -2320,7 +2385,7 @@ class AppBase extends React.Component {
     // Keep the mounted chat and its unsent draft while replacing the archive.
     this.setState({ pinnedSessionTs: null, streamingLatest: null, isStreaming: false,
       contextWindow: null, contextBarLocked: false, contextBarOptimistic: false,
-      workspaceMode: false, cliMode: true, sdkMode: true, sdkResumeId: data.resumeId, viewMode: 'chat' }, () => this._resetV2Communication());
+      sdkModel: null, workspaceMode: false, cliMode: true, sdkMode: true, sdkResumeId: data.resumeId, viewMode: 'chat' }, () => this._resetV2Communication());
   };
 
   handleWorkspaceLaunch = ({ projectName, sdkMode, instanceKey }) => {
@@ -2503,11 +2568,16 @@ class AppBase extends React.Component {
   // dismissed entries for that kind. Used by both ask (static id reuse) and ptyPlan (timestamp ids
   // could repeat after long sessions). PTY plan and ask share the same dismiss-on-transition policy.
   _setApprovalKind = (kind, data) => {
-    const enriched = this._injectProjectName(data, kind);
+    if (this._unmounted) return;
+    const reason = data?.reason === 'view-switch' ? 'view-switch' : null;
+    const enriched = reason ? null : this._injectProjectName(data, kind);
     this.setState(prev => {
       const next = { ...prev.approvalGlobal };
       if (enriched) next[kind] = enriched;
       else next[kind] = null;
+      const prevId = prev.approvalGlobal?.[kind]?.[kind]?.id ?? null;
+      const nextId = enriched?.[kind]?.id ?? null;
+      if (!shouldWipeApprovalDismissal(prevId, nextId, { reason })) return { approvalGlobal: next };
       const dismissed = new Set(prev.approvalDismissedIds);
       let changed = false;
       for (const id of dismissed) {

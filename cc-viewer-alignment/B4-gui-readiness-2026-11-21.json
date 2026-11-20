@@ -1,0 +1,83 @@
+{
+  "date": "2026-11-21",
+  "scope": "GUI fixture readiness only;no production UI/protocol change",
+  "probe": "cc-viewer-alignment/probes/b4-tasks-gui.mjs",
+  "startCommand": "node cc-viewer-alignment/probes/b4-tasks-gui.mjs --native-asks --model-chip",
+  "fixture": {
+    "root": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-tasks-gui-c8KQZp",
+    "port": 20320,
+    "usesFakeNativeChild": true,
+    "usesRealModelNetwork": false
+  },
+  "checks": {
+    "syntax": "passed",
+    "diffWhitespace": "passed",
+    "compactionWS": {
+      "own": 1,
+      "sibling": 0,
+      "inventedTokenCounts": false
+    },
+    "canonicalContextVariants": [
+      {
+        "variant": "SDK",
+        "sdkSource": true,
+        "instructions": "You are Codex"
+      },
+      {
+        "variant": "CUSTOM",
+        "sdkSource": true,
+        "instructions": "GUI actual custom instructions"
+      },
+      {
+        "variant": "HTTP shape fixture",
+        "sdkSource": false,
+        "instructions": "You are Codex"
+      }
+    ],
+    "queuePreemptionWS": {
+      "queued": true,
+      "oldApprovalClosed": true,
+      "closeEvent": "perm-hook-timeout",
+      "lateOldReply": "SDK_APPROVAL_NOT_PENDING",
+      "siblingFrames": 0,
+      "settled": true
+    },
+    "canonicalFollowup": {
+      "promptCount": 1,
+      "replyRetained": true
+    },
+    "failedAttempts": [
+      "Initial materializer assertion called includes on undefined TOOL input;fixed assertion and rerun passed.",
+      "Initial preemption script expected perm-hook-resolved instead of actual perm-hook-timeout;corrected to existing E54 contract,new request IDs,rerun passed."
+    ]
+  },
+  "gui": {
+    "status": "unverified",
+    "inventoryErrors": [
+      "Sky Computer Use native pipe startup failed",
+      "The browser access host is unavailable"
+    ],
+    "directIabCreation": "The browser access host is unavailable",
+    "alternativeBrowserPermission": "pending user interactive choice",
+    "alternateBrowserInstalledOrUsed": false,
+    "pending": [
+      "G1",
+      "G2",
+      "G3",
+      "G4",
+      "G5"
+    ]
+  },
+  "validationLimits": {
+    "newFullSuite": false,
+    "newBuild": false,
+    "newInstalledCheck": false,
+    "reason": "Only existing standalone fixture and alignment evidence changed;latest source/build/installation evidence remains E62/E64."
+  },
+  "publication": {
+    "squashed": false,
+    "pushed": false,
+    "prCreated": false,
+    "b4Complete": false
+  }
+}

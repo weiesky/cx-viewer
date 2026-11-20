@@ -1,0 +1,66 @@
+{
+  "date": "2026-11-21",
+  "upstream": "dafe2bce374df1daf3e81526a4b42c9189e620f0",
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "subitem": "Interrupted cumulative-prefix divergence must retain queued user prompts and invalidate stale rendered rows.",
+  "sourceAudit": [
+    "Actual dafe sessionMerge diff and fixed final branch; later d7 response/known-full, d89 session identity and1aca queued-display diffs do not replace this branch.",
+    "Local full merge/normalizer, AppBase live and cold ingestion, ChatView session render cache and array-keyed tool caches traced before adaptation."
+  ],
+  "implementation": "Port longest-common-prefix replacement. Necessary current-cache adaptation: if the established prefix diverges, allocate its surviving prefix before appending the authoritative tail. Pure append keeps original identity. Reuse existing array-identity invalidation, no new revision fields or UI.",
+  "red": [
+    "Three initial tests fail: actual AppBase live/cold and cumulative transcript retain aborted partial while dropping queued user.",
+    "LCP-only initial89 target/full1568/build/install passed but Safari A still showed old partial and reply with no queued user: rejected as incomplete.",
+    "Actual cached ChatView regression then reproduces that stale row. Initial extraction omitted user text props; corrected extractor yields the real cache-red mismatch."
+  ],
+  "finalTarget": "91/91,0 skip",
+  "full": "1570/1570 (5+328+1025+212),0 skip",
+  "build": "passed",
+  "installed": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-z6xncts1",
+    "files": 702,
+    "source_bytes_match": true,
+    "web_asset_files": 204,
+    "runtime_tests": "285/285",
+    "b12_regression": "passed",
+    "installed_cli_relative_cd_boot": "passed",
+    "uses_fake_codex": true,
+    "uses_real_model_network": false
+  },
+  "gui": {
+    "fixture": "cxv-b4-tasks-gui-MvmJVu",
+    "pid": 90869,
+    "initialFailureConfirmedInSafari": true,
+    "syntheticCanonicalSnapshotsViaProductionSdkAdapterWriter": true,
+    "finalRepeat": "not completed: native CUA pipe startup failed twice before final corrected build could be inspected",
+    "ownProcessStopped": true,
+    "cliTurns": 0
+  },
+  "guiReproduction": {
+    "command": "node cc-viewer-alignment/probes/b4-tasks-gui.mjs",
+    "actions": [
+      "Open emitted A URL in Safari.",
+      "stdin JSON action merge-step step1 (workspace a default). Verify MERGE_ABORTED_PARTIAL visible.",
+      "stdin JSON action merge-step step2. Expect MERGE_QUEUED_USER before MERGE_QUEUED_REPLY, each once, old partial absent.",
+      "Refresh. Expect the same four-message authoritative transcript."
+    ],
+    "environment": "Working CUA native pipe or manual browser access, current production build; isolated HOME/SDK fixture only."
+  },
+  "logs": [
+    "/tmp/cxv-b4-interrupt-merge-red.log",
+    "/tmp/cxv-b4-interrupt-merge-target.log",
+    "/tmp/cxv-b4-interrupt-merge-full.log",
+    "/tmp/cxv-b4-interrupt-merge-cache-red.log",
+    "/tmp/cxv-b4-interrupt-merge-cache-red-final.log",
+    "/tmp/cxv-b4-interrupt-merge-cache-red-render.log",
+    "/tmp/cxv-b4-interrupt-merge-target-final.log",
+    "/tmp/cxv-b4-interrupt-merge-full-final.log",
+    "/tmp/cxv-b4-interrupt-merge-build-final.log",
+    "/tmp/cxv-b4-interrupt-merge-installed-final.log"
+  ],
+  "limits": [
+    "Final browser repetition remains pending, not passed; actual cached component/live/cold assertions pass.",
+    "No new DOM/CSS or redesign. No real Stop control/model/physical-device validation claimed.",
+    "Other dafe queue/PTY/IM/orphan-checkpoint/release mixed subitems remain independent; B4 not complete; Context choices pending; no push."
+  ]
+}

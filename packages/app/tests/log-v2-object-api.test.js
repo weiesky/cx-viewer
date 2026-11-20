@@ -386,8 +386,27 @@ function liveFailureFixture(t) {
   append(2);
   const options = { logDir: root, file, getActiveFile: () => file,
     afterSeq: snapshot.end.cursor.throughSeq, generation: snapshot.start.archive.generation, objectHandle: handle };
-  return { options, requests };
+  return { options, requests, append };
 }
+
+test('cold snapshot attachment replays its gap once and retains commits arriving during backpressure', async t => {
+  const { options, requests, append } = liveFailureFixture(t);
+  const req = new EventEmitter(), response = mockResponse();
+  requests.push(req);
+  const write = response.write;
+  let blocked = true;
+  response.write = value => { write(value); return !blocked; };
+  await serveLogV2Live(req, response, options);
+  await waitForBody(response, /id: [^\n]+:2\n/);
+  append(3);
+  blocked = false;
+  response.emit('drain');
+  await waitForBody(response, /id: [^\n]+:4\n/);
+  assert.deepEqual([...response.body.matchAll(/^id: [^\n]+:(\d+)$/gm)].map(match => Number(match[1])), [2, 3, 4]);
+  assert.equal(response.body.includes('event: v2_reset'), false);
+  req.emit('close');
+  assert.equal(getV2TimelineWatcherStats().subscribers, 0);
+});
 
 for (const mode of ['write', 'write-and-end', 'async-error']) {
   test(`live ${mode} failure closes the connection and subscription; reconnect replays the suffix`, async t => {
