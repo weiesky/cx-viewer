@@ -1,0 +1,40 @@
+packages/app/proxy.js
+  s_f3ce02ff91d9cf::t_612d6e8c8bb88c 3,332,409-410,412-413,454-455,457-476,478,480-481,547
+  s_f3ce02ff91d9cf::t_dfae90a354f46e 479
+  s_f3ce02ff91d9cf::t_3a62e39005e309 411,456,477,482
+packages/app/lib/sdk-manager.js
+  s_f3ce02ff91d9cf::t_612d6e8c8bb88c 159-162,306,420-431,1100,1128-1129
+packages/app/server.js
+  s_f3ce02ff91d9cf::t_612d6e8c8bb88c 5337
+packages/app/tests/proxy-slow-upstream.test.js
+  s_f3ce02ff91d9cf::t_fc84905a6ecbb0 1-82
+AGENTS.md
+  s_f3ce02ff91d9cf::t_94709943ec09cf 26
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_f3ce02ff91d9cf::t_94709943ec09cf 3,15609-15613
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_f3ce02ff91d9cf::t_94709943ec09cf 3
+packages/app/tests/sdk-workspace-connections.test.js
+  s_f3ce02ff91d9cf::t_9115c66fb072b3 3
+  s_f3ce02ff91d9cf::t_4ffffd864c362b 76,698-755
+cc-viewer-alignment/B4-implementation.md
+  s_f3ce02ff91d9cf::t_94709943ec09cf 296,309-317
+cc-viewer-alignment/README.md
+  s_f3ce02ff91d9cf::t_94709943ec09cf 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f7b13af92d09fc4a29172c42a9d09b5f16515cf9",
+  "prompts": {},
+  "sessions": {
+    "s_f3ce02ff91d9cf": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6e7-9606-7a33-911c-33e9b1de1cad",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
