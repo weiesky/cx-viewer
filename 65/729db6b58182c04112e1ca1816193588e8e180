@@ -1,0 +1,51 @@
+README.md
+  s_f3ce02ff91d9cf::t_ce19ac77c0bf58 52-60
+cc-viewer-alignment/probes/b4-appserver-compat.mjs
+  s_f3ce02ff91d9cf::t_77c78cb585b29d 351
+  s_f3ce02ff91d9cf::t_9ebb69f133dc00 4-5,7,20,163,320-349,363,372-375
+packages/app/tests/sdk-cli-resume.test.js
+  s_f3ce02ff91d9cf::t_edead54373fd27 234-236
+  s_f3ce02ff91d9cf::t_383ef72b8f4c7d 105
+  s_f3ce02ff91d9cf::t_c60b0ec6d36aa6 188-189,192-233,237-256
+  s_f3ce02ff91d9cf::t_28afabd0e99d63 190-191
+packages/app/cli.js
+  s_f3ce02ff91d9cf::t_0285a4bd1086f4 13,595,612,618,635,667,783-785,1015,1017,1019
+packages/app/lib/cli-args.js
+  s_f3ce02ff91d9cf::t_0285a4bd1086f4 42-67
+cc-viewer-alignment/B4-appserver-cli-2026-11-20.json
+  s_f3ce02ff91d9cf::t_3f285b41058821 1-139
+cc-viewer-alignment/probes/b3-installed-check.py
+  s_f3ce02ff91d9cf::t_5193b4848d0c2f 29
+AGENTS.md
+  s_f3ce02ff91d9cf::t_8f13ecba9b3a88 26
+cc-viewer-alignment/B4-appserver-proposal.md
+  s_f3ce02ff91d9cf::t_7e08ca349603c3 67-69
+cc-viewer-alignment/B4-implementation.md
+  s_f3ce02ff91d9cf::t_8b38d26bc36f3e 124-139
+cc-viewer-alignment/B4-native-cli-install-2026-11-20.json
+  s_f3ce02ff91d9cf::t_12edf171019e60 1-11
+cc-viewer-alignment/README.md
+  s_f3ce02ff91d9cf::t_1a916d4617c4de 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_f3ce02ff91d9cf::t_f6116a0fd3a319 15538-15541
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_f3ce02ff91d9cf::t_64785ab151b3b6 3
+packages/app/tests/cli-args.test.js
+  s_f3ce02ff91d9cf::t_7d2e9e681b4e75 133-150
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "65729db6b58182c04112e1ca1816193588e8e180",
+  "prompts": {},
+  "sessions": {
+    "s_f3ce02ff91d9cf": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6e7-9606-7a33-911c-33e9b1de1cad",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
