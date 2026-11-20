@@ -1,0 +1,36 @@
+packages/app/lib/sdk-manager.js
+  s_f3ce02ff91d9cf::t_0e5e78836aa689 273,632-635,641,940
+  s_f3ce02ff91d9cf::t_d267f91b31d7d5 144-147,272,506,592,636-640,642-654,742-745,939,960,974
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_f3ce02ff91d9cf::t_78fd0b04d70021 3,1358,2173
+packages/app/tests/sdk-task-state.test.js
+  s_f3ce02ff91d9cf::t_5c966c53570e2e 1-115
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_f3ce02ff91d9cf::t_78fd0b04d70021 3,45,101
+cc-viewer-alignment/B4-implementation.md
+  s_f3ce02ff91d9cf::t_78fd0b04d70021 1-17
+AGENTS.md
+  s_f3ce02ff91d9cf::t_78fd0b04d70021 26
+packages/app/tests/sdk-workspace-connections.test.js
+  s_f3ce02ff91d9cf::t_35d309fb0e31d7 129-131,194-200,220,282
+cc-viewer-alignment/README.md
+  s_f3ce02ff91d9cf::t_78fd0b04d70021 5,21
+packages/app/server.js
+  s_f3ce02ff91d9cf::t_d267f91b31d7d5 5334
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "61c3d78682507d98ba9bb0f0ab7ef128ae4a5b79",
+  "prompts": {},
+  "sessions": {
+    "s_f3ce02ff91d9cf": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6e7-9606-7a33-911c-33e9b1de1cad",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
