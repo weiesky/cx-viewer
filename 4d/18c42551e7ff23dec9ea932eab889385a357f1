@@ -1,0 +1,63 @@
+cc-viewer-alignment/B5-implementation.md
+  s_4122b07c8b4292::t_7c17a6d97de1ff 86-96
+cc-viewer-alignment/B5-candidate-matrix.md
+  s_4122b07c8b4292::t_7c17a6d97de1ff 47
+cc-viewer-alignment/probes/b5-search-gui.mjs
+  s_4122b07c8b4292::t_57ba5a83083199 42-48,81-84
+cc-viewer-alignment/probes/b3-installed-check.py
+  s_4122b07c8b4292::t_2163ccbd6f88d2 29,35
+  s_4122b07c8b4292::t_65bff21fcc0122 12-18,38
+cc-viewer-alignment/B5-file-encoding-2026-11-21.json
+  s_4122b07c8b4292::t_7c17a6d97de1ff 1-81
+  s_4122b07c8b4292::t_726e95a75c5215 82-93
+packages/app/tests/file-content-binary.test.js
+  s_4122b07c8b4292::t_bb689255f54378 1-78
+packages/app/lib/binary-sniff.js
+  s_4122b07c8b4292::t_f4a3ece01eb64b 1-35
+apps/web/src/components/files/FileContentView.jsx
+  s_4122b07c8b4292::t_840e5dd1f3b606 7-8,327,337-340,386,522,572,632,637-638,645,650-654,656-665,669,671,679-680,684,703,712,716,718,864,883,887,890,910-913,929,1000,1012,1047-1048
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4122b07c8b4292::t_7c17a6d97de1ff 15935-15939
+AGENTS.md
+  s_4122b07c8b4292::t_7c17a6d97de1ff 26
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_4122b07c8b4292::t_7c17a6d97de1ff 3
+packages/app/server.js
+  s_4122b07c8b4292::t_f4a3ece01eb64b 3688
+packages/app/tests/binary-sniff.test.js
+  s_4122b07c8b4292::t_bb689255f54378 1-50
+apps/web/src/components/viewers/UnsupportedFilePreview.module.css
+  s_4122b07c8b4292::t_f4a3ece01eb64b 1-48
+apps/web/src/components/viewers/UnsupportedFilePreview.jsx
+  s_4122b07c8b4292::t_f4a3ece01eb64b 1-31
+apps/web/src/i18n.js
+  s_4122b07c8b4292::t_f4a3ece01eb64b 4-13,15-34
+  s_4122b07c8b4292::t_42ff15a0525ee9 14
+cc-viewer-alignment/probes/b5-file-encoding-gui.mjs
+  s_4122b07c8b4292::t_57ba5a83083199 1-19,24-34,37-62
+  s_4122b07c8b4292::t_11b34ef8195e1f 35
+  s_4122b07c8b4292::t_0ee0175b7501ef 21-22
+  s_4122b07c8b4292::t_c183831c51b195 20,23
+  s_4122b07c8b4292::t_674b9efb194d03 36
+packages/app/lib/file-api.js
+  s_4122b07c8b4292::t_840e5dd1f3b606 6,75-86,98,137
+  s_4122b07c8b4292::t_f4a3ece01eb64b 7,99-104,129,134-136,138-139,168-169
+cc-viewer-alignment/README.md
+  s_4122b07c8b4292::t_7c17a6d97de1ff 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "4d18c42551e7ff23dec9ea932eab889385a357f1",
+  "prompts": {},
+  "sessions": {
+    "s_4122b07c8b4292": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fbcc-5a47-7112-a38d-fb834f2c5f53",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
