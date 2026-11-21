@@ -1,0 +1,91 @@
+apps/web/src/components/files/FileBrowserModal.jsx
+  s_4122b07c8b4292::t_1592b1c7414ebc 316,348,373,457,627,847,852,976
+  s_4122b07c8b4292::t_eb2f1836af8419 4,33,61,63,171
+AGENTS.md
+  s_4122b07c8b4292::t_416b75057fa1af 26
+cc-viewer-alignment/probes/b5-search-gui.mjs
+  s_4122b07c8b4292::t_97c6b748130f24 175-178
+  s_4122b07c8b4292::t_ce7bb49aaf1cb5 114-130,144,146,179-180,182-183,223
+  s_4122b07c8b4292::t_2677baf1aca88b 181
+apps/web/tests/api-url-instance.test.js
+  s_4122b07c8b4292::t_9e3066ae7cd40d 48-61
+cc-viewer-alignment/B5-implementation.md
+  s_4122b07c8b4292::t_dcb805861f73c5 342-351
+cc-viewer-alignment/README.md
+  s_4122b07c8b4292::t_416b75057fa1af 5
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_4122b07c8b4292::t_416b75057fa1af 3,111
+apps/web/src/i18n.js
+  s_4122b07c8b4292::t_db23cabd9b270a 4-24
+cc-viewer-alignment/B5-target-browser-2026-11-21.json
+  s_4122b07c8b4292::t_638bc9a5656ae5 1-267
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4122b07c8b4292::t_dcb805861f73c5 16081-16084
+packages/app/tests/target-files.test.js
+  s_4122b07c8b4292::t_9e3066ae7cd40d 272-283
+  s_4122b07c8b4292::t_0b9b39683c847c 284-306
+packages/app/server.js
+  s_4122b07c8b4292::t_dd237fadf04857 1616-1635
+  s_4122b07c8b4292::t_c1724af6590e3c 1475-1477,1491-1495,3737-3739
+  s_4122b07c8b4292::t_1592b1c7414ebc 3820
+  s_4122b07c8b4292::t_98141a9c0e7a0f 1469-1474,1478-1479,1484-1490,1496-1497,1515,1524,1547,3732,3734-3736,3740-3741
+cc-viewer-alignment/probes/b5-target-files-gui.mjs
+  s_4122b07c8b4292::t_8dbe2e81c04ffe 95-96
+  s_4122b07c8b4292::t_71ee9c4d823e49 1-4,6,10-15,18-30,34,49-58,60-75,77-82,84-86,88,90,93-94,97-103,105,123,125-126,129-130
+  s_4122b07c8b4292::t_7c130800fb822f 89,91-92,106-113,116-117,119-122,124
+  s_4122b07c8b4292::t_3e8f17901f9e08 118
+  s_4122b07c8b4292::t_7a04a552f738ac 35-48,87,104
+  s_4122b07c8b4292::t_3a8a9689c6c8ec 5
+  s_4122b07c8b4292::t_e7f5a91cd29961 7-9
+  s_4122b07c8b4292::t_f64f572644abbd 16-17
+  s_4122b07c8b4292::t_b210f24e778b2e 31-33
+  s_4122b07c8b4292::t_da9c94c69bb14a 59
+  s_4122b07c8b4292::t_9324b02170183e 76
+  s_4122b07c8b4292::t_2409f79653a38c 83
+  s_4122b07c8b4292::t_ec3b28b3b352c0 114-115
+  s_4122b07c8b4292::t_d83752b4d83945 127-128
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_4122b07c8b4292::t_9e3066ae7cd40d 1671-1696
+apps/web/src/components/common/HtmlPreviewModal.jsx
+  s_4122b07c8b4292::t_dd237fadf04857 10,13-15,21,48
+apps/web/src/Mobile.jsx
+  s_4122b07c8b4292::t_6fba2483b31283 25,79,221,227,230,233,238-250,349,849,852-856,865
+apps/web/src/components/common/MemoryDetailModal.jsx
+  s_4122b07c8b4292::t_ab34a9489177b0 6,17,66-69
+apps/web/src/components/common/sharedChrome.module.css
+  s_4122b07c8b4292::t_f83c2819e868b7 291-303
+apps/web/src/components/dashboard/AppHeader.jsx
+  s_4122b07c8b4292::t_2dca6cf03560f5 27,117,393,673,679,682,685,690-702,1494,1497-1501,1885
+apps/web/src/components/files/FileContentView.jsx
+  s_4122b07c8b4292::t_c4fee0e0afb483 4,318,542,573,646,714,912,929
+apps/web/src/components/files/fileContextMenu.js
+  s_4122b07c8b4292::t_192dbcbfb91a4a 13-25,55-61
+apps/web/src/components/files/fileContextMenuActions.jsx
+  s_4122b07c8b4292::t_4d2d7396a9e9ed 14,39,45-46,52,55
+apps/web/src/components/settings/SkillsManagerModal.jsx
+  s_4122b07c8b4292::t_2f011e3dea2da2 8,40,83,118-119,138
+apps/web/src/components/settings/SkillsManagerModal.module.css
+  s_4122b07c8b4292::t_c4938a87e01fdf 162-173
+apps/web/src/components/viewers/ImageViewer.jsx
+  s_4122b07c8b4292::t_8c82d808948f69 3,17,29
+apps/web/src/components/viewers/UnsupportedFilePreview.jsx
+  s_4122b07c8b4292::t_5c355efc3ab13f 4,10,12
+apps/web/src/utils/apiUrl.js
+  s_4122b07c8b4292::t_85a18c8f67c63b 44-57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "c7ef277ffa176b1b3233f1c2b205ce4a275c5ce8",
+  "prompts": {},
+  "sessions": {
+    "s_4122b07c8b4292": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fbcc-5a47-7112-a38d-fb834f2c5f53",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
