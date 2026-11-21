@@ -1,0 +1,37 @@
+apps/web/src/components/search/SearchPanel.module.css
+  s_4122b07c8b4292::t_e6fb720969f6e6 164-205,241-244,321-325
+apps/web/src/components/search/SearchPanel.jsx
+  s_4122b07c8b4292::t_e6fb720969f6e6 3,70-118,134,143,153-172,191,197-200,217-218,234,240-271,273-281,455-459,465,467-476,489-498
+apps/web/src/i18n.js
+  s_4122b07c8b4292::t_e6fb720969f6e6 4-21
+AGENTS.md
+  s_4122b07c8b4292::t_340347ef7be6c8 26
+cc-viewer-alignment/B5-candidate-matrix.md
+  s_4122b07c8b4292::t_054a8314510ac5 10
+cc-viewer-alignment/B5-implementation.md
+  s_4122b07c8b4292::t_6c23f343afd9cb 31-37
+cc-viewer-alignment/B5-search-ui-2026-11-21.json
+  s_4122b07c8b4292::t_00e1fbc7919621 1-30
+cc-viewer-alignment/README.md
+  s_4122b07c8b4292::t_c644782dedea29 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4122b07c8b4292::t_cd85fbe31fa614 15910-15914
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_4122b07c8b4292::t_6eea58f982cf48 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a2a4ec0ee65c786cf1c059202e954a485b1da1bf",
+  "prompts": {},
+  "sessions": {
+    "s_4122b07c8b4292": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fbcc-5a47-7112-a38d-fb834f2c5f53",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
