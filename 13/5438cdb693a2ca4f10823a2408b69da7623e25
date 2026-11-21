@@ -1,0 +1,84 @@
+apps/web/src/i18n.js
+  s_76602f25d7665d::t_49f7cb5bae5b23 12655-12694
+cc-viewer-alignment/B7-pty-queue-rejection/result.json
+  s_76602f25d7665d::t_75ec41f9af81de 1-26
+packages/app/server/lib/pty-chat-queue.js
+  s_76602f25d7665d::t_49f7cb5bae5b23 119,166,177,181,350,361
+cc-viewer-alignment/probes/b7-pty-fixture.mjs
+  s_76602f25d7665d::t_dd77bb3bfeeb87 14,16-19,24,35-36,52
+  s_76602f25d7665d::t_2a6a2e6311237c 48
+apps/web/src/App.jsx
+  s_76602f25d7665d::t_49f7cb5bae5b23 465
+apps/web/src/Mobile.jsx
+  s_76602f25d7665d::t_49f7cb5bae5b23 735
+apps/web/src/components/chat/ChatView.jsx
+  s_76602f25d7665d::t_932731dd24b99a 2873,3371-3382
+  s_76602f25d7665d::t_9c294de97e11fe 305,801-806,2860-2872,2874-2881,3118-3119,3366-3370,3383-3386,3393-3397,3399,3401,3403-3408,3412,3685,3760-3773,4574,5002,5005
+  s_76602f25d7665d::t_537137c2bb9c46 3400,3402
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_76602f25d7665d::t_02169e846a78ba 1855,1885
+  s_76602f25d7665d::t_932731dd24b99a 1848-1854,1856-1884,1886-1892
+cc-viewer-alignment/B7-E31-queue-source.json
+  s_76602f25d7665d::t_e3840949c2da5d 15-16
+  s_76602f25d7665d::t_7598e61eff46af 1-14,19
+  s_76602f25d7665d::t_e70f6569154ad7 17-18
+packages/app/tests/pty-workspace-routing.test.js
+  s_76602f25d7665d::t_02169e846a78ba 228,247
+apps/web/src/AppBase.jsx
+  s_76602f25d7665d::t_49f7cb5bae5b23 133,1035,1037
+packages/app/server.js
+  s_76602f25d7665d::t_9c294de97e11fe 5977,5980,5987
+  s_76602f25d7665d::t_49f7cb5bae5b23 5989
+cc-viewer-alignment/B7-pty-queue/partial.json
+  s_76602f25d7665d::t_20cdef5523ccc2 2,5-23,25-28,34-35,40-55,60-61,65-68,73-86,88,93-94,98-136,139-154,156,159-160,164-165
+  s_76602f25d7665d::t_07fc40d8aaf5e3 32-33
+  s_76602f25d7665d::t_432940a7a67ee1 1
+  s_76602f25d7665d::t_e721149b0f56e4 3-4
+  s_76602f25d7665d::t_c750c9e8621703 24
+  s_76602f25d7665d::t_3162bc26451046 29-31
+  s_76602f25d7665d::t_4993be1b13a037 36-39
+  s_76602f25d7665d::t_89738403216c78 56-59
+  s_76602f25d7665d::t_f4974e8a4938ed 62-64
+  s_76602f25d7665d::t_a3632b127f756d 69-72
+  s_76602f25d7665d::t_00cafb87d014fc 87
+  s_76602f25d7665d::t_d5a4ad8bd672cd 89-92
+  s_76602f25d7665d::t_20460cd4fcb70f 95-97
+  s_76602f25d7665d::t_36322ba3aec9fe 137-138
+  s_76602f25d7665d::t_9ec19109f234a7 155
+  s_76602f25d7665d::t_320894cb971712 157-158
+  s_76602f25d7665d::t_4ccca6b27e6cbf 161-163
+  s_76602f25d7665d::t_47f49f4f11bd18 166-168
+cc-viewer-alignment/B7-pty-queue/result.json
+  s_76602f25d7665d::t_07fc40d8aaf5e3 1-200
+cc-viewer-alignment/probes/b7-pty-queue-rejection-gui.mjs
+  s_76602f25d7665d::t_e70f6569154ad7 1-42
+  s_76602f25d7665d::t_f27be21f662684 43
+AGENTS.md
+  s_76602f25d7665d::t_25bc7c6d09bb7e 26-27
+cc-viewer-alignment/B7-implementation.md
+  s_76602f25d7665d::t_ebf648608d068b 289-300
+cc-viewer-alignment/README.md
+  s_76602f25d7665d::t_42a8d448276319 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_76602f25d7665d::t_4c1f5c7a5d7ca3 3,3617-3618,8076-8077
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_76602f25d7665d::t_87c01728e69796 3
+cc-viewer-alignment/probes/b7-pty-queue-gui.mjs
+  s_76602f25d7665d::t_a2447502ca4911 1-71
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "135438cdb693a2ca4f10823a2408b69da7623e25",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
