@@ -1,0 +1,84 @@
+{
+  "file": "b7-readonly/20261121_1b671865-f7dd-41c3-a9bb-bd6bd41da918.cxvsession/timeline.jsonl",
+  "source": "generated native-format V2 archive",
+  "cases": [
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "mode": "desktop",
+      "emulated": false,
+      "virtualized": false,
+      "generatedRows": 1050,
+      "mountedRows": 1050,
+      "firstRowAccessibleWithoutClick": true,
+      "noManualLoadButton": true,
+      "noWritesOrModelSend": true,
+      "screenshot": "chromium-desktop-auto-filled.png"
+    },
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "mode": "phone",
+      "emulated": true,
+      "virtualized": true,
+      "generatedRows": 1050,
+      "mountedRows": 20,
+      "firstRowAccessibleWithoutClick": true,
+      "noManualLoadButton": true,
+      "noWritesOrModelSend": true,
+      "screenshot": "chromium-phone-auto-filled.png"
+    },
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "mode": "pad",
+      "emulated": true,
+      "virtualized": false,
+      "generatedRows": 1050,
+      "mountedRows": 1050,
+      "firstRowAccessibleWithoutClick": true,
+      "noManualLoadButton": true,
+      "noWritesOrModelSend": true,
+      "screenshot": "chromium-pad-auto-filled.png"
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "mode": "desktop",
+      "emulated": false,
+      "virtualized": false,
+      "generatedRows": 1050,
+      "mountedRows": 1050,
+      "firstRowAccessibleWithoutClick": true,
+      "noManualLoadButton": true,
+      "noWritesOrModelSend": true,
+      "screenshot": "webkit-desktop-auto-filled.png"
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "mode": "phone",
+      "emulated": true,
+      "virtualized": false,
+      "generatedRows": 1050,
+      "mountedRows": 1050,
+      "firstRowAccessibleWithoutClick": true,
+      "noManualLoadButton": true,
+      "noWritesOrModelSend": true,
+      "screenshot": "webkit-phone-auto-filled.png"
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "mode": "pad",
+      "emulated": true,
+      "virtualized": false,
+      "generatedRows": 1050,
+      "mountedRows": 1050,
+      "firstRowAccessibleWithoutClick": true,
+      "noManualLoadButton": true,
+      "noWritesOrModelSend": true,
+      "screenshot": "webkit-pad-auto-filled.png"
+    }
+  ]
+}

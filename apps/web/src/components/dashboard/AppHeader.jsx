@@ -12,7 +12,7 @@ import { APPROVALS_REVIEWER_DEFAULT, approvalReviewerSelectOptions } from '../..
 import { isMainAgent } from '../../../../../packages/app/src/utils/contentFilter';
 import { sortSkillsDefault } from '../../utils/skillsParser';
 import { handleSkillToggle, handleSkillDelete } from '../../utils/skillModalController';
-import { PINNED_KEY, parsePinned, serializePinned, togglePinned } from '../../utils/pinnedMenu';
+import { PINNED_KEY, togglePinned, normalizePinnedKeys, resolvePinnedKeys } from '../../utils/pinnedMenu';
 import { classifyRequest } from '../../../../../packages/app/src/utils/requestType';
 import { resolveTeammateNames } from '../../../../../packages/app/src/utils/contentFilter';
 import { t, getLang, setLang, LANG_OPTIONS } from '../../i18n';
@@ -91,10 +91,25 @@ function HeaderProjectLabel({ projectName, isLocalLog }) {
   );
 }
 
+function readLegacyPinnedRaw() {
+  try { return typeof localStorage !== 'undefined' ? localStorage.getItem(PINNED_KEY) : null; } catch { return null; }
+}
+function clearLegacyPinnedRaw() {
+  try { localStorage.removeItem(PINNED_KEY); } catch {}
+}
+function sameKeys(a, b) {
+  return a.length === b.length && a.every((k, i) => k === b[i]);
+}
+function initialPinnedKeys(context) {
+  const prefsValue = context?.preferences?.pinnedMenuKeys;
+  if (Array.isArray(prefsValue)) return normalizePinnedKeys(prefsValue);
+  return [];
+}
+
 class AppHeader extends React.Component {
   static contextType = SettingsContext;
 
-  constructor(props) {
+  constructor(props, context) {
     super(props);
     this.state = { settingsDrawerVisible: false, globalSettingsVisible: false, projectStatsVisible: false, projectStats: null, projectStatsLoading: false, localUrl: '', pluginModalVisible: false, processModalVisible: false, logoDropdownOpen: false, electronMenuOpen: false, electronMenuBar: null, proxyModalVisible: false, systemTextModalVisible: false, messagingModalVisible: false, messagingInitialTool: null, logDirDraft: null, qrPopoverOpen: false, electronQrOpen: false, electronQrAnchor: null, projectPrefsModalOpen: false, _skillsModal: { open: false, loading: false, skills: [], error: null, toggling: new Set() },
       // 文件系统权威的 skill 列表（/api/skills 返回）；live-tail 下作为 popover chip 和管理弹窗的共享数据源。
@@ -126,9 +141,9 @@ class AppHeader extends React.Component {
       _authSaving: false,
       // 管理区当前选中的作用域 tab；null=跟随生效 scope。切换 tab 时清空草稿。
       _authScope: null,
-      // 汉堡菜单「钉住」的菜单 key 列表（全局持久，跨项目共享；存 localStorage cxv_pinnedMenuKeys）。
+      // Pinned keys hydrate from authoritative preferences; legacy localStorage is migration-only.
       // 顺序=用户钉住先后；驱动行内钉按钮实心态、汉堡右侧快捷方式行、Electron header model 的 pins。
-      pinnedKeys: parsePinned(typeof localStorage !== 'undefined' ? localStorage.getItem(PINNED_KEY) : null),
+      pinnedKeys: initialPinnedKeys(context),
     };
     this._fsSkillsSeq = 0;
     this._memorySeq = 0;
@@ -138,6 +153,9 @@ class AppHeader extends React.Component {
     this._codexMdSeq = 0;
     this._codexMdDetailSeq = 0;
     this._authStateSeq = 0;
+    this._pinnedTouched = false;
+    this._persistQueue = Promise.resolve(null);
+    this._prefsHydrated = false;
   }
 
   // ===== Electron 原生 tab bar header 桥接（把部分控件迁移到最顶部 tab bar）=====
@@ -164,14 +182,47 @@ class AppHeader extends React.Component {
     ];
   }
 
-  // 切换某菜单项的钉住状态：更新 state + 写 localStorage(全局持久)。
-  // componentDidUpdate 会自动 _pushHeaderModel()，Electron 侧无需在此显式推送。
   togglePin = (key) => {
-    this.setState((s) => {
-      const next = togglePinned(s.pinnedKeys, key);
-      try { localStorage.setItem(PINNED_KEY, serializePinned(next)); } catch {}
-      return { pinnedKeys: next };
+    this.setState(
+      (s) => ({ pinnedKeys: togglePinned(s.pinnedKeys, key) }),
+      () => {
+        this._pinnedTouched = true;
+        this._queuePersistPinnedKeys(this.state.pinnedKeys);
+      },
+    );
+  };
+
+  _queuePersistPinnedKeys(keys) {
+    this._persistQueue = this._persistQueue.catch(() => null).then(() =>
+      this.context.updatePreferences({ pinnedMenuKeys: keys }),
+    );
+    this._persistQueue.then((resp) => {
+      if (resp === null) this.context.refreshPreferences?.();
     });
+  }
+
+  _hydratePinnedKeys = (data) => {
+    if (!data || typeof data.logDir !== 'string') return;
+    if (!this._pinnedTouched) {
+      this._prefsHydrated = true;
+      const { keys, migrated } = resolvePinnedKeys(data.pinnedMenuKeys, readLegacyPinnedRaw());
+      if (!sameKeys(keys, this.state.pinnedKeys)) this.setState({ pinnedKeys: keys });
+      if (migrated) {
+        this._persistQueue = this._persistQueue.catch(() => null).then(() =>
+          this.context.updatePreferences({ pinnedMenuKeys: keys }),
+        );
+        this._persistQueue.then((resp) => { if (resp) clearLegacyPinnedRaw(); });
+      } else if (Array.isArray(data.pinnedMenuKeys)) {
+        clearLegacyPinnedRaw();
+      }
+    } else {
+      this._persistQueue.then((resp) => {
+        if (resp) {
+          this._prefsHydrated = true;
+          clearLegacyPinnedRaw();
+        }
+      });
+    }
   };
 
   // 由描述符构建 antd Dropdown items：按 dividerAfter 插入分隔线；每行 label 包成
@@ -358,6 +409,7 @@ class AppHeader extends React.Component {
   };
 
   componentDidMount() {
+    this.context._prefsReady.then(this._hydratePinnedKeys);
     fetch(apiUrl('/api/local-url')).then(r => r.json()).then(data => {
       if (data.url) this.setState({ localUrl: data.url });
     }).catch(() => {});
@@ -377,6 +429,17 @@ class AppHeader extends React.Component {
 
   componentDidUpdate(prevProps) {
     this._pushHeaderModel();
+    if (prevProps.preferences !== this.props.preferences) {
+      const prefsValue = this.context?.preferences?.pinnedMenuKeys;
+      const authoritative = Array.isArray(prefsValue) && (!this._pinnedTouched || this._prefsHydrated);
+      if (authoritative) {
+        // Any authoritative array reaching us through this channel means preferences are
+        // flowing again — mark hydrated so later scope switches / refreshes keep following.
+        this._prefsHydrated = true;
+        const keys = normalizePinnedKeys(prefsValue);
+        if (!sameKeys(keys, this.state.pinnedKeys)) this.setState({ pinnedKeys: keys });
+      }
+    }
     // Workspace 切换：projectName 变了 → 旧的 _fsSkills 属于旧项目，直接作废。
     // 递增 seq 防止正在途中的 reload 回包把脏数据塞回 state。
     const authContextChanged = prevProps.projectName !== this.props.projectName;
@@ -752,6 +815,7 @@ class AppHeader extends React.Component {
       nextProps.proxyProfiles !== this.props.proxyProfiles ||
       nextProps.activeProxyId !== this.props.activeProxyId ||
       nextProps.defaultConfig !== this.props.defaultConfig ||
+      nextProps.preferences !== this.props.preferences ||
       nextProps.approvalPrefs !== this.props.approvalPrefs ||
       nextProps.approvalGlobal !== this.props.approvalGlobal ||
       nextProps.approvalDismissedIds !== this.props.approvalDismissedIds ||
@@ -1214,6 +1278,7 @@ class AppHeader extends React.Component {
     const expandThinking = !!_prefs.expandThinking;
     const expandDiff = !!_prefs.expandDiff;
     const showFullToolContent = !!_prefs.showFullToolContent;
+    const minimalChat = _prefs.minimalChat !== false;
     const onlyCurrentSession = !!_prefs.onlyCurrentSession;
 
     const menuItems = this.getMenuItems();
@@ -1281,7 +1346,7 @@ class AppHeader extends React.Component {
           })()}
           {!isElectronTab && (() => {
             // 钉住的快捷方式：汉堡右侧的常驻入口。按描述符过滤(mode-gated 项当前不存在则跳过渲染，
-            // 但保留在 localStorage，切回对应模式自动恢复)。Electron 下走原生 tab bar(见 _buildHeaderModel.pins)。
+            // 但保留在 pinnedMenuKeys，切回对应模式自动恢复)。Electron 下走原生 tab bar(见 _buildHeaderModel.pins)。
             const descByKey = new Map(this._getMenuDescriptors().map(d => [d.key, d]));
             const pins = this.state.pinnedKeys.map(k => descByKey.get(k)).filter(Boolean);
             if (pins.length === 0) return null;
@@ -1615,6 +1680,20 @@ class AppHeader extends React.Component {
                 <Switch
                   checked={!!collapseToolResults}
                   onChange={(checked) => this.context.updatePreferences({ collapseToolResults: checked })}
+                />
+              </div>
+            )}
+            {!showFullToolContent && (
+              <div className={styles.settingsItem}>
+                <span className={styles.settingsLabel}>
+                  {t('ui.minimalChat')}
+                  <Tooltip title={t('ui.minimalChat.help')}>
+                    <QuestionCircleOutlined className={styles.settingsHelpIcon} />
+                  </Tooltip>
+                </span>
+                <Switch
+                  checked={minimalChat}
+                  onChange={(checked) => this.context.updatePreferences({ minimalChat: checked })}
                 />
               </div>
             )}

@@ -26,8 +26,7 @@ export function getOtelTraceExporterConfigArgs(endpoint) {
 }
 
 /** Inject the secret through the standard OTLP environment, never child argv. */
-export function withOtelTraceAuthHeader(existing, authToken) {
-  if (typeof authToken !== 'string' || authToken.length === 0) return existing || '';
+export function withoutOtelTraceAuthHeader(existing) {
   const fields = typeof existing === 'string'
     ? existing.split(',').map(field => field.trim()).filter(Boolean)
     : [];
@@ -38,8 +37,12 @@ export function withOtelTraceAuthHeader(existing, authToken) {
     try { key = decodeURIComponent(key); } catch {}
     return key.toLowerCase() !== OTEL_AUTH_HEADER;
   });
-  filtered.push(`${OTEL_AUTH_HEADER}=${encodeURIComponent(authToken)}`);
   return filtered.join(',');
+}
+
+export function withOtelTraceAuthHeader(existing, authToken) {
+  if (typeof authToken !== 'string' || authToken.length === 0) return existing || '';
+  return [withoutOtelTraceAuthHeader(existing), `${OTEL_AUTH_HEADER}=${encodeURIComponent(authToken)}`].filter(Boolean).join(',');
 }
 
 function isTraceExporterOverride(value) {

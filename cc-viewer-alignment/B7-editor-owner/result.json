@@ -1,0 +1,77 @@
+{
+  "noModelSubmission": true,
+  "cases": [
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "owner": 0,
+      "nativeCodex": "0.169.0",
+      "realEditorChild": true,
+      "scopedOpenAndPoll": true,
+      "foreignDoneRejected": true,
+      "siblingNoNotification": true,
+      "replayPreservesUnsavedDraft": true,
+      "actualUiSave": true,
+      "helperExited": true,
+      "nativeTuiAdoptedSavedDraft": true,
+      "screenshots": [
+        "chromium-owner-0-editing.png",
+        "chromium-owner-0-returned.png"
+      ]
+    },
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "owner": 1,
+      "nativeCodex": "0.169.0",
+      "realEditorChild": true,
+      "scopedOpenAndPoll": true,
+      "foreignDoneRejected": true,
+      "siblingNoNotification": true,
+      "replayPreservesUnsavedDraft": true,
+      "actualUiSave": true,
+      "helperExited": true,
+      "nativeTuiAdoptedSavedDraft": true,
+      "screenshots": [
+        "chromium-owner-1-editing.png",
+        "chromium-owner-1-returned.png"
+      ]
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "owner": 0,
+      "nativeCodex": "0.169.0",
+      "realEditorChild": true,
+      "scopedOpenAndPoll": true,
+      "foreignDoneRejected": true,
+      "siblingNoNotification": true,
+      "replayPreservesUnsavedDraft": true,
+      "actualUiSave": true,
+      "helperExited": true,
+      "nativeTuiAdoptedSavedDraft": true,
+      "screenshots": [
+        "webkit-owner-0-editing.png",
+        "webkit-owner-0-returned.png"
+      ]
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "owner": 1,
+      "nativeCodex": "0.169.0",
+      "realEditorChild": true,
+      "scopedOpenAndPoll": true,
+      "foreignDoneRejected": true,
+      "siblingNoNotification": true,
+      "replayPreservesUnsavedDraft": true,
+      "actualUiSave": true,
+      "helperExited": true,
+      "nativeTuiAdoptedSavedDraft": true,
+      "screenshots": [
+        "webkit-owner-1-editing.png",
+        "webkit-owner-1-returned.png"
+      ]
+    }
+  ]
+}

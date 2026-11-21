@@ -1,0 +1,44 @@
+[
+  {
+    "engine": "chromium",
+    "version": "159.0.8154.6",
+    "plusStyle": {
+      "width": 16,
+      "height": 16,
+      "borderStyle": "dashed"
+    },
+    "nativeCli": true,
+    "cancelPreservesBoot": true,
+    "launchPreservesBoot": true,
+    "exactOwner": true,
+    "sdkMode": false,
+    "switchedBackSameStream": true,
+    "screenshots": [
+      "chromium-picker.png",
+      "chromium-parallel.png",
+      "chromium-returned-boot.png"
+    ],
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "version": "27.2",
+    "plusStyle": {
+      "width": 16,
+      "height": 16,
+      "borderStyle": "dashed"
+    },
+    "nativeCli": true,
+    "cancelPreservesBoot": true,
+    "launchPreservesBoot": true,
+    "exactOwner": true,
+    "sdkMode": false,
+    "switchedBackSameStream": true,
+    "screenshots": [
+      "webkit-picker.png",
+      "webkit-parallel.png",
+      "webkit-returned-boot.png"
+    ],
+    "errors": []
+  }
+]

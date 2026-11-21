@@ -1,0 +1,7 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "sourceCommit": "80ced6a99694f2f861ebecacea68b95f6387c106",
+  "effectiveAutoFillMethodExact": true,
+  "methodSha256": "ec060615f53d15fc35159e2de797d2d2ec508ddb6f3d0b63976768309472ae36",
+  "scope": "Progressively expand already loaded readonly rows per rAF; virtualized readonly rows skip the DOM window cap; original loading JSX and lifecycle restored. Native archive HTTP paging remains unchanged."
+}

@@ -1,0 +1,84 @@
+{
+  "cases": [
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "mode": "desktop",
+      "emulated": false,
+      "generatedNativeFormatArchive": true,
+      "enabledMergesTwoPureToolRuns": true,
+      "assistantBubblesMerged": 6,
+      "unmerged": 8,
+      "patchRemainsSeparate": true,
+      "originalSettingsToggle": true,
+      "preferencePersistsOnReload": true,
+      "fullContentDisablesMerge": true,
+      "noToolOrModelExecution": true,
+      "screenshots": [
+        "chromium-desktop-merged.png",
+        "chromium-desktop-setting-off.png",
+        "chromium-desktop-unmerged.png"
+      ]
+    },
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "mode": "phone",
+      "emulated": true,
+      "generatedNativeFormatArchive": true,
+      "enabledMergesTwoPureToolRuns": true,
+      "assistantBubblesMerged": 6,
+      "unmerged": 8,
+      "patchRemainsSeparate": true,
+      "originalSettingsToggle": true,
+      "preferencePersistsOnReload": true,
+      "fullContentDisablesMerge": true,
+      "noToolOrModelExecution": true,
+      "screenshots": [
+        "chromium-phone-merged.png",
+        "chromium-phone-setting-off.png",
+        "chromium-phone-unmerged.png"
+      ]
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "mode": "desktop",
+      "emulated": false,
+      "generatedNativeFormatArchive": true,
+      "enabledMergesTwoPureToolRuns": true,
+      "assistantBubblesMerged": 6,
+      "unmerged": 8,
+      "patchRemainsSeparate": true,
+      "originalSettingsToggle": true,
+      "preferencePersistsOnReload": true,
+      "fullContentDisablesMerge": true,
+      "noToolOrModelExecution": true,
+      "screenshots": [
+        "webkit-desktop-merged.png",
+        "webkit-desktop-setting-off.png",
+        "webkit-desktop-unmerged.png"
+      ]
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "mode": "phone",
+      "emulated": true,
+      "generatedNativeFormatArchive": true,
+      "enabledMergesTwoPureToolRuns": true,
+      "assistantBubblesMerged": 6,
+      "unmerged": 8,
+      "patchRemainsSeparate": true,
+      "originalSettingsToggle": true,
+      "preferencePersistsOnReload": true,
+      "fullContentDisablesMerge": true,
+      "noToolOrModelExecution": true,
+      "screenshots": [
+        "webkit-phone-merged.png",
+        "webkit-phone-setting-off.png",
+        "webkit-phone-unmerged.png"
+      ]
+    }
+  ]
+}

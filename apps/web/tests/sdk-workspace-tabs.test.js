@@ -22,6 +22,8 @@ mkdirSync(join(web, 'node_modules/.cache'), { recursive: true });
 const directory = mkdtempSync(join(web, 'node_modules/.cache/sdk-tabs-test-'));
 const output = join(directory, 'components.cjs');
 await build({ stdin: { contents: `export { default as Component } from './src/components/dashboard/SdkWorkspaceTabs.jsx';
+export { default as CachePopoverContent } from './src/components/dashboard/CachePopoverContent.jsx';
+export { default as UserPromptsModal } from './src/components/chat/UserPromptsModal.jsx';
 export { default as GitChanges } from './src/components/git/GitChanges.jsx';
 export { default as ChatInputBar } from './src/components/chat/ChatInputBar.jsx';
 export { default as ScratchTerminal } from './src/components/terminal/ScratchTerminal.jsx';
@@ -44,8 +46,11 @@ export { moveFile, canDropMoveOn } from './src/components/files/fileMove.js';
 export { importFiles, expandEntries } from './src/components/files/importFiles.js';
 export { createFileMenuHandler } from './src/components/files/fileContextMenuActions.jsx';
 export { buildFileContextMenuItems } from './src/components/files/fileContextMenu.js';
+export { default as AppHeader } from './src/components/dashboard/AppHeader.jsx';
 export { default as AppBase } from './src/AppBase.jsx';
 export { default as ChatView } from './src/components/chat/ChatView.jsx';
+export { default as ChatMessage } from './src/components/chat/ChatMessage.jsx';
+export { default as PreferencesForm } from './src/components/settings/PreferencesForm.jsx';
 export { default as DetailPanel } from './src/components/dashboard/DetailPanel.jsx';
 export { default as ContextTab } from './src/components/dashboard/ContextTab.jsx';
 export { default as ProxyChip } from './src/components/chat/ProxyChip.jsx';`, resolveDir: web },
@@ -219,6 +224,7 @@ function fixture(t, { blocked = false, component = 'Component', props = {} } = {
   location.assign = url => navigations.push(url);
   const storage = {
     getItem: key => values.get(key) ?? null,
+    removeItem: key => values.delete(key),
     setItem: (key, value) => { if (blocked) throw new Error('blocked'); values.set(key, value); },
   };
   const globals = {
@@ -1260,6 +1266,7 @@ test('opening embedded results releases editor state, reveals ancestors and refr
   const previous = Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage');
   Object.defineProperty(globalThis, 'sessionStorage', { configurable: true, value: {
     setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key), getItem: key => values.get(key) ?? null,
+    removeItem: key => values.delete(key),
   } });
   t.after(() => previous ? Object.defineProperty(globalThis, 'sessionStorage', previous) : delete globalThis.sessionStorage);
   const chat = new f.ChatView({ cliMode: true, sdkMode: true, projectName: 'alpha', mainAgentSessions: [], requests: [] });
@@ -1693,4 +1700,398 @@ test('target menus omit chat-only actions and root reveal uses the target endpoi
   const request = f.requests.at(-1), url = new URL(request.url, window.location.href);
   assert.equal(url.pathname, '/api/target-reveal-file'); assert.equal(url.searchParams.get('id'), target.id);
   assert.deepEqual(JSON.parse(request.options.body), { path: '' });
+});
+
+test('ordinary PTY reuses project tabs and plus while keeping SDK history and transport disabled', async t => {
+  const f = fixture(t, { props: { sdkMode: false, onNewProject() {} } }); f.draw(); await f.tick(); f.draw();
+  assert.ok(descendants(f.tree, node => node.type === 'button' && node.props['aria-label'] === require(output).translate('ui.resume.newProject'))[0]);
+  assert.equal(descendants(f.tree, node => node.type?.name === 'SdkResumeModal')[0], undefined);
+  const app = new f.AppBase({}); app.state.ptyMode = true; app.state.sdkMode = false;
+  assert.equal(app.renderWorkspaces().props.sdkMode, false);
+  app.handleWorkspaceLaunch({ ptyMode: true, instanceKey: 'ordinary-native', projectName: 'same' });
+  assert.match(f.navigations.at(-1), /instance=ordinary-native/);
+  assert.equal(app.state.sdkMode, false);
+  app.handleReturnToWorkspaces();
+  assert.match(f.navigations.at(-1), /workspaces=1/);
+  assert.equal(f.requests.some(request => String(request.url).includes('/api/workspaces/stop')), false);
+});
+
+test('native navigation caches stable content but refreshes badges on language changes and preserves card targets', t => {
+  const f = fixture(t), React = require('react'), exports = require(output), previous = exports.getLang();
+  t.after(() => exports.setLang(previous)); exports.setLang('en');
+  const sessions = [{ conversationId: 'thread:one', messages: [{ _timestamp: 'producer' }, { _timestamp: 'carrier' }] }];
+  const view = new f.ChatView({ cliMode: true, sdkMode: false, terminalVisible: false, lang: 'en', mainAgentSessions: sessions, requests: [] });
+  view.state.allItems = [React.createElement('span', { key: 'tools', role: 'assistant', timestamp: 'carrier', displayTs: 'producer',
+    content: [{ type: 'tool_use', name: 'update_plan', input: {} }, { type: 'tool_use', name: 'request_user_input', input: {} }] })];
+  view.state.visibleCount = 20;
+  const targets = []; view._scrollToPromptNavItem = (...args) => targets.push(args);
+  view.render(); const first = view._buildUserPromptNav(), firstKey = view._navCacheKey;
+  view.render(); assert.equal(view._buildUserPromptNav(), first);
+  const cards = descendants(first, node => node.type === 'div' && typeof node.props.onClick === 'function');
+  assert.equal(cards.length, 2); cards.forEach(card => card.props.onClick());
+  assert.deepEqual(targets, [[0, 'producer'], [0, 'producer']]);
+  const fragments = first.props.children[1].props.children;
+  assert.notEqual(fragments[0].key, fragments[1].key);
+  exports.setLang('zh'); view.props = { ...view.props, lang: 'zh' }; view.render();
+  assert.notEqual(view._navCacheKey, firstKey); const translated = view._buildUserPromptNav();
+  assert.notEqual(translated, first);
+  assert.ok(descendants(translated, node => node.type === 'span' && node.props.children === exports.translate('ui.navBadgeAsk')).length);
+});
+
+test('user prompt summary reuses native projection without revealing developer or covered compaction payloads', t => {
+  const req = Object.freeze({ mainAgent: true, _sdkSource: true, url: 'codex://sdk/turn', timestamp: '2026-11-21T12:00:00Z', body: Object.freeze({ instructions: 'PRIVATE SYSTEM', input: [
+    { type: 'message', role: 'developer', content: [{ type: 'input_text', text: 'PRIVATE DEVELOPER' }] },
+    { type: 'message', role: 'user', content: [{ type: 'input_text', text: 'PRIVATE COVERED' }] },
+    { type: 'compaction', encrypted_content: 'PRIVATE ENCRYPTED' },
+    { type: 'message', role: 'user', content: [{ type: 'input_text', text: '<user_instructions>CONTEXT ONLY</user_instructions>' }, { type: 'input_text', text: 'After compact task' }] },
+  ] }) });
+  const input = req.body.input;
+  const props = { open: true, requests: [null, 'not an entry', req, { ...req, mainAgent: false, subAgent: true }, { mainAgent: true, method: 'POST', url: 'https://api.openai.com/v1/responses', body: { instructions: 'PRIVATE RAW SYSTEM', input: [{ role: 'user', content: 'PRIVATE RAW USER' }] } }], onClose() {} };
+  const f = fixture(t, { component: 'UserPromptsModal', props }); f.draw();
+  const exports = require(output), tabs = descendants(f.tree, node => Array.isArray(node.props?.items) && node.props.items.some(item => item.key === 'text'))[0];
+  tabs.props.onChange('text'); f.draw();
+  const text = descendants(f.tree, node => node.type === 'textarea')[0].props.value;
+  assert.equal(text, 'After compact task');
+  for (const hidden of ['PRIVATE SYSTEM', 'PRIVATE DEVELOPER', 'PRIVATE COVERED', 'PRIVATE ENCRYPTED', 'CONTEXT ONLY']) assert.ok(!text.includes(hidden));
+  assert.equal(req.body.input, input); assert.equal(req.body.messages, undefined);
+  tabs.props.onChange('context'); f.draw();
+  const collapses = descendants(f.tree, node => Array.isArray(node.props?.items) && node.props.items[0]?.key === 'sys-0');
+  assert.equal(collapses.length, 1); assert.equal(collapses[0].props.items[0].children.props.children, 'CONTEXT ONLY');
+  assert.ok(!JSON.stringify(f.tree).includes('PRIVATE COVERED'));
+  const title = f.tree.props.title; assert.ok(title.includes('(1')); assert.ok(!title.includes('ui.promptCountUnit'));
+  props.open = false; props.requests = [{ get body() { throw new Error('closed modal must not scan'); } }]; f.draw();
+  assert.ok(f.tree.props.title.includes('(0'));
+});
+
+test('user prompt modal deduplicates repeated native history, ignores tool results and escapes literal markup', t => {
+  const input = [{ role: 'user', content: [{ type: 'text', text: 'Native user <img src=x onerror=test>' }, null, { type: 'text', text: 42 }] },
+    { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'tool', content: 'PRIVATE TOOL RESULT' }] }];
+  const f = fixture(t, { component: 'UserPromptsModal', props: { open: true, requests: [
+    { mainAgent: true, body: { input } }, { mainAgent: true, body: { input } },
+  ], onClose() {} } }); f.draw();
+  const pre = descendants(f.tree, node => node.type === 'pre');
+  assert.equal(pre.length, 1); assert.equal(pre[0].props.children, 'Native user <img src=x onerror=test>');
+  assert.equal(descendants(f.tree, node => node.props?.dangerouslySetInnerHTML).length, 0);
+});
+
+test('composer navigation shares native targets, closes on more or selection and resets on layout changes', t => {
+  const f = fixture(t), React = require('react');
+  const view = new f.ChatView({ cliMode: true, sdkMode: true, terminalVisible: true, requests: [], mainAgentSessions: [] });
+  view.setState = update => Object.assign(view.state, typeof update === 'function' ? update(view.state) : update);
+  view.state.allItems = [React.createElement('span', { key: 'prompt', role: 'user', text: 'Native target', timestamp: 'producer' })];
+  view.state.visibleCount = 20;
+  let tree = view.render();
+  const composer = descendants(tree, node => node.type?.name === 'ChatInputBar')[0];
+  assert.ok(composer.props.promptNavPopover);
+  assert.equal(descendants(view._renderNavSidebar(false), node => node.type === 'img' && node.props.alt === 'User').length, 0);
+  composer.props.promptNavPopover.onOpenChange(true); assert.equal(view.state.promptNavOpen, true);
+  const more = descendants(view._buildUserPromptNav(), node => node.type === 'button')[0]; more.props.onClick();
+  assert.equal(view.state.userPromptsModalOpen, true); assert.equal(view.state.promptNavOpen, false);
+  view.state.promptNavOpen = true; view._doScrollToVisibleIdx = () => {}; view._scrollHighlight.bind = () => {};
+  view._scrollToPromptNavItem(0, 'producer'); assert.equal(view.state.promptNavOpen, false); assert.equal(view.state.highlightTs, 'producer');
+  view.state.promptNavOpen = true; view.props = { ...view.props, sdkMode: false };
+  view._attachMdCodeProbe = view._bindInputStackRO = view._bindChatScrollbarRO = () => {};
+  view.componentDidUpdate(view.props, view.state); assert.equal(view.state.promptNavOpen, false);
+  assert.equal(view._useComposerPromptNav(), false);
+  assert.equal(descendants(view._renderNavSidebar(false), node => node.type === 'img' && node.props.alt === 'User').length, 1);
+  view.props = { ...view.props, terminalVisible: false }; assert.equal(view._useComposerPromptNav(), true);
+  view.props = { ...view.props, cliMode: false }; assert.equal(view._useComposerPromptNav(), false);
+});
+
+
+test('active skills preserve authoritative scoped rows and exclude disabled or builtin entries', t => {
+  const f = fixture(t, { component: 'CachePopoverContent', props: { requests: [], memory: null, codexMd: null, fsSkills: [
+    { name: 'global-fixture', source: 'user', enabled: true },
+    { name: 'project-fixture', source: 'project', enabled: true },
+    { name: 'plugin-fixture', source: 'plugin', pluginName: 'fixture@bundled', enabled: true },
+    { name: 'disabled-fixture', source: 'user', enabled: false },
+    { name: 'builtin-fixture', source: 'builtin', enabled: true },
+  ] } }); f.draw();
+  const React = require('react'), exports = require(output);
+  const labels = descendants(f.tree, node => node.type === 'span').map(node => React.Children.toArray(node.props.children).join(''));
+  for (const scope of ['global', 'project', 'plugin']) assert.ok(labels.includes(exports.translate('ui.skillScopeRow.' + scope) + ':'));
+  for (const name of ['global-fixture', 'project-fixture', 'fixture:plugin-fixture']) assert.ok(labels.includes(name));
+  assert.ok(!labels.includes('disabled-fixture')); assert.ok(!labels.includes('builtin-fixture'));
+});
+
+test('slash menu keyboard selection fills native dollar invocation without sending, and IME or hidden layouts fall through', t => {
+  const f = fixture(t), view = new f.ChatView({ cliMode: true, sdkMode: true, terminalVisible: true });
+  view.setState = (update, callback) => { Object.assign(view.state, typeof update === 'function' ? update(view.state) : update); callback?.(); };
+  const ta = { value: '/', style: {}, scrollHeight: 37, selectionStart: 1, focus() {}, setSelectionRange() {} };
+  view._inputRef.current = ta; let sent = 0, prevented = 0; view.handleInputSend = () => sent++;
+  view.state.sdkSkillsReady = true; view.state.sdkSkillCommands = [{ name: 'real', group: 'personal' }, { name: 'second', group: 'personal' }];
+  view.state.slashMenu = { open: true, query: '', activeIndex: 0 };
+  const key = (key, extra = {}) => view.handleInputKeyDown({ key, preventDefault() { prevented++; }, ...extra });
+  key('ArrowDown'); assert.equal(view.state.slashMenu.activeIndex, 1);
+  key('Enter'); assert.equal(ta.value, '$second '); assert.equal(sent, 0); assert.equal(view.state.slashMenu.open, false);
+  view.state.slashMenu = { open: true, query: '', activeIndex: 0 }; key('Enter', { isComposing: true, keyCode: 229 });
+  assert.equal(view.state.slashMenu.open, true); assert.equal(sent, 0);
+  key('Escape'); assert.equal(view.state.slashMenu.open, false);
+  view.state.slashMenu = { open: true, query: '', activeIndex: 0 }; view.props = { ...view.props, sdkMode: false };
+  key('Enter'); assert.equal(sent, 1, 'main PTY shown cannot consume hidden menu keyboard input');
+  assert.ok(prevented > 0);
+});
+
+test('slash metadata is scoped, native empty is authoritative, and late view results or failed cooldown cannot revive an old menu', async t => {
+  const f = fixture(t), view = new f.ChatView({ cliMode: true, sdkMode: true });
+  view.setState = (update, callback) => { Object.assign(view.state, typeof update === 'function' ? update(view.state) : update); callback?.(); };
+  let finish, calls = [];
+  globalThis.fetch = async url => { calls.push(String(url)); return new Promise(resolve => { finish = resolve; }); };
+  view._ensureSlashSkillsLoaded(); view._ensureSlashSkillsLoaded(); assert.equal(calls.length, 1); assert.match(calls[0], /instance=a/);
+  view._resetSlashMenuSurface(); finish({ ok: true, json: async () => ({ ok: true, skills: [{ name: 'old' }] }) }); await f.tick();
+  assert.equal(view.state.sdkSkillsReady, false); assert.deepEqual(view.state.sdkSkillCommands, []);
+  globalThis.fetch = async () => ({ ok: true, json: async () => ({ ok: true, skills: [] }) });
+  view._ensureSlashSkillsLoaded(); await f.tick(); assert.equal(view.state.sdkSkillsReady, true); assert.deepEqual(view._buildSlashMenuModel().flatItems, []);
+  view._resetSlashMenuSurface(); calls = [];
+  globalThis.fetch = async url => { calls.push(String(url)); throw new Error('offline'); };
+  view._ensureSlashSkillsLoaded(); await f.tick(); assert.equal(view.state.slashMenuFsSkills, false);
+  view._ensureSlashSkillsLoaded(true); assert.equal(calls.length, 1);
+  view._slashSkillsFailedAt = Date.now() - 6000;
+  globalThis.fetch = async url => ({ ok: true, json: async () => String(url).includes('skill-commands') ? { ok: false } : { skills: [{ name: 'fallback', enabled: true, source: 'project', path: '/fallback/SKILL.md' }] } });
+  view._retrySlashSkillsIfFailed(); await f.tick(); assert.equal(view.state.sdkSkillsReady, false); assert.equal(view._buildSlashMenuModel().flatItems[0].name, 'fallback');
+});
+
+test('ordinary busy send uses the correlated server queue, rejects back into the draft and replays without a second optimistic bubble', t => {
+  const f = fixture(t), originalWarning = require('antd').message.warning;
+  const warnings = []; require('antd').message.warning = text => warnings.push(text); t.after(() => { require('antd').message.warning = originalWarning; });
+  const view = new f.ChatView({ cliMode: true, sdkMode: false, ptyQueueAvailable: true, isStreaming: true, requests: [], mainAgentSessions: [] });
+  view.setState = (update, callback) => { const patch = typeof update === 'function' ? update(view.state) : update; if (patch) Object.assign(view.state, patch); callback?.(); };
+  const ta = { value: 'Native queued draft', style: {}, scrollHeight: 37, focus() {} }; view._inputRef.current = ta;
+  const frames = []; view.context = { isOpen: () => true, send(value) { frames.push(value); return true; } };
+  view.handleInputSend(); const request = frames[0];
+  assert.equal(request.type, 'queue-message'); assert.equal(request.text, 'Native queued draft'); assert.equal(ta.value, '');
+  assert.equal(view.state.pendingInputs[0].queuePending, true);
+  let tree = view.render(); assert.equal(descendants(tree, node => node.type?.name === 'ChatMessage' && node.props.text === request.text).length, 0);
+  view._onTerminalWsMessage({ type: 'queue-rejected', instanceKey: 'a', reason: 'full', requestId: request.requestId });
+  assert.equal(ta.value, 'Native queued draft'); assert.equal(view.state.pendingInputs.length, 0);
+  view.handleInputSend(); const second = frames.at(-1);
+  const item = { id: 'q_native', text: second.text, ts: Date.now(), status: 'queued', requestId: second.requestId };
+  view._onTerminalWsMessage({ type: 'queue-state', transport: 'pty', instanceKey: 'a', items: [item] });
+  assert.equal(view.state.pendingInputs.length, 0); assert.equal(view.state.ptyQueuedInputs[0].text, second.text); assert.deepEqual(view.state.sdkQueuedInputs, []);
+  view._onTerminalWsMessage({ type: 'queue-state', transport: 'pty', instanceKey: 'b', items: [] }); assert.equal(view.state.ptyQueuedInputs.length, 1);
+  const bubble = view._renderQueueBubbles()[0], buttons = descendants(bubble, node => node.type === 'button');
+  buttons.at(-1).props.onClick(); assert.equal(frames.at(-1).type, 'queue-send-now'); assert.equal(frames.at(-1).id, item.id);
+  view._onTerminalWsMessage({ type: 'queue-state', transport: 'pty', instanceKey: 'a', items: [{ ...item, status: 'dispatching' }] });
+  assert.ok(descendants(view._renderQueueBubbles()[0], node => node.type === 'button').every(node => node.props.disabled));
+  view._onTerminalWsMessage({ type: 'queue-state', transport: 'pty', instanceKey: 'a', items: [] });
+  view._onTerminalWsMessage({ type: 'queue-rejected', instanceKey: 'a', reason: 'target-gone', id: item.id, requestId: item.requestId, text: item.text });
+  assert.equal(ta.value, 'Native queued draft'); assert.equal(view.state.ptyQueuedInputs.length, 0);
+  frames.length = 0; view.handleInputStop(); assert.equal(frames[0].type, 'queue-suppress');
+  clearTimeout(view._stopOptimisticTimer); assert.equal(warnings.length, 2);
+});
+
+test('ordinary rejection resolves a batched enqueue record and disconnect retains uncertain text until exact replay ack', t => {
+  const f = fixture(t), originalWarning = require('antd').message.warning;
+  const warnings = []; require('antd').message.warning = text => warnings.push(text); t.after(() => { require('antd').message.warning = originalWarning; });
+  const view = new f.ChatView({ cliMode: true, ptyQueueAvailable: true, isStreaming: true });
+  const updates = []; view.setState = (update, callback) => updates.push([update, callback]);
+  const flush = () => { while (updates.length) { const batch = updates.splice(0); for (const [update] of batch) { const patch = typeof update === 'function' ? update(view.state) : update; if (patch) Object.assign(view.state, patch); } for (const [, callback] of batch) callback?.(); } };
+  const ta = { value: 'Batched queued text', style: {}, scrollHeight: 37 }; view._inputRef.current = ta;
+  let request; view.context = { isOpen: () => true, send(value) { request = value; return true; } };
+  view.handleInputSend(); view._onTerminalWsMessage({ type: 'queue-rejected', reason: 'unavailable', instanceKey: 'a', requestId: request.requestId }); flush();
+  assert.equal(ta.value, 'Batched queued text'); assert.equal(view.state.pendingInputs.length, 0);
+  view.handleInputSend(); flush(); const pending = view.state.pendingInputs[0]; assert.equal(pending.queuePending, true);
+  view._onTerminalWsState('close'); flush(); assert.equal(view.state.pendingInputs[0].wireText, 'Batched queued text'); assert.equal(view.state.pendingInputs[0].queuePending, false);
+  view._onTerminalWsMessage({ type: 'queue-state', transport: 'pty', instanceKey: 'a', items: [{ id: 'replayed', requestId: pending.id, text: pending.wireText, ts: Date.now(), status: 'queued' }] }); flush();
+  assert.equal(view.state.pendingInputs.length, 0); assert.equal(view.state.ptyQueuedInputs.length, 1); assert.equal(warnings.length, 1);
+});
+
+test('SDK Send now displays the original inline sending status until authoritative dispatch, then keeps only one accepted native prompt', t => {
+  const f = fixture(t), view = new f.ChatView({ cliMode: true, sdkMode: true, projectName: 'same', requests: [], mainAgentSessions: [] });
+  view.setState = (update, callback) => { const patch = typeof update === 'function' ? update(view.state) : update; if (patch) Object.assign(view.state, patch); callback?.(); };
+  view.scrollToBottom = () => {}; t.after(() => view._clearOptimisticQueueSweepTimer());
+  const frames = []; view.context = { isOpen: () => true, send(frame) { frames.push(frame); return true; } };
+  const item = { id: 'sdk-queued', text: 'Native SDK follow-up', ts: Date.now(), status: 'queued' };
+  const snapshot = extra => view._onTerminalWsMessage({ type: 'queue-state', instanceKey: 'a', epoch: 'epoch', items: [item], activeInput: null, ...extra });
+  snapshot(); view._sendSdkQueuedNow(item.id); assert.equal(frames[0].type, 'sdk-queue-send-now');
+  let tree = view.render(), bubble = descendants(tree, node => node.type?.name === 'ChatMessage' && node.props.text === item.text);
+  assert.equal(bubble.length, 1); assert.equal(bubble[0].props.labelSuffix.props.role, 'status');
+  const active = { id: item.id, text: item.text, timestamp: new Date().toISOString() };
+  snapshot({ items: [{ ...item, status: 'dispatching' }], activeInput: active }); assert.equal(view.state.optimisticQueueMessages[0].dispatchingSeen, true);
+  tree = view.render(); bubble = descendants(tree, node => node.type?.name === 'ChatMessage' && node.props.text === item.text); assert.equal(bubble.length, 1);
+  snapshot({ items: [], activeInput: active }); assert.equal(view.state.optimisticQueueMessages.length, 0); assert.equal(view._optimisticQueueSweepTimer, null);
+  tree = view.render(); bubble = descendants(tree, node => node.type?.name === 'ChatMessage' && node.props.text === item.text);
+  assert.equal(bubble.length, 1); assert.equal(bubble[0].props.labelSuffix, undefined);
+  snapshot({ items: [], activeInput: null });
+  assert.equal(view.state.pendingInputs.length, 0, 'a completed native activeInput cannot leave an orphan if its transcript is outside the rendered slice');
+});
+
+test('SDK explicit placeholders expire at the original 30 seconds, clear on disconnect and cannot render in a historical slice', t => {
+  const f = fixture(t), view = new f.ChatView({ cliMode: true, sdkMode: true, projectName: 'same', requests: [], mainAgentSessions: [] });
+  view.setState = (update, callback) => { const patch = typeof update === 'function' ? update(view.state) : update; if (patch) Object.assign(view.state, patch); callback?.(); };
+  view.scrollToBottom = () => {}; t.after(() => view._clearOptimisticQueueSweepTimer());
+  view.context = { isOpen: () => true, send() { return true; } };
+  const item = { id: 'sdk-timer', text: 'Unacknowledged click', ts: Date.now(), status: 'queued' };
+  view.state.sdkQueuedInputs = [item]; view._sendSdkQueuedNow(item.id);
+  const sentAt = view.state.optimisticQueueMessages[0].sentAt;
+  view._sweepExpiredOptimisticQueueMessages(sentAt + 29999); assert.equal(view.state.optimisticQueueMessages.length, 1);
+  view._sweepExpiredOptimisticQueueMessages(sentAt + 30000); assert.equal(view.state.optimisticQueueMessages.length, 0);
+  view._sendSdkQueuedNow(item.id); view.props = { ...view.props, sessionUpperBoundTs: 'history' };
+  assert.equal(descendants(view.render(), node => node.type?.name === 'ChatMessage' && node.props.labelSuffix).length, 0);
+  view._onTerminalWsState('close'); assert.equal(view.state.optimisticQueueMessages.length, 0); assert.equal(view._optimisticQueueSweepTimer, null);
+});
+
+test('historical slice changes clear only SDK click placeholders and retain the authoritative ordinary queue mirror', t => {
+  const f = fixture(t), view = new f.ChatView({ cliMode: true, projectName: 'same', requests: [], mainAgentSessions: [], sessionUpperBoundTs: null });
+  view.setState = (update, callback) => { const patch = typeof update === 'function' ? update(view.state) : update; if (patch) Object.assign(view.state, patch); callback?.(); };
+  view._attachMdCodeProbe = view._bindInputStackRO = view._bindChatScrollbarRO = () => {};
+  const queued = [{ id: 'native-parked', text: 'Still server-owned', ts: Date.now(), status: 'queued' }];
+  view.state.ptyQueuedInputs = queued; view.state.optimisticQueueMessages = [{ id: 'sdk-old', text: 'temporary' }];
+  const previous = view.props; view.props = { ...previous, sessionUpperBoundTs: 'history' }; view.componentDidUpdate(previous, view.state);
+  assert.equal(view.state.ptyQueuedInputs, queued); assert.deepEqual(view.state.optimisticQueueMessages, []);
+});
+
+test('editor replay cannot remount an unsaved editor and foreign instance events are ignored', t => {
+  const f = fixture(t), view = new f.ChatView({});
+  view.setState = update => { const patch = typeof update === 'function' ? update(view.state) : update; if (patch) Object.assign(view.state, patch); };
+  view._handleEditorOpen('editor-a', '/fixture/draft.md'); const version = view.state.fileVersion;
+  view._handleEditorOpen('editor-a', '/fixture/draft.md'); assert.equal(view.state.fileVersion, version);
+  const events = [], Panel = require(output).TerminalPanel, panel = new Panel({ onEditorOpen: (...event) => events.push(event) });
+  panel._onTerminalWsMessage({ type: 'editor-open', instanceKey: 'b', sessionId: 'foreign', filePath: '/b' }); assert.deepEqual(events, []);
+  panel._onTerminalWsMessage({ type: 'editor-open', instanceKey: 'a', sessionId: 'own', filePath: '/a' }); assert.deepEqual(events, [['own', '/a']]);
+  window.location.search = ''; panel._onTerminalWsMessage({ type: 'editor-open', sessionId: 'legacy', filePath: '/legacy' });
+  assert.deepEqual(events.at(-1), ['legacy', '/legacy']);
+});
+
+
+test('the desktop conversation window keeps its newest 800 rows and expands earlier by 300 without losing navigation offsets', t => {
+  const f = fixture(t), chat = new f.ChatView({ requests: [], mainAgentSessions: [] });
+  chat.setState = (patch, callback) => { Object.assign(chat.state, typeof patch === 'function' ? patch(chat.state) : patch); callback?.(); };
+  const rows = Array.from({ length: 1200 }, (_, index) => ({ key: 'row-' + index }));
+  chat._tsItemMap = { earlier: 100, visible: 500, latest: 1199 }; chat._scrollTargetIdx = 700;
+  const current = chat._applyMobileSlice(rows); assert.equal(current.length, 800); assert.equal(current[0].key, 'row-400');
+  assert.equal(chat._mobileSliceOffset, 400); assert.equal(chat._totalItemCount, 1200);
+  assert.deepEqual(chat._tsItemMap, { visible: 100, latest: 799 }); assert.equal(chat._scrollTargetIdx, 300);
+  chat.state.allItems = current;
+  chat.buildAllItems = () => { chat._tsItemMap = { earlier: 100, visible: 500, latest: 1199 }; chat._scrollTargetIdx = 700; return rows; };
+  chat.handleLoadMore(); assert.equal(chat.state.allItems.length, 1100); assert.equal(chat.state.allItems[0].key, 'row-100');
+  assert.equal(chat._mobileSliceOffset, 100); assert.deepEqual(chat._tsItemMap, { earlier: 0, visible: 400, latest: 1099 });
+  assert.equal(chat._scrollTargetIdx, 600); chat.handleLoadMore(); assert.equal(chat.state.allItems.length, 1200);
+  assert.equal(chat._mobileSliceOffset, 0); assert.equal(chat._scrollTargetIdx, 700);
+});
+
+
+test('desktop composer upload opens from the original top quick-menu row and collapses a hovered cascade', t => {
+  const f = fixture(t, { component: 'ChatInputBar', props: { sdkMode: true, inputRef: { current: null } } });
+  let picked = 0; const elements = []; const original = document.createElement;
+  document.createElement = tag => { const element = { tag, style: {}, click: () => picked++ }; elements.push(element); return element; };
+  t.after(() => { document.createElement = original; });
+  f.draw(); const quick = () => descendants(f.tree, node => node.type === 'button' && node.props?.title === 'Quick settings')[0];
+  assert.equal(descendants(f.tree, node => node.type === 'button' && node.props?.title === 'Upload File').length, 0);
+  quick().props.onClick(); f.draw();
+  const upload = () => descendants(f.tree, node => node.type === 'button' && descendants(node, child => child.type?.name === 'UploadIcon').length)[0];
+  assert.ok(upload()); const team = descendants(f.tree, node => node.type === 'div' && node.props?.onMouseEnter && node.props?.onMouseLeave).at(-1);
+  const settings = () => descendants(f.tree, node => node.type?.name === 'QuickAutoApproveRows')[0];
+  team.props.onMouseEnter(); f.draw(); assert.equal(settings().props.expandedKey, 'agentteam');
+  upload().props.onMouseEnter(); f.draw(); assert.equal(settings().props.expandedKey, null);
+  upload().props.onClick(); f.draw(); assert.equal(picked, 1); assert.equal(elements.at(-1).tag, 'input'); assert.equal(elements.at(-1).type, 'file');
+  assert.equal(upload(), undefined); assert.deepEqual(f.requests, []);
+});
+
+
+test('main terminal upload uses the baseline quick-menu row, closes the popover before file pick and retires hover intent', t => {
+  const f = fixture(t), Terminal = require(output).TerminalPanel, panel = new Terminal({});
+  panel.setState = (patch, callback) => { Object.assign(panel.state, typeof patch === 'function' ? patch(panel.state) : patch); callback?.(); };
+  const picked = []; panel.fileInputRef.current = { click: () => picked.push([panel.state.quickSettingsOpen, panel.state.quickSettingsExpanded]) };
+  panel.state.quickSettingsOpen = true; panel.state.quickSettingsExpanded = 'agentteam';
+  const tree = panel.render();
+  assert.equal(descendants(tree, node => node.type === 'button' && node.props?.title === 'Upload File').length, 0);
+  const popover = descendants(tree, node => node.props?.content?.type === 'div' && descendants(node.props.content, child => child.type?.name === 'QuickAutoApproveRows').length)[0];
+  const upload = require('react').Children.toArray(popover.props.content.props.children)[0]; assert.equal(upload.type, 'button');
+  panel._qmHover.leave('agentteam'); upload.props.onMouseEnter(); assert.equal(panel.state.quickSettingsExpanded, null);
+  panel.state.quickSettingsExpanded = 'history'; upload.props.onClick(); assert.deepEqual(picked, [[false, null]]);
+  const input = descendants(tree, node => node.type === 'input' && node.props?.type === 'file')[0];
+  assert.equal(input.props.onChange, panel.handleFileUpload); assert.deepEqual(f.requests, []);
+});
+
+
+test('read-only conversation progressively reveals loaded rows per animation frame and live views retain manual loading', t => {
+  const f = fixture(t), frames = new Map(); let seq = 0;
+  const previous = Object.getOwnPropertyDescriptor(globalThis, 'requestAnimationFrame');
+  Object.defineProperty(globalThis, 'requestAnimationFrame', { configurable: true, value: callback => { frames.set(++seq, callback); return seq; } });
+  t.after(() => { if (previous) Object.defineProperty(globalThis, 'requestAnimationFrame', previous); else delete globalThis.requestAnimationFrame; });
+  const chat = new f.ChatView({ requests: [], mainAgentSessions: [], isLocalLog: true });
+  chat.setState = (patch, callback) => { Object.assign(chat.state, typeof patch === 'function' ? patch(chat.state) : patch); callback?.(); };
+  const rows = Array.from({ length: 1500 }, (_, key) => ({ key })); chat.buildAllItems = () => rows;
+  chat.state.allItems = chat._applyMobileSlice(rows); assert.equal(chat.state.allItems.length, 800);
+  const advance = () => { chat._maybeScheduleLocalLogAutoFill(); chat._maybeScheduleLocalLogAutoFill(); assert.equal(frames.size, 1); const [id, fn] = [...frames][0]; frames.delete(id); fn(); };
+  advance(); assert.equal(chat.state.allItems.length, 1100); advance(); assert.equal(chat.state.allItems.length, 1400);
+  advance(); assert.equal(chat.state.allItems.length, 1500); chat._maybeScheduleLocalLogAutoFill(); assert.equal(frames.size, 0);
+  chat._mobileSliceOffset = 700; chat.props = { ...chat.props, isLocalLog: false }; chat._maybeScheduleLocalLogAutoFill(); assert.equal(frames.size, 0);
+  chat.props = { ...chat.props, isLocalLog: true }; chat._maybeScheduleLocalLogAutoFill(); assert.equal(frames.size, 1);
+  chat._unmounted = true; [...frames.values()][0](); assert.equal(chat.state.allItems.length, 1500);
+});
+
+
+test('minimal native runs preserve timestamp navigation, split on text or full cards, and return to raw rows when disabled', t => {
+  const f = fixture(t), messages = [
+    { role: 'user', content: [{ type: 'text', text: 'native prompt' }], _timestamp: '2026-01-01T00:00:00Z' },
+    { role: 'assistant', content: [{ type: 'tool_use', id: 'a', name: 'exec_command', input: { cmd: 'pwd' } }], _timestamp: '2026-01-01T00:00:01Z' },
+    { role: 'assistant', content: [{ type: 'tool_use', id: 'b', name: 'exec_command', input: { cmd: 'ls' } }], _timestamp: '2026-01-01T00:00:02Z' },
+    { role: 'assistant', content: [{ type: 'text', text: 'native response' }], _timestamp: '2026-01-01T00:00:03Z' },
+  ];
+  const chat = new f.ChatView({ requests: [], mainAgentSessions: [{ sessionId: 'native-root', messages }], minimalChat: true, showFullToolContent: false, scrollToTimestamp: messages[1]._timestamp });
+  let items = chat.buildAllItems(), run = items.find(item => item.props?.runMembers);
+  assert.equal(run.props.runMembers.length, 2); assert.equal(run.props.timestamp, messages[2]._timestamp);
+  assert.equal(chat._scrollTargetIdx, items.indexOf(run)); assert.equal(chat._tsItemMap[messages[1]._timestamp], chat._tsItemMap[messages[2]._timestamp]);
+  chat.props = { ...chat.props, minimalChat: false }; items = chat.buildAllItems(); assert.ok(items.every(item => !item.props?.runMembers)); assert.equal(chat._toolRunCache.size, 0);
+  chat.props = { ...chat.props, minimalChat: true, showFullToolContent: true }; items = chat.buildAllItems(); assert.ok(items.every(item => !item.props?.runMembers));
+  const app = new f.AppBase({}); assert.equal(app._prefValues().minimalChat, true); const patches = []; app.context = { preferences: { minimalChat: false }, updatePreferences: patch => patches.push(patch) };
+  assert.equal(app._prefValues().minimalChat, false); app.handleMinimalChatChange(true); assert.deepEqual(patches, [{ minimalChat: true }]);
+});
+
+
+test('project preference form uses the original default-on minimal toggle only in pill mode', t => {
+  const patches = [], props = { values: {}, onPatch: patch => patches.push(patch) };
+  const f = fixture(t, { component: 'PreferencesForm', props }); f.draw();
+  const row = () => descendants(f.tree, node => node.props?.label === 'Minimal conversation')[0];
+  assert.equal(row().props.children.props.checked, true); row().props.children.props.onChange(false); assert.deepEqual(patches, [{ minimalChat: false }]);
+  props.values = { minimalChat: false }; f.draw(); assert.equal(row().props.children.props.checked, false);
+  props.values = { showFullToolContent: true }; f.draw(); assert.equal(row(), undefined);
+});
+
+test('assistant render paths omit zero-segment text while preserving real text and legal system-tag cards', t => {
+  fixture(t);
+  const { ChatMessage } = require(output);
+  const message = new ChatMessage({ role: 'sub-agent-chat', label: 'native child' });
+  for (const render of [content => message._renderAssistantContentLegacy(content, {}),
+    content => message._renderAssistantContentInOrder(content, {}, [], new Set())]) {
+    for (const text of ['   ', '\n\n', ' \n ', '\t \t']) assert.deepEqual(render([{ type: 'text', text }]), [], JSON.stringify(text));
+    const visible = render([{ type: 'text', text: 'native answer' }]);
+    assert.equal(visible.length, 1); assert.equal(visible[0].props.className, 'chat-boxer');
+    const system = render([{ type: 'text', text: '<task-notification></task-notification>' }]);
+    assert.equal(system.length, 1, 'a legal empty system-tag still has a renderable segment');
+  }
+});
+
+test('menu pins hydrate and migrate from a server-confirmed base, persist serially and follow external preferences', async t => {
+  const f = fixture(t), { AppHeader } = require(output);
+  const make = (preferences = {}) => {
+    const header = new AppHeader({ preferences }, { preferences });
+    header.context = { preferences, updatePreferences: async patch => patch, refreshPreferences() {} };
+    header.setState = (update, callback) => { header.state = { ...header.state, ...(typeof update === 'function' ? update(header.state) : update) }; callback?.(); };
+    return header;
+  };
+  f.values.set('cxv_pinnedMenuKeys', '["project-stats"]');
+  const a = make(); assert.deepEqual(a.state.pinnedKeys, [], 'stale browser values never seed optimistic writes');
+  a._hydratePinnedKeys({ logDir: '/fixture', pinnedMenuKeys: [] });
+  assert.deepEqual(a.state.pinnedKeys, []); assert.equal(f.values.has('cxv_pinnedMenuKeys'), false);
+  f.values.set('cxv_pinnedMenuKeys', '["project-stats"]');
+  const b = make(); let resolveMigration; const posted = [];
+  b.context.updatePreferences = patch => { posted.push(patch); return new Promise(resolve => { resolveMigration = resolve; }); };
+  b._hydratePinnedKeys({}); assert.equal(posted.length, 0); assert.equal(f.values.has('cxv_pinnedMenuKeys'), true);
+  b._hydratePinnedKeys({ logDir: '/fixture' }); await f.tick();
+  assert.deepEqual(b.state.pinnedKeys, ['project-stats']); assert.equal(f.values.has('cxv_pinnedMenuKeys'), true);
+  resolveMigration({}); await b._persistQueue; await f.tick(); assert.equal(f.values.has('cxv_pinnedMenuKeys'), false);
+  const c = make({ pinnedMenuKeys: ['project-stats'] }), writes = [], releases = [];
+  c.context.updatePreferences = patch => { writes.push(patch); return new Promise(resolve => releases.push(resolve)); };
+  c.togglePin('import-local'); c.togglePin('display-settings'); await f.tick();
+  assert.equal(writes.length, 1); assert.deepEqual(writes[0].pinnedMenuKeys, ['project-stats', 'import-local']);
+  c._hydratePinnedKeys({ logDir: '/fixture', pinnedMenuKeys: ['old'] });
+  assert.deepEqual(c.state.pinnedKeys, ['project-stats', 'import-local', 'display-settings']);
+  releases.shift()({}); await f.tick(); assert.equal(writes.length, 2); releases.shift()({}); await c._persistQueue; await f.tick();
+  c.props = { ...c.props, preferences: { pinnedMenuKeys: ['proxy-switch'] } }; c.context.preferences = c.props.preferences;
+  c.componentDidUpdate({ ...c.props, preferences: {} }); assert.deepEqual(c.state.pinnedKeys, ['proxy-switch']);
+  const d = make(); let refreshed = 0; d.context.updatePreferences = async () => null; d.context.refreshPreferences = () => refreshed++;
+  d.togglePin('project-stats'); await d._persistQueue; await f.tick(); assert.equal(refreshed, 1);
 });

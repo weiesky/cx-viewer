@@ -58,9 +58,25 @@ export function mergeActiveSkills(fsSkills, historicalSkills) {
     if (!s || !s.enabled || s.source === 'builtin') continue;
     const name = skillToDisplayName(s);
     if (!name || BUILTIN_SKILL_NAMES.has(name)) continue;
-    out.set(name, { name, description: s.description || descMap.get(name) || '' });
+    out.set(name, { name, description: s.description || descMap.get(name) || '', source: s.source });
   }
   return [...out.values()];
+}
+
+// Bucket mergeActiveSkills output by scope for the "Active Skills" grouped rows.
+// Returns { global, project, plugin }; user maps to global (~/.codex/skills/ is user-level / global).
+// The historical fallback path (mergeActiveSkills returned null) never reaches this function — the
+// caller renders a single merged row there instead.
+export function groupActiveSkillsByScope(skills) {
+  const groups = { global: [], project: [], plugin: [] };
+  if (!Array.isArray(skills)) return groups;
+  for (const s of skills) {
+    if (!s) continue;
+    if (s.source === 'project') groups.project.push(s);
+    else if (s.source === 'plugin') groups.plugin.push(s);
+    else groups.global.push(s); // user 及其它未知 source 归到 global
+  }
+  return groups;
 }
 
 // Context-pollution warnings are actionable only for skills the user controls

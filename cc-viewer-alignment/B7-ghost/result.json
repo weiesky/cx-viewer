@@ -1,0 +1,194 @@
+[
+  {
+    "engine": "chromium",
+    "version": "159.0.8154.6",
+    "mode": "desktop",
+    "emulated": false,
+    "controlledProductionSuggestion": true,
+    "measured": {
+      "clamp": "2",
+      "whiteSpace": "normal",
+      "overflow": "hidden",
+      "textareaMin": "58px",
+      "ghostHeight": 58,
+      "textareaHeight": 58,
+      "toolbarGap": 3
+    },
+    "cleared": {
+      "height": 37,
+      "min": "37px"
+    },
+    "remounted": true,
+    "syntheticVoicePreview": {
+      "max": "100%",
+      "height": 40,
+      "boxHeight": 40,
+      "visibleHeight": 36,
+      "clipping": "hidden",
+      "toolbarGap": 4
+    },
+    "screenshot": "chromium-desktop-ghost.png",
+    "voiceScreenshot": "chromium-desktop-voice-preview.png",
+    "errors": []
+  },
+  {
+    "engine": "chromium",
+    "version": "159.0.8154.6",
+    "mode": "pad",
+    "emulated": true,
+    "controlledProductionSuggestion": true,
+    "measured": {
+      "clamp": "2",
+      "whiteSpace": "normal",
+      "overflow": "hidden",
+      "textareaMin": "58px",
+      "ghostHeight": 58,
+      "textareaHeight": 58,
+      "toolbarGap": 5
+    },
+    "cleared": {
+      "height": 37,
+      "min": "37px"
+    },
+    "remounted": false,
+    "syntheticVoicePreview": {
+      "max": "100%",
+      "height": 50,
+      "boxHeight": 42,
+      "visibleHeight": 38,
+      "clipping": "hidden",
+      "toolbarGap": 4
+    },
+    "screenshot": "chromium-pad-ghost.png",
+    "voiceScreenshot": "chromium-pad-voice-preview.png",
+    "errors": []
+  },
+  {
+    "engine": "chromium",
+    "version": "159.0.8154.6",
+    "mode": "phone",
+    "emulated": true,
+    "controlledProductionSuggestion": true,
+    "measured": {
+      "clamp": "2",
+      "whiteSpace": "normal",
+      "overflow": "hidden",
+      "textareaMin": "92px",
+      "ghostHeight": 55.1875,
+      "textareaHeight": 55.1875,
+      "toolbarGap": 3
+    },
+    "cleared": {
+      "height": 58.9844,
+      "min": "52px"
+    },
+    "remounted": false,
+    "syntheticVoicePreview": {
+      "max": "100%",
+      "height": 45.578125,
+      "boxHeight": 38.390625,
+      "visibleHeight": 33.59375,
+      "clipping": "hidden",
+      "toolbarGap": 4.796875
+    },
+    "screenshot": "chromium-phone-ghost.png",
+    "voiceScreenshot": "chromium-phone-voice-preview.png",
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "version": "27.2",
+    "mode": "desktop",
+    "emulated": false,
+    "controlledProductionSuggestion": true,
+    "measured": {
+      "clamp": "2",
+      "whiteSpace": "normal",
+      "overflow": "hidden",
+      "textareaMin": "58px",
+      "ghostHeight": 58,
+      "textareaHeight": 58,
+      "toolbarGap": 3.203125
+    },
+    "cleared": {
+      "height": 37,
+      "min": "37px"
+    },
+    "remounted": true,
+    "syntheticVoicePreview": {
+      "max": "100%",
+      "height": 40.203125,
+      "boxHeight": 40.203125,
+      "visibleHeight": 36.203125,
+      "clipping": "hidden",
+      "toolbarGap": 4
+    },
+    "screenshot": "webkit-desktop-ghost.png",
+    "voiceScreenshot": "webkit-desktop-voice-preview.png",
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "version": "27.2",
+    "mode": "pad",
+    "emulated": true,
+    "controlledProductionSuggestion": true,
+    "measured": {
+      "clamp": "2",
+      "whiteSpace": "normal",
+      "overflow": "hidden",
+      "textareaMin": "58px",
+      "ghostHeight": 58,
+      "textareaHeight": 58,
+      "toolbarGap": 5.234375
+    },
+    "cleared": {
+      "height": 37,
+      "min": "37px"
+    },
+    "remounted": false,
+    "syntheticVoicePreview": {
+      "max": "100%",
+      "height": 50.234375,
+      "boxHeight": 42.234375,
+      "visibleHeight": 38.234375,
+      "clipping": "hidden",
+      "toolbarGap": 4
+    },
+    "screenshot": "webkit-pad-ghost.png",
+    "voiceScreenshot": "webkit-pad-voice-preview.png",
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "version": "27.2",
+    "mode": "phone",
+    "emulated": true,
+    "controlledProductionSuggestion": true,
+    "measured": {
+      "clamp": "2",
+      "whiteSpace": "normal",
+      "overflow": "hidden",
+      "textareaMin": "92px",
+      "ghostHeight": 55.15625,
+      "textareaHeight": 55.1875,
+      "toolbarGap": 3.0625
+    },
+    "cleared": {
+      "height": 57.994789,
+      "min": "52px"
+    },
+    "remounted": false,
+    "syntheticVoicePreview": {
+      "max": "100%",
+      "height": 45.015625,
+      "boxHeight": 37.828125,
+      "visibleHeight": 33.03125,
+      "clipping": "hidden",
+      "toolbarGap": 4.796875
+    },
+    "screenshot": "webkit-phone-ghost.png",
+    "voiceScreenshot": "webkit-phone-voice-preview.png",
+    "errors": []
+  }
+]

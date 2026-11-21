@@ -1,0 +1,28 @@
+[
+  {
+    "engine": "chromium",
+    "version": "159.0.8154.6",
+    "realFilesystemAPI": true,
+    "rows": [
+      "Global Skills:\nglobal-fixture",
+      "Project Skills:\nproject-fixture",
+      "Plugin Skills:\npack:plugin-fixture"
+    ],
+    "chipDescription": true,
+    "screenshot": "chromium-scopes.png",
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "version": "27.2",
+    "realFilesystemAPI": true,
+    "rows": [
+      "Global Skills:\nglobal-fixture",
+      "Project Skills:\nproject-fixture",
+      "Plugin Skills:\npack:plugin-fixture"
+    ],
+    "chipDescription": true,
+    "screenshot": "webkit-scopes.png",
+    "errors": []
+  }
+]

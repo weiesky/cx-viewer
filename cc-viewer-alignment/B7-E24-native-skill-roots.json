@@ -1,0 +1,16 @@
+{
+  "codexVersion": "0.169.0",
+  "actualNativeRPC": "skills/list",
+  "noThreadOrTurnStarted": true,
+  "isolatedHome": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b7-native-skills-YkJ5tM",
+  "project": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b7-native-skills-YkJ5tM/project",
+  "fixture": {
+    "name": "b7-native-fixture",
+    "description": "Read-only B7 skill catalog fixture.",
+    "path": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b7-native-skills-YkJ5tM/project/.agents/skills/b7-native-fixture/SKILL.md",
+    "scope": "repo"
+  },
+  "ownedChildExited": true,
+  "nativeDisabledExcluded": true,
+  "legacyProjectCodexPathDiscovered": true
+}

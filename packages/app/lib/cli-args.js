@@ -249,3 +249,34 @@ export function appendCxvFinalConfigArgs(args = [], { proxyPort = null } = {}) {
   }
   return finalArgs;
 }
+
+// Parallel PTY workspaces share model defaults, not the boot turn's directory,
+// prompt, resume target, profile or permission grants. Permission/resume choices
+// come from the existing workspace picker (owner decision, 2026-11-21).
+export function buildPtyWorkspaceLaunchArgs(bootArgs = [], pickerArgs = []) {
+  if (![bootArgs, pickerArgs].every(args => Array.isArray(args)
+      && args.every(arg => typeof arg === 'string' && !arg.includes('\0')))) {
+    throw new TypeError('Invalid PTY workspace arguments');
+  }
+  const allowedPicker = new Set([CODEX_BYPASS_FLAG, 'resume', '--last']);
+  if (pickerArgs.some(arg => !allowedPicker.has(arg)) || new Set(pickerArgs).size !== pickerArgs.length
+      || pickerArgs.includes('resume') !== pickerArgs.includes('--last')) {
+    throw new TypeError('Unsupported PTY workspace picker arguments');
+  }
+  const inherited = [];
+  for (let i = 0; i < bootArgs.length; i++) {
+    const arg = bootArgs[i];
+    if (arg === '--') break;
+    if (GLOBAL_FLAGS_WITH_VALUE.has(arg)) {
+      const value = bootArgs[++i];
+      if (typeof value !== 'string') throw new TypeError('Incomplete PTY workspace defaults');
+      if (arg === '-m' || arg === '--model') inherited.push(arg, value);
+      if ((arg === '-c' || arg === '--config')
+          && /^(?:model|model_provider|model_reasoning_effort|model_reasoning_summary|model_verbosity)\s*=/.test(value.trim())
+          && !/[\r\n]/.test(value)) inherited.push(arg, value);
+    } else if (arg.startsWith('--model=')) inherited.push(arg);
+  }
+  return [...inherited, ...buildWorkspaceCodexArgs({
+    dangerousMode: pickerArgs.includes(CODEX_BYPASS_FLAG), resumeLast: pickerArgs.includes('resume'),
+  })];
+}

@@ -209,6 +209,7 @@ export function getGlobalSkillRoots(homeDir = homedir()) {
 export function getProjectSkillRoots(cwd) {
   return [
     { source: 'project', store: 'project', enabledDir: join(cwd, '.codex', 'skills'), disabledDir: join(cwd, '.codex', 'skills-skip') },
+    { source: 'project', store: 'project-agents', enabledDir: join(cwd, '.agents', 'skills'), disabledDir: join(cwd, '.agents', 'skills-skip') },
   ];
 }
 

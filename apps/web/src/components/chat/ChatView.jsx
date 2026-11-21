@@ -16,9 +16,10 @@ import GitDiffView from '../git/GitDiffView';
 import ToolApprovalPanel from '../approval/ToolApprovalPanel';
 import { getModelInfo, getEffectiveModel, getDisplayedSessionModelName, getSessionIdentityCandidates, resolveProducerModelInfo, AUTO_APPROVE_INSTANT } from '../../utils/helpers';
 import { formatPromptNavTime, formatHms } from '../../utils/formatters';
-import { buildPromptNavItems } from '../../utils/promptNav';
+import { buildPromptNavItems, shouldUseComposerPromptNav } from '../../utils/promptNav';
 import { getTeammateAvatar } from '../../utils/teammateAvatars';
 import { applyAvatarAnimationTargets } from '../../utils/avatarAnimationPostPass';
+import { mergeToolRuns } from '../../utils/toolRunMerge.js';
 import { isSystemText, classifyUserContent, isMainAgent, isTeammate, resolveTeammateNames, extractDisplayText } from '../../../../../packages/app/src/utils/contentFilter';
 import { classifyRequest, formatRequestTag, formatTeammateLabel } from '../../../../../packages/app/src/utils/requestType';
 import { shouldExcludeFromConversation } from '../../utils/conversationEntryNormalize';
@@ -52,6 +53,7 @@ import { isSafeAttachmentPath } from '../../utils/fileDragDrop';
 import ChatInputBar, { resizeChatTextarea } from './ChatInputBar';
 import ProxyChip from './ProxyChip';
 import ProxyModal from '../settings/ProxyModal';
+import UserPromptsModal from './UserPromptsModal';
 import WorkflowLiveHud from '../viewers/WorkflowLiveHud';
 import TaskProgressHud from './TaskProgressHud';
 import PresetModal from '../terminal/PresetModal';
@@ -73,9 +75,11 @@ import { PermissionController } from './controllers/permissionController';
 import { ToolFileChangeController } from './controllers/toolFileChangeController';
 import { SplitDragController, TERMINAL_WIDTH_STORAGE_KEY, SIDEBAR_WIDTH_STORAGE_KEY } from './controllers/splitDragController';
 import { PtyPromptController } from './controllers/ptyPromptController';
+import { reconcileOptimisticQueueMessages, captureOptimisticQueueTextCounts } from './optimisticQueueMessage';
 import { sendTerminalSocketMessage, TerminalStreamController } from '../../utils/terminalStreamController';
 import { createPendingInputRecord, getPendingInputDisplayText, reconcilePendingInputs, removePendingInputsById } from '../../utils/pendingInputEcho';
 import { TERMINAL_CHAR_WIDTH, RESIZER_WIDTH_PX } from '../../utils/splitDragCalc';
+import { CLOSED_SLASH_MENU, getSlashMenuContext, normalizeSdkCommands, buildSlashMenuModel, composeOutgoingText } from '../../utils/slashCommandMenu';
 import { isMobile, isIOS, isPad } from '../../env';
 import { t } from '../../i18n';
 import { apiUrl } from '../../utils/apiUrl';
@@ -114,13 +118,13 @@ const UPLOAD_DEFER_TIMEOUT_MS = 10000;
 // 免审批下 PTY 子代理 prompt 去重时窗：同一 prompt 在该窗口内被反复检测时只放行一次，
 // 挡住 PTY 慢回显/重绘导致的二次自动放行（_promptSubmitting 仅 500ms，不足以覆盖）。
 
-const MOBILE_ITEM_LIMIT = 240;
-const IOS_ITEM_LIMIT = 150;
-const MOBILE_LOAD_MORE_STEP = 100;
+const MOBILE_ITEM_LIMIT = 400;
+const IOS_ITEM_LIMIT = 300;
+const MOBILE_LOAD_MORE_STEP = 300;
 // 桌面端初始渲染上限。桌面不走虚拟化（useVirtuoso 仅 isMobile），长任务会把整段对话全量渲染成
 // DOM，中后段 reconcile/layout 成本随条目数线性增长 → 主线程卡死（Windows 比 Mac 先撞上上限）。
 // 与移动端一致：只渲染最近 N 条 item，更早的用「加载更早」按需展开。桌面给更大窗口。
-const DESKTOP_ITEM_LIMIT = 400;
+const DESKTOP_ITEM_LIMIT = 800;
 // 当前平台基础渲染上限。isMobile/isIOS 在模块加载时即固定（见 env.js），故可一次性求值。
 const ITEM_LIMIT = isMobile ? (isIOS ? IOS_ITEM_LIMIT : MOBILE_ITEM_LIMIT) : DESKTOP_ITEM_LIMIT;
 const useVirtuoso = isMobile && !isIOS && !isPad;
@@ -187,6 +191,8 @@ function _writeUltraplanModalSize(size) {
     if (size?.h) localStorage.setItem(_ULTRAPLAN_H_KEY, String(size.h));
   } catch {}
 }
+
+const OPTIMISTIC_QUEUE_ACK_TIMEOUT_MS = 30 * 1000;
 
 class ChatView extends React.Component {
   // 通过 Context 共享 App 层的单条 /ws/terminal,this.context = { send, isOpen, addMessageHandler, addStateListener }
@@ -265,6 +271,7 @@ class ChatView extends React.Component {
     // 每项: { session, msgsLen, subCount, items, tsEntries, lastPendingAskId, lastPendingPlanId }
     this._sessionItemCache = [];
     this._itemCacheToggleSig = null;
+    this._toolRunCache = new Map();
 
     // 文件详情滚动位置快照（写/编辑触发 fileVersion remount 时跨实例传递）。
     // 故意用 instance ref 而非 React state：onScroll throttle 100ms 期间会高频写入，
@@ -295,9 +302,13 @@ class ChatView extends React.Component {
       sidebarWidth: parseInt(localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY), 10) || 240,
       terminalWidth: initialTerminalWidth || 624, // 默认 80cols * 7.8px
       needsInitialSnap: initialTerminalWidth === null, // 标记是否需要初始化吸附
+      slashMenu: { ...CLOSED_SLASH_MENU },
+      sdkSkillCommands: [], sdkSkillsReady: false, slashMenuFsSkills: null,
       inputEmpty: true,
       pendingInputs: [],
       sdkQueuedInputs: [],
+      optimisticQueueMessages: [],
+      ptyQueuedInputs: [],
       sdkQueuePaused: false,
       sdkQueueEpoch: null,
       stickyBottom: true,
@@ -335,6 +346,8 @@ class ChatView extends React.Component {
       roleFilterSelected: new Set(),
       teamModalSession: null,
       workflowModalRun: null,
+      userPromptsModalOpen: false,
+      promptNavOpen: false,
       mdLightboxSrc: null,
       streamingFading: false,
       stopOptimistic: false, // 点「停止」后乐观置 true：按钮/指示器立即切非运行态，真实 isStreaming 翻 false 或兜底超时后清除
@@ -393,6 +406,7 @@ class ChatView extends React.Component {
     this._unsubWsHandler = null;
     this._unsubWsState = null;
     this._inputRef = React.createRef();
+    this._slashSkillsSeq = 0; this._slashSkillsLoading = false; this._slashSkillsFailedAt = 0;
     this._stopOptimisticTimer = null; // 乐观停止兜底定时器
     // PTY byte-stream state (buffer/carry/debounce/current-prompt mirror/auto-allow
     // dedupe) is owned by this._ptyPrompt (PtyPromptController), see end of constructor.
@@ -400,6 +414,7 @@ class ChatView extends React.Component {
     this._mobileExtraItems = 0;
     this._mobileSliceOffset = 0;
     this._totalItemCount = 0;
+    this._autoFillRafId = null;
     // Cold history hydration can update sessions and the local current-session
     // anchor in adjacent React commits. Rebuild once on the following frame so
     // the final hydrated props always win over an earlier empty render.
@@ -754,6 +769,7 @@ class ChatView extends React.Component {
       nextProps.collapseToolResults !== this.props.collapseToolResults ||
       nextProps.expandThinking !== this.props.expandThinking ||
       nextProps.showFullToolContent !== this.props.showFullToolContent ||
+      nextProps.minimalChat !== this.props.minimalChat ||
       nextProps.onlyCurrentSession !== this.props.onlyCurrentSession ||
       nextProps.isLocalLog !== this.props.isLocalLog ||
       nextProps.scrollToTimestamp !== this.props.scrollToTimestamp ||
@@ -787,6 +803,28 @@ class ChatView extends React.Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
+    if (this.state.promptNavOpen && !this._useComposerPromptNav()) {
+      this.setState({ promptNavOpen: false });
+    }
+    const viewChanged = (prevProps.projectName && prevProps.projectName !== this.props.projectName)
+      || (prevProps.viewInstance && prevProps.viewInstance !== this.props.viewInstance)
+      || prevProps.isLocalLog !== this.props.isLocalLog;
+    if (viewChanged) {
+      this._lastPtyQueueAction = null;
+      if (this.state.ptyQueuedInputs.length) this.setState({ ptyQueuedInputs: [] });
+    }
+    if (viewChanged || prevProps.sessionUpperBoundTs !== this.props.sessionUpperBoundTs
+      || (prevProps.sdkMode && !this.props.sdkMode)
+      || (this.props.sdkResumeId && prevProps.sdkResumeId !== this.props.sdkResumeId)) {
+      this._clearOptimisticQueueSweepTimer();
+      if (this.state.optimisticQueueMessages.length) this.setState({ optimisticQueueMessages: [] });
+    }
+    if ((prevProps.viewInstance && prevProps.viewInstance !== this.props.viewInstance)
+      || (prevProps.projectName && prevProps.projectName !== this.props.projectName)
+      || prevProps.isLocalLog !== this.props.isLocalLog || (prevProps.sdkMode && !this.props.sdkMode)
+      || (prevProps.attachedSid && prevProps.attachedSid !== this.props.attachedSid)
+      || (this.props.sdkResumeId && prevProps.sdkResumeId !== this.props.sdkResumeId)) this._resetSlashMenuSurface();
+    if (this.state.slashMenu.open && ((this.props.terminalVisible && !this.props.sdkMode) || this.props.isLocalLog)) this._closeSlashMenu();
     this._attachMdCodeProbe();
     this._bindInputStackRO();
     this._bindChatScrollbarRO();
@@ -829,9 +867,11 @@ class ChatView extends React.Component {
       // conversation switch instead of draining an old deferred submission.
       this._clearDeferSend();
       if (this.state.stopOptimistic) this._clearStopOptimistic();
-      if (this.state.pendingInputs.length || this.state.sdkQueuedInputs.length) this.setState({ pendingInputs: [], sdkQueuedInputs: [] });
+      if (this.state.pendingInputs.length || this.state.sdkQueuedInputs.length) this.setState({ pendingInputs: [], sdkQueuedInputs: [], optimisticQueueMessages: [] });
       return;
     }
+    if (prevProps.mainAgentSessions !== this.props.mainAgentSessions
+      || prevProps.sessionUpperBoundTs !== this.props.sessionUpperBoundTs) this._reconcileOptimisticQueueMessages();
     // Reconcile optimistic sends against persisted user rows independently of
     // the sessions prop reference. One server row consumes at most one queued
     // send, so identical prompts can safely be in flight together.
@@ -1187,6 +1227,7 @@ class ChatView extends React.Component {
     } else if (prevProps.collapseToolResults !== this.props.collapseToolResults
             || prevProps.expandThinking !== this.props.expandThinking
             || prevProps.showFullToolContent !== this.props.showFullToolContent
+            || prevProps.minimalChat !== this.props.minimalChat
             || prevProps.showThinkingSummaries !== this.props.showThinkingSummaries
             || prevProps.onlyCurrentSession !== this.props.onlyCurrentSession
             || prevProps.sessionUpperBoundTs !== this.props.sessionUpperBoundTs) {
@@ -1253,6 +1294,7 @@ class ChatView extends React.Component {
     }
     // 不再在此建立 ws — Provider 通过 props.open 派生(cliMode || terminalVisible)集中管理
     if (!useVirtuoso) this._stickyController.bind(this.containerRef.current);
+    this._maybeScheduleLocalLogAutoFill();
   }
 
   // ── Slow-upstream toast helpers (review P2-1) ───────────────────────────
@@ -1298,9 +1340,11 @@ class ChatView extends React.Component {
 
   componentWillUnmount() {
     this._unbindSelectionQuoteListeners();
+    this._clearOptimisticQueueSweepTimer();
     this._clearSlowUpstreamToast();
     if (this._sdkRetryResetTimer) { clearTimeout(this._sdkRetryResetTimer); this._sdkRetryResetTimer = null; }
     this._unmounted = true;
+    this._slashSkillsSeq++;
     if (this._mdProbeObserver) { this._mdProbeObserver.disconnect(); this._mdProbeObserver = null; }
     this._mdProbeObservedEl = null;
     if (this._mdProbeRaf) { cancelAnimationFrame(this._mdProbeRaf); this._mdProbeRaf = 0; }
@@ -1336,6 +1380,7 @@ class ChatView extends React.Component {
       }
     } catch {}
     if (this._queueTimer) clearTimeout(this._queueTimer);
+    if (this._autoFillRafId) { cancelAnimationFrame(this._autoFillRafId); this._autoFillRafId = null; }
     if (this._historyHydrationRafId) { cancelAnimationFrame(this._historyHydrationRafId); this._historyHydrationRafId = null; }
     this._ptyPrompt.dispose();
     this._toolFileMonitor.dispose();
@@ -1713,6 +1758,19 @@ class ChatView extends React.Component {
     this.setState({ sendDeferred: false });
   };
 
+  // logfile 只读模式（非虚拟化平台：桌面/iOS/iPad）自动渐进扩窗——替代手工点击「加载更多」。
+  // 每个 rAF 帧执行一步 handleLoadMore（帧间让出主线程给绘制/输入，避免单次全量挂 DOM 的长任务卡死，
+  // 见 DESKTOP_ITEM_LIMIT 注释），沿用其滚动补偿保持视口稳定；componentDidUpdate 接力续步直到全量渲染完成。
+  _maybeScheduleLocalLogAutoFill() {
+    if (!this.props.isLocalLog || useVirtuoso) return;
+    if (this._mobileSliceOffset <= 0 || this._autoFillRafId || this._unmounted) return;
+    this._autoFillRafId = requestAnimationFrame(() => {
+      this._autoFillRafId = null;
+      if (this._unmounted || this._mobileSliceOffset <= 0) return;
+      this.handleLoadMore();
+    });
+  }
+
   handleLoadMore = () => {
     this._mobileExtraItems += MOBILE_LOAD_MORE_STEP;
     const prevLen = this.state.allItems?.length || 0;
@@ -2020,7 +2078,7 @@ class ChatView extends React.Component {
         }
         if (asstContent) {
           renderedMessages.push(
-            <ChatMessage key={`${keyPrefix}-asst-${mi}`} role="assistant" isTeammate={teammateIdentity ? true : undefined} label={teammateIdentity?.label} animateAvatar={teammateIdentity ? false : undefined} content={asstContent} toolResultMap={toolResultMap} readContentMap={readContentMap} editSnapshotMap={editSnapshotMap} askAnswerMap={mergedAskAnswerMap} planApprovalMap={planApprovalMap} latestPlanContent={latestPlanContent} planFileContents={this.state.planFileContents} timestamp={ts} displayTs={msg._generatedTs} modelInfo={modelInfo} collapseToolResults={collapseToolResults} expandThinking={expandThinking} showFullToolContent={showFullToolContent} showThinkingSummaries={showThinkingSummaries} ptyPrompt={this.state.ptyPrompt} activePlanPrompt={activePlanPrompt} activePtyPlanId={this.state.pendingPtyPlan?.id ?? null} planAutoApproveCountdown={this.state.planAutoApproveCountdown} onCancelPlanAutoApprove={this.cancelPlanAutoApprove} activeDangerousPrompt={activeDangerousPrompt} lastPendingPlanId={msgLastPlanId} lastPendingAskId={msgLastAskId} onPlanApprovalClick={this.handlePromptOptionClick} onPlanFeedbackSubmit={this.handlePlanFeedbackSubmit} onDangerousApprovalClick={this.handlePromptOptionClick} onAskQuestionSubmit={this.handleAskQuestionSubmit} onAskQuestionCancel={this.handleAskCancel} pendingAsk={this.state.pendingAsk} askMetaMap={this.state.askMetaMap} cliMode={this.props.cliMode} onOpenFile={this.handleOpenToolFilePath} requestIndex={hasViewRequest ? reqIdx : undefined} onViewRequest={hasViewRequest ? onViewRequest : undefined} isHistoryLog={isHistoryLog} />
+            <ChatMessage key={`${keyPrefix}-asst-${mi}`} role="assistant" isTeammate={teammateIdentity ? true : undefined} label={teammateIdentity?.label} animateAvatar={teammateIdentity ? false : undefined} content={asstContent} toolResultMap={toolResultMap} readContentMap={readContentMap} editSnapshotMap={editSnapshotMap} askAnswerMap={mergedAskAnswerMap} planApprovalMap={planApprovalMap} latestPlanContent={latestPlanContent} planFileContents={this.state.planFileContents} timestamp={ts} displayTs={msg._generatedTs} modelInfo={modelInfo} collapseToolResults={collapseToolResults} expandThinking={expandThinking} showFullToolContent={showFullToolContent} minimalChat={this.props.minimalChat} showThinkingSummaries={showThinkingSummaries} ptyPrompt={this.state.ptyPrompt} activePlanPrompt={activePlanPrompt} activePtyPlanId={this.state.pendingPtyPlan?.id ?? null} planAutoApproveCountdown={this.state.planAutoApproveCountdown} onCancelPlanAutoApprove={this.cancelPlanAutoApprove} activeDangerousPrompt={activeDangerousPrompt} lastPendingPlanId={msgLastPlanId} lastPendingAskId={msgLastAskId} onPlanApprovalClick={this.handlePromptOptionClick} onPlanFeedbackSubmit={this.handlePlanFeedbackSubmit} onDangerousApprovalClick={this.handlePromptOptionClick} onAskQuestionSubmit={this.handleAskQuestionSubmit} onAskQuestionCancel={this.handleAskCancel} pendingAsk={this.state.pendingAsk} askMetaMap={this.state.askMetaMap} cliMode={this.props.cliMode} onOpenFile={this.handleOpenToolFilePath} requestIndex={hasViewRequest ? reqIdx : undefined} onViewRequest={hasViewRequest ? onViewRequest : undefined} isHistoryLog={isHistoryLog} />
           );
         }
       }
@@ -2228,13 +2286,13 @@ class ChatView extends React.Component {
     const tsToIndex = cache.tsToIndex;
     const subAgentEntries = cache.subAgentEntries;
 
-    const allItems = [];
+    const rawAllItems = [];
     const tsItemMap = {};
 
     // === session item 缓存：toggle 签名检查 ===
     const { showThinkingSummaries } = this.props;
     const activePromptIds = (this.state.ptyPromptHistory || []).filter(p => p.status === 'active').map(p => p.id).join(',');
-    const toggleSig = `${collapseToolResults}|${expandThinking}|${showFullToolContent}|${showThinkingSummaries}|${this.props.cliMode}|${this.state.ptyPrompt?.id || ''}|${activePromptIds}|${this.props.userProfile?.name || ''}|${this.props.lang || ''}|${Object.keys(this.state.localAskAnswers || {}).join(',')}`;
+    const toggleSig = `${collapseToolResults}|${expandThinking}|${showFullToolContent}|${this.props.minimalChat}|${showThinkingSummaries}|${this.props.cliMode}|${this.state.ptyPrompt?.id || ''}|${activePromptIds}|${this.props.userProfile?.name || ''}|${this.props.lang || ''}|${Object.keys(this.state.localAskAnswers || {}).join(',')}`;
     if (toggleSig !== this._itemCacheToggleSig) {
       this._sessionItemCache = [];
       this._itemCacheToggleSig = toggleSig;
@@ -2262,7 +2320,7 @@ class ChatView extends React.Component {
     // Server-side pagination: "load earlier conversations" button
     // 仅展示当前会话时隐藏跨会话的「加载更早」按钮（更早内容本就不展示）。
     if (!this.props.shards && !onlyCurrentSession && (this.props.hasMoreHistory || this.props.loadingMore)) {
-      allItems.push(
+      rawAllItems.push(
         <div key="load-more-history" className={styles.loadMoreWrap}>
           {this.props.loadingMore ? (
             <div className={`${styles.loadMoreBtn} ${styles.loadMoreBtnLoading}`}>
@@ -2309,7 +2367,7 @@ class ChatView extends React.Component {
       // 紧凑模式只展示上一轮和当前轮；传入列表已由 pin 截到当前轮结尾。
       if (si < startSi || (onlyCurrentSession && si > currentSi)) return;
       if (si > startSi && isSessionDividerBoundary(mainAgentSessions[si - 1], session)) {
-        allItems.push(
+        rawAllItems.push(
           <Divider key={`session-div-${si}`} className={styles.sessionDivider}>
             <Text className={styles.sessionDividerText}>{t('ui.session')}</Text>
           </Divider>
@@ -2319,7 +2377,7 @@ class ChatView extends React.Component {
       // 冷 session 占位符
       if (session._cold) {
         const isLoading = this.props.loadingSessionId === session.sessionId;
-        allItems.push(
+        rawAllItems.push(
           <div key={`cold-session-${si}`} className={styles.loadMoreWrap}>
             {isLoading ? (
               <div className={`${styles.loadMoreBtn} ${styles.loadMoreBtnLoading}`}>
@@ -2477,14 +2535,14 @@ class ChatView extends React.Component {
         // 插入时间戳 <= 当前消息时间戳的 SubAgent entries
         while (subIdx < subAgentEntries.length && msgWallTs && subAgentEntries[subIdx].timestamp <= msgWallTs) {
           const sa = subAgentEntries[subIdx];
-          if (sa.timestamp) tsItemMap[sa.timestamp] = allItems.length;
-          allItems.push(
-            <ChatMessage key={`sub-${sa.requestIndex}-${sa.timestamp}`} role="sub-agent-chat" content={sa.content} toolResultMap={sa.toolResultMap} label={sa.label} isTeammate={sa.isTeammate} timestamp={sa.timestamp} collapseToolResults={collapseToolResults} expandThinking={expandThinking} showFullToolContent={showFullToolContent} requestIndex={sa.requestIndex} onViewRequest={onViewRequest} onOpenFile={this.handleOpenToolFilePath} isHistoryLog={isHistoryLog} />
+          if (sa.timestamp) tsItemMap[sa.timestamp] = rawAllItems.length;
+          rawAllItems.push(
+            <ChatMessage key={`sub-${sa.requestIndex}-${sa.timestamp}`} role="sub-agent-chat" runIdentity={sa.req?._v2Descriptor?.threadId || sa.req?._threadId || sa.req?.body?.metadata?.thread_id} content={sa.content} toolResultMap={sa.toolResultMap} label={sa.label} isTeammate={sa.isTeammate} timestamp={sa.timestamp} collapseToolResults={collapseToolResults} expandThinking={expandThinking} showFullToolContent={showFullToolContent} minimalChat={this.props.minimalChat} requestIndex={sa.requestIndex} onViewRequest={onViewRequest} onOpenFile={this.handleOpenToolFilePath} isHistoryLog={isHistoryLog} />
           );
           subIdx++;
         }
-        if (msgLookupTs) tsItemMap[msgLookupTs] = allItems.length;
-        allItems.push(m);
+        if (msgLookupTs) tsItemMap[msgLookupTs] = rawAllItems.length;
+        rawAllItems.push(m);
       }
       // 插入剩余的 SubAgent entries（时间戳在最后一条消息之后）
       while (subIdx < subAgentEntries.length) {
@@ -2500,14 +2558,28 @@ class ChatView extends React.Component {
         // 改用 sessionUpperBoundTs（= 下一个未展示会话的起点）截断，避免更晚会话的 sub-agent 渗入。
         const bound = nextSessionStart || this.props.sessionUpperBoundTs;
         if (bound && sa.timestamp > bound) break;
-        if (sa.timestamp) tsItemMap[sa.timestamp] = allItems.length;
-        allItems.push(
-          <ChatMessage key={`sub-${sa.requestIndex}-${sa.timestamp}`} role="sub-agent-chat" content={sa.content} toolResultMap={sa.toolResultMap} label={sa.label} isTeammate={sa.isTeammate} timestamp={sa.timestamp} collapseToolResults={collapseToolResults} expandThinking={expandThinking} showFullToolContent={showFullToolContent} requestIndex={sa.requestIndex} onViewRequest={onViewRequest} onOpenFile={this.handleOpenToolFilePath} isHistoryLog={isHistoryLog} />
+        if (sa.timestamp) tsItemMap[sa.timestamp] = rawAllItems.length;
+        rawAllItems.push(
+          <ChatMessage key={`sub-${sa.requestIndex}-${sa.timestamp}`} role="sub-agent-chat" runIdentity={sa.req?._v2Descriptor?.threadId || sa.req?._threadId || sa.req?.body?.metadata?.thread_id} content={sa.content} toolResultMap={sa.toolResultMap} label={sa.label} isTeammate={sa.isTeammate} timestamp={sa.timestamp} collapseToolResults={collapseToolResults} expandThinking={expandThinking} showFullToolContent={showFullToolContent} minimalChat={this.props.minimalChat} requestIndex={sa.requestIndex} onViewRequest={onViewRequest} onOpenFile={this.handleOpenToolFilePath} isHistoryLog={isHistoryLog} />
         );
         subIdx++;
       }
 
     });
+
+    // Minimal chat: merge each agent's consecutive tool-only turns into one
+    // bubble (utils/toolRunMerge.js). Runs on the built element array, so the
+    // per-session cache above stays raw; indices in tsItemMap are remapped and
+    // everything index-based below (_scrollTargetIdx, avatar pass, mobile
+    // slice) sees the merged array. Only meaningful in pill mode.
+    let allItems = rawAllItems;
+    if (this.props.minimalChat && !showFullToolContent) {
+      const merged = mergeToolRuns(rawAllItems, this._toolRunCache);
+      for (const k of Object.keys(tsItemMap)) tsItemMap[k] = merged.indexMap[tsItemMap[k]];
+      allItems = merged.items;
+    } else if (this._toolRunCache.size) {
+      this._toolRunCache.clear();
+    }
 
     // 记录滚动目标 item index
     const { scrollToTimestamp } = this.props;
@@ -2529,6 +2601,13 @@ class ChatView extends React.Component {
   // （桌面端启用裁剪以避免长任务全量渲染卡死，见 DESKTOP_ITEM_LIMIT 注释）。
   _applyMobileSlice(allItems) {
     this._totalItemCount = allItems.length;
+    // logfile 只读模式：虚拟化平台（Android，渲染 O(1)）直接一次性全量渲染；
+    // 桌面/iOS/iPad 不走虚拟化，单次全量挂 DOM 会重现 DESKTOP_ITEM_LIMIT 注释里点名的长任务卡死，
+    // 故保留 ITEM_LIMIT 窗口裁剪，由 _maybeScheduleLocalLogAutoFill 逐帧自动扩窗至全量（无需手工点击）。
+    if (this.props.isLocalLog && useVirtuoso) {
+      this._mobileSliceOffset = 0;
+      return allItems;
+    }
     const limit = ITEM_LIMIT + this._mobileExtraItems;
     if (allItems.length <= limit) {
       this._mobileSliceOffset = 0;
@@ -2833,6 +2912,28 @@ class ChatView extends React.Component {
         this.setState({ sdkTaskSnapshot: { sessionId: msg.sessionId || null, tasks } });
         return;
       }
+      if ((msg.type === 'queue-state' && msg.transport === 'pty')
+        || ['queue-message-accepted', 'queue-rejected'].includes(msg.type)) {
+        const instance = new URLSearchParams(window.location.search).get('instance');
+        if (instance !== null && msg.instanceKey !== instance) return;
+        if (msg.type === 'queue-state') {
+          if (!Array.isArray(msg.items)) return;
+          const items = msg.items.filter(item => typeof item?.id === 'string' && typeof item.text === 'string'
+            && Number.isFinite(Number(item.ts)) && ['queued', 'dispatching'].includes(item.status));
+          this.setState(prev => ({ ptyQueuedInputs: items,
+            pendingInputs: prev.pendingInputs.filter(record => !items.some(item => item.requestId === record.id)) }));
+        } else if (msg.type === 'queue-message-accepted') {
+          this.setState(prev => ({ pendingInputs: removePendingInputsById(prev.pendingInputs, [msg.requestId]) }));
+        } else {
+          if (!msg.requestId && !msg.id) return;
+          this._restoreRejectedPtyQueue(msg);
+          if (msg.reason === 'full' || msg.reason === 'target-gone' || msg.requestId) {
+            message.warning(t(msg.reason === 'full' ? 'ui.chatInput.queueFull'
+              : msg.reason === 'target-gone' ? 'ui.chatInput.queueTargetGone' : 'ui.sendFailed'));
+          }
+        }
+        return;
+      }
       // The socket may attach before /api/cli-mode finishes. Retain its scoped
       // SDK snapshot now so cold loading cannot discard a parked queue.
       if (['sdk-compact', 'sdk-error', 'sdk-retry-state', 'sdk-slow-upstream', 'sdk-slow-upstream-resolved', 'sdk-message-accepted', 'queue-state'].includes(msg.type)) {
@@ -2856,6 +2957,7 @@ class ChatView extends React.Component {
           this.setState(prev => {
             let pendingInputs = prev.pendingInputs.filter(record =>
               (!record.sdkActiveEpoch || record.sdkActiveEpoch === epoch)
+              && (!record.sdkActiveId || (validActive && record.sdkActiveId === active.id))
               && !items.some(item => item.id === record.queueId || item.requestId === record.id)
               && !(validActive && active.requestId === record.id));
             if (validActive && epoch && !active.retryOf && !pendingInputs.some(record => record.sdkActiveId === active.id)) {
@@ -2866,9 +2968,14 @@ class ChatView extends React.Component {
                 createdAt: active.timestamp,
               }), sdkActiveId: active.id, sdkActiveEpoch: epoch, serverTimestamp: active.timestamp }];
             }
+            const optimisticQueueMessages = reconcileOptimisticQueueMessages(
+              prev.optimisticQueueMessages.filter(item => item.epoch === epoch).map(pending =>
+                items.some(item => item.id === pending.id && item.status === 'dispatching') ? { ...pending, dispatchingSeen: true } : pending),
+              this.props.mainAgentSessions, items, this._queueViewScope(),
+              { allowTextAck: this.props.sessionUpperBoundTs == null });
             return { sdkQueuedInputs: items, sdkQueuePaused: msg.paused === true,
-              sdkQueueEpoch: epoch, pendingInputs };
-          });
+              sdkQueueEpoch: epoch, pendingInputs, optimisticQueueMessages };
+          }, () => { if (!this.state.optimisticQueueMessages.length) this._clearOptimisticQueueSweepTimer(); });
           return;
         }
         const rejected = this.state.pendingInputs.find(record => record.id === msg.requestId);
@@ -3069,6 +3176,9 @@ class ChatView extends React.Component {
     }
     if (state !== 'close') return;
     this._clearSlowUpstreamToast();
+    this._lastPtyQueueAction = null;
+    this._clearOptimisticQueueSweepTimer();
+    this.setState(prev => ({ optimisticQueueMessages: [], ptyQueuedInputs: [], pendingInputs: prev.pendingInputs.map(record => record.queuePending ? { ...record, queuePending: false } : record) }));
     this.setState({ sdkTaskSnapshot: { sessionId: null, tasks: [] },
       sdkAgentSnapshot: { sessionId: null, agents: [] }, activeAgentsBarVisible: false });
     this._failPendingSequentialInputs();
@@ -3315,22 +3425,53 @@ class ChatView extends React.Component {
       pendingInputs: removePendingInputsById(prev.pendingInputs, [pendingId]) }));
   };
 
-  _renderSdkQueueBubbles = () => this.props.sdkMode ? this.state.sdkQueuedInputs.map(item => (
+  _queueInputs = () => this.props.sdkMode ? this.state.sdkQueuedInputs : this.state.ptyQueuedInputs;
+
+  _restoreRejectedPtyQueue = (msg) => {
+    const action = this._lastPtyQueueAction?.id === msg.id ? this._lastPtyQueueAction : null;
+    const ownRequest = typeof msg.requestId === 'string' && msg.requestId.startsWith(`pending-${this._pendingInputPrefix}-`);
+    const candidate = this._createPendingInputRecord('');
+    let restore = null;
+    this.setState(prev => {
+      const pending = prev.pendingInputs.find(record => record.id === msg.requestId && record.queuePending);
+      const text = pending?.wireText || ((action || ownRequest) && (msg.text || action?.text));
+      if (!text) return null;
+      const record = pending || { ...candidate, wireText: text, displayText: text };
+      restore = { text, record };
+      return { pendingInputs: pending
+        ? prev.pendingInputs.map(item => item.id === record.id ? { ...item, queuePending: false } : item)
+        : [...prev.pendingInputs, record] };
+    }, () => { if (restore) this._restoreUnsentInput(restore.text, restore.record.id); });
+    if (action) this._lastPtyQueueAction = null;
+  };
+
+  _renderQueueBubbles = () => this._queueInputs().map(item => (
     <div className={`${styles.queueBubble} ${item.status === 'dispatching' ? styles.queueBubbleDispatching : ''}`}
       key={item.id} title={item.text} aria-busy={item.status === 'dispatching'}>
       <span className={styles.queueBubbleText}>{item.text}</span>
       <button type="button" className={styles.queueBubbleRemove}
         aria-label={t('ui.chatInput.queueRemove')} title={t('ui.chatInput.queueRemove')}
         disabled={item.status === 'dispatching'} onMouseDown={event => event.preventDefault()}
-        onClick={() => { if (item.status !== 'dispatching') this._removeSdkQueuedInput(item.id); }}>&times;</button>
+        onClick={() => {
+          if (item.status === 'dispatching') return;
+          if (this.props.sdkMode) this._removeSdkQueuedInput(item.id);
+          else if (!sendTerminalSocketMessage(this._inputWs, { type: 'queue-remove', id: item.id })) message.error(t('ui.sendFailed'));
+        }}>&times;</button>
       <button type="button" className={styles.queueBubbleSendNow}
-        title={t('ui.sdkQueue.sendNowHint')}
-        disabled={this.state.sdkQueuedInputs.some(row => row.status === 'dispatching')}
-        onMouseDown={event => event.preventDefault()} onClick={() => this._sendSdkQueuedNow(item.id)}>
+        title={this.props.sdkMode ? t('ui.sdkQueue.sendNowHint') : t('ui.chatInput.queueSendNow')}
+        disabled={this.props.sdkMode ? this.state.sdkQueuedInputs.some(row => row.status === 'dispatching') : item.status === 'dispatching'}
+        onMouseDown={event => event.preventDefault()} onClick={() => {
+          if (this.props.sdkMode ? this.state.sdkQueuedInputs.some(row => row.status === 'dispatching') : item.status === 'dispatching') return;
+          if (this.props.sdkMode) this._sendSdkQueuedNow(item.id);
+          else {
+            this._lastPtyQueueAction = { id: item.id, text: item.text };
+            if (!sendTerminalSocketMessage(this._inputWs, { type: 'queue-send-now', id: item.id })) message.error(t('ui.sendFailed'));
+          }
+        }}>
         {t(item.status === 'dispatching' ? 'ui.chatInput.queueDispatching' : 'ui.chatInput.queueSendNow')}
       </button>
     </div>
-  )) : [];
+  ));
 
   // An explicit user send starts a fresh turn: drop the pinned error rows (a retry's
   // own failure re-posts a row). Cleared here — NOT on sdk-session-state 'running' —
@@ -3443,15 +3584,153 @@ class ChatView extends React.Component {
   };
 
   _sendSdkQueuedNow = id => {
-    if (!sendTerminalSocketMessage(this._inputWs, { type: 'sdk-queue-send-now', id })) message.error(t('ui.sendFailed'));
-    else this._clearSdkErrors();
+    const item = this.state.sdkQueuedInputs.find(row => row.id === id);
+    if (!item || item.status === 'dispatching' || !this.props.sdkMode || this.props.isLocalLog || this.props.sessionUpperBoundTs != null) return;
+    if (!sendTerminalSocketMessage(this._inputWs, { type: 'sdk-queue-send-now', id })) { message.error(t('ui.sendFailed')); return; }
+    this._clearSdkErrors();
+    const counts = captureOptimisticQueueTextCounts(this.props.mainAgentSessions || []);
+    const optimistic = { id, text: item.text, ts: item.ts || Date.now(), sentAt: Date.now(),
+      baselineTextCount: counts[item.text] || 0, epoch: this.state.sdkQueueEpoch, ...this._queueViewScope() };
+    this.setState(prev => ({ optimisticQueueMessages: [...prev.optimisticQueueMessages.filter(row => row.id !== id), optimistic] }), () => {
+      this.scrollToBottom(); this._scheduleOptimisticQueueSweep();
+    });
+  };
+
+  _queueViewScope = () => ({ project: this.props.projectName || null,
+    instanceKey: new URLSearchParams(window.location.search).get('instance'), attachedSid: this.props.sdkResumeId || null });
+
+  _reconcileOptimisticQueueMessages = () => {
+    this.setState(prev => {
+      if (!prev.optimisticQueueMessages.length) return null;
+      const items = reconcileOptimisticQueueMessages(prev.optimisticQueueMessages, this.props.mainAgentSessions,
+        this.state.sdkQueuedInputs, this._queueViewScope(), { allowTextAck: this.props.sessionUpperBoundTs == null });
+      return items.length === prev.optimisticQueueMessages.length ? null : { optimisticQueueMessages: items };
+    }, () => { if (!this.state.optimisticQueueMessages.length) this._clearOptimisticQueueSweepTimer(); });
+  };
+
+  _scheduleOptimisticQueueSweep = () => {
+    if (this._unmounted) return;
+    if (this._optimisticQueueSweepTimer) return;
+    const pending = this.state.optimisticQueueMessages;
+    if (!pending || pending.length === 0) return;
+    const now = Date.now();
+    const earliest = pending.reduce((min, item) => {
+      const sentAt = typeof item.sentAt === 'number' ? item.sentAt : now;
+      return Math.min(min, sentAt);
+    }, now);
+    const delay = Math.max(0, earliest + OPTIMISTIC_QUEUE_ACK_TIMEOUT_MS - now);
+    this._optimisticQueueSweepTimer = setTimeout(() => {
+      this._optimisticQueueSweepTimer = null;
+      if (this._unmounted) return;
+      this._sweepExpiredOptimisticQueueMessages();
+    }, delay);
+    if (typeof this._optimisticQueueSweepTimer.unref === 'function') this._optimisticQueueSweepTimer.unref();
+  };
+
+  _sweepExpiredOptimisticQueueMessages = (now = Date.now()) => {
+    if (this._unmounted) return;
+    this.setState((prev) => {
+      if (prev.optimisticQueueMessages.length === 0) return null;
+      const kept = prev.optimisticQueueMessages.filter((item) => {
+        const sentAt = typeof item.sentAt === 'number' ? item.sentAt : now;
+        return now - sentAt < OPTIMISTIC_QUEUE_ACK_TIMEOUT_MS;
+      });
+      if (kept.length === prev.optimisticQueueMessages.length) return null;
+      return { optimisticQueueMessages: kept };
+    }, () => {
+      if (this.state.optimisticQueueMessages.length > 0) this._scheduleOptimisticQueueSweep();
+    });
+  };
+
+  _clearOptimisticQueueSweepTimer = () => {
+    if (this._optimisticQueueSweepTimer) {
+      clearTimeout(this._optimisticQueueSweepTimer);
+      this._optimisticQueueSweepTimer = null;
+    }
+  };
+
+  _closeSlashMenu = () => {
+    if (this.state.slashMenu.open) this.setState({ slashMenu: { ...CLOSED_SLASH_MENU } });
+  };
+
+  _resetSlashMenuSurface = () => {
+    this._slashSkillsSeq++; // invalidate any in-flight /api/skills pull
+    // Clear the in-flight gate too — the stale request's .finally won't (seq no longer
+    // matches), so without this the latch stays true and the menu never reloads.
+    this._slashSkillsLoading = false;
+    this._slashSkillsFailedAt = 0;
+    this.setState({
+      slashMenu: { ...CLOSED_SLASH_MENU },
+      sdkSkillCommands: [],
+      sdkSkillsReady: false,
+      slashMenuFsSkills: null,
+    });
+  };
+
+  _buildSlashMenuModel = () => buildSlashMenuModel({
+    sdkReady: !!(this.props.sdkMode && this.state.sdkSkillsReady),
+    sdkCommands: this.state.sdkSkillCommands,
+    fsSkills: Array.isArray(this.state.slashMenuFsSkills) ? this.state.slashMenuFsSkills : null,
+    query: this.state.slashMenu.query,
+  });
+
+  // Lazily read this workspace's actual native catalog, with existing filesystem fallback.
+  // Reopening refreshes metadata; sequence guards discard retired view results.
+  // Failure is retryable: `slashMenuFsSkills=false` + a timestamp, so a later menu open
+  // re-arms the pull after a short cooldown instead of pinning "no skills" for the view's life.
+  _ensureSlashSkillsLoaded = (refresh = false) => {
+    if (this.props.isLocalLog) return;
+    if (this._slashSkillsLoading || (this.state.slashMenuFsSkills !== null && !refresh)) return;
+    // Retry window after a failed pull.
+    if (this._slashSkillsFailedAt && Date.now() - this._slashSkillsFailedAt < 5000) return;
+    const seq = ++this._slashSkillsSeq;
+    this._slashSkillsLoading = true;
+    const read = async () => {
+      if (this.props.sdkMode) {
+        const native = await fetch(apiUrl('/api/skill-commands')).then(r => r.ok ? r.json() : null);
+        if (native?.ok === true && Array.isArray(native.skills)) return { native: normalizeSdkCommands(native.skills), skills: [] };
+      }
+      const response = await fetch(apiUrl('/api/skills'));
+      if (!response.ok) throw new Error(`http:${response.status}`);
+      const data = await response.json();
+      if (!Array.isArray(data?.skills)) throw new Error('Invalid skill catalog');
+      return { native: null, skills: data.skills };
+    };
+    read()
+      .then(data => {
+        if (this._unmounted || seq !== this._slashSkillsSeq) return;
+        const skills = data.skills;
+        this._slashSkillsFailedAt = 0;
+        this.setState({ slashMenuFsSkills: skills, sdkSkillsReady: data.native !== null, sdkSkillCommands: data.native || [] });
+      })
+      .catch((err) => {
+        if (this._unmounted || seq !== this._slashSkillsSeq) return;
+        if (this._unmounted) return;
+        this._slashSkillsFailedAt = Date.now();
+        this.setState({ slashMenuFsSkills: false, sdkSkillsReady: false, sdkSkillCommands: [] });
+      })
+      .finally(() => {
+        if (seq === this._slashSkillsSeq) this._slashSkillsLoading = false;
+      });
+  };
+
+  // 打开菜单时若上次失败且已过冷却，允许重试（清回 null 重新拉）。
+  _retrySlashSkillsIfFailed = () => {
+    if (this.state.slashMenuFsSkills === false
+      && (!this._slashSkillsFailedAt || Date.now() - this._slashSkillsFailedAt >= 5000)) {
+      this.setState({ slashMenuFsSkills: null }, () => this._ensureSlashSkillsLoaded());
+    }
   };
 
   _sendUserMessageImmediate = (text, textareaToReset, skipUiState, pendingId, clearQuotes = true) => {
     if (!text) return;
+    this._closeSlashMenu();
     const ws = this._inputWs;
     const pendingRecord = skipUiState ? null : this._createPendingInputRecord(text);
-    const sequential = !this.props.sdkMode && text.includes('\n');
+    // Native Codex also batches long single-line input as a paste. Its 50ms
+    // raw Enter can become a draft newline; reuse the settled atomic paste path
+    // for ordinary text while preserving native slash-command interaction.
+    const sequential = !this.props.sdkMode && (text.includes('\n') || !/^\s*\//.test(text));
     const sent = sequential ? this._sendBracketPasteSequential(text, {
       onFailure: () => {
         this._restoreUnsentInput(text, pendingId || pendingRecord?.id);
@@ -3529,6 +3808,7 @@ class ChatView extends React.Component {
       this._clearSlowUpstreamToast();
       this._inputWs.send(JSON.stringify({ type: 'sdk-interrupt' }));
     } else {
+      if (this.props.ptyQueueAvailable) this._inputWs.send(JSON.stringify({ type: 'queue-suppress' }));
       // CLI/PTY 模式：ESC 打断 Codex TUI 当前生成。
       // 关键修复：点击 HTML 停止按钮会让隐藏的 xterm 失焦，向 codex 上报 focus-out (\x1b[O)，
       // 之后 codex(Ink) 会忽略 ESC（仅在「聚焦」时把 ESC 当中断）。所以先补一个 focus-in (\x1b[I)
@@ -3561,7 +3841,7 @@ class ChatView extends React.Component {
     const imagePaths = this.state.pendingImages.map(img => `"${img.path.replace(/"/g, '')}"`).join(' ');
     const isSlash = isSlashCommandText(userText);
     const quotePrefix = isSlash ? '' : buildQuotePrefix(this.state.pendingQuotes);
-    const text = quotePrefix + (imagePaths ? (userText ? (isSlash ? `${userText} ${imagePaths}` : `${imagePaths} ${userText}`) : imagePaths) : userText);
+    const text = quotePrefix + composeOutgoingText(userText, imagePaths);
     if (!text) return;
 
     // 发起新一轮：清除可能仍挂着的乐观停止标志，确保新 run 的按钮正确显示为停止态。
@@ -3603,10 +3883,56 @@ class ChatView extends React.Component {
       return;
     }
 
+    // Native PTY busy follow-ups stay on the authoritative server queue. Keep
+    // a correlated local record until its snapshot/ack so rejection cannot lose text.
+    if (!this.props.sdkMode && this.props.ptyQueueAvailable && this.props.isStreaming && !this.state.stopOptimistic) {
+      const record = { ...this._createPendingInputRecord(text), queuePending: true };
+      if (!sendTerminalSocketMessage(this._inputWs, { type: 'queue-message', text, requestId: record.id })) {
+        message.error(t('ui.sendFailed')); return;
+      }
+      textarea.value = ''; resizeChatTextarea(textarea, { focused: document.activeElement === textarea });
+      this._clearPendingImages(); if (!isSlash) this._clearPendingQuotes(); this._closeSlashMenu();
+      if (!/^\s*\/clear\s*$/.test(text)) this.props.onUserMessageSent?.();
+      this.setState(prev => ({ inputEmpty: true, inputSuggestion: null, pendingInputs: [...prev.pendingInputs, record] }));
+      return;
+    }
+
     this._sendUserMessageImmediate(text, textarea, false, undefined, !isSlash);
   };
 
   handleInputKeyDown = (e) => {
+    // `/` skill menu takes precedence while open AND actually visible (same condition the
+    // render uses) — an open-but-hidden menu (terminal shown / local-log) must not intercept.
+    const slashMenuLive = this.state.slashMenu.open && (!this.props.terminalVisible || this.props.sdkMode) && !this.props.isLocalLog;
+    if (slashMenuLive && !e.isComposing && e.keyCode !== 229) {
+      const model = this._buildSlashMenuModel();
+      const count = model.flatItems.length;
+      const plain = !e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey;
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        this._closeSlashMenu();
+        return;
+      }
+      if (count > 0 && plain && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+        e.preventDefault();
+        const cur = Math.min(this.state.slashMenu.activeIndex, count - 1);
+        const next = e.key === 'ArrowDown' ? Math.min(count - 1, cur + 1) : Math.max(0, cur - 1);
+        this.setState(prev => ({ slashMenu: { ...prev.slashMenu, activeIndex: next } }));
+        return;
+      }
+      if (count > 0 && plain && e.key === 'Tab') {
+        e.preventDefault();
+        this.handleSlashMenuSelect(this.state.slashMenu.activeIndex);
+        return;
+      }
+      if (count > 0 && plain && e.key === 'Enter') {
+        e.preventDefault();
+        this.handleSlashMenuSelect(this.state.slashMenu.activeIndex);
+        return;
+      }
+      // count === 0: fall through so Enter still sends the typed `/xyz` text.
+    }
+
     if (e.key === 'Tab' && this.state.inputSuggestion) {
       e.preventDefault();
       const textarea = this._inputRef.current;
@@ -3627,14 +3953,45 @@ class ChatView extends React.Component {
     if (visible !== this.state.activeAgentsBarVisible) this.setState({ activeAgentsBarVisible: visible });
   };
 
+  // Insert the picked skill as native `$name ` (never auto-send) so the user can add args.
+  handleSlashMenuSelect = (index) => {
+    const model = this._buildSlashMenuModel();
+    const item = model.flatItems[index];
+    if (!item) { this._closeSlashMenu(); return; }
+    const ta = this._inputRef.current;
+    if (!ta) { this._closeSlashMenu(); return; }
+    const nextValue = `$${item.name} `;
+    ta.value = nextValue;
+    resizeChatTextarea(ta, { focused: true });
+    this.setState({ inputEmpty: false, inputSuggestion: null, slashMenu: { ...CLOSED_SLASH_MENU } }, () => {
+      ta.focus();
+      try { ta.setSelectionRange(nextValue.length, nextValue.length); } catch { /* caret best-effort */ }
+    });
+  };
+
+  handleSlashMenuHover = (index) => {
+    if (index === this.state.slashMenu.activeIndex) return;
+    this.setState(prev => ({ slashMenu: { ...prev.slashMenu, activeIndex: index } }));
+  };
+
   handleInputChange = (e) => {
     const textarea = e.target;
     resizeChatTextarea(textarea, { focused: document.activeElement === textarea });
     const empty = !textarea.value.trim();
-    this.setState({ inputEmpty: empty });
-    if (this.state.inputSuggestion && !empty) {
-      this.setState({ inputSuggestion: null });
-    }
+    // IME composition mid-gesture: don't recompute the menu (avoids flicker); close it.
+    const composing = !!(e.nativeEvent && e.nativeEvent.isComposing);
+    const ctx = (!this.props.isLocalLog && !composing)
+      ? getSlashMenuContext(textarea.value, textarea.selectionStart)
+      : null;
+    if (ctx) this._retrySlashSkillsIfFailed();
+    if (ctx) this._ensureSlashSkillsLoaded(!this.state.slashMenu.open);
+    this.setState(prev => ({
+      inputEmpty: empty,
+      inputSuggestion: (prev.inputSuggestion && !empty) ? null : prev.inputSuggestion,
+      slashMenu: ctx
+        ? { open: true, query: ctx.query, activeIndex: ctx.query === prev.slashMenu.query ? prev.slashMenu.activeIndex : 0 }
+        : { ...CLOSED_SLASH_MENU },
+    }));
   };
 
   handleSuggestionToTerminal = () => {
@@ -3856,6 +4213,14 @@ class ChatView extends React.Component {
     if (unprobed.length > 200) this._scheduleMdCodeVerify();
   };
 
+  _handleEditorOpen = (sessionId, filePath) => {
+    this.setState(prev => prev.editorSessionId === sessionId ? null : {
+      editorSessionId: sessionId, editorFilePath: filePath, currentFile: filePath,
+      currentGitDiff: null, scrollToLine: null, scrollToMatch: null,
+      fileVersion: (prev.fileVersion || 0) + 1,
+    });
+  };
+
   handleOpenToolFilePath = async (filePath, line) => {
     const viewScope = sdkWorkspaceScope(window.location.href);
     if (!filePath) return;
@@ -3999,27 +4364,45 @@ class ChatView extends React.Component {
         </Popover>
         <TeamButton requests={this.props.requests} onOpenSession={(session) => this.setState({ teamModalSession: session })} navBtnClass={styles.navBtn} />
         <WorkflowButton requests={this.props.requests} onOpenRun={(run) => this.setState({ workflowModalRun: run })} navBtnClass={styles.navBtn} />
-        <Popover
-          content={this._buildUserPromptNav()}
-          trigger="hover"
-          placement="right"
-          arrow={{ pointAtCenter: true }}
-          autoAdjustOverflow={false}
-          align={{ overflow: { adjustX: true, shiftY: true } }}
-          overlayStyle={{ maxWidth: 400 }}
-          overlayInnerStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-light)', padding: 0 }}
-        >
-          <button className={styles.navBtn} title={t('ui.userPromptNav')}>
-            <img
-              src={this.props.userProfile?.avatar || defaultAvatarUrl}
-              className={styles.navAvatarImg}
-              alt="User"
-              onError={(e) => { e.target.onerror = null; e.target.src = defaultAvatarUrl; }}
-            />
-          </button>
-        </Popover>
+        {/* Sidebar avatar entry: kept only when the composer cannot host the nav entry —
+            i.e. --terminal with the PTY shown (input bar yields to the terminal) and the
+            read-only log viewer (no composer at all). In --sdk or --terminal-with-terminal-
+            hidden the entry moves into ChatInputBar (see the promptNavPopover prop). */}
+        {!this._useComposerPromptNav() && (
+          <Popover
+            content={this._buildUserPromptNav()}
+            trigger="hover"
+            placement="right"
+            arrow={{ pointAtCenter: true }}
+            autoAdjustOverflow={false}
+            align={{ overflow: { adjustX: true, shiftY: true } }}
+            overlayStyle={{ maxWidth: 400 }}
+            overlayInnerStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-light)', padding: 0 }}
+          >
+            <button className={styles.navBtn} title={t('ui.userPromptNav')}>
+              <img
+                src={this.props.userProfile?.avatar || defaultAvatarUrl}
+                className={styles.navAvatarImg}
+                alt="User"
+                onError={(e) => { e.target.onerror = null; e.target.src = defaultAvatarUrl; }}
+              />
+            </button>
+          </Popover>
+        )}
       </div>
     );
+  }
+
+  // Whether the "User Prompt Nav" entry lives inside the chat composer (true) or stays as
+  // the sidebar avatar (false). Thin wrapper over utils/promptNav.shouldUseComposerPromptNav
+  // so the predicate stays single-sourced and unit-testable.
+  _useComposerPromptNav() {
+    return shouldUseComposerPromptNav({
+      isMobile,
+      sdkMode: this.props.sdkMode,
+      terminalVisible: this.props.terminalVisible,
+      cliMode: this.props.cliMode,
+    });
   }
 
   /**
@@ -4030,29 +4413,42 @@ class ChatView extends React.Component {
     const visible = this._currentVisible;
     if (!visible || visible.length === 0) return null;
 
-    // 缓存：visible 引用未变化时复用上次结果
-    if (this._navCacheVisible === visible && this._navCacheResult) return this._navCacheResult;
+    // The render slice is fresh; cache stable content/filter/window/language inputs.
+    const cacheKey = this._navCacheKey;
+    if (cacheKey != null && this._navCacheKeyUsed === cacheKey && this._navCacheResult) return this._navCacheResult;
 
     // 纯逻辑（会话边界标记 / 去重 / 图片清理 / 无 ts 容错）抽到 utils/promptNav，便于单测；此处只管缓存与渲染。
     const prompts = buildPromptNavItems(visible, this.props.mainAgentSessions);
-    if (prompts.length === 0) { this._navCacheVisible = visible; this._navCacheResult = null; return null; }
+    if (prompts.length === 0) { this._navCacheKeyUsed = cacheKey; this._navCacheResult = null; return null; }
 
     const result = (
       <div className={styles.userPromptNavWrap}>
-        <div className={styles.userPromptNavTitle}>{t('ui.userPromptNav')} ({prompts.length})</div>
+        <div className={styles.userPromptNavTitle}>
+          <span>{t('ui.userPromptNav')} ({prompts.length})</span>
+          <button type="button" className={styles.userPromptNavMore}
+            onClick={() => this.setState({ userPromptsModalOpen: true, promptNavOpen: false })}>{t('ui.more')}</button>
+        </div>
         <div className={styles.userPromptNavList}>
-          {prompts.map((p) => {
+          {prompts.map((p, idx) => {
             const timeStr = formatPromptNavTime(p.timestamp);
+            const kindUi = p.kind === 'plan'
+              ? { badgeCls: styles.userPromptNavBadgePlan, label: t('ui.navBadgePlan') }
+              : p.kind === 'ask'
+                ? { badgeCls: styles.userPromptNavBadgeAsk, label: t('ui.navBadgeAsk') }
+                : p.kind === 'ultraplan'
+                  ? { badgeCls: styles.userPromptNavBadgeUltraplan, label: t('ui.ultraplan') }
+                  : null;
             return (
-              <React.Fragment key={p.visibleIdx}>
+              <React.Fragment key={`${p.kind}-${p.visibleIdx}-${idx}`}>
                 {p.newSession && (
                   <div className={styles.userPromptNavSessionSep}><span>{t('ui.session')}</span></div>
                 )}
                 <div className={`${styles.userPromptNavItem} ${p.kind === 'compaction' ? styles.userPromptNavItemCompaction : ''}`}
                   onClick={() => this._scrollToPromptNavItem(p.visibleIdx, p.timestamp)}>
                   {timeStr && <span className={styles.userPromptNavTime}>{timeStr}</span>}
+                  {kindUi && <span className={kindUi.badgeCls}>{kindUi.label}</span>}
                   <span className={styles.userPromptNavText}>
-                    {p.kind === 'compaction' ? t('ui.contextCompaction') : p.display}
+                    {p.kind === 'compaction' ? t('ui.contextCompaction') : p.display || kindUi?.label}
                   </span>
                 </div>
               </React.Fragment>
@@ -4061,7 +4457,7 @@ class ChatView extends React.Component {
         </div>
       </div>
     );
-    this._navCacheVisible = visible;
+    this._navCacheKeyUsed = cacheKey;
     this._navCacheResult = result;
     return result;
   }
@@ -4073,6 +4469,7 @@ class ChatView extends React.Component {
    */
   _scrollToPromptNavItem(visibleIdx, timestamp) {
     if (visibleIdx == null || visibleIdx < 0) return;
+    if (this.state.promptNavOpen) this.setState({ promptNavOpen: false });
     // 触发高亮（有 timestamp 时显示蓝色虚线动画）
     if (timestamp) {
       this.setState({ highlightTs: timestamp, highlightFading: false, highlightVisibleIdx: visibleIdx }, () => {
@@ -4123,6 +4520,8 @@ class ChatView extends React.Component {
   render() {
     const { mainAgentSessions, cliMode, terminalVisible, onToggleTerminal } = this.props;
     const { allItems, visibleCount, loading, terminalWidth, sidebarWidth } = this.state;
+    const slashMenuModel = this.state.slashMenu.open ? this._buildSlashMenuModel() : { groups: [], flatItems: [] };
+    const slashMenuLoading = this.state.slashMenu.open && !this.state.sdkSkillsReady && this.state.slashMenuFsSkills === null;
     const streamSpinnerUrl = this._streamSpinnerUrl || shimmerUrl;
     const isElectronTab = typeof window !== 'undefined' && !!window.tabBridge;
     const showProxyChip = !this.props.isLocalLog && (this.props.sdkMode || !terminalVisible)
@@ -4258,7 +4657,7 @@ class ChatView extends React.Component {
             modelInfo={streamingModelInfo}
             collapseToolResults={this.props.collapseToolResults}
             expandThinking={this.props.expandThinking}
-            showFullToolContent={this.props.showFullToolContent}
+            showFullToolContent={this.props.showFullToolContent} minimalChat={this.props.minimalChat}
             showTrailingCursor={true}
             toolResultMap={EMPTY_MAP}
             isHistoryLog={this._getIsHistoryLog()}
@@ -4283,6 +4682,14 @@ class ChatView extends React.Component {
     const visible = filteredItems.slice(0, _isFiltering ? filteredItems.length : visibleCount);
     // 缓存 visible，供 _buildUserPromptNav / _scrollToPromptNavItem 使用
     this._currentVisible = visible;
+    this._navRefIds = this._navRefIds || { map: new WeakMap(), next: 1 };
+    const navRefId = value => {
+      if (!value || typeof value !== 'object') return 0;
+      let id = this._navRefIds.map.get(value);
+      if (!id) { id = this._navRefIds.next++; this._navRefIds.map.set(value, id); }
+      return id;
+    };
+    this._navCacheKey = `${navRefId(allItems)}:${navRefId(this.props.mainAgentSessions)}:${_isFiltering ? [...this.state.roleFilterSelected].sort().join(',') : ''}:${visibleCount}:${visible.length}:${this.props.lang || ''}`;
     // 优先使用精确的 visibleIdx（同一请求的多条消息共享 timestamp，findIndex 会匹配到第一条）
     // findIndex 用 displayTs ?? timestamp 作 key —— assistant bubble 的 props.timestamp 是 carrier
     // (= 下一次 entry 的 ts)，而 highlightTs 来自 scrollToTimestamp (= request 自身 ts)；只看 timestamp
@@ -4290,7 +4697,8 @@ class ChatView extends React.Component {
     // (producer request 的 ts)，跟 highlightTs 同源。其他 role 没 displayTs 自动 fallback 到 timestamp。
     const highlightIdx = highlightVisibleIdx >= 0 && highlightVisibleIdx < visible.length
       ? highlightVisibleIdx
-      : (highlightTs != null ? visible.findIndex(item => (item.props?.displayTs || item.props?.timestamp) === highlightTs) : -1);
+      : (highlightTs != null ? visible.findIndex(item => (item.props?.displayTs || item.props?.timestamp) === highlightTs
+          || (item.props?.runMembers || []).some(member => (member.props?.displayTs || member.props?.timestamp) === highlightTs)) : -1);
 
     const { pendingInputs, stickyBottom, ptyPromptHistory } = this.state;
     const _userFilteredOut = _isFiltering && !this.state.roleFilterSelected.has('user');
@@ -4298,7 +4706,7 @@ class ChatView extends React.Component {
     // Derive the acknowledged view during render as well as in cdU so the
     // server row and optimistic copy are never committed in the same frame.
     const displayPendingInputs = reconcilePendingInputs(pendingInputs, this.state.allItems).filter(record =>
-      !record.sdkActiveId || !this.state.sdkQueuedInputs.some(item => item.id === record.sdkActiveId));
+      !record.queuePending && (!record.sdkActiveId || ![...this.state.sdkQueuedInputs, ...this.state.optimisticQueueMessages].some(item => item.id === record.sdkActiveId)));
     const pendingBubbles = showPendingInputs ? [...displayPendingInputs.map(record => (
       <ChatMessage
         key={record.id}
@@ -4312,6 +4720,26 @@ class ChatView extends React.Component {
       />
     ))] : null;
 
+    const optimisticQueueBubbles = showPendingInputs && this.props.sdkMode && this.state.optimisticQueueMessages.length > 0 ? (
+      <div className={styles.optimisticQueueStack}>
+        {this.state.optimisticQueueMessages.map((item) => (
+          <div key={`optimistic-queue-${item.id}`} className={styles.optimisticQueueItem}>
+            <ChatMessage
+              role="user"
+              text={item.text}
+              lang={this.props.lang}
+              timestamp={new Date(item.ts).toISOString()}
+              userProfile={this.props.userProfile}
+              isHistoryLog={false}
+              labelSuffix={(
+                <span className={styles.optimisticQueueStatus} role="status">{t('ui.chatInput.queueDispatching')}</span>
+              )}
+            />
+          </div>
+        ))}
+      </div>
+    ) : null;
+
     const stickyBtn = !stickyBottom ? (
       <button className={styles.stickyBottomBtn} onClick={this.handleStickToBottom}>
         {uiStreaming && <img src={loadingPetUrl} className={styles.loadingPet} alt="" />}
@@ -4324,9 +4752,17 @@ class ChatView extends React.Component {
 
     const loadMoreBtn = this._mobileSliceOffset > 0 ? (
       <div className={styles.loadMoreWrap}>
-        <button className={styles.loadMoreBtn} onClick={this.handleLoadMore}>
-          {t('ui.loadMoreHistory', { count: this._mobileSliceOffset })}
-        </button>
+        {this.props.isLocalLog ? (
+          // logfile 只读模式自动渐进扩窗中：展示加载态而非可点按钮（_maybeScheduleLocalLogAutoFill 驱动）
+          <div className={`${styles.loadMoreBtn} ${styles.loadMoreBtnLoading}`}>
+            <span className={styles.loadMoreSpinner} />
+            {t('ui.loading')}
+          </div>
+        ) : (
+          <button className={styles.loadMoreBtn} onClick={this.handleLoadMore}>
+            {t('ui.loadMoreHistory', { count: this._mobileSliceOffset })}
+          </button>
+        )}
       </div>
     ) : null;
 
@@ -4369,7 +4805,7 @@ class ChatView extends React.Component {
               {loading ? <Spin size="large" /> : <Empty description={t('ui.noChat')} />}
             </div>
           ) : null}
-          {pendingBubbles}
+          {pendingBubbles}{optimisticQueueBubbles}
           {this._renderSdkErrors(true)}
           <div className={styles.inputStackSpacer} aria-hidden="true" />
         </div>
@@ -4389,7 +4825,7 @@ class ChatView extends React.Component {
           this._virtuosoHeader = <>{shardBtn}{loadMoreBtn}</>,
           this._virtuosoFooter = <>
             {spinnerNode}
-            {pendingBubbles}
+            {pendingBubbles}{optimisticQueueBubbles}
             {this._renderSdkErrors()}
             {streamingLiveItem && (
               targetIdx != null && targetIdx >= visible.length
@@ -4443,7 +4879,7 @@ class ChatView extends React.Component {
                 : el;
             })}
             {spinnerNode}
-            {pendingBubbles}
+            {pendingBubbles}{optimisticQueueBubbles}
             {this._renderSdkErrors()}
             {streamingLiveItem && (
               targetIdx != null && targetIdx >= visible.length
@@ -4467,6 +4903,7 @@ class ChatView extends React.Component {
         </div>
         <TeamModal session={this.state.teamModalSession} requests={this.props.requests} mainAgentSessions={this.props.mainAgentSessions} collapseToolResults={this.props.collapseToolResults} expandThinking={this.props.expandThinking} showFullToolContent={this.props.showFullToolContent} userProfile={this.props.userProfile} onViewRequest={this.props.onViewRequest} isHistoryLog={this._getIsHistoryLog()} lang={this.props.lang} onClose={() => this.setState({ teamModalSession: null })} />
         <WorkflowRunsModal run={this.state.workflowModalRun} onClose={() => this.setState({ workflowModalRun: null })} />
+      <UserPromptsModal open={this.state.userPromptsModalOpen} requests={this.props.requests} onClose={() => this.setState({ userPromptsModalOpen: false })} />
         {this._renderSelectionQuotePopup()}
       </>);
     }
@@ -4725,13 +5162,13 @@ class ChatView extends React.Component {
                 </div>
               );
             })()}
-            {this.props.sdkMode && this.state.sdkQueuedInputs.length > 0 && (
+            {(this.props.sdkMode || this.props.ptyQueueAvailable) && !this.props.isLocalLog && this.props.sessionUpperBoundTs == null && this._queueInputs().length > 0 && (
               <div className={styles.queueBubbleStack} role="status"
                 aria-label={t(this.state.sdkQueuePaused ? 'ui.sdkQueue.paused' : 'ui.chatInput.queueHint')}>
-                {this._renderSdkQueueBubbles()}
+                {this._renderQueueBubbles()}
               </div>
             )}
-            {this.props.sdkMode && !this.props.isLocalLog && this.props.sessionUpperBoundTs == null && (
+            {(this.props.sdkMode || this.props.cliMode) && !this.props.isLocalLog && this.props.sessionUpperBoundTs == null && (
               <TaskProgressHud snapshot={this.state.sdkTaskSnapshot} />
             )}
             <ChatInputBar
@@ -4742,6 +5179,13 @@ class ChatView extends React.Component {
               inputSuggestion={this.state.inputSuggestion}
               terminalVisible={terminalVisible}
               sdkMode={this.props.sdkMode}
+              slashMenuOpen={this.state.slashMenu.open && (!terminalVisible || this.props.sdkMode) && !this.props.isLocalLog}
+              slashMenuGroups={slashMenuModel.groups}
+              slashMenuActiveIndex={this.state.slashMenu.activeIndex}
+              slashMenuLoading={slashMenuLoading}
+              onSlashMenuHover={this.handleSlashMenuHover}
+              onSlashMenuSelect={this.handleSlashMenuSelect}
+              onSlashMenuClose={this._closeSlashMenu}
               onKeyDown={this.handleInputKeyDown}
               onChange={this.handleInputChange}
               onSend={this.handleInputSend}
@@ -4801,6 +5245,14 @@ class ChatView extends React.Component {
               onUploadStart={this.handleUploadStart}
               onUploadEnd={this.handleUploadEnd}
               proxyChip={proxyChipNode}
+              promptNavPopover={this._useComposerPromptNav() ? {
+                open: this.state.promptNavOpen,
+                onOpenChange: (open) => this.setState({ promptNavOpen: open }),
+                content: this._buildUserPromptNav(),
+                // Same avatar asset as the sidebar entry — keeps the "this is your prompts"
+                // visual metaphor after the move into the composer.
+                avatarSrc: this.props.userProfile?.avatar || defaultAvatarUrl,
+              } : null}
               setContextBarSlot={this.props.setContextBarSlot}
               approvalsReviewer={this.props.approvalsReviewer}
               onApprovalsReviewerChange={this.props.onApprovalsReviewerChange}
@@ -4885,17 +5337,7 @@ class ChatView extends React.Component {
                 <div className={styles.dropZoneMask} aria-hidden="true">{t('ui.dragDropHint')}</div>
                 <TerminalPanel onResumeSession={this.props.onResumeSession} resumeInstanceKey={this.props.resumeInstanceKey} projectName={this.props.projectName} key={this.props.sdkMode ? 'sdk-scratch' : 'pty'}
                   scratchOnly={this.props.sdkMode} scratchOpen={terminalVisible}
-                  preferences={this.props.preferences} onUpdatePreferences={this.props.onUpdatePreferences} onEditorOpen={(sessionId, filePath) => {
-                  this.setState({
-                    editorSessionId: sessionId,
-                    editorFilePath: filePath,
-                    currentFile: filePath,
-                    currentGitDiff: null,
-                    scrollToLine: null,
-                    scrollToMatch: null,
-                    fileVersion: (this.state.fileVersion || 0) + 1,
-                  });
-                }} onFilePath={(path) => {
+                  preferences={this.props.preferences} onUpdatePreferences={this.props.onUpdatePreferences} onEditorOpen={this._handleEditorOpen} onFilePath={(path) => {
                   // 加入 pendingImages，在终端 Enter 时统一注入 PTY
                   this._addPendingImage(path, 'terminal');
                 }}
@@ -4918,6 +5360,7 @@ class ChatView extends React.Component {
       </div>
       <TeamModal session={this.state.teamModalSession} requests={this.props.requests} mainAgentSessions={this.props.mainAgentSessions} collapseToolResults={this.props.collapseToolResults} expandThinking={this.props.expandThinking} showFullToolContent={this.props.showFullToolContent} userProfile={this.props.userProfile} onViewRequest={this.props.onViewRequest} isHistoryLog={this._getIsHistoryLog()} lang={this.props.lang} onClose={() => this.setState({ teamModalSession: null })} />
       <WorkflowRunsModal run={this.state.workflowModalRun} onClose={() => this.setState({ workflowModalRun: null })} />
+      <UserPromptsModal open={this.state.userPromptsModalOpen} requests={this.props.requests} onClose={() => this.setState({ userPromptsModalOpen: false })} />
       <PresetModal open={this.state.mobilePresetModalVisible} onClose={() => this.setState({ mobilePresetModalVisible: false })} items={this.state.presetItems} onItemsChange={(items) => this.setState({ presetItems: items })} onSavePresets={(payload) => { if (this.props.onUpdatePreferences) this.props.onUpdatePreferences(payload); }} />
       {this._renderSelectionQuotePopup()}
     </>);

@@ -1,0 +1,16 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "selectors": [
+    ".textareaWithGhost",
+    ".chatTextareaTwoLines",
+    ".interimPreview",
+    ".ghostText",
+    "@media (max-width: 768px) .chatTextareaTwoLines",
+    "@media (max-width: 768px) .ghostText",
+    "@media (max-width: 768px) .interimPreview",
+    ":global(html.pad-mode) .chatTextareaTwoLines",
+    ":global(html.pad-mode) .ghostText",
+    ":global(html.pad-mode) .interimPreview"
+  ],
+  "differences": []
+}

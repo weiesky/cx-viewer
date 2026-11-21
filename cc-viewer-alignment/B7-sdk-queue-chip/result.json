@@ -1,0 +1,102 @@
+[
+  {
+    "engine": "chromium",
+    "version": "159.0.8154.6",
+    "mode": "desktop",
+    "emulated": false,
+    "controlledFakeNative": true,
+    "actualSdkManagerAndWs": true,
+    "inlineSendingChip": true,
+    "dispatchAckClearsChip": true,
+    "nativePromptRemainsUnique": true,
+    "reloadNoGhost": true,
+    "siblingNoLeak": true,
+    "wireSentOnce": true,
+    "placement": {
+      "fontSize": "11px",
+      "marginLeft": "6px",
+      "role": "status",
+      "parentClass": "_labelRow_jhfu4_94"
+    },
+    "screenshots": [
+      "chromium-desktop-inline-sending.png",
+      "chromium-desktop-accepted-once.png"
+    ],
+    "errors": []
+  },
+  {
+    "engine": "chromium",
+    "version": "159.0.8154.6",
+    "mode": "phone",
+    "emulated": true,
+    "controlledFakeNative": true,
+    "actualSdkManagerAndWs": true,
+    "inlineSendingChip": true,
+    "dispatchAckClearsChip": true,
+    "nativePromptRemainsUnique": true,
+    "reloadNoGhost": true,
+    "siblingNoLeak": true,
+    "wireSentOnce": true,
+    "placement": {
+      "fontSize": "11px",
+      "marginLeft": "6px",
+      "role": "status",
+      "parentClass": "_labelRow_jhfu4_94"
+    },
+    "screenshots": [
+      "chromium-phone-inline-sending.png",
+      "chromium-phone-accepted-once.png"
+    ],
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "version": "27.2",
+    "mode": "desktop",
+    "emulated": false,
+    "controlledFakeNative": true,
+    "actualSdkManagerAndWs": true,
+    "inlineSendingChip": true,
+    "dispatchAckClearsChip": true,
+    "nativePromptRemainsUnique": true,
+    "reloadNoGhost": true,
+    "siblingNoLeak": true,
+    "wireSentOnce": true,
+    "placement": {
+      "fontSize": "11px",
+      "marginLeft": "6px",
+      "role": "status",
+      "parentClass": "_labelRow_jhfu4_94"
+    },
+    "screenshots": [
+      "webkit-desktop-inline-sending.png",
+      "webkit-desktop-accepted-once.png"
+    ],
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "version": "27.2",
+    "mode": "phone",
+    "emulated": true,
+    "controlledFakeNative": true,
+    "actualSdkManagerAndWs": true,
+    "inlineSendingChip": true,
+    "dispatchAckClearsChip": true,
+    "nativePromptRemainsUnique": true,
+    "reloadNoGhost": true,
+    "siblingNoLeak": true,
+    "wireSentOnce": true,
+    "placement": {
+      "fontSize": "11px",
+      "marginLeft": "5.989583px",
+      "role": "status",
+      "parentClass": "_labelRow_jhfu4_94"
+    },
+    "screenshots": [
+      "webkit-phone-inline-sending.png",
+      "webkit-phone-accepted-once.png"
+    ],
+    "errors": []
+  }
+]

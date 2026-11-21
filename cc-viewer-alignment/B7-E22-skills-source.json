@@ -1,0 +1,10 @@
+{
+  "CSSExact": {
+    "skillScopeRows": true,
+    "skillScopeRow": true,
+    "skillScopeLabel": true
+  },
+  "groupFunctionExact": true,
+  "upstream": "d906edb3de840208944bbca9d33ec037bdeb6bc5",
+  "source": "native filesystem API existing source field"
+}

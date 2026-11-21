@@ -1,0 +1,14 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "selectors": [
+    ".userPromptNavBadgePlan",
+    ".userPromptNavBadgeAsk",
+    ".userPromptNavBadgeUltraplan"
+  ],
+  "differences": [],
+  "locales": {
+    "ui.navBadgePlan": 18,
+    "ui.navBadgeAsk": 18
+  },
+  "translationsIdentical": true
+}

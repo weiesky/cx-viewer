@@ -1,0 +1,50 @@
+[
+  {
+    "engine": "chromium",
+    "version": "159.0.8154.6",
+    "mode": "desktop",
+    "emulated": false,
+    "uploadFirst": true,
+    "cascadeRetiredOnHover": true,
+    "persistentInputFileChooser": true,
+    "menuClosedBeforePick": true,
+    "noUploadOrModelSend": true,
+    "screenshot": "chromium-desktop-menu.png"
+  },
+  {
+    "engine": "chromium",
+    "version": "159.0.8154.6",
+    "mode": "pad",
+    "emulated": true,
+    "uploadFirst": true,
+    "cascadeRetiredOnHover": true,
+    "persistentInputFileChooser": true,
+    "menuClosedBeforePick": true,
+    "noUploadOrModelSend": true,
+    "screenshot": "chromium-pad-menu.png"
+  },
+  {
+    "engine": "webkit",
+    "version": "27.2",
+    "mode": "desktop",
+    "emulated": false,
+    "uploadFirst": true,
+    "cascadeRetiredOnHover": true,
+    "persistentInputFileChooser": true,
+    "menuClosedBeforePick": true,
+    "noUploadOrModelSend": true,
+    "screenshot": "webkit-desktop-menu.png"
+  },
+  {
+    "engine": "webkit",
+    "version": "27.2",
+    "mode": "pad",
+    "emulated": true,
+    "uploadFirst": true,
+    "cascadeRetiredOnHover": true,
+    "persistentInputFileChooser": true,
+    "menuClosedBeforePick": true,
+    "noUploadOrModelSend": true,
+    "screenshot": "webkit-pad-menu.png"
+  }
+]

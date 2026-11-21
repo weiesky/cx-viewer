@@ -1,0 +1,26 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "selectors": [
+    ".newProjectPlusBtn",
+    ".newProjectPlusBtn:hover",
+    ".newProjectPlusBtn:focus,\n.newProjectPlusBtn:focus-visible",
+    ".projectTabsStrip",
+    ".projectTabsStrip::-webkit-scrollbar",
+    ".projectTab",
+    ".projectTab:hover",
+    ".projectTabActive,\n.projectTabActive:hover",
+    ".projectTabDot",
+    ".projectTabRing,\n.projectTabRingActive",
+    ".projectTabRingActive",
+    ".projectTabRingSpin",
+    ".projectTabsStripSpinner",
+    ".projectTabName",
+    ".projectTabIdx",
+    ".projectTabClose",
+    ".projectTabActive .projectTabClose,\n.projectTab:hover .projectTabClose,\n.projectTab:focus-within .projectTabClose",
+    ".projectTabClose:hover"
+  ],
+  "differences": [],
+  "localCssSha256": "a0da8abec8ad95f29d70ac9211cf84fcd9390fba93ad570e9aef151dcc7e0213",
+  "unchangedCssInE13": true
+}

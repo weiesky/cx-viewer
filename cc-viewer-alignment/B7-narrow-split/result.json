@@ -1,0 +1,204 @@
+[
+  {
+    "engine": "chromium",
+    "version": "159.0.8154.6",
+    "realNativePty": true,
+    "wide": {
+      "split": {
+        "left": 0,
+        "right": 1440,
+        "width": 1440
+      },
+      "clientWidth": 1440,
+      "scrollWidth": 1440,
+      "scrollLeft": 0,
+      "overflowX": "auto",
+      "chat": {
+        "left": 285,
+        "right": 811,
+        "width": 526
+      },
+      "chatMinWidth": "280px",
+      "terminal": {
+        "left": 816,
+        "right": 1440,
+        "width": 624
+      }
+    },
+    "narrow": {
+      "split": {
+        "left": 0,
+        "right": 900,
+        "width": 900
+      },
+      "clientWidth": 900,
+      "scrollWidth": 1194,
+      "scrollLeft": 0,
+      "overflowX": "auto",
+      "chat": {
+        "left": 285,
+        "right": 565,
+        "width": 280
+      },
+      "chatMinWidth": "280px",
+      "terminal": {
+        "left": 570,
+        "right": 1194,
+        "width": 624
+      }
+    },
+    "scrolled": {
+      "split": {
+        "left": 0,
+        "right": 900,
+        "width": 900
+      },
+      "clientWidth": 900,
+      "scrollWidth": 1194,
+      "scrollLeft": 294,
+      "overflowX": "auto",
+      "chat": {
+        "left": -9,
+        "right": 271,
+        "width": 280
+      },
+      "chatMinWidth": "280px",
+      "terminal": {
+        "left": 276,
+        "right": 900,
+        "width": 624
+      }
+    },
+    "restored": {
+      "split": {
+        "left": 0,
+        "right": 1440,
+        "width": 1440
+      },
+      "clientWidth": 1440,
+      "scrollWidth": 1440,
+      "scrollLeft": 0,
+      "overflowX": "auto",
+      "chat": {
+        "left": 285,
+        "right": 811,
+        "width": 526
+      },
+      "chatMinWidth": "280px",
+      "terminal": {
+        "left": 816,
+        "right": 1440,
+        "width": 624
+      }
+    },
+    "toggleRetainsDraftAndRoot": true,
+    "screenshots": [
+      "chromium-wide.png",
+      "chromium-narrow-chat.png",
+      "chromium-narrow-terminal.png",
+      "chromium-hidden-terminal.png"
+    ],
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "version": "27.2",
+    "realNativePty": true,
+    "wide": {
+      "split": {
+        "left": 0,
+        "right": 1440,
+        "width": 1440
+      },
+      "clientWidth": 1440,
+      "scrollWidth": 1440,
+      "scrollLeft": 0,
+      "overflowX": "auto",
+      "chat": {
+        "left": 285,
+        "right": 811,
+        "width": 526
+      },
+      "chatMinWidth": "280px",
+      "terminal": {
+        "left": 816,
+        "right": 1440,
+        "width": 624
+      }
+    },
+    "narrow": {
+      "split": {
+        "left": 0,
+        "right": 900,
+        "width": 900
+      },
+      "clientWidth": 900,
+      "scrollWidth": 1194,
+      "scrollLeft": 0,
+      "overflowX": "auto",
+      "chat": {
+        "left": 285,
+        "right": 565,
+        "width": 280
+      },
+      "chatMinWidth": "280px",
+      "terminal": {
+        "left": 570,
+        "right": 1194,
+        "width": 624
+      }
+    },
+    "scrolled": {
+      "split": {
+        "left": 0,
+        "right": 900,
+        "width": 900
+      },
+      "clientWidth": 900,
+      "scrollWidth": 1194,
+      "scrollLeft": 294,
+      "overflowX": "auto",
+      "chat": {
+        "left": -9,
+        "right": 271,
+        "width": 280
+      },
+      "chatMinWidth": "280px",
+      "terminal": {
+        "left": 276,
+        "right": 900,
+        "width": 624
+      }
+    },
+    "restored": {
+      "split": {
+        "left": 0,
+        "right": 1440,
+        "width": 1440
+      },
+      "clientWidth": 1440,
+      "scrollWidth": 1440,
+      "scrollLeft": 0,
+      "overflowX": "auto",
+      "chat": {
+        "left": 285,
+        "right": 811,
+        "width": 526
+      },
+      "chatMinWidth": "280px",
+      "terminal": {
+        "left": 816,
+        "right": 1440,
+        "width": 624
+      }
+    },
+    "toggleRetainsDraftAndRoot": true,
+    "screenshots": [
+      "webkit-wide.png",
+      "webkit-narrow-chat.png",
+      "webkit-narrow-terminal.png",
+      "webkit-hidden-terminal.png"
+    ],
+    "errors": []
+  }
+]

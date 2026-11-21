@@ -19,9 +19,9 @@ import { createServer } from 'node:http';
 import { appendFileSync, existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { BINARY_NAME } from '../findcx.js';
+import { createProcessAdapter } from './cxv-processes.js';
+import { stopOwnedProcessTree } from './shutdown.js';
 import WebSocket, { WebSocketServer } from 'ws';
-import { getOriginalCodexBaseUrl } from './codex-config.js';
-import { DEFAULT_API_BASE } from './constants.js';
 import { isTemporaryTitleThread } from './codex-thread-source.js';
 import { isSupportedApprovalsReviewer, normalizeApprovalsReviewer } from './approval-reviewer.js';
 import { parseSupportedToolResultImage } from './tool-result-image-protocol.js';
@@ -36,1918 +36,1728 @@ import {
   selectSystemPrompt,
 } from './model-system-prompts.js';
 
-let _appServerProcess = null;
+const bridgeProcesses = createProcessAdapter();
+// One TUI workspace owns its protocol, transcript, RPC maps and native child.
+// The default instance preserves all existing module-level callers.
+export function createAppServerBridge() {
+  let _appServerProcess = null;
 
-const CODEX_PLAN_TOOL_NAME = 'update_plan';
-const CODEX_ASK_TOOL_NAME = 'request_user_input';
+  const CODEX_PLAN_TOOL_NAME = 'update_plan';
+  const CODEX_ASK_TOOL_NAME = 'request_user_input';
 
-/** Build the real OpenAI API URL from configured base URL */
-function buildApiUrl() {
-  const base = getOriginalCodexBaseUrl() || DEFAULT_API_BASE;
-  const cleanBase = base.replace(/\/+$/, '');
-  if (cleanBase.endsWith('/v1')) return `${cleanBase}/responses`;
-  return `${cleanBase}/v1/responses`;
-}
-let _proxyServer = null;
-let _upstreamWs = null;
-let _rawDir = null;
-let _currentModel = null;
-let _currentProject = null;
-let _messages = [];       // 累积会话项，用于生成 MainAgent 的 Responses input
-let _pendingContent = []; // 当前 turn 的 assistant content blocks
-let _turnStartTime = null;
-let _mainThreadId = null;
-const _threadStates = new Map();
-const _threadMetaById = new Map();
-const _pendingThreadStartByRpcId = new Map();
-const _subAgentThreads = new Map();
-const _pendingServerRequests = new Map();
+  let _proxyServer = null;
+  let _upstreamWs = null;
+  let _rawDir = null;
+  let _currentModel = null;
+  let _currentProject = null;
+  let _messages = [];       // 累积会话项，用于生成 MainAgent 的 Responses input
+  let _pendingContent = []; // 当前 turn 的 assistant content blocks
+  let _turnStartTime = null;
+  let _mainThreadId = null;
+  const _threadStates = new Map();
+  const _threadMetaById = new Map();
+  const _pendingThreadContextByRpcId = new Map();
+  const _subAgentThreads = new Map();
+  const _pendingServerRequests = new Map();
 
-// 丰富的上下文信息
-let _threadId = null;
-let _turnId = null;
-let _onTurnTerminal = null;
-let _onAgentMessageDelta = null;
-let _onAgentLoopStart = null, _onAgentLoopEnd = null, _loopCwd = null;
-const _pendingClientTurns = new Map(), _agentLoops = new Map();
-const turnRpcKey = (connection, id) => `${connection}\0${typeof id}:${id}`;
-
-function endAgentLoop(threadId, turnId, reason, ts = Date.now()) {
-  const rec = _agentLoops.get(threadId);
-  if (!rec || rec.turnId !== turnId) return;
-  _agentLoops.delete(threadId);
-  try { rec.onEnd?.({ ...rec.data, ts, reason }); } catch { /* observer isolation */ }
-}
-
-function clearAgentLoops(connection = null) {
-  for (const [key, pending] of _pendingClientTurns) {
-    if (connection == null || pending.connection === connection) _pendingClientTurns.delete(key);
+  // 丰富的上下文信息
+  let _threadId = null;
+  let _turnId = null;
+  let _onTurnTerminal = null;
+  let _onAgentMessageDelta = null;
+  let _onTaskSnapshot = null;
+  let _taskSnapshot = { sessionId: null, turnId: null, tasks: [] };
+  function getAppServerTaskState() {
+    return { type: 'sdk-task-snapshot', cwd: _loopCwd || _cwd,
+      ..._taskSnapshot, tasks: _taskSnapshot.tasks.map(task => ({ ...task })) };
   }
-  for (const [threadId, rec] of _agentLoops) {
-    if (connection == null || rec.connection === connection) endAgentLoop(threadId, rec.turnId, 'session-ended');
+  function publishTaskState(snapshot = { sessionId: null, turnId: null, tasks: [] }) {
+    _taskSnapshot = snapshot;
+    try { _onTaskSnapshot?.(getAppServerTaskState()); } catch { /* observer isolation */ }
   }
-}
+  let _onAgentLoopStart = null, _onAgentLoopEnd = null, _loopCwd = null;
+  const _pendingClientTurns = new Map(), _agentLoops = new Map();
+  const turnRpcKey = (connection, id) => `${connection}\0${typeof id}:${id}`;
 
-function acceptAgentLoop(pending, turn) {
-  const thread = _threadMetaById.get(pending.threadId);
-  if (typeof turn?.id !== 'string' || !turn.id || getAgentIdentity(pending.threadId).subAgent
-      || isTemporaryTitleThread(thread)) return;
-  const old = _agentLoops.get(pending.threadId);
-  if (old?.turnId === turn.id) return;
-  if (old) endAgentLoop(pending.threadId, old.turnId, 'session-ended');
-  if (_agentLoops.size >= 128) return;
-  const data = { cwd: _loopCwd || _cwd, sessionId: pending.threadId, turnId: turn.id,
-    turnStartedAt: pending.startedAt, ts: Date.now() };
-  _agentLoops.set(pending.threadId, { data, turnId: turn.id, connection: pending.connection, onEnd: _onAgentLoopEnd });
-  try { _onAgentLoopStart?.({ ...data }); } catch { /* observer isolation */ }
-  const ended = getThreadState(pending.threadId).lastTerminalTurn;
-  if (ended?.id === turn.id) endAgentLoop(pending.threadId, turn.id, ended.reason, ended.ts);
-}
-
-export function setAppServerTurnTerminalListener(listener) {
-  _onTurnTerminal = typeof listener === 'function' ? listener : null;
-}
-
-export function setAppServerAgentMessageDeltaListener(listener) {
-  _onAgentMessageDelta = typeof listener === 'function' ? listener : null;
-}
-export function getAppServerAgentLoopSnapshot() {
-  return [..._agentLoops.values()].map(rec => ({ ...rec.data }));
-}
-let _cwd = null;
-let _systemPrompt = null;
-let _serverInfo = null;      // initialize 响应
-let _turnContext = {};        // turn/start 的完整 params
-let _threadMeta = {};         // thread/started 的完整信息
-let _lastTokenUsage = null;   // 最近的 token usage
-let _turnStatus = null;       // turn 完成状态
-let _rawFrameSeq = 0;
-let _rawStreamId = randomUUID();
-const _rawRpcThreadById = new Map();
-const _rawTurnThreadById = new Map();
-const _rawItemThreadById = new Map();
-const _rawSidecarBuffers = new Map();
-const _rawSidecarStates = new Map();
-const _rawRangeByThread = new Map();
-let _rawSidecarFlushTimer = null;
-const RAW_SIDECAR_FLUSH_BYTES = 256 * 1024;
-const RAW_SIDECAR_FLUSH_MS = 250;
-const RAW_SIDECAR_SEGMENT_BYTES = 4 * 1024 * 1024;
-const RAW_SIDECAR_THREAD_QUOTA_BYTES = 32 * 1024 * 1024;
-const RAW_SIDECAR_GLOBAL_QUOTA_BYTES = 128 * 1024 * 1024;
-const RAW_SIDECAR_BUFFER_BYTES = 1024 * 1024;
-const RAW_ROUTE_TTL_MS = 10 * 60 * 1000;
-const RAW_ROUTE_MAP_MAX = 2048;
-let _rawBufferedBytes = 0;
-let _rawDroppedFrames = 0;
-let _rawStorageOptions = null;
-let _approvalsReviewerOverride = null;
-let _onApprovalsReviewerActive = null;
-let _writeLogEntry = null;
-
-const REVIEWER_LIFECYCLE_METHODS = new Set([
-  'thread/start',
-  'thread/resume',
-  'thread/fork',
-  'turn/start',
-]);
-
-function injectApprovalsReviewer(msg) {
-  if (!_approvalsReviewerOverride || !msg || !REVIEWER_LIFECYCLE_METHODS.has(msg.method)) return msg;
-  return {
-    ...msg,
-    params: {
-      ...(msg.params || {}),
-      approvalsReviewer: _approvalsReviewerOverride,
-    },
-  };
-}
-
-export function injectManagedSystemPrompt(msg, {
-  capability = null,
-  logDir = null,
-  cwd = null,
-} = {}) {
-  if (msg?.method !== 'thread/start' || !capability?.verified || !logDir) return msg;
-  try {
-    const params = msg.params || {};
-    const selected = selectSystemPrompt({
-      logDir,
-      cwd: params.cwd || cwd,
-      model: params.model || null,
-    });
-    if (!selected) return msg;
-    if (selected.mode === 'append' && !capability.append) return msg;
-    if (selected.mode === 'override' && !capability.override) return msg;
-    return injectSystemPromptIntoThreadStart(msg, selected);
-  } catch (error) {
-    console.warn('[CX-Viewer] Managed system prompt skipped:', error?.code || 'system_prompt_store_failed');
-    const failure = new Error('Managed system prompt could not be loaded', { cause: error });
-    failure.code = 'CXV_SYSTEM_PROMPT_INJECTION_FAILED';
-    throw failure;
+  function endAgentLoop(threadId, turnId, reason, ts = Date.now()) {
+    const rec = _agentLoops.get(threadId);
+    if (!rec || rec.turnId !== turnId) return;
+    _agentLoops.delete(threadId);
+    try { rec.onEnd?.({ ...rec.data, ts, reason }); } catch { /* observer isolation */ }
   }
-}
 
-export function setApprovalsReviewer(value) {
-  _approvalsReviewerOverride = normalizeApprovalsReviewer(value);
-  return {
-    approvalsReviewer: _approvalsReviewerOverride,
-    appliesOnNextTurn: true,
-  };
-}
-
-function _pickSystemPrompt(...candidates) {
-  for (const value of candidates) {
-    if (typeof value === 'string' && value.trim()) return value.trim();
-  }
-  return null;
-}
-
-function cloneJson(value) {
-  if (value == null) return value;
-  try {
-    return JSON.parse(JSON.stringify(value));
-  } catch {
-    return value;
-  }
-}
-
-function stringifyValue(value) {
-  if (value == null) return '';
-  if (typeof value === 'string') return value;
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return String(value);
-  }
-}
-
-function hasStructuredImageOutput(output) {
-  return Array.isArray(output) && output.some(part => parseSupportedToolResultImage(part));
-}
-
-function parseMaybeJson(value) {
-  if (typeof value !== 'string') return value;
-  try {
-    return JSON.parse(value);
-  } catch {
-    return value;
-  }
-}
-
-function decodeBase64Text(value) {
-  if (typeof value !== 'string' || !value) return '';
-  try {
-    return Buffer.from(value, 'base64').toString('utf8');
-  } catch {
-    return '';
-  }
-}
-
-function usageField(usage, camelName, snakeName) {
-  return usage?.[camelName] ?? usage?.[snakeName] ?? 0;
-}
-
-function normalizeTokenUsage(usage) {
-  if (!usage) return null;
-  const input = usageField(usage, 'inputTokens', 'input_tokens');
-  const output = usageField(usage, 'outputTokens', 'output_tokens');
-  const reasoning = usageField(usage, 'reasoningOutputTokens', 'reasoning_output_tokens');
-  const cached = usageField(usage, 'cachedInputTokens', 'cached_input_tokens');
-  const total = usageField(usage, 'totalTokens', 'total_tokens') || (input + output);
-  return {
-    input_tokens: input,
-    output_tokens: output,
-    reasoning_output_tokens: reasoning,
-    total_tokens: total,
-    input_tokens_details: { cached_tokens: cached, cache_write_tokens: 0 },
-  };
-}
-
-function formatTurnPlan(planUpdate) {
-  if (!planUpdate) return '';
-  const lines = [];
-  if (planUpdate.explanation) lines.push(planUpdate.explanation);
-  for (const item of planUpdate.plan || []) {
-    if (!item?.step) continue;
-    const status = item.status ? `[${item.status}] ` : '';
-    lines.push(`- ${status}${item.step}`);
-  }
-  return lines.join('\n');
-}
-
-function textFromContent(content) {
-  if (content == null) return '';
-  if (typeof content === 'string') return content;
-  if (!Array.isArray(content)) {
-    if (typeof content.text === 'string') return content.text;
-    if (typeof content.input_text === 'string') return content.input_text;
-    if (typeof content.output_text === 'string') return content.output_text;
-    if (Array.isArray(content.content) || typeof content.content === 'string') {
-      return textFromContent(content.content);
+  function clearAgentLoops(connection = null) {
+    for (const [key, pending] of _pendingClientTurns) {
+      if (connection == null || pending.connection === connection) _pendingClientTurns.delete(key);
     }
-    return '';
+    for (const [threadId, rec] of _agentLoops) {
+      if (connection == null || rec.connection === connection) endAgentLoop(threadId, rec.turnId, 'session-ended');
+    }
   }
-  return content.map(block => {
-    if (!block) return '';
-    if (typeof block === 'string') return block;
-    if (typeof block.text === 'string') return block.text;
-    if (typeof block.input_text === 'string') return block.input_text;
-    if (typeof block.output_text === 'string') return block.output_text;
-    if (typeof block.content === 'string' || Array.isArray(block.content)) return textFromContent(block.content);
-    return '';
-  }).filter(Boolean).join('\n');
-}
 
-function normalizeUserContent(content) {
-  if (typeof content === 'string') return content;
-  if (!Array.isArray(content)) return textFromContent(content);
-  const text = textFromContent(content);
-  const hasOnlyText = content.every(block => {
-    if (typeof block === 'string') return true;
-    return block && (block.type === 'text' || block.type === 'input_text');
-  });
-  return hasOnlyText ? text : cloneJson(content);
-}
-
-function sameUserContent(a, b) {
-  if (a === b) return true;
-  try {
-    return JSON.stringify(a) === JSON.stringify(b);
-  } catch {
-    return false;
+  function acceptAgentLoop(pending, turn) {
+    const thread = _threadMetaById.get(pending.threadId);
+    if (typeof turn?.id !== 'string' || !turn.id || getAgentIdentity(pending.threadId).subAgent
+        || isTemporaryTitleThread(thread)) return;
+    const old = _agentLoops.get(pending.threadId);
+    if (old?.turnId === turn.id) return;
+    if (old) endAgentLoop(pending.threadId, old.turnId, 'session-ended');
+    if (_agentLoops.size >= 128) return;
+    const data = { cwd: _loopCwd || _cwd, sessionId: pending.threadId, turnId: turn.id,
+      turnStartedAt: pending.startedAt, ts: Date.now() };
+    _agentLoops.set(pending.threadId, { data, turnId: turn.id, connection: pending.connection, onEnd: _onAgentLoopEnd });
+    try { _onAgentLoopStart?.({ ...data }); } catch { /* observer isolation */ }
+    const ended = getThreadState(pending.threadId).lastTerminalTurn;
+    if (ended?.id === turn.id) endAgentLoop(pending.threadId, turn.id, ended.reason, ended.ts);
   }
-}
 
-function createThreadState(threadId) {
-  return {
-    threadId: threadId || 'root',
-    messages: [],
-    pendingContent: [],
-    turnStartTime: null,
-    turnId: null,
-    cwd: _cwd,
-    model: _currentModel,
-    systemPrompt: null,
-    turnContext: {},
-    threadMeta: {},
-    lastTokenUsage: null,
-    turnStatus: null,
-    seenUserMessageIds: new Set(),
-    agentMessageDeltas: new Map(),
-    reasoningDeltas: new Map(),
-    planDeltas: new Map(),
-    commandOutputDeltas: new Map(),
-    commandExecOutputDeltas: new Map(),
-    terminalInteractions: new Map(),
-    fileChangeOutputDeltas: new Map(),
-    fileChangePatches: new Map(),
-    mcpProgressMessages: new Map(),
-    processOutputDeltas: new Map(),
-    itemSnapshots: new Map(),
-    itemOrder: [],
-    completedItemIds: new Set(),
-    emittedTurnIds: new Set(),
-    turnPlan: null,
-    turnPlanToolId: null,
-    turnDiff: null,
-    turnModerationMetadata: null,
-    modelReroutes: [],
-    modelVerifications: [],
-    safetyBuffering: null,
-    warnings: [],
-  };
-}
-
-function getThreadState(threadId) {
-  const key = threadId || _threadId || _mainThreadId || 'root';
-  let state = _threadStates.get(key);
-  if (!state) {
-    state = createThreadState(key);
-    _threadStates.set(key, state);
+  function setAppServerTurnTerminalListener(listener) {
+    _onTurnTerminal = typeof listener === 'function' ? listener : null;
   }
-  return state;
-}
 
-function syncGlobalsFromState(state) {
-  if (!state) return;
-  _threadId = state.threadId;
-  _turnId = state.turnId;
-  _turnStartTime = state.turnStartTime;
-  _turnContext = state.turnContext || {};
-  _threadMeta = state.threadMeta || {};
-  _lastTokenUsage = state.lastTokenUsage || null;
-  _turnStatus = state.turnStatus || null;
-  _messages = state.messages;
-  _pendingContent = state.pendingContent;
-}
-
-function resetThreadRuntimeState() {
-  clearAgentLoops();
-  _threadStates.clear();
-  _threadMetaById.clear();
-  _pendingThreadStartByRpcId.clear();
-  _subAgentThreads.clear();
-  _pendingServerRequests.clear();
-  _mainThreadId = null;
-}
-
-function getSubAgentSourceInfo(source) {
-  const subAgent = source?.subAgent;
-  if (!subAgent) return null;
-  if (typeof subAgent === 'string') {
-    return { kind: subAgent };
+  function setAppServerAgentMessageDeltaListener(listener) {
+    _onAgentMessageDelta = typeof listener === 'function' ? listener : null;
   }
-  const spawn = subAgent.thread_spawn || subAgent.threadSpawn;
-  if (spawn) {
+  function getAppServerAgentLoopSnapshot() {
+    return [..._agentLoops.values()].map(rec => ({ ...rec.data }));
+  }
+  let _cwd = null;
+  let _systemPrompt = null;
+  let _serverInfo = null;      // initialize 响应
+  let _turnContext = {};        // turn/start 的完整 params
+  let _threadMeta = {};         // thread/started 的完整信息
+  let _lastTokenUsage = null;   // 最近的 token usage
+  let _turnStatus = null;       // turn 完成状态
+  let _rawFrameSeq = 0;
+  let _rawStreamId = randomUUID();
+  const _rawRpcThreadById = new Map();
+  const _rawTurnThreadById = new Map();
+  const _rawItemThreadById = new Map();
+  const _rawSidecarBuffers = new Map();
+  const _rawSidecarStates = new Map();
+  const _rawRangeByThread = new Map();
+  let _rawSidecarFlushTimer = null;
+  const RAW_SIDECAR_FLUSH_BYTES = 256 * 1024;
+  const RAW_SIDECAR_FLUSH_MS = 250;
+  const RAW_SIDECAR_SEGMENT_BYTES = 4 * 1024 * 1024;
+  const RAW_SIDECAR_THREAD_QUOTA_BYTES = 32 * 1024 * 1024;
+  const RAW_SIDECAR_GLOBAL_QUOTA_BYTES = 128 * 1024 * 1024;
+  const RAW_SIDECAR_BUFFER_BYTES = 1024 * 1024;
+  const RAW_ROUTE_TTL_MS = 10 * 60 * 1000;
+  const RAW_ROUTE_MAP_MAX = 2048;
+  let _rawBufferedBytes = 0;
+  let _rawDroppedFrames = 0;
+  let _rawStorageOptions = null;
+  let _approvalsReviewerOverride = null;
+  let _onApprovalsReviewerActive = null;
+  let _writeLogEntry = null;
+
+  const REVIEWER_LIFECYCLE_METHODS = new Set([
+    'thread/start',
+    'thread/resume',
+    'thread/fork',
+    'turn/start',
+  ]);
+
+  function injectApprovalsReviewer(msg) {
+    if (!_approvalsReviewerOverride || !msg || !REVIEWER_LIFECYCLE_METHODS.has(msg.method)) return msg;
     return {
-      kind: 'thread_spawn',
-      parentThreadId: spawn.parent_thread_id || spawn.parentThreadId,
-      agentPath: spawn.agent_path || spawn.agentPath,
-      agentNickname: spawn.agent_nickname || spawn.agentNickname,
-      agentRole: spawn.agent_role || spawn.agentRole || spawn.agent_type || spawn.agentType,
-      depth: spawn.depth,
+      ...msg,
+      params: {
+        ...(msg.params || {}),
+        approvalsReviewer: _approvalsReviewerOverride,
+      },
     };
   }
-  return { kind: stringifyValue(subAgent) };
-}
 
-function rememberSubAgentThread(threadId, info = {}) {
-  if (!threadId) return;
-  const existing = _subAgentThreads.get(threadId) || {};
-  const next = { ...existing, ...info };
-  if (!next.parentThreadId && _mainThreadId && _mainThreadId !== threadId) {
-    next.parentThreadId = _mainThreadId;
-  }
-  _subAgentThreads.set(threadId, next);
-  getThreadState(threadId);
-  if (!_mainThreadId && next.parentThreadId && next.parentThreadId !== threadId) {
-    _mainThreadId = next.parentThreadId;
-  }
-}
-
-function isSubAgentThreadMeta(thread) {
-  if (!thread) return false;
-  if (thread.parentThreadId) return true;
-  if (thread.threadSource === 'subagent') return true;
-  return !!getSubAgentSourceInfo(thread.source);
-}
-
-function rememberThread(thread) {
-  if (!thread?.id) return getThreadState();
-  const existingThread = _threadMetaById.get(thread.id) || {};
-  thread = { ...existingThread, ...thread };
-  _threadMetaById.set(thread.id, thread);
-  const state = getThreadState(thread.id);
-  state.threadMeta = thread;
-  state.cwd = thread.cwd || state.cwd || _cwd;
-  const sourceInfo = getSubAgentSourceInfo(thread.source) || {};
-  const parentThreadId = thread.parentThreadId || sourceInfo.parentThreadId || null;
-
-  if (isSubAgentThreadMeta(thread)) {
-    rememberSubAgentThread(thread.id, {
-      parentThreadId,
-      agentPath: thread.agentPath || sourceInfo.agentPath,
-      agentNickname: thread.agentNickname || sourceInfo.agentNickname,
-      agentRole: thread.agentRole || sourceInfo.agentRole || sourceInfo.kind,
-      source: thread.source,
-    });
-  } else if (!_mainThreadId) {
-    _mainThreadId = thread.id;
-  }
-
-  syncGlobalsFromState(state);
-  return state;
-}
-
-function rememberThreadResponse(result, startContext = null) {
-  const thread = startContext && result?.thread
-    ? {
-        ...result.thread,
-        sessionStartSource: startContext.sessionStartSource,
-        previousSessionId: startContext.previousSessionId,
-      }
-    : result?.thread;
-  if (!thread?.id) return null;
-  const state = rememberThread(thread);
-  state.model = result.model || state.model || _currentModel;
-  state.cwd = result.cwd || thread.cwd || state.cwd || _cwd;
-  syncGlobalsFromState(state);
-  hydrateThreadTurnsFromResponse(thread, result);
-  return state;
-}
-
-function getAgentIdentity(threadId) {
-  const thread = _threadMetaById.get(threadId) || getThreadState(threadId).threadMeta || {};
-  if (isTemporaryTitleThread(thread)) return { mainAgent: false, subAgent: false, _agentThreadId: threadId };
-  const sourceInfo = getSubAgentSourceInfo(thread.source) || {};
-  const registered = _subAgentThreads.get(threadId);
-  if (registered || isSubAgentThreadMeta(thread)) {
-    const info = registered || {};
-    const label = info.agentNickname
-      || thread.agentNickname
-      || info.agentRole
-      || thread.agentRole
-      || info.agentPath
-      || sourceInfo.agentNickname
-      || sourceInfo.agentRole
-      || sourceInfo.agentPath
-      || sourceInfo.kind
-      || 'subagent';
-    const parentThreadId = info.parentThreadId || thread.parentThreadId || sourceInfo.parentThreadId || _mainThreadId || null;
-    return {
-      mainAgent: false,
-      subAgent: true,
-      subAgentName: label,
-      teamName: parentThreadId || undefined,
-      _agentThreadId: threadId,
-      ...(parentThreadId ? { _parentThreadId: parentThreadId } : {}),
-    };
-  }
-  return {
-    mainAgent: true,
-    subAgent: false,
-    _agentThreadId: threadId,
-  };
-}
-
-function getThreadWriteContext(threadId, state) {
-  const known = _threadMetaById.get(threadId) || state?.threadMeta || null;
-  const knownSessionId = known?.sessionId || known?.session_id || null;
-  if (known?.id && knownSessionId) return known;
-
-  // Collaboration activity can announce a child before App Server emits a
-  // full Thread object for it. The root Thread remains authoritative for the
-  // session boundary, while the collaboration registry supplies the parent.
-  const registered = _subAgentThreads.get(threadId);
-  if (!threadId || !registered) return known;
-  const root = _threadMetaById.get(_mainThreadId) || {};
-  const sessionId = root.sessionId || root.session_id || _mainThreadId || null;
-  if (!sessionId) return known;
-  return {
-    ...(known || {}),
-    id: threadId,
-    sessionId,
-    parentThreadId: registered.parentThreadId || known?.parentThreadId || null,
-    ...(registered.source ? { source: registered.source } : {}),
-  };
-}
-
-function pushContentBlock(blocks, block) {
-  if (!block) return;
-  if (block.type === 'text' && !block.text) return;
-  if (block.type === 'thinking' && !block.thinking) return;
-  const prev = blocks[blocks.length - 1];
-  if (prev && prev.type === 'text' && block.type === 'text') {
-    prev.text += block.text;
-    return;
-  }
-  if (prev && prev.type === 'thinking' && block.type === 'thinking') {
-    prev.thinking += block.thinking;
-    return;
-  }
-  blocks.push(block);
-}
-
-function flushAssistantContent(state) {
-  if (!state?.pendingContent?.length) return;
-  state.messages.push({ role: 'assistant', content: state.pendingContent });
-  state.pendingContent = [];
-  if (state.threadId === _threadId) _pendingContent = state.pendingContent;
-}
-
-function appendUserMessage(state, content, clientId, options = {}) {
-  if (!state) return;
-  if (clientId && state.seenUserMessageIds.has(clientId)) return;
-  const normalized = normalizeUserContent(content);
-  const hasContent = Array.isArray(normalized) ? normalized.length > 0 : !!normalized;
-  if (!hasContent) return;
-  if (options.dedupeLastUser) {
-    const last = state.messages[state.messages.length - 1];
-    if (last?.role === 'user' && sameUserContent(last.content, normalized)) {
-      if (clientId) state.seenUserMessageIds.add(clientId);
-      return;
-    }
-  }
-  state.messages.push({ role: 'user', content: normalized, ...(clientId ? { _clientId: clientId } : {}) });
-  if (clientId) state.seenUserMessageIds.add(clientId);
-}
-
-function appendToolResultMessage(state, id, output) {
-  state.messages.push({
-    role: 'user',
-    content: [{
-      type: 'tool_result',
-      tool_use_id: id,
-      // Structured Responses image outputs must remain arrays so image parts
-      // reach the renderer. Other arrays retain their historical JSON text
-      // representation instead of becoming an unrecognized content-part list.
-      content: hasStructuredImageOutput(output) ? cloneJson(output) : stringifyValue(output),
-    }],
-  });
-}
-
-function registerCollabAgentThreads(item, fallbackParentThreadId) {
-  if (!item || typeof item !== 'object') return;
-  const parentThreadId = item.senderThreadId || fallbackParentThreadId || _mainThreadId;
-  const receiverThreadIds = [
-    ...(Array.isArray(item.receiverThreadIds) ? item.receiverThreadIds : []),
-    item.receiverThreadId,
-    item.newThreadId,
-  ].filter(Boolean);
-  for (const threadId of receiverThreadIds) {
-    rememberSubAgentThread(threadId, {
-      parentThreadId,
-      agentNickname: item.agentNickname,
-      agentRole: item.agentRole || item.tool,
-      agentPath: item.agentPath,
-    });
-  }
-}
-
-function itemKey(item) {
-  return item?.id || item?.call_id || item?.callId || item?.processId || item?.type || null;
-}
-
-function rememberItemSnapshot(state, item) {
-  const id = itemKey(item);
-  if (!state || !id || !item || typeof item !== 'object') return item;
-  if (!state.itemSnapshots.has(id)) state.itemOrder.push(id);
-  const previous = state.itemSnapshots.get(id) || {};
-  const next = { ...previous, ...item, id: item.id || previous.id || id };
-  state.itemSnapshots.set(id, next);
-  return next;
-}
-
-function isTerminalItem(item) {
-  return item?.status === 'completed' || item?.status === 'failed' || item?.status === 'cancelled';
-}
-
-function canFlushSnapshotAtTurnEnd(item) {
-  if (!item || typeof item !== 'object') return false;
-  if (isTerminalItem(item)) return true;
-  return item.type === 'message'
-    || item.type === 'agentMessage'
-    || item.type === 'agent_message'
-    || item.type === 'reasoning'
-    || item.type === 'todoList'
-    || item.type === 'todo_list'
-    || item.type === 'error'
-    || item.type === 'plan';
-}
-
-function resetRawRoutingState() {
-  flushRawSidecars({ force: true });
-  _rawSidecarStates.clear();
-  _rawFrameSeq = 0;
-  _rawStreamId = randomUUID();
-  _rawRpcThreadById.clear();
-  _rawTurnThreadById.clear();
-  _rawItemThreadById.clear();
-  _rawRangeByThread.clear();
-  _rawDroppedFrames = 0;
-}
-
-/** Start a new raw capture epoch and discard frames that have not reached a business entry. */
-export function resetRawCaptureBoundary() {
-  if (_rawSidecarFlushTimer) {
-    clearTimeout(_rawSidecarFlushTimer);
-    _rawSidecarFlushTimer = null;
-  }
-  const previousStreamId = _rawStreamId;
-  _rawSidecarBuffers.clear();
-  _rawSidecarStates.clear();
-  _rawBufferedBytes = 0;
-  _rawFrameSeq = 0;
-  _rawStreamId = randomUUID();
-  _rawRpcThreadById.clear();
-  _rawTurnThreadById.clear();
-  _rawItemThreadById.clear();
-  _rawRangeByThread.clear();
-  _rawDroppedFrames = 0;
-  return { previousStreamId, streamId: _rawStreamId };
-}
-
-function rawOptions() {
-  return {
-    segmentBytes: RAW_SIDECAR_SEGMENT_BYTES,
-    threadQuotaBytes: RAW_SIDECAR_THREAD_QUOTA_BYTES,
-    globalQuotaBytes: RAW_SIDECAR_GLOBAL_QUOTA_BYTES,
-    bufferBytes: RAW_SIDECAR_BUFFER_BYTES,
-    routeTtlMs: RAW_ROUTE_TTL_MS,
-    routeMapMax: RAW_ROUTE_MAP_MAX,
-    append: appendFileSync,
-    now: Date.now,
-    ...(_rawStorageOptions || {}),
-  };
-}
-
-function rawSegmentPath(baseFile, index) {
-  return index === 0 ? baseFile : baseFile.replace(/\.jsonl$/, `.part-${String(index).padStart(4, '0')}.jsonl`);
-}
-
-function rawSegmentInfo(baseFile) {
-  const dir = dirname(baseFile);
-  const name = basename(baseFile, '.jsonl');
-  const matcher = new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\.part-(\\d{4}))?\\.jsonl$`);
-  const segments = [];
-  try {
-    if (!existsSync(dir)) return segments;
-    for (const entry of readdirSync(dir)) {
-      const match = entry.match(matcher);
-      if (!match) continue;
-      const file = join(dir, entry);
-      const stats = statSync(file);
-      segments.push({ file, index: match[1] ? Number(match[1]) : 0, size: stats.size, mtimeMs: stats.mtimeMs });
-    }
-  } catch {}
-  return segments.sort((a, b) => a.index - b.index);
-}
-
-function getRawSidecarState(baseFile) {
-  let state = _rawSidecarStates.get(baseFile);
-  if (state && existsSync(rawSegmentPath(baseFile, state.index))) return state;
-  const segments = rawSegmentInfo(baseFile);
-  const latest = segments.at(-1);
-  state = { index: latest?.index || 0, size: latest?.size || 0 };
-  _rawSidecarStates.set(baseFile, state);
-  return state;
-}
-
-function enforceRawQuota(baseFile) {
-  const opts = rawOptions();
-  const segments = rawSegmentInfo(baseFile);
-  let threadBytes = segments.reduce((sum, item) => sum + item.size, 0);
-  for (const segment of segments) {
-    if (threadBytes <= opts.threadQuotaBytes || segment.index === getRawSidecarState(baseFile).index) break;
-    try { unlinkSync(segment.file); threadBytes -= segment.size; } catch {}
-  }
-
-  const rawDir = dirname(baseFile);
-  let all = [];
-  try {
-    all = readdirSync(rawDir)
-      .filter(name => name.endsWith('.jsonl'))
-      .map(name => {
-        const file = join(rawDir, name);
-        const stats = statSync(file);
-        return { file, size: stats.size, mtimeMs: stats.mtimeMs };
-      })
-      .sort((a, b) => a.mtimeMs - b.mtimeMs);
-  } catch { return; }
-  let total = all.reduce((sum, item) => sum + item.size, 0);
-  for (const item of all) {
-    if (total <= opts.globalQuotaBytes) break;
+  function injectManagedSystemPrompt(msg, {
+    capability = null,
+    logDir = null,
+    cwd = null,
+  } = {}) {
+    if (msg?.method !== 'thread/start' || !capability?.verified || !logDir) return msg;
     try {
-      unlinkSync(item.file);
-      total -= item.size;
-      for (const [base, state] of _rawSidecarStates) {
-        if (rawSegmentPath(base, state.index) === item.file) _rawSidecarStates.delete(base);
-      }
-    } catch {}
-  }
-}
-
-function appendRawChunks(baseFile, chunks) {
-  const opts = rawOptions();
-  const state = getRawSidecarState(baseFile);
-  mkdirSync(dirname(baseFile), { recursive: true });
-  let batchChunks = [];
-  let batchBytes = 0;
-  const writeBatch = () => {
-    if (batchChunks.length === 0) return;
-    opts.append(rawSegmentPath(baseFile, state.index), batchChunks.join(''));
-    state.size += batchBytes;
-    batchChunks = [];
-    batchBytes = 0;
-  };
-  for (const chunk of chunks) {
-    const bytes = Buffer.byteLength(chunk);
-    if ((state.size > 0 || batchChunks.length > 0) && state.size + batchBytes + bytes > opts.segmentBytes) {
-      writeBatch();
-      state.index++;
-      state.size = 0;
+      const params = msg.params || {};
+      const selected = selectSystemPrompt({
+        logDir,
+        cwd: params.cwd || cwd,
+        model: params.model || null,
+      });
+      if (!selected) return msg;
+      if (selected.mode === 'append' && !capability.append) return msg;
+      if (selected.mode === 'override' && !capability.override) return msg;
+      return injectSystemPromptIntoThreadStart(msg, selected);
+    } catch (error) {
+      console.warn('[CX-Viewer] Managed system prompt skipped:', error?.code || 'system_prompt_store_failed');
+      const failure = new Error('Managed system prompt could not be loaded', { cause: error });
+      failure.code = 'CXV_SYSTEM_PROMPT_INJECTION_FAILED';
+      throw failure;
     }
-    batchChunks.push(chunk);
-    batchBytes += bytes;
   }
-  writeBatch();
-  enforceRawQuota(baseFile);
-}
 
-function flushRawSidecar(baseFile, { force = false } = {}) {
-  const buffered = _rawSidecarBuffers.get(baseFile);
-  if (!buffered?.chunks?.length) return;
-  const now = rawOptions().now();
-  if (!force && buffered.nextRetryAt > now) return;
-  const chunks = buffered.chunks;
-  const bytes = buffered.bytes;
-  try {
-    appendRawChunks(baseFile, chunks);
-    _rawSidecarBuffers.delete(baseFile);
-    _rawBufferedBytes -= bytes;
-  } catch (err) {
-    buffered.failures++;
-    buffered.nextRetryAt = now + Math.min(30_000, 250 * (2 ** Math.min(buffered.failures, 7)));
-    if (process.env.CXV_DEBUG) console.warn('[CX-Viewer] Raw app-server frame write error:', err.message);
-    scheduleRawSidecarFlush();
+  function setApprovalsReviewer(value) {
+    _approvalsReviewerOverride = normalizeApprovalsReviewer(value);
+    return {
+      approvalsReviewer: _approvalsReviewerOverride,
+      appliesOnNextTurn: true,
+    };
   }
-}
 
-function flushRawSidecars({ force = false } = {}) {
-  if (_rawSidecarFlushTimer) {
-    clearTimeout(_rawSidecarFlushTimer);
-    _rawSidecarFlushTimer = null;
-  }
-  for (const file of [..._rawSidecarBuffers.keys()]) flushRawSidecar(file, { force });
-  if (_rawSidecarBuffers.size > 0 && !force) scheduleRawSidecarFlush();
-}
-
-function scheduleRawSidecarFlush() {
-  if (_rawSidecarFlushTimer) return;
-  _rawSidecarFlushTimer = setTimeout(() => {
-    _rawSidecarFlushTimer = null;
-    flushRawSidecars();
-  }, RAW_SIDECAR_FLUSH_MS);
-  _rawSidecarFlushTimer.unref?.();
-}
-
-function pruneRawRouteMap(map, now, max) {
-  for (const [key, value] of map) {
-    if (value.expiresAt <= now) map.delete(key);
-  }
-  while (map.size >= max) map.delete(map.keys().next().value);
-}
-
-function rememberRawRoute(map, key, threadId) {
-  if (key == null || !threadId) return;
-  const opts = rawOptions();
-  const now = opts.now();
-  pruneRawRouteMap(map, now, opts.routeMapMax);
-  map.set(String(key), { threadId: String(threadId), expiresAt: now + opts.routeTtlMs });
-}
-
-function getRawRoute(map, key) {
-  const value = key == null ? null : map.get(String(key));
-  if (!value) return null;
-  if (value.expiresAt <= rawOptions().now()) {
-    map.delete(String(key));
+  function _pickSystemPrompt(...candidates) {
+    for (const value of candidates) {
+      if (typeof value === 'string' && value.trim()) return value.trim();
+    }
     return null;
   }
-  return value.threadId;
-}
 
-function rawMessageThreadId(direction, msg) {
-  const params = msg?.params || {};
-  const result = msg?.result || {};
-  const direct = params.threadId
-    || params.thread_id
-    || params.conversationId
-    || params.thread?.id
-    || params.turn?.threadId
-    || params.item?.threadId
-    || result.thread?.id
-    || result.threadId
-    || null;
-  if (direct) return String(direct);
-
-  const turnId = params.turnId || params.turn_id || params.turn?.id || params.item?.turnId || params.item?.turn_id || null;
-  const turnThread = getRawRoute(_rawTurnThreadById, turnId);
-  if (turnThread) return turnThread;
-  const itemId = params.itemId || params.item_id || params.item?.id || params.callId || params.call_id || null;
-  const itemThread = getRawRoute(_rawItemThreadById, itemId);
-  if (itemThread) return itemThread;
-  const responseKey = msg?.id !== undefined && msg?.id !== null ? `${direction}:${msg.id}` : null;
-  const responseThread = getRawRoute(_rawRpcThreadById, responseKey);
-  if (responseThread) return responseThread;
-  return null;
-}
-
-function rememberRawRouting(direction, msg, threadId) {
-  if (!msg || !threadId) return;
-  const id = String(threadId);
-  const params = msg.params || {};
-  const turnId = params.turnId || params.turn_id || params.turn?.id || params.item?.turnId || params.item?.turn_id || null;
-  const itemId = params.itemId || params.item_id || params.item?.id || params.callId || params.call_id || null;
-  rememberRawRoute(_rawTurnThreadById, turnId, id);
-  rememberRawRoute(_rawItemThreadById, itemId, id);
-  if (msg.id !== undefined && msg.id !== null && msg.method) {
-    const responseDirection = direction === 'client' ? 'server' : 'client';
-    rememberRawRoute(_rawRpcThreadById, `${responseDirection}:${msg.id}`, id);
-  }
-}
-
-function rawSidecarName(threadId) {
-  if (!threadId) return '_app-server.jsonl';
-  const id = String(threadId);
-  if (id !== '.' && id !== '..' && /^[A-Za-z0-9._-]{1,180}$/.test(id)) return `${id}.jsonl`;
-  const digest = createHash('sha256').update(id).digest('hex').slice(0, 24);
-  return `thread-${digest}.jsonl`;
-}
-
-function appendRawFrame(direction, msg) {
-  if (!msg || !_rawDir) return;
-  const threadId = rawMessageThreadId(direction, msg);
-  rememberRawRouting(direction, msg, threadId);
-  const params = msg.params || {};
-  const turnId = params.turnId || params.turn_id || params.turn?.id || params.item?.turnId || params.item?.turn_id || null;
-  const itemId = params.itemId || params.item_id || params.item?.id || params.callId || params.call_id || null;
-  const rawDir = _rawDir;
-  const seq = ++_rawFrameSeq;
-  const record = {
-    stream_id: _rawStreamId,
-    seq,
-    timestamp: new Date().toISOString(),
-    direction,
-    thread_id: threadId,
-    turn_id: turnId ? String(turnId) : null,
-    method: msg.method || null,
-    frame: msg,
-  };
-  const sidecar = rawSidecarName(threadId);
-  const file = join(rawDir, sidecar);
-  const line = `${JSON.stringify(record)}\n`;
-  const lineBytes = Buffer.byteLength(line);
-  let buffered = _rawSidecarBuffers.get(file);
-  if (!buffered) {
-    buffered = { chunks: [], bytes: 0, failures: 0, nextRetryAt: 0 };
-    _rawSidecarBuffers.set(file, buffered);
-  }
-  buffered.chunks.push(line);
-  buffered.bytes += lineBytes;
-  _rawBufferedBytes += lineBytes;
-  const rangeKey = threadId || '';
-  const range = _rawRangeByThread.get(rangeKey) || { fromSeq: seq, toSeq: seq, sidecar };
-  range.toSeq = seq;
-  _rawRangeByThread.set(rangeKey, range);
-
-  const maxBuffer = rawOptions().bufferBytes;
-  while (_rawBufferedBytes > maxBuffer) {
-    const oldest = _rawSidecarBuffers.entries().next().value;
-    if (!oldest) break;
-    const [oldFile, oldBuffer] = oldest;
-    const dropped = oldBuffer.chunks.shift();
-    if (dropped) {
-      const droppedBytes = Buffer.byteLength(dropped);
-      oldBuffer.bytes -= droppedBytes;
-      _rawBufferedBytes -= droppedBytes;
-      _rawDroppedFrames++;
-    }
-    if (oldBuffer.chunks.length === 0) _rawSidecarBuffers.delete(oldFile);
-  }
-  if (!msg.method && msg.id !== undefined && msg.id !== null) {
-    _rawRpcThreadById.delete(`${direction}:${msg.id}`);
-  }
-  if (msg.method === 'turn/completed' || msg.method === 'turn/failed') {
-    const completedTurnId = turnId || msg.params?.turn?.id;
-    if (completedTurnId) _rawTurnThreadById.delete(String(completedTurnId));
-  }
-  if (msg.method === 'item/completed' || msg.method === 'item/failed') {
-    if (itemId) _rawItemThreadById.delete(String(itemId));
-  }
-  if (buffered.bytes >= RAW_SIDECAR_FLUSH_BYTES) flushRawSidecar(file);
-  else scheduleRawSidecarFlush();
-}
-
-function captureRawClientFrame(msg) {
-  appendRawFrame('client', msg);
-}
-
-function captureRawServerFrame(msg) {
-  appendRawFrame('server', msg);
-}
-
-function rawReferenceForEntry(entry) {
-  const threadId = entry?.body?.metadata?.thread_id
-    || entry?.body?._threadId
-    || entry?.response?.body?.turn?.threadId
-    || null;
-  const range = _rawRangeByThread.get(threadId || '');
-  if (!range) return null;
-  return {
-    version: 1,
-    streamId: _rawStreamId,
-    threadId: threadId ? String(threadId) : null,
-    sidecar: range.sidecar,
-    fromSeq: range.fromSeq,
-    toSeq: range.toSeq,
-    ...(_rawDroppedFrames > 0 ? { droppedFrames: _rawDroppedFrames } : {}),
-  };
-}
-
-function releaseRawReference(rawRef) {
-  // A completion from an earlier capture epoch must never advance a new
-  // epoch's range merely because its thread id and sequence happen to match.
-  if (!rawRef || rawRef.streamId !== _rawStreamId) return;
-  const rangeKey = rawRef.threadId || '';
-  const current = _rawRangeByThread.get(rangeKey);
-  if (current?.toSeq === rawRef.toSeq) _rawRangeByThread.delete(rangeKey);
-  else if (current && current.fromSeq <= rawRef.toSeq) current.fromSeq = rawRef.toSeq + 1;
-}
-
-/**
- * 找一个空闲端口
- */
-function findFreePort() {
-  return new Promise((resolve, reject) => {
-    const srv = createServer();
-    srv.listen(0, '127.0.0.1', () => {
-      const port = srv.address().port;
-      srv.close(() => resolve(port));
-    });
-    srv.on('error', reject);
-  });
-}
-
-/**
- * 等待 app-server 就绪
- */
-async function waitForReady(url, timeoutMs = 15000) {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
+  function cloneJson(value) {
+    if (value == null) return value;
     try {
-      const res = await fetch(url);
-      if (res.ok) return true;
-    } catch {}
-    await new Promise(r => setTimeout(r, 300));
-  }
-  throw new Error(`App-server not ready after ${timeoutMs}ms`);
-}
-
-/**
- * 写入一条 entry 到 Log Store V2
- */
-function writeEntry(entry) {
-  if (!entry || !_writeLogEntry) return;
-  try {
-    let normalizedEntry = entry;
-    if (typeof entry.url === 'string' && entry.url.startsWith('codex://')) {
-      const {
-        subAgentName: _subAgentName,
-        teamName: _teamName,
-        teammate: _teammate,
-        ...rest
-      } = entry;
-      normalizedEntry = { ...rest, subAgent: false };
+      return JSON.parse(JSON.stringify(value));
+    } catch {
+      return value;
     }
-    const rawRef = rawReferenceForEntry(normalizedEntry);
-    const storedEntry = rawRef && !normalizedEntry._codexRaw
-      ? { ...normalizedEntry, _codexRaw: rawRef }
-      : normalizedEntry;
-    let result = { written: true, accepted: true, durable: true };
-    const threadId = storedEntry._agentThreadId
-      || storedEntry.body?.metadata?.thread_id
-      || storedEntry.body?._threadId
-      || _threadId
-      || _mainThreadId;
-    const state = getThreadState(threadId);
-    const thread = getThreadWriteContext(threadId, state);
-    result = _writeLogEntry(storedEntry, {
-      source: 'app-server',
-      thread,
-      cwd: state.cwd || _cwd,
-      projectId: _currentProject,
-    });
-    if (rawRef) {
-      if (result?.completion && typeof result.completion.then === 'function') {
-        void Promise.resolve(result.completion).then((completion) => {
-          if (completion?.durable === true) releaseRawReference(rawRef);
-        }, () => {
-          // Preserve the range so a later business entry can reference the raw
-          // frames again after a failed durable write.
-        });
-      } else if (result?.durable === true) {
-        releaseRawReference(rawRef);
+  }
+
+  function stringifyValue(value) {
+    if (value == null) return '';
+    if (typeof value === 'string') return value;
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  }
+
+  function hasStructuredImageOutput(output) {
+    return Array.isArray(output) && output.some(part => parseSupportedToolResultImage(part));
+  }
+
+  function parseMaybeJson(value) {
+    if (typeof value !== 'string') return value;
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value;
+    }
+  }
+
+  function decodeBase64Text(value) {
+    if (typeof value !== 'string' || !value) return '';
+    try {
+      return Buffer.from(value, 'base64').toString('utf8');
+    } catch {
+      return '';
+    }
+  }
+
+  function usageField(usage, camelName, snakeName) {
+    return usage?.[camelName] ?? usage?.[snakeName] ?? 0;
+  }
+
+  function normalizeTokenUsage(usage) {
+    if (!usage) return null;
+    const input = usageField(usage, 'inputTokens', 'input_tokens');
+    const output = usageField(usage, 'outputTokens', 'output_tokens');
+    const reasoning = usageField(usage, 'reasoningOutputTokens', 'reasoning_output_tokens');
+    const cached = usageField(usage, 'cachedInputTokens', 'cached_input_tokens');
+    const total = usageField(usage, 'totalTokens', 'total_tokens') || (input + output);
+    return {
+      input_tokens: input,
+      output_tokens: output,
+      reasoning_output_tokens: reasoning,
+      total_tokens: total,
+      input_tokens_details: { cached_tokens: cached, cache_write_tokens: 0 },
+    };
+  }
+
+  function formatTurnPlan(planUpdate) {
+    if (!planUpdate) return '';
+    const lines = [];
+    if (planUpdate.explanation) lines.push(planUpdate.explanation);
+    for (const item of planUpdate.plan || []) {
+      if (!item?.step) continue;
+      const status = item.status ? `[${item.status}] ` : '';
+      lines.push(`- ${status}${item.step}`);
+    }
+    return lines.join('\n');
+  }
+
+  function textFromContent(content) {
+    if (content == null) return '';
+    if (typeof content === 'string') return content;
+    if (!Array.isArray(content)) {
+      if (typeof content.text === 'string') return content.text;
+      if (typeof content.input_text === 'string') return content.input_text;
+      if (typeof content.output_text === 'string') return content.output_text;
+      if (Array.isArray(content.content) || typeof content.content === 'string') {
+        return textFromContent(content.content);
       }
+      return '';
     }
-    return result;
-  } catch {}
-}
-
-/**
- * 构建完整的 Responses request body（包含所有可用上下文）
- */
-function buildFullRequestBody(state = getThreadState(), threadId = state.threadId) {
-  const identity = getAgentIdentity(threadId);
-  const systemPrompt = state.systemPrompt
-    || (identity.subAgent
-      ? `You are Codex subagent (${identity.subAgentName || 'subagent'}), a general-purpose agent.`
-      : (_systemPrompt || 'You are Codex'));
-  return {
-    model: state.model || _currentModel,
-    instructions: systemPrompt,
-    input: state.messages.map(m => cloneJson(m)),
-    tools: [{ name: 'shell_command' }, { name: 'apply_patch' }, { name: 'tool_search' }],
-    // turn/start 中的完整参数
-    ...(state.turnContext?.approvalPolicy ? { approval_policy: state.turnContext.approvalPolicy } : {}),
-    ...(state.turnContext?.effort ? { reasoning_effort: state.turnContext.effort } : {}),
-    ...(state.turnContext?.summary ? { reasoning_summary: state.turnContext.summary } : {}),
-    ...(state.turnContext?.sandboxPolicy ? { sandbox_policy: state.turnContext.sandboxPolicy } : {}),
-    // 线程和 turn 元数据
-    metadata: {
-      thread_id: threadId,
-      turn_id: state.turnId,
-      cwd: state.cwd || _cwd || _currentProject,
-      ...identity,
-      ...(isTemporaryTitleThread(state.threadMeta) ? { threadSource: 'thread_title', ephemeral: true } : {}),
-      ...(state.threadMeta?.preview ? { thread_preview: state.threadMeta.preview } : {}),
-      ...(_serverInfo ? { server: _serverInfo } : {}),
-    },
-  };
-}
-
-/**
- * 构建完整的 response body
- */
-function buildFullResponseBody(responseContent, turnMeta, state = getThreadState()) {
-  const usage = state.lastTokenUsage?.last;
-  const totalUsage = state.lastTokenUsage?.total;
-  return {
-    content: responseContent,
-    model: state.model || _currentModel,
-    stop_reason: state.turnStatus || 'end_turn',
-    ...(usage ? {
-      usage: normalizeTokenUsage(usage),
-    } : {}),
-    ...(totalUsage ? {
-      total_usage: normalizeTokenUsage(totalUsage),
-    } : {}),
-    ...(state.lastTokenUsage?.modelContextWindow ? { context_window: state.lastTokenUsage.modelContextWindow } : {}),
-    ...(state.turnPlan ? { turn_plan: cloneJson(state.turnPlan) } : {}),
-    ...(state.turnDiff ? { turn_diff: state.turnDiff } : {}),
-    ...(state.turnModerationMetadata ? { moderation_metadata: cloneJson(state.turnModerationMetadata) } : {}),
-    ...(state.modelReroutes?.length ? { model_reroutes: cloneJson(state.modelReroutes) } : {}),
-    ...(state.modelVerifications?.length ? { model_verifications: cloneJson(state.modelVerifications) } : {}),
-    ...(state.safetyBuffering ? { safety_buffering: cloneJson(state.safetyBuffering) } : {}),
-    ...(state.warnings?.length ? { warnings: cloneJson(state.warnings) } : {}),
-    ...(turnMeta ? {
-      turn: {
-        id: turnMeta.id,
-        status: turnMeta.status,
-        started_at: turnMeta.startedAt,
-        completed_at: turnMeta.completedAt,
-        duration_ms: turnMeta.durationMs,
-      },
-    } : {}),
-  };
-}
-
-/**
- * 发出累积式 MainAgent entry
- */
-function emitMainAgentEntry(timestamp, responseContent, turnMeta, state = getThreadState(), options = {}) {
-  const identity = getAgentIdentity(state.threadId);
-  const entry = {
-    timestamp,
-    project: _currentProject || 'codex',
-    url: buildApiUrl(),
-    method: 'POST',
-    headers: {},
-    body: buildFullRequestBody(state, state.threadId),
-    response: {
-      status: 200,
-      statusText: 'OK',
-      headers: {},
-      body: buildFullResponseBody(responseContent, turnMeta, state),
-    },
-    duration: turnMeta?.durationMs || (state.turnStartTime ? Date.now() - state.turnStartTime : 0),
-    isStream: options.isStream ?? true,
-    ...identity,
-    _appServerSource: true,
-    ...(options.extra || {}),
-  };
-  writeEntry(entry);
-}
-
-function writeEventEntry(base, state, name, input = {}, options = {}) {
-  const identity = getAgentIdentity(state.threadId);
-  writeEntry({
-    ...base,
-    url: options.url || `codex://event/${encodeURIComponent(name)}`,
-    method: options.method || 'EVENT',
-    body: {
-      event_name: name,
-      event_input: cloneJson(input),
-      _threadId: state.threadId,
-      _turnId: state.turnId,
-    },
-    response: {
-      status: options.status || 200,
-      statusText: options.statusText || 'OK',
-      headers: {},
-      body: Object.prototype.hasOwnProperty.call(options, 'output')
-        ? cloneJson(options.output)
-        : cloneJson(input),
-    },
-    duration: 0,
-    mainAgent: false,
-    subAgent: identity.subAgent,
-    ...(identity.subAgent ? {
-      subAgentName: identity.subAgentName,
-      teamName: identity.teamName,
-    } : {}),
-    _agentThreadId: state.threadId,
-    ...(identity._parentThreadId ? { _parentThreadId: identity._parentThreadId } : {}),
-  });
-}
-
-function rememberProcessOutput(state, params) {
-  const processHandle = params.processHandle;
-  if (!processHandle) return;
-  const stream = params.stream === 'stderr' ? 'stderr' : 'stdout';
-  const current = state.processOutputDeltas.get(processHandle) || {
-    stdout: '',
-    stderr: '',
-    stdoutCapReached: false,
-    stderrCapReached: false,
-  };
-  current[stream] += decodeBase64Text(params.deltaBase64);
-  if (params.capReached) {
-    current[`${stream}CapReached`] = true;
-  }
-  state.processOutputDeltas.set(processHandle, current);
-}
-
-function writeToolEntry(base, state, item, options = {}) {
-  const identity = getAgentIdentity(state.threadId);
-  const name = options.name || item.tool || item.name || item.type || 'tool';
-  const input = options.input ?? item.arguments ?? item.input ?? item.action ?? {};
-  const hasOutput = Object.prototype.hasOwnProperty.call(options, 'output')
-    || Object.prototype.hasOwnProperty.call(item, 'output')
-    || Object.prototype.hasOwnProperty.call(item, 'result')
-    || Object.prototype.hasOwnProperty.call(item, 'error')
-    || Object.prototype.hasOwnProperty.call(item, 'aggregatedOutput')
-    || Object.prototype.hasOwnProperty.call(item, 'status');
-  const output = Object.prototype.hasOwnProperty.call(options, 'output')
-    ? options.output
-    : (item.output ?? item.result ?? item.error ?? item.aggregatedOutput ?? item.status);
-  writeEntry({
-    ...base,
-    url: options.url || `codex://tool/${encodeURIComponent(name)}`,
-    method: options.method || 'TOOL',
-    body: {
-      tool_name: name,
-      tool_input: parseMaybeJson(input),
-      _callId: item.call_id || item.callId || item.id,
-      _threadId: state.threadId,
-      _turnId: state.turnId,
-      _itemType: item.type,
-      status: item.status,
-      raw_item: item,
-    },
-    response: hasOutput ? {
-      status: item.error || item.status === 'failed' ? 500 : 200,
-      statusText: item.error || item.status === 'failed' ? 'Error' : 'OK',
-      headers: {},
-      body: {
-        output,
-        status: item.status,
-        exit_code: item.exitCode,
-        duration_ms: item.durationMs,
-      },
-    } : null,
-    duration: item.durationMs || 0,
-    mainAgent: false,
-    subAgent: identity.subAgent,
-    ...(identity.subAgent ? {
-      subAgentName: identity.subAgentName,
-      teamName: identity.teamName,
-    } : {}),
-    _agentThreadId: state.threadId,
-    ...(identity._parentThreadId ? { _parentThreadId: identity._parentThreadId } : {}),
-  });
-}
-
-
-function writeServerRequestEntry(base, state, requestId, method, params, descriptor) {
-  const identity = getAgentIdentity(state.threadId);
-  const kind = descriptor?.kind || 'serverRequest';
-  const name = descriptor?.name || method;
-  const input = descriptor?.input ?? params;
-  writeEntry({
-    ...base,
-    url: `codex://server_request/${encodeURIComponent(method)}/${encodeURIComponent(String(requestId))}`,
-    method: APPROVAL_SERVER_REQUEST_METHODS.has(method) ? 'APPROVAL_REQUEST' : 'SERVER_REQUEST',
-    body: {
-      server_request_method: method,
-      server_request_id: requestId,
-      server_request_kind: kind,
-      tool_name: name,
-      tool_input: parseMaybeJson(input) || {},
-      _threadId: state.threadId,
-      _turnId: params.turnId || state.turnId,
-      _itemId: params.itemId || params.callId,
-      raw_params: cloneJson(params),
-    },
-    response: null,
-    duration: 0,
-    mainAgent: false,
-    subAgent: identity.subAgent,
-    ...(identity.subAgent ? {
-      subAgentName: identity.subAgentName,
-      teamName: identity.teamName,
-    } : {}),
-    _agentThreadId: state.threadId,
-    ...(identity._parentThreadId ? { _parentThreadId: identity._parentThreadId } : {}),
-  });
-}
-
-function writeServerRequestResolutionEntry(pending, msg) {
-  const state = getThreadState(pending.threadId);
-  const identity = getAgentIdentity(state.threadId);
-  const isError = !!msg.error;
-  writeEntry({
-    timestamp: new Date().toISOString(),
-    project: _currentProject || 'codex',
-    url: `codex://server_request_response/${encodeURIComponent(pending.method)}/${encodeURIComponent(String(pending.requestId))}`,
-    method: 'SERVER_RESPONSE',
-    headers: {},
-    body: {
-      server_request_method: pending.method,
-      server_request_id: pending.requestId,
-      server_request_kind: pending.kind,
-      tool_name: pending.name,
-      _threadId: state.threadId,
-      _turnId: pending.turnId || state.turnId,
-      _itemId: pending.itemId,
-    },
-    response: {
-      status: isError ? 500 : 200,
-      statusText: isError ? 'Error' : 'OK',
-      headers: {},
-      body: isError ? cloneJson(msg.error) : cloneJson(msg.result),
-    },
-    duration: 0,
-    mainAgent: false,
-    subAgent: identity.subAgent,
-    ...(identity.subAgent ? {
-      subAgentName: identity.subAgentName,
-      teamName: identity.teamName,
-    } : {}),
-    _agentThreadId: state.threadId,
-    ...(identity._parentThreadId ? { _parentThreadId: identity._parentThreadId } : {}),
-  });
-}
-
-function appendToolUse(state, id, name, input) {
-  pushContentBlock(state.pendingContent, {
-    type: 'tool_use',
-    id: id || name || 'tool',
-    name: name || 'tool',
-    input: parseMaybeJson(input) || {},
-  });
-}
-
-function upsertToolUse(state, id, name, input) {
-  if (!state || !id) return;
-  const existing = state.pendingContent.find(block => block?.type === 'tool_use' && block.id === id);
-  if (existing) {
-    existing.name = name || existing.name;
-    existing.input = parseMaybeJson(input) || {};
-    return;
-  }
-  appendToolUse(state, id, name, input);
-}
-
-function normalizeRequestUserInputQuestions(questions = []) {
-  if (!Array.isArray(questions)) return [];
-  return questions
-    .filter(q => q && typeof q === 'object')
-    .map(q => ({
-      ...(q.id ? { id: q.id } : {}),
-      header: q.header || '',
-      question: q.question || q.id || '',
-      ...(q.isOther ? { isOther: true } : {}),
-      ...(q.isSecret ? { isSecret: true } : {}),
-      options: Array.isArray(q.options)
-        ? q.options.map(opt => ({
-          label: String(opt?.label ?? ''),
-          description: opt?.description || '',
-        }))
-        : [],
-    }));
-}
-
-function mcpElicitationOptions(schema = {}) {
-  if (Array.isArray(schema.oneOf)) {
-    return schema.oneOf.map(opt => ({
-      label: String(opt?.title ?? opt?.const ?? ''),
-      description: opt?.title && opt?.const != null && opt.title !== opt.const ? String(opt.const) : '',
-      value: opt?.const,
-    }));
-  }
-  if (Array.isArray(schema.enum)) {
-    return schema.enum.map((value, index) => ({
-      label: String(schema.enumNames?.[index] ?? value),
-      description: schema.enumNames?.[index] ? String(value) : '',
-      value,
-    }));
-  }
-  return [];
-}
-
-function mcpElicitationArrayOptions(schema = {}) {
-  const items = schema.items || {};
-  if (Array.isArray(items.anyOf)) {
-    return items.anyOf.map(opt => ({
-      label: String(opt?.title ?? opt?.const ?? ''),
-      description: opt?.title && opt?.const != null && opt.title !== opt.const ? String(opt.const) : '',
-      value: opt?.const,
-    }));
-  }
-  if (Array.isArray(items.enum)) {
-    return items.enum.map(value => ({ label: String(value), description: '', value }));
-  }
-  return [];
-}
-
-function questionTextFromMcpField(params, key, schema = {}) {
-  const label = schema.title || key;
-  const description = schema.description ? `\n${schema.description}` : '';
-  return [params.message, `${label}${description}`].filter(Boolean).join('\n\n');
-}
-
-function normalizeMcpElicitationQuestions(params = {}) {
-  const header = params.serverName ? `${params.serverName} MCP` : 'MCP elicitation';
-  if (params.mode === 'form' && params.requestedSchema?.properties) {
-    return Object.entries(params.requestedSchema.properties)
-      .filter(([, schema]) => schema && typeof schema === 'object')
-      .map(([key, schema]) => {
-        const isMulti = schema.type === 'array';
-        const options = isMulti ? mcpElicitationArrayOptions(schema) : mcpElicitationOptions(schema);
-        const booleanOptions = schema.type === 'boolean'
-          ? [
-            { label: 'true', description: '' },
-            { label: 'false', description: '' },
-          ]
-          : [];
-        return {
-          id: key,
-          header,
-          question: questionTextFromMcpField(params, key, schema),
-          ...(isMulti ? { multiSelect: true } : {}),
-          options: options.length ? options : booleanOptions,
-          mcpSchema: cloneJson(schema),
-        };
-      });
-  }
-  return [{
-    id: params.elicitationId || 'mcp-elicitation',
-    header,
-    question: [params.message, params.url].filter(Boolean).join('\n\n'),
-    options: [],
-    mcpMode: params.mode,
-    requestedSchema: cloneJson(params.requestedSchema),
-  }];
-}
-
-function answerTextValue(answer) {
-  if (Array.isArray(answer?.answers)) return answer.answers.join(', ');
-  if (Array.isArray(answer)) return answer.join(', ');
-  if (typeof answer === 'string') return answer;
-  if (answer && typeof answer === 'object' && typeof answer.answer === 'string') return answer.answer;
-  return stringifyValue(answer);
-}
-
-function quoteAskField(value) {
-  return String(value ?? '').replace(/"/g, "'");
-}
-
-function formatAskUserInputResult(pending, result = {}) {
-  const answers = result.answers || {};
-  const questionById = new Map((pending.questions || []).map(q => [q.id || q.question, q]));
-  return Object.entries(answers).map(([id, answer]) => {
-    const q = questionById.get(id) || {};
-    const question = q.question || id;
-    return `"${quoteAskField(question)}"="${quoteAskField(answerTextValue(answer))}"`;
-  }).join('\n');
-}
-
-function answerLabelForQuestion(question, answer) {
-  if (!question?.options?.length) return answerTextValue(answer);
-  const values = Array.isArray(answer) ? answer : [answer];
-  return values.map(value => {
-    const match = question.options.find(opt => opt.value === value || opt.label === value);
-    return match?.label || answerTextValue(value);
-  }).join(', ');
-}
-
-function formatMcpElicitationResult(pending, result = {}) {
-  const action = result.action || null;
-  if (action && action !== 'accept') return `[mcp:${action}]`;
-  const content = result.content && typeof result.content === 'object' ? result.content : {};
-  const questionById = new Map((pending.questions || []).map(q => [q.id || q.question, q]));
-  const lines = Object.entries(content).map(([id, answer]) => {
-    const q = questionById.get(id) || {};
-    const question = q.question || id;
-    return `"${quoteAskField(question)}"="${quoteAskField(answerLabelForQuestion(q, answer))}"`;
-  });
-  if (lines.length > 0) return lines.join('\n');
-  return action ? `action=${action}` : stringifyValue(result);
-}
-
-function buildCodexTurnPlanInput(planUpdate) {
-  return {
-    plan: formatTurnPlan(planUpdate),
-    allowedPrompts: [],
-    codexTurnPlan: true,
-    nonInteractive: true,
-    turnPlan: cloneJson(planUpdate),
-  };
-}
-
-function buildCodexPlanItemInput(item) {
-  return {
-    plan: item?.text || '',
-    allowedPrompts: [],
-    codexTurnPlan: true,
-    nonInteractive: true,
-    planItem: cloneJson(item),
-  };
-}
-
-function completeToolLikeItem(base, state, item, options = {}) {
-  const id = item.call_id || item.callId || item.id || options.id || options.name || item.type;
-  const name = options.name || item.tool || item.name || item.type || 'tool';
-  const input = options.input ?? item.arguments ?? item.input ?? item.action ?? {};
-  const output = Object.prototype.hasOwnProperty.call(options, 'output')
-    ? options.output
-    : (item.output ?? item.result ?? item.error ?? item.aggregatedOutput ?? item.status ?? item);
-  appendToolUse(state, id, name, input);
-  writeToolEntry(base, state, item, { ...options, name, input, output });
-  flushAssistantContent(state);
-  appendToolResultMessage(state, id, output);
-}
-
-function handleCompletedItem(item, state, base) {
-  if (!item || typeof item !== 'object') return;
-  const type = item.type;
-  const id = itemKey(item);
-  if (id) state.completedItemIds.add(id);
-
-  if (type === 'userMessage') {
-    appendUserMessage(state, item.content || [], item.clientId || item.id, { dedupeLastUser: true });
-    return;
+    return content.map(block => {
+      if (!block) return '';
+      if (typeof block === 'string') return block;
+      if (typeof block.text === 'string') return block.text;
+      if (typeof block.input_text === 'string') return block.input_text;
+      if (typeof block.output_text === 'string') return block.output_text;
+      if (typeof block.content === 'string' || Array.isArray(block.content)) return textFromContent(block.content);
+      return '';
+    }).filter(Boolean).join('\n');
   }
 
-  if (type === 'message' || type === 'agentMessage' || type === 'agent_message') {
-    const text = item.text || textFromContent(item.content) || state.agentMessageDeltas.get(item.id) || '';
-    pushContentBlock(state.pendingContent, { type: 'text', text });
-    return;
-  }
-
-  if (type === 'plan') {
-    const text = item.text || state.planDeltas.get(item.id) || '';
-    upsertToolUse(state, item.id || `codex-plan:${state.turnId || state.threadId || 'turn'}`, CODEX_PLAN_TOOL_NAME, buildCodexPlanItemInput({ ...item, text }));
-    return;
-  }
-
-  if (type === 'reasoning') {
-    const fromItem = textFromContent(item.summary || []) || textFromContent(item.content || []);
-    const thinking = fromItem || state.reasoningDeltas.get(item.id) || '';
-    pushContentBlock(state.pendingContent, { type: 'thinking', thinking, summary: item.summary });
-    return;
-  }
-
-  if (type === 'function_call' || type === 'custom_tool_call' || type === 'local_shell_call' || type === 'tool_search_call') {
-    const input = item.arguments ?? item.input ?? item.action ?? {};
-    const name = item.name || item.tool || (type === 'local_shell_call' ? 'local_shell' : type);
-    appendToolUse(state, item.call_id || item.id, name, input);
-    writeToolEntry(base, state, item, { name, input });
-    return;
-  }
-
-  if (type === 'function_call_output' || type === 'custom_tool_call_output') {
-    const id = item.call_id || item.callId || item.id;
-    flushAssistantContent(state);
-    appendToolResultMessage(state, id, item.output);
-    writeToolEntry(base, state, item, {
-      method: 'TOOL_RESULT',
-      url: `codex://tool_result/${encodeURIComponent(id || '')}`,
-      name: type,
-      input: { _callId: id },
-      output: item.output,
+  function normalizeUserContent(content) {
+    if (typeof content === 'string') return content;
+    if (!Array.isArray(content)) return textFromContent(content);
+    const text = textFromContent(content);
+    const hasOnlyText = content.every(block => {
+      if (typeof block === 'string') return true;
+      return block && (block.type === 'text' || block.type === 'input_text');
     });
-    return;
+    return hasOnlyText ? text : cloneJson(content);
   }
 
-  if (type === 'commandExecution' || type === 'command_execution') {
-    const output = item.aggregatedOutput
-      ?? item.aggregated_output
-      ?? state.commandOutputDeltas.get(item.id)
-      ?? (item.processId ? state.commandExecOutputDeltas.get(item.processId) : null)
-      ?? item.status;
-    const terminalInteractions = state.terminalInteractions.get(item.id) || [];
-    const exitCode = item.exitCode ?? item.exit_code;
-    completeToolLikeItem(base, state, item, {
-      name: 'shell_command',
-      input: {
-        command: item.command,
-        cwd: item.cwd,
-        source: item.source,
-        commandActions: item.commandActions,
-      },
-      output: {
-        output,
-        status: item.status,
-        exitCode,
-        ...(terminalInteractions.length ? { terminal_interactions: terminalInteractions } : {}),
-      },
-    });
-    return;
+  function sameUserContent(a, b) {
+    if (a === b) return true;
+    try {
+      return JSON.stringify(a) === JSON.stringify(b);
+    } catch {
+      return false;
+    }
   }
 
-  if (type === 'fileChange' || type === 'file_change') {
-    const deltaOutput = state.fileChangeOutputDeltas.get(item.id);
-    const changes = (Array.isArray(item.changes) && item.changes.length > 0)
-      ? item.changes
-      : (state.fileChangePatches.get(item.id) || item.changes || []);
-    completeToolLikeItem(base, state, item, {
-      name: 'apply_patch',
-      input: { changes },
-      output: { status: item.status, changes, ...(deltaOutput ? { output: deltaOutput } : {}) },
-    });
-    return;
+  function createThreadState(threadId) {
+    return {
+      threadId: threadId || 'root',
+      messages: [],
+      pendingContent: [],
+      turnStartTime: null,
+      turnId: null,
+      cwd: _cwd,
+      model: _currentModel,
+      systemPrompt: null,
+      turnContext: {},
+      threadMeta: {},
+      lastTokenUsage: null,
+      turnStatus: null,
+      seenUserMessageIds: new Set(),
+      agentMessageDeltas: new Map(),
+      reasoningDeltas: new Map(),
+      planDeltas: new Map(),
+      commandOutputDeltas: new Map(),
+      commandExecOutputDeltas: new Map(),
+      terminalInteractions: new Map(),
+      fileChangeOutputDeltas: new Map(),
+      fileChangePatches: new Map(),
+      mcpProgressMessages: new Map(),
+      processOutputDeltas: new Map(),
+      itemSnapshots: new Map(),
+      itemOrder: [],
+      completedItemIds: new Set(),
+      emittedTurnIds: new Set(),
+      turnPlan: null,
+      turnPlanToolId: null,
+      turnDiff: null,
+      turnModerationMetadata: null,
+      modelReroutes: [],
+      modelVerifications: [],
+      safetyBuffering: null,
+      warnings: [],
+    };
   }
 
-  if (type === 'mcpToolCall' || type === 'mcp_tool_call') {
-    const progress = state.mcpProgressMessages.get(item.id);
-    const resultOutput = item.error || item.result || item.status;
-    completeToolLikeItem(base, state, item, {
-      name: item.server ? `${item.server}.${item.tool}` : item.tool,
-      input: item.arguments,
-      output: progress?.length ? {
-        progress,
-        result: item.result,
-        error: item.error,
-        status: item.status,
-      } : resultOutput,
-      url: `codex://mcp_tool/${encodeURIComponent(item.tool || item.id || '')}`,
-    });
-    return;
+  function getThreadState(threadId) {
+    const key = threadId || _threadId || _mainThreadId || 'root';
+    let state = _threadStates.get(key);
+    if (!state) {
+      state = createThreadState(key);
+      _threadStates.set(key, state);
+    }
+    return state;
   }
 
-  if (type === 'dynamicToolCall') {
-    completeToolLikeItem(base, state, item, {
-      name: item.namespace ? `${item.namespace}.${item.tool}` : item.tool,
-      input: item.arguments,
-      output: item.contentItems || item.success || item.status,
-      url: `codex://dynamic_tool/${encodeURIComponent(item.tool || item.id || '')}`,
-    });
-    return;
+  function syncGlobalsFromState(state) {
+    if (!state) return;
+    _threadId = state.threadId;
+    _turnId = state.turnId;
+    _turnStartTime = state.turnStartTime;
+    _turnContext = state.turnContext || {};
+    _threadMeta = state.threadMeta || {};
+    _lastTokenUsage = state.lastTokenUsage || null;
+    _turnStatus = state.turnStatus || null;
+    _messages = state.messages;
+    _pendingContent = state.pendingContent;
   }
 
-  if (type === 'webSearch' || type === 'web_search') {
-    completeToolLikeItem(base, state, item, {
-      name: 'web_search',
-      input: { query: item.query, action: item.action },
-      output: item.action || item.query,
-      url: 'codex://tool/web_search',
-    });
-    return;
+  function resetThreadRuntimeState() {
+    clearAgentLoops();
+    _threadStates.clear();
+    _threadMetaById.clear();
+    // Keep in-flight preview reads classified even across a new-thread boundary.
+    for (const [id, context] of _pendingThreadContextByRpcId) {
+      if (!context.passiveRead) _pendingThreadContextByRpcId.delete(id);
+    }
+    _subAgentThreads.clear();
+    _pendingServerRequests.clear();
+    _mainThreadId = null;
+    publishTaskState();
   }
 
-  if (type === 'todoList' || type === 'todo_list') {
-    const text = (Array.isArray(item.items) ? item.items : [])
-      .map(todo => `${todo.completed ? '[x]' : '[ ]'} ${todo.text || ''}`.trim())
-      .filter(Boolean)
-      .join('\n');
-    pushContentBlock(state.pendingContent, { type: 'text', text });
-    return;
-  }
-
-  if (type === 'error') {
-    const text = item.message ? `Error: ${item.message}` : '';
-    pushContentBlock(state.pendingContent, { type: 'text', text });
-    return;
-  }
-
-  if (type === 'imageView') {
-    completeToolLikeItem(base, state, item, {
-      name: 'view_image',
-      input: { path: item.path },
-      output: item.path,
-      url: 'codex://tool/view_image',
-    });
-    return;
-  }
-
-  if (type === 'collabAgentToolCall' || type === 'collabToolCall') {
-    registerCollabAgentThreads(item, state.threadId);
-    completeToolLikeItem(base, state, item, {
-      name: item.tool || 'spawn_agent',
-      input: {
-        prompt: item.prompt,
-        model: item.model,
-        receiverThreadIds: item.receiverThreadIds,
-        receiverThreadId: item.receiverThreadId,
-        newThreadId: item.newThreadId,
-        reasoningEffort: item.reasoningEffort,
-      },
-      output: {
-        status: item.status,
-        agentsStates: item.agentsStates,
-        receiverThreadIds: item.receiverThreadIds,
-        receiverThreadId: item.receiverThreadId,
-        newThreadId: item.newThreadId,
-      },
-      url: `codex://collab/${encodeURIComponent(item.tool || 'agent')}`,
-    });
-    return;
-  }
-
-  if (type === 'subAgentActivity') {
-    rememberSubAgentThread(item.agentThreadId, {
-      parentThreadId: state.threadId,
-      agentPath: item.agentPath,
-      agentRole: item.kind,
-    });
-    writeToolEntry(base, state, item, {
-      method: 'SUBAGENT',
-      url: `codex://subagent/${encodeURIComponent(item.kind || 'activity')}`,
-      name: item.kind || 'subAgentActivity',
-      input: { agentThreadId: item.agentThreadId, agentPath: item.agentPath },
-      output: item.kind,
-    });
-    return;
-  }
-
-  if (type === 'sleep' || type === 'imageGeneration' || type === 'contextCompaction' || type === 'compacted' || type === 'enteredReviewMode' || type === 'exitedReviewMode') {
-    writeToolEntry(base, state, item, {
-      method: 'EVENT',
-      url: `codex://event/${encodeURIComponent(type)}`,
-      name: type,
-      input: item,
-      output: item.status || item.review || item,
-    });
-  }
-}
-
-function flushSnapshotItemsAtTurnEnd(state, base) {
-  if (!state?.itemOrder?.length) return;
-  for (const id of state.itemOrder) {
-    if (state.completedItemIds.has(id)) continue;
-    const item = state.itemSnapshots.get(id);
-    if (!canFlushSnapshotAtTurnEnd(item)) continue;
-    handleCompletedItem(item, state, base);
-  }
-}
-
-function timestampFromTurn(turn) {
-  const seconds = turn?.completedAt ?? turn?.startedAt;
-  return typeof seconds === 'number' && Number.isFinite(seconds)
-    ? new Date(seconds * 1000).toISOString()
-    : new Date().toISOString();
-}
-
-function resetTurnItemState(state) {
-  state.pendingContent = [];
-  state.itemSnapshots = new Map();
-  state.itemOrder = [];
-  state.completedItemIds = new Set();
-  state.turnPlan = null;
-  state.turnPlanToolId = null;
-  state.turnDiff = null;
-  state.turnModerationMetadata = null;
-  state.modelReroutes = [];
-  state.modelVerifications = [];
-  state.safetyBuffering = null;
-  state.warnings = [];
-}
-
-function hydrateHistoryTurn(thread, turn, responseResult = {}) {
-  if (!thread?.id || !turn?.id || !Array.isArray(turn.items)) return;
-  if (turn.status === 'inProgress') return;
-  const state = getThreadState(thread.id);
-  if (state.emittedTurnIds.has(turn.id)) return;
-
-  state.threadId = thread.id;
-  state.threadMeta = thread;
-  state.cwd = responseResult.cwd || thread.cwd || state.cwd || _cwd;
-  state.model = responseResult.model || state.model || _currentModel;
-  state.turnId = turn.id;
-  state.turnStatus = turn.status;
-  state.turnStartTime = typeof turn.startedAt === 'number' ? turn.startedAt * 1000 : null;
-  resetTurnItemState(state);
-  syncGlobalsFromState(state);
-
-  const base = {
-    timestamp: timestampFromTurn(turn),
-    project: _currentProject || 'codex',
-    headers: {},
-    isStream: false,
-    _appServerSource: true,
-    _codexHistorySource: true,
-  };
-
-  for (const item of turn.items) {
-    handleCompletedItem(item, state, base);
-  }
-  flushSnapshotItemsAtTurnEnd(state, base);
-
-  if (state.pendingContent.length > 0 || state.turnPlan || state.turnDiff) {
-    const responseContent = state.pendingContent.length > 0
-      ? state.pendingContent
-      : (state.turnPlan ? [{ type: 'text', text: formatTurnPlan(state.turnPlan) }] : []);
-    state.messages.push({ role: 'assistant', content: responseContent });
-    emitMainAgentEntry(base.timestamp, responseContent, turn, state, {
-      isStream: false,
-      extra: { _codexHistorySource: true },
-    });
-    state.pendingContent = [];
-  } else if (turn.status === 'failed' || turn.error) {
-    writeEntry({
-      ...base,
-      url: 'codex://error',
-      method: 'POST',
-      body: buildFullRequestBody(state, state.threadId),
-      response: {
-        status: 500, statusText: 'Error', headers: {},
-        body: { error: turn.error || turn },
-      },
-      duration: turn.durationMs || 0,
-      ...getAgentIdentity(state.threadId),
-    });
-  }
-
-  state.emittedTurnIds.add(turn.id);
-  syncGlobalsFromState(state);
-}
-
-function hydrateThreadTurnsFromResponse(thread, responseResult = {}) {
-  if (!Array.isArray(thread?.turns) || thread.turns.length === 0) return;
-  for (const turn of thread.turns) {
-    hydrateHistoryTurn(thread, turn, responseResult);
-  }
-}
-
-/**
- * 解析 app-server → client 的 JSON-RPC notification
- */
-function parseServerMessage(msg, connection = 'test') {
-  if (!msg) return;
-  captureRawServerFrame(msg);
-
-  // 捕获 initialize response 中的服务端信息
-  if (msg.id !== undefined && msg.result && !_serverInfo) {
-    if (msg.result.userAgent || msg.result.codexHome) {
-      _serverInfo = {
-        userAgent: msg.result.userAgent,
-        codexHome: msg.result.codexHome,
-        platform: msg.result.platformFamily,
-        os: msg.result.platformOs,
+  function getSubAgentSourceInfo(source) {
+    const subAgent = source?.subAgent;
+    if (!subAgent) return null;
+    if (typeof subAgent === 'string') {
+      return { kind: subAgent };
+    }
+    const spawn = subAgent.thread_spawn || subAgent.threadSpawn;
+    if (spawn) {
+      return {
+        kind: 'thread_spawn',
+        parentThreadId: spawn.parent_thread_id || spawn.parentThreadId,
+        agentPath: spawn.agent_path || spawn.agentPath,
+        agentNickname: spawn.agent_nickname || spawn.agentNickname,
+        agentRole: spawn.agent_role || spawn.agentRole || spawn.agent_type || spawn.agentType,
+        depth: spawn.depth,
       };
     }
+    return { kind: stringifyValue(subAgent) };
   }
 
-  if (msg.id !== undefined && msg.result) {
-    const startContext = _pendingThreadStartByRpcId.get(String(msg.id)) || null;
-    rememberThreadResponse(msg.result, startContext);
-    if (startContext) _pendingThreadStartByRpcId.delete(String(msg.id));
-  }
-
-  if (!msg.method && msg.id != null) {
-    const key = turnRpcKey(connection, msg.id), pending = _pendingClientTurns.get(key);
-    if (pending) {
-      _pendingClientTurns.delete(key);
-      if (!msg.error) acceptAgentLoop(pending, msg.result?.turn);
+  function rememberSubAgentThread(threadId, info = {}) {
+    if (!threadId) return;
+    const existing = _subAgentThreads.get(threadId) || {};
+    const next = { ...existing, ...info };
+    if (!next.parentThreadId && _mainThreadId && _mainThreadId !== threadId) {
+      next.parentThreadId = _mainThreadId;
+    }
+    _subAgentThreads.set(threadId, next);
+    getThreadState(threadId);
+    if (!_mainThreadId && next.parentThreadId && next.parentThreadId !== threadId) {
+      _mainThreadId = next.parentThreadId;
     }
   }
 
-  if (!msg.method) return; // 只处理 notifications（有 method）
-
-  const params = msg.params || {};
-  const ts = new Date().toISOString();
-  const method = msg.method;
-
-  // thread/started — 捕获线程元数据；parentThreadId/source/threadSource 用于识别 subAgent
-  if (method === 'thread/started') {
-    rememberThread(params.thread || {});
-    return;
+  function isSubAgentThreadMeta(thread) {
+    if (!thread) return false;
+    if (thread.parentThreadId) return true;
+    if (thread.threadSource === 'subagent') return true;
+    return !!getSubAgentSourceInfo(thread.source);
   }
 
-  const threadId = params.threadId
-    || params.conversationId
-    || params.thread?.id
-    || params.turn?.threadId
-    || params.item?.threadId
-    || _threadId
-    || _mainThreadId;
-  const state = getThreadState(threadId);
-  syncGlobalsFromState(state);
+  function rememberThread(thread) {
+    if (!thread?.id) return getThreadState();
+    const existingThread = _threadMetaById.get(thread.id) || {};
+    thread = { ...existingThread, ...thread };
+    _threadMetaById.set(thread.id, thread);
+    const state = getThreadState(thread.id);
+    state.threadMeta = thread;
+    state.cwd = thread.cwd || state.cwd || _cwd;
+    const sourceInfo = getSubAgentSourceInfo(thread.source) || {};
+    const parentThreadId = thread.parentThreadId || sourceInfo.parentThreadId || null;
 
-  const base = {
-    timestamp: ts,
-    project: _currentProject || 'codex',
-    headers: {},
-    isStream: false,
-    _appServerSource: true,
-  };
+    if (isSubAgentThreadMeta(thread)) {
+      rememberSubAgentThread(thread.id, {
+        parentThreadId,
+        agentPath: thread.agentPath || sourceInfo.agentPath,
+        agentNickname: thread.agentNickname || sourceInfo.agentNickname,
+        agentRole: thread.agentRole || sourceInfo.agentRole || sourceInfo.kind,
+        source: thread.source,
+      });
+    } else if (!_mainThreadId) {
+      _mainThreadId = thread.id;
+    }
 
-  // Server requests with an id are part of the app-server protocol as well.
-  // For transcript purposes, preserve the question-card input shape consumed
-  // by ChatView, but keep the Codex-native tool name in new app-server logs.
-  if (msg.id !== undefined && msg.id !== null) {
-    if (method === 'item/tool/requestUserInput' || method === 'tool/requestUserInput') {
-      const questions = normalizeRequestUserInputQuestions(params.questions || []);
-      const toolId = codexRequestUserInputItemId(msg);
-      upsertToolUse(state, toolId, CODEX_ASK_TOOL_NAME, {
-        questions,
-        autoResolutionMs: params.autoResolutionMs ?? null,
-        codexRequestUserInput: true,
-      });
-      _pendingServerRequests.set(String(msg.id), {
-        kind: 'requestUserInput',
-        threadId: state.threadId,
-        turnId: params.turnId || state.turnId,
-        itemId: toolId,
-        questions,
-      });
-    }
-    if (method === 'mcpServer/elicitation/request') {
-      const questions = normalizeMcpElicitationQuestions(params);
-      const toolId = params.elicitationId || `mcp-elicitation-${msg.id}`;
-      upsertToolUse(state, toolId, CODEX_ASK_TOOL_NAME, {
-        questions,
-        codexMcpElicitation: true,
-        mode: params.mode,
-        serverName: params.serverName,
-        requestedSchema: cloneJson(params.requestedSchema),
-        url: params.url,
-        elicitationId: params.elicitationId,
-      });
-      _pendingServerRequests.set(String(msg.id), {
-        kind: 'mcpElicitation',
-        threadId: state.threadId,
-        turnId: params.turnId || state.turnId,
-        itemId: toolId,
-        questions,
-      });
-    }
-    const descriptor = describeServerRequest(method, params);
-    if (descriptor) {
-      writeServerRequestEntry(base, state, msg.id, method, params, descriptor);
-      const previous = _pendingServerRequests.get(String(msg.id)) || {};
-      _pendingServerRequests.set(String(msg.id), {
-        ...previous,
-        kind: previous.kind || descriptor.kind,
-        method,
-        requestId: msg.id,
-        threadId: previous.threadId || state.threadId,
-        turnId: previous.turnId || params.turnId || state.turnId,
-        itemId: previous.itemId || params.itemId || params.callId,
-        name: descriptor.name,
-      });
-    }
-    return;
+    syncGlobalsFromState(state);
+    return state;
   }
 
-  // turn/started — 捕获 turn 元数据
-  if (method === 'turn/started') {
-    state.turnStartTime = Date.now();
+  function rememberThreadResponse(result, startContext = null) {
+    const thread = startContext && result?.thread
+      ? {
+          ...result.thread,
+          sessionStartSource: startContext.sessionStartSource,
+          previousSessionId: startContext.previousSessionId,
+        }
+      : result?.thread;
+    if (!thread?.id) return null;
+    const state = rememberThread(thread);
+    state.model = result.model || state.model || _currentModel;
+    state.cwd = result.cwd || thread.cwd || state.cwd || _cwd;
+    syncGlobalsFromState(state);
+    hydrateThreadTurnsFromResponse(thread, result);
+    return state;
+  }
+
+  function getAgentIdentity(threadId) {
+    const thread = _threadMetaById.get(threadId) || getThreadState(threadId).threadMeta || {};
+    if (isTemporaryTitleThread(thread)) return { mainAgent: false, subAgent: false, _agentThreadId: threadId };
+    const sourceInfo = getSubAgentSourceInfo(thread.source) || {};
+    const registered = _subAgentThreads.get(threadId);
+    if (registered || isSubAgentThreadMeta(thread)) {
+      const info = registered || {};
+      const label = info.agentNickname
+        || thread.agentNickname
+        || info.agentRole
+        || thread.agentRole
+        || info.agentPath
+        || sourceInfo.agentNickname
+        || sourceInfo.agentRole
+        || sourceInfo.agentPath
+        || sourceInfo.kind
+        || 'subagent';
+      const parentThreadId = info.parentThreadId || thread.parentThreadId || sourceInfo.parentThreadId || _mainThreadId || null;
+      return {
+        mainAgent: false,
+        subAgent: true,
+        subAgentName: label,
+        teamName: parentThreadId || undefined,
+        _agentThreadId: threadId,
+        ...(parentThreadId ? { _parentThreadId: parentThreadId } : {}),
+      };
+    }
+    return {
+      mainAgent: true,
+      subAgent: false,
+      _agentThreadId: threadId,
+    };
+  }
+
+  function getThreadWriteContext(threadId, state) {
+    const known = _threadMetaById.get(threadId) || state?.threadMeta || null;
+    const knownSessionId = known?.sessionId || known?.session_id || null;
+    if (known?.id && knownSessionId) return known;
+
+    // Collaboration activity can announce a child before App Server emits a
+    // full Thread object for it. The root Thread remains authoritative for the
+    // session boundary, while the collaboration registry supplies the parent.
+    const registered = _subAgentThreads.get(threadId);
+    if (!threadId || !registered) return known;
+    const root = _threadMetaById.get(_mainThreadId) || {};
+    const sessionId = root.sessionId || root.session_id || _mainThreadId || null;
+    if (!sessionId) return known;
+    return {
+      ...(known || {}),
+      id: threadId,
+      sessionId,
+      parentThreadId: registered.parentThreadId || known?.parentThreadId || null,
+      ...(registered.source ? { source: registered.source } : {}),
+    };
+  }
+
+  function pushContentBlock(blocks, block) {
+    if (!block) return;
+    if (block.type === 'text' && !block.text) return;
+    if (block.type === 'thinking' && !block.thinking) return;
+    const prev = blocks[blocks.length - 1];
+    if (prev && prev.type === 'text' && block.type === 'text') {
+      prev.text += block.text;
+      return;
+    }
+    if (prev && prev.type === 'thinking' && block.type === 'thinking') {
+      prev.thinking += block.thinking;
+      return;
+    }
+    blocks.push(block);
+  }
+
+  function flushAssistantContent(state) {
+    if (!state?.pendingContent?.length) return;
+    state.messages.push({ role: 'assistant', content: state.pendingContent });
     state.pendingContent = [];
-    state.turnId = params.turn?.id || params.turnId || state.turnId;
-    state.turnStatus = params.turn?.status || 'inProgress';
+    if (state.threadId === _threadId) _pendingContent = state.pendingContent;
+  }
+
+  function appendUserMessage(state, content, clientId, options = {}) {
+    if (!state) return;
+    if (clientId && state.seenUserMessageIds.has(clientId)) return;
+    const normalized = normalizeUserContent(content);
+    const hasContent = Array.isArray(normalized) ? normalized.length > 0 : !!normalized;
+    if (!hasContent) return;
+    if (options.dedupeLastUser) {
+      const last = state.messages[state.messages.length - 1];
+      if (last?.role === 'user' && sameUserContent(last.content, normalized)) {
+        if (clientId) state.seenUserMessageIds.add(clientId);
+        return;
+      }
+    }
+    state.messages.push({ role: 'user', content: normalized, ...(clientId ? { _clientId: clientId } : {}) });
+    if (clientId) state.seenUserMessageIds.add(clientId);
+  }
+
+  function appendToolResultMessage(state, id, output) {
+    state.messages.push({
+      role: 'user',
+      content: [{
+        type: 'tool_result',
+        tool_use_id: id,
+        // Structured Responses image outputs must remain arrays so image parts
+        // reach the renderer. Other arrays retain their historical JSON text
+        // representation instead of becoming an unrecognized content-part list.
+        content: hasStructuredImageOutput(output) ? cloneJson(output) : stringifyValue(output),
+      }],
+    });
+  }
+
+  function registerCollabAgentThreads(item, fallbackParentThreadId) {
+    if (!item || typeof item !== 'object') return;
+    const parentThreadId = item.senderThreadId || fallbackParentThreadId || _mainThreadId;
+    const receiverThreadIds = [
+      ...(Array.isArray(item.receiverThreadIds) ? item.receiverThreadIds : []),
+      item.receiverThreadId,
+      item.newThreadId,
+    ].filter(Boolean);
+    for (const threadId of receiverThreadIds) {
+      rememberSubAgentThread(threadId, {
+        parentThreadId,
+        agentNickname: item.agentNickname,
+        agentRole: item.agentRole || item.tool,
+        agentPath: item.agentPath,
+      });
+    }
+  }
+
+  function itemKey(item) {
+    return item?.id || item?.call_id || item?.callId || item?.processId || item?.type || null;
+  }
+
+  function rememberItemSnapshot(state, item) {
+    const id = itemKey(item);
+    if (!state || !id || !item || typeof item !== 'object') return item;
+    if (!state.itemSnapshots.has(id)) state.itemOrder.push(id);
+    const previous = state.itemSnapshots.get(id) || {};
+    const next = { ...previous, ...item, id: item.id || previous.id || id };
+    state.itemSnapshots.set(id, next);
+    return next;
+  }
+
+  function isTerminalItem(item) {
+    return item?.status === 'completed' || item?.status === 'failed' || item?.status === 'cancelled';
+  }
+
+  function canFlushSnapshotAtTurnEnd(item) {
+    if (!item || typeof item !== 'object') return false;
+    if (isTerminalItem(item)) return true;
+    return item.type === 'message'
+      || item.type === 'agentMessage'
+      || item.type === 'agent_message'
+      || item.type === 'reasoning'
+      || item.type === 'todoList'
+      || item.type === 'todo_list'
+      || item.type === 'error'
+      || item.type === 'plan';
+  }
+
+  function resetRawRoutingState() {
+    flushRawSidecars({ force: true });
+    _rawSidecarStates.clear();
+    _rawFrameSeq = 0;
+    _rawStreamId = randomUUID();
+    _rawRpcThreadById.clear();
+    _rawTurnThreadById.clear();
+    _rawItemThreadById.clear();
+    _rawRangeByThread.clear();
+    _rawDroppedFrames = 0;
+  }
+
+  /** Start a new raw capture epoch and discard frames that have not reached a business entry. */
+  function resetRawCaptureBoundary() {
+    if (_rawSidecarFlushTimer) {
+      clearTimeout(_rawSidecarFlushTimer);
+      _rawSidecarFlushTimer = null;
+    }
+    const previousStreamId = _rawStreamId;
+    _rawSidecarBuffers.clear();
+    _rawSidecarStates.clear();
+    _rawBufferedBytes = 0;
+    _rawFrameSeq = 0;
+    _rawStreamId = randomUUID();
+    _rawRpcThreadById.clear();
+    _rawTurnThreadById.clear();
+    _rawItemThreadById.clear();
+    _rawRangeByThread.clear();
+    _rawDroppedFrames = 0;
+    return { previousStreamId, streamId: _rawStreamId };
+  }
+
+  function rawOptions() {
+    return {
+      segmentBytes: RAW_SIDECAR_SEGMENT_BYTES,
+      threadQuotaBytes: RAW_SIDECAR_THREAD_QUOTA_BYTES,
+      globalQuotaBytes: RAW_SIDECAR_GLOBAL_QUOTA_BYTES,
+      bufferBytes: RAW_SIDECAR_BUFFER_BYTES,
+      routeTtlMs: RAW_ROUTE_TTL_MS,
+      routeMapMax: RAW_ROUTE_MAP_MAX,
+      append: appendFileSync,
+      now: Date.now,
+      ...(_rawStorageOptions || {}),
+    };
+  }
+
+  function rawSegmentPath(baseFile, index) {
+    return index === 0 ? baseFile : baseFile.replace(/\.jsonl$/, `.part-${String(index).padStart(4, '0')}.jsonl`);
+  }
+
+  function rawSegmentInfo(baseFile) {
+    const dir = dirname(baseFile);
+    const name = basename(baseFile, '.jsonl');
+    const matcher = new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\.part-(\\d{4}))?\\.jsonl$`);
+    const segments = [];
+    try {
+      if (!existsSync(dir)) return segments;
+      for (const entry of readdirSync(dir)) {
+        const match = entry.match(matcher);
+        if (!match) continue;
+        const file = join(dir, entry);
+        const stats = statSync(file);
+        segments.push({ file, index: match[1] ? Number(match[1]) : 0, size: stats.size, mtimeMs: stats.mtimeMs });
+      }
+    } catch {}
+    return segments.sort((a, b) => a.index - b.index);
+  }
+
+  function getRawSidecarState(baseFile) {
+    let state = _rawSidecarStates.get(baseFile);
+    if (state && existsSync(rawSegmentPath(baseFile, state.index))) return state;
+    const segments = rawSegmentInfo(baseFile);
+    const latest = segments.at(-1);
+    state = { index: latest?.index || 0, size: latest?.size || 0 };
+    _rawSidecarStates.set(baseFile, state);
+    return state;
+  }
+
+  function enforceRawQuota(baseFile) {
+    const opts = rawOptions();
+    const segments = rawSegmentInfo(baseFile);
+    let threadBytes = segments.reduce((sum, item) => sum + item.size, 0);
+    for (const segment of segments) {
+      if (threadBytes <= opts.threadQuotaBytes || segment.index === getRawSidecarState(baseFile).index) break;
+      try { unlinkSync(segment.file); threadBytes -= segment.size; } catch {}
+    }
+
+    const rawDir = dirname(baseFile);
+    let all = [];
+    try {
+      all = readdirSync(rawDir)
+        .filter(name => name.endsWith('.jsonl'))
+        .map(name => {
+          const file = join(rawDir, name);
+          const stats = statSync(file);
+          return { file, size: stats.size, mtimeMs: stats.mtimeMs };
+        })
+        .sort((a, b) => a.mtimeMs - b.mtimeMs);
+    } catch { return; }
+    let total = all.reduce((sum, item) => sum + item.size, 0);
+    for (const item of all) {
+      if (total <= opts.globalQuotaBytes) break;
+      try {
+        unlinkSync(item.file);
+        total -= item.size;
+        for (const [base, state] of _rawSidecarStates) {
+          if (rawSegmentPath(base, state.index) === item.file) _rawSidecarStates.delete(base);
+        }
+      } catch {}
+    }
+  }
+
+  function appendRawChunks(baseFile, chunks) {
+    const opts = rawOptions();
+    const state = getRawSidecarState(baseFile);
+    mkdirSync(dirname(baseFile), { recursive: true });
+    let batchChunks = [];
+    let batchBytes = 0;
+    const writeBatch = () => {
+      if (batchChunks.length === 0) return;
+      opts.append(rawSegmentPath(baseFile, state.index), batchChunks.join(''));
+      state.size += batchBytes;
+      batchChunks = [];
+      batchBytes = 0;
+    };
+    for (const chunk of chunks) {
+      const bytes = Buffer.byteLength(chunk);
+      if ((state.size > 0 || batchChunks.length > 0) && state.size + batchBytes + bytes > opts.segmentBytes) {
+        writeBatch();
+        state.index++;
+        state.size = 0;
+      }
+      batchChunks.push(chunk);
+      batchBytes += bytes;
+    }
+    writeBatch();
+    enforceRawQuota(baseFile);
+  }
+
+  function flushRawSidecar(baseFile, { force = false } = {}) {
+    const buffered = _rawSidecarBuffers.get(baseFile);
+    if (!buffered?.chunks?.length) return;
+    const now = rawOptions().now();
+    if (!force && buffered.nextRetryAt > now) return;
+    const chunks = buffered.chunks;
+    const bytes = buffered.bytes;
+    try {
+      appendRawChunks(baseFile, chunks);
+      _rawSidecarBuffers.delete(baseFile);
+      _rawBufferedBytes -= bytes;
+    } catch (err) {
+      buffered.failures++;
+      buffered.nextRetryAt = now + Math.min(30_000, 250 * (2 ** Math.min(buffered.failures, 7)));
+      if (process.env.CXV_DEBUG) console.warn('[CX-Viewer] Raw app-server frame write error:', err.message);
+      scheduleRawSidecarFlush();
+    }
+  }
+
+  function flushRawSidecars({ force = false } = {}) {
+    if (_rawSidecarFlushTimer) {
+      clearTimeout(_rawSidecarFlushTimer);
+      _rawSidecarFlushTimer = null;
+    }
+    for (const file of [..._rawSidecarBuffers.keys()]) flushRawSidecar(file, { force });
+    if (_rawSidecarBuffers.size > 0 && !force) scheduleRawSidecarFlush();
+  }
+
+  function scheduleRawSidecarFlush() {
+    if (_rawSidecarFlushTimer) return;
+    _rawSidecarFlushTimer = setTimeout(() => {
+      _rawSidecarFlushTimer = null;
+      flushRawSidecars();
+    }, RAW_SIDECAR_FLUSH_MS);
+    _rawSidecarFlushTimer.unref?.();
+  }
+
+  function pruneRawRouteMap(map, now, max) {
+    for (const [key, value] of map) {
+      if (value.expiresAt <= now) map.delete(key);
+    }
+    while (map.size >= max) map.delete(map.keys().next().value);
+  }
+
+  function rememberRawRoute(map, key, threadId) {
+    if (key == null || !threadId) return;
+    const opts = rawOptions();
+    const now = opts.now();
+    pruneRawRouteMap(map, now, opts.routeMapMax);
+    map.set(String(key), { threadId: String(threadId), expiresAt: now + opts.routeTtlMs });
+  }
+
+  function getRawRoute(map, key) {
+    const value = key == null ? null : map.get(String(key));
+    if (!value) return null;
+    if (value.expiresAt <= rawOptions().now()) {
+      map.delete(String(key));
+      return null;
+    }
+    return value.threadId;
+  }
+
+  function rawMessageThreadId(direction, msg) {
+    const params = msg?.params || {};
+    const result = msg?.result || {};
+    const direct = params.threadId
+      || params.thread_id
+      || params.conversationId
+      || params.thread?.id
+      || params.turn?.threadId
+      || params.item?.threadId
+      || result.thread?.id
+      || result.threadId
+      || null;
+    if (direct) return String(direct);
+
+    const turnId = params.turnId || params.turn_id || params.turn?.id || params.item?.turnId || params.item?.turn_id || null;
+    const turnThread = getRawRoute(_rawTurnThreadById, turnId);
+    if (turnThread) return turnThread;
+    const itemId = params.itemId || params.item_id || params.item?.id || params.callId || params.call_id || null;
+    const itemThread = getRawRoute(_rawItemThreadById, itemId);
+    if (itemThread) return itemThread;
+    const responseKey = msg?.id !== undefined && msg?.id !== null ? `${direction}:${msg.id}` : null;
+    const responseThread = getRawRoute(_rawRpcThreadById, responseKey);
+    if (responseThread) return responseThread;
+    return null;
+  }
+
+  function rememberRawRouting(direction, msg, threadId) {
+    if (!msg || !threadId) return;
+    const id = String(threadId);
+    const params = msg.params || {};
+    const turnId = params.turnId || params.turn_id || params.turn?.id || params.item?.turnId || params.item?.turn_id || null;
+    const itemId = params.itemId || params.item_id || params.item?.id || params.callId || params.call_id || null;
+    rememberRawRoute(_rawTurnThreadById, turnId, id);
+    rememberRawRoute(_rawItemThreadById, itemId, id);
+    if (msg.id !== undefined && msg.id !== null && msg.method) {
+      const responseDirection = direction === 'client' ? 'server' : 'client';
+      rememberRawRoute(_rawRpcThreadById, `${responseDirection}:${msg.id}`, id);
+    }
+  }
+
+  function rawSidecarName(threadId) {
+    if (!threadId) return '_app-server.jsonl';
+    const id = String(threadId);
+    if (id !== '.' && id !== '..' && /^[A-Za-z0-9._-]{1,180}$/.test(id)) return `${id}.jsonl`;
+    const digest = createHash('sha256').update(id).digest('hex').slice(0, 24);
+    return `thread-${digest}.jsonl`;
+  }
+
+  function appendRawFrame(direction, msg) {
+    if (!msg || !_rawDir) return;
+    const threadId = rawMessageThreadId(direction, msg);
+    rememberRawRouting(direction, msg, threadId);
+    const params = msg.params || {};
+    const turnId = params.turnId || params.turn_id || params.turn?.id || params.item?.turnId || params.item?.turn_id || null;
+    const itemId = params.itemId || params.item_id || params.item?.id || params.callId || params.call_id || null;
+    const rawDir = _rawDir;
+    const seq = ++_rawFrameSeq;
+    const record = {
+      stream_id: _rawStreamId,
+      seq,
+      timestamp: new Date().toISOString(),
+      direction,
+      thread_id: threadId,
+      turn_id: turnId ? String(turnId) : null,
+      method: msg.method || null,
+      frame: msg,
+    };
+    const sidecar = rawSidecarName(threadId);
+    const file = join(rawDir, sidecar);
+    const line = `${JSON.stringify(record)}\n`;
+    const lineBytes = Buffer.byteLength(line);
+    let buffered = _rawSidecarBuffers.get(file);
+    if (!buffered) {
+      buffered = { chunks: [], bytes: 0, failures: 0, nextRetryAt: 0 };
+      _rawSidecarBuffers.set(file, buffered);
+    }
+    buffered.chunks.push(line);
+    buffered.bytes += lineBytes;
+    _rawBufferedBytes += lineBytes;
+    const rangeKey = threadId || '';
+    const range = _rawRangeByThread.get(rangeKey) || { fromSeq: seq, toSeq: seq, sidecar };
+    range.toSeq = seq;
+    _rawRangeByThread.set(rangeKey, range);
+
+    const maxBuffer = rawOptions().bufferBytes;
+    while (_rawBufferedBytes > maxBuffer) {
+      const oldest = _rawSidecarBuffers.entries().next().value;
+      if (!oldest) break;
+      const [oldFile, oldBuffer] = oldest;
+      const dropped = oldBuffer.chunks.shift();
+      if (dropped) {
+        const droppedBytes = Buffer.byteLength(dropped);
+        oldBuffer.bytes -= droppedBytes;
+        _rawBufferedBytes -= droppedBytes;
+        _rawDroppedFrames++;
+      }
+      if (oldBuffer.chunks.length === 0) _rawSidecarBuffers.delete(oldFile);
+    }
+    if (!msg.method && msg.id !== undefined && msg.id !== null) {
+      _rawRpcThreadById.delete(`${direction}:${msg.id}`);
+    }
+    if (msg.method === 'turn/completed' || msg.method === 'turn/failed') {
+      const completedTurnId = turnId || msg.params?.turn?.id;
+      if (completedTurnId) _rawTurnThreadById.delete(String(completedTurnId));
+    }
+    if (msg.method === 'item/completed' || msg.method === 'item/failed') {
+      if (itemId) _rawItemThreadById.delete(String(itemId));
+    }
+    if (buffered.bytes >= RAW_SIDECAR_FLUSH_BYTES) flushRawSidecar(file);
+    else scheduleRawSidecarFlush();
+  }
+
+  function captureRawClientFrame(msg) {
+    appendRawFrame('client', msg);
+  }
+
+  function captureRawServerFrame(msg) {
+    appendRawFrame('server', msg);
+  }
+
+  function rawReferenceForEntry(entry) {
+    const threadId = entry?.body?.metadata?.thread_id
+      || entry?.body?._threadId
+      || entry?.response?.body?.turn?.threadId
+      || null;
+    const range = _rawRangeByThread.get(threadId || '');
+    if (!range) return null;
+    return {
+      version: 1,
+      streamId: _rawStreamId,
+      threadId: threadId ? String(threadId) : null,
+      sidecar: range.sidecar,
+      fromSeq: range.fromSeq,
+      toSeq: range.toSeq,
+      ...(_rawDroppedFrames > 0 ? { droppedFrames: _rawDroppedFrames } : {}),
+    };
+  }
+
+  function releaseRawReference(rawRef) {
+    // A completion from an earlier capture epoch must never advance a new
+    // epoch's range merely because its thread id and sequence happen to match.
+    if (!rawRef || rawRef.streamId !== _rawStreamId) return;
+    const rangeKey = rawRef.threadId || '';
+    const current = _rawRangeByThread.get(rangeKey);
+    if (current?.toSeq === rawRef.toSeq) _rawRangeByThread.delete(rangeKey);
+    else if (current && current.fromSeq <= rawRef.toSeq) current.fromSeq = rawRef.toSeq + 1;
+  }
+
+  /**
+   * 找一个空闲端口
+   */
+  function findFreePort() {
+    return new Promise((resolve, reject) => {
+      const srv = createServer();
+      srv.listen(0, '127.0.0.1', () => {
+        const port = srv.address().port;
+        srv.close(() => resolve(port));
+      });
+      srv.on('error', reject);
+    });
+  }
+
+  /**
+   * 等待 app-server 就绪
+   */
+  async function waitForReady(url, timeoutMs = 15000, signal = null) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      signal?.throwIfAborted();
+      try {
+        const res = await fetch(url, { signal });
+        if (res.ok) return true;
+      } catch { signal?.throwIfAborted(); }
+      await new Promise(r => setTimeout(r, 300));
+    }
+    throw new Error(`App-server not ready after ${timeoutMs}ms`);
+  }
+
+  /**
+   * 写入一条 entry 到 Log Store V2
+   */
+  function writeEntry(entry) {
+    if (!entry || !_writeLogEntry) return;
+    try {
+      let normalizedEntry = entry;
+      if (typeof entry.url === 'string' && entry.url.startsWith('codex://') && entry.url !== 'codex://app-server/turn') {
+        const {
+          subAgentName: _subAgentName,
+          teamName: _teamName,
+          teammate: _teammate,
+          ...rest
+        } = entry;
+        normalizedEntry = { ...rest, subAgent: false };
+      }
+      const rawRef = rawReferenceForEntry(normalizedEntry);
+      const storedEntry = rawRef && !normalizedEntry._codexRaw
+        ? { ...normalizedEntry, _codexRaw: rawRef }
+        : normalizedEntry;
+      let result = { written: true, accepted: true, durable: true };
+      const threadId = storedEntry._agentThreadId
+        || storedEntry.body?.metadata?.thread_id
+        || storedEntry.body?._threadId
+        || _threadId
+        || _mainThreadId;
+      const state = getThreadState(threadId);
+      const thread = getThreadWriteContext(threadId, state);
+      result = _writeLogEntry(storedEntry, {
+        source: 'app-server',
+        thread,
+        cwd: state.cwd || _cwd,
+        projectId: _currentProject,
+      });
+      if (rawRef) {
+        if (result?.completion && typeof result.completion.then === 'function') {
+          void Promise.resolve(result.completion).then((completion) => {
+            if (completion?.durable === true) releaseRawReference(rawRef);
+          }, () => {
+            // Preserve the range so a later business entry can reference the raw
+            // frames again after a failed durable write.
+          });
+        } else if (result?.durable === true) {
+          releaseRawReference(rawRef);
+        }
+      }
+      return result;
+    } catch {}
+  }
+
+  /**
+   * 构建完整的 Responses request body（包含所有可用上下文）
+   */
+  function buildFullRequestBody(state = getThreadState(), threadId = state.threadId) {
+    const identity = getAgentIdentity(threadId);
+    const systemPrompt = state.systemPrompt
+      || (identity.subAgent
+        ? `You are Codex subagent (${identity.subAgentName || 'subagent'}), a general-purpose agent.`
+        : (_systemPrompt || 'You are Codex'));
+    return {
+      model: state.model || _currentModel,
+      instructions: systemPrompt,
+      input: state.messages.map(m => cloneJson(m)),
+      tools: [{ name: 'shell_command' }, { name: 'apply_patch' }, { name: 'tool_search' }],
+      // turn/start 中的完整参数
+      ...(state.turnContext?.approvalPolicy ? { approval_policy: state.turnContext.approvalPolicy } : {}),
+      ...(state.turnContext?.effort ? { reasoning_effort: state.turnContext.effort } : {}),
+      ...(state.turnContext?.summary ? { reasoning_summary: state.turnContext.summary } : {}),
+      ...(state.turnContext?.sandboxPolicy ? { sandbox_policy: state.turnContext.sandboxPolicy } : {}),
+      // 线程和 turn 元数据
+      metadata: {
+        thread_id: threadId,
+        turn_id: state.turnId,
+        cwd: state.cwd || _cwd || _currentProject,
+        ...identity,
+        ...(isTemporaryTitleThread(state.threadMeta) ? { threadSource: 'thread_title', ephemeral: true } : {}),
+        ...(state.threadMeta?.preview ? { thread_preview: state.threadMeta.preview } : {}),
+        ...(_serverInfo ? { server: _serverInfo } : {}),
+      },
+    };
+  }
+
+  /**
+   * 构建完整的 response body
+   */
+  function buildFullResponseBody(responseContent, turnMeta, state = getThreadState()) {
+    const usage = state.lastTokenUsage?.last;
+    const totalUsage = state.lastTokenUsage?.total;
+    return {
+      content: responseContent,
+      model: state.model || _currentModel,
+      stop_reason: state.turnStatus || 'end_turn',
+      ...(usage ? {
+        usage: normalizeTokenUsage(usage),
+      } : {}),
+      ...(totalUsage ? {
+        total_usage: normalizeTokenUsage(totalUsage),
+      } : {}),
+      ...(state.lastTokenUsage?.modelContextWindow ? { context_window: state.lastTokenUsage.modelContextWindow } : {}),
+      ...(state.turnPlan ? { turn_plan: cloneJson(state.turnPlan) } : {}),
+      ...(state.turnDiff ? { turn_diff: state.turnDiff } : {}),
+      ...(state.turnModerationMetadata ? { moderation_metadata: cloneJson(state.turnModerationMetadata) } : {}),
+      ...(state.modelReroutes?.length ? { model_reroutes: cloneJson(state.modelReroutes) } : {}),
+      ...(state.modelVerifications?.length ? { model_verifications: cloneJson(state.modelVerifications) } : {}),
+      ...(state.safetyBuffering ? { safety_buffering: cloneJson(state.safetyBuffering) } : {}),
+      ...(state.warnings?.length ? { warnings: cloneJson(state.warnings) } : {}),
+      ...(turnMeta ? {
+        turn: {
+          id: turnMeta.id,
+          status: turnMeta.status,
+          started_at: turnMeta.startedAt,
+          completed_at: turnMeta.completedAt,
+          duration_ms: turnMeta.durationMs,
+        },
+      } : {}),
+    };
+  }
+
+  /**
+   * 发出累积式 MainAgent entry
+   */
+  function emitMainAgentEntry(timestamp, responseContent, turnMeta, state = getThreadState(), options = {}) {
+    const identity = getAgentIdentity(state.threadId);
+    const entry = {
+      timestamp,
+      project: _currentProject || 'codex',
+      // A synthesized protocol transcript is not an HTTP capture of its model request.
+      url: 'codex://app-server/turn',
+      method: 'POST',
+      headers: {},
+      body: buildFullRequestBody(state, state.threadId),
+      response: {
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        body: buildFullResponseBody(responseContent, turnMeta, state),
+      },
+      duration: turnMeta?.durationMs || (state.turnStartTime ? Date.now() - state.turnStartTime : 0),
+      isStream: options.isStream ?? true,
+      ...identity,
+      _appServerSource: true,
+      ...(options.extra || {}),
+    };
+    writeEntry(entry);
+  }
+
+  function writeEventEntry(base, state, name, input = {}, options = {}) {
+    const identity = getAgentIdentity(state.threadId);
+    writeEntry({
+      ...base,
+      url: options.url || `codex://event/${encodeURIComponent(name)}`,
+      method: options.method || 'EVENT',
+      body: {
+        event_name: name,
+        event_input: cloneJson(input),
+        _threadId: state.threadId,
+        _turnId: state.turnId,
+      },
+      response: {
+        status: options.status || 200,
+        statusText: options.statusText || 'OK',
+        headers: {},
+        body: Object.prototype.hasOwnProperty.call(options, 'output')
+          ? cloneJson(options.output)
+          : cloneJson(input),
+      },
+      duration: 0,
+      mainAgent: false,
+      subAgent: identity.subAgent,
+      ...(identity.subAgent ? {
+        subAgentName: identity.subAgentName,
+        teamName: identity.teamName,
+      } : {}),
+      _agentThreadId: state.threadId,
+      ...(identity._parentThreadId ? { _parentThreadId: identity._parentThreadId } : {}),
+    });
+  }
+
+  function rememberProcessOutput(state, params) {
+    const processHandle = params.processHandle;
+    if (!processHandle) return;
+    const stream = params.stream === 'stderr' ? 'stderr' : 'stdout';
+    const current = state.processOutputDeltas.get(processHandle) || {
+      stdout: '',
+      stderr: '',
+      stdoutCapReached: false,
+      stderrCapReached: false,
+    };
+    current[stream] += decodeBase64Text(params.deltaBase64);
+    if (params.capReached) {
+      current[`${stream}CapReached`] = true;
+    }
+    state.processOutputDeltas.set(processHandle, current);
+  }
+
+  function writeToolEntry(base, state, item, options = {}) {
+    const identity = getAgentIdentity(state.threadId);
+    const name = options.name || item.tool || item.name || item.type || 'tool';
+    const input = options.input ?? item.arguments ?? item.input ?? item.action ?? {};
+    const hasOutput = Object.prototype.hasOwnProperty.call(options, 'output')
+      || Object.prototype.hasOwnProperty.call(item, 'output')
+      || Object.prototype.hasOwnProperty.call(item, 'result')
+      || Object.prototype.hasOwnProperty.call(item, 'error')
+      || Object.prototype.hasOwnProperty.call(item, 'aggregatedOutput')
+      || Object.prototype.hasOwnProperty.call(item, 'status');
+    const output = Object.prototype.hasOwnProperty.call(options, 'output')
+      ? options.output
+      : (item.output ?? item.result ?? item.error ?? item.aggregatedOutput ?? item.status);
+    writeEntry({
+      ...base,
+      url: options.url || `codex://tool/${encodeURIComponent(name)}`,
+      method: options.method || 'TOOL',
+      body: {
+        tool_name: name,
+        tool_input: parseMaybeJson(input),
+        _callId: item.call_id || item.callId || item.id,
+        _threadId: state.threadId,
+        _turnId: state.turnId,
+        _itemType: item.type,
+        status: item.status,
+        raw_item: item,
+      },
+      response: hasOutput ? {
+        status: item.error || item.status === 'failed' ? 500 : 200,
+        statusText: item.error || item.status === 'failed' ? 'Error' : 'OK',
+        headers: {},
+        body: {
+          output,
+          status: item.status,
+          exit_code: item.exitCode,
+          duration_ms: item.durationMs,
+        },
+      } : null,
+      duration: item.durationMs || 0,
+      mainAgent: false,
+      subAgent: identity.subAgent,
+      ...(identity.subAgent ? {
+        subAgentName: identity.subAgentName,
+        teamName: identity.teamName,
+      } : {}),
+      _agentThreadId: state.threadId,
+      ...(identity._parentThreadId ? { _parentThreadId: identity._parentThreadId } : {}),
+    });
+  }
+
+
+  function writeServerRequestEntry(base, state, requestId, method, params, descriptor) {
+    const identity = getAgentIdentity(state.threadId);
+    const kind = descriptor?.kind || 'serverRequest';
+    const name = descriptor?.name || method;
+    const input = descriptor?.input ?? params;
+    writeEntry({
+      ...base,
+      url: `codex://server_request/${encodeURIComponent(method)}/${encodeURIComponent(String(requestId))}`,
+      method: APPROVAL_SERVER_REQUEST_METHODS.has(method) ? 'APPROVAL_REQUEST' : 'SERVER_REQUEST',
+      body: {
+        server_request_method: method,
+        server_request_id: requestId,
+        server_request_kind: kind,
+        tool_name: name,
+        tool_input: parseMaybeJson(input) || {},
+        _threadId: state.threadId,
+        _turnId: params.turnId || state.turnId,
+        _itemId: params.itemId || params.callId,
+        raw_params: cloneJson(params),
+      },
+      response: null,
+      duration: 0,
+      mainAgent: false,
+      subAgent: identity.subAgent,
+      ...(identity.subAgent ? {
+        subAgentName: identity.subAgentName,
+        teamName: identity.teamName,
+      } : {}),
+      _agentThreadId: state.threadId,
+      ...(identity._parentThreadId ? { _parentThreadId: identity._parentThreadId } : {}),
+    });
+  }
+
+  function writeServerRequestResolutionEntry(pending, msg) {
+    const state = getThreadState(pending.threadId);
+    const identity = getAgentIdentity(state.threadId);
+    const isError = !!msg.error;
+    writeEntry({
+      timestamp: new Date().toISOString(),
+      project: _currentProject || 'codex',
+      url: `codex://server_request_response/${encodeURIComponent(pending.method)}/${encodeURIComponent(String(pending.requestId))}`,
+      method: 'SERVER_RESPONSE',
+      headers: {},
+      body: {
+        server_request_method: pending.method,
+        server_request_id: pending.requestId,
+        server_request_kind: pending.kind,
+        tool_name: pending.name,
+        _threadId: state.threadId,
+        _turnId: pending.turnId || state.turnId,
+        _itemId: pending.itemId,
+      },
+      response: {
+        status: isError ? 500 : 200,
+        statusText: isError ? 'Error' : 'OK',
+        headers: {},
+        body: isError ? cloneJson(msg.error) : cloneJson(msg.result),
+      },
+      duration: 0,
+      mainAgent: false,
+      subAgent: identity.subAgent,
+      ...(identity.subAgent ? {
+        subAgentName: identity.subAgentName,
+        teamName: identity.teamName,
+      } : {}),
+      _agentThreadId: state.threadId,
+      ...(identity._parentThreadId ? { _parentThreadId: identity._parentThreadId } : {}),
+    });
+  }
+
+  function appendToolUse(state, id, name, input) {
+    pushContentBlock(state.pendingContent, {
+      type: 'tool_use',
+      id: id || name || 'tool',
+      name: name || 'tool',
+      input: parseMaybeJson(input) || {},
+    });
+  }
+
+  function upsertToolUse(state, id, name, input) {
+    if (!state || !id) return;
+    const existing = state.pendingContent.find(block => block?.type === 'tool_use' && block.id === id);
+    if (existing) {
+      existing.name = name || existing.name;
+      existing.input = parseMaybeJson(input) || {};
+      return;
+    }
+    appendToolUse(state, id, name, input);
+  }
+
+  function normalizeRequestUserInputQuestions(questions = []) {
+    if (!Array.isArray(questions)) return [];
+    return questions
+      .filter(q => q && typeof q === 'object')
+      .map(q => ({
+        ...(q.id ? { id: q.id } : {}),
+        header: q.header || '',
+        question: q.question || q.id || '',
+        ...(q.isOther ? { isOther: true } : {}),
+        ...(q.isSecret ? { isSecret: true } : {}),
+        options: Array.isArray(q.options)
+          ? q.options.map(opt => ({
+            label: String(opt?.label ?? ''),
+            description: opt?.description || '',
+          }))
+          : [],
+      }));
+  }
+
+  function mcpElicitationOptions(schema = {}) {
+    if (Array.isArray(schema.oneOf)) {
+      return schema.oneOf.map(opt => ({
+        label: String(opt?.title ?? opt?.const ?? ''),
+        description: opt?.title && opt?.const != null && opt.title !== opt.const ? String(opt.const) : '',
+        value: opt?.const,
+      }));
+    }
+    if (Array.isArray(schema.enum)) {
+      return schema.enum.map((value, index) => ({
+        label: String(schema.enumNames?.[index] ?? value),
+        description: schema.enumNames?.[index] ? String(value) : '',
+        value,
+      }));
+    }
+    return [];
+  }
+
+  function mcpElicitationArrayOptions(schema = {}) {
+    const items = schema.items || {};
+    if (Array.isArray(items.anyOf)) {
+      return items.anyOf.map(opt => ({
+        label: String(opt?.title ?? opt?.const ?? ''),
+        description: opt?.title && opt?.const != null && opt.title !== opt.const ? String(opt.const) : '',
+        value: opt?.const,
+      }));
+    }
+    if (Array.isArray(items.enum)) {
+      return items.enum.map(value => ({ label: String(value), description: '', value }));
+    }
+    return [];
+  }
+
+  function questionTextFromMcpField(params, key, schema = {}) {
+    const label = schema.title || key;
+    const description = schema.description ? `\n${schema.description}` : '';
+    return [params.message, `${label}${description}`].filter(Boolean).join('\n\n');
+  }
+
+  function normalizeMcpElicitationQuestions(params = {}) {
+    const header = params.serverName ? `${params.serverName} MCP` : 'MCP elicitation';
+    if (params.mode === 'form' && params.requestedSchema?.properties) {
+      return Object.entries(params.requestedSchema.properties)
+        .filter(([, schema]) => schema && typeof schema === 'object')
+        .map(([key, schema]) => {
+          const isMulti = schema.type === 'array';
+          const options = isMulti ? mcpElicitationArrayOptions(schema) : mcpElicitationOptions(schema);
+          const booleanOptions = schema.type === 'boolean'
+            ? [
+              { label: 'true', description: '' },
+              { label: 'false', description: '' },
+            ]
+            : [];
+          return {
+            id: key,
+            header,
+            question: questionTextFromMcpField(params, key, schema),
+            ...(isMulti ? { multiSelect: true } : {}),
+            options: options.length ? options : booleanOptions,
+            mcpSchema: cloneJson(schema),
+          };
+        });
+    }
+    return [{
+      id: params.elicitationId || 'mcp-elicitation',
+      header,
+      question: [params.message, params.url].filter(Boolean).join('\n\n'),
+      options: [],
+      mcpMode: params.mode,
+      requestedSchema: cloneJson(params.requestedSchema),
+    }];
+  }
+
+  function answerTextValue(answer) {
+    if (Array.isArray(answer?.answers)) return answer.answers.join(', ');
+    if (Array.isArray(answer)) return answer.join(', ');
+    if (typeof answer === 'string') return answer;
+    if (answer && typeof answer === 'object' && typeof answer.answer === 'string') return answer.answer;
+    return stringifyValue(answer);
+  }
+
+  function quoteAskField(value) {
+    return String(value ?? '').replace(/"/g, "'");
+  }
+
+  function formatAskUserInputResult(pending, result = {}) {
+    const answers = result.answers || {};
+    const questionById = new Map((pending.questions || []).map(q => [q.id || q.question, q]));
+    return Object.entries(answers).map(([id, answer]) => {
+      const q = questionById.get(id) || {};
+      const question = q.question || id;
+      return `"${quoteAskField(question)}"="${quoteAskField(answerTextValue(answer))}"`;
+    }).join('\n');
+  }
+
+  function answerLabelForQuestion(question, answer) {
+    if (!question?.options?.length) return answerTextValue(answer);
+    const values = Array.isArray(answer) ? answer : [answer];
+    return values.map(value => {
+      const match = question.options.find(opt => opt.value === value || opt.label === value);
+      return match?.label || answerTextValue(value);
+    }).join(', ');
+  }
+
+  function formatMcpElicitationResult(pending, result = {}) {
+    const action = result.action || null;
+    if (action && action !== 'accept') return `[mcp:${action}]`;
+    const content = result.content && typeof result.content === 'object' ? result.content : {};
+    const questionById = new Map((pending.questions || []).map(q => [q.id || q.question, q]));
+    const lines = Object.entries(content).map(([id, answer]) => {
+      const q = questionById.get(id) || {};
+      const question = q.question || id;
+      return `"${quoteAskField(question)}"="${quoteAskField(answerLabelForQuestion(q, answer))}"`;
+    });
+    if (lines.length > 0) return lines.join('\n');
+    return action ? `action=${action}` : stringifyValue(result);
+  }
+
+  function buildCodexTurnPlanInput(planUpdate) {
+    return {
+      plan: formatTurnPlan(planUpdate),
+      allowedPrompts: [],
+      codexTurnPlan: true,
+      nonInteractive: true,
+      turnPlan: cloneJson(planUpdate),
+    };
+  }
+
+  function buildCodexPlanItemInput(item) {
+    return {
+      plan: item?.text || '',
+      allowedPrompts: [],
+      codexTurnPlan: true,
+      nonInteractive: true,
+      planItem: cloneJson(item),
+    };
+  }
+
+  function completeToolLikeItem(base, state, item, options = {}) {
+    const id = item.call_id || item.callId || item.id || options.id || options.name || item.type;
+    const name = options.name || item.tool || item.name || item.type || 'tool';
+    const input = options.input ?? item.arguments ?? item.input ?? item.action ?? {};
+    const output = Object.prototype.hasOwnProperty.call(options, 'output')
+      ? options.output
+      : (item.output ?? item.result ?? item.error ?? item.aggregatedOutput ?? item.status ?? item);
+    appendToolUse(state, id, name, input);
+    writeToolEntry(base, state, item, { ...options, name, input, output });
+    flushAssistantContent(state);
+    appendToolResultMessage(state, id, output);
+  }
+
+  function handleCompletedItem(item, state, base) {
+    if (!item || typeof item !== 'object') return;
+    const type = item.type;
+    const id = itemKey(item);
+    if (id) state.completedItemIds.add(id);
+
+    if (type === 'userMessage') {
+      appendUserMessage(state, item.content || [], item.clientId || item.id, { dedupeLastUser: true });
+      return;
+    }
+
+    if (type === 'message' || type === 'agentMessage' || type === 'agent_message') {
+      const text = item.text || textFromContent(item.content) || state.agentMessageDeltas.get(item.id) || '';
+      pushContentBlock(state.pendingContent, { type: 'text', text });
+      return;
+    }
+
+    if (type === 'plan') {
+      const text = item.text || state.planDeltas.get(item.id) || '';
+      upsertToolUse(state, item.id || `codex-plan:${state.turnId || state.threadId || 'turn'}`, CODEX_PLAN_TOOL_NAME, buildCodexPlanItemInput({ ...item, text }));
+      return;
+    }
+
+    if (type === 'reasoning') {
+      const fromItem = textFromContent(item.summary || []) || textFromContent(item.content || []);
+      const thinking = fromItem || state.reasoningDeltas.get(item.id) || '';
+      pushContentBlock(state.pendingContent, { type: 'thinking', thinking, summary: item.summary });
+      return;
+    }
+
+    if (type === 'function_call' || type === 'custom_tool_call' || type === 'local_shell_call' || type === 'tool_search_call') {
+      const input = item.arguments ?? item.input ?? item.action ?? {};
+      const name = item.name || item.tool || (type === 'local_shell_call' ? 'local_shell' : type);
+      appendToolUse(state, item.call_id || item.id, name, input);
+      writeToolEntry(base, state, item, { name, input });
+      return;
+    }
+
+    if (type === 'function_call_output' || type === 'custom_tool_call_output') {
+      const id = item.call_id || item.callId || item.id;
+      flushAssistantContent(state);
+      appendToolResultMessage(state, id, item.output);
+      writeToolEntry(base, state, item, {
+        method: 'TOOL_RESULT',
+        url: `codex://tool_result/${encodeURIComponent(id || '')}`,
+        name: type,
+        input: { _callId: id },
+        output: item.output,
+      });
+      return;
+    }
+
+    if (type === 'commandExecution' || type === 'command_execution') {
+      const output = item.aggregatedOutput
+        ?? item.aggregated_output
+        ?? state.commandOutputDeltas.get(item.id)
+        ?? (item.processId ? state.commandExecOutputDeltas.get(item.processId) : null)
+        ?? item.status;
+      const terminalInteractions = state.terminalInteractions.get(item.id) || [];
+      const exitCode = item.exitCode ?? item.exit_code;
+      completeToolLikeItem(base, state, item, {
+        name: 'shell_command',
+        input: {
+          command: item.command,
+          cwd: item.cwd,
+          source: item.source,
+          commandActions: item.commandActions,
+        },
+        output: {
+          output,
+          status: item.status,
+          exitCode,
+          ...(terminalInteractions.length ? { terminal_interactions: terminalInteractions } : {}),
+        },
+      });
+      return;
+    }
+
+    if (type === 'fileChange' || type === 'file_change') {
+      const deltaOutput = state.fileChangeOutputDeltas.get(item.id);
+      const changes = (Array.isArray(item.changes) && item.changes.length > 0)
+        ? item.changes
+        : (state.fileChangePatches.get(item.id) || item.changes || []);
+      completeToolLikeItem(base, state, item, {
+        name: 'apply_patch',
+        input: { changes },
+        output: { status: item.status, changes, ...(deltaOutput ? { output: deltaOutput } : {}) },
+      });
+      return;
+    }
+
+    if (type === 'mcpToolCall' || type === 'mcp_tool_call') {
+      const progress = state.mcpProgressMessages.get(item.id);
+      const resultOutput = item.error || item.result || item.status;
+      completeToolLikeItem(base, state, item, {
+        name: item.server ? `${item.server}.${item.tool}` : item.tool,
+        input: item.arguments,
+        output: progress?.length ? {
+          progress,
+          result: item.result,
+          error: item.error,
+          status: item.status,
+        } : resultOutput,
+        url: `codex://mcp_tool/${encodeURIComponent(item.tool || item.id || '')}`,
+      });
+      return;
+    }
+
+    if (type === 'dynamicToolCall') {
+      completeToolLikeItem(base, state, item, {
+        name: item.namespace ? `${item.namespace}.${item.tool}` : item.tool,
+        input: item.arguments,
+        output: item.contentItems || item.success || item.status,
+        url: `codex://dynamic_tool/${encodeURIComponent(item.tool || item.id || '')}`,
+      });
+      return;
+    }
+
+    if (type === 'webSearch' || type === 'web_search') {
+      completeToolLikeItem(base, state, item, {
+        name: 'web_search',
+        input: { query: item.query, action: item.action },
+        output: item.action || item.query,
+        url: 'codex://tool/web_search',
+      });
+      return;
+    }
+
+    if (type === 'todoList' || type === 'todo_list') {
+      const text = (Array.isArray(item.items) ? item.items : [])
+        .map(todo => `${todo.completed ? '[x]' : '[ ]'} ${todo.text || ''}`.trim())
+        .filter(Boolean)
+        .join('\n');
+      pushContentBlock(state.pendingContent, { type: 'text', text });
+      return;
+    }
+
+    if (type === 'error') {
+      const text = item.message ? `Error: ${item.message}` : '';
+      pushContentBlock(state.pendingContent, { type: 'text', text });
+      return;
+    }
+
+    if (type === 'imageView') {
+      completeToolLikeItem(base, state, item, {
+        name: 'view_image',
+        input: { path: item.path },
+        output: item.path,
+        url: 'codex://tool/view_image',
+      });
+      return;
+    }
+
+    if (type === 'collabAgentToolCall' || type === 'collabToolCall') {
+      registerCollabAgentThreads(item, state.threadId);
+      completeToolLikeItem(base, state, item, {
+        name: item.tool || 'spawn_agent',
+        input: {
+          prompt: item.prompt,
+          model: item.model,
+          receiverThreadIds: item.receiverThreadIds,
+          receiverThreadId: item.receiverThreadId,
+          newThreadId: item.newThreadId,
+          reasoningEffort: item.reasoningEffort,
+        },
+        output: {
+          status: item.status,
+          agentsStates: item.agentsStates,
+          receiverThreadIds: item.receiverThreadIds,
+          receiverThreadId: item.receiverThreadId,
+          newThreadId: item.newThreadId,
+        },
+        url: `codex://collab/${encodeURIComponent(item.tool || 'agent')}`,
+      });
+      return;
+    }
+
+    if (type === 'subAgentActivity') {
+      rememberSubAgentThread(item.agentThreadId, {
+        parentThreadId: state.threadId,
+        agentPath: item.agentPath,
+        agentRole: item.kind,
+      });
+      writeToolEntry(base, state, item, {
+        method: 'SUBAGENT',
+        url: `codex://subagent/${encodeURIComponent(item.kind || 'activity')}`,
+        name: item.kind || 'subAgentActivity',
+        input: { agentThreadId: item.agentThreadId, agentPath: item.agentPath },
+        output: item.kind,
+      });
+      return;
+    }
+
+    if (type === 'sleep' || type === 'imageGeneration' || type === 'contextCompaction' || type === 'compacted' || type === 'enteredReviewMode' || type === 'exitedReviewMode') {
+      writeToolEntry(base, state, item, {
+        method: 'EVENT',
+        url: `codex://event/${encodeURIComponent(type)}`,
+        name: type,
+        input: item,
+        output: item.status || item.review || item,
+      });
+    }
+  }
+
+  function flushSnapshotItemsAtTurnEnd(state, base) {
+    if (!state?.itemOrder?.length) return;
+    for (const id of state.itemOrder) {
+      if (state.completedItemIds.has(id)) continue;
+      const item = state.itemSnapshots.get(id);
+      if (!canFlushSnapshotAtTurnEnd(item)) continue;
+      handleCompletedItem(item, state, base);
+    }
+  }
+
+  function timestampFromTurn(turn) {
+    const seconds = turn?.completedAt ?? turn?.startedAt;
+    return typeof seconds === 'number' && Number.isFinite(seconds)
+      ? new Date(seconds * 1000).toISOString()
+      : new Date().toISOString();
+  }
+
+  function resetTurnItemState(state) {
+    state.pendingContent = [];
+    state.itemSnapshots = new Map();
+    state.itemOrder = [];
+    state.completedItemIds = new Set();
     state.turnPlan = null;
     state.turnPlanToolId = null;
     state.turnDiff = null;
@@ -1956,37 +1766,47 @@ function parseServerMessage(msg, connection = 'test') {
     state.modelVerifications = [];
     state.safetyBuffering = null;
     state.warnings = [];
-    state.itemSnapshots = new Map();
-    state.itemOrder = [];
-    state.completedItemIds = new Set();
-    if (params.threadId && params.threadId !== state.threadId) {
-      state.threadId = params.threadId;
-    }
-    syncGlobalsFromState(state);
-    return;
   }
 
-  // turn/completed — 发出根线程或 subAgent 的完整 turn entry
-  if (method === 'turn/completed') {
-    const turn = params.turn || {};
-    const reason = ['interrupted', 'cancelled', 'canceled'].includes(turn.status) ? 'interrupted'
-      : turn.status === 'completed' ? 'stop-hook' : 'error';
-    state.lastTerminalTurn = { id: turn.id, reason, ts: Date.now() };
-    endAgentLoop(state.threadId, turn.id, reason, state.lastTerminalTurn.ts);
-    flushRawSidecars();
+  function hydrateHistoryTurn(thread, turn, responseResult = {}) {
+    if (!thread?.id || !turn?.id || !Array.isArray(turn.items)) return;
+    if (turn.status === 'inProgress') return;
+    const state = getThreadState(thread.id);
+    if (state.emittedTurnIds.has(turn.id)) return;
+
+    state.threadId = thread.id;
+    state.threadMeta = thread;
+    state.cwd = responseResult.cwd || thread.cwd || state.cwd || _cwd;
+    state.model = responseResult.model || state.model || _currentModel;
+    state.turnId = turn.id;
     state.turnStatus = turn.status;
-    if (turn.id && state.emittedTurnIds.has(turn.id)) {
-      state.pendingContent = [];
-      syncGlobalsFromState(state);
-      return;
+    state.turnStartTime = typeof turn.startedAt === 'number' ? turn.startedAt * 1000 : null;
+    resetTurnItemState(state);
+    syncGlobalsFromState(state);
+
+    const base = {
+      timestamp: timestampFromTurn(turn),
+      project: _currentProject || 'codex',
+      headers: {},
+      isStream: false,
+      _appServerSource: true,
+      _codexHistorySource: true,
+    };
+
+    for (const item of turn.items) {
+      handleCompletedItem(item, state, base);
     }
     flushSnapshotItemsAtTurnEnd(state, base);
+
     if (state.pendingContent.length > 0 || state.turnPlan || state.turnDiff) {
       const responseContent = state.pendingContent.length > 0
         ? state.pendingContent
         : (state.turnPlan ? [{ type: 'text', text: formatTurnPlan(state.turnPlan) }] : []);
       state.messages.push({ role: 'assistant', content: responseContent });
-      emitMainAgentEntry(ts, responseContent, turn, state);
+      emitMainAgentEntry(base.timestamp, responseContent, turn, state, {
+        isStream: false,
+        extra: { _codexHistorySource: true },
+      });
       state.pendingContent = [];
     } else if (turn.status === 'failed' || turn.error) {
       writeEntry({
@@ -1996,737 +1816,1045 @@ function parseServerMessage(msg, connection = 'test') {
         body: buildFullRequestBody(state, state.threadId),
         response: {
           status: 500, statusText: 'Error', headers: {},
-          body: { error: turn.error || params.error || turn },
+          body: { error: turn.error || turn },
         },
-        duration: turn.durationMs || (state.turnStartTime ? Date.now() - state.turnStartTime : 0),
+        duration: turn.durationMs || 0,
+        ...getAgentIdentity(state.threadId),
+      });
+    }
+
+    state.emittedTurnIds.add(turn.id);
+    syncGlobalsFromState(state);
+  }
+
+  function hydrateThreadTurnsFromResponse(thread, responseResult = {}) {
+    if (!Array.isArray(thread?.turns) || thread.turns.length === 0) return;
+    for (const turn of thread.turns) {
+      hydrateHistoryTurn(thread, turn, responseResult);
+    }
+  }
+
+  /**
+   * 解析 app-server → client 的 JSON-RPC notification
+   */
+  function parseServerMessage(msg, connection = 'test') {
+    if (!msg) return;
+    captureRawServerFrame(msg);
+
+    // 捕获 initialize response 中的服务端信息
+    if (msg.id !== undefined && msg.result && !_serverInfo) {
+      if (msg.result.userAgent || msg.result.codexHome) {
+        _serverInfo = {
+          userAgent: msg.result.userAgent,
+          codexHome: msg.result.codexHome,
+          platform: msg.result.platformFamily,
+          os: msg.result.platformOs,
+        };
+      }
+    }
+
+    if (msg.id !== undefined && (msg.result || msg.error)) {
+      const context = _pendingThreadContextByRpcId.get(String(msg.id)) || null;
+      _pendingThreadContextByRpcId.delete(String(msg.id));
+      const threadId = msg.result?.thread?.id;
+      // The TUI reads global history previews during startup. Only an already
+      // owned thread can hydrate from that passive read; it cannot select a root.
+      if (!context?.passiveRead || threadId === _mainThreadId || _subAgentThreads.has(threadId)) {
+        rememberThreadResponse(msg.result, context?.passiveRead ? null : context);
+      }
+    }
+
+    if (!msg.method && msg.id != null) {
+      const key = turnRpcKey(connection, msg.id), pending = _pendingClientTurns.get(key);
+      if (pending) {
+        _pendingClientTurns.delete(key);
+        if (!msg.error) acceptAgentLoop(pending, msg.result?.turn);
+      }
+    }
+
+    if (!msg.method) return; // 只处理 notifications（有 method）
+
+    const params = msg.params || {};
+    const ts = new Date().toISOString();
+    const method = msg.method;
+
+    // thread/started — 捕获线程元数据；parentThreadId/source/threadSource 用于识别 subAgent
+    if (method === 'thread/started') {
+      rememberThread(params.thread || {});
+      return;
+    }
+
+    const threadId = params.threadId
+      || params.conversationId
+      || params.thread?.id
+      || params.turn?.threadId
+      || params.item?.threadId
+      || _threadId
+      || _mainThreadId;
+    const state = getThreadState(threadId);
+    syncGlobalsFromState(state);
+
+    const base = {
+      timestamp: ts,
+      project: _currentProject || 'codex',
+      headers: {},
+      isStream: false,
+      _appServerSource: true,
+    };
+
+    // Server requests with an id are part of the app-server protocol as well.
+    // For transcript purposes, preserve the question-card input shape consumed
+    // by ChatView, but keep the Codex-native tool name in new app-server logs.
+    if (msg.id !== undefined && msg.id !== null) {
+      if (method === 'item/tool/requestUserInput' || method === 'tool/requestUserInput') {
+        const questions = normalizeRequestUserInputQuestions(params.questions || []);
+        const toolId = codexRequestUserInputItemId(msg);
+        upsertToolUse(state, toolId, CODEX_ASK_TOOL_NAME, {
+          questions,
+          autoResolutionMs: params.autoResolutionMs ?? null,
+          codexRequestUserInput: true,
+        });
+        _pendingServerRequests.set(String(msg.id), {
+          kind: 'requestUserInput',
+          threadId: state.threadId,
+          turnId: params.turnId || state.turnId,
+          itemId: toolId,
+          questions,
+        });
+      }
+      if (method === 'mcpServer/elicitation/request') {
+        const questions = normalizeMcpElicitationQuestions(params);
+        const toolId = params.elicitationId || `mcp-elicitation-${msg.id}`;
+        upsertToolUse(state, toolId, CODEX_ASK_TOOL_NAME, {
+          questions,
+          codexMcpElicitation: true,
+          mode: params.mode,
+          serverName: params.serverName,
+          requestedSchema: cloneJson(params.requestedSchema),
+          url: params.url,
+          elicitationId: params.elicitationId,
+        });
+        _pendingServerRequests.set(String(msg.id), {
+          kind: 'mcpElicitation',
+          threadId: state.threadId,
+          turnId: params.turnId || state.turnId,
+          itemId: toolId,
+          questions,
+        });
+      }
+      const descriptor = describeServerRequest(method, params);
+      if (descriptor) {
+        writeServerRequestEntry(base, state, msg.id, method, params, descriptor);
+        const previous = _pendingServerRequests.get(String(msg.id)) || {};
+        _pendingServerRequests.set(String(msg.id), {
+          ...previous,
+          kind: previous.kind || descriptor.kind,
+          method,
+          requestId: msg.id,
+          threadId: previous.threadId || state.threadId,
+          turnId: previous.turnId || params.turnId || state.turnId,
+          itemId: previous.itemId || params.itemId || params.callId,
+          name: descriptor.name,
+        });
+      }
+      return;
+    }
+
+    // turn/started — 捕获 turn 元数据
+    if (method === 'turn/started') {
+      state.turnStartTime = Date.now();
+      state.pendingContent = [];
+      state.turnId = params.turn?.id || params.turnId || state.turnId;
+      state.turnStatus = params.turn?.status || 'inProgress';
+      state.turnPlan = null;
+      state.turnPlanToolId = null;
+      state.turnDiff = null;
+      state.turnModerationMetadata = null;
+      state.modelReroutes = [];
+      state.modelVerifications = [];
+      state.safetyBuffering = null;
+      state.warnings = [];
+      state.itemSnapshots = new Map();
+      state.itemOrder = [];
+      state.completedItemIds = new Set();
+      if (params.threadId && params.threadId !== state.threadId) {
+        state.threadId = params.threadId;
+      }
+      if (state.threadId === _mainThreadId) publishTaskState({ sessionId: state.threadId, turnId: state.turnId, tasks: [] });
+      syncGlobalsFromState(state);
+      return;
+    }
+
+    // turn/completed — 发出根线程或 subAgent 的完整 turn entry
+    if (method === 'turn/completed') {
+      const turn = params.turn || {};
+      const reason = ['interrupted', 'cancelled', 'canceled'].includes(turn.status) ? 'interrupted'
+        : turn.status === 'completed' ? 'stop-hook' : 'error';
+      state.lastTerminalTurn = { id: turn.id, reason, ts: Date.now() };
+      endAgentLoop(state.threadId, turn.id, reason, state.lastTerminalTurn.ts);
+      flushRawSidecars();
+      state.turnStatus = turn.status;
+      if (turn.id && state.emittedTurnIds.has(turn.id)) {
+        state.pendingContent = [];
+        syncGlobalsFromState(state);
+        return;
+      }
+      flushSnapshotItemsAtTurnEnd(state, base);
+      if (state.pendingContent.length > 0 || state.turnPlan || state.turnDiff) {
+        const responseContent = state.pendingContent.length > 0
+          ? state.pendingContent
+          : (state.turnPlan ? [{ type: 'text', text: formatTurnPlan(state.turnPlan) }] : []);
+        state.messages.push({ role: 'assistant', content: responseContent });
+        emitMainAgentEntry(ts, responseContent, turn, state);
+        state.pendingContent = [];
+      } else if (turn.status === 'failed' || turn.error) {
+        writeEntry({
+          ...base,
+          url: 'codex://error',
+          method: 'POST',
+          body: buildFullRequestBody(state, state.threadId),
+          response: {
+            status: 500, statusText: 'Error', headers: {},
+            body: { error: turn.error || params.error || turn },
+          },
+          duration: turn.durationMs || (state.turnStartTime ? Date.now() - state.turnStartTime : 0),
+          ...getAgentIdentity(state.threadId),
+          _appServerSource: true,
+        });
+      }
+      if (['failed', 'cancelled', 'canceled', 'interrupted'].includes(turn.status) || turn.error) {
+        try { _onTurnTerminal?.({ threadId: state.threadId, turnId: turn.id, status: turn.status || 'failed' }); } catch {}
+      }
+      if (turn.id) state.emittedTurnIds.add(turn.id);
+      if (state.threadId === _mainThreadId && _taskSnapshot.turnId === turn.id
+          && (turn.status !== 'completed' || turn.error)) {
+        publishTaskState({ ..._taskSnapshot, tasks: _taskSnapshot.tasks.map(task =>
+          task.status === 'completed' ? task : { ...task, status: 'failed' }) });
+      }
+      syncGlobalsFromState(state);
+      return;
+    }
+
+    // thread/tokenUsage/updated — 缓存 token usage（供 emitMainAgentEntry 使用）
+    if (method === 'thread/tokenUsage/updated' || method === 'thread/tokenUsageUpdated') {
+      state.lastTokenUsage = params.tokenUsage || null;
+      syncGlobalsFromState(state);
+      return;
+    }
+
+    if (method === 'item/started') {
+      const item = params.item || {};
+      rememberItemSnapshot(state, item);
+      if (item.type === 'collabAgentToolCall' || item.type === 'collabToolCall') {
+        registerCollabAgentThreads(item, state.threadId);
+      }
+      if (item.type === 'subAgentActivity') {
+        rememberSubAgentThread(item.agentThreadId, {
+          parentThreadId: state.threadId,
+          agentPath: item.agentPath,
+          agentRole: item.kind,
+        });
+      }
+      return;
+    }
+
+    if (method === 'item/updated' || method === 'rawResponseItem/updated' || method === 'rawResponseItemUpdated' || method === 'itemUpdated') {
+      rememberItemSnapshot(state, params.item || {});
+      syncGlobalsFromState(state);
+      return;
+    }
+
+    // item/completed — ResponseItem 完成（包含 message、function_call、function_call_output、reasoning 等）
+    if (method === 'item/completed' || method === 'rawResponseItem/completed' || method === 'rawResponseItemCompleted') {
+      const item = rememberItemSnapshot(state, params.item || {});
+      handleCompletedItem(item, state, base);
+      syncGlobalsFromState(state);
+      return;
+    }
+
+    // item/* deltas — 用于 final item 缺失完整字段时兜底重建
+    if (method === 'item/agentMessage/delta' || method === 'agentMessage/delta' || method === 'agentMessageDelta') {
+      const itemId = params.itemId || params.item?.id || 'agentMessage';
+      const delta = typeof params.delta === 'string' ? params.delta : '';
+      state.agentMessageDeltas.set(itemId, (state.agentMessageDeltas.get(itemId) || '') + delta);
+      if (delta && getAgentIdentity(state.threadId).mainAgent) {
+        try { _onAgentMessageDelta?.({ threadId: state.threadId, turnId: state.turnId, itemId, delta }); } catch {}
+      }
+      return;
+    }
+
+    if (method === 'item/plan/delta') {
+      const itemId = params.itemId || 'plan';
+      state.planDeltas.set(itemId, (state.planDeltas.get(itemId) || '') + (params.delta || ''));
+      return;
+    }
+
+    if (method === 'item/reasoning/summaryTextDelta' || method === 'item/reasoning/textDelta') {
+      const itemId = params.itemId || 'reasoning';
+      state.reasoningDeltas.set(itemId, (state.reasoningDeltas.get(itemId) || '') + (params.delta || ''));
+      return;
+    }
+
+    if (method === 'item/commandExecution/outputDelta') {
+      const itemId = params.itemId || 'commandExecution';
+      state.commandOutputDeltas.set(itemId, (state.commandOutputDeltas.get(itemId) || '') + (params.delta || ''));
+      return;
+    }
+
+    if (method === 'item/commandExecution/terminalInteraction') {
+      const itemId = params.itemId || 'commandExecution';
+      const list = state.terminalInteractions.get(itemId) || [];
+      list.push({
+        processId: params.processId,
+        stdin: params.stdin,
+      });
+      state.terminalInteractions.set(itemId, list);
+      return;
+    }
+
+    if (method === 'command/exec/outputDelta') {
+      const processId = params.processId;
+      if (processId) {
+        const delta = decodeBase64Text(params.deltaBase64);
+        state.commandExecOutputDeltas.set(processId, (state.commandExecOutputDeltas.get(processId) || '') + delta);
+      }
+      return;
+    }
+
+    if (method === 'process/outputDelta') {
+      rememberProcessOutput(state, params);
+      return;
+    }
+
+    if (method === 'process/exited') {
+      const processHandle = params.processHandle;
+      const output = state.processOutputDeltas.get(processHandle) || {};
+      const stdout = params.stdout || output.stdout || '';
+      const stderr = params.stderr || output.stderr || '';
+      writeEventEntry(base, state, 'process.exited', {
+        processHandle,
+      }, {
+        method: 'PROCESS',
+        url: `codex://process/${encodeURIComponent(processHandle || 'spawn')}`,
+        output: {
+          exitCode: params.exitCode,
+          stdout,
+          stderr,
+          stdoutCapReached: !!(params.stdoutCapReached || output.stdoutCapReached),
+          stderrCapReached: !!(params.stderrCapReached || output.stderrCapReached),
+        },
+        status: params.exitCode === 0 ? 200 : 500,
+        statusText: params.exitCode === 0 ? 'OK' : 'Error',
+      });
+      if (processHandle) state.processOutputDeltas.delete(processHandle);
+      return;
+    }
+
+    if (method === 'item/fileChange/outputDelta') {
+      const itemId = params.itemId || 'fileChange';
+      state.fileChangeOutputDeltas.set(itemId, (state.fileChangeOutputDeltas.get(itemId) || '') + (params.delta || ''));
+      return;
+    }
+
+    if (method === 'item/fileChange/patchUpdated') {
+      const itemId = params.itemId || 'fileChange';
+      state.fileChangePatches.set(itemId, cloneJson(params.changes || []));
+      return;
+    }
+
+    if (method === 'item/mcpToolCall/progress') {
+      const itemId = params.itemId || 'mcpToolCall';
+      const list = state.mcpProgressMessages.get(itemId) || [];
+      if (params.message) list.push(params.message);
+      state.mcpProgressMessages.set(itemId, list);
+      return;
+    }
+
+    if (method === 'item/reasoning/summaryPartAdded') {
+      return;
+    }
+
+    if (method === 'turn/plan/updated') {
+      state.turnPlan = {
+        plan: cloneJson(params.plan || []),
+        explanation: params.explanation || null,
+      };
+      state.turnPlanToolId = `codex-turn-plan:${params.turnId || state.turnId || state.threadId || 'turn'}`;
+      upsertToolUse(state, state.turnPlanToolId, CODEX_PLAN_TOOL_NAME, buildCodexTurnPlanInput(state.turnPlan));
+      if (state.threadId === _mainThreadId && params.turnId === state.turnId) {
+        const tasks = [];
+        for (const [index, step] of (Array.isArray(params.plan) ? params.plan : []).entries()) {
+          if (typeof step?.step !== 'string' || !['pending', 'inProgress', 'completed'].includes(step.status)) continue;
+          tasks.push({ taskId: `${state.turnPlanToolId}:${index}`, subject: step.step,
+            status: step.status === 'inProgress' ? 'in_progress' : step.status });
+        }
+        publishTaskState({ sessionId: state.threadId, turnId: state.turnId, tasks });
+      }
+      return;
+    }
+
+    if (method === 'turn/diff/updated') {
+      state.turnDiff = params.diff || '';
+      return;
+    }
+
+    if (method === 'turn/moderationMetadata') {
+      state.turnModerationMetadata = cloneJson(params.metadata);
+      writeEventEntry(base, state, 'turn.moderationMetadata', params, {
+        url: 'codex://turn/moderationMetadata',
+      });
+      return;
+    }
+
+    if (method === 'model/rerouted') {
+      state.modelReroutes.push(cloneJson(params));
+      if (params.toModel) {
+        state.model = params.toModel;
+        _currentModel = params.toModel;
+      }
+      writeEventEntry(base, state, 'model.rerouted', params, {
+        url: 'codex://model/rerouted',
+      });
+      return;
+    }
+
+    if (method === 'model/verification') {
+      state.modelVerifications.push(cloneJson(params));
+      writeEventEntry(base, state, 'model.verification', params, {
+        url: 'codex://model/verification',
+      });
+      return;
+    }
+
+    if (method === 'model/safetyBuffering/updated') {
+      state.safetyBuffering = cloneJson(params);
+      writeEventEntry(base, state, 'model.safetyBuffering.updated', params, {
+        url: 'codex://model/safetyBuffering',
+      });
+      return;
+    }
+
+    if (method === 'warning' || method === 'guardianWarning' || method === 'configWarning'
+      || method === 'deprecationNotice' || method === 'windows/worldWritableWarning') {
+      state.warnings.push({ method, ...cloneJson(params) });
+      writeEventEntry(base, state, method.replace(/\//g, '.'), params, {
+        url: `codex://warning/${encodeURIComponent(method)}`,
+        status: 299,
+        statusText: 'Warning',
+      });
+      return;
+    }
+
+    if (method === 'item/autoApprovalReview/started' || method === 'item/autoApprovalReview/completed') {
+      writeEventEntry(base, state, method.replace(/\//g, '.'), params, {
+        url: `codex://approval/${encodeURIComponent(params.reviewId || method)}`,
+      });
+      return;
+    }
+
+    if (method === 'serverRequest/resolved') {
+      const pending = _pendingServerRequests.get(String(params.requestId));
+      writeEventEntry(base, state, 'serverRequest.resolved', {
+        ...params,
+        ...(pending ? {
+          pendingMethod: pending.method,
+          pendingKind: pending.kind,
+          pendingName: pending.name,
+          pendingItemId: pending.itemId,
+        } : {}),
+      }, {
+        url: `codex://server_request_resolved/${encodeURIComponent(String(params.requestId || 'unknown'))}`,
+      });
+      // This notification is authoritative even when the turn was completed or
+      // interrupted before the client sent a response.
+      _pendingServerRequests.delete(String(params.requestId));
+      return;
+    }
+
+    if (method === 'hook/started' || method === 'hook/completed') {
+      // Hook events are internal implementation details; suppressed from the log.
+      return;
+    }
+
+    // error — 错误通知
+    if (method === 'error') {
+      writeEntry({
+        ...base,
+        url: 'codex://error',
+        method: 'POST',
+        body: buildFullRequestBody(state, state.threadId),
+        response: {
+          status: 500, statusText: 'Error', headers: {},
+          body: {
+            error: params.error || params,
+            ...(params.willRetry === true ? { willRetry: true } : {}),
+          },
+        },
+        duration: state.turnStartTime ? Date.now() - state.turnStartTime : 0,
         ...getAgentIdentity(state.threadId),
         _appServerSource: true,
       });
+      return;
     }
-    if (['failed', 'cancelled', 'canceled', 'interrupted'].includes(turn.status) || turn.error) {
-      try { _onTurnTerminal?.({ threadId: state.threadId, turnId: turn.id, status: turn.status || 'failed' }); } catch {}
-    }
-    if (turn.id) state.emittedTurnIds.add(turn.id);
-    syncGlobalsFromState(state);
-    return;
   }
 
-  // thread/tokenUsage/updated — 缓存 token usage（供 emitMainAgentEntry 使用）
-  if (method === 'thread/tokenUsage/updated' || method === 'thread/tokenUsageUpdated') {
-    state.lastTokenUsage = params.tokenUsage || null;
-    syncGlobalsFromState(state);
-    return;
-  }
+  /**
+   * 解析 client → server 的 JSON-RPC request（提取用户输入）
+   */
+  function parseClientMessage(msg, connection = 'test') {
+    if (!msg) return;
 
-  if (method === 'item/started') {
-    const item = params.item || {};
-    rememberItemSnapshot(state, item);
-    if (item.type === 'collabAgentToolCall' || item.type === 'collabToolCall') {
-      registerCollabAgentThreads(item, state.threadId);
-    }
-    if (item.type === 'subAgentActivity') {
-      rememberSubAgentThread(item.agentThreadId, {
-        parentThreadId: state.threadId,
-        agentPath: item.agentPath,
-        agentRole: item.kind,
-      });
-    }
-    return;
-  }
-
-  if (method === 'item/updated' || method === 'rawResponseItem/updated' || method === 'rawResponseItemUpdated' || method === 'itemUpdated') {
-    rememberItemSnapshot(state, params.item || {});
-    syncGlobalsFromState(state);
-    return;
-  }
-
-  // item/completed — ResponseItem 完成（包含 message、function_call、function_call_output、reasoning 等）
-  if (method === 'item/completed' || method === 'rawResponseItem/completed' || method === 'rawResponseItemCompleted') {
-    const item = rememberItemSnapshot(state, params.item || {});
-    handleCompletedItem(item, state, base);
-    syncGlobalsFromState(state);
-    return;
-  }
-
-  // item/* deltas — 用于 final item 缺失完整字段时兜底重建
-  if (method === 'item/agentMessage/delta' || method === 'agentMessage/delta' || method === 'agentMessageDelta') {
-    const itemId = params.itemId || params.item?.id || 'agentMessage';
-    const delta = typeof params.delta === 'string' ? params.delta : '';
-    state.agentMessageDeltas.set(itemId, (state.agentMessageDeltas.get(itemId) || '') + delta);
-    if (delta && getAgentIdentity(state.threadId).mainAgent) {
-      try { _onAgentMessageDelta?.({ threadId: state.threadId, turnId: state.turnId, itemId, delta }); } catch {}
-    }
-    return;
-  }
-
-  if (method === 'item/plan/delta') {
-    const itemId = params.itemId || 'plan';
-    state.planDeltas.set(itemId, (state.planDeltas.get(itemId) || '') + (params.delta || ''));
-    return;
-  }
-
-  if (method === 'item/reasoning/summaryTextDelta' || method === 'item/reasoning/textDelta') {
-    const itemId = params.itemId || 'reasoning';
-    state.reasoningDeltas.set(itemId, (state.reasoningDeltas.get(itemId) || '') + (params.delta || ''));
-    return;
-  }
-
-  if (method === 'item/commandExecution/outputDelta') {
-    const itemId = params.itemId || 'commandExecution';
-    state.commandOutputDeltas.set(itemId, (state.commandOutputDeltas.get(itemId) || '') + (params.delta || ''));
-    return;
-  }
-
-  if (method === 'item/commandExecution/terminalInteraction') {
-    const itemId = params.itemId || 'commandExecution';
-    const list = state.terminalInteractions.get(itemId) || [];
-    list.push({
-      processId: params.processId,
-      stdin: params.stdin,
-    });
-    state.terminalInteractions.set(itemId, list);
-    return;
-  }
-
-  if (method === 'command/exec/outputDelta') {
-    const processId = params.processId;
-    if (processId) {
-      const delta = decodeBase64Text(params.deltaBase64);
-      state.commandExecOutputDeltas.set(processId, (state.commandExecOutputDeltas.get(processId) || '') + delta);
-    }
-    return;
-  }
-
-  if (method === 'process/outputDelta') {
-    rememberProcessOutput(state, params);
-    return;
-  }
-
-  if (method === 'process/exited') {
-    const processHandle = params.processHandle;
-    const output = state.processOutputDeltas.get(processHandle) || {};
-    const stdout = params.stdout || output.stdout || '';
-    const stderr = params.stderr || output.stderr || '';
-    writeEventEntry(base, state, 'process.exited', {
-      processHandle,
-    }, {
-      method: 'PROCESS',
-      url: `codex://process/${encodeURIComponent(processHandle || 'spawn')}`,
-      output: {
-        exitCode: params.exitCode,
-        stdout,
-        stderr,
-        stdoutCapReached: !!(params.stdoutCapReached || output.stdoutCapReached),
-        stderrCapReached: !!(params.stderrCapReached || output.stderrCapReached),
-      },
-      status: params.exitCode === 0 ? 200 : 500,
-      statusText: params.exitCode === 0 ? 'OK' : 'Error',
-    });
-    if (processHandle) state.processOutputDeltas.delete(processHandle);
-    return;
-  }
-
-  if (method === 'item/fileChange/outputDelta') {
-    const itemId = params.itemId || 'fileChange';
-    state.fileChangeOutputDeltas.set(itemId, (state.fileChangeOutputDeltas.get(itemId) || '') + (params.delta || ''));
-    return;
-  }
-
-  if (method === 'item/fileChange/patchUpdated') {
-    const itemId = params.itemId || 'fileChange';
-    state.fileChangePatches.set(itemId, cloneJson(params.changes || []));
-    return;
-  }
-
-  if (method === 'item/mcpToolCall/progress') {
-    const itemId = params.itemId || 'mcpToolCall';
-    const list = state.mcpProgressMessages.get(itemId) || [];
-    if (params.message) list.push(params.message);
-    state.mcpProgressMessages.set(itemId, list);
-    return;
-  }
-
-  if (method === 'item/reasoning/summaryPartAdded') {
-    return;
-  }
-
-  if (method === 'turn/plan/updated') {
-    state.turnPlan = {
-      plan: cloneJson(params.plan || []),
-      explanation: params.explanation || null,
-    };
-    state.turnPlanToolId = `codex-turn-plan:${params.turnId || state.turnId || state.threadId || 'turn'}`;
-    upsertToolUse(state, state.turnPlanToolId, CODEX_PLAN_TOOL_NAME, buildCodexTurnPlanInput(state.turnPlan));
-    return;
-  }
-
-  if (method === 'turn/diff/updated') {
-    state.turnDiff = params.diff || '';
-    return;
-  }
-
-  if (method === 'turn/moderationMetadata') {
-    state.turnModerationMetadata = cloneJson(params.metadata);
-    writeEventEntry(base, state, 'turn.moderationMetadata', params, {
-      url: 'codex://turn/moderationMetadata',
-    });
-    return;
-  }
-
-  if (method === 'model/rerouted') {
-    state.modelReroutes.push(cloneJson(params));
-    if (params.toModel) {
-      state.model = params.toModel;
-      _currentModel = params.toModel;
-    }
-    writeEventEntry(base, state, 'model.rerouted', params, {
-      url: 'codex://model/rerouted',
-    });
-    return;
-  }
-
-  if (method === 'model/verification') {
-    state.modelVerifications.push(cloneJson(params));
-    writeEventEntry(base, state, 'model.verification', params, {
-      url: 'codex://model/verification',
-    });
-    return;
-  }
-
-  if (method === 'model/safetyBuffering/updated') {
-    state.safetyBuffering = cloneJson(params);
-    writeEventEntry(base, state, 'model.safetyBuffering.updated', params, {
-      url: 'codex://model/safetyBuffering',
-    });
-    return;
-  }
-
-  if (method === 'warning' || method === 'guardianWarning' || method === 'configWarning'
-    || method === 'deprecationNotice' || method === 'windows/worldWritableWarning') {
-    state.warnings.push({ method, ...cloneJson(params) });
-    writeEventEntry(base, state, method.replace(/\//g, '.'), params, {
-      url: `codex://warning/${encodeURIComponent(method)}`,
-      status: 299,
-      statusText: 'Warning',
-    });
-    return;
-  }
-
-  if (method === 'item/autoApprovalReview/started' || method === 'item/autoApprovalReview/completed') {
-    writeEventEntry(base, state, method.replace(/\//g, '.'), params, {
-      url: `codex://approval/${encodeURIComponent(params.reviewId || method)}`,
-    });
-    return;
-  }
-
-  if (method === 'serverRequest/resolved') {
-    const pending = _pendingServerRequests.get(String(params.requestId));
-    writeEventEntry(base, state, 'serverRequest.resolved', {
-      ...params,
-      ...(pending ? {
-        pendingMethod: pending.method,
-        pendingKind: pending.kind,
-        pendingName: pending.name,
-        pendingItemId: pending.itemId,
-      } : {}),
-    }, {
-      url: `codex://server_request_resolved/${encodeURIComponent(String(params.requestId || 'unknown'))}`,
-    });
-    // This notification is authoritative even when the turn was completed or
-    // interrupted before the client sent a response.
-    _pendingServerRequests.delete(String(params.requestId));
-    return;
-  }
-
-  if (method === 'hook/started' || method === 'hook/completed') {
-    // Hook events are internal implementation details; suppressed from the log.
-    return;
-  }
-
-  // error — 错误通知
-  if (method === 'error') {
-    writeEntry({
-      ...base,
-      url: 'codex://error',
-      method: 'POST',
-      body: buildFullRequestBody(state, state.threadId),
-      response: {
-        status: 500, statusText: 'Error', headers: {},
-        body: {
-          error: params.error || params,
-          ...(params.willRetry === true ? { willRetry: true } : {}),
-        },
-      },
-      duration: state.turnStartTime ? Date.now() - state.turnStartTime : 0,
-      ...getAgentIdentity(state.threadId),
-      _appServerSource: true,
-    });
-    return;
-  }
-}
-
-/**
- * 解析 client → server 的 JSON-RPC request（提取用户输入）
- */
-function parseClientMessage(msg, connection = 'test') {
-  if (!msg) return;
-
-  if (!msg.method) {
-    captureRawClientFrame(msg);
-    if (msg.id !== undefined && msg.id !== null) {
-      const pending = _pendingServerRequests.get(String(msg.id));
-      if (pending?.kind === 'requestUserInput' || pending?.kind === 'mcpElicitation') {
-        if (!pending.responded) {
-          const state = getThreadState(pending.threadId);
-          appendToolResultMessage(
-            state,
-            pending.itemId,
-            msg.error
-              ? `[cx-viewer:cancel] ${msg.error.message || stringifyValue(msg.error)}`
-              : (pending.kind === 'mcpElicitation'
-                ? formatMcpElicitationResult(pending, msg.result || {})
-                : formatAskUserInputResult(pending, msg.result || {}))
-          );
-          if (pending.kind === 'mcpElicitation' && pending.method) {
-            writeServerRequestResolutionEntry(pending, msg);
+    if (!msg.method) {
+      captureRawClientFrame(msg);
+      if (msg.id !== undefined && msg.id !== null) {
+        const pending = _pendingServerRequests.get(String(msg.id));
+        if (pending?.kind === 'requestUserInput' || pending?.kind === 'mcpElicitation') {
+          if (!pending.responded) {
+            const state = getThreadState(pending.threadId);
+            appendToolResultMessage(
+              state,
+              pending.itemId,
+              msg.error
+                ? `[cx-viewer:cancel] ${msg.error.message || stringifyValue(msg.error)}`
+                : (pending.kind === 'mcpElicitation'
+                  ? formatMcpElicitationResult(pending, msg.result || {})
+                  : formatAskUserInputResult(pending, msg.result || {}))
+            );
+            if (pending.kind === 'mcpElicitation' && pending.method) {
+              writeServerRequestResolutionEntry(pending, msg);
+            }
+            pending.responded = true;
+            pending.response = msg.error || msg.result || null;
+            syncGlobalsFromState(state);
           }
-          pending.responded = true;
-          pending.response = msg.error || msg.result || null;
-          syncGlobalsFromState(state);
-        }
-      } else if (pending) {
-        if (!pending.responded) {
-          writeServerRequestResolutionEntry(pending, msg);
-          pending.responded = true;
-          pending.response = msg.error || msg.result || null;
-          syncGlobalsFromState(getThreadState(pending.threadId));
+        } else if (pending) {
+          if (!pending.responded) {
+            writeServerRequestResolutionEntry(pending, msg);
+            pending.responded = true;
+            pending.response = msg.error || msg.result || null;
+            syncGlobalsFromState(getThreadState(pending.threadId));
+          }
         }
       }
+      return;
     }
-    return;
+
+    // turn/start — 用户发起新 turn（捕获完整上下文）
+    if (msg.method === 'turn/start') {
+      captureRawClientFrame(msg);
+      const params = msg.params || {};
+      _currentModel = params.model || _currentModel;
+      const state = getThreadState(params.threadId || _threadId || _mainThreadId);
+      if (['string', 'number'].includes(typeof msg.id) && state.threadId && _pendingClientTurns.size < 128) {
+        _pendingClientTurns.set(turnRpcKey(connection, msg.id), {
+          threadId: state.threadId, connection, startedAt: Date.now(),
+        });
+      }
+      state.model = params.model || state.model || _currentModel;
+      state.turnStartTime = Date.now();
+      state.pendingContent = [];
+      state.threadId = params.threadId || state.threadId;
+      state.cwd = params.cwd || state.cwd || _cwd;
+      // 保存完整 turn 参数供 buildFullRequestBody 使用
+      state.turnContext = {
+        approvalPolicy: params.approvalPolicy,
+        effort: params.effort,
+        summary: params.summary,
+        sandboxPolicy: params.sandboxPolicy,
+        cwd: params.cwd,
+        model: params.model,
+        outputSchema: params.outputSchema,
+        serviceTier: params.serviceTier,
+        personality: params.personality,
+        approvalsReviewer: params.approvalsReviewer,
+      };
+      appendUserMessage(state, params.input || [], params.clientUserMessageId);
+      if (params.cwd) _cwd = params.cwd;
+      syncGlobalsFromState(state);
+      return;
+    }
+
+    // turn/steer — 同一 active turn 内追加用户输入，不开启新 turn
+    if (msg.method === 'turn/steer') {
+      captureRawClientFrame(msg);
+      const params = msg.params || {};
+      const state = getThreadState(params.threadId || _threadId || _mainThreadId);
+      if (params.expectedTurnId) state.turnId = params.expectedTurnId;
+      if (params.threadId && params.threadId !== state.threadId) {
+        state.threadId = params.threadId;
+      }
+      flushAssistantContent(state);
+      appendUserMessage(state, params.input || [], params.clientUserMessageId);
+      syncGlobalsFromState(state);
+      return;
+    }
+
+    // thread/start — 新会话
+    if (msg.method === 'thread/start') {
+      captureRawClientFrame(msg);
+      const params = msg.params || {};
+      // Native TUI generates titles in a separate temporary thread. It must not
+      // reset an accepted user's transcript, approvals or whole-turn lifecycle.
+      if (isTemporaryTitleThread(params)) return;
+      const previousThread = _threadMetaById.get(_mainThreadId) || {};
+      const startContext = {
+        sessionStartSource: params.sessionStartSource || params.session_start_source || 'startup',
+        previousSessionId: previousThread.sessionId || previousThread.session_id || _mainThreadId || null,
+      };
+      resetThreadRuntimeState();
+      if (msg.id !== undefined && msg.id !== null) {
+        _pendingThreadContextByRpcId.set(String(msg.id), startContext);
+      }
+      _cwd = params.cwd || _cwd;
+      _currentProject = params.cwd ? basename(params.cwd) : _currentProject;
+      _systemPrompt = _pickSystemPrompt(
+        params.developerInstructions,
+        params.baseInstructions,
+        params.config?.developer_instructions,
+        params.config?.instructions,
+      );
+      _messages = [];
+      _pendingContent = [];
+      _threadMeta = {};
+      _turnContext = {};
+      _threadId = null;
+      _turnId = null;
+      return;
+    }
+
+    if (msg.method === 'thread/read' && msg.id != null) {
+      _pendingThreadContextByRpcId.set(String(msg.id), { passiveRead: true });
+    }
+    captureRawClientFrame(msg);
   }
 
-  // turn/start — 用户发起新 turn（捕获完整上下文）
-  if (msg.method === 'turn/start') {
-    captureRawClientFrame(msg);
-    const params = msg.params || {};
-    _currentModel = params.model || _currentModel;
-    const state = getThreadState(params.threadId || _threadId || _mainThreadId);
-    if (['string', 'number'].includes(typeof msg.id) && state.threadId && _pendingClientTurns.size < 128) {
-      _pendingClientTurns.set(turnRpcKey(connection, msg.id), {
-        threadId: state.threadId, connection, startedAt: Date.now(),
-      });
+  function _resetAppServerBridgeForTests({
+    rawDir = null,
+    cwd = '/tmp/codex-project',
+    project = 'codex-project',
+    model = null,
+    writeLogEntry = null,
+    rawStorageOptions = null,
+    onAgentLoopStart = null, onAgentLoopEnd = null, onTaskSnapshot = null,
+  } = {}) {
+    clearAgentLoops();
+    _onAgentLoopStart = onAgentLoopStart; _onAgentLoopEnd = onAgentLoopEnd; _loopCwd = cwd;
+    _onTaskSnapshot = typeof onTaskSnapshot === 'function' ? onTaskSnapshot : null;
+    flushRawSidecars({ force: true });
+    if (_rawSidecarBuffers.size > 0) {
+      _rawSidecarBuffers.clear();
+      _rawBufferedBytes = 0;
     }
-    state.model = params.model || state.model || _currentModel;
-    state.turnStartTime = Date.now();
-    state.pendingContent = [];
-    state.threadId = params.threadId || state.threadId;
-    state.cwd = params.cwd || state.cwd || _cwd;
-    // 保存完整 turn 参数供 buildFullRequestBody 使用
-    state.turnContext = {
-      approvalPolicy: params.approvalPolicy,
-      effort: params.effort,
-      summary: params.summary,
-      sandboxPolicy: params.sandboxPolicy,
-      cwd: params.cwd,
-      model: params.model,
-      outputSchema: params.outputSchema,
-      serviceTier: params.serviceTier,
-      personality: params.personality,
-      approvalsReviewer: params.approvalsReviewer,
-    };
-    appendUserMessage(state, params.input || [], params.clientUserMessageId);
-    if (params.cwd) _cwd = params.cwd;
-    syncGlobalsFromState(state);
-    return;
-  }
-
-  // turn/steer — 同一 active turn 内追加用户输入，不开启新 turn
-  if (msg.method === 'turn/steer') {
-    captureRawClientFrame(msg);
-    const params = msg.params || {};
-    const state = getThreadState(params.threadId || _threadId || _mainThreadId);
-    if (params.expectedTurnId) state.turnId = params.expectedTurnId;
-    if (params.threadId && params.threadId !== state.threadId) {
-      state.threadId = params.threadId;
-    }
-    flushAssistantContent(state);
-    appendUserMessage(state, params.input || [], params.clientUserMessageId);
-    syncGlobalsFromState(state);
-    return;
-  }
-
-  // thread/start — 新会话
-  if (msg.method === 'thread/start') {
-    captureRawClientFrame(msg);
-    const params = msg.params || {};
-    // Native TUI generates titles in a separate temporary thread. It must not
-    // reset an accepted user's transcript, approvals or whole-turn lifecycle.
-    if (isTemporaryTitleThread(params)) return;
-    const previousThread = _threadMetaById.get(_mainThreadId) || {};
-    const startContext = {
-      sessionStartSource: params.sessionStartSource || params.session_start_source || 'startup',
-      previousSessionId: previousThread.sessionId || previousThread.session_id || _mainThreadId || null,
-    };
-    resetThreadRuntimeState();
-    if (msg.id !== undefined && msg.id !== null) {
-      _pendingThreadStartByRpcId.set(String(msg.id), startContext);
-    }
-    _cwd = params.cwd || _cwd;
-    _currentProject = params.cwd ? basename(params.cwd) : _currentProject;
-    _systemPrompt = _pickSystemPrompt(
-      params.developerInstructions,
-      params.baseInstructions,
-      params.config?.developer_instructions,
-      params.config?.instructions,
-    );
+    _rawStorageOptions = rawStorageOptions;
+    _rawDir = rawDir;
+    _writeLogEntry = typeof writeLogEntry === 'function' ? writeLogEntry : null;
+    _currentModel = model;
+    _currentProject = project;
+    _cwd = cwd;
     _messages = [];
     _pendingContent = [];
-    _threadMeta = {};
-    _turnContext = {};
     _threadId = null;
     _turnId = null;
-    return;
+    _serverInfo = null;
+    _turnContext = {};
+    _threadMeta = {};
+    _systemPrompt = null;
+    _lastTokenUsage = null;
+    _turnStatus = null;
+    resetThreadRuntimeState();
+    _pendingThreadContextByRpcId.clear();
+    resetRawRoutingState();
+    _rawDroppedFrames = 0;
   }
 
-  captureRawClientFrame(msg);
-}
-
-export function _resetAppServerBridgeForTests({
-  rawDir = null,
-  cwd = '/tmp/codex-project',
-  project = 'codex-project',
-  model = null,
-  writeLogEntry = null,
-  rawStorageOptions = null,
-  onAgentLoopStart = null, onAgentLoopEnd = null,
-} = {}) {
-  clearAgentLoops();
-  _onAgentLoopStart = onAgentLoopStart; _onAgentLoopEnd = onAgentLoopEnd; _loopCwd = cwd;
-  flushRawSidecars({ force: true });
-  if (_rawSidecarBuffers.size > 0) {
-    _rawSidecarBuffers.clear();
-    _rawBufferedBytes = 0;
-  }
-  _rawStorageOptions = rawStorageOptions;
-  _rawDir = rawDir;
-  _writeLogEntry = typeof writeLogEntry === 'function' ? writeLogEntry : null;
-  _currentModel = model;
-  _currentProject = project;
-  _cwd = cwd;
-  _messages = [];
-  _pendingContent = [];
-  _threadId = null;
-  _turnId = null;
-  _serverInfo = null;
-  _turnContext = {};
-  _threadMeta = {};
-  _systemPrompt = null;
-  _lastTokenUsage = null;
-  _turnStatus = null;
-  resetThreadRuntimeState();
-  resetRawRoutingState();
-  _rawDroppedFrames = 0;
-}
-
-export function _parseAppServerClientMessageForTests(msg, connection) {
-  parseClientMessage(msg, connection);
-}
-
-export function _injectApprovalsReviewerForTests(msg, value) {
-  const previous = _approvalsReviewerOverride;
-  if (value !== undefined) setApprovalsReviewer(value);
-  const injected = injectApprovalsReviewer(msg);
-  _approvalsReviewerOverride = previous;
-  return injected;
-}
-
-export function _parseAppServerServerMessageForTests(msg, connection) {
-  parseServerMessage(msg, connection);
-}
-
-export function _writeAppServerEntryForTests(entry) {
-  return writeEntry(entry);
-}
-
-export function _flushAppServerRawSidecarsForTests() {
-  flushRawSidecars({ force: true });
-}
-
-export function _getAppServerRawStateForTests() {
-  return {
-    bufferedBytes: _rawBufferedBytes,
-    droppedFrames: _rawDroppedFrames,
-    rpcRoutes: _rawRpcThreadById.size,
-    turnRoutes: _rawTurnThreadById.size,
-    itemRoutes: _rawItemThreadById.size,
-  };
-}
-
-export function getAppServerRuntimeContext() {
-  const threadId = _mainThreadId || _threadId || null;
-  const state = threadId ? getThreadState(threadId) : null;
-  const thread = threadId ? (_threadMetaById.get(threadId) || state?.threadMeta || {}) : {};
-  return Object.freeze({
-    threadId,
-    sessionId: thread.sessionId || thread.session_id || threadId,
-    turnId: state?.turnId || _turnId || null,
-  });
-}
-
-/**
- * 启动 App-Server Bridge
- *
- * @param {object} options
- * @param {string} options.cwd - 工作目录
- * @param {string} options.codexPath - codex 二进制路径
- * @param {string} options.rawDir - private V2 diagnostic attachment directory
- * @param {object} [options.env] - 环境变量
- * @returns {Promise<{ proxyPort: number, appServerPort: number, stop: Function }>}
- */
-export async function startAppServerBridge(options) {
-  const {
-    cwd,
-    codexPath,
-    rawDir,
-    env = process.env,
-    extraConfigArgs = [],
-    onApprovalsReviewerActive = null,
-    onRequestUserInput = null,
-    onRequestUserInputCleared = null,
-    onAgentLoopStart = null, onAgentLoopEnd = null,
-    writeLogEntry = null,
-    systemPromptCapability = null,
-    systemPromptLogDir = null,
-  } = options;
-  clearAgentLoops();
-  _onAgentLoopStart = onAgentLoopStart; _onAgentLoopEnd = onAgentLoopEnd; _loopCwd = cwd;
-  _onApprovalsReviewerActive = typeof onApprovalsReviewerActive === 'function' ? onApprovalsReviewerActive : null;
-  _writeLogEntry = typeof writeLogEntry === 'function' ? writeLogEntry : null;
-  _rawDir = rawDir;
-  _currentModel = null;
-  _currentProject = cwd ? basename(cwd) : 'codex';
-  _cwd = cwd;
-  resetThreadRuntimeState();
-  _messages = [];
-  _pendingContent = [];
-  _threadId = null;
-  _turnId = null;
-  _serverInfo = null;
-  _turnContext = {};
-  _threadMeta = {};
-  _systemPrompt = null;
-  _lastTokenUsage = null;
-  _turnStatus = null;
-  resetRawRoutingState();
-  const requestUserInputRelay = new CodexRequestUserInputRelay({
-    onPending: onRequestUserInput,
-    onCleared: onRequestUserInputCleared,
-  });
-
-  // 1. 找两个空闲端口
-  const appServerPort = await findFreePort();
-  const proxyPort = await findFreePort();
-
-  // 2. 启动 codex app-server
-  // The HTTP proxy is started by cli.js before calling us; the -c
-  // openai_base_url=... flag in extraConfigArgs routes the app-server's model
-  // traffic through it. Clear any stale OPENAI_BASE_URL from the environment
-  // so it does not conflict with the -c override.
-  const appEnv = { ...env };
-  delete appEnv.OPENAI_BASE_URL;
-  delete appEnv.CXV_ORIGINAL_BASE_URL;
-  if (!appEnv.HTTPS_PROXY && !appEnv.HTTP_PROXY && !appEnv.https_proxy && !appEnv.http_proxy) {
-    try {
-      const shell = process.env.SHELL || '/bin/zsh';
-      const funcBody = execSync(
-        `${shell} -ic 'declare -f ${BINARY_NAME} 2>/dev/null || type ${BINARY_NAME} 2>/dev/null'`,
-        { encoding: 'utf-8', timeout: 5000, stdio: ['pipe', 'pipe', 'pipe'] }
-      );
-      const proxyRe = /\b(HTTPS?_PROXY|https?_proxy|ALL_PROXY|all_proxy|NO_PROXY|no_proxy)=(\S+)/g;
-      let m;
-      while ((m = proxyRe.exec(funcBody)) !== null) {
-        appEnv[m[1]] = m[2];
-      }
-    } catch {}
+  function _parseAppServerClientMessageForTests(msg, connection) {
+    parseClientMessage(msg, connection);
   }
 
-  let command = codexPath;
-  // extraConfigArgs (e.g. -c openai_base_url="...") redirect the app-server
-  // child's model traffic through the cxv proxy. `-c` is a global Codex flag so
-  // position relative to the `app-server` subcommand does not matter.
-  let appServerArgs = [...extraConfigArgs, 'app-server', '--listen', `ws://127.0.0.1:${appServerPort}`];
-  // npm 版 codex 是 .js 文件，需要 node 运行
-  if (codexPath.endsWith('.js')) {
-    command = process.execPath;
-    appServerArgs = [codexPath, ...appServerArgs];
+  function _injectApprovalsReviewerForTests(msg, value) {
+    const previous = _approvalsReviewerOverride;
+    if (value !== undefined) setApprovalsReviewer(value);
+    const injected = injectApprovalsReviewer(msg);
+    _approvalsReviewerOverride = previous;
+    return injected;
   }
-  _appServerProcess = spawn(command, appServerArgs, {
-    cwd,
-    env: appEnv,
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  const loopProcess = _appServerProcess;
-  _appServerProcess.once('exit', () => { if (_appServerProcess === loopProcess) clearAgentLoops(); });
 
-  _appServerProcess.stdout.on('data', (data) => {
-    if (process.env.CXV_DEBUG) process.stderr.write(`[app-server] ${data}`);
-  });
-  _appServerProcess.stderr.on('data', (data) => {
-    if (process.env.CXV_DEBUG) process.stderr.write(`[app-server] ${data}`);
-  });
+  function _parseAppServerServerMessageForTests(msg, connection) {
+    parseServerMessage(msg, connection);
+  }
 
-  // 3. 等待就绪
-  await waitForReady(`http://127.0.0.1:${appServerPort}/readyz`);
+  function _writeAppServerEntryForTests(entry) {
+    return writeEntry(entry);
+  }
 
-  // 4. 启动 WebSocket proxy server
-  const httpServer = createServer((req, res) => {
-    res.writeHead(404);
-    res.end();
-  });
+  function _flushAppServerRawSidecarsForTests() {
+    flushRawSidecars({ force: true });
+  }
 
-  const wss = new WebSocketServer({ server: httpServer });
+  function _getAppServerRawStateForTests() {
+    return {
+      bufferedBytes: _rawBufferedBytes,
+      droppedFrames: _rawDroppedFrames,
+      rpcRoutes: _rawRpcThreadById.size,
+      turnRoutes: _rawTurnThreadById.size,
+      itemRoutes: _rawItemThreadById.size,
+    };
+  }
 
-  wss.on('connection', (clientWs) => {
-    const loopConnection = randomUUID();
-    // 为每个 TUI 客户端连接创建到 app-server 的上游连接
-    const upstream = new WebSocket(`ws://127.0.0.1:${appServerPort}`);
-    _upstreamWs = upstream;
-    const pendingQueue = []; // 上游未就绪时暂存的消息
-    let upstreamReady = false;
+  function getAppServerInputState() {
+    return Object.freeze({
+      connected: !!_appServerProcess && _appServerProcess.exitCode === null
+        && _appServerProcess.signalCode === null && _upstreamWs?.readyState === WebSocket.OPEN,
+      active: _pendingClientTurns.size > 0 || _agentLoops.size > 0,
+      pendingRequests: [..._pendingServerRequests.values()].filter(request => !request.responded).length,
+    });
+  }
 
-    upstream.on('open', () => {
-      upstreamReady = true;
-      for (const m of pendingQueue) upstream.send(m);
-      pendingQueue.length = 0;
+  function getAppServerRuntimeContext() {
+    const threadId = _mainThreadId || _threadId || null;
+    const state = threadId ? getThreadState(threadId) : null;
+    const thread = threadId ? (_threadMetaById.get(threadId) || state?.threadMeta || {}) : {};
+    return Object.freeze({
+      threadId,
+      sessionId: thread.sessionId || thread.session_id || threadId,
+      turnId: state?.turnId || _turnId || null,
+    });
+  }
+
+  /**
+   * 启动 App-Server Bridge
+   *
+   * @param {object} options
+   * @param {string} options.cwd - 工作目录
+   * @param {string} options.codexPath - codex 二进制路径
+   * @param {string} options.rawDir - private V2 diagnostic attachment directory
+   * @param {object} [options.env] - 环境变量
+   * @returns {Promise<{ proxyPort: number, appServerPort: number, stop: Function }>}
+   */
+  async function startAppServerBridge(options) {
+    const {
+      cwd,
+      codexPath,
+      rawDir,
+      env = process.env,
+      extraConfigArgs = [],
+      onApprovalsReviewerActive = null,
+      onRequestUserInput = null,
+      onRequestUserInputCleared = null,
+      onAgentLoopStart = null, onAgentLoopEnd = null, onTaskSnapshot = null,
+      writeLogEntry = null,
+      systemPromptCapability = null,
+      systemPromptLogDir = null,
+      signal = null,
+    } = options;
+    signal?.throwIfAborted();
+    clearAgentLoops();
+    _onAgentLoopStart = onAgentLoopStart; _onAgentLoopEnd = onAgentLoopEnd; _loopCwd = cwd;
+    _onTaskSnapshot = typeof onTaskSnapshot === 'function' ? onTaskSnapshot : null;
+    _onApprovalsReviewerActive = typeof onApprovalsReviewerActive === 'function' ? onApprovalsReviewerActive : null;
+    _writeLogEntry = typeof writeLogEntry === 'function' ? writeLogEntry : null;
+    _rawDir = rawDir;
+    _currentModel = null;
+    _currentProject = cwd ? basename(cwd) : 'codex';
+    _cwd = cwd;
+    resetThreadRuntimeState();
+    _messages = [];
+    _pendingContent = [];
+    _threadId = null;
+    _turnId = null;
+    _serverInfo = null;
+    _turnContext = {};
+    _threadMeta = {};
+    _systemPrompt = null;
+    _lastTokenUsage = null;
+    _turnStatus = null;
+    resetRawRoutingState();
+    const requestUserInputRelay = new CodexRequestUserInputRelay({
+      onPending: onRequestUserInput,
+      onCleared: onRequestUserInputCleared,
     });
 
-    // client → proxy → upstream
-    clientWs.on('message', (data) => {
-      const original = typeof data === 'string' ? data : data.toString();
-      let str = original;
-      let parsed = null;
-      try {
-        parsed = JSON.parse(original);
-        const msg = injectManagedSystemPrompt(
-          injectApprovalsReviewer(parsed),
-          {
-            capability: systemPromptCapability,
-            logDir: systemPromptLogDir,
-            cwd,
-          },
-        );
-        str = JSON.stringify(msg);
-        parseClientMessage(msg, loopConnection);
-        if (REVIEWER_LIFECYCLE_METHODS.has(msg.method)
-            && isSupportedApprovalsReviewer(msg.params?.approvalsReviewer)) {
-          _onApprovalsReviewerActive?.(normalizeApprovalsReviewer(msg.params.approvalsReviewer));
-        }
-      } catch (error) {
-        if (parsed?.method === 'thread/start' && error?.code === 'CXV_SYSTEM_PROMPT_INJECTION_FAILED') {
-          clientWs.send(JSON.stringify({
-            id: parsed.id ?? null,
-            error: {
-              code: -32603,
-              message: 'Managed system prompt could not be loaded; the thread was not started',
-            },
-          }));
-          return;
-        }
-      }
-
-      if (upstreamReady) {
-        upstream.send(str);
-      } else {
-        pendingQueue.push(str);
-      }
-    });
-
-    // upstream → proxy → client（记录 server notifications）
-    upstream.on('message', (data) => {
-      const str = typeof data === 'string' ? data : data.toString();
-      let msg = null;
-      try {
-        msg = JSON.parse(str);
-        parseServerMessage(msg, loopConnection);
-      } catch {}
-
-      // request_user_input is a server-initiated JSON-RPC request. When the
-      // browser GUI claims it, this proxy becomes the responding client and the
-      // TUI must not see the same request. If no GUI is connected, claim()
-      // returns false and the original frame falls through to the TUI unchanged.
-      if (isCodexRequestUserInputMessage(msg)) {
-        const claimed = requestUserInputRelay.claim(
-          msg,
-          (response) => {
-            if (upstream.readyState !== WebSocket.OPEN) return false;
-            parseClientMessage(response, loopConnection);
-            upstream.send(JSON.stringify(response));
-            return true;
-          },
-          () => {
-            if (clientWs.readyState !== WebSocket.OPEN) return false;
-            clientWs.send(str);
-            return true;
-          },
-        );
-        if (claimed) return;
-      }
-
-      if (msg?.method === 'serverRequest/resolved' && msg.params?.requestId !== undefined) {
-        requestUserInputRelay.clearByRequestId(msg.params.requestId, 'server-resolved');
-      }
-
-      if (clientWs.readyState === WebSocket.OPEN) {
-        clientWs.send(str);
-      }
-    });
-
-    // 清理
-    clientWs.on('close', () => {
-      clearAgentLoops(loopConnection);
-      requestUserInputRelay.clearAll('tui-disconnected');
-      upstream.close();
-      _upstreamWs = null;
-    });
-    upstream.on('close', () => {
-      clearAgentLoops(loopConnection);
-      requestUserInputRelay.clearAll('app-server-disconnected');
-      clientWs.close();
-    });
-    clientWs.on('error', () => upstream.close());
-    upstream.on('error', () => clientWs.close());
-  });
-
-  await new Promise((resolve, reject) => {
-    httpServer.listen(proxyPort, '127.0.0.1', () => resolve());
-    httpServer.on('error', reject);
-  });
-  _proxyServer = httpServer;
-
-  return {
-    proxyPort,
-    appServerPort,
-    systemPromptCapability: systemPromptCapability || {
-      verified: false,
-      append: false,
-      override: false,
-      error: 'capability not checked',
-    },
-    setApprovalsReviewer,
-    resolveRequestUserInput: (id, answers) => requestUserInputRelay.resolve(id, answers),
-    cancelRequestUserInput: (id) => requestUserInputRelay.cancel(id),
-    releaseRequestUserInputToTui: (id) => requestUserInputRelay.releaseToClient(id),
-    stop() {
+    const startup = new AbortController();
+    let ready = false;
+    let wss = null;
+    let nativeIdentity = Promise.resolve(null), stopPromise = null, stopChild = null;
+    const onAbort = () => { void stop(); };
+    function stop() {
+      if (stopPromise) return stopPromise;
+      startup.abort();
+      signal?.removeEventListener('abort', onAbort);
       clearAgentLoops();
       _onAgentLoopStart = null; _onAgentLoopEnd = null;
+      publishTaskState(); _onTaskSnapshot = null;
       requestUserInputRelay.clearAll('bridge-stopped');
       flushRawSidecars();
       _onApprovalsReviewerActive = null;
       _writeLogEntry = null;
+      for (const client of wss?.clients || []) client.terminate();
+      wss?.close();
       if (_proxyServer) { _proxyServer.close(); _proxyServer = null; }
       if (_upstreamWs) { _upstreamWs.close(); _upstreamWs = null; }
-      if (_appServerProcess) { _appServerProcess.kill(); _appServerProcess = null; }
-    },
+      const child = _appServerProcess || stopChild; stopChild = child; _appServerProcess = null;
+      stopPromise = nativeIdentity.then(identity => stopOwnedProcessTree(child, identity));
+      stopPromise.catch(error => { stopPromise = null; console.warn('[CX Viewer] Native bridge cleanup:', error.message); });
+      return stopPromise;
+    }
+    signal?.addEventListener('abort', onAbort, { once: true });
+    try {
+      // 1. 找两个空闲端口
+      const appServerPort = await findFreePort();
+      const proxyPort = await findFreePort();
+
+      startup.signal.throwIfAborted();
+
+      // 2. 启动 codex app-server
+      // The HTTP proxy is started by cli.js before calling us; the -c
+      // openai_base_url=... flag in extraConfigArgs routes the app-server's model
+      // traffic through it. Clear any stale OPENAI_BASE_URL from the environment
+      // so it does not conflict with the -c override.
+      const appEnv = { ...env };
+      delete appEnv.OPENAI_BASE_URL;
+      delete appEnv.CXV_ORIGINAL_BASE_URL;
+      if (!appEnv.HTTPS_PROXY && !appEnv.HTTP_PROXY && !appEnv.https_proxy && !appEnv.http_proxy) {
+        try {
+          const shell = process.env.SHELL || '/bin/zsh';
+          const funcBody = execSync(
+            `${shell} -ic 'declare -f ${BINARY_NAME} 2>/dev/null || type ${BINARY_NAME} 2>/dev/null'`,
+            { encoding: 'utf-8', timeout: 5000, stdio: ['pipe', 'pipe', 'pipe'] }
+          );
+          const proxyRe = /\b(HTTPS?_PROXY|https?_proxy|ALL_PROXY|all_proxy|NO_PROXY|no_proxy)=(\S+)/g;
+          let m;
+          while ((m = proxyRe.exec(funcBody)) !== null) {
+            appEnv[m[1]] = m[2];
+          }
+        } catch {}
+      }
+
+      let command = codexPath;
+      // extraConfigArgs (e.g. -c openai_base_url="...") redirect the app-server
+      // child's model traffic through the cxv proxy. `-c` is a global Codex flag so
+      // position relative to the `app-server` subcommand does not matter.
+      let appServerArgs = [...extraConfigArgs, 'app-server', '--listen', `ws://127.0.0.1:${appServerPort}`];
+      // npm 版 codex 是 .js 文件，需要 node 运行
+      if (codexPath.endsWith('.js')) {
+        command = process.execPath;
+        appServerArgs = [codexPath, ...appServerArgs];
+      }
+      _appServerProcess = spawn(command, appServerArgs, {
+        cwd,
+        env: appEnv,
+        stdio: ['ignore', 'pipe', 'pipe'],
+        detached: process.platform !== 'win32',
+      });
+      const loopProcess = _appServerProcess;
+      nativeIdentity = loopProcess.pid ? bridgeProcesses.inspect(loopProcess.pid) : Promise.resolve(null);
+      _appServerProcess.once('error', error => startup.abort(error));
+      _appServerProcess.once('exit', (code, signal) => {
+        if (_appServerProcess === loopProcess) { clearAgentLoops(); publishTaskState(); }
+        if (!ready && !startup.signal.aborted) startup.abort(new Error(`App-server exited before readiness (${signal || code})`));
+      });
+
+      _appServerProcess.stdout.on('data', (data) => {
+        if (process.env.CXV_DEBUG) process.stderr.write(`[app-server] ${data}`);
+      });
+      _appServerProcess.stderr.on('data', (data) => {
+        if (process.env.CXV_DEBUG) process.stderr.write(`[app-server] ${data}`);
+      });
+
+      await nativeIdentity;
+      startup.signal.throwIfAborted();
+
+      // 3. 等待就绪
+      await waitForReady(`http://127.0.0.1:${appServerPort}/readyz`, 15000, startup.signal);
+      startup.signal.throwIfAborted();
+
+      // 4. 启动 WebSocket proxy server
+      const httpServer = createServer((req, res) => {
+        res.writeHead(404);
+        res.end();
+      });
+
+      _proxyServer = httpServer;
+      wss = new WebSocketServer({ server: httpServer });
+
+      wss.on('connection', (clientWs) => {
+        const loopConnection = randomUUID();
+        // 为每个 TUI 客户端连接创建到 app-server 的上游连接
+        const upstream = new WebSocket(`ws://127.0.0.1:${appServerPort}`);
+        _upstreamWs = upstream;
+        const pendingQueue = []; // 上游未就绪时暂存的消息
+        let upstreamReady = false;
+
+        upstream.on('open', () => {
+          upstreamReady = true;
+          for (const m of pendingQueue) upstream.send(m);
+          pendingQueue.length = 0;
+        });
+
+        // client → proxy → upstream
+        clientWs.on('message', (data) => {
+          const original = typeof data === 'string' ? data : data.toString();
+          let str = original;
+          let parsed = null;
+          try {
+            parsed = JSON.parse(original);
+            const msg = injectManagedSystemPrompt(
+              injectApprovalsReviewer(parsed),
+              {
+                capability: systemPromptCapability,
+                logDir: systemPromptLogDir,
+                cwd,
+              },
+            );
+            str = JSON.stringify(msg);
+            parseClientMessage(msg, loopConnection);
+            if (REVIEWER_LIFECYCLE_METHODS.has(msg.method)
+                && isSupportedApprovalsReviewer(msg.params?.approvalsReviewer)) {
+              _onApprovalsReviewerActive?.(normalizeApprovalsReviewer(msg.params.approvalsReviewer));
+            }
+          } catch (error) {
+            if (parsed?.method === 'thread/start' && error?.code === 'CXV_SYSTEM_PROMPT_INJECTION_FAILED') {
+              clientWs.send(JSON.stringify({
+                id: parsed.id ?? null,
+                error: {
+                  code: -32603,
+                  message: 'Managed system prompt could not be loaded; the thread was not started',
+                },
+              }));
+              return;
+            }
+          }
+
+          if (upstreamReady) {
+            upstream.send(str);
+          } else {
+            pendingQueue.push(str);
+          }
+        });
+
+        // upstream → proxy → client（记录 server notifications）
+        upstream.on('message', (data) => {
+          const str = typeof data === 'string' ? data : data.toString();
+          let msg = null;
+          try {
+            msg = JSON.parse(str);
+            parseServerMessage(msg, loopConnection);
+          } catch {}
+
+          // request_user_input is a server-initiated JSON-RPC request. When the
+          // browser GUI claims it, this proxy becomes the responding client and the
+          // TUI must not see the same request. If no GUI is connected, claim()
+          // returns false and the original frame falls through to the TUI unchanged.
+          if (isCodexRequestUserInputMessage(msg)) {
+            const claimed = requestUserInputRelay.claim(
+              msg,
+              (response) => {
+                if (upstream.readyState !== WebSocket.OPEN) return false;
+                parseClientMessage(response, loopConnection);
+                upstream.send(JSON.stringify(response));
+                return true;
+              },
+              () => {
+                if (clientWs.readyState !== WebSocket.OPEN) return false;
+                clientWs.send(str);
+                return true;
+              },
+            );
+            if (claimed) return;
+          }
+
+          if (msg?.method === 'serverRequest/resolved' && msg.params?.requestId !== undefined) {
+            requestUserInputRelay.clearByRequestId(msg.params.requestId, 'server-resolved');
+          }
+
+          if (clientWs.readyState === WebSocket.OPEN) {
+            clientWs.send(str);
+          }
+        });
+
+        // 清理
+        clientWs.on('close', () => {
+          if (_upstreamWs === upstream) publishTaskState();
+          clearAgentLoops(loopConnection);
+          requestUserInputRelay.clearAll('tui-disconnected');
+          upstream.close();
+          _upstreamWs = null;
+        });
+        upstream.on('close', () => {
+          if (_upstreamWs === upstream) publishTaskState();
+          clearAgentLoops(loopConnection);
+          requestUserInputRelay.clearAll('app-server-disconnected');
+          clientWs.close();
+        });
+        clientWs.on('error', () => upstream.close());
+        upstream.on('error', () => clientWs.close());
+      });
+
+      await new Promise((resolve, reject) => {
+        httpServer.listen(proxyPort, '127.0.0.1', () => resolve());
+        httpServer.on('error', reject);
+      });
+      startup.signal.throwIfAborted();
+      ready = true;
+
+      return {
+        proxyPort,
+        appServerPort,
+        systemPromptCapability: systemPromptCapability || {
+          verified: false,
+          append: false,
+          override: false,
+          error: 'capability not checked',
+        },
+        setApprovalsReviewer,
+        resolveRequestUserInput: (id, answers) => requestUserInputRelay.resolve(id, answers),
+        cancelRequestUserInput: (id) => requestUserInputRelay.cancel(id),
+        releaseRequestUserInputToTui: (id) => requestUserInputRelay.releaseToClient(id),
+        stop,
+      };
+    } catch (error) {
+      await stop();
+      throw error;
+    }
+  }
+
+  return {
+    setAppServerTurnTerminalListener,
+    setAppServerAgentMessageDeltaListener,
+    getAppServerAgentLoopSnapshot,
+    getAppServerTaskState,
+    injectManagedSystemPrompt,
+    setApprovalsReviewer,
+    resetRawCaptureBoundary,
+    _resetAppServerBridgeForTests,
+    _parseAppServerClientMessageForTests,
+    _injectApprovalsReviewerForTests,
+    _parseAppServerServerMessageForTests,
+    _writeAppServerEntryForTests,
+    _flushAppServerRawSidecarsForTests,
+    _getAppServerRawStateForTests,
+    getAppServerRuntimeContext,
+    getAppServerInputState,
+    startAppServerBridge
   };
 }
+
+export const {
+  setAppServerTurnTerminalListener,
+  setAppServerAgentMessageDeltaListener,
+  getAppServerAgentLoopSnapshot,
+  getAppServerTaskState,
+  injectManagedSystemPrompt,
+  setApprovalsReviewer,
+  resetRawCaptureBoundary,
+  _resetAppServerBridgeForTests,
+  _parseAppServerClientMessageForTests,
+  _injectApprovalsReviewerForTests,
+  _parseAppServerServerMessageForTests,
+  _writeAppServerEntryForTests,
+  _flushAppServerRawSidecarsForTests,
+  _getAppServerRawStateForTests,
+  getAppServerRuntimeContext,
+  getAppServerInputState,
+  startAppServerBridge
+} = createAppServerBridge();

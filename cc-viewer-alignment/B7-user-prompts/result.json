@@ -1,0 +1,32 @@
+[
+  {
+    "engine": "chromium",
+    "version": "159.0.8154.6",
+    "nativeProtocolFixture": true,
+    "threeModes": true,
+    "inertMarkup": true,
+    "exportTextOnly": true,
+    "draftPreserved": true,
+    "screenshots": [
+      "chromium-original.png",
+      "chromium-context.png",
+      "chromium-text.png"
+    ],
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "version": "27.2",
+    "nativeProtocolFixture": true,
+    "threeModes": true,
+    "inertMarkup": true,
+    "exportTextOnly": true,
+    "draftPreserved": true,
+    "screenshots": [
+      "webkit-original.png",
+      "webkit-context.png",
+      "webkit-text.png"
+    ],
+    "errors": []
+  }
+]

@@ -240,6 +240,10 @@ export async function fetchMcpStatus(anchor) {
   return sessionForAnchor(anchor)?.fetchMcpStatus() || { ok: false, reason: 'session-inactive' };
 }
 
+export async function fetchSkills(anchor) {
+  return sessionForAnchor(anchor)?.fetchSkills() || { ok: false, reason: 'session-inactive' };
+}
+
 export function getMcpStatusSnapshot(anchor) {
   return sessionForAnchor(anchor)?.getMcpStatusSnapshot() || null;
 }
@@ -1125,6 +1129,19 @@ function createSdkSession(instanceKey) {
     }
   }
 
+  async function fetchSkills() {
+    if (_transportKind !== 'appserver') return { ok: false, reason: 'unsupported' };
+    const owned = _transport, generation = _sessionGeneration;
+    if (!owned) return { ok: false, reason: 'session-inactive' };
+    try {
+      const skills = await owned.getSkills();
+      if (generation !== _sessionGeneration || _transport !== owned || skills === null) return { ok: false, reason: 'session-inactive' };
+      return { ok: true, instanceKey, skills };
+    } catch {
+      return { ok: false, reason: 'control-failed' };
+    }
+  }
+
   function resolveApproval(id, value) {
     if (_nativeApprovals?.resolve(id, value)) return true;
     const pending = _pendingApprovals.get(id);
@@ -1231,7 +1248,7 @@ function createSdkSession(instanceKey) {
     get revision() { return `${_sessionGeneration}:${_activityRevision}`; },
     resume,
     initSdkSession, sendUserMessage, retryInterruptedTurn, interruptTurn, resolveApproval, stopSession,
-    getSessionId, getInitialPrompt, getStreamingState, getQueueState, getTaskState, removeQueuedMessage, sendQueuedNow, fetchMcpStatus,
+    getSessionId, getInitialPrompt, getStreamingState, getQueueState, getTaskState, removeQueuedMessage, sendQueuedNow, fetchMcpStatus, fetchSkills,
   };
 }
 

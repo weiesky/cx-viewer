@@ -1,0 +1,21 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": "2914d6479d2845e0b193ba1c09aa6667c66850a6",
+  "blocks": {
+    ".splitContainer {": {
+      "exact": true,
+      "sha256": "9548d5a73da21d53d1a8bafd553a4774a3a5d66cbfedc70489d430a53f1f2121"
+    },
+    ".chatSection {": {
+      "exact": true,
+      "sha256": "7998155d64857093e04686de1a4aca55887028ab611ad29dcb027d30b303beee"
+    }
+  },
+  "laterCssCommits": [
+    "96f3a7a44e",
+    "975313773a",
+    "2e09d30192"
+  ],
+  "laterChangesToTheseBlocks": false,
+  "geometryControllerChangesAfterIntroduction": false
+}

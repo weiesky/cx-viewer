@@ -7,11 +7,12 @@ import { createServer } from 'node:http';
 function runBridgeAgainst(response, { env = {}, command = 'npm test' } = {}) {
   return new Promise((resolve, reject) => {
     let received = null;
+    let receivedUrl = null;
     const server = createServer((req, res) => {
       let body = '';
       req.on('data', chunk => { body += chunk; });
       req.on('end', () => {
-        received = JSON.parse(body);
+        received = JSON.parse(body); receivedUrl = req.url;
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(response));
       });
@@ -28,7 +29,7 @@ function runBridgeAgainst(response, { env = {}, command = 'npm test' } = {}) {
       child.stderr.on('data', chunk => { stderr += chunk; });
       child.on('error', reject);
       child.on('close', status => {
-        server.close(() => resolve({ status, stdout, stderr, received }));
+        server.close(() => resolve({ status, stdout, stderr, received, receivedUrl }));
       });
       child.stdin.end(JSON.stringify({
         hook_event_name: 'PermissionRequest',
@@ -127,4 +128,11 @@ test('perm-bridge recognizes common protected publish command variants', async (
     const child = await runBridgeAgainst({ decision: 'deny' }, { command });
     assert.equal(child.received.forceManual, true, command);
   }
+});
+
+test('permission child sends its exact workspace identity in the hook URL', async () => {
+  const key = 'cxv-' + 'a'.repeat(36);
+  const child = await runBridgeAgainst({ decision: 'deny' }, { env: { CXV_INSTANCE_KEY: key, CXV_BYPASS_PERMISSIONS: '' } });
+  assert.equal(child.status, 0); assert.equal(child.receivedUrl, '/api/perm-hook?instance=' + key);
+  assert.equal(JSON.parse(child.stdout).hookSpecificOutput.decision.behavior, 'deny');
 });

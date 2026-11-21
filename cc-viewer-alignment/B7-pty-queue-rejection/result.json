@@ -1,0 +1,26 @@
+[
+  {
+    "engine": "chromium",
+    "version": "159.0.8154.6",
+    "realNativeBusyTurn": true,
+    "serverCapacity": 50,
+    "fullRejectionRestoresExactMultilineDraft": true,
+    "noPhantomUserBubble": true,
+    "fillNeverSentToModel": true,
+    "stopClearPreservesDraft": true,
+    "screenshot": "chromium-restored-full-queue.png",
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "version": "27.2",
+    "realNativeBusyTurn": true,
+    "serverCapacity": 50,
+    "fullRejectionRestoresExactMultilineDraft": true,
+    "noPhantomUserBubble": true,
+    "fillNeverSentToModel": true,
+    "stopClearPreservesDraft": true,
+    "screenshot": "webkit-restored-full-queue.png",
+    "errors": []
+  }
+]

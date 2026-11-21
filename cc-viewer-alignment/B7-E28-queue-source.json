@@ -1,0 +1,47 @@
+{
+  "upstream": "1aca9b5f8f207903a7516a8036a7fa590808ca16",
+  "fixedBaseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "mechanicallyUnchangedFunctionBodies": [
+    "initChatQueue",
+    "_normalizeScope",
+    "_hasScope",
+    "_scopeOf",
+    "_matchesScope",
+    "_publicItem",
+    "getSnapshot",
+    "_broadcast",
+    "_broadcastRejected",
+    "_makeItem",
+    "_clearRescueTimer",
+    "_clearPollTimer",
+    "_clearEscTimer",
+    "_safeToInject",
+    "_startDispatch",
+    "_restoreDispatch",
+    "_targetGone",
+    "_failDispatch",
+    "_writeDispatch",
+    "_injectHead",
+    "_pollUntilSafe",
+    "enqueue",
+    "remove",
+    "clear",
+    "sendNow",
+    "onTurnEnd",
+    "suppressNextDrain",
+    "onStreamingActivated",
+    "stop",
+    "__resetForTests"
+  ],
+  "onlyBodyLiteralAdaptation": {
+    "function": "_safeToInject",
+    "from": "claude",
+    "to": "codex"
+  },
+  "otherAdaptations": [
+    "one factory per owned PTY",
+    "existing native bracket-paste builder and native C0/C1 sanitizer",
+    "existing reportSwallowed path",
+    "no plaintext resume injection; native resume keeps B3 lifecycle"
+  ]
+}

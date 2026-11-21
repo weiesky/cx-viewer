@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { appServerThreadParams, createSdkAppServerTransport, normalizeAppServerItem, normalizeAppServerMcpStatus, serializeAppServerConfig } from '../lib/sdk-appserver-transport.js';
+import { appServerThreadParams, createSdkAppServerTransport, normalizeAppServerItem, normalizeAppServerMcpStatus, normalizeAppServerSkills, serializeAppServerConfig } from '../lib/sdk-appserver-transport.js';
 
 function fixture(mode = 'success', options = {}) {
   const calls = [], raw = [];
@@ -13,6 +13,7 @@ function fixture(mode = 'success', options = {}) {
     async stop() { stopped++; close(); },
     async request(method, params, requestOptions) {
       calls.push({ method, params, ...(requestOptions ? { options: requestOptions } : {}) });
+      if (method === 'skills/list') return options.readSkills(params, requestOptions);
       if (method === 'mcpServerStatus/list') return options.readMcpStatus(params, requestOptions);
       if (method === 'thread/turns/list') return options.readTurns?.(params, requestOptions) || { data: [] };
       if (method === 'thread/read' && options.readControl) return options.readControl(params, requestOptions);
@@ -427,4 +428,39 @@ test('native item mapping preserves tool output, collaboration identity and unkn
   assert.equal(collab.output.agentsStates.child.status, 'running');
   const unknown = { id: 'future', type: 'futureEvent', payload: 'kept' };
   assert.deepEqual(normalizeAppServerItem(unknown).output, unknown);
+});
+
+
+test('native skills read uses only its active cwd and never starts a process or turn for a menu', async () => {
+  const skill = { name: 'real-skill', description: 'actual metadata', path: '/fixture/SKILL.md', enabled: true, scope: 'repo', pluginId: 'plugin' };
+  const f = fixture('lost-result', { readSkills: () => ({ data: [{ cwd: '/fixture', skills: [skill, { ...skill, name: 'disabled', enabled: false }] }] }) });
+  try {
+    assert.equal(await f.transport.getSkills(), null); assert.deepEqual(f.calls, []);
+    const stream = await f.transport.runStreamed('hold'); const it = stream.events[Symbol.asyncIterator](); await it.next(); await it.next();
+    assert.deepEqual(await f.transport.getSkills(), [{ name: 'real-skill', description: 'actual metadata', path: '/fixture/SKILL.md', scope: 'repo', pluginId: 'plugin' }]);
+    const read = f.calls.find(call => call.method === 'skills/list');
+    assert.deepEqual(read.params, { cwds: ['/fixture'], forceReload: true }); assert.equal(read.options.timeoutMs, 10000);
+    assert.equal(f.calls.filter(call => call.method === 'turn/start').length, 1);
+    f.frame('turn/completed', { threadId: 'root', turn: { id: 'turn', status: 'completed' } }); for await (const _ of it) {}
+  } finally { await f.transport.stop(); }
+});
+
+test('native skills reject foreign or duplicate cwd and drop invalid protocol tokens and paths', () => {
+  const skill = { name: 'safe', path: '/fixture/SKILL.md', enabled: true, scope: 'repo' };
+  for (const data of [[], [{ cwd: '/other', skills: [skill] }], [{ cwd: '/fixture', skills: [] }, { cwd: '/fixture', skills: [] }]]) {
+    assert.throws(() => normalizeAppServerSkills({ data }, '/fixture'), /workspace/);
+  }
+  assert.deepEqual(normalizeAppServerSkills({ data: [{ cwd: '/fixture', skills: [
+    { ...skill, name: 'unsafe\ninput' }, { ...skill, path: 'relative' }, { ...skill, enabled: false },
+    { ...skill, scope: 'constructor' }, skill,
+  ] }] }, '/fixture'), [{ name: 'safe', description: '', path: '/fixture/SKILL.md', scope: 'repo' }]);
+  assert.deepEqual(normalizeAppServerSkills({ data: [{ cwd: '/fixture', skills: [] }] }, '/fixture'), []);
+});
+
+test('native skills discard reads from a retired client', async () => {
+  let finish;
+  const f = fixture('lost-result', { readSkills: () => new Promise(resolve => { finish = resolve; }) });
+  const stream = await f.transport.runStreamed('hold'); const it = stream.events[Symbol.asyncIterator](); await it.next(); await it.next();
+  const pending = f.transport.getSkills(); await f.transport.stop(); finish({ data: [{ cwd: '/fixture', skills: [] }] });
+  await assert.rejects(pending, /changed/); await assert.rejects(it.next(), /stopped/);
 });

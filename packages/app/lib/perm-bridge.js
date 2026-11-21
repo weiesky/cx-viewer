@@ -121,6 +121,12 @@ if (!APPROVAL_TOOLS.has(toolName)) {
   process.exit(0);
 }
 
+const instanceKey = process.env.CXV_INSTANCE_KEY || '';
+if (instanceKey && !/^cxv-[a-f0-9]{36}$/.test(instanceKey)) {
+  process.stdout.write(JSON.stringify(fallbackOutput('Invalid CX Viewer workspace instance')) + '\n');
+  process.exit(0);
+}
+
 const TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
 function postToViewer() {
@@ -131,7 +137,7 @@ function postToViewer() {
     const req = http.request({
       hostname: '127.0.0.1',
       port: Number(port),
-      path: '/api/perm-hook',
+      path: '/api/perm-hook' + (instanceKey ? '?instance=' + encodeURIComponent(instanceKey) : ''),
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

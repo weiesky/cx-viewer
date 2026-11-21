@@ -1,0 +1,30 @@
+{
+  "cases": [
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "legacyMigratedAndCleared": true,
+      "separateBrowserContextHydratesServer": true,
+      "realMenuUnpinPersisted": true,
+      "authoritativeEmptyAfterReload": true,
+      "pageerrors": [],
+      "screenshots": [
+        "chromium-migrated.png",
+        "chromium-cross-browser-cleared.png"
+      ]
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "legacyMigratedAndCleared": true,
+      "separateBrowserContextHydratesServer": true,
+      "realMenuUnpinPersisted": true,
+      "authoritativeEmptyAfterReload": true,
+      "pageerrors": [],
+      "screenshots": [
+        "webkit-migrated.png",
+        "webkit-cross-browser-cleared.png"
+      ]
+    }
+  ]
+}

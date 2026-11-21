@@ -1,0 +1,113 @@
+{
+  "noFileUploadOrModelSend": true,
+  "cases": [
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "mode": "ordinary-desktop",
+      "uploadFirst": true,
+      "cascadeRetiredOnHover": true,
+      "realFileChooser": true,
+      "menuClosedBeforePick": true,
+      "css": {
+        "font": "13px",
+        "display": "flex",
+        "height": 27
+      },
+      "screenshots": [
+        "chromium-ordinary-desktop-menu.png"
+      ]
+    },
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "mode": "sdk-desktop",
+      "uploadFirst": true,
+      "cascadeRetiredOnHover": true,
+      "realFileChooser": true,
+      "menuClosedBeforePick": true,
+      "css": {
+        "font": "13px",
+        "display": "flex",
+        "height": 27
+      },
+      "screenshots": [
+        "chromium-sdk-desktop-menu.png"
+      ]
+    },
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "mode": "sdk-pad",
+      "emulated": true,
+      "originalFlatUploadEntryPreserved": true,
+      "screenshots": [
+        "chromium-sdk-pad-flat-menu.png"
+      ]
+    },
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "mode": "sdk-phone",
+      "emulated": true,
+      "originalFlatUploadEntryPreserved": true,
+      "screenshots": [
+        "chromium-sdk-phone-flat-menu.png"
+      ]
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "mode": "ordinary-desktop",
+      "uploadFirst": true,
+      "cascadeRetiredOnHover": true,
+      "realFileChooser": true,
+      "menuClosedBeforePick": true,
+      "css": {
+        "font": "13px",
+        "display": "flex",
+        "height": 28
+      },
+      "screenshots": [
+        "webkit-ordinary-desktop-menu.png"
+      ]
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "mode": "sdk-desktop",
+      "uploadFirst": true,
+      "cascadeRetiredOnHover": true,
+      "realFileChooser": true,
+      "menuClosedBeforePick": true,
+      "css": {
+        "font": "13px",
+        "display": "flex",
+        "height": 28
+      },
+      "screenshots": [
+        "webkit-sdk-desktop-menu.png"
+      ]
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "mode": "sdk-pad",
+      "emulated": true,
+      "originalFlatUploadEntryPreserved": true,
+      "screenshots": [
+        "webkit-sdk-pad-flat-menu.png"
+      ]
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "mode": "sdk-phone",
+      "emulated": true,
+      "originalFlatUploadEntryPreserved": true,
+      "screenshots": [
+        "webkit-sdk-phone-flat-menu.png"
+      ]
+    }
+  ]
+}

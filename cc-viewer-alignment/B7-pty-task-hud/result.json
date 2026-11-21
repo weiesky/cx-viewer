@@ -1,0 +1,113 @@
+{
+  "externalModelOrInstalledNativePlanToolNotClaimed": true,
+  "cases": [
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "mode": "desktop",
+      "emulated": false,
+      "controlledNativeProtocol": true,
+      "actualPtyRuntimeAndBridge": true,
+      "originalHudAndDots": true,
+      "refreshReplaysExactOwner": true,
+      "childDoesNotReplaceRoot": true,
+      "completeAndInterruptedHideOwnHud": true,
+      "siblingRetained": true,
+      "nextPromptResets": true,
+      "screenshots": [
+        "chromium-desktop-expanded.png",
+        "chromium-desktop-sibling-retained.png"
+      ]
+    },
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "mode": "pad",
+      "emulated": true,
+      "controlledNativeProtocol": true,
+      "actualPtyRuntimeAndBridge": true,
+      "originalHudAndDots": true,
+      "refreshReplaysExactOwner": true,
+      "childDoesNotReplaceRoot": true,
+      "completeAndInterruptedHideOwnHud": true,
+      "siblingRetained": true,
+      "nextPromptResets": true,
+      "screenshots": [
+        "chromium-pad-expanded.png",
+        "chromium-pad-sibling-retained.png"
+      ]
+    },
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "mode": "phone",
+      "emulated": true,
+      "controlledNativeProtocol": true,
+      "actualPtyRuntimeAndBridge": true,
+      "originalHudAndDots": true,
+      "refreshReplaysExactOwner": true,
+      "childDoesNotReplaceRoot": true,
+      "completeAndInterruptedHideOwnHud": true,
+      "siblingRetained": true,
+      "nextPromptResets": true,
+      "screenshots": [
+        "chromium-phone-expanded.png",
+        "chromium-phone-sibling-retained.png"
+      ]
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "mode": "desktop",
+      "emulated": false,
+      "controlledNativeProtocol": true,
+      "actualPtyRuntimeAndBridge": true,
+      "originalHudAndDots": true,
+      "refreshReplaysExactOwner": true,
+      "childDoesNotReplaceRoot": true,
+      "completeAndInterruptedHideOwnHud": true,
+      "siblingRetained": true,
+      "nextPromptResets": true,
+      "screenshots": [
+        "webkit-desktop-expanded.png",
+        "webkit-desktop-sibling-retained.png"
+      ]
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "mode": "pad",
+      "emulated": true,
+      "controlledNativeProtocol": true,
+      "actualPtyRuntimeAndBridge": true,
+      "originalHudAndDots": true,
+      "refreshReplaysExactOwner": true,
+      "childDoesNotReplaceRoot": true,
+      "completeAndInterruptedHideOwnHud": true,
+      "siblingRetained": true,
+      "nextPromptResets": true,
+      "screenshots": [
+        "webkit-pad-expanded.png",
+        "webkit-pad-sibling-retained.png"
+      ]
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "mode": "phone",
+      "emulated": true,
+      "controlledNativeProtocol": true,
+      "actualPtyRuntimeAndBridge": true,
+      "originalHudAndDots": true,
+      "refreshReplaysExactOwner": true,
+      "childDoesNotReplaceRoot": true,
+      "completeAndInterruptedHideOwnHud": true,
+      "siblingRetained": true,
+      "nextPromptResets": true,
+      "screenshots": [
+        "webkit-phone-expanded.png",
+        "webkit-phone-sibling-retained.png"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,200 @@
+[
+  {
+    "engine": "chromium",
+    "version": "159.0.8154.6",
+    "mode": "desktop",
+    "emulated": false,
+    "nativeCodex": "0.169.0",
+    "localCannedModel": true,
+    "distinctNativeSessionIds": true,
+    "busyEnqueue": true,
+    "noPrematureUserBubble": true,
+    "reloadReplay": true,
+    "siblingIsolation": true,
+    "remove": true,
+    "stopParks": true,
+    "sendNow": true,
+    "automaticDrain": true,
+    "uniqueNativeUserEcho": true,
+    "queueFrames": 13,
+    "css": {
+      "radius": "16px",
+      "clamp": "2",
+      "width": 1000,
+      "height": 30,
+      "right": 1362.5,
+      "viewport": 1440
+    },
+    "screenshots": [
+      "chromium-desktop-queued.png",
+      "chromium-desktop-stopped-parked.png",
+      "chromium-desktop-native-dispatched.png"
+    ],
+    "errors": []
+  },
+  {
+    "engine": "chromium",
+    "version": "159.0.8154.6",
+    "mode": "pad",
+    "emulated": true,
+    "nativeCodex": "0.169.0",
+    "localCannedModel": true,
+    "distinctNativeSessionIds": true,
+    "busyEnqueue": true,
+    "noPrematureUserBubble": true,
+    "reloadReplay": true,
+    "siblingIsolation": true,
+    "remove": true,
+    "stopParks": true,
+    "sendNow": true,
+    "automaticDrain": true,
+    "uniqueNativeUserEcho": true,
+    "queueFrames": 13,
+    "css": {
+      "radius": "16px",
+      "clamp": "2",
+      "width": 951,
+      "height": 30,
+      "right": 1008,
+      "viewport": 1024
+    },
+    "screenshots": [
+      "chromium-pad-queued.png",
+      "chromium-pad-stopped-parked.png",
+      "chromium-pad-native-dispatched.png"
+    ],
+    "errors": []
+  },
+  {
+    "engine": "chromium",
+    "version": "159.0.8154.6",
+    "mode": "phone",
+    "emulated": true,
+    "nativeCodex": "0.169.0",
+    "localCannedModel": true,
+    "distinctNativeSessionIds": true,
+    "busyEnqueue": true,
+    "noPrematureUserBubble": true,
+    "reloadReplay": true,
+    "siblingIsolation": true,
+    "remove": true,
+    "stopParks": true,
+    "sendNow": true,
+    "automaticDrain": true,
+    "uniqueNativeUserEcho": true,
+    "queueFrames": 13,
+    "css": {
+      "radius": "21px",
+      "clamp": "2",
+      "width": 404.8125,
+      "height": 18.5625,
+      "right": 417.40625,
+      "viewport": 430
+    },
+    "screenshots": [
+      "chromium-phone-queued.png",
+      "chromium-phone-stopped-parked.png",
+      "chromium-phone-native-dispatched.png"
+    ],
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "version": "27.2",
+    "mode": "desktop",
+    "emulated": false,
+    "nativeCodex": "0.169.0",
+    "localCannedModel": true,
+    "distinctNativeSessionIds": true,
+    "busyEnqueue": true,
+    "noPrematureUserBubble": true,
+    "reloadReplay": true,
+    "siblingIsolation": true,
+    "remove": true,
+    "stopParks": true,
+    "sendNow": true,
+    "automaticDrain": true,
+    "uniqueNativeUserEcho": true,
+    "queueFrames": 13,
+    "css": {
+      "radius": "16px",
+      "clamp": "2",
+      "width": 1000,
+      "height": 31,
+      "right": 1362.5,
+      "viewport": 1440
+    },
+    "screenshots": [
+      "webkit-desktop-queued.png",
+      "webkit-desktop-stopped-parked.png",
+      "webkit-desktop-native-dispatched.png"
+    ],
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "version": "27.2",
+    "mode": "pad",
+    "emulated": true,
+    "nativeCodex": "0.169.0",
+    "localCannedModel": true,
+    "distinctNativeSessionIds": true,
+    "busyEnqueue": true,
+    "noPrematureUserBubble": true,
+    "reloadReplay": true,
+    "siblingIsolation": true,
+    "remove": true,
+    "stopParks": true,
+    "sendNow": true,
+    "automaticDrain": true,
+    "uniqueNativeUserEcho": true,
+    "queueFrames": 13,
+    "css": {
+      "radius": "16px",
+      "clamp": "2",
+      "width": 951,
+      "height": 31,
+      "right": 1008,
+      "viewport": 1024
+    },
+    "screenshots": [
+      "webkit-pad-queued.png",
+      "webkit-pad-stopped-parked.png",
+      "webkit-pad-native-dispatched.png"
+    ],
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "version": "27.2",
+    "mode": "phone",
+    "emulated": true,
+    "nativeCodex": "0.169.0",
+    "localCannedModel": true,
+    "distinctNativeSessionIds": true,
+    "busyEnqueue": true,
+    "noPrematureUserBubble": true,
+    "reloadReplay": true,
+    "siblingIsolation": true,
+    "remove": true,
+    "stopParks": true,
+    "sendNow": true,
+    "automaticDrain": true,
+    "uniqueNativeUserEcho": true,
+    "queueFrames": 13,
+    "css": {
+      "radius": "21px",
+      "clamp": "2",
+      "width": 404.8125,
+      "height": 18.5625,
+      "right": 417.40625,
+      "viewport": 430
+    },
+    "screenshots": [
+      "webkit-phone-queued.png",
+      "webkit-phone-stopped-parked.png",
+      "webkit-phone-native-dispatched.png"
+    ],
+    "errors": []
+  }
+]

@@ -4,7 +4,7 @@ import { ReloadOutlined, PlusOutlined, FolderOpenOutlined, FileZipOutlined, File
 import { parseToolXmlList, extractLoadedSkills } from '../../utils/helpers';
 import { extractLoadedTools } from '../../utils/requestTools';
 import { contextSeverityColor } from '../../utils/formatters';
-import { BUILTIN_SKILL_NAMES, countSkillWarningCandidates, mergeActiveSkills } from '../../utils/skillsParser';
+import { BUILTIN_SKILL_NAMES, countSkillWarningCandidates, mergeActiveSkills, groupActiveSkillsByScope } from '../../utils/skillsParser';
 import { t } from '../../i18n';
 import { apiUrl } from '../../utils/apiUrl';
 import { renderMemoryMarkdown } from '../../utils/markdown';
@@ -271,9 +271,31 @@ export default function CachePopoverContent({
       ))}
     </div>
   );
-  const skillsBody = (
-    <div className={sharedChrome.toolChipGrid}>{skills.map(renderSkillChip)}</div>
-  );
+  // Scoped rows: when fsSkills is available, split chips into global / project / plugin
+  // rows. The historical fallback (mergedSkills === null) has no source info, so it keeps
+  // the original single merged row.
+  const skillsBody = (() => {
+    if (mergedSkills === null) {
+      return <div className={sharedChrome.toolChipGrid}>{skills.map(renderSkillChip)}</div>;
+    }
+    const groups = groupActiveSkillsByScope(mergedSkills);
+    const rows = [
+      { key: 'global', labelKey: 'ui.skillScopeRow.global', items: groups.global },
+      { key: 'project', labelKey: 'ui.skillScopeRow.project', items: groups.project },
+      { key: 'plugin', labelKey: 'ui.skillScopeRow.plugin', items: groups.plugin },
+    ].filter(r => r.items.length > 0);
+    // Inline layout: "Label: chip chip chip" on one line per scope (wraps naturally).
+    return (
+      <div className={styles.skillScopeRows}>
+        {rows.map(row => (
+          <div key={row.key} className={styles.skillScopeRow}>
+            <span className={styles.skillScopeLabel}>{t(row.labelKey)}:</span>
+            {row.items.map(renderSkillChip)}
+          </div>
+        ))}
+      </div>
+    );
+  })();
 
   const skillsAction = (onOpenSkillsModal || onSkillImported) ? (
     <>

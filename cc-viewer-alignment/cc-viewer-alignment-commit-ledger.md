@@ -1,6 +1,6 @@
 # cc-viewer 逐提交对齐台账
 
-2026-11-21 B6已完成（第7/12工作包），固定上游74cd752d99caf122e750216d2af3bb9f467c4de1；原16笔已备份并整合为e885d8b，经[PR #6](https://github.com/weiesky/cx-viewer/pull/6)合并main（9f3e2ce）。E1–E13迁入归档/音频/字幕/图像分发、助手/diff/KV/Ask选区与Markdown复制，E12修复共享CAS body覆盖旧回合，E14收口。原最终1986/1986、0skip及新安装525/525/B1.2/CLI通过；交付重新build/pack720、artifact-only安装源码/许可及211Web字节通过，26图hash复核，原双引擎6场/10轮GUI保持。实际PR无CI检查，不冒称CI通过。普通CLI/PTY增加工作区入口仍待纠偏；活动7008旧后端未重启，npm链接正确。46候选混合子项、stdin/IM偶发、物理设备/音频/系统剪贴板/真实LAN-TLS/外部模型/其他OS/最低Node未验及原缺陷保持。默认exec/显式AppServer渐进与353K不变。本会话不启动B7，下一会话先纠偏普通模式入口，再按固定源码推进B7，见[B7交接](./B7-handoff.md)。
+2026-11-22 B7实施中（第8/12工作包），固定上游74cd752d99caf122e750216d2af3bb9f467c4de1，分支codex/b7-input-navigation-skills，起点main8968935，74索引候选及追加源码子项逐项核验。E1–E41及E19a/E31a/E31b/E40a独立完成；原普通PTY任务HUD接精确root计划快照，整CSS同基线，226/226、build与受控native协议双引擎6场12图通过；实际0.169未见plan工具事件，不记模型执行已验，继续审计。 普通“＋”、输入12行/ghost/导航/汇总/Skills菜单、窄split、主PTY与scratch进程树均已有分项证据；74候选完整闭合及最终全量/新安装仍待完成，B7未完成。新工作区权限遵循已选弹窗；/选技能填原生$name；合成AppServer会话使用codex://app-server/turn（均经用户选定）。活动7008不重启；IM偶发、物理设备/音频/外部模型/真实LAN/TLS/其他OS/最低Node未验保持，exec/显式AppServer渐进与353K不变。见[B7实施](./B7-implementation.md)。
 
 2026-11-21 B6交付：原16笔完整备份并整为e885d8b，PR #6已合并main（9f3e2ce），精确head guard及合并tree已核；实际无PR CI检查。交付复建/pack720/新artifact-only字节通过，生产实现不变；原上游映射继续有效。普通PTY入口待纠偏及旧后端未重启保持，B7下一会话执行，见[整合记录](./B6-local-commit-consolidation-2026-11-21.md)及[B7交接](./B7-handoff.md)。
 
@@ -85,6 +85,8 @@
 
 - 2026-11-21 B4 E57：本笔实际运行时子项的阅读边界/本地复用/后续工作包归属见[B4.60](./B4-implementation.md#b460-e57-混合候选的生命周期与输入代理自动化边界源码审计无运行时变动)及[B4混合scope回执](./B4-mixed-scope-audit-2026-11-21.json)。无运行时改动，不将B7/B8/B9及其他混合子项整体勾选。
 
+- 2026-11-21 B7 E20：E1–E20及E19a独立完成；原desktop composer PromptNav/click popover/mic迁位、布局失效/选项/more关闭，109/109与build、双引擎8场14图通过；发现原主PTY切换会卸载未发草稿，下一笔修复该实际数据丢失。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e20)。
+
 <a id="commit-8f1d345309"></a>
 ## [8f1d345309](https://github.com/weiesky/cc-viewer/commit/8f1d345309b10c289ee14825fea8d24f07eb534f) — feat(web): move prompt-nav into composer and relocate mic in --sdk layout
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-8f1d345309)
@@ -109,6 +111,10 @@
   - `history.md` → 无直接路径匹配
 
 - 2026-11-21 B4 E57：本笔实际运行时子项的阅读边界/本地复用/后续工作包归属见[B4.60](./B4-implementation.md#b460-e57-混合候选的生命周期与输入代理自动化边界源码审计无运行时变动)及[B4混合scope回执](./B4-mixed-scope-audit-2026-11-21.json)。无运行时改动，不将B7/B8/B9及其他混合子项整体勾选。
+
+- 2026-11-21 B7 E20：E1–E20及E19a独立完成；原desktop composer PromptNav/click popover/mic迁位、布局失效/选项/more关闭，109/109与build、双引擎8场14图通过；发现原主PTY切换会卸载未发草稿，下一笔修复该实际数据丢失。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e20)。
+
+- 2026-11-21 B7 E21：E1–E21及E19a独立完成；修复实际GUI发现的主PTY切换未发草稿丢失，在同一composer局部保留文本/选区并复用原autosize，109/109与build、双引擎八场重验通过。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e21)。
 
 <a id="commit-13ad396d5e"></a>
 ## [13ad396d5e](https://github.com/weiesky/cc-viewer/commit/13ad396d5ec0a26ab69583f494f6ff56c23ea97f) — chore(star-history): refresh chart [skip ci]
@@ -220,6 +226,8 @@
 - 2026-11-21 B6 E13：E12 755b2b5；E13最终1986/1986、0skip/build/pack720，新安装525/525与211Web最终字节一致；双引擎桌面及phone/pad仿真6场26图逐张核看，连续不刷新10轮问答通过，正在汇总完成矩阵。 仅所述子项，整包GUI及混合范围未计完成，见[B6实施](./B6-implementation.md#e13)。
 
 - 2026-11-21 B6 E14收口：该提交B6子项按E1–E13核销；最终1986/1986、0skip/build/pack720，新安装525/525与211Web字节通过，双引擎6场26图及10轮问答通过。整条混合范围不扩大完成。完整本地hash见[映射](./B6-local-commit-map-2026-11-21.json)，边界见[B6完成矩阵](./B6-completion-matrix.md)。
+
+- 2026-11-22 B7 E35：E1–E35及E19a/E31a/E31b独立完成；真实Codex长单行50ms Enter丢提交已复现，普通文本复用250ms原子粘贴；197/197、build及双引擎双工作区24提交/满队列2场通过，剩余源码审计与全量继续。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e35)。
 
 <a id="commit-efe935cd43"></a>
 ## [efe935cd43](https://github.com/weiesky/cc-viewer/commit/efe935cd43146052eada870a78bc8fb774e19cdd) — chore(release): 1.9.28
@@ -1354,6 +1362,10 @@
   - `history.md` → 无直接路径匹配
   - `packages/app/server/i18n.js` → 无直接路径匹配
 
+- 2026-11-21 B7 E19：E1–E19完成独立提交；新增原UserPrompt汇总more入口、Original/Context/Text与本地txt导出，native只读投影/压缩保密复用，107/107及build通过，双引擎两场6图零pageerror。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e19)。
+
+- 2026-11-21 B7 E19a：E1–E19及E19a独立完成；UserPrompt原三视图/导出经107/107、build、双引擎验证，截图发现上游空英文计数单位会回退键名，已作仅标题局部兜底并重验两场6图。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e19a)。
+
 <a id="commit-d6ec38be82"></a>
 ## [d6ec38be82](https://github.com/weiesky/cc-viewer/commit/d6ec38be824f67a1528ff1ffeaa91349255dd58e) — feat(header): stop auto-pinning system-prompt entry to top navbar
 - B0 本地关键代码对照：上游移除系统提示入口自动置顶，保留菜单及手动置顶；本地 AppHeader.jsx 有 SystemTextModal 与菜单，需核对实际 pin/status 逻辑和用户偏好迁移，归 B7/B8。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-d6ec38be82)。
@@ -1540,6 +1552,8 @@
   - `packages/core/src/contentFilter.js` → 本地候选：`src/utils/contentFilter.js`
   - `packages/core/src/ultraplanTemplates.js` → 本地候选：`src/utils/ultraplanTemplates.js`
   - `scripts/tarball-baseline.json` → 无直接路径匹配
+
+- 2026-11-22 B7 E32：E1–E32及E19a/E31a/E31b独立完成；恢复原窄split两CSS块，双引擎改前900px会话0px→改后280px，横滚可达完整624px主PTY，开关保草稿/真实SID、宽屏无横滚，build及8图通过；B7剩余审计继续。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e32)。
 
 <a id="commit-3ce8f67a1c"></a>
 ## [3ce8f67a1c](https://github.com/weiesky/cc-viewer/commit/3ce8f67a1c51b196f78bc71d96540ad5b1b9af5e) — chore(star-history): refresh chart [skip ci]
@@ -2154,6 +2168,8 @@
   - `packages/content/concepts/zh-TW/Teammate.md` → 无直接路径匹配
   - `packages/content/concepts/zh/Teammate.md` → 无直接路径匹配
 
+- 2026-11-21 B7 E16：E1–E15已提交；E16原composer12行+border-box/Pad后修，95/95/build，双引擎desktop/pad/phone6场6图通过；继续ghost/Nav/Skills。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e16)。
+
 <a id="commit-d90ac9587d"></a>
 ## [d90ac9587d](https://github.com/weiesky/cc-viewer/commit/d90ac9587dcd9caadee721cbbf26c43ecb5711ea) — fix(web): render blank-whitespace text as no bubble instead of empty chat-boxer
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-d90ac9587d)
@@ -2282,6 +2298,8 @@
   - `apps/web/src/components/chat/ChatInputBar.module.css` → 本地候选：`src/components/chat/ChatInputBar.module.css`
 
 - 2026-11-21 B6范围核定：B7输入/导航/对话布局或缓存候选，非B6格式预览/引用；保留B7逐笔核验，不搬整条。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
+- 2026-11-21 B7 E16：E1–E15已提交；E16原composer12行+border-box/Pad后修，95/95/build，双引擎desktop/pad/phone6场6图通过；继续ghost/Nav/Skills。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e16)。
 
 <a id="commit-0cde7d1df8"></a>
 ## [0cde7d1df8](https://github.com/weiesky/cc-viewer/commit/0cde7d1df8f15fdbac23be941e367e5d577159de) — feat(web): SDK mode task checklist HUD via sdk-task WS relay
@@ -3334,6 +3352,8 @@
 
 - 2026-11-21 B6范围核定：B7输入/导航/对话布局或缓存候选，非B6格式预览/引用；保留B7逐笔核验，不搬整条。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
+- 2026-11-22 B7 E33：E1–E33及E19a/E31a/E31b独立完成；原SDK Send now行内状态与30s有界占位迁入，结合既有native activeInput/epoch精确核销/防重复/结束清孤儿，130/130、build与双引擎desktop/phone4场8图通过；剩余审计继续。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e33)。
+
 <a id="commit-566ade13fc"></a>
 ## [566ade13fc](https://github.com/weiesky/cc-viewer/commit/566ade13fc3bf2c3fd8d90044b1f36602c6980bf) — feat(web): open CLAUDE.md and skill folders
 - B0 本地关键代码对照：上游支持打开 CLAUDE.md 和 skill 文件夹；本地 CachePopoverContent.jsx 已展示 AGENTS.md，skills 导入也存在。需按 Codex AGENTS/skill 作用域核对入口及安全策略，归 B5/B7。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-566ade13fc)。
@@ -3371,6 +3391,8 @@
   - `packages/app/test/api-target-files.test.js` → 无直接路径匹配
 
 - 2026-11-21 B6范围核定：AGENTS/skill目录、target身份/编辑/管理复用B5；输入/skills展示等B7及其他混合范围保持。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
+- 2026-11-21 B7 E24：E1–E24及E19a独立完成；真实Codex确认项目.agents与旧.codex技能均可发现，现有技能API补项目.agents根，28/28实际目录/读写边界回归通过；/入口选后$方案保持，前端菜单继续。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e24)。
 
 <a id="commit-2cd4488ce9"></a>
 ## [2cd4488ce9](https://github.com/weiesky/cc-viewer/commit/2cd4488ce984abf10f9338ec5f1ad6e88c359281) — Merge pull request #162 from weiesky/fix/file-browser-view-scope
@@ -3591,6 +3613,16 @@
   - `scripts/tarball-baseline.json` → 无直接路径匹配
   - `test/content-filter-unit.test.js` → 无直接路径匹配
   - `test/v3-assembler.test.js` → 无直接路径匹配
+
+- 2026-11-21 B7 E28：E1–E28及E19a独立完成；普通PTY忙队列核心按原FIFO/dispatching/Stop park/send-now安全轮询迁入，每实例factory避免全局忙态串台；30函数AST一致（仅native kind字面适配），50/50通过，服务/UI尚未接入。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e28)。
+
+- 2026-11-21 B7 E29：E1–E29及E19a独立完成；普通PTY队列WS按精确owner/当前原生session接入，回放/Stop park/审批等待/关闭清理与真实bridge连接安全状态已接，117/117通过；UI与IM双向互斥仍待接，不算忙队列整体验收。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e29)。
+
+- 2026-11-21 B7 E30：E1–E30及E19a独立完成；共用boot PTY时web dispatch/原生忙态与IM完整turn双向互斥，IM等待不丢消息且释放后重试、stop清计时器，70/70通过；B7普通队列前端接线继续。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e30)。
+
+- 2026-11-22 B7 E31：E1–E31及E19a/E31a/E31b独立完成；普通PTY原队列条/Stop停放/Send now/删除/相关重放与拒绝原文恢复已接，169/169、build及真实Codex双引擎8场20图通过，A/B原生SID不同；单行50ms即时输入一次未提交待独立复现，B7不宣告完成。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e31)。
+
+- 2026-11-22 B7 E33：E1–E33及E19a/E31a/E31b独立完成；原SDK Send now行内状态与30s有界占位迁入，结合既有native activeInput/epoch精确核销/防重复/结束清孤儿，130/130、build与双引擎desktop/phone4场8图通过；剩余审计继续。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e33)。
 
 <a id="commit-b9d592fc13"></a>
 ## [b9d592fc13](https://github.com/weiesky/cc-viewer/commit/b9d592fc13fa01acab96432a28c764864fb4729a) — chore(star-history): refresh chart [skip ci]
@@ -4122,6 +4154,10 @@
 
 - 2026-11-21 B6范围核定：混合Homebrew CI及ghost输入建议，B11/B7保留，无B6独立功能。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
+- 2026-11-21 B7 E16：E1–E15已提交；E16原composer12行+border-box/Pad后修，95/95/build，双引擎desktop/pad/phone6场6图通过；继续ghost/Nav/Skills。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e16)。
+
+- 2026-11-21 B7 E17：E1–E16已提交；E17原ghost两行/输入floor与voice裁切，95/95/build，10组CSS全同，双引擎6场12图通过受控建议与合成voice preview。继续Nav/Skills。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e17)。
+
 <a id="commit-c66b5fe2ed"></a>
 ## [c66b5fe2ed](https://github.com/weiesky/cc-viewer/commit/c66b5fe2ed6e855f0610127eba3de96ac821adea) — feat(web): move proxy hot-switch chip into the chat input bar (#158)
 - B0 本地关键代码对照：上游将 proxy chip 移入输入栏、终端展示回退及 iPad drawer 无障碍；本地 AppHeader.jsx 当前展示 profile，需验证 SDK/PTTY、Electron、移动端及 aria/inert，归 B7/B8。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-c66b5fe2ed)。
@@ -4283,6 +4319,8 @@
   - `apps/web/src/i18n.js` → 本地候选：`src/i18n.js`
   - `history.md` → 无直接路径匹配
 
+- 2026-11-22 B7 E39：E1–E39及E19a/E31a/E31b独立完成；共享AgentTeam菜单标签按原恢复18语言快捷指令文案，精确源码及build通过；继续剩余候选、local-log扩窗与最终验收。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e39)。
+
 <a id="commit-a336d3919f"></a>
 ## [a336d3919f](https://github.com/weiesky/cc-viewer/commit/a336d3919f585712a1dcc608515e29589c0621f5) — feat(web): fold terminal toolbar upload into the sparkle quick-settings menu
 - B0 本地关键代码对照：本地 TerminalPanel.jsx 有独立上传和 quickSettingsExpanded；上游将上传放入快捷设置且保持隐藏 input/通知链。需验证终端焦点、hover 与上传失败，归 B7。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-a336d3919f)。
@@ -4298,6 +4336,8 @@
   - `apps/web/src/components/terminal/TerminalPanel.jsx` → 本地候选：`src/components/terminal/TerminalPanel.jsx`
   - `apps/web/test/upload-terminal-plus-menu.test.js` → 无直接路径匹配
   - `history.md` → 无直接路径匹配
+
+- 2026-11-22 B7 E38：E1–E38及E19a/E31a/E31b独立完成；主终端上传按原收进四芒星首行，111/111、build与双引擎desktop/pad4场4图通过；继续原快捷指令文案及逐候选审计。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e38)。
 
 <a id="commit-9b1bb4e729"></a>
 ## [9b1bb4e729](https://github.com/weiesky/cc-viewer/commit/9b1bb4e729473360cbe60e508f0558a702370a08) — fix(sdk): render turn/query failures as persistent rows in the dialogue tail
@@ -4437,6 +4477,8 @@
   - `packages/app/server/server.js` → 本地候选：`server.js`
   - `packages/app/test/sdk-manager-query.test.js` → 无直接路径匹配
 
+- 2026-11-21 B7 E25：E1–E25及E19a独立完成；原slash菜单/CSS照迁，用户已选保留/入口选后填原生$；实际skills/list与真实文件fallback、权威空/禁用/旧代次/5s失败重试，110/110、build及双引擎六场六图通过。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e25)。
+
 <a id="commit-3cf3e9585f"></a>
 - 2026-11-20 B4 E52：实际SDK manager/server/AppBase/projectKey/CLI差异核定技能拉取与scope/replay边界，固定最终与84e65缓存/活性区别已读；67祖先/merge combined无新增resolution。B4复用B2/E5/E29/E40/E46既有实例/重连/真实探测，技能metadata与菜单留B7/B8，Codex真实skills/list存在但未迁。不以审计等于整条实现；无运行时或重跑声明，见[B4.55](./B4-implementation.md#b455-e52-斜杠菜单混合提交的sdk生命周期归属源码审计无运行时变动)。
 
@@ -4455,6 +4497,8 @@
   - `apps/web/test/upload-plus-menu.test.js` → 无直接路径匹配
 
 - 2026-11-21 B6范围核定：B5文件上传/共享导入已验，composer (+)及级联输入菜单留B7，B6不重排入口。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
+- 2026-11-22 B7 E37：E1–E37及E19a/E31a/E31b独立完成；桌面composer上传按原收进四芒星首行并迁入hover后修，110/110、build与双引擎ordinary/SDK/phone/pad8场8图通过；继续终端上传入口及逐候选审计。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e37)。
 
 <a id="commit-9dbf4e295a"></a>
 ## [9dbf4e295a](https://github.com/weiesky/cc-viewer/commit/9dbf4e295a08e472c0b15cfb66de1cc80c77cfa3) — fix(web): SDK 模式打开终端不再隐藏对话输入框
@@ -4490,6 +4534,8 @@
   - `history.md` → 无直接路径匹配
 
 - 2026-11-21 B6范围核定：B5文件上传/共享导入已验，composer (+)及级联输入菜单留B7，B6不重排入口。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
+- 2026-11-22 B7 E37：E1–E37及E19a/E31a/E31b独立完成；桌面composer上传按原收进四芒星首行并迁入hover后修，110/110、build与双引擎ordinary/SDK/phone/pad8场8图通过；继续终端上传入口及逐候选审计。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e37)。
 
 <a id="commit-51c23e9090"></a>
 ## [51c23e9090](https://github.com/weiesky/cc-viewer/commit/51c23e9090f349b983a2dba52c738c559da5bf1b) — fix(web): 修复 SDK 模式 plan 审批卡死
@@ -4537,6 +4583,12 @@
   - `packages/app/server/lib/sdk-manager.js` → 本地候选：`lib/sdk-manager.js`
   - `packages/app/server/server.js` → 本地候选：`server.js`
   - `packages/app/test/sdk-manager-query.test.js` → 无直接路径匹配
+
+- 2026-11-21 B7 E23：E1–E23及E19a独立完成；新增现有AppServer只读skills/list精确实例接口，53/53+真实HTTP/WS12/12通过；实际Codex0.169隔离HOME证明repo技能与disabled过滤。用户已选保留/菜单、选后填$技能名，不重复确认，UI另笔继续。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e23)。
+
+- 2026-11-21 B7 E24：E1–E24及E19a独立完成；真实Codex确认项目.agents与旧.codex技能均可发现，现有技能API补项目.agents根，28/28实际目录/读写边界回归通过；/入口选后$方案保持，前端菜单继续。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e24)。
+
+- 2026-11-21 B7 E25：E1–E25及E19a独立完成；原slash菜单/CSS照迁，用户已选保留/入口选后填原生$；实际skills/list与真实文件fallback、权威空/禁用/旧代次/5s失败重试，110/110、build及双引擎六场六图通过。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e25)。
 
 <a id="commit-3d4f098f08"></a>
 - 2026-11-20 B4 E52：实际SDK manager/server/AppBase/projectKey/CLI差异核定技能拉取与scope/replay边界，固定最终与84e65缓存/活性区别已读；67祖先/merge combined无新增resolution。B4复用B2/E5/E29/E40/E46既有实例/重连/真实探测，技能metadata与菜单留B7/B8，Codex真实skills/list存在但未迁。不以审计等于整条实现；无运行时或重跑声明，见[B4.55](./B4-implementation.md#b455-e52-斜杠菜单混合提交的sdk生命周期归属源码审计无运行时变动)。
@@ -4685,6 +4737,8 @@
   - `history.md` → 无直接路径匹配
 
 - 2026-11-21 B6范围核定：AGENTS/skill目录、target身份/编辑/管理复用B5；输入/skills展示等B7及其他混合范围保持。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
+- 2026-11-21 B7 E22：E1–E22及E19a独立完成；Active Skills原Global/Project/Plugin分行复用native权威source，104/104与build、真实隔离文件API双引擎两图通过，禁用/builtin过滤和既有告警保持。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e22)。
 
 <a id="commit-ec440163c0"></a>
 ## [ec440163c0](https://github.com/weiesky/cc-viewer/commit/ec440163c0702f493609216e1ff0d7af801fa47e) — Merge pull request #153 from weiesky/fix/file-tree-row-shrink
@@ -5217,6 +5271,10 @@
   - `packages/app/test/live-processes-close.test.js` → 无直接路径匹配
   - `packages/app/test/scratch-pty-manager-gap.test.js` → 无直接路径匹配
   - `packages/app/test/server-cli-mode.test.js` → 无直接路径匹配
+
+- 2026-11-21 B7 E26：E1–E26及E19a独立完成；按原scratch独立shell边界清除CXV/CXVIEWER协调和boot bypass/模型代理，仅剥本Viewer的OTel私有头并保留其他用户头，scratch/原生runtime/OTel回归通过；强回收另笔继续。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e26)。
+
+- 2026-11-21 B7 E27：E1–E27及E19a独立完成；scratch主动关闭/自然退出复用已有稳定身份组回收，API与服务退出等待实际资源；真实TERM/HUP抵抗父子两例、37/37路由/WS回归通过，待加载未创建进程只取消不阻塞关闭。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e27)。
 
 <a id="commit-bc669f59cc"></a>
 ## [bc669f59cc](https://github.com/weiesky/cc-viewer/commit/bc669f59cced8ab8fddfb487a7f1121320ed8b64) — test(sdk): 补提交 SDK 会话状态(turn-level session-state)测试
@@ -5790,6 +5848,44 @@
   - `scripts/tarball-baseline.json` → 无直接路径匹配
 
 - 2026-11-21用户截图复核：普通CLI/PTY增加工作区入口被本地sdkMode门槛隐藏，上游HeaderProjectSwitcher普通项目标签旁应渲染NewProjectButton。该B2子项恢复待纠偏，既有SDK GUI不覆盖；本轮仅核对/更正状态，无运行时实现提交，见[缺口记录](./B2-pty-workspace-entry-gap-2026-11-21.md)。
+
+- 2026-11-21 B7 E1：本地复用PTY生命周期封装独立实例，18函数体保持；32/32、0skip/build及两实际shell隔离通过。“＋”及完整普通PTY多工作区仍未修，后续继续精确身份/启动/bridge/路由，见[B7实施](./B7-implementation.md#e1)。
+
+- 2026-11-21 B7 E2：Codex普通TUI bridge单例字段封装为独立实例，15函数逻辑保持，55/55及build通过；双真实本机proxy/fake native进程隔离，停A后B响应通过。原上游多PTY语义的native必要适配，入口/完整注册路由尚待，见[B7实施](./B7-implementation.md#e2)。
+
+- 2026-11-21 B7 E3：新增独立PTY实例注册/固定boot默认scope/同cwd在途复用/精确关闭及晚到runtime清理；9/9及Node检查通过，尚未接入口/launch/runtime，无UI完成声明。native权限参数继承已提选项待决，见[B7实施](./B7-implementation.md#e3)。
+
+- 2026-11-21 B7 E4：native bridge在途Abort与启动error/exit统一清理，原取消后仍成功已实跑复现；64/64与build通过，fake正常SIGTERM PID回收已核，完整树与最终入口尚待。Codex必要生命周期适配，见[B7实施](./B7-implementation.md#e4)。
+
+- 2026-11-21 B7 E5：E1 f03e84d独立PTY、E2 eefaa81独立bridge、E3 6c0f180精确注册、E4 fb757ee在途取消已逐笔验证；E5每PTY内部env及resume/shell fallback保持，25项/Node检查通过，不修改全局环境或决定argv继承。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e5)。
+
+- 2026-11-21 B7 E6：E1–E5独立PTY/bridge/注册/取消/env逐笔通过；E5 35b6dce。E6按用户所选新增工作区argv组合，只继承模型设置，权限/续接由原弹窗确定，拒绝额外命令/cwd/不完整参数；CLI/PTY及新增argv定向通过，尚未接调用。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e6)。
+
+- 2026-11-21 B7 E7：E1–E6基础及用户所选权限已逐笔通过，E6 5eb20a0为17项。E7独立capture proxy/bridge/PTY runtime组合，问答ID前缀/可信owner/OTel/env/取消清理，12项与Node检查通过；实际双HTTP/WS假native子进程，TUI为stub，尚未接CLI/HTTP/GUI。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e7)。
+
+- 2026-11-21 B7 E8：E1–E7独立PTY/bridge/registry/runtime已提交；E8精确native会话日志选择18/18，缺失/恢复不回退同cwd其他会话，下一笔接服务端路由。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e8)。
+
+- 2026-11-21 B7 E9：E1–E8已提交；E9普通PTY精确HTTP/WS/scratch路由，原回归23/23与新增3/3通过，尚未接CLI或入口。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e9)。
+
+- 2026-11-21 B7 E10：E1–E9已提交；E10 native Ask/loop/SSE/WS事件按PTY owner隔离19/19通过，下一笔组合启动及原permission链归属。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e10)。
+
+- 2026-11-21 B7 E11：E1–E10已提交；E11权限hook身份和每PTY reviewer隔离24/24及扩展路由7/7通过，准备接CLI与launch。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e11)。
+
+- 2026-11-21 B7 E12：E1–E11已提交；E12普通CLI配置独立runtime与精确launch/close/stop API，13/13通过；下一笔复用Header入口并验真实CLI/GUI。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e12)。
+
+- 2026-11-21 B7 E13：E1–E12已提交；E13普通Header＋纠偏，95/95/build，真实CLI双引擎6图通过入口/取消/新建保留A/切回原stream，18组CSS与上游相同。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e13)。
+
+- 2026-11-21 B7 E14：E1–E13已提交；E14 native父/工具子进程忽略终止回归先失败后修，69/69/build，CLI等待在途native清理；下一笔PTY进程树及输入候选。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e14)。
+
+- 2026-11-21 B7 E15：E1–E14已提交；E15主PTY复用强回收，89/89+真实PTY6/6/build；真实CLI精确关B保A、10自有进程退出残留0。继续输入/Nav/Skills及scratch。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e15)。
+
+- 2026-11-21 B7 E31a：E1–E30、E19a及E31a独立完成；真实Codex0.169本机回包暴露并修复AppServer合成turn误作Master隐藏，用户已选codex://合成身份，91/91及真实CLI网页回包通过；普通队列UI继续验收。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e31a)。
+
+- 2026-11-22 B7 E31b：E1–E30、E19a/E31a/E31b独立完成；修复真实原生thread/read全局预览抢占新工作区root，56/56与双引擎真实A/B不同SID、B空归档/无借用会话通过；E31普通队列UI含真实SID强断言复验继续。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e31b)。
+
+- 2026-11-22 B7 E34：E1–E34及E19a/E31a/E31b独立完成；editor按精确owner打开/轮询/结束/重放，保dirty且复用原文件策略，124/124、build与真实Codex双引擎双工作区4场8图通过，无模型调用；继续单行输入和剩余审计。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e34)。
+
+- 2026-11-22 B7 E40a：E1–E39及E19a/E31a/E31b/E40a独立完成；只读归档被boot补锚重载的前置缺陷已修，111/111、build与双引擎2场2图证实仅1次snapshot/无重定向；随后继续原自动扩窗与剩余审计。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e40a)。
 
 <a id="commit-2ae12ca122"></a>
 ## [2ae12ca122](https://github.com/weiesky/cc-viewer/commit/2ae12ca122c9d3210e8f7464970fc8c8df91b067) — chore(star-history): refresh chart [skip ci]
@@ -6842,6 +6938,8 @@
   - `packages/app/test/task-bridge.test.js` → 无直接路径匹配
   - `packages/app/test/task-state.test.js` → 无直接路径匹配
 
+- 2026-11-22 B7 E41：E1–E41及E19a/E31a/E31b/E40a独立完成；原普通PTY任务HUD接精确root计划快照，整CSS同基线，226/226、build与受控native协议双引擎6场12图通过；实际0.169未见plan工具事件，不记模型执行已验，继续审计。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e41)。
+
 <a id="commit-48d6e0f3c3"></a>
 ## [48d6e0f3c3](https://github.com/weiesky/cc-viewer/commit/48d6e0f3c355a7f9182a2c2f4277cfa353a6c774) — fix(tests): await stopViewer in server.test.js to fix EPIPE flake
 - B0 本地关键代码对照：上游测试因未 await stopViewer 导致 teardown EPIPE；本地 tests/search-endpoint.test.js 也调用 stopViewer() 未等待，其他多处测试已 await；应检查返回 Promise 与临时目录清理顺序，归 B11。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-48d6e0f3c3)。
@@ -7134,6 +7232,8 @@
 
 - 2026-11-21 B6范围核定：B7输入/导航/对话布局或缓存候选，非B6格式预览/引用；保留B7逐笔核验，不搬整条。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
+- 2026-11-21 B7 E18：E1–E17已提交；E18 Prompt Nav原Plan/Ask/Ultra徽标+语言缓存/producer归属，103/103/build，双引擎6图及3组CSS/18语种通过；继续更多/Prompt汇总。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e18)。
+
 <a id="commit-85b9aabce4"></a>
 ## [85b9aabce4](https://github.com/weiesky/cc-viewer/commit/85b9aabce418b7087319167c3866b2fb562c1e7d) — fix(ci): widen bump-homebrew npm-registry wait window to 10min
 - B0 本地关键代码对照：上游 Homebrew 等待 npm 注册表传播改为最多 10 分钟；本地 .github/workflows 仅见 npm-publish.yml，不能直接套用缺失的上游 job；发布链是否需要 Homebrew 归 B11。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-85b9aabce4)。
@@ -7185,6 +7285,8 @@
   - `packages/app/test/branch-routes-files-fs.test.js` → 无直接路径匹配
 
 - 2026-11-21 B6范围核定：B7输入/导航/对话布局或缓存候选，非B6格式预览/引用；保留B7逐笔核验，不搬整条。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
+- 2026-11-21 B7 E18：E1–E17已提交；E18 Prompt Nav原Plan/Ask/Ultra徽标+语言缓存/producer归属，103/103/build，双引擎6图及3组CSS/18语种通过；继续更多/Prompt汇总。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e18)。
 
 <a id="commit-9b1a2c913a"></a>
 ## [9b1a2c913a](https://github.com/weiesky/cc-viewer/commit/9b1a2c913a4897acd128265d7c08ed968a2328e2) — docs(claude): document release tag ordering — changeset version bump must land before tagging
@@ -7435,6 +7537,8 @@
 
 - 2026-11-21 B6范围核定：原Task HUD及native任务协议已在B4完成，B6无新增。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
+- 2026-11-22 B7 E41：E1–E41及E19a/E31a/E31b/E40a独立完成；原普通PTY任务HUD接精确root计划快照，整CSS同基线，226/226、build与受控native协议双引擎6场12图通过；实际0.169未见plan工具事件，不记模型执行已验，继续审计。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e41)。
+
 <a id="commit-fa77ecd681"></a>
 ## [fa77ecd681](https://github.com/weiesky/cc-viewer/commit/fa77ecd6818e2a4874d2020dd09e0d6f6dcde672) — fix(v2): exclude proxy retry-stat shards from legacy v1 log sniffing
 - 2026-11-20 B3当前结论：格式审计完成：本地只发现经manifest校验的canonical目录，无按JSONL后缀猜测V1的入口；proxy统计不进入该发现链。不照搬不存在的Claude sniff转换器。 最终验证及边界见[B3完成矩阵](./B3-completion-matrix.md)与[分片实施](./B3-sharding.md)。
@@ -7521,6 +7625,10 @@
   - `packages/app/package.json` → 本地候选：`package.json`
 
 - 2026-11-21 B6范围核定：复用B3已验冷读终态/渲染窗口；没有独立B6预览改动，其他子项不扩大完成。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
+- 2026-11-22 B7 E36：E1–E36及E19a/E31a/E31b独立完成；逐项审计发现窗口仍为旧值，按原恢复桌面800/Android400/iOS300与展开300，109/109及build通过；剩余候选与后续local-log独立scope继续。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e36)。
+
+- 2026-11-22 B7 E40：E1–E40及E19a/E31a/E31b/E40a独立完成；原只读逐帧扩窗恢复，112/112、build与实际1050行V2归档双引擎desktop/phone/pad6场6图通过；继续普通PTY任务HUD缺口、候选审计及最终验收。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e40)。
 
 <a id="commit-d858204313"></a>
 ## [d858204313](https://github.com/weiesky/cc-viewer/commit/d85820431363b750e522be204e122636d6682aea) — fix(git): show local commits on branches without an upstream in the changes panel
@@ -7986,6 +8094,14 @@
 - 2026-11-21 B4 E54：按dafe及后续1aca/固定最终实际中断链补send-now先取消native root审批，复用Stop同一clearThread；双实例红测复现，28定向/1571完整/构建通过，新安装702文件/204Web精确字节/286运行时、B1.2/隔离CLI通过。B2队列原能力复用，PTY和其他混合未完成；orphan/helper所在旧IM消费链当前未接齐，归B11待处理，不记主V2已修。见[B4.57](./B4-implementation.md#b457-e54-立即发送先清理被中断的原生审批)。
 
 - 2026-11-21 B4 E53消息保留子项：原LCP修中断分叉丢queued user，最初测试/产物过但Safari失败，进一步补实际cached ChatView红测并仅在prefix改写时更换数组身份；91定向/1570完整/构建/新安装285通过。最终GUI两次CUA native pipe失败待复验，保留失败与步骤，不记通过；SDK/PTY/IM/orphan等混合继续。见[B4.56](./B4-implementation.md#b456-e53-中断分叉后的排队prompt保留实现已验最终gui复验待)。
+
+- 2026-11-21 B7 E28：E1–E28及E19a独立完成；普通PTY忙队列核心按原FIFO/dispatching/Stop park/send-now安全轮询迁入，每实例factory避免全局忙态串台；30函数AST一致（仅native kind字面适配），50/50通过，服务/UI尚未接入。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e28)。
+
+- 2026-11-21 B7 E29：E1–E29及E19a独立完成；普通PTY队列WS按精确owner/当前原生session接入，回放/Stop park/审批等待/关闭清理与真实bridge连接安全状态已接，117/117通过；UI与IM双向互斥仍待接，不算忙队列整体验收。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e29)。
+
+- 2026-11-21 B7 E30：E1–E30及E19a独立完成；共用boot PTY时web dispatch/原生忙态与IM完整turn双向互斥，IM等待不丢消息且释放后重试、stop清计时器，70/70通过；B7普通队列前端接线继续。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e30)。
+
+- 2026-11-22 B7 E31：E1–E31及E19a/E31a/E31b独立完成；普通PTY原队列条/Stop停放/Send now/删除/相关重放与拒绝原文恢复已接，169/169、build及真实Codex双引擎8场20图通过，A/B原生SID不同；单行50ms即时输入一次未提交待独立复现，B7不宣告完成。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e31)。
 
 <a id="commit-7a2dd6162e"></a>
 ## [7a2dd6162e](https://github.com/weiesky/cc-viewer/commit/7a2dd6162e1465071a755606d77de22d7c0caa90) — fix(sdk): expand all system segments in request JSON view on first-turn MainAgent requests
@@ -16280,3 +16396,9 @@ Upstream566ade13fc3bf2c3fd8d90044b1f36602c6980bf +7a75e1be81b3e90f55f8888c423e66
 ### B5 用户交付授权与下一会话交接（2026-11-21）
 
 用户在B5完成后明确要求原46笔合为一个commit，创建面向main的PR并由代理自查合并；B6留待下一个会话执行。原上游→本地映射及E46当时验收状态不改写，完整46笔hash见[原始清单](./B5-original-commits-2026-11-21.tsv)，恢复分支/bundle/hash、逐路径tree核验和实际PR流程见[B5整合记录](./B5-local-commit-consolidation-2026-11-21.md)。整合只更新交付文档，应用源码/测试/探针/依赖/GUI证据不变；1781/487是原最终实际验证，未因整理历史虚报重跑。最终PR/merge hash以GitHub关联PR和本地consolidation.json为准，本会话不实施B6。
+
+
+<a id="commit-80ced6a996"></a>
+### 追加源码范围：80ced6a99694f2f861ebecacea68b95f6387c106 / 只读渲染窗口
+
+固定74cd752d实际源码核出的旧混合release前端子项，原74 B7候选之外；E40迁入原只读逐帧扩窗/虚拟化输入免裁剪/原loading反馈，112/112、build及实际V2 HTTP投影双引擎6场6图通过。只展开已加载row，native分页策略不改；其他workflow/release子项未计本包完成。本地独立commit即本记录所在提交，详见[B7 E40](./B7-implementation.md#e40)与源码/GUI回执。

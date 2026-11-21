@@ -120,6 +120,7 @@ export function createDingTalkImBridge({
   getActiveContext,
   getPtyState,
   writeToPtySequential,
+  canInject = () => true,
   turnTimeoutMs = DEFAULT_TURN_TIMEOUT_MS,
   maxQueue = MAX_DINGTALK_QUEUE,
 } = {}) {
@@ -127,7 +128,7 @@ export function createDingTalkImBridge({
     throw new TypeError('DingTalk adapter is required');
   }
   if (typeof getConfig !== 'function' || typeof getActiveContext !== 'function'
-      || typeof getPtyState !== 'function' || typeof writeToPtySequential !== 'function') {
+      || typeof getPtyState !== 'function' || typeof writeToPtySequential !== 'function' || typeof canInject !== 'function') {
     throw new TypeError('DingTalk bridge dependencies are incomplete');
   }
 
@@ -138,6 +139,8 @@ export function createDingTalkImBridge({
   let starting = null;
   let lastError = null;
   let active = null;
+  let drainRetry = null;
+  function clearDrainRetry() { if (drainRetry) clearTimeout(drainRetry); drainRetry = null; }
   const queue = [];
   const seen = new Set();
   const seenOrder = [];
@@ -277,7 +280,7 @@ export function createDingTalkImBridge({
   }
 
   function drain() {
-    if (!running || active || queue.length === 0) return;
+    if (!running || active || queue.length === 0) { clearDrainRetry(); return; }
     const state = getPtyState();
     const context = getActiveContext();
     if (!state?.running || state.recovering || !nonEmpty(context?.projectId) || !nonEmpty(context?.threadId)) {
@@ -286,6 +289,16 @@ export function createDingTalkImBridge({
       queueMicrotask(drain);
       return;
     }
+    let allowed = false;
+    try { allowed = canInject() === true; } catch { lastError = 'Shared PTY injection probe failed'; }
+    if (!allowed) {
+      if (!drainRetry) {
+        drainRetry = setTimeout(() => { drainRetry = null; drain(); }, 100);
+        drainRetry.unref?.();
+      }
+      return;
+    }
+    clearDrainRetry();
     arm(queue.shift(), context);
   }
 
@@ -336,6 +349,7 @@ export function createDingTalkImBridge({
   async function stop() {
     generation++;
     running = false;
+    clearDrainRetry();
     queue.length = 0;
     if (active) {
       clearTimeout(active.timer);

@@ -999,7 +999,17 @@ export function findActiveV2SessionFile(logDir, {
   projectId,
   canonicalCwd,
   forceHealthyScan = false,
+  exactSessionId,
 } = {}) {
+  // A live instance without its own archive is an empty view. Never select a
+  // sibling conversation in the same cwd, including during recovery.
+  if (exactSessionId !== undefined) {
+    if (typeof exactSessionId !== 'string' || !exactSessionId) return null;
+    const resolved = resolveExactProject(logDir, projectId, canonicalCwd);
+    return resolved
+      ? lightweightConversationFile(logDir, resolved.project, resolved.projectDir, exactSessionId)
+      : null;
+  }
   const runtimeSessionId = runtime?.writer?.lastConversationLocator?.sessionId || null;
   if (runtimeSessionId && !forceHealthyScan) {
     const resolved = resolveExactProject(logDir, projectId, canonicalCwd);
@@ -1064,6 +1074,8 @@ function activeFileLookupKey(logDir, options) {
     options.canonicalCwd || null,
     options.runtime?.writer?.lastConversationLocator?.sessionId || null,
     options.forceHealthyScan === true,
+    options.exactSessionId !== undefined,
+    options.exactSessionId ?? null,
   ]);
 }
 

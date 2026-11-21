@@ -370,6 +370,31 @@ test('active V2 selector trusts the runtime conversation locator without scannin
   }
 });
 
+test('exact instance V2 selection never falls back to a sibling archive, including worker cache and recovery', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-exact-instance-'));
+  try {
+    const files = {};
+    for (const id of ['a', 'b']) {
+      const writer = LogV2Writer.open({ ...options(root), sessionId: id, rootThreadId: id });
+      writer.append(entry('2026-07-14T08:00:00.000Z', [{ type: 'message', text: id }], id),
+        resolveAppServerThreadIdentity({ id, sessionId: id }));
+      writer.markProjectLatest({ source: 'app-server' });
+      files[id] = relative(root, join(writer.sessionDir, 'timeline.jsonl')).split(sep).join('/');
+    }
+    const base = { projectId: 'project', canonicalCwd: '/workspace/project' };
+    assert.equal(await findActiveV2SessionFileAsync(root, base), files.b);
+    for (const id of ['a', 'b', 'missing', null, '']) {
+      const expected = files[id] || null;
+      assert.equal(findActiveV2SessionFile(root, { ...base, exactSessionId: id, forceHealthyScan: true }), expected);
+      assert.equal(await findActiveV2SessionFileAsync(root, { ...base, exactSessionId: id }), expected);
+    }
+    assert.equal(findActiveV2SessionFile(root, { ...base, canonicalCwd: '/wrong', exactSessionId: 'a' }), null);
+    assert.equal(await findActiveV2SessionFileAsync(root, base), files.b);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('durable latest pointer caches its root-main proof without a full health scan', () => {
   const root = mkdtempSync(join(tmpdir(), 'cxv-v2-active-latest-pointer-'));
   try {

@@ -26,6 +26,9 @@ for (const name of ['pty-manager.js', 'scratch-pty-manager.js']) {
       write(join(app, 'findcx.js'), "export const BINARY_NAME = 'codex'; export function resolveNativePath() {}\n");
       write(join(app, 'lib', 'cli-args.js'), 'export function parseCodexInvocation() {} export function stripResumeInvocation() {}\n');
       write(join(app, 'lib', 'terminal-screen-model.js'), 'export class TerminalScreenModel { dispose() {} }\n');
+      for (const dependency of ['cxv-processes.js', 'shutdown.js', 'otel-config.js']) {
+        copyFileSync(new URL(`../lib/${dependency}`, import.meta.url), join(app, 'lib', dependency));
+      }
       copyFileSync(new URL(`../${name}`, import.meta.url), join(app, name));
       assert.equal(statSync(helper).mode & 0o111, 0);
       const manager = await import(pathToFileURL(join(app, name)).href);

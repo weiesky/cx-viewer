@@ -1,0 +1,34 @@
+{
+  "date": "2026-11-22",
+  "nativeCodex": "0.169.0",
+  "browser": "Chromium 159.0.8154.6",
+  "backend": "actual CLI + native AppServer + node-pty",
+  "model": "task-owned local HTTP SSE canned reply; no external model success",
+  "testFlag": "CXV_TEST=0: actual proxy interceptor initialization",
+  "message": "B7 native warm local reply only",
+  "reply": "B7 local native reply",
+  "modelRequests": [
+    {
+      "path": "/v1/responses",
+      "bytes": 41718
+    },
+    {
+      "path": "/v1/responses",
+      "bytes": 24736
+    }
+  ],
+  "assertions": [
+    "real TUI returned native agentMessage",
+    "web user and assistant visible after synthetic URL fix",
+    "raw HTTP Master exclusion retained by tests",
+    "title auxiliary excluded"
+  ],
+  "screenshots": [
+    "B7-native-transcript/chromium-native-reply.png"
+  ],
+  "limitations": [
+    "earlier fixture failures excluded",
+    "no physical devices or external models",
+    "actual native GUI only Chromium for this fix; later queue GUI tests both engines"
+  ]
+}
