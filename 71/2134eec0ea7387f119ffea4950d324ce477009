@@ -1,0 +1,45 @@
+packages/app/lib/sdk-appserver-transport.js
+  s_76602f25d7665d::t_d0aaa9bfca4c57 1,11-27,412-418
+  s_76602f25d7665d::t_4c9a5056f73895 419
+packages/app/server.js
+  s_76602f25d7665d::t_d0aaa9bfca4c57 2682-2689
+cc-viewer-alignment/probes/b7-native-skills.mjs
+  s_76602f25d7665d::t_21effabf7c82c9 12,20-24,28
+  s_76602f25d7665d::t_e4ed8ef025df2a 1,3-6,8-11,13-15,19,25-27,29
+  s_76602f25d7665d::t_ff198af61248e1 2,7,16-18
+cc-viewer-alignment/B7-E23-native-skills.json
+  s_76602f25d7665d::t_21effabf7c82c9 5-6,10,13-14
+  s_76602f25d7665d::t_ff198af61248e1 1-4,7-9,11-12,15
+packages/app/lib/sdk-manager.js
+  s_76602f25d7665d::t_d0aaa9bfca4c57 243-246,1132-1144,1251
+AGENTS.md
+  s_76602f25d7665d::t_8e9d0134cc6707 26
+cc-viewer-alignment/B7-implementation.md
+  s_76602f25d7665d::t_fd4d6c5f0be6ca 199-208
+cc-viewer-alignment/README.md
+  s_76602f25d7665d::t_b2d7884395334b 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_76602f25d7665d::t_cd6c19f1596cd5 3,4559-4560
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_76602f25d7665d::t_d5070100a84933 3
+packages/app/tests/sdk-appserver-transport.test.js
+  s_76602f25d7665d::t_d80f045bbcac0e 3,16,432-466
+packages/app/tests/sdk-workspace-connections.test.js
+  s_76602f25d7665d::t_a333b3daf528ec 691-694,724-725,737-739,786
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "712134eec0ea7387f119ffea4950d324ce477009",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
