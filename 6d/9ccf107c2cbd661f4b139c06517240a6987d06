@@ -1,0 +1,42 @@
+cc-viewer-alignment/README.md
+  s_4122b07c8b4292::t_d2ad4a0e0ee5a5 5
+packages/app/server.js
+  s_4122b07c8b4292::t_d8d6c59654002c 1573-1592,1603,3750-3752,3847-3851,3859
+cc-viewer-alignment/probes/b5-html-preview-gui.mjs
+  s_4122b07c8b4292::t_9655787e8686a2 1-23
+packages/app/tests/html-preview-scope.test.js
+  s_4122b07c8b4292::t_a7c0dc43dd3a14 1-57,59
+  s_4122b07c8b4292::t_b5122c7a5c382f 58
+apps/web/src/components/files/FileExplorer.jsx
+  s_4122b07c8b4292::t_d8d6c59654002c 2,13,632
+AGENTS.md
+  s_4122b07c8b4292::t_d2ad4a0e0ee5a5 26
+cc-viewer-alignment/B5-html-preview-2026-11-21.json
+  s_4122b07c8b4292::t_d2ad4a0e0ee5a5 1-66
+apps/web/src/components/common/HtmlPreviewModal.jsx
+  s_4122b07c8b4292::t_d8d6c59654002c 1-56
+cc-viewer-alignment/probes/b5-search-gui.mjs
+  s_4122b07c8b4292::t_9655787e8686a2 60-67,102-105
+cc-viewer-alignment/B5-implementation.md
+  s_4122b07c8b4292::t_d2ad4a0e0ee5a5 130-138
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4122b07c8b4292::t_d2ad4a0e0ee5a5 15955-15959
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_4122b07c8b4292::t_d2ad4a0e0ee5a5 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "6d9ccf107c2cbd661f4b139c06517240a6987d06",
+  "prompts": {},
+  "sessions": {
+    "s_4122b07c8b4292": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fbcc-5a47-7112-a38d-fb834f2c5f53",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
