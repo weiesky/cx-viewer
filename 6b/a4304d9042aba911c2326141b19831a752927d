@@ -1,0 +1,33 @@
+AGENTS.md
+  s_4122b07c8b4292::t_d1bb3783fe8d0d 26
+cc-viewer-alignment/B5-candidate-matrix.md
+  s_4122b07c8b4292::t_d1bb3783fe8d0d 23
+cc-viewer-alignment/B5-git-timeout-2026-11-21.json
+  s_4122b07c8b4292::t_d1bb3783fe8d0d 1-22
+cc-viewer-alignment/B5-implementation.md
+  s_4122b07c8b4292::t_d1bb3783fe8d0d 236-242
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_4122b07c8b4292::t_d1bb3783fe8d0d 3,111
+packages/app/lib/git-diff.js
+  s_4122b07c8b4292::t_2f922d1a111f53 11-13,101,112,214,244,265,308,347,360,390
+cc-viewer-alignment/README.md
+  s_4122b07c8b4292::t_d1bb3783fe8d0d 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4122b07c8b4292::t_d1bb3783fe8d0d 16015-16019
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "6ba4304d9042aba911c2326141b19831a752927d",
+  "prompts": {},
+  "sessions": {
+    "s_4122b07c8b4292": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fbcc-5a47-7112-a38d-fb834f2c5f53",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
