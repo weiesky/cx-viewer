@@ -1,0 +1,35 @@
+cc-viewer-alignment/B5-implementation.md
+  s_4122b07c8b4292::t_605b33f540d40e 291-297
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_4122b07c8b4292::t_605b33f540d40e 3,111
+cc-viewer-alignment/README.md
+  s_4122b07c8b4292::t_605b33f540d40e 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4122b07c8b4292::t_605b33f540d40e 16050-16054
+cc-viewer-alignment/B5-candidate-matrix.md
+  s_4122b07c8b4292::t_605b33f540d40e 3,7-8,22,25-28,31,33,46,48-50
+AGENTS.md
+  s_4122b07c8b4292::t_605b33f540d40e 26
+cc-viewer-alignment/B5-candidate-footprints-2026-11-21.json
+  s_4122b07c8b4292::t_78a563b5d91ac9 1-1409
+cc-viewer-alignment/B5-cross-package-audit.md
+  s_4122b07c8b4292::t_2fc35c3c960cf7 1-33
+cc-viewer-alignment/B5-candidate-audit-2026-11-21.json
+  s_4122b07c8b4292::t_605b33f540d40e 1-43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "47ebed49a732e16ade7d57215de6b42d26f3b6c5",
+  "prompts": {},
+  "sessions": {
+    "s_4122b07c8b4292": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fbcc-5a47-7112-a38d-fb834f2c5f53",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
