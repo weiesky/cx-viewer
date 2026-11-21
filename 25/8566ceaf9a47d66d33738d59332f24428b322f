@@ -1,0 +1,72 @@
+cc-viewer-alignment/B5-markdown-files-2026-11-21.json
+  s_4122b07c8b4292::t_064561d3278db4 1-198
+cc-viewer-alignment/README.md
+  s_4122b07c8b4292::t_064561d3278db4 5
+apps/web/src/utils/markdownHrefClassify.js
+  s_4122b07c8b4292::t_c9d1fec9bd4ffe 1-98
+apps/web/src/components/chat/ChatView.jsx
+  s_4122b07c8b4292::t_c9d1fec9bd4ffe 79-80,218-221,609,758,1259-1261,3497-3500,3505-3641,3643,3646-3647,3658,3667,3686,4154
+apps/web/src/utils/markdown.js
+  s_4122b07c8b4292::t_c9d1fec9bd4ffe 6-7,11-12,32
+apps/web/src/utils/mdCodePathVerify.js
+  s_4122b07c8b4292::t_c9d1fec9bd4ffe 1-135
+AGENTS.md
+  s_4122b07c8b4292::t_064561d3278db4 26
+cc-viewer-alignment/probes/b5-search-gui.mjs
+  s_4122b07c8b4292::t_a9d8cc2b2a0503 118,121
+  s_4122b07c8b4292::t_31a33a07d9735c 114-117,119-120,122-124,161-162
+  s_4122b07c8b4292::t_52a0fda9edad41 163
+cc-viewer-alignment/B5-implementation.md
+  s_4122b07c8b4292::t_064561d3278db4 266-276
+cc-viewer-alignment/probes/b5-markdown-files-gui.mjs
+  s_4122b07c8b4292::t_a9d8cc2b2a0503 56
+  s_4122b07c8b4292::t_060e88ea09f5f4 3,31,35-41,43,52
+  s_4122b07c8b4292::t_303e984ac6830f 15-16
+  s_4122b07c8b4292::t_d65653e940822c 27
+  s_4122b07c8b4292::t_eef3faa1e6ab38 48-49
+  s_4122b07c8b4292::t_d9160b16707dfd 42,44
+  s_4122b07c8b4292::t_8e2c99c8e0087e 13
+  s_4122b07c8b4292::t_798fd873d1a9ad 4,28-30,32-34,45,47,51,53-55,57,62,65
+  s_4122b07c8b4292::t_31a33a07d9735c 1-2,5-12,14,17-26,58-61,63-64,66-67
+  s_4122b07c8b4292::t_eaa9f1b441cb33 46,50
+apps/web/src/global.css
+  s_4122b07c8b4292::t_c9d1fec9bd4ffe 454-480
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_4122b07c8b4292::t_a9fd8c2d30199d 40,1597-1651
+apps/web/tests/markdown-code-path-classify.test.js
+  s_4122b07c8b4292::t_a9fd8c2d30199d 1-106
+apps/web/src/utils/markdownCodePathClassify.js
+  s_4122b07c8b4292::t_c9d1fec9bd4ffe 1-75
+apps/web/tests/markdown-decorations.test.js
+  s_4122b07c8b4292::t_a9fd8c2d30199d 1-13
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4122b07c8b4292::t_064561d3278db4 16035-16039
+cc-viewer-alignment/B5-candidate-matrix.md
+  s_4122b07c8b4292::t_064561d3278db4 12
+apps/web/src/utils/markdownCodeSpanRenderer.js
+  s_4122b07c8b4292::t_c9d1fec9bd4ffe 1-44
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_4122b07c8b4292::t_064561d3278db4 3,111
+apps/web/src/utils/markdownLinkRenderer.js
+  s_4122b07c8b4292::t_c9d1fec9bd4ffe 1-67
+apps/web/tests/markdown-href-classify.test.js
+  s_4122b07c8b4292::t_a9fd8c2d30199d 1-142
+cc-viewer-alignment/probes/b3-installed-check.py
+  s_4122b07c8b4292::t_ee0e9036afe155 29,40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "258566ceaf9a47d66d33738d59332f24428b322f",
+  "prompts": {},
+  "sessions": {
+    "s_4122b07c8b4292": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fbcc-5a47-7112-a38d-fb834f2c5f53",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
