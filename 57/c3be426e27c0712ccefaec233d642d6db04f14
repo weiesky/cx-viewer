@@ -1,0 +1,39 @@
+cc-viewer-alignment/probes/b7-readonly-render-window-gui.mjs
+  s_76602f25d7665d::t_d128ee7ed5352a 1-36
+apps/web/src/components/chat/ChatView.jsx
+  s_76602f25d7665d::t_dfb1023454045c 415,1293,1379,1757-1769,2586-2592,4736-4746
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_76602f25d7665d::t_dfb1023454045c 2001-2018
+AGENTS.md
+  s_76602f25d7665d::t_ee524ab6c25975 26
+cc-viewer-alignment/B7-E40-readonly-render-source.json
+  s_76602f25d7665d::t_0fed26c6b422c1 1-7
+cc-viewer-alignment/B7-candidate-index-2026-11-21.json
+  s_76602f25d7665d::t_90b30cab5ff155 594-600
+cc-viewer-alignment/B7-implementation.md
+  s_76602f25d7665d::t_4427a3feee6bbf 388-397
+cc-viewer-alignment/B7-readonly-render-window/result.json
+  s_76602f25d7665d::t_9ddc83ea3da9ad 1-84
+cc-viewer-alignment/README.md
+  s_76602f25d7665d::t_fc6e5d7a1ae563 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_76602f25d7665d::t_be9126cbccf908 3,7627-7628,16395-16400
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_76602f25d7665d::t_1556fed1560385 3,48,141
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "57c3be426e27c0712ccefaec233d642d6db04f14",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
