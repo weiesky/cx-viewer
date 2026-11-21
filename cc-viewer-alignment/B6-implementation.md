@@ -124,3 +124,7 @@
 - E13本地`1c91dec2d7400095da9304473875b4d67656ea4f`。汇总[完成矩阵](./B6-completion-matrix.md)、[最终回执](./B6-final-2026-11-21.json)、[13笔完整hash映射](./B6-local-commit-map-2026-11-21.json)，46候选只按B6子项核销，B7及其他混合范围不冒称完成。
 - 同步AGENTS/README/规划/提交台账当前状态；26图hash再次核对，最终release退出0与安装字节一致已确认。仅文档及回执，无生产代码变化，不重复测试。
 - 自有fixture已停止；本地分支未推送/压缩/建PR/合并，未切换活动安装。下一工作包B7，本轮未启动。物理/其他平台及已列偶发/原基线缺陷边界保留。
+
+## 交付后续（原迭代验收保持）
+
+原16笔连同npm入口/普通PTY缺口诊断已按最新授权整合为`e885d8b`，由[PR #6](https://github.com/weiesky/cx-viewer/pull/6)合并main（`9f3e2ce`）；完整备份/hash与交付复验见[整合记录](./B6-local-commit-consolidation-2026-11-21.md)。生产源码/测试/依赖/样式与原末端相同，新build/pack720和artifact-only源码/211Web字节通过；原1986/525检查点不冒称重跑。普通CLI/PTY“＋”仍待纠偏，活动旧后端未重启。用户明确本会话不启动B7，见[B7交接](./B7-handoff.md)。

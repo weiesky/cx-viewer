@@ -75,7 +75,14 @@
     "Existing IM concurrency and stdin timeout intermittent cases not claimed fixed.",
     "Native profile/image-input/add-dir/review unsupported; exec/explicit AppServer gradual rollout and 353K retained."
   ],
-  "delivery": "Local independent commits only, no push, PR, merge or active install switch. Task-owned fixture stopped.",
+  "delivery": "Original E1-E14 acceptance checkpoint retained. All 16 original commits consolidated to one, implementation PR #6 merged to main. Post-merge documentation updated through a separate docs PR; no direct main push, npm release or active backend restart.",
   "nextWorkPackage": "B7",
-  "b7Started": false
+  "b7Started": false,
+  "deliveryPullRequest": "https://github.com/weiesky/cx-viewer/pull/6",
+  "deliveryMergeCommit": "9f3e2ce9b891f4d2e31f9a4b8fb4607b5f4bf996",
+  "deliveryHead": "e885d8bf5376767fc6f211a9e0a7209de3983656",
+  "consolidationRecord": "B6-local-commit-consolidation-2026-11-21.md",
+  "consolidationPreflight": "B6-pr-preflight-2026-11-21.json",
+  "handoff": "B7-handoff.md",
+  "nextSession": "B7 explicitly deferred to next conversation; ordinary PTY workspace plus remains pending correction."
 }

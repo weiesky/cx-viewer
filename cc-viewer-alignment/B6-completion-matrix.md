@@ -1,6 +1,6 @@
 # B6 完成矩阵
 
-固定上游`74cd752d99caf122e750216d2af3bb9f467c4de1`，2026-11-21。**B6工作包在下述范围完成（第7/12工作包）。** 最终1986/1986、0skip、build/pack720通过；真实生产新安装525/525、必需源码/许可与211Web精确字节、B1.2及隔离CLI通过。46候选按子项核销，混合提交不整体勾选。分支`codex/b6-preview-content`，保持本地独立提交，未推送、未发布、未切换活动安装。
+固定上游`74cd752d99caf122e750216d2af3bb9f467c4de1`，2026-11-21。**B6工作包在下述范围完成（第7/12工作包）。** 最终1986/1986、0skip、build/pack720通过；真实生产新安装525/525、必需源码/许可与211Web精确字节、B1.2及隔离CLI通过。46候选按子项核销，混合提交不整体勾选。原16笔已整合为`e885d8b`，经[PR #6](https://github.com/weiesky/cx-viewer/pull/6)合并main（`9f3e2ce`）；备份/原始hash保留，未发布npm或重启活动进程。
 
 | 范围 | 实施与依据 | 验收及边界 |
 | --- | --- | --- |
@@ -31,3 +31,5 @@
 真实LAN/TLS、外部模型/慢网/OAuth/远端MCP、物理设备/触屏/软键盘/音频、跨应用剪贴板、Windows/Linux/最低Node未验。原iPad替换横滚已选保留、Markdown冷开行号原缺陷保留；native profile/image-input/add-dir/review不支持、exec/显式AppServer渐进及353K用量条保持。临时fixture已停止，真实用户配置/凭据/活动实例未变更。
 
 下一工作包B7：输入/导航/Skills、普通主PTY新GUI及窄split发送钮，按固定基线逐笔核验；本轮未启动B7。
+
+合并交付补记：2026-11-21原16笔已备份并合为1commit，PR #6实际MERGED，main的tree与精确PR head一致；无PR CI检查。整合后build/pack720及全新artifact-only安装字节通过，无生产变更，不冒称1986/525重跑。见[整合记录](./B6-local-commit-consolidation-2026-11-21.md)。普通PTY“＋”缺口仍待纠偏，下一会话按[B7交接](./B7-handoff.md)推进，本轮不实施。
