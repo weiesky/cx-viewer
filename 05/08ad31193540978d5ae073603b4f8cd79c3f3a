@@ -1,0 +1,56 @@
+cc-viewer-alignment/probes/b5-search-gui.mjs
+  s_4122b07c8b4292::t_7efe5071a9542a 39-41,60,74,164
+  s_4122b07c8b4292::t_77865cb8a2ebb3 44,48
+  s_4122b07c8b4292::t_cacef3f737c878 61-68
+  s_4122b07c8b4292::t_6ddf545526c403 49-57,75-77
+cc-viewer-alignment/probes/b3-installed-check.py
+  s_4122b07c8b4292::t_eb058b8ea179af 29
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_4122b07c8b4292::t_18a64be5a7fc28 36-37,288,1276-1320
+cc-viewer-alignment/probes/b5-file-menus-gui.mjs
+  s_4122b07c8b4292::t_a7e7de63af7caa 63
+  s_4122b07c8b4292::t_4e35c49a7af106 14,20,27,33-39,57-61
+  s_4122b07c8b4292::t_7efe5071a9542a 12,18-19,47-56
+  s_4122b07c8b4292::t_707581c3ad89dc 24,30
+  s_4122b07c8b4292::t_0a40690a5cb8c7 1-11,13,15-17,21-23,25-26,28-29,31-32,40-46,62,64-68
+AGENTS.md
+  s_4122b07c8b4292::t_d7d68095e38cb2 26
+apps/web/src/components/files/FileExplorer.jsx
+  s_4122b07c8b4292::t_c8a281d1de93c8 1-2,8-10,91-93,338-346,474-479,780-794
+apps/web/src/components/files/FileExplorer.module.css
+  s_4122b07c8b4292::t_6e6cfdbc3d9d2c 143-151,158-160
+apps/web/src/components/files/fileContextMenu.js
+  s_4122b07c8b4292::t_aef43001797695 1-50
+apps/web/src/components/files/fileContextMenuActions.jsx
+  s_4122b07c8b4292::t_c74486b464bafb 1-233
+apps/web/src/i18n.js
+  s_4122b07c8b4292::t_08fac8217a117f 4-23
+cc-viewer-alignment/B5-candidate-matrix.md
+  s_4122b07c8b4292::t_f3f2327b0ee0ba 11,13,24
+cc-viewer-alignment/B5-file-menus-2026-11-21.json
+  s_4122b07c8b4292::t_df4a0646c6a839 1-97
+cc-viewer-alignment/B5-implementation.md
+  s_4122b07c8b4292::t_aac3648eb2cd3e 62-74
+cc-viewer-alignment/README.md
+  s_4122b07c8b4292::t_4fe3dd00e76b64 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4122b07c8b4292::t_d8267236809a01 15925-15929
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_4122b07c8b4292::t_133484e9058ba9 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "0508ad31193540978d5ae073603b4f8cd79c3f3a",
+  "prompts": {},
+  "sessions": {
+    "s_4122b07c8b4292": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fbcc-5a47-7112-a38d-fb834f2c5f53",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
