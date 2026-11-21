@@ -1,0 +1,31 @@
+packages/app/lib/cli-args.js
+  s_76602f25d7665d::t_1befcbe07f8236 252-282
+packages/app/tests/pty-workspace-args.test.js
+  s_76602f25d7665d::t_1befcbe07f8236 1-35
+AGENTS.md
+  s_76602f25d7665d::t_14c8499080ce2a 26,31
+cc-viewer-alignment/B7-implementation.md
+  s_76602f25d7665d::t_db8bd318ce4d10 49-56
+cc-viewer-alignment/README.md
+  s_76602f25d7665d::t_2cf00f8aa579eb 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_76602f25d7665d::t_538533e40fc2ee 3,5804-5805
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_76602f25d7665d::t_1d17c319dfaf51 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "5eb20a06de1166b01b50344fbeee5941d87984c9",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
