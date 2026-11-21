@@ -1,0 +1,49 @@
+cc-viewer-alignment/probes/b5-drop-zones-gui.mjs
+  s_4122b07c8b4292::t_0cb93da5c5e077 37-38
+  s_4122b07c8b4292::t_0b822376edcad2 8
+  s_4122b07c8b4292::t_49b5bbfc0b6f68 1-7,9-36,39-47
+AGENTS.md
+  s_4122b07c8b4292::t_f060cc3dd607ce 26
+apps/web/src/App.jsx
+  s_4122b07c8b4292::t_445ab0bddec102 327
+apps/web/src/AppBase.jsx
+  s_4122b07c8b4292::t_12052b580af705 128,861-862,1051-1052,2952-2961,2963-2972,2975,2981,2985-2993,2999,3006-3014
+apps/web/src/components/chat/ChatView.jsx
+  s_4122b07c8b4292::t_80a4a1537fa54f 4200-4201,4489-4490
+apps/web/src/components/chat/ChatView.module.css
+  s_4122b07c8b4292::t_c7ef73a04859b0 52,380,722-743
+apps/web/src/components/files/FileExplorer.jsx
+  s_4122b07c8b4292::t_e88dd60ad03268 537
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_4122b07c8b4292::t_8a27c2685e8fdf 1423-1455
+cc-viewer-alignment/B5-candidate-matrix.md
+  s_4122b07c8b4292::t_2806bca54d20d7 14
+cc-viewer-alignment/B5-drop-zones-2026-11-21.json
+  s_4122b07c8b4292::t_aa67da17243781 1-80
+cc-viewer-alignment/B5-implementation.md
+  s_4122b07c8b4292::t_6b369026f6cc74 152-158
+cc-viewer-alignment/README.md
+  s_4122b07c8b4292::t_f50ccdeb94fb92 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4122b07c8b4292::t_a9673f7509cd79 15965-15969
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_4122b07c8b4292::t_f68ed4ec9025aa 3,111
+cc-viewer-alignment/probes/b5-search-gui.mjs
+  s_4122b07c8b4292::t_6c4f9ffae3fe13 113-115
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f498f6ba2e1864ceefa76de7f126f1d3c3f91884",
+  "prompts": {},
+  "sessions": {
+    "s_4122b07c8b4292": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fbcc-5a47-7112-a38d-fb834f2c5f53",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
