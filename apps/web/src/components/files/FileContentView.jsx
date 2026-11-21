@@ -4,6 +4,7 @@ import { Modal, message } from 'antd';
 import { apiUrl, withViewParams, withTargetParams } from '../../utils/apiUrl';
 import { useMarkdownExport } from '../../hooks/useMarkdownExport';
 import { detectMdExtensions } from '../../utils/mdExtensionDetect';
+import { getPreviewKind, isDownloadOnlyPreview } from '../../utils/previewKind.js';
 import UnsupportedFilePreview from '../viewers/UnsupportedFilePreview';
 import { reportSwallowed } from '../../utils/errorReport';
 import { handleStaleChunk } from '../../utils/lazyWithReload';
@@ -313,7 +314,31 @@ const highlightStyle = HighlightStyle.define([
 
 const syntaxTheme = syntaxHighlighting(highlightStyle);
 
-export default function FileContentView({
+const ArchivePreview = lazy(() =>
+  import('../viewers/ArchivePreview').catch((err) =>
+    handleStaleChunk('ArchivePreview', err, {
+      onReload: () => message.warning(i18n('ui.chunkOutdatedReloading')),
+    }),
+  ),
+);
+
+const AudioPreview = lazy(() =>
+  import('../viewers/AudioPreview').catch((err) =>
+    handleStaleChunk('AudioPreview', err, {
+      onReload: () => message.warning(i18n('ui.chunkOutdatedReloading')),
+    }),
+  ),
+);
+
+const SubtitlePreview = lazy(() =>
+  import('../viewers/SubtitlePreview').catch((err) =>
+    handleStaleChunk('SubtitlePreview', err, {
+      onReload: () => message.warning(i18n('ui.chunkOutdatedReloading')),
+    }),
+  ),
+);
+
+function FileContentViewImpl({
   filePath,
   project, instance, target, displayPath,
   onClose,
@@ -339,7 +364,7 @@ export default function FileContentView({
   if (binaryFallback?.path && binaryFallback.path !== filePath) setBinaryFallback(null);
   const [readOnlyEncoding, setReadOnlyEncoding] = useState(null);
   const readOnly = readOnlyProp || readOnlyEncoding?.path === filePath;
-  const isMdFile = /\.md$/i.test(filePath);
+  const isMdFile = getPreviewKind(filePath) === 'markdown';
   const [viewMode, setViewMode] = useState(isMdFile ? 'markdown' : 'text');
   const [downloadMenuOpen, setDownloadMenuOpen] = useState(false);
   // MDX 编辑相关 state
@@ -1067,4 +1092,34 @@ export default function FileContentView({
       </div>
     </div>
   );
+}
+
+// Keep this dispatcher hook-free: callers may replace preview paths in place.
+export default function FileContentView(props) {
+  const kind = getPreviewKind(props.filePath);
+  if (kind === 'archive') {
+    return (
+      <Suspense fallback={<div className={styles.fileContentView}><div className={styles.loading}>{i18n('ui.loading')}</div></div>}>
+        <ArchivePreview key={props.filePath} {...props} />
+      </Suspense>
+    );
+  }
+  if (kind === 'audio') {
+    return (
+      <Suspense fallback={<div className={styles.fileContentView}><div className={styles.loading}>{i18n('ui.loading')}</div></div>}>
+        <AudioPreview key={props.filePath} {...props} />
+      </Suspense>
+    );
+  }
+  // Subtitle preview is read-only; an $EDITOR session must keep the editable
+  // text editor so the terminal flow can actually save the file.
+  if (kind === 'subtitle' && !props.editorSession) {
+    return (
+      <Suspense fallback={<div className={styles.fileContentView}><div className={styles.loading}>{i18n('ui.loading')}</div></div>}>
+        <SubtitlePreview key={props.filePath} {...props} />
+      </Suspense>
+    );
+  }
+  if (isDownloadOnlyPreview(kind)) return <UnsupportedFilePreview key={props.filePath} {...props} kind={kind} />;
+  return <FileContentViewImpl {...props} />;
 }

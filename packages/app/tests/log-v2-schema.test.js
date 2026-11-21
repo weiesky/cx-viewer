@@ -201,3 +201,19 @@ test('entry codec preserves null and non-object request/response containers', ()
     assert.deepEqual(assembleEntryParts(new Map(Object.entries(split.parts))), entry);
   }
 });
+
+for (const path of ['root.body.input', 'request.body.input']) test(`conversation projection does not mutate a shared CAS body at ${path}`, () => {
+  const sharedBody = { model: 'same-model', metadata: { thread: 'same-thread' } };
+  const part = path.startsWith('request.') ? 'request.body' : 'root.body';
+  const parts = new Map([[part, sharedBody]]);
+  const firstInput = { role: 'user', content: 'first turn' }, secondInput = { role: 'assistant', content: 'pending question' };
+  const first = assembleEntryParts(parts, { path, items: [firstInput] }, { cloneValues: false });
+  const second = assembleEntryParts(parts, { path, items: [firstInput, secondInput] }, { cloneValues: false });
+  const firstBody = path.startsWith('request.') ? first.request.body : first.body;
+  const secondBody = path.startsWith('request.') ? second.request.body : second.body;
+  assert.deepEqual(firstBody.input, [firstInput], 'hydrating the new turn cannot rewrite an old completed entry');
+  assert.deepEqual(secondBody.input, [firstInput, secondInput]);
+  assert.equal(Object.hasOwn(sharedBody, 'input'), false, 'decoded content-addressed body remains immutable');
+  assert.equal(firstBody.metadata, sharedBody.metadata, 'large immutable values still share references');
+  assert.equal(firstBody.input[0], firstInput, 'input items retain the existing no-deep-clone budget');
+});

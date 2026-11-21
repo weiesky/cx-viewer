@@ -1,0 +1,52 @@
+{
+  "originalHead": "b3ff4c6eec6cc46d00dae24dc1ecac093cdd5fe9",
+  "originalTree": "8d9fe2e979c7e1f73b85fb0176e093ed919f147e",
+  "originalCommitCount": 16,
+  "squashTreeBeforeDocumentationMatchesOriginal": true,
+  "allProductionSourcesTestsDependenciesAndStylesUnchanged": true,
+  "productionDiff": [],
+  "guiImageHashesRechecked": 26,
+  "build": "passed (rerun after checkout)",
+  "packFiles": 720,
+  "artifactOnlyInstalled": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-2ask2fwv",
+    "files": 720,
+    "source_bytes_match": true,
+    "web_asset_files": 211,
+    "web_asset_bytes_match": true,
+    "runtime_tests": "not run (artifact-only)"
+  },
+  "previousFullTests": 1986,
+  "previousInstalledRuntime": "525/525",
+  "originalLogHashesRechecked": true,
+  "runtimeRerun": "None: no production change; current artifact-only installation is not another 525-runtime run.",
+  "reviewedAreas": [
+    "exact instance/target/admin/native policy + descriptor ownership",
+    "archive bounded read and portable parser limits",
+    "audio Range/HEAD/304/416/If-Range/abort lifecycle",
+    "preview dispatcher and frozen baseline CSS",
+    "selection scopes/portals, SDK failure retention and correlated PTY ACK",
+    "Markdown safe links/dual clipboard formats and MIT notices",
+    "shared-CAS body ownership regression"
+  ],
+  "openIssuesRetained": [
+    "Ordinary CLI/PTY workspace plus hidden by sdkMode; deferred correction, not fixed",
+    "Old active 7008 backend not restarted, current session hosted by that process",
+    "Existing stdin timeout/IM intermittent cases and documented unverified environments"
+  ],
+  "logs": {
+    "build": {
+      "path": "/tmp/cxv-b6-pr-build.log",
+      "sha256": "7a9a9e1203aeca234cb73d28de2331893308d24e601695bdf30610e53a8f856e"
+    },
+    "pack": {
+      "path": "/tmp/cxv-b6-pr-pack.log",
+      "sha256": "f427bbe14e435359e0404c91560d40dfaa9bdeae9a69dd6ac6f3be71f67d4607"
+    },
+    "artifact": {
+      "path": "/tmp/cxv-b6-pr-artifact.log",
+      "sha256": "4f35d09e5d0368ba8bd24e20d974236453046c96a8a0ee2717fae04dc31c96ed"
+    }
+  },
+  "prCi": "Repository workflow only triggers on v* tags or published release; actual PR status to be queried after creation."
+}

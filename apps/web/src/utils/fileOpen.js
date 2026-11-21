@@ -11,7 +11,7 @@ import { apiUrl } from './apiUrl';
 /** 需要系统默认应用打开的扩展名 */
 const SYSTEM_OPEN_EXTS = new Set([
   'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
-  'odt', 'ods', 'odp', 'pdf',
+  'odt', 'ods', 'odp',
 ]);
 
 /**

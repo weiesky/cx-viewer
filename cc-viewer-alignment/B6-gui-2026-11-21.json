@@ -1,0 +1,127 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "desktopRuns": 2,
+  "responsiveEmulatedRuns": 4,
+  "screenshots": [
+    {
+      "path": "cc-viewer-alignment/evidence/B6-preview-2026-11-21/chromium-archive-text.png",
+      "sha256": "76c028766630f4dbbeae4816b3396a6f8597538cf9404cb197581c188bbe80c3"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B6-preview-2026-11-21/chromium-archive-image.png",
+      "sha256": "49571f9f0a8643c8f98a9e7314d18e563daa6731b49b43de207e068378d28634"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B6-preview-2026-11-21/chromium-subtitle.png",
+      "sha256": "0e8aed5f8fd04d375fec43399a50254566f30024aedd002161c9682144cf4efd"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B6-preview-2026-11-21/chromium-audio.png",
+      "sha256": "d35a37f0dab4ff497174ab4a6f9e50ac240ab47fd674c0f7253ed899afbc3f7b"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B6-preview-2026-11-21/chromium-quote-chip.png",
+      "sha256": "087accfd0ffeeaf91b2967e9e23e22eba6d33f1fc37aa3060ee4437ec04a7990"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B6-preview-2026-11-21/chromium-quoted-tools.png",
+      "sha256": "3b0d60609f4b117f9e0fb93ff399bb4a095c3a2f8f7f48236ce4cc4c8faeb726"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B6-preview-2026-11-21/chromium-question-quote.png",
+      "sha256": "a3c9b2b724e0a5c734789c1fd116dc2cd5ee2d8c77788030bccb6a1fd5dd750b"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B6-preview-2026-11-21/webkit-archive-text.png",
+      "sha256": "5f2da1cca1ccfe68c6f1322b40eb6bfa8078d14b5a8fc13542b65f10aae8b986"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B6-preview-2026-11-21/webkit-archive-image.png",
+      "sha256": "f3f703e5d32811878b970ac437153435bb01c7b01a1f4e8e87cbbdeca8531a60"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B6-preview-2026-11-21/webkit-subtitle.png",
+      "sha256": "f8fb30109b2e7f7b9c2e8df2795ff638a5c1dac8025285bfbffe6cc52adb3670"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B6-preview-2026-11-21/webkit-audio.png",
+      "sha256": "29f49748de14616666ef78ce36a32eb3065462014585cd55e772c85161b40dc9"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B6-preview-2026-11-21/webkit-quote-chip.png",
+      "sha256": "660265644cc487fd5f313160981ba1021a2f200daf5092181b1a5131ddbb9131"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B6-preview-2026-11-21/webkit-quoted-tools.png",
+      "sha256": "8f7840d34d412b602010b0cf0102015876c35af4aa2fec155f6b9865b1de6c93"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B6-preview-2026-11-21/webkit-question-quote.png",
+      "sha256": "59a3a6d1072479a4d9438e52b538868bd90e1e39d5538d7dc3fc73e802aab899"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B6-preview-2026-11-21/chromium-phone-archive.png",
+      "sha256": "dfe35a0115504995016beec2b7e28f8967618470cf2d16e56620e5ae24a77f73"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B6-preview-2026-11-21/chromium-phone-subtitle.png",
+      "sha256": "f2b585a8838fc9c8736ff2a70c38989e58e6584d466d960497ce7b5b065268b7"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B6-preview-2026-11-21/chromium-phone-audio.png",
+      "sha256": "1aa01bf9cf87e6f0df6eba00731aae7ef429bee1fb691a9140ffc749b5a267a2"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B6-preview-2026-11-21/chromium-pad-archive.png",
+      "sha256": "7859ac691ed2edbf9e14149f50f6b977635df5abd7318ed8abe33124816ca5c9"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B6-preview-2026-11-21/chromium-pad-subtitle.png",
+      "sha256": "c61617366bec93b9db2e9c7238f6857a4bfc76f0bcd10f196526f2e89b6d8ed0"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B6-preview-2026-11-21/chromium-pad-audio.png",
+      "sha256": "885d22a3cd23e11d1bbb3c5b9cff9d6f125b9d0ccfa3c5444fb721259452bc31"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B6-preview-2026-11-21/webkit-phone-archive.png",
+      "sha256": "a30e7dd2ff248d139d10fe5b44d51335abf766d5db6d70e7a39532959d3deee7"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B6-preview-2026-11-21/webkit-phone-subtitle.png",
+      "sha256": "0996ebf386b1a4dc965f4e6bef54e9221fb19e9ca51a0faa9fd45fa54996f8e9"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B6-preview-2026-11-21/webkit-phone-audio.png",
+      "sha256": "542a658cce43148c1e63b235f8572ef474303882c932d8d71c0cbaebffbf26f1"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B6-preview-2026-11-21/webkit-pad-archive.png",
+      "sha256": "b3a49b9bee79ad883e4fe7a60c7b254492f8f4daf65252599f8e66a5e677d032"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B6-preview-2026-11-21/webkit-pad-subtitle.png",
+      "sha256": "d8a9d41feb46c9ca640df2dbb24389b420b79b75ed84191657c15029a4555f2b"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B6-preview-2026-11-21/webkit-pad-audio.png",
+      "sha256": "be66c65ff93d51de86366d4c186825e8cc17e47c4253847356f0c035bf923c98"
+    }
+  ],
+  "imagesVisuallyInspected": 26,
+  "warmCycles": 10,
+  "warmReloads": 0,
+  "browsers": [
+    "Chromium159.0.8154.6",
+    "WebKit27.2"
+  ],
+  "productionVersion": "755b2b5",
+  "fixture": "isolated HOME + fake AppServer, loopback HTTP, no external model",
+  "limits": [
+    "Phone/pad are emulations, not physical devices.",
+    "Audio muted play/seek and real 206 requests, not audible hardware verification.",
+    "Copy uses actual Ctrl/Meta+C browser event and DataTransfer, not cross-application OS clipboard.",
+    "Archive fixture raster is one pixel; decode success verified, not an image quality comparison.",
+    "Geo lookups stubbed in final browser probes; initial external CORS failures and script timing/locator failures are not passes."
+  ]
+}

@@ -10,11 +10,11 @@
 // 解析出的 /private 变体)足够特异,去掉引号要求不会误伤正常文案。
 
 // 路径必须以图片扩展名结尾才渲染(与服务端 /api/file-raw 支持的类型一致)。
-export const IMAGE_EXTS = /\.(?:png|jpe?g|gif|webp|avif|svg|bmp|ico|icns)$/i;
+export const IMAGE_EXTS = /\.(?:png|jpe?g|gif|webp|avif|svg|bmp|ico|apng|jfif)$/i;
 
 // 上传目录前缀：/tmp/cx-viewer-uploads/ 与 macOS 下 realpath 解析出的 /private/tmp/... 两种。
 const UPLOAD = String.raw`(?:\/private)?\/tmp\/cx-viewer-uploads\/`;
-const EXT = String.raw`(?:png|jpe?g|gif|webp|avif|svg|bmp|ico|icns)`;
+const EXT = String.raw`(?:png|jpe?g|gif|webp|avif|svg|bmp|ico|apng|jfif)`;
 
 // 三选一(顺序有意义：引号分支在裸路径分支之前,确保引号被一并吃掉,不会残留成文本)：
 //   group1 = [Image …] 内的路径；group2 = 双引号路径；group3 = 单引号路径；group4 = 裸上传路径。

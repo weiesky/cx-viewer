@@ -1,0 +1,134 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "baseLocal": "1c7eac578a7e8a66a50e1194ef37aca2f9b27580",
+  "branch": "codex/b6-preview-content",
+  "entries": [
+    {
+      "iteration": "E1",
+      "localCommit": "7c47e78db807b03d349c08ed1ea4b0922499256f",
+      "subject": "feat(alignment): migrate B6 archive preview baseline",
+      "upstreamCommits": [
+        "91a523d043dbc27bd404f1cd911d2cc588847b8b",
+        "f96811cddb3f1f5516ef7823bcc2a36d142a95e3",
+        "18bd742bc50d38ce52abf9f8df89930c49b50807"
+      ],
+      "evidence": "B6-implementation.md#e1"
+    },
+    {
+      "iteration": "E2",
+      "localCommit": "ba6ac2b441c9508be4e54f5717cc2be0c461ab5d",
+      "subject": "feat(alignment): migrate B6 audio preview and range streaming",
+      "upstreamCommits": [
+        "20313b254cffff4f8fec955b74a7b5233a0620ee"
+      ],
+      "evidence": "B6-implementation.md#e2"
+    },
+    {
+      "iteration": "E3",
+      "localCommit": "3bcbf14b6e998aa8de260250f34f3e98bc1198b8",
+      "subject": "feat(alignment): migrate B6 subtitle preview baseline",
+      "upstreamCommits": [
+        "18bd742bc50d38ce52abf9f8df89930c49b50807"
+      ],
+      "evidence": "B6-implementation.md#e3"
+    },
+    {
+      "iteration": "E4",
+      "localCommit": "11c80f6f8d98b7a073d528f99e81e34bae0a241e",
+      "subject": "fix(alignment): align B6 image formats and preview routing",
+      "upstreamCommits": [
+        "18bd742bc50d38ce52abf9f8df89930c49b50807",
+        "f96811cddb3f1f5516ef7823bcc2a36d142a95e3"
+      ],
+      "evidence": "B6-implementation.md#e4"
+    },
+    {
+      "iteration": "E5",
+      "localCommit": "f8aa8959940ed4679b450be80f627cca37f1df9f",
+      "subject": "feat(alignment): migrate B6 assistant selection quote chips",
+      "upstreamCommits": [
+        "2e09d30192774017db5cb06d1783686c63b16031"
+      ],
+      "evidence": "B6-implementation.md#e5"
+    },
+    {
+      "iteration": "E6",
+      "localCommit": "ed0a57f1d91f608b1f97da8c0713c4fb4d9b3ab3",
+      "subject": "feat(alignment): extend B6 quotes to diff tools and questions",
+      "upstreamCommits": [
+        "1b3c2268e3bd0e73ffef043bf450662d01a28371"
+      ],
+      "evidence": "B6-implementation.md#e6"
+    },
+    {
+      "iteration": "E7",
+      "localCommit": "fed31052b356e3899bc394c82dca668199921fbf",
+      "subject": "feat(alignment): complete B6 selected markdown source copy",
+      "upstreamCommits": [
+        "478268a4db5aadb50be1396207b2c54093824c58"
+      ],
+      "evidence": "B6-implementation.md#e7"
+    },
+    {
+      "iteration": "E8",
+      "localCommit": "d3c5598ec4d067f681529dd0633e48cb4391d397",
+      "subject": "fix(alignment): adapt B6 preview translation parameters",
+      "upstreamCommits": [
+        "91a523d043dbc27bd404f1cd911d2cc588847b8b",
+        "18bd742bc50d38ce52abf9f8df89930c49b50807"
+      ],
+      "evidence": "B6-implementation.md#e8"
+    },
+    {
+      "iteration": "E9",
+      "localCommit": "c1548c0816facf13f8144705c47ca2c7a9144852",
+      "subject": "test(alignment): verify B6 preview target access boundaries",
+      "upstreamCommits": [
+        "91a523d043dbc27bd404f1cd911d2cc588847b8b",
+        "20313b254cffff4f8fec955b74a7b5233a0620ee"
+      ],
+      "evidence": "B6-implementation.md#e9"
+    },
+    {
+      "iteration": "E10",
+      "localCommit": "89b99987ec8481c2f9924ae498a60d581118f3e9",
+      "subject": "docs(alignment): reconcile B6 candidate scopes and baseline mappings",
+      "upstreamCommits": [],
+      "evidence": "B6-implementation.md#e10"
+    },
+    {
+      "iteration": "E11",
+      "localCommit": "e5d5180f242447328e6d7d21a74073e63b4f26c5",
+      "subject": "fix(alignment): preserve B6 converter licenses in published artifacts",
+      "upstreamCommits": [
+        "478268a4db5aadb50be1396207b2c54093824c58",
+        "91a523d043dbc27bd404f1cd911d2cc588847b8b"
+      ],
+      "evidence": "B6-implementation.md#e11"
+    },
+    {
+      "iteration": "E12",
+      "localCommit": "755b2b522ce2a05e5d2674d430898bb2a2127dde",
+      "subject": "fix(alignment): isolate B6 conversation input from shared CAS bodies",
+      "upstreamCommits": [
+        "1b3c2268e3bd0e73ffef043bf450662d01a28371"
+      ],
+      "evidence": "B6-implementation.md#e12"
+    },
+    {
+      "iteration": "E13",
+      "localCommit": "1c91dec2d7400095da9304473875b4d67656ea4f",
+      "subject": "test(alignment): verify B6 production previews and content references",
+      "upstreamCommits": [
+        "91a523d043dbc27bd404f1cd911d2cc588847b8b",
+        "20313b254cffff4f8fec955b74a7b5233a0620ee",
+        "18bd742bc50d38ce52abf9f8df89930c49b50807",
+        "2e09d30192774017db5cb06d1783686c63b16031",
+        "478268a4db5aadb50be1396207b2c54093824c58",
+        "1b3c2268e3bd0e73ffef043bf450662d01a28371"
+      ],
+      "evidence": "B6-implementation.md#e13"
+    }
+  ],
+  "closure": "E14 is the standalone documentation commit containing this map, deliberately not self-referencing. E10 covers all 46 candidates via B6-candidate-matrix.md. E12 is a local V2 ownership fix, not an upstream patch transplant."
+}

@@ -34,6 +34,7 @@ import { targetFilesFsRoutes } from './lib/target-files-fs.js';
 import { revealInOs, openTerminalAt } from './lib/os-open.js';
 import { assertNativeFilePath, isNativeFilePathPublic, isWriteAllowed } from './lib/file-access-policy.js';
 import { readTargetFiles } from './lib/target-files.js';
+import { AUDIO_EXTENSIONS, audioExtOf, serveAudioStream } from './server/lib/audio-stream.js';
 import { fileBrowserAccess } from './lib/file-browser-access.js';
 import { probeFilesExist } from './lib/files-exists.js';
 import { ensureProjectIdForCwd, resolveProjectIdForCwd } from './lib/log-v2/project-id.js';
@@ -3881,11 +3882,44 @@ async function handleViewerRequest(req, res) {
     return;
   }
 
+  // Same exact-instance/target/native policy as the file browser, without buffering audio.
+  if (url === '/api/audio-stream' && (method === 'GET' || method === 'HEAD')) {
+    let fd = null;
+    try {
+      const access = fileBrowserAccess(parsedUrl, requestProjectDir, { isAdmin: isTargetFileAdmin,
+        codexMdEntries: discoverCodexMdEntries(req) });
+      const filePath = resolveFilePath(access.root, parsedUrl.searchParams.get('path'), access.external);
+      access.assertPath(filePath);
+      fd = openSync(filePath, fsConstants.O_RDONLY | (fsConstants.O_NOFOLLOW || 0) | (fsConstants.O_NONBLOCK || 0));
+      const stat = fstatSync(fd);
+      assertPublicFilePath(filePath, stat);
+      access.assertPath(filePath, stat);
+      if (!stat.isFile()) { sendJson(res, 400, { error: 'Not a file' }); return; }
+      const ext = audioExtOf(filePath);
+      if (!AUDIO_EXTENSIONS.has(ext)) { sendJson(res, 400, { error: 'Unsupported audio path' }); return; }
+      // Sniff and stream the SAME validated descriptor. The stream owns it only
+      // when a body is sent; all HEAD/304/416/empty/error exits close it below.
+      if (serveAudioStream(req, res, { filePath, stat, ext, fd })) fd = null;
+    } catch (err) {
+      if (res.headersSent) res.destroy();
+      else sendJson(res, err.status || ERROR_STATUS_MAP[err.code] || 500, { error: err.message });
+    } finally {
+      if (fd !== null) { try { closeSync(fd); } catch {} }
+    }
+    return;
+  }
+
   // 返回文件原始二进制内容（用于图片预览等）
-  if ((url === '/api/file-raw' || url.startsWith('/api/file-raw/')) && (method === 'GET' || method === 'HEAD')) {
+  if ((url === '/api/archive-raw' || url === '/api/file-raw' || url.startsWith('/api/file-raw/')) && (method === 'GET' || method === 'HEAD')) {
+    const archive = url === '/api/archive-raw';
     const reqPath = rawPath ?? parsedUrl.searchParams.get('path');
     const isEditorSession = rawPath === null && parsedUrl.searchParams.get('editorSession') === 'true';
     const cwd = requestProjectDir;
+    if (archive && (!reqPath || !/\.(zip|tar|gz|tgz)$/i.test(reqPath))) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Unsupported archive path' }));
+      return;
+    }
     let constrainedFd = null;
     try {
       const access = fileBrowserAccess(parsedUrl, cwd, { isAdmin: isTargetFileAdmin || isTargetPreviewResource,
@@ -3896,7 +3930,7 @@ async function handleViewerRequest(req, res) {
       const persistPrefix = join(homedir(), '.codex', 'cx-viewer', pName, 'images') + '/';
       let targetFile;
       let constrainedImageRoot = null;
-      if (!access.external && reqPath && reqPath.startsWith(uploadPrefix)) {
+      if (!archive && !access.external && reqPath && reqPath.startsWith(uploadPrefix)) {
         targetFile = resolve(reqPath);
         // 路径穿越防护：resolve 后必须仍在 upload 目录内
         if (!targetFile.startsWith(uploadPrefix)) {
@@ -3914,7 +3948,7 @@ async function handleViewerRequest(req, res) {
           }
         }
         if (!constrainedImageRoot) constrainedImageRoot = uploadPrefix;
-      } else if (!access.external && reqPath && reqPath.startsWith(persistPrefix)) {
+      } else if (!archive && !access.external && reqPath && reqPath.startsWith(persistPrefix)) {
         targetFile = resolve(reqPath);
         // 路径穿越防护：resolve 后必须仍在持久化目录内
         if (!targetFile.startsWith(persistPrefix)) {
@@ -3975,23 +4009,39 @@ async function handleViewerRequest(req, res) {
         res.end(JSON.stringify({ error: 'Not a file' }));
         return;
       }
-      if (stat.size > 10 * 1024 * 1024) {
+      const maxBytes = (archive ? 32 : 10) * 1024 * 1024;
+      if (stat.size > maxBytes) {
         res.writeHead(413, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'File too large' }));
+        res.end(JSON.stringify({ error: 'File too large', ...(archive ? { maxBytes, size: stat.size } : {}) }));
         return;
       }
       const extMime = {
         '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
         '.gif': 'image/gif', '.svg': 'image/svg+xml', '.ico': 'image/x-icon',
         '.webp': 'image/webp', '.bmp': 'image/bmp', '.avif': 'image/avif',
+        '.apng': 'image/apng', '.jfif': 'image/jpeg',
+        '.tif': 'image/tiff', '.tiff': 'image/tiff', '.heic': 'image/heic', '.heif': 'image/heif',
         '.html': 'text/html', '.htm': 'text/html',
         '.css': 'text/css', '.js': 'text/javascript', '.mjs': 'text/javascript',
         '.json': 'application/json', '.map': 'application/json', '.txt': 'text/plain',
         '.woff': 'font/woff', '.woff2': 'font/woff2', '.ttf': 'font/ttf',
       };
       const ext = (targetFile.match(/\.[^.]+$/) || [''])[0].toLowerCase();
-      const mime = extMime[ext] || 'application/octet-stream';
-      const data = method === 'HEAD' ? null : readFileSync(constrainedFd === null ? targetFile : constrainedFd);
+      const mime = archive ? 'application/octet-stream' : extMime[ext] || 'application/octet-stream';
+      let data = null;
+      if (method !== 'HEAD') {
+        if (archive) {
+          // Bound the descriptor read even if the archive grows after fstat.
+          data = Buffer.alloc(stat.size);
+          let offset = 0;
+          while (offset < data.length) {
+            const count = readSync(constrainedFd, data, offset, data.length - offset, offset);
+            if (!count) break;
+            offset += count;
+          }
+          data = data.subarray(0, offset);
+        } else data = readFileSync(constrainedFd);
+      }
       const size = method === 'HEAD' ? stat.size : data.length;
       const headers = { 'Content-Type': mime, 'Content-Length': size };
       // 防止用户项目中的恶意 HTML 在同源下执行脚本（XSS 防护）

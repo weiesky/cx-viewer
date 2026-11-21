@@ -144,16 +144,16 @@ function attachInput(entry, path, items, cloneValues) {
   const input = cloneValues ? items.map(clonePart) : [...items];
   if (path === 'root.input') entry.input = input;
   else if (path === 'root.body.input') {
-    if (!entry.body || typeof entry.body !== 'object' || Array.isArray(entry.body)) entry.body = {};
+    // The no-deep-clone conversation path shares decoded CAS values. Only the
+    // owning body must be fresh before attaching this descriptor's input.
+    entry.body = entry.body && typeof entry.body === 'object' && !Array.isArray(entry.body) ? { ...entry.body } : {};
     entry.body.input = input;
   } else if (path === 'request.input') {
     if (!entry.request || typeof entry.request !== 'object' || Array.isArray(entry.request)) entry.request = {};
     entry.request.input = input;
   } else if (path === 'request.body.input') {
     if (!entry.request || typeof entry.request !== 'object' || Array.isArray(entry.request)) entry.request = {};
-    if (!entry.request.body || typeof entry.request.body !== 'object' || Array.isArray(entry.request.body)) {
-      entry.request.body = {};
-    }
+    entry.request.body = entry.request.body && typeof entry.request.body === 'object' && !Array.isArray(entry.request.body) ? { ...entry.request.body } : {};
     entry.request.body.input = input;
   } else {
     throw new TypeError(`unsupported V2 input path: ${path}`);

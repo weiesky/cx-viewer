@@ -1,0 +1,39 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "firstFullRuntimeInstall": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-dejx1z7l",
+    "files": 720,
+    "source_bytes_match": true,
+    "web_asset_files": 211,
+    "runtime_tests": "514/514",
+    "b12_regression": "passed",
+    "installed_cli_relative_cd_boot": "passed",
+    "uses_fake_codex": true,
+    "uses_real_model_network": false
+  },
+  "licenseFinalArtifactInstall": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-6xr73jdl",
+    "files": 720,
+    "source_bytes_match": true,
+    "web_asset_files": 211,
+    "web_asset_bytes_match": true,
+    "runtime_tests": "not run (artifact-only)"
+  },
+  "licenseSha256": "982d26fb4d66ace625655d0d9a125819089616b6f0d571c44474132cb6ac1519",
+  "notes": [
+    "514 runtime cases passed on the production code; subsequent change only added the two MIT notices and the final artifact-only install verified exact license and assets.",
+    "No claim of real network/model/physical device or other OS verification.",
+    "E12 shared-CAS ownership fix reverified with all 525 installed runtime cases, B1.2 and isolated CLI; entry-codec exact bytes required."
+  ],
+  "finalCasFixFullRuntimeInstall": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-ijviyf8t",
+    "files": 720,
+    "source_bytes_match": true,
+    "web_asset_files": 211,
+    "runtime_tests": "525/525",
+    "b12_regression": "passed",
+    "installed_cli_relative_cd_boot": "passed",
+    "uses_fake_codex": true,
+    "uses_real_model_network": false
+  }
+}

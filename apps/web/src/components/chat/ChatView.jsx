@@ -1,4 +1,7 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
+import { htmlToMarkdown } from '../../utils/markdownCopy';
+import { selectionInSingleAssistantQuoteRegion, selectionInSingleAssistantMarkdown, selectionPopupPosition, buildQuotePrefix, isSlashCommandText, truncateQuote } from './selectionQuote';
 import { Empty, Typography, Divider, Spin, Popover, Modal, Button, message } from 'antd';
 import ChatMessage from './ChatMessage';
 import ActiveAgentsBar from './ActiveAgentsBar';
@@ -25,6 +28,7 @@ import { playEvent as playVoiceEvent } from '../../utils/voicePackPlayer';
 import { buildChunksForAnswer, buildBracketPasteSequentialRequest } from '../../../../../packages/app/src/utils/ptyChunkBuilder';
 import { isPlanApprovalPrompt, isDangerousOperationPrompt, pickPlanApproveOptionNumber } from '../../utils/promptClassifier';
 import { reportSwallowed } from '../../utils/errorReport';
+import { opensInFileViewer, getPreviewKind } from '../../utils/previewKind.js';
 import { isImageFile } from '../../utils/commandValidator';
 import { projectUserPromptItem } from '../../../../../packages/app/src/utils/userPromptContent.js';
 import { loadExpandedPaths, saveExpandedPaths } from '../../utils/fileExpandedPathsStorage';
@@ -220,6 +224,13 @@ class ChatView extends React.Component {
     this._mdProbeObservedEl = null;
     this._mdProbeRaf = 0;
 
+    // Selection→quote popup imperative fields (see the "Selection → quote chips" section).
+    this._selQuoteBound = false;   // listeners bound
+    this._selQuoteText = '';       // ref-held selection text read by the button's click
+    this._selQuoteTextPrev = '';   // last text written to state, to skip no-op setState
+    this._selMouseDown = false;    // a mouse-driven selection drag is in progress
+    this._selQuoteRaf = 0;         // pending selectionchange debounce rAF
+
     // 增量 tool result 状态
     this._incToolState = null;
     this._incToolProcessedCount = 0;
@@ -339,6 +350,8 @@ class ChatView extends React.Component {
       // ask resolve/cancel/timeout 时 delete，确保内存随 ask 生命周期回收（不会随会话增长无界累积）。
       pendingPtyPlan: null, // { id, prompt } — active plan approval. id 与 plan tool_use id (lastPendingPlanId) 同源，由 componentDidUpdate 从 _currentLastPendingPlanId 派生（cliMode 守卫 + _resolvedPlanIds 短暂窗口守卫）。
       planAutoApproveCountdown: null, // number|null — 「Plan 自动审批」开启时当前 pendingPtyPlan 的剩余秒数；null=未在倒计时。下发给 inline 卡片显示「{n}s 后自动批准 · 取消」。
+      pendingQuotes: [],
+      selectionPopup: null,
       pendingImages: [], // [{ path, source }] — images uploaded/pasted, shown as previews in chat input
       uploadingItems: [], // [{ id, name, previewUrl }] — 上传在途的占位项(路径还没 resolve);预览条只从 pendingImages 渲染缩略图,故占位需独立 state
       sendDeferred: false, // 仅渲染用:有上传在途时按了发送 → 缓发态(发送按钮 spinner)。权威双发标志是实例字段 _sendDeferred
@@ -650,6 +663,7 @@ class ChatView extends React.Component {
     }
     this._bindInputStackRO();
     this._bindChatScrollbarRO();
+    this._bindSelectionQuoteListeners();
     // 初始化时吸附到 60cols
     if (this.state.needsInitialSnap && this.props.cliMode && !this.props.sdkMode && this.props.terminalVisible) {
       this._snapToInitialPosition();
@@ -807,7 +821,8 @@ class ChatView extends React.Component {
     }
 
     if (this.props.sdkResumeId && prevProps.sdkResumeId !== this.props.sdkResumeId) {
-      this.setState({ sdkCompactNotices: [] });
+      this.setState({ sdkCompactNotices: [], pendingQuotes: [], selectionPopup: null });
+      this._selQuoteText = "";
       this._clearSdkErrors();
       this._clearSlowUpstreamToast();
       // Keep the draft and uploads, but require another explicit send after a
@@ -859,6 +874,17 @@ class ChatView extends React.Component {
       || (prevProps.attachedSid && prevProps.attachedSid !== this.props.attachedSid)
       || (prevProps.viewInstance && prevProps.viewInstance !== this.props.viewInstance)
       || (prevProps.viewProject && prevProps.viewProject !== this.props.viewProject)) this._clearSlowUpstreamToast();
+    if (prevProps.isLocalLog !== this.props.isLocalLog
+      || prevProps.sessionUpperBoundTs !== this.props.sessionUpperBoundTs
+      || prevProps.attachedSid !== this.props.attachedSid
+      || (this.props.sdkResumeId && prevProps.sdkResumeId !== this.props.sdkResumeId)
+      || (prevProps.viewInstance && prevProps.viewInstance !== this.props.viewInstance)
+      || (prevProps.projectName && prevProps.projectName !== this.props.projectName)
+      || (prevProps.mainAgentSessions !== this.props.mainAgentSessions
+        && isSessionDividerBoundary(getLatestSessionByActivity(prevProps.mainAgentSessions || []),
+          getLatestSessionByActivity(this.props.mainAgentSessions || [])))) {
+      this._clearPendingQuotes(); this._hideSelectionPopup(); this._selQuoteText = '';
+    }
     // currentFile 变（含切到 null）→ 上一文件的 scroll 快照失效，集中在 cdU 一处清，
     // 比在 8 个 setState({currentFile:...}) 站点各加一行更稳。fileVersion bump 走的是同
     // currentFile 的 remount 路径，currentFile 不变 → 快照保留 → 用于 restore，正合需求。
@@ -1271,6 +1297,7 @@ class ChatView extends React.Component {
   }
 
   componentWillUnmount() {
+    this._unbindSelectionQuoteListeners();
     this._clearSlowUpstreamToast();
     if (this._sdkRetryResetTimer) { clearTimeout(this._sdkRetryResetTimer); this._sdkRetryResetTimer = null; }
     this._unmounted = true;
@@ -1483,6 +1510,164 @@ class ChatView extends React.Component {
       return { pendingImages: next };
     });
   };
+
+  // ── Selection → quote chips ─────────────────────────────────────────────────
+  // A floating "add to chat" button (i18n key ui.chatQuote.addToChat) appears when the user
+  // selects text inside a single assistant bubble's markdown. Clicking it pushes the selection
+  // into pendingQuotes; the chips ride the composer attachment strip and are sent as a `> `
+  // blockquote prefix.
+  //
+  // The mouse show path is `mouseup` (so the button does not dance mid-drag); touch and
+  // keyboard selections never fire a list mouseup, so `selectionchange` (debounced) shows the
+  // popup for them once the mouse-drag flag is clear. scroll/resize/pointerdown-outside hide it.
+
+  _bindSelectionQuoteListeners = () => {
+    if (this._selQuoteBound) return;
+    this._selQuoteBound = true;
+    this._onSelChange = () => this._handleSelectionChange();
+    this._onSelScroll = (e) => this._handleSelScroll(e);
+    this._onSelResize = () => this._hideSelectionPopup();
+    // Reset the mouse-drag flag even when the button is released outside the message list.
+    this._onSelDocMouseUp = () => { this._selMouseDown = false; };
+    // Dismiss the popup when the user presses anywhere outside the floating button (e.g. opening
+    // a sidebar file overlay, clicking the header/terminal). The button is portaled to body and
+    // marked with data-ccv-selection-quote-btn so we can exclude it. This is pointerdown (not click)
+    // because a text selection survives button clicks, so selectionchange alone won't dismiss.
+    this._onSelDocPointerDown = (e) => {
+      if (!this.state.selectionPopup) return;
+      const t0 = e && e.target;
+      if (t0 && t0 instanceof Element && t0.closest('[data-ccv-selection-quote-btn]')) return;
+      this._hideSelectionPopup();
+    };
+    document.addEventListener('selectionchange', this._onSelChange);
+    // capture phase so the inner Virtuoso / .container scroller's scroll reaches us.
+    document.addEventListener('scroll', this._onSelScroll, true);
+    document.addEventListener('mouseup', this._onSelDocMouseUp);
+    document.addEventListener('pointerdown', this._onSelDocPointerDown, true);
+    window.addEventListener('resize', this._onSelResize);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', this._onSelResize);
+  };
+
+  _unbindSelectionQuoteListeners = () => {
+    if (!this._selQuoteBound) return;
+    this._selQuoteBound = false;
+    document.removeEventListener('selectionchange', this._onSelChange);
+    document.removeEventListener('scroll', this._onSelScroll, true);
+    document.removeEventListener('mouseup', this._onSelDocMouseUp);
+    document.removeEventListener('pointerdown', this._onSelDocPointerDown, true);
+    window.removeEventListener('resize', this._onSelResize);
+    if (window.visualViewport) window.visualViewport.removeEventListener('resize', this._onSelResize);
+    if (this._selQuoteRaf) { cancelAnimationFrame(this._selQuoteRaf); this._selQuoteRaf = 0; }
+  };
+
+  // selectionchange: keep an already-shown popup in sync (hide when the selection becomes
+  // invalid), AND surface the popup for non-mouse selections (touch long-press + selection
+  // handles, keyboard Shift+arrow) which never fire a list `mouseup`. The mouse path stays on
+  // mouseup so a mid-drag selection doesn't make the button dance; this debounce (rAF + a
+  // trailing validity re-check) only *shows* when no popup is up yet.
+  _handleSelectionChange = () => {
+    if (this._selQuoteRaf) cancelAnimationFrame(this._selQuoteRaf);
+    this._selQuoteRaf = requestAnimationFrame(() => {
+      this._selQuoteRaf = 0;
+      if (this._unmounted) return;
+      if (this.state.selectionPopup) {
+        // Already shown: track the live selection (touch-handle drags / Shift+arrow change it
+        // without any list mouseup). The rAF debounce absorbs per-move jitter.
+        this._syncQuotePopup();
+        return;
+      }
+      // Not shown: surface for keyboard/touch selections. Skip while a mouse drag is in
+      // progress (mousedown tracked via _selMouseDown) so desktop drag stays on mouseup.
+      if (this._selMouseDown) return;
+      this._syncQuotePopup();
+    });
+  };
+
+  // Single show/sync path: validate the selection against a single assistant bubble's markdown,
+  // then write the ref-held text + popup position. Returns true when the popup is showing.
+  // The click handler reads the ref-held text (not the live selection, which collapses on click),
+  // so `_selQuoteText` always tracks the selection that the popup currently points at.
+  _syncQuotePopup = () => {
+    const sel = window.getSelection();
+    if (selectionInSingleAssistantQuoteRegion(sel)) {
+      const text = sel.toString();
+      const pos = selectionPopupPosition(sel);
+      if (text.trim() && pos) {
+        this._selQuoteText = text;
+        // Skip the setState when nothing moved, so a steady selection doesn't re-render ChatView.
+        const cur = this.state.selectionPopup;
+        if (!cur || cur.left !== pos.left || cur.top !== pos.top || cur.above !== pos.above || text !== this._selQuoteTextPrev) {
+          this._selQuoteTextPrev = text;
+          this.setState({ selectionPopup: { left: pos.left, top: pos.top, above: pos.above } });
+        }
+        return true;
+      }
+    }
+    this._hideSelectionPopup();
+    return false;
+  };
+
+  // The capture-phase scroll listener hears EVERY document scroll, including the xterm
+  // viewport (terminal streaming) and unrelated panels. Only a scroll inside the chat message
+  // list invalidates the selection's viewport rect, so ignore anything outside it — otherwise
+  // the popup dies within a frame whenever the terminal or live answer is streaming.
+  _handleSelScroll = (e) => {
+    if (!this.state.selectionPopup) return;
+    const wrap = this._mdProbeWrapRef && this._mdProbeWrapRef.current;
+    const target = e && e.target;
+    if (wrap && target && target instanceof Node && wrap.contains(target)) this._hideSelectionPopup();
+  };
+
+  _onMessageListMouseDown = () => {
+    // Mark a mouse-driven selection drag; the selectionchange show path stays quiet until
+    // mouseup so the button does not dance mid-drag. Reset on the next mouseup anywhere.
+    this._selMouseDown = true;
+  };
+
+  _onMessageListMouseUp = () => {
+    this._selMouseDown = false;
+    this._syncQuotePopup();
+  };
+
+  _hideSelectionPopup = () => {
+    if (this.state.selectionPopup) this.setState({ selectionPopup: null });
+  };
+
+  // Floating button click. The button uses onMouseDown preventDefault so the selection (and
+  // this popup) survive until the click fires; we read the ref-held text, not the live
+  // selection, which may already be collapsing.
+  _handleAddQuoteFromPopup = () => {
+    const text = this._selQuoteText;
+    this._hideSelectionPopup();
+    const sel = window.getSelection();
+    if (sel) sel.removeAllRanges();
+    if (text && text.trim()) this._addPendingQuote(text);
+  };
+
+  _addPendingQuote = (text) => {
+    // Cap/truncate a single quote so selecting an entire long answer cannot produce a huge
+    // bracketed paste / oversized optimistic bubble. No user feedback on cap/dedup, mirroring
+    // pendingImages.
+    const trimmed = truncateQuote(text);
+    if (!trimmed) return;
+    this.setState(prev => {
+      if (prev.pendingQuotes.length >= 20) return null; // cap, mirrors pendingImages
+      if (prev.pendingQuotes.some(q => q.text === trimmed)) return null; // dedup
+      return { pendingQuotes: [...prev.pendingQuotes, { text: trimmed }] };
+    });
+  };
+
+  _removePendingQuote = (index) => {
+    this.setState(prev => ({ pendingQuotes: prev.pendingQuotes.filter((_, i) => i !== index) }));
+  };
+
+  _clearPendingQuotes = () => {
+    if (this.state.pendingQuotes.length > 0) {
+      this.setState({ pendingQuotes: [] });
+    }
+  };
+
+
 
   _clearPendingImages = () => {
     if (this.state.pendingImages.length > 0) {
@@ -2451,7 +2636,7 @@ class ChatView extends React.Component {
     // setState 提交后再发 → handleInputSend 守卫看到 uploadingItems 为空,不会 defer。
     this._clearDeferSend();
     for (const u of this.state.uploadingItems) { if (u.previewUrl) { try { URL.revokeObjectURL(u.previewUrl); } catch {} } }
-    this.setState({ inputEmpty: false, pendingImages: [], uploadingItems: [] }, () => this.handleInputSend());
+    this.setState({ inputEmpty: false, pendingImages: [], pendingQuotes: [], uploadingItems: [] }, () => this.handleInputSend());
     this.props.onClearContextOptimistic?.();
   };
 
@@ -3262,21 +3447,27 @@ class ChatView extends React.Component {
     else this._clearSdkErrors();
   };
 
-  _sendUserMessageImmediate = (text, textareaToReset, skipUiState, pendingId) => {
+  _sendUserMessageImmediate = (text, textareaToReset, skipUiState, pendingId, clearQuotes = true) => {
     if (!text) return;
     const ws = this._inputWs;
     const pendingRecord = skipUiState ? null : this._createPendingInputRecord(text);
-    const sent = sendTerminalSocketMessage(ws, this.props.sdkMode
+    const sequential = !this.props.sdkMode && text.includes('\n');
+    const sent = sequential ? this._sendBracketPasteSequential(text, {
+      onFailure: () => {
+        this._restoreUnsentInput(text, pendingId || pendingRecord?.id);
+        message.error(t('ui.sendFailed'));
+      },
+    }) : sendTerminalSocketMessage(ws, this.props.sdkMode
       ? { type: 'sdk-user-message', text, requestId: pendingId || pendingRecord?.id } : { type: 'input', data: text });
     if (!sent) {
       if (skipUiState) this._restoreUnsentInput(text, pendingId);
-      message.error(t('ui.sendFailed'));
+      if (!sequential) message.error(t('ui.sendFailed'));
       return false;
     }
     // Only a successful send unlocks the optimistic context-bar state.
     if (this.props.sdkMode) this._clearSdkErrors();
     if (!/^\s*\/clear(\s|$)/.test(text)) this.props.onUserMessageSent?.();
-    if (!this.props.sdkMode) {
+    if (!this.props.sdkMode && !sequential) {
       setTimeout(() => {
         if (this._inputWs && this._inputWs.readyState === WebSocket.OPEN) {
           this._inputWs.send(JSON.stringify({ type: 'input', data: '\r' }));
@@ -3289,6 +3480,7 @@ class ChatView extends React.Component {
     }
     if (!skipUiState) {
       this._clearPendingImages();
+      if (clearQuotes) this._clearPendingQuotes();
       this.setState(prev => ({
         inputEmpty: true,
         pendingInputs: [...prev.pendingInputs, pendingRecord],
@@ -3367,7 +3559,9 @@ class ChatView extends React.Component {
     const userText = textarea.value.trim();
     // 拼接 pendingImages 路径到消息前面（发送时才注入，支持用户删除后不发）
     const imagePaths = this.state.pendingImages.map(img => `"${img.path.replace(/"/g, '')}"`).join(' ');
-    const text = imagePaths ? (userText ? `${imagePaths} ${userText}` : imagePaths) : userText;
+    const isSlash = isSlashCommandText(userText);
+    const quotePrefix = isSlash ? '' : buildQuotePrefix(this.state.pendingQuotes);
+    const text = quotePrefix + (imagePaths ? (userText ? (isSlash ? `${userText} ${imagePaths}` : `${imagePaths} ${userText}`) : imagePaths) : userText);
     if (!text) return;
 
     // 发起新一轮：清除可能仍挂着的乐观停止标志，确保新 run 的按钮正确显示为停止态。
@@ -3384,6 +3578,7 @@ class ChatView extends React.Component {
       textarea.value = '';
       resizeChatTextarea(textarea, { focused: document.activeElement === textarea });
       this._clearPendingImages();
+      if (!isSlash) this._clearPendingQuotes();
       const pendingRecord = this._createPendingInputRecord(text);
       this.setState(prev => ({
         inputEmpty: true,
@@ -3408,7 +3603,7 @@ class ChatView extends React.Component {
       return;
     }
 
-    this._sendUserMessageImmediate(text, textarea);
+    this._sendUserMessageImmediate(text, textarea, false, undefined, !isSlash);
   };
 
   handleInputKeyDown = (e) => {
@@ -3901,6 +4096,30 @@ class ChatView extends React.Component {
     }
   }
 
+  // Floating "add to chat" button (ui.chatQuote.addToChat) over a valid assistant selection.
+  // Portaled to document.body so it is positioned against the viewport (unaffected by the mobile
+  // zoom/transform ancestor or the floating .inputStack) and so its own mouseup does not bubble
+  // back into the message list's onMouseUp handler. onMouseDown preventDefault keeps the
+  // selection alive until the click reads the ref-held text (mousedown would otherwise collapse
+  // the selection → selectionchange hides the popup → the click never fires).
+  _renderSelectionQuotePopup() {
+    const popup = this.state.selectionPopup;
+    if (!popup) return null;
+    return ReactDOM.createPortal(
+      <button
+        type="button"
+        data-ccv-selection-quote-btn
+        className={`${styles.selectionQuoteBtn}${popup.above ? '' : ` ${styles.selectionQuoteBtnBelow}`}`}
+        style={{ left: popup.left, top: popup.top }}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={this._handleAddQuoteFromPopup}
+      >
+        {t('ui.chatQuote.addToChat')}
+      </button>,
+      document.body
+    );
+  }
+
   render() {
     const { mainAgentSessions, cliMode, terminalVisible, onToggleTerminal } = this.props;
     const { allItems, visibleCount, loading, terminalWidth, sidebarWidth } = this.state;
@@ -4160,7 +4379,7 @@ class ChatView extends React.Component {
     ) : (
       <div className={roleFilterBar ? `${styles.messageListWrap} ${styles.withRoleFilter}`
         : (activeAgentsBar && this.state.activeAgentsBarVisible
-          ? `${styles.messageListWrap} ${styles.withActiveAgents}` : styles.messageListWrap)} onClick={this.handleChatMdClick} onKeyDown={this.handleChatMdKeydown} ref={this._mdProbeWrapRef}>
+          ? `${styles.messageListWrap} ${styles.withActiveAgents}` : styles.messageListWrap)} onClick={this.handleChatMdClick} onKeyDown={this.handleChatMdKeydown} onMouseDown={this._onMessageListMouseDown} onMouseUp={this._onMessageListMouseUp} onCopy={this.handleMessageListCopy} ref={this._mdProbeWrapRef}>
         {roleFilterBar}
         {activeAgentsBar}
         {this.state.mdLightboxSrc && (
@@ -4248,6 +4467,7 @@ class ChatView extends React.Component {
         </div>
         <TeamModal session={this.state.teamModalSession} requests={this.props.requests} mainAgentSessions={this.props.mainAgentSessions} collapseToolResults={this.props.collapseToolResults} expandThinking={this.props.expandThinking} showFullToolContent={this.props.showFullToolContent} userProfile={this.props.userProfile} onViewRequest={this.props.onViewRequest} isHistoryLog={this._getIsHistoryLog()} lang={this.props.lang} onClose={() => this.setState({ teamModalSession: null })} />
         <WorkflowRunsModal run={this.state.workflowModalRun} onClose={() => this.setState({ workflowModalRun: null })} />
+        {this._renderSelectionQuotePopup()}
       </>);
     }
 
@@ -4342,6 +4562,10 @@ class ChatView extends React.Component {
               onFileClick={(repoPath, filePath, commitHash) => {
                 const resolvedPath = repoPath && repoPath !== '.' ? `${repoPath}/${filePath}` : filePath;
                 if (tryOpenWithSystem(resolvedPath, 'git-changes')) return;
+                if (opensInFileViewer(getPreviewKind(resolvedPath))) {
+                  this.setState({ currentGitDiff: null, currentFile: resolvedPath });
+                  return;
+                }
                 this.setState({ currentGitDiff: { repo: repoPath, file: filePath, commit: commitHash || null }, currentFile: null });
               }}
               onOpenFile={(repoPath, filePath) => {
@@ -4570,6 +4794,8 @@ class ChatView extends React.Component {
               isStreaming={uiStreaming}
               pendingImages={this.state.pendingImages}
               onRemovePendingImage={this._removePendingImage}
+              pendingQuotes={this.state.pendingQuotes}
+              onRemovePendingQuote={this._removePendingQuote}
               uploadingItems={this.state.uploadingItems}
               sendDeferred={this.state.sendDeferred}
               onUploadStart={this.handleUploadStart}
@@ -4693,6 +4919,7 @@ class ChatView extends React.Component {
       <TeamModal session={this.state.teamModalSession} requests={this.props.requests} mainAgentSessions={this.props.mainAgentSessions} collapseToolResults={this.props.collapseToolResults} expandThinking={this.props.expandThinking} showFullToolContent={this.props.showFullToolContent} userProfile={this.props.userProfile} onViewRequest={this.props.onViewRequest} isHistoryLog={this._getIsHistoryLog()} lang={this.props.lang} onClose={() => this.setState({ teamModalSession: null })} />
       <WorkflowRunsModal run={this.state.workflowModalRun} onClose={() => this.setState({ workflowModalRun: null })} />
       <PresetModal open={this.state.mobilePresetModalVisible} onClose={() => this.setState({ mobilePresetModalVisible: false })} items={this.state.presetItems} onItemsChange={(items) => this.setState({ presetItems: items })} onSavePresets={(payload) => { if (this.props.onUpdatePreferences) this.props.onUpdatePreferences(payload); }} />
+      {this._renderSelectionQuotePopup()}
     </>);
   }
 }

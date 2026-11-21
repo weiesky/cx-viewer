@@ -1,0 +1,92 @@
+[
+  {
+    "engine": "chromium",
+    "version": "159.0.8154.6",
+    "mode": "desktop",
+    "archiveTextImageAndBounds": true,
+    "subtitlePlainTextAndGBK": true,
+    "audioPlaybackAndSeek": true,
+    "audioRanges": [
+      {
+        "status": 206,
+        "range": "bytes=0-"
+      },
+      {
+        "status": 206,
+        "range": "bytes=0-"
+      }
+    ],
+    "scopeAtoB": true,
+    "quoteSentExact": true,
+    "nativeKeyboardCopyEvent": {
+      "plain": "# B6 assistant answer\n\nSelect **bold text** and `inline code`.\n\n| Name | Value |\n| --- | --- |\n| Alpha | Beta |\n\n[Local file](<note.txt>)\n\n```js\nconst selected = 1;\n```",
+      "html": "<h1>B6 assistant answer</h1>\n<p>Select <strong>bold text</strong> and <code>inline code</code>.</p>\n<table>\n<thead>\n<tr>\n<th>Name</th>\n<th>Value</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>Alpha</td>\n<td>Beta</td>\n</tr>\n</tbody></table>\n<p><a href=\"note.txt\" data-md-file=\"note.txt\">Local file</a></p>\n<pre><code class=\"language-js\">const selected = 1;\n</code></pre>\n",
+      "prevented": true
+    },
+    "actualDiffRegion": true,
+    "actualToolKVRegion": true,
+    "questionMouseDragGuardAndKeyboard": true,
+    "portalSelectionExcluded": true,
+    "screenshots": [
+      "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B6-preview-2026-11-21/chromium-archive-text.png",
+      "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B6-preview-2026-11-21/chromium-archive-image.png",
+      "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B6-preview-2026-11-21/chromium-subtitle.png",
+      "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B6-preview-2026-11-21/chromium-audio.png",
+      "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B6-preview-2026-11-21/chromium-quote-chip.png",
+      "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B6-preview-2026-11-21/chromium-quoted-tools.png",
+      "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B6-preview-2026-11-21/chromium-question-quote.png"
+    ],
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "version": "27.2",
+    "mode": "desktop",
+    "archiveTextImageAndBounds": true,
+    "subtitlePlainTextAndGBK": true,
+    "audioPlaybackAndSeek": true,
+    "audioRanges": [
+      {
+        "status": 206,
+        "range": "bytes=0-1"
+      },
+      {
+        "status": 206,
+        "range": "bytes=0-88243"
+      },
+      {
+        "status": 206,
+        "range": "bytes=0-1"
+      },
+      {
+        "status": 206,
+        "range": "bytes=0-8"
+      },
+      {
+        "status": 206,
+        "range": "bytes=0-1445"
+      }
+    ],
+    "scopeAtoB": true,
+    "quoteSentExact": true,
+    "nativeKeyboardCopyEvent": {
+      "plain": "# B6 assistant answer\n\nSelect **bold text** and `inline code`.\n\n| Name | Value |\n| --- | --- |\n| Alpha | Beta |\n\n[Local file](<note.txt>)\n\n```js\nconst selected = 1;\n```",
+      "html": "<h1>B6 assistant answer</h1>\n<p>Select <strong>bold text</strong> and <code>inline code</code>.</p>\n<table>\n<thead>\n<tr>\n<th>Name</th>\n<th>Value</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>Alpha</td>\n<td>Beta</td>\n</tr>\n</tbody></table>\n<p><a href=\"note.txt\" data-md-file=\"note.txt\">Local file</a></p>\n<pre><code class=\"language-js\">const selected = 1;\n</code></pre>\n",
+      "prevented": true
+    },
+    "actualDiffRegion": true,
+    "actualToolKVRegion": true,
+    "questionMouseDragGuardAndKeyboard": true,
+    "portalSelectionExcluded": true,
+    "screenshots": [
+      "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B6-preview-2026-11-21/webkit-archive-text.png",
+      "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B6-preview-2026-11-21/webkit-archive-image.png",
+      "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B6-preview-2026-11-21/webkit-subtitle.png",
+      "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B6-preview-2026-11-21/webkit-audio.png",
+      "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B6-preview-2026-11-21/webkit-quote-chip.png",
+      "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B6-preview-2026-11-21/webkit-quoted-tools.png",
+      "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B6-preview-2026-11-21/webkit-question-quote.png"
+    ],
+    "errors": []
+  }
+]

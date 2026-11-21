@@ -1,0 +1,85 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "checks": [
+    {
+      "path": "apps/web/src/components/viewers/ArchivePreview.module.css",
+      "sha256": "d8d426595ae2928565281a6663b8b8c56d74c00ab44b5fee35f321ce64c66872",
+      "exactBaseline": true
+    },
+    {
+      "path": "apps/web/src/components/viewers/AudioPreview.module.css",
+      "sha256": "1e0e4029bf280862d1b1cf9e8c110c8b1b8b87a2dc453ef43942e2075e03e305",
+      "exactBaseline": true
+    },
+    {
+      "path": "apps/web/src/components/viewers/SubtitlePreview.module.css",
+      "sha256": "441e0d6f16682faa646c262b6566057872a3bf9ed3fb747a15bc57e158b59377",
+      "exactBaseline": true
+    },
+    {
+      "path": "apps/web/src/components/chat/selectionQuote.js",
+      "sha256": "571db31f4ad75d5c9c9e9b8208e588b7750a3d584905c73195f256a61aee7dfd",
+      "exactBaseline": true
+    },
+    {
+      "path": "apps/web/src/utils/markdownCopy.js",
+      "sha256": "584297a196f1077886bd3553193f1f0021b586b7c5ec7838a0505ed156204f9b",
+      "exactBaseline": true
+    },
+    {
+      "path": "apps/web/src/components/chat/ChatView.module.css",
+      "selector": ".selectionQuoteBtn",
+      "sha256": "c61fc67edb40f3902b30210ca5e86bb1b4b51b1db3ac891add2d8c5136145785",
+      "exactBaseline": true
+    },
+    {
+      "path": "apps/web/src/components/chat/ChatView.module.css",
+      "selector": ".selectionQuoteBtn:hover",
+      "sha256": "d74f71eda4729a1f2bc70ab2c3531609f811b9d9264712abf7697135c24fb345",
+      "exactBaseline": true
+    },
+    {
+      "path": "apps/web/src/components/chat/ChatView.module.css",
+      "selector": ".selectionQuoteBtnBelow",
+      "sha256": "1050c070a6bfdccd260c5bbf9279e37ede2c132e6ddc434c44ea95ff864f518e",
+      "exactBaseline": true
+    },
+    {
+      "path": "apps/web/src/components/chat/ChatInputBar.module.css",
+      "selector": ".quotePreviewChip",
+      "sha256": "7e8d7bc5cc6f40a642e3640c76dd923f91006252e566c66353ae4cbcbc2883a5",
+      "exactBaseline": true
+    },
+    {
+      "path": "apps/web/src/components/chat/ChatInputBar.module.css",
+      "selector": ".quotePreviewChip svg",
+      "sha256": "c29c1b7d7abd914fc170e7550ad779ce0353755f6e95d3f87efb2fb2019706a4",
+      "exactBaseline": true
+    },
+    {
+      "path": "apps/web/src/components/chat/ChatInputBar.module.css",
+      "selector": ".quotePreviewName",
+      "sha256": "faa07781bdc2990f9b89551213d9b63a9a0981061894996c05cb83f9348c1f32",
+      "exactBaseline": true
+    },
+    {
+      "path": "apps/web/src/components/chat/ChatInputBar.module.css",
+      "selector": ".quotePreviewBody",
+      "sha256": "f49c70e967ec080fa884c449e6257ccb05a1cf7ec71b452eb60e3e7384f6c80e",
+      "exactBaseline": true
+    },
+    {
+      "path": "apps/web/src/components/chat/ChatInputBar.module.css",
+      "selector": ".quotePreviewTitle",
+      "sha256": "f46a4d38d3d75d5c6d7f97b5dda2e6d64e5a644ed9cd372ea54a8e676f3e7779",
+      "exactBaseline": true
+    },
+    {
+      "path": "apps/web/src/components/chat/ChatInputBar.module.css",
+      "selector": ".quotePreviewText",
+      "sha256": "e12a63c1d98b83347c1c2dd145559ecd350b03871b80e3734798546c579fde40",
+      "exactBaseline": true
+    }
+  ],
+  "note": "Exact source/selector checks supplement actual screenshots; no claim of whole ChatView equivalence."
+}
