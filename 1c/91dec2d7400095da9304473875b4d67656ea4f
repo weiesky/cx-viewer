@@ -1,0 +1,57 @@
+cc-viewer-alignment/probes/b6-preview-fixture.mjs
+  s_76602f25d7665d::t_20f360b76c1ac7 40
+  s_76602f25d7665d::t_815c6eea07b947 1-39,41-54
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_76602f25d7665d::t_08b2634ea1e590 3,152-153,183-184,212-213,740-741,782-783,1233
+  s_76602f25d7665d::t_dde396094518ba 1234
+cc-viewer-alignment/probes/b6-responsive-gui.mjs
+  s_76602f25d7665d::t_38b746d78e035e 8
+  s_76602f25d7665d::t_4b3f8c4881f398 1-7,9-26
+cc-viewer-alignment/README.md
+  s_76602f25d7665d::t_08b2634ea1e590 5
+cc-viewer-alignment/B6-source-style-2026-11-21.json
+  s_76602f25d7665d::t_63cfe98a2c8b32 1-85
+cc-viewer-alignment/evidence/B6-preview-2026-11-21/result.json
+  s_76602f25d7665d::t_5889ff4f21a069 1-92
+cc-viewer-alignment/probes/b6-warm-conversation-gui.mjs
+  s_76602f25d7665d::t_88356e74fe7ae4 1-12,14-43
+  s_76602f25d7665d::t_38b746d78e035e 13
+cc-viewer-alignment/evidence/B6-preview-2026-11-21/README.md
+  s_76602f25d7665d::t_08b2634ea1e590 1-7
+cc-viewer-alignment/B6-implementation.md
+  s_76602f25d7665d::t_08b2634ea1e590 109-119
+cc-viewer-alignment/probes/b6-preview-gui.mjs
+  s_76602f25d7665d::t_21d7a02a583c81 51
+  s_76602f25d7665d::t_84fcb77df0a601 1-12,15-21,23-36,38-40,42-47,52-75,93-95,97-98
+  s_76602f25d7665d::t_b1e0ba8ecfb038 22,76-79,96
+  s_76602f25d7665d::t_38b746d78e035e 14
+  s_76602f25d7665d::t_3c3d6c39734b49 37,41
+  s_76602f25d7665d::t_91e26f4bd9aa27 13,48-50,80-92
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_76602f25d7665d::t_08b2634ea1e590 3
+cc-viewer-alignment/B6-gui-2026-11-21.json
+  s_76602f25d7665d::t_282584d9d39b13 1-79,81-83,85-87,89-91,93-95,97-99,101-103,105-107,109-127
+  s_76602f25d7665d::t_f7445ace2d9760 80,84,88,92,96,100,104,108
+AGENTS.md
+  s_76602f25d7665d::t_08b2634ea1e590 26
+cc-viewer-alignment/evidence/B6-preview-2026-11-21/responsive-result.json
+  s_76602f25d7665d::t_3b783f85ec1e42 1-102
+cc-viewer-alignment/evidence/B6-preview-2026-11-21/warm-result.json
+  s_76602f25d7665d::t_fae28775b5884e 1-58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1c91dec2d7400095da9304473875b4d67656ea4f",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
