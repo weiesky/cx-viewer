@@ -1,6 +1,8 @@
 # cc-viewer 逐提交对齐台账
 
-2026-11-21 B6已完成（第7/12工作包），固定上游74cd752d99caf122e750216d2af3bb9f467c4de1；B5已由PR #5合并main（1c7eac5）。E1–E13逐笔迁入归档/音频/字幕/图像分发、助手/diff/KV/Ask选区与Markdown复制；E12修复共享CAS body覆盖旧回合，E14收口。最终1986/1986、0skip/build/pack720；真实新安装525/525、必需源码/许可及211Web精确字节、B1.2/隔离CLI通过。实际Chromium159/WebKit27.2桌面及phone/pad仿真6场26图逐张核看，连续不刷新10轮问答通过。46候选混合子项独立保留；stdin超时用例一次偶发（定向/最终全测通过）及既有IM偶发根因未定。真实LAN/TLS/外部模型/物理设备音频/跨应用剪贴板/其他OS/最低Node未验；原iPad横滚与Markdown冷开行号缺陷、native不支持边界保持。默认exec/显式AppServer渐进与353K不变。成果仅本地codex/b6-preview-content，未推送/切换活动安装；下一工作包B7，本轮未启动。见[B6完成矩阵](./B6-completion-matrix.md)。
+2026-11-21 B6已完成（第7/12工作包），固定上游74cd752d99caf122e750216d2af3bb9f467c4de1；原16笔已备份并整合为e885d8b，经[PR #6](https://github.com/weiesky/cx-viewer/pull/6)合并main（9f3e2ce）。E1–E13迁入归档/音频/字幕/图像分发、助手/diff/KV/Ask选区与Markdown复制，E12修复共享CAS body覆盖旧回合，E14收口。原最终1986/1986、0skip及新安装525/525/B1.2/CLI通过；交付重新build/pack720、artifact-only安装源码/许可及211Web字节通过，26图hash复核，原双引擎6场/10轮GUI保持。实际PR无CI检查，不冒称CI通过。普通CLI/PTY增加工作区入口仍待纠偏；活动7008旧后端未重启，npm链接正确。46候选混合子项、stdin/IM偶发、物理设备/音频/系统剪贴板/真实LAN-TLS/外部模型/其他OS/最低Node未验及原缺陷保持。默认exec/显式AppServer渐进与353K不变。本会话不启动B7，下一会话先纠偏普通模式入口，再按固定源码推进B7，见[B7交接](./B7-handoff.md)。
+
+2026-11-21 B6交付：原16笔完整备份并整为e885d8b，PR #6已合并main（9f3e2ce），精确head guard及合并tree已核；实际无PR CI检查。交付复建/pack720/新artifact-only字节通过，生产实现不变；原上游映射继续有效。普通PTY入口待纠偏及旧后端未重启保持，B7下一会话执行，见[整合记录](./B6-local-commit-consolidation-2026-11-21.md)及[B7交接](./B7-handoff.md)。
 
 2026-11-21 B6交接补记（不新增上游迁移）：用户核对npm入口，实测bin/cxv已指当前packages/app/cli.js，7008旧后端对archive/audio返回200首页HTML；首页本身已是最新构建。未重启当前代理父进程，活动实例生效验收待正常重启后执行，见[只读证据与步骤](./B6-runtime-entry-2026-11-21.md)。B6原实现及验收不变。
 

@@ -2,11 +2,11 @@
 
 **迁移约束：优先参考 PR 的实际代码，禁止根据文档自由改版。** B2已按上游组件/CSS/交互纠偏并经用户验收收口；B4及后续工作包继续遵守该规则，运行性测试不能单独代表视觉对齐。必读[源码优先迁移规范与已确认偏差](./migration-code-first.md)。
 
-2026-11-21 B6已完成（第7/12工作包），固定上游74cd752d99caf122e750216d2af3bb9f467c4de1；B5已由PR #5合并main（1c7eac5）。E1–E13逐笔迁入归档/音频/字幕/图像分发、助手/diff/KV/Ask选区与Markdown复制；E12修复共享CAS body覆盖旧回合，E14收口。最终1986/1986、0skip/build/pack720；真实新安装525/525、必需源码/许可及211Web精确字节、B1.2/隔离CLI通过。实际Chromium159/WebKit27.2桌面及phone/pad仿真6场26图逐张核看，连续不刷新10轮问答通过。46候选混合子项独立保留；stdin超时用例一次偶发（定向/最终全测通过）及既有IM偶发根因未定。真实LAN/TLS/外部模型/物理设备音频/跨应用剪贴板/其他OS/最低Node未验；原iPad横滚与Markdown冷开行号缺陷、native不支持边界保持。默认exec/显式AppServer渐进与353K不变。成果仅本地codex/b6-preview-content，未推送/切换活动安装；下一工作包B7，本轮未启动。见[B6完成矩阵](./B6-completion-matrix.md)。
+2026-11-21 B6已完成（第7/12工作包），固定上游74cd752d99caf122e750216d2af3bb9f467c4de1；原16笔已备份并整合为e885d8b，经[PR #6](https://github.com/weiesky/cx-viewer/pull/6)合并main（9f3e2ce）。E1–E13迁入归档/音频/字幕/图像分发、助手/diff/KV/Ask选区与Markdown复制，E12修复共享CAS body覆盖旧回合，E14收口。原最终1986/1986、0skip及新安装525/525/B1.2/CLI通过；交付重新build/pack720、artifact-only安装源码/许可及211Web字节通过，26图hash复核，原双引擎6场/10轮GUI保持。实际PR无CI检查，不冒称CI通过。普通CLI/PTY增加工作区入口仍待纠偏；活动7008旧后端未重启，npm链接正确。46候选混合子项、stdin/IM偶发、物理设备/音频/系统剪贴板/真实LAN-TLS/外部模型/其他OS/最低Node未验及原缺陷保持。默认exec/显式AppServer渐进与353K不变。本会话不启动B7，下一会话先纠偏普通模式入口，再按固定源码推进B7，见[B7交接](./B7-handoff.md)。
 
 2026-11-21 用户截图发现普通CLI/PTY增加工作区入口缺失：本地sdkMode门槛隐藏“＋”，与旧进程问题独立；B2普通模式Header恢复待纠偏，不能沿用SDK GUI通过结论。见[实际调用链与修复边界](./B2-pty-workspace-entry-gap-2026-11-21.md)。
 
-2026-11-21 活动入口核对：cxv已指向本仓库packages/app/cli.js；7008旧进程未重启，前端新而B6后端未加载，两个新API仍回首页HTML。当前会话由该进程托管，本次未停止它；见[核对回执和重启步骤](./B6-runtime-entry-2026-11-21.md)。B7及B6 PR交付未启动，继续范围待本次选项确认。
+2026-11-21 活动入口核对：cxv已指向本仓库packages/app/cli.js；7008旧进程未重启，前端新而B6后端未加载，两个新API仍回首页HTML。当前会话由该进程托管，本次未停止它；见[核对回执和重启步骤](./B6-runtime-entry-2026-11-21.md)。B6已通过PR #6交付；用户已明确B7留待下一会话，本会话不重启活动进程。
 
 2026-11-18 GitHub 同步：已按用户请求将 main 6045b53 与 codex/pnpm-workspace 2c0edc8 原子推送到 origin 同名分支，远端完整 hash 已读回核对，上游跟踪已设置。未执行强推、分支合并或活动安装切换；未提交的 AGENTS.md 与 cc-viewer-alignment 文档仍保留本地。
 
@@ -20,13 +20,15 @@
 | --- | --- |
 | B0 | 已完结：337 条台账、归属与迁移准入复核；产品验收由各实施包负责。 |
 | B1 | 本地实现与隔离安装验收完成（b549125）；保留现场并拒绝覆盖策略已确认，真实用户/目标环境验收仍待。 |
-| B2 | 已完成：2026-11-19用户验收收口 |
+| B2 | 已用户验收收口；普通CLI/PTY的工作区“＋”入口重新待纠偏，见[缺口记录](./B2-pty-workspace-entry-gap-2026-11-21.md)。 |
 | B3 | 已完成并推送main：[7c3d849](https://github.com/weiesky/cx-viewer/commit/7c3d849b9e7acda1c974077843406c23627dbdcb)；1410项通过，见[B3完成矩阵](./B3-completion-matrix.md) |
 | B4 | 已完成并通过[PR #4](https://github.com/weiesky/cx-viewer/pull/4)合并main：288faea；见[B4完成矩阵](./B4-completion-matrix.md)。 |
 | B5 | 已完成（第6/12工作包），按最新授权1commit/1PR自行合并，原46笔备份/映射保留；见[B5完成矩阵](./B5-completion-matrix.md)及[最终回执](./B5-final-2026-11-21.json)。 |
-| B6 | 已完成（第7/12工作包），1986完整/525安装/6场26图与10轮问答；见[B6完成矩阵](./B6-completion-matrix.md)，本地分支未推送。 |
+| B6 | 已完成（第7/12工作包），1986完整/525安装/6场26图与10轮问答；见[B6完成矩阵](./B6-completion-matrix.md)，已由[PR #6](https://github.com/weiesky/cx-viewer/pull/6)合并main（9f3e2ce）。 |
 | B7–B10 | 尚未逐包完成，下一B7；按台账独立核验 |
 | B11 / 工程前置 | A1 6287d2a 已主线；A2 3b15a6d 已提交工作树并通过本地验证，当前全局实例未切换。 |
+
+下一会话直接从[B7交接](./B7-handoff.md)进入；本会话不启动B7。
 
 pnpm/workspace 已按用户选择前置实施，先稳定结构，再继续功能对齐；见 [提交、边界与验收](./A1-A2-engineering.md)。
 

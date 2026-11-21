@@ -35,4 +35,4 @@
 
 后续源码变化需要先`pnpm run build`更新前端/组装产物；涉及后端时还需重启加载源码。此流程不要求重新npm link，不修改真实用户配置。
 
-B6收口和未验环境见[完成矩阵](./B6-completion-matrix.md)。下一候选是B7（输入、导航、Skills及普通主PTY/窄split GUI）；本次“继续”范围已通过选项工具澄清，确认前不启动新的工作包或B6 PR交付。
+B6收口和未验环境见[完成矩阵](./B6-completion-matrix.md)。下一候选是B7（输入、导航、Skills及普通主PTY/窄split GUI）；用户随后明确完成B6整合/PR合并并将B7留待下一会话；B6现已通过PR #6合并，本轮仍未重启活动后端，下一会话见[B7交接](./B7-handoff.md)。

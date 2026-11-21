@@ -1,0 +1,30 @@
+{
+  "implementationPullRequest": {
+    "baseRefName": "main",
+    "headRefOid": "e885d8bf5376767fc6f211a9e0a7209de3983656",
+    "mergeCommit": {
+      "oid": "9f3e2ce9b891f4d2e31f9a4b8fb4607b5f4bf996"
+    },
+    "mergedAt": "2026-11-21T11:00:48Z",
+    "number": 6,
+    "state": "MERGED",
+    "statusCheckRollup": [],
+    "url": "https://github.com/weiesky/cx-viewer/pull/6"
+  },
+  "headGuard": "e885d8bf5376767fc6f211a9e0a7209de3983656",
+  "mergedTreeMatchesPrHead": true,
+  "originalCommits": 16,
+  "originalCommitList": "B6-original-commits-2026-11-21.tsv",
+  "checksBeforeMerge": {
+    "checkRuns": 0,
+    "statuses": 0,
+    "statusCheckRollup": [],
+    "combinedState": "pending",
+    "meaning": "No configured PR CI, not a passing CI run."
+  },
+  "postMergeDocumentation": "This receipt and B7 handoff are a documentation-only PR; final docs merge is recorded locally after it occurs.",
+  "b7Started": false,
+  "activeBackendRestarted": false,
+  "npmPublished": false,
+  "ordinaryPtyWorkspacePlus": "pending correction; not fixed by B6 merge or process restart"
+}

@@ -2,6 +2,12 @@
 
 用户明确要求本轮本地提交合并为一个commit，PR到main，由代理自查并合并；合并后更新文档，B7留待下一会话。本记录随实现整合提交保存；PR、精确head、实际checks和合并hash以GitHub及本地consolidation.json为准，不预记未发生的结果。合并后的真实回执与交接文档将再经仅文档PR更新，不直接推main。
 
+## 实际合并回执
+
+[PR #6](https://github.com/weiesky/cx-viewer/pull/6)已于2026-11-21T11:00:48Z合并main；唯一PR head为`e885d8bf5376767fc6f211a9e0a7209de3983656`，合并提交`9f3e2ce9b891f4d2e31f9a4b8fb4607b5f4bf996`。合并前base/head/唯一commit及111个变更路径与本地自查一致，MERGEABLE/CLEAN；check-runs=0、statuses=0、statusCheckRollup=[]，combined status为pending且无producer，不当作CI通过。使用match-head-commit经PR squash合并，未直接推main。fetch后main合并hash读回一致，tree精确等于PR head。
+
+合并后文档回执和[B7下一会话交接](./B7-handoff.md)通过单独仅文档PR同步；其实际head/合并结果另存同备份目录的consolidation.json，不自引用尚未发生的文档合并hash。
+
 ## 原始历史与恢复
 
 - 基点`1c7eac578a7e8a66a50e1194ef37aca2f9b27580`，fetch确认远端main无新增提交且为原分支祖先。
