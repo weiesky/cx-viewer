@@ -1,0 +1,66 @@
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4122b07c8b4292::t_f2fb353942b30b 15960-15964
+cc-viewer-alignment/probes/b5-search-gui.mjs
+  s_4122b07c8b4292::t_32c77088a33666 68-75,80,109-113
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_4122b07c8b4292::t_f2fb353942b30b 3
+cc-viewer-alignment/B5-candidate-matrix.md
+  s_4122b07c8b4292::t_f2fb353942b30b 13-15,39
+cc-viewer-alignment/README.md
+  s_4122b07c8b4292::t_f2fb353942b30b 5
+AGENTS.md
+  s_4122b07c8b4292::t_f2fb353942b30b 26
+cc-viewer-alignment/B5-implementation.md
+  s_4122b07c8b4292::t_f2fb353942b30b 139-151
+cc-viewer-alignment/B5-project-browser-2026-11-21.json
+  s_4122b07c8b4292::t_f2fb353942b30b 1-173
+cc-viewer-alignment/probes/b5-file-browser-gui.mjs
+  s_4122b07c8b4292::t_32c77088a33666 1-18,20,22-23,25-27,32-33,39-91,93-96
+  s_4122b07c8b4292::t_ee0b1b2bbf4047 19,21
+  s_4122b07c8b4292::t_35199b808f9ea8 24,28-31
+  s_4122b07c8b4292::t_c0ae6311e36475 34-38,92
+apps/web/src/AppBase.jsx
+  s_4122b07c8b4292::t_ab9a33d725b863 8,2949-2952,2972
+apps/web/src/components/common/OpenFolderIcon.jsx
+  s_4122b07c8b4292::t_424e6cf14a426b 6-7,9,14
+apps/web/src/components/files/FileBrowserModal.jsx
+  s_4122b07c8b4292::t_8a15f45e8960c3 1-980
+apps/web/src/components/files/FileBrowserModal.module.css
+  s_4122b07c8b4292::t_301c0b78f8d600 1-310
+apps/web/src/components/files/FileExplorer.jsx
+  s_4122b07c8b4292::t_c90fb56bfc7611 14-15,326-327,429,452,541,638-640
+apps/web/src/components/files/fileDropTarget.js
+  s_4122b07c8b4292::t_e0c4ea91beec9f 1-42
+apps/web/src/hooks/useFileDropTarget.js
+  s_4122b07c8b4292::t_6969720f52aba8 1-77
+apps/web/src/i18n.js
+  s_4122b07c8b4292::t_c61945f5af093e 4-150,2382-2399
+apps/web/src/utils/apiUrl.js
+  s_4122b07c8b4292::t_3050a276d52084 38-43
+apps/web/src/utils/dragGuards.js
+  s_4122b07c8b4292::t_2de360f48354f0 1-15
+apps/web/src/utils/fileOpen.js
+  s_4122b07c8b4292::t_194f630b5f8a92 8,27-30,32
+apps/web/src/utils/previewKind.js
+  s_4122b07c8b4292::t_488444a5001156 1-30
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_4122b07c8b4292::t_8c2d43f9ff5f97 36-37,1396-1422
+cc-viewer-alignment/probes/b3-installed-check.py
+  s_4122b07c8b4292::t_ead2270289308f 40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d23fac0b490d03d12ee562605654d6cda701264e",
+  "prompts": {},
+  "sessions": {
+    "s_4122b07c8b4292": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fbcc-5a47-7112-a38d-fb834f2c5f53",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
