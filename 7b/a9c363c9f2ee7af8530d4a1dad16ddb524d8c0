@@ -1,0 +1,33 @@
+packages/app/tests/pty-workspace-routing.test.js
+  s_76602f25d7665d::t_2efe9876b1451e 129-161,195
+  s_76602f25d7665d::t_0dd6db4cd22097 12,162-194
+packages/app/server.js
+  s_76602f25d7665d::t_91b6b4b324acf6 322-342,344-356,359,361,379-382,389,404,414,429,436-437,442,457-459,1365,2697,2702,3685-3686,5907-5909,5911,5928,5937-5938,5943,5968,5979,6042-6043,6152-6160,6301,6303-6310,6314-6315,6318-6324,6326,6329-6331,6336,6343,6352-6353,6357
+  s_76602f25d7665d::t_2efe9876b1451e 6047,6354
+AGENTS.md
+  s_76602f25d7665d::t_65e6e0dc189bff 26
+cc-viewer-alignment/B7-implementation.md
+  s_76602f25d7665d::t_64bd290310eed5 81-89
+cc-viewer-alignment/README.md
+  s_76602f25d7665d::t_cd44bb5ee51420 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_76602f25d7665d::t_0491d707c5230d 3,5812-5813
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_76602f25d7665d::t_7b06738aff8155 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "7ba9c363c9f2ee7af8530d4a1dad16ddb524d8c0",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
