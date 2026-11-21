@@ -1,0 +1,42 @@
+cc-viewer-alignment/README.md
+  s_4122b07c8b4292::t_20edb6f504ef2e 5
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_4122b07c8b4292::t_20edb6f504ef2e 3
+  s_4122b07c8b4292::t_6a095106bf764c 111
+packages/app/tests/target-files.test.js
+  s_4122b07c8b4292::t_5ab03fb9a61348 1-3,5-34,36-103
+  s_4122b07c8b4292::t_4c78d18a2781c9 4,35
+packages/app/lib/target-files.js
+  s_4122b07c8b4292::t_05b22bc5d1b9f4 10,52-90
+  s_4122b07c8b4292::t_20edb6f504ef2e 1-6,8-9,11-51,91
+  s_4122b07c8b4292::t_0b873de465f9a0 7
+packages/app/server.js
+  s_4122b07c8b4292::t_20edb6f504ef2e 33,95,1510-1514,1522,3704-3710
+  s_4122b07c8b4292::t_cac5e1d8d6ac79 3711-3713
+cc-viewer-alignment/B5-target-permission-boundary.md
+  s_4122b07c8b4292::t_20edb6f504ef2e 1,3,11,24
+AGENTS.md
+  s_4122b07c8b4292::t_20edb6f504ef2e 20,26
+cc-viewer-alignment/B5-implementation.md
+  s_4122b07c8b4292::t_8abe51fd34f52a 322-327
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4122b07c8b4292::t_cf295fe11b1640 16069-16072
+cc-viewer-alignment/probes/b3-installed-check.py
+  s_4122b07c8b4292::t_c7060e6bcafb8a 29,40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d6681ef080002a6dad6ae2d4fcd75ac401572a72",
+  "prompts": {},
+  "sessions": {
+    "s_4122b07c8b4292": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fbcc-5a47-7112-a38d-fb834f2c5f53",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
