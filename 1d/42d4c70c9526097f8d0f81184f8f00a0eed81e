@@ -1,0 +1,32 @@
+tests/appserver-bridge.test.js
+  s_76602f25d7665d::t_af9ff4f44b5257 785
+  s_76602f25d7665d::t_3ff1192fda7bc1 21-22,782-784,786
+AGENTS.md
+  s_76602f25d7665d::t_f1904407e432e4 26
+cc-viewer-alignment/B7-E31a-native-transcript.json
+  s_76602f25d7665d::t_09f1feecbd92b9 1-34
+cc-viewer-alignment/README.md
+  s_76602f25d7665d::t_fce0c4ab6efe0e 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_76602f25d7665d::t_f0e9d1a383261e 3,5864-5865
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_76602f25d7665d::t_0b39e70a2f29a7 3
+packages/app/lib/appserver-bridge.js
+  s_76602f25d7665d::t_2c3b1c6801482d 1022,1141-1142
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1d42d4c70c9526097f8d0f81184f8f00a0eed81e",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
