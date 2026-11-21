@@ -1,0 +1,41 @@
+cc-viewer-alignment/README.md
+  s_76602f25d7665d::t_9c6a7e6e38a005 5
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_76602f25d7665d::t_9c6a7e6e38a005 3
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_76602f25d7665d::t_9c6a7e6e38a005 3,230
+  s_76602f25d7665d::t_ad027e3841a7da 231
+apps/web/tests/terminal-ws-liveness.test.js
+  s_76602f25d7665d::t_c7c66016493fb1 179-180,188,190,205,248,260,269-270,274,280,284,296,315,318
+  s_76602f25d7665d::t_957705a46fa79a 722-744
+cc-viewer-alignment/B7-implementation.md
+  s_76602f25d7665d::t_9c6a7e6e38a005 331-341
+AGENTS.md
+  s_76602f25d7665d::t_9c6a7e6e38a005 26
+cc-viewer-alignment/B7-native-singleline/before/result.json
+  s_76602f25d7665d::t_9c6a7e6e38a005 1-56
+cc-viewer-alignment/B7-native-singleline/result.json
+  s_76602f25d7665d::t_9c6a7e6e38a005 1-608
+apps/web/src/components/chat/ChatView.jsx
+  s_76602f25d7665d::t_189ed916213ccd 3689-3692
+cc-viewer-alignment/probes/b7-native-singleline-gui.mjs
+  s_76602f25d7665d::t_d790834d5436bb 1-41
+cc-viewer-alignment/probes/b7-pty-queue-rejection-gui.mjs
+  s_76602f25d7665d::t_aa0a7bc92c8c06 12-13,25,30,40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "eef0c498d1841e5c95956e292ba4750b9096b822",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
