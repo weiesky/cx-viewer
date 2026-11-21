@@ -1,0 +1,56 @@
+packages/app/server.js
+  s_76602f25d7665d::t_c8aa0e4afc605a 5833-5834,6536-6540
+  s_76602f25d7665d::t_0bb192b841b387 6541-6542
+cc-viewer-alignment/probes/b7-pty-task-fixture.mjs
+  s_76602f25d7665d::t_bf2bba54a5b55c 1-50
+apps/web/src/components/chat/ChatView.jsx
+  s_76602f25d7665d::t_c8aa0e4afc605a 5152
+packages/app/lib/pty-workspace-runtime.js
+  s_76602f25d7665d::t_c8aa0e4afc605a 75,98
+cc-viewer-alignment/B7-E41-task-hud-source.json
+  s_76602f25d7665d::t_0edb0a36370e96 1-32
+packages/app/cli.js
+  s_76602f25d7665d::t_c8aa0e4afc605a 456,528,544
+packages/app/lib/appserver-bridge.js
+  s_76602f25d7665d::t_c8aa0e4afc605a 68-77,403,1983,2029-2033,2184-2192,2438,2442,2544,2553,2588,2653,2777,2784,2825,2846
+tests/appserver-bridge.test.js
+  s_76602f25d7665d::t_2a3c86e4337a3c 2313-2341
+AGENTS.md
+  s_76602f25d7665d::t_c5c83962ae8a9b 26
+apps/web/tests/terminal-ws-liveness.test.js
+  s_76602f25d7665d::t_e90c5024fbc557 401-402
+cc-viewer-alignment/B7-candidate-index-2026-11-21.json
+  s_76602f25d7665d::t_198589ae4a926b 62-70,259-267
+cc-viewer-alignment/B7-implementation.md
+  s_76602f25d7665d::t_006f4f2459c69d 398-409
+cc-viewer-alignment/B7-pty-task-hud/result.json
+  s_76602f25d7665d::t_6dde4e705e0ca8 1-113
+cc-viewer-alignment/README.md
+  s_76602f25d7665d::t_c010393bd5a3ee 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_76602f25d7665d::t_26ef063c7e62a4 3,6941-6942,7540-7541
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_76602f25d7665d::t_fcf1214084c6cd 3
+cc-viewer-alignment/probes/b7-pty-task-hud-gui.mjs
+  s_76602f25d7665d::t_f488f921c08eae 1-42
+packages/app/tests/pty-workspace-routing.test.js
+  s_76602f25d7665d::t_e21c5ffe82a272 217-238
+packages/app/tests/pty-workspace-runtime.test.js
+  s_76602f25d7665d::t_05bc95d0cf1c07 23,56,58,72,76-80,94
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "e00d2b370bedf0974b020c4f103e8dce59e94e33",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
