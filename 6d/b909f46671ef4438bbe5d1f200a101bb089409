@@ -1,0 +1,41 @@
+cc-viewer-alignment/probes/b5-search-gui.mjs
+  s_4122b07c8b4292::t_e8fbadc1dd7584 89-92
+cc-viewer-alignment/probes/b5-file-import-gui.mjs
+  s_4122b07c8b4292::t_e8fbadc1dd7584 1-33
+AGENTS.md
+  s_4122b07c8b4292::t_a0cd570d2210c1 26
+apps/web/src/components/files/FileExplorer.jsx
+  s_4122b07c8b4292::t_5f998c86aa0489 11,417-420,474,506,609
+apps/web/src/components/files/importFiles.js
+  s_4122b07c8b4292::t_ee13bf4a77c562 1-186
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_4122b07c8b4292::t_cfde755a9963ac 36,289,1322-1377
+cc-viewer-alignment/B5-candidate-matrix.md
+  s_4122b07c8b4292::t_7f6f17f21dee6d 14
+cc-viewer-alignment/B5-implementation.md
+  s_4122b07c8b4292::t_4147c10df75555 106-116
+cc-viewer-alignment/B5-shared-import-2026-11-21.json
+  s_4122b07c8b4292::t_185fffe53369ae 1-74
+cc-viewer-alignment/README.md
+  s_4122b07c8b4292::t_5b1abb651e0e8e 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4122b07c8b4292::t_e69e9b9587da63 15945-15949
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_4122b07c8b4292::t_e90f65ae0a1834 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "6db909f46671ef4438bbe5d1f200a101bb089409",
+  "prompts": {},
+  "sessions": {
+    "s_4122b07c8b4292": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fbcc-5a47-7112-a38d-fb834f2c5f53",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
