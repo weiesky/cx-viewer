@@ -1,0 +1,37 @@
+cc-viewer-alignment/B7-candidate-index-2026-11-21.json
+  s_76602f25d7665d::t_af48181afdb941 546-554
+cc-viewer-alignment/B7-E32-split-source.json
+  s_76602f25d7665d::t_af48181afdb941 1-21
+AGENTS.md
+  s_76602f25d7665d::t_e7175d33991b44 26
+apps/web/src/components/chat/ChatView.module.css
+  s_76602f25d7665d::t_19780e88bc254e 43-48,53-55,59
+cc-viewer-alignment/B7-implementation.md
+  s_76602f25d7665d::t_4ab7bf4ebc3637 301-309
+cc-viewer-alignment/B7-narrow-split/before/result.json
+  s_76602f25d7665d::t_e291205848e9b8 1-108
+cc-viewer-alignment/README.md
+  s_76602f25d7665d::t_2e345f0159c84c 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_76602f25d7665d::t_a5924b2be4a796 3,1554-1555
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_76602f25d7665d::t_47e9efcae6b8e9 3,37,48,137,141,196
+cc-viewer-alignment/probes/b7-narrow-split-gui.mjs
+  s_76602f25d7665d::t_d62c29c3df2e7b 1-33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d9a59056d35672bd818221a1c9d35693ef8bda76",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
