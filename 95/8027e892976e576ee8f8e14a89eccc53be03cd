@@ -1,0 +1,36 @@
+packages/app/tests/file-download.test.js
+  s_4122b07c8b4292::t_f34c442b05f487 1-108
+packages/app/server.js
+  s_4122b07c8b4292::t_8d4bd649f9b2e3 3-4,11,3693-3723
+  s_4122b07c8b4292::t_f2f9f0b857f1a3 3724-3727
+AGENTS.md
+  s_4122b07c8b4292::t_adf316722f0dde 26
+cc-viewer-alignment/B5-candidate-matrix.md
+  s_4122b07c8b4292::t_862a2bb01e9a08 11
+cc-viewer-alignment/B5-file-download-2026-11-21.json
+  s_4122b07c8b4292::t_2a5ee0b78b86bf 1-33
+cc-viewer-alignment/B5-implementation.md
+  s_4122b07c8b4292::t_0c0d1059c6b39e 51-61
+cc-viewer-alignment/README.md
+  s_4122b07c8b4292::t_75c40ec661ec7f 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4122b07c8b4292::t_dc8f0dd544c647 15920-15924
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_4122b07c8b4292::t_aac22aba0fb49f 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "958027e892976e576ee8f8e14a89eccc53be03cd",
+  "prompts": {},
+  "sessions": {
+    "s_4122b07c8b4292": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fbcc-5a47-7112-a38d-fb834f2c5f53",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
