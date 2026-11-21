@@ -1,0 +1,48 @@
+cc-viewer-alignment/probes/b5-git-reference-gui.mjs
+  s_4122b07c8b4292::t_c13352678f3e9b 34,37
+  s_4122b07c8b4292::t_e3f67163d4b8f4 1-33,35-36,38-55
+cc-viewer-alignment/probes/b5-search-gui.mjs
+  s_4122b07c8b4292::t_e3f67163d4b8f4 76,89-98,151-153,157
+AGENTS.md
+  s_4122b07c8b4292::t_857760dab8f2cd 26
+apps/web/src/components/chat/ChatView.jsx
+  s_4122b07c8b4292::t_7f1d245989b0f7 4170-4171
+apps/web/src/components/git/GitChanges.jsx
+  s_4122b07c8b4292::t_cd1dfb21b813b2 7-8,38-60,81-101,106,113-115,127,132,138-140,142,150-153,157,160-162,199,215-221,225,229-231,243-244,257-258,269,448-449,496-497
+apps/web/src/components/git/GitChanges.module.css
+  s_4122b07c8b4292::t_3d59b5fe51d9b0 329-334
+apps/web/src/utils/gitWorkspacePath.js
+  s_4122b07c8b4292::t_c21548c8384e73 1-6
+apps/web/tests/file-drag-drop.test.js
+  s_4122b07c8b4292::t_49fc278e54ad1b 5,80-88
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_4122b07c8b4292::t_c61fdccb6a4457 25,279,1515-1552
+cc-viewer-alignment/B5-candidate-matrix.md
+  s_4122b07c8b4292::t_d0435d12294027 51-52
+cc-viewer-alignment/B5-git-references-2026-11-21.json
+  s_4122b07c8b4292::t_63b602c6009ad7 1-85
+cc-viewer-alignment/B5-implementation.md
+  s_4122b07c8b4292::t_a199261708714a 202-210
+cc-viewer-alignment/README.md
+  s_4122b07c8b4292::t_127ad237e62bcc 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4122b07c8b4292::t_93d62451b137ba 15995-15999
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_4122b07c8b4292::t_a8c74380bcac08 3,111
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "116199863cd303383e3b49ad0d448bfd38538c89",
+  "prompts": {},
+  "sessions": {
+    "s_4122b07c8b4292": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fbcc-5a47-7112-a38d-fb834f2c5f53",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
