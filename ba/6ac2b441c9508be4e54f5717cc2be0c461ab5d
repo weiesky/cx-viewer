@@ -1,0 +1,47 @@
+apps/web/src/components/files/FileContentView.jsx
+  s_76602f25d7665d::t_ef2b7dbf27358d 325-332,1099-1102
+  s_76602f25d7665d::t_40afbd174b3a8a 1103-1105
+packages/app/server/lib/audio-stream.js
+  s_76602f25d7665d::t_ef2b7dbf27358d 1-268
+packages/app/server.js
+  s_76602f25d7665d::t_ef2b7dbf27358d 37,3885-3907
+  s_76602f25d7665d::t_ce0f42ec9d8d6f 3908-3911
+apps/web/src/components/viewers/AudioPreview.jsx
+  s_76602f25d7665d::t_ef2b7dbf27358d 1-50
+apps/web/src/i18n.js
+  s_76602f25d7665d::t_ef2b7dbf27358d 4-10,365
+AGENTS.md
+  s_76602f25d7665d::t_a319dcbebba855 26
+apps/web/src/components/chat/ChatView.jsx
+  s_76602f25d7665d::t_662335cb0febf8 28,4346-4349
+apps/web/src/components/viewers/AudioPreview.module.css
+  s_76602f25d7665d::t_a9e33b09edaed2 1-49
+cc-viewer-alignment/B6-implementation.md
+  s_76602f25d7665d::t_9bc366029a5b3a 17-25
+cc-viewer-alignment/README.md
+  s_76602f25d7665d::t_898403b2906416 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_76602f25d7665d::t_54550ce50fcde7 3,742-743
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_76602f25d7665d::t_e0dc718bf1f013 3
+packages/app/tests/audio-preview-api.test.js
+  s_76602f25d7665d::t_fd611a81b7582e 1-74
+packages/app/tests/audio-stream.test.js
+  s_76602f25d7665d::t_daf67af91ca8f4 1-123
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "ba6ac2b441c9508be4e54f5717cc2be0c461ab5d",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
