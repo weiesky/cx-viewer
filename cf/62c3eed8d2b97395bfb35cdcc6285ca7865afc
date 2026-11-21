@@ -1,0 +1,35 @@
+packages/app/tests/pty-workspace-routing.test.js
+  s_76602f25d7665d::t_99a860078c27bd 15-16,53-56,74,83,117-127
+  s_76602f25d7665d::t_be6e86272de55d 14
+  s_76602f25d7665d::t_d17b49db0190b9 1-13,17-52,57,59-61,63,65-70,75-82,84-86,89-106,108-109,111-116,128
+  s_76602f25d7665d::t_42625630d78795 58,62,64,71-73,87-88,107,110
+packages/app/server.js
+  s_76602f25d7665d::t_d8ff82236344a0 50,210,223-229,632,770-777,779-787,1674,1683-1687,1690,1692-1693,2018-2020,2022,2026,2037,2043,2553,2680,2693-2694,2731,4543,5263-5264,5308-5314,5325-5329,5355,5390-5391,5456-5468,5717-5722,5783-5784,6020-6021,6057,6059,6067,6152-6157
+  s_76602f25d7665d::t_7efe8b13e54ada 778
+AGENTS.md
+  s_76602f25d7665d::t_8f22d45c593d84 26
+cc-viewer-alignment/B7-implementation.md
+  s_76602f25d7665d::t_d7f7e56e191a44 73-80
+cc-viewer-alignment/README.md
+  s_76602f25d7665d::t_fef27848a191ce 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_76602f25d7665d::t_b88eb0ebd5e673 3,5810-5811
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_76602f25d7665d::t_003dbb63b151f9 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "cf62c3eed8d2b97395bfb35cdcc6285ca7865afc",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
