@@ -1,0 +1,40 @@
+packages/app/server.js
+  s_76602f25d7665d::t_9b9aba3d494035 300-309,311-314,324,331,2064,2066,2111,2113,2115,2128-2129,3815-3816
+  s_76602f25d7665d::t_7616033835a3cd 3821,3837,3843,3849,3864,5992,5996-5998,6013
+packages/app/lib/pty-workspace-runtime.js
+  s_76602f25d7665d::t_9b9aba3d494035 3,30,41,65,92-97
+packages/app/tests/pty-workspace-runtime.test.js
+  s_76602f25d7665d::t_9b9aba3d494035 65
+AGENTS.md
+  s_76602f25d7665d::t_bd5a0da2d65fbd 26
+cc-viewer-alignment/B7-implementation.md
+  s_76602f25d7665d::t_b0bd3e484960d7 90-98
+cc-viewer-alignment/README.md
+  s_76602f25d7665d::t_e028a75dfeb4f1 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_76602f25d7665d::t_6b3a3c4e26998e 3,5814-5815
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_76602f25d7665d::t_41ff6230b60645 3
+packages/app/lib/perm-bridge.js
+  s_76602f25d7665d::t_22af386394a0f1 124-129,140
+packages/app/tests/perm-bridge.test.js
+  s_76602f25d7665d::t_c142473e888848 10,15,32,132-138
+packages/app/tests/pty-workspace-routing.test.js
+  s_76602f25d7665d::t_bf7ad4382f4c3c 196-239
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "07d6a0654dc786d14758365f84ad73eca2647abf",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
