@@ -1,0 +1,54 @@
+cc-viewer-alignment/probes/b7-sdk-ui-fixture.mjs
+  s_76602f25d7665d::t_b5fd426dd38839 26-30
+cc-viewer-alignment/B7-E33-sdk-chip-source.json
+  s_76602f25d7665d::t_990f9b84a7fde8 5
+  s_76602f25d7665d::t_4444e68102d001 1-4,6-26
+apps/web/src/components/chat/optimisticQueueMessage.js
+  s_76602f25d7665d::t_49f7cb5bae5b23 2-13,15-57,59
+  s_76602f25d7665d::t_fbfdb2d479aa91 1,14,58
+apps/web/src/components/chat/ChatView.jsx
+  s_76602f25d7665d::t_fbfdb2d479aa91 77,194-195,308,805,807-808,812-817,866,869-870,1337,2919,2930-2934,2936-2937,3139-3140,3546-3579,3581-3594,3596-3608,4656,4671-4689,4747,4767,4821
+  s_76602f25d7665d::t_752b9117e86b08 3580,3595,4670
+AGENTS.md
+  s_76602f25d7665d::t_7b1c761e3f5816 26
+apps/web/tests/optimistic-queue-message.test.js
+  s_76602f25d7665d::t_d492b267c07a2c 1-27
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_76602f25d7665d::t_d67c17f8bfdc49 1893-1937
+cc-viewer-alignment/B7-implementation.md
+  s_76602f25d7665d::t_134b419e51cb52 310-319
+cc-viewer-alignment/B7-sdk-queue-chip/result.json
+  s_f43780ec8105fc::t_393b4855242ff1 1-102
+cc-viewer-alignment/README.md
+  s_76602f25d7665d::t_35efced5edc950 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_76602f25d7665d::t_0a2ec8e8c7974b 3,3353-3354,3623-3624
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_76602f25d7665d::t_9d3597f3f6d1e6 3
+cc-viewer-alignment/probes/b7-sdk-queue-chip-gui.mjs
+  s_76602f25d7665d::t_62a5df4f4a229d 1-39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1ebd97a84eb391bea936ac9b98df026db940c2d9",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    },
+    "s_f43780ec8105fc": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6e7f4856-3a6f-4f51-b389-bab156716df9",
+        "model": "k3"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
