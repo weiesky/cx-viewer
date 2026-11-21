@@ -1,0 +1,47 @@
+AGENTS.md
+  s_76602f25d7665d::t_b5b0607b5a693a 26
+apps/web/src/components/chat/ChatView.jsx
+  s_76602f25d7665d::t_10a82f29086c95 3-4,4382
+apps/web/src/components/chat/selectionQuote.js
+  s_ef9ee44cb3b089::t_653e8000668512 34-49
+apps/web/src/i18n.js
+  s_76602f25d7665d::t_436dda61e66fca 4-24
+apps/web/src/utils/markdownCopy.js
+  s_ef9ee44cb3b089::t_f9dc7de7935463 1-81
+apps/web/tests/markdown-copy.test.js
+  s_ef9ee44cb3b089::t_662bf5735824f0 1-310
+apps/web/vite.config.js
+  s_76602f25d7665d::t_dd705ab4f4b7ef 65
+cc-viewer-alignment/B6-implementation.md
+  s_76602f25d7665d::t_38e03bee0fbc53 58,60-68
+cc-viewer-alignment/README.md
+  s_76602f25d7665d::t_a6dfcaf5dc8000 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_76602f25d7665d::t_1eee0323374f24 3,146-147,171
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_76602f25d7665d::t_8d6464f6e18a92 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "fed31052b356e3899bc394c82dca668199921fbf",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    },
+    "s_ef9ee44cb3b089": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e5bd-4c89-7421-a8a2-63319454b8f5",
+        "model": "gpt-6.1-terra"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
