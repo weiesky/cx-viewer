@@ -1,5 +1,9 @@
 # cc-viewer 逐提交对齐台账
 
+2026-11-21 B6已完成（第7/12工作包），固定上游74cd752d99caf122e750216d2af3bb9f467c4de1；B5已由PR #5合并main（1c7eac5）。E1–E13逐笔迁入归档/音频/字幕/图像分发、助手/diff/KV/Ask选区与Markdown复制；E12修复共享CAS body覆盖旧回合，E14收口。最终1986/1986、0skip/build/pack720；真实新安装525/525、必需源码/许可及211Web精确字节、B1.2/隔离CLI通过。实际Chromium159/WebKit27.2桌面及phone/pad仿真6场26图逐张核看，连续不刷新10轮问答通过。46候选混合子项独立保留；stdin超时用例一次偶发（定向/最终全测通过）及既有IM偶发根因未定。真实LAN/TLS/外部模型/物理设备音频/跨应用剪贴板/其他OS/最低Node未验；原iPad横滚与Markdown冷开行号缺陷、native不支持边界保持。默认exec/显式AppServer渐进与353K不变。成果仅本地codex/b6-preview-content，未推送/切换活动安装；下一工作包B7，本轮未启动。见[B6完成矩阵](./B6-completion-matrix.md)。
+
+2026-11-21 B6交接补记（不新增上游迁移）：用户核对npm入口，实测bin/cxv已指当前packages/app/cli.js，7008旧后端对archive/audio返回200首页HTML；首页本身已是最新构建。未重启当前代理父进程，活动实例生效验收待正常重启后执行，见[只读证据与步骤](./B6-runtime-entry-2026-11-21.md)。B6原实现及验收不变。
+
 2026-11-20 B4实施中（第5/12工作包），固定上游74cd752d99caf122e750216d2af3bb9f467c4de1；B2/B3已收口。默认exec/显式AppServer渐进启用，任务HUD、原审批/问答/子Agent卡片、输入区/角色浮层、整轮loading和错误条已实现。E18 9e7a83a修复最终回复浮层残留，E19 36af884单次续接，E20 124ca25原重试UI/用户所选Codex原文已验。E21 f7b13af/E22 7a50079原慢请求提示、首body/逐请求清理/重连回放已实现，GUI发现的冷hydration清掉回放已纠正。最终1480/1480、0 skip、构建通过；新生产安装199/199、695文件/202 Web精确字节及B1.2/隔离CLI通过；Safari生产30s提示/切出/返回/刷新/首字节收起通过。E23 a51bd1a首轮JSON分段展开Web279/构建已过；E24真实Codex本机38请求补齐child中断/复用/隔离深度2嵌套的生产tracker/transport验证；Context SDK占位说明待用户选择。E25 SDK独立agent_loop边界/SSE/JS插件钩子与公开CLI已接线，26+11定向/构建和真实Codex本机34请求通过；下一笔原语音设置/播放接线，随后核活性/丢result，66候选不整体勾选。B4未收口、未推送。保留IM并发测试一次偶发失败（定向/5轮/最终全测通过，原因未定）；原生profile/image-input/add-dir/review不支持，真实命令/文件/permissions审批、dynamic图像、外部慢网模型、物理/其他平台仍未验。详见[B4实施](./B4-implementation.md)。
 
 2026-11-18 GitHub 同步：已按用户请求将 main 6045b53 与 codex/pnpm-workspace 2c0edc8 原子推送到 origin 同名分支，远端完整 hash 已读回核对，上游跟踪已设置。未执行强推、分支合并或活动安装切换；未提交的 AGENTS.md 与 cc-viewer-alignment 文档仍保留本地。
@@ -141,6 +145,16 @@
   - `history.md` → 无直接路径匹配
   - `pnpm-lock.yaml` → 无直接路径匹配
 
+- 2026-11-21 B6 E7：E6扩展引用ed0a57f（86/86）；E7补齐原Markdown源复制完整链，复用B5已有未绑定handler并引入固定Turndown7.2.5/GFM1.0.2（MIT），123/123源转换/选区/真实类方法与构建通过。 仅所述子项，整包GUI及混合范围未计完成，见[B6实施](./B6-implementation.md#e7)。
+
+- 2026-11-21 B6范围核定：E7原Markdown源复制、GFM/安全链接/选区范围、原依赖版本和chunk；B5已有函数体补链。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
+- 2026-11-21 B6 E11：E10范围审计89b9998；E11新安装720文件/211Web精确字节、514/514运行时、B1.2/隔离CLI通过；补齐打包压缩后被移除的Turndown/GFM MIT署名，最终新安装artifact-only核对LICENSE/产物字节通过。 仅所述子项，整包GUI及混合范围未计完成，见[B6实施](./B6-implementation.md#e11)。
+
+- 2026-11-21 B6 E13：E12 755b2b5；E13最终1986/1986、0skip/build/pack720，新安装525/525与211Web最终字节一致；双引擎桌面及phone/pad仿真6场26图逐张核看，连续不刷新10轮问答通过，正在汇总完成矩阵。 仅所述子项，整包GUI及混合范围未计完成，见[B6实施](./B6-implementation.md#e13)。
+
+- 2026-11-21 B6 E14收口：该提交B6子项按E1–E13核销；最终1986/1986、0skip/build/pack720，新安装525/525与211Web字节通过，双引擎6场26图及10轮问答通过。整条混合范围不扩大完成。完整本地hash见[映射](./B6-local-commit-map-2026-11-21.json)，边界见[B6完成矩阵](./B6-completion-matrix.md)。
+
 <a id="commit-1b3c2268e3"></a>
 ## [1b3c2268e3](https://github.com/weiesky/cc-viewer/commit/1b3c2268e3bd0e73ffef043bf450662d01a28371) — feat(web): 「添加到对话」覆盖代码 diff、工具参数区与 AskUserQuestion 卡片
 - B0 本地关键代码对照：上游扩展选区引用至 diff、工具参数和问答卡片，并避免选字触发选择；本地 ChatMessage.jsx、DiffView.jsx、AskQuestionForm.jsx 已有各自组件，需实现跨区域规则、键盘和多选区测试，归 B6/B7。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-1b3c2268e3)。
@@ -164,6 +178,16 @@
   - `apps/web/test/chat-quote-i18n.test.js` → 无直接路径匹配
   - `history.md` → 无直接路径匹配
 
+- 2026-11-21 B6 E6：E5选区引用f8aa895；E6按原扩展diff代码/工具KV/Ask区域，同助手同区域单range守卫及问答拖选不误触、字形/gutter不可选保持，86/86原helper和真实类方法与构建通过。 仅所述子项，整包GUI及混合范围未计完成，见[B6实施](./B6-implementation.md#e6)。
+
+- 2026-11-21 B6范围核定：E6原Diff/KV/Ask区域、单range守卫、问答拖选不切换，保持portal排除。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
+- 2026-11-21 B6 E12：E11 e5d5180；E12修复无深拷贝投影写坏共享CAS body、两个失败前置回归与21定向通过；新安装525/525、720文件/211Web精确字节、B1.2/隔离CLI通过，最终GUI及全量仍在复验。 仅所述子项，整包GUI及混合范围未计完成，见[B6实施](./B6-implementation.md#e12)。
+
+- 2026-11-21 B6 E13：E12 755b2b5；E13最终1986/1986、0skip/build/pack720，新安装525/525与211Web最终字节一致；双引擎桌面及phone/pad仿真6场26图逐张核看，连续不刷新10轮问答通过，正在汇总完成矩阵。 仅所述子项，整包GUI及混合范围未计完成，见[B6实施](./B6-implementation.md#e13)。
+
+- 2026-11-21 B6 E14收口：该提交B6子项按E1–E13核销；最终1986/1986、0skip/build/pack720，新安装525/525与211Web字节通过，双引擎6场26图及10轮问答通过。整条混合范围不扩大完成。完整本地hash见[映射](./B6-local-commit-map-2026-11-21.json)，边界见[B6完成矩阵](./B6-completion-matrix.md)。
+
 <a id="commit-2e09d30192"></a>
 ## [2e09d30192](https://github.com/weiesky/cc-viewer/commit/2e09d30192774017db5cb06d1783686c63b16031) — feat(web): 选中助手回复文字弹出「添加到对话」，作为引用 chip 随消息发送
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-2e09d30192)
@@ -186,6 +210,14 @@
   - `apps/web/src/i18n.js` → 本地候选：`src/i18n.js`
   - `apps/web/test/chat-quote-i18n.test.js` → 无直接路径匹配
   - `history.md` → 无直接路径匹配
+
+- 2026-11-21 B6 E5：E4图片路由11c80f6；E5原助手选区按钮/chip/预览/删除/引用发送已迁入，64/64真实类方法与原helper测试、既有41组合及构建通过；发送失败保留、slash跳过保留、native resume清除、多行PTY相关确认复用。 仅所述子项，整包GUI及混合范围未计完成，见[B6实施](./B6-implementation.md#e5)。
+
+- 2026-11-21 B6范围核定：E5原浮动选区/quote chip/预览移除/发送，native确认与scope最小适配。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
+- 2026-11-21 B6 E13：E12 755b2b5；E13最终1986/1986、0skip/build/pack720，新安装525/525与211Web最终字节一致；双引擎桌面及phone/pad仿真6场26图逐张核看，连续不刷新10轮问答通过，正在汇总完成矩阵。 仅所述子项，整包GUI及混合范围未计完成，见[B6实施](./B6-implementation.md#e13)。
+
+- 2026-11-21 B6 E14收口：该提交B6子项按E1–E13核销；最终1986/1986、0skip/build/pack720，新安装525/525与211Web字节通过，双引擎6场26图及10轮问答通过。整条混合范围不扩大完成。完整本地hash见[映射](./B6-local-commit-map-2026-11-21.json)，边界见[B6完成矩阵](./B6-completion-matrix.md)。
 
 <a id="commit-efe935cd43"></a>
 ## [efe935cd43](https://github.com/weiesky/cc-viewer/commit/efe935cd43146052eada870a78bc8fb774e19cdd) — chore(release): 1.9.28
@@ -298,6 +330,8 @@
   - `apps/web/src/components/files/FileExplorer.module.css` → 本地候选：`src/components/files/FileExplorer.module.css`
   - `apps/web/src/components/git/GitChanges.jsx` → 本地候选：`src/components/git/GitChanges.jsx`
   - `apps/web/src/components/git/GitChanges.module.css` → 本地候选：`src/components/git/GitChanges.module.css`
+
+- 2026-11-21 B6范围核定：复用B5文件/搜索/菜单/路径/引用已验子项，B6新增预览统一dispatcher和实例链保持；混合其余包仍独立。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
 <a id="commit-add350bc52"></a>
 ## [add350bc52](https://github.com/weiesky/cc-viewer/commit/add350bc526ad9352dc1a715dee8c7d3909dc9ee) — fix(web): hide Teammate role in proxy hot-switch under SDK mode
@@ -701,6 +735,20 @@
   - `packages/app/server/routes/files-content.js` → 无直接路径匹配
   - `packages/app/test/api-files-content.test.js` → 无直接路径匹配
 
+- 2026-11-21 B6 E1：原ArchivePreview/便携解析器及32MiB raw已迁入，复用B5文件策略；25/25解析器/真实HTTP与Web构建通过，原CSS一致，GUI待。f968仅分发/下载占位，18bd仅解析器后续修复，不计其他子项完成。见[B6实施](./B6-implementation.md#e1)。
+
+- 2026-11-21 B6 E3：E1压缩包7c47e78、E2音频ba6ac2b；E3迁入原字幕列表/原文、1MiB/3000cue限制与editorSession文本编辑保留，57/57字幕/压缩包/二进制与构建通过，原字幕整CSS一致。 仅所述子项，整包GUI及混合范围未计完成，见[B6实施](./B6-implementation.md#e3)。
+
+- 2026-11-21 B6 E4：E3字幕3bcbf14；E4补齐上游共享图片路由/APNG-JFIF引用及raw MIME、PDF内置下载占位，48/48分类/路由/真实HTTP和构建通过；分类及缩略图复用B5，原图标不重写。 仅所述子项，整包GUI及混合范围未计完成，见[B6实施](./B6-implementation.md#e4)。
+
+- 2026-11-21 B6 E8：E7源复制fed3105；首轮全量1982/1982、0skip。E8按GUI实证修正新增archive/subtitle文案占位符以适配本地t()，18locale参数测试1/1、构建通过；继续实际双引擎GUI。 仅所述子项，整包GUI及混合范围未计完成，见[B6实施](./B6-implementation.md#e8)。
+
+- 2026-11-21 B6范围核定：E1解析器后续修复/E3字幕/E4APNG-JFIF及MIME/引用/E8参数；分类图标复用B5。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
+- 2026-11-21 B6 E13：E12 755b2b5；E13最终1986/1986、0skip/build/pack720，新安装525/525与211Web最终字节一致；双引擎桌面及phone/pad仿真6场26图逐张核看，连续不刷新10轮问答通过，正在汇总完成矩阵。 仅所述子项，整包GUI及混合范围未计完成，见[B6实施](./B6-implementation.md#e13)。
+
+- 2026-11-21 B6 E14收口：该提交B6子项按E1–E13核销；最终1986/1986、0skip/build/pack720，新安装525/525与211Web字节通过，双引擎6场26图及10轮问答通过。整条混合范围不扩大完成。完整本地hash见[映射](./B6-local-commit-map-2026-11-21.json)，边界见[B6完成矩阵](./B6-completion-matrix.md)。
+
 <a id="commit-20313b254c"></a>
 ## [20313b254c](https://github.com/weiesky/cc-viewer/commit/20313b254cffff4f8fec955b74a7b5233a0620ee) — feat: add inline audio preview with streaming range support
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-20313b254c)
@@ -734,6 +782,16 @@
   - `packages/app/test/api-target-files.test.js` → 无直接路径匹配
   - `packages/app/test/audio-stream.test.js` → 无直接路径匹配
   - `scripts/tarball-baseline.json` → 无直接路径匹配
+
+- 2026-11-21 B6 E2：E1原压缩包已提交7c47e78；E2迁入原AudioPreview/整CSS及单Range音频流，嗅探/播放同一已校验descriptor，23/23原解析与真实HTTP（206/416/304/If-Range/HEAD/1GiB范围/中止/隔离）及构建通过。 仅所述子项，整包GUI及混合范围未计完成，见[B6实施](./B6-implementation.md#e2)。
+
+- 2026-11-21 B6 E9：E8文案适配d3c5598；E9对新增audio/archive真实端点组合target管理员、cross-site/Origin与native秘密hardlink拒绝，7/7端点测试通过（无运行时代码变化）；首轮完整1982保持，GUI继续。 仅所述子项，整包GUI及混合范围未计完成，见[B6实施](./B6-implementation.md#e9)。
+
+- 2026-11-21 B6范围核定：E2原AudioPreview/Range MIME，native descriptor适配；E9真实target/admin/inode验证。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
+- 2026-11-21 B6 E13：E12 755b2b5；E13最终1986/1986、0skip/build/pack720，新安装525/525与211Web最终字节一致；双引擎桌面及phone/pad仿真6场26图逐张核看，连续不刷新10轮问答通过，正在汇总完成矩阵。 仅所述子项，整包GUI及混合范围未计完成，见[B6实施](./B6-implementation.md#e13)。
+
+- 2026-11-21 B6 E14收口：该提交B6子项按E1–E13核销；最终1986/1986、0skip/build/pack720，新安装525/525与211Web字节通过，双引擎6场26图及10轮问答通过。整条混合范围不扩大完成。完整本地hash见[映射](./B6-local-commit-map-2026-11-21.json)，边界见[B6完成矩阵](./B6-completion-matrix.md)。
 
 <a id="commit-919fded845"></a>
 ## [919fded845](https://github.com/weiesky/cc-viewer/commit/919fded8456a518eb667a105b0550fd6d42cb978) — fix(sdk): settle stale slow-upstream notices
@@ -932,6 +990,8 @@
   - `packages/app/CHANGELOG.md` → 无直接路径匹配
   - `packages/app/package.json` → 本地候选：`package.json`
 
+- 2026-11-21 B6范围核定：仅研究/发布历史元数据，B11保留，不复制上游版本或研究文档作为B6实现。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
 <a id="commit-9e24827264"></a>
 ## [9e24827264](https://github.com/weiesky/cc-viewer/commit/9e248272640c3165f641124502e716369e961313) — Merge pull request #170 from weiesky/feat/file-preview-foundation
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-9e24827264)
@@ -1055,6 +1115,10 @@
   - `packages/core/test/ask-auto-answer.test.js` → 无直接路径匹配
   - `scripts/tarball-baseline.json` → 无直接路径匹配
 
+- 2026-11-21 B6范围核定：PR #170合并索引：B6只对应91a/f968最终代码，禁止重复cherry-pick；自动答题B9、其他B5/B7/B8/B11混合子项保留。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
+- 2026-11-21 B6 E10：E9权限验收c1548c0；E10主42/交叉12去重为46候选，逐子项区分B3/B4/B5复用、B6新增与B7–B11未完成混合范围，完整hash/diff足迹已留存；GUI/新安装验证继续。 仅所述子项，整包GUI及混合范围未计完成，见[B6实施](./B6-implementation.md#e10)。
+
 <a id="commit-f3db3ed9a2"></a>
 ## [f3db3ed9a2](https://github.com/weiesky/cc-viewer/commit/f3db3ed9a217cbe3f1dead56582b90f45059507c) — ci: avoid installing zsh for mocked shell tests
 - B0 本地关键代码对照：上游移除只供模拟 shell 测试使用的 zsh 安装；本地 CI 布局不同，需区分模拟与真实跨平台 shell 测试，归 B11。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-f3db3ed9a2)。
@@ -1122,6 +1186,14 @@
   - `packages/app/test/binary-sniff.test.js` → 无直接路径匹配
   - `scripts/tarball-baseline.json` → 无直接路径匹配
 
+- 2026-11-21 B6 E1：原ArchivePreview/便携解析器及32MiB raw已迁入，复用B5文件策略；25/25解析器/真实HTTP与Web构建通过，原CSS一致，GUI待。f968仅分发/下载占位，18bd仅解析器后续修复，不计其他子项完成。见[B6实施](./B6-implementation.md#e1)。
+
+- 2026-11-21 B6 E4：E3字幕3bcbf14；E4补齐上游共享图片路由/APNG-JFIF引用及raw MIME、PDF内置下载占位，48/48分类/路由/真实HTTP和构建通过；分类及缩略图复用B5，原图标不重写。 仅所述子项，整包GUI及混合范围未计完成，见[B6实施](./B6-implementation.md#e4)。
+
+- 2026-11-21 B6范围核定：E1/E4共享dispatcher/PDF内置回退/图像分类；B5既有binary/UTF16保护复用。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
+- 2026-11-21 B6 E14收口：该提交B6子项按E1–E13核销；最终1986/1986、0skip/build/pack720，新安装525/525与211Web字节通过，双引擎6场26图及10轮问答通过。整条混合范围不扩大完成。完整本地hash见[映射](./B6-local-commit-map-2026-11-21.json)，边界见[B6完成矩阵](./B6-completion-matrix.md)。
+
 <a id="commit-91a523d043"></a>
 ## [91a523d043](https://github.com/weiesky/cc-viewer/commit/91a523d043dbc27bd404f1cd911d2cc588847b8b) — feat: add cross-platform archive preview
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-91a523d043)
@@ -1164,6 +1236,18 @@
   - `packages/app/test/branch-routes-files-content.test.js` → 无直接路径匹配
   - `packages/app/test/route-dispatch.test.js` → 无直接路径匹配
 
+- 2026-11-21 B6 E1：原ArchivePreview/便携解析器及32MiB raw已迁入，复用B5文件策略；25/25解析器/真实HTTP与Web构建通过，原CSS一致，GUI待。f968仅分发/下载占位，18bd仅解析器后续修复，不计其他子项完成。见[B6实施](./B6-implementation.md#e1)。
+
+- 2026-11-21 B6 E8：E7源复制fed3105；首轮全量1982/1982、0skip。E8按GUI实证修正新增archive/subtitle文案占位符以适配本地t()，18locale参数测试1/1、构建通过；继续实际双引擎GUI。 仅所述子项，整包GUI及混合范围未计完成，见[B6实施](./B6-implementation.md#e8)。
+
+- 2026-11-21 B6 E9：E8文案适配d3c5598；E9对新增audio/archive真实端点组合target管理员、cross-site/Origin与native秘密hardlink拒绝，7/7端点测试通过（无运行时代码变化）；首轮完整1982保持，GUI继续。 仅所述子项，整包GUI及混合范围未计完成，见[B6实施](./B6-implementation.md#e9)。
+
+- 2026-11-21 B6范围核定：E1原ArchivePreview/vendor/32MiB raw，E8本地文案参数适配；B11发布外壳仍独立。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
+- 2026-11-21 B6 E13：E12 755b2b5；E13最终1986/1986、0skip/build/pack720，新安装525/525与211Web最终字节一致；双引擎桌面及phone/pad仿真6场26图逐张核看，连续不刷新10轮问答通过，正在汇总完成矩阵。 仅所述子项，整包GUI及混合范围未计完成，见[B6实施](./B6-implementation.md#e13)。
+
+- 2026-11-21 B6 E14收口：该提交B6子项按E1–E13核销；最终1986/1986、0skip/build/pack720，新安装525/525与211Web字节通过，双引擎6场26图及10轮问答通过。整条混合范围不扩大完成。完整本地hash见[映射](./B6-local-commit-map-2026-11-21.json)，边界见[B6完成矩阵](./B6-completion-matrix.md)。
+
 <a id="commit-beaa2e86f2"></a>
 ## [beaa2e86f2](https://github.com/weiesky/cc-viewer/commit/beaa2e86f2dfa451a2044348c6c14fa874419e6f) — feat(web): support dragging folders into terminal and chat
 - B0 本地关键代码对照：上游在文件拖入基础上增加目录；本地 FileExplorer.jsx 内部移动和 onAttachToChat 不等价拖入终端。验证目录语义、路径边界、键盘替代和拒绝跨项目，归 B5/B7。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-beaa2e86f2)。
@@ -1184,6 +1268,8 @@
   - `apps/web/src/utils/fileDragDrop.js` → 无直接路径匹配
   - `apps/web/test/file-drag-drop.test.js` → 无直接路径匹配
   - `history.md` → 无直接路径匹配
+
+- 2026-11-21 B6范围核定：复用B5文件/搜索/菜单/路径/引用已验子项，B6新增预览统一dispatcher和实例链保持；混合其余包仍独立。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
 <a id="commit-ea995f3883"></a>
 ## [ea995f3883](https://github.com/weiesky/cc-viewer/commit/ea995f38833b20201b47ebd2c13ec5e54e24aa95) — feat(web): drag files into terminal or chat
@@ -1211,6 +1297,8 @@
   - `apps/web/test/file-drag-drop.test.js` → 无直接路径匹配
   - `history.md` → 无直接路径匹配
 
+- 2026-11-21 B6范围核定：复用B5文件/搜索/菜单/路径/引用已验子项，B6新增预览统一dispatcher和实例链保持；混合其余包仍独立。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
 <a id="commit-a6b82f16df"></a>
 ## [a6b82f16df](https://github.com/weiesky/cc-viewer/commit/a6b82f16dff7991670ca8bdf3f01c6ae6f0d5d4b) — feat(web): 文件搜索并入文件浏览器面板并重排搜索控件
 - B0 本地关键代码对照：上游将搜索嵌入文件浏览器、重排筛选、持久化及拖拽比例；本地 FileExplorer.jsx 与 SearchPanel.jsx 独立。须保留替换授权、搜索输入、状态及拖拽焦点，归 B5/B7。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-a6b82f16df)。
@@ -1234,6 +1322,8 @@
   - `apps/web/test/git-changes-open-persist.test.js` → 无直接路径匹配
   - `apps/web/test/search-into-file-explorer.test.js` → 无直接路径匹配
   - `history.md` → 无直接路径匹配
+
+- 2026-11-21 B6范围核定：复用B5文件/搜索/菜单/路径/引用已验子项，B6新增预览统一dispatcher和实例链保持；混合其余包仍独立。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
 <a id="commit-96f3a7a44e"></a>
 ## [96f3a7a44e](https://github.com/weiesky/cc-viewer/commit/96f3a7a44e014192000378b974ea757f194d08e9) — feat(chat): move user-prompts entry from hamburger menu to prompt-nav "more"
@@ -1348,6 +1438,8 @@
 - 处理建议：核对是否涉及用户行为；独立评估文档、重构及修复。
 - 上游改动路径（1 个）：
   - `history.md` → 无直接路径匹配
+
+- 2026-11-21 B6范围核定：仅研究/发布历史元数据，B11保留，不复制上游版本或研究文档作为B6实现。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
 <a id="commit-839f0f85ac"></a>
 ## [839f0f85ac](https://github.com/weiesky/cc-viewer/commit/839f0f85ac5375ff9c06491e7ba502b905164ff6) — fix(kimi-k3): add tool-error circuit-breaker section to preset
@@ -1541,6 +1633,8 @@
   - `apps/web/src/components/chat/ChatView.jsx` → 本地候选：`src/components/chat/ChatView.jsx`
   - `apps/web/test/chat-pending-images-guard.test.js` → 无直接路径匹配
   - `history.md` → 无直接路径匹配
+
+- 2026-11-21 B6范围核定：B7输入/导航/对话布局或缓存候选，非B6格式预览/引用；保留B7逐笔核验，不搬整条。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
 <a id="commit-57c732d037"></a>
 ## [57c732d037](https://github.com/weiesky/cc-viewer/commit/57c732d0371bc34417e75a6bd106e1a3fde90f99) — feat(server): add CCV_BASE_URL for cloud reverse-proxy deployment
@@ -2075,6 +2169,8 @@
   - `apps/web/test/chat-blank-bubble.test.js` → 无直接路径匹配
   - `history.md` → 无直接路径匹配
 
+- 2026-11-21 B6范围核定：B7输入/导航/对话布局或缓存候选，非B6格式预览/引用；保留B7逐笔核验，不搬整条。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
 <a id="commit-92ed9bc751"></a>
 ## [92ed9bc751](https://github.com/weiesky/cc-viewer/commit/92ed9bc751c4ba3677487453d387e4565cc9fdb3) — fix(content): unify UltraReview prompt to the TeamCreate-free version
 - B0 本地关键代码对照：上游移除 UltraReview TeamCreate 依赖、同步 18 语言和模板；本地 code-expert.json 已动态发现多代理并逐一通知退出，需检查所有提示来源是否一致及保留用户要求的修复策略，归 B11。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-92ed9bc751)。
@@ -2182,6 +2278,8 @@
 - 上游改动路径（2 个）：
   - `apps/web/src/components/chat/ChatInputBar.jsx` → 本地候选：`src/components/chat/ChatInputBar.jsx`
   - `apps/web/src/components/chat/ChatInputBar.module.css` → 本地候选：`src/components/chat/ChatInputBar.module.css`
+
+- 2026-11-21 B6范围核定：B7输入/导航/对话布局或缓存候选，非B6格式预览/引用；保留B7逐笔核验，不搬整条。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
 <a id="commit-0cde7d1df8"></a>
 ## [0cde7d1df8](https://github.com/weiesky/cc-viewer/commit/0cde7d1df8f15fdbac23be941e367e5d577159de) — feat(web): SDK mode task checklist HUD via sdk-task WS relay
@@ -2361,6 +2459,8 @@
   - `history.md` → 无直接路径匹配
 
 
+- 2026-11-21 B6范围核定：复用B5文件/搜索/菜单/路径/引用已验子项，B6新增预览统一dispatcher和实例链保持；混合其余包仍独立。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
 <a id="commit-bd32d02884"></a>
 ## [bd32d02884](https://github.com/weiesky/cc-viewer/commit/bd32d02884082a6d15f2b213855537e667cdefd0) — fix(server): live-refresh new message in a resumed history project (SDK mode)
 - 2026-11-18 **已具备（附证据）**：现有快照byte/seq游标+立即pump覆盖同等恢复水位语义，无需移植_seenSizes/suppressExisting。`dc5989a`新增冷/回收后重挂×seed/重建检查点四项独立进程回归，挂接前的新主/子线程精确还原且只转发一次，后续追加无重复。定向19/19、全量1221/1221、682文件实际安装47/47+B1.2+CLI启动通过；运行时代码未变，非GUI/模型验收。完整diff已读，见[B2记录](./B2-session-isolation.md)。下方较早“仍待专项”的记录为历史状态，以上为最新结论。
@@ -2464,6 +2564,8 @@
   - `apps/web/src/components/files/FileBrowserModal.jsx` → 无直接路径匹配
   - `apps/web/test/file-browser-modal.test.js` → 无直接路径匹配
   - `history.md` → 无直接路径匹配
+
+- 2026-11-21 B6范围核定：复用B5文件/搜索/菜单/路径/引用已验子项，B6新增预览统一dispatcher和实例链保持；混合其余包仍独立。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
 <a id="commit-88995a1046"></a>
 ## [88995a1046](https://github.com/weiesky/cc-viewer/commit/88995a10461973689656841a8476ee4e6c60281b) — style(web): cap SDK error bar width at 800px
@@ -2861,6 +2963,8 @@
   - `apps/web/test/lr-duplicate-text.test.js` → 无直接路径匹配
   - `history.md` → 无直接路径匹配
 
+- 2026-11-21 B6范围核定：B7输入/导航/对话布局或缓存候选，非B6格式预览/引用；保留B7逐笔核验，不搬整条。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
 <a id="commit-282306a950"></a>
 ## [282306a950](https://github.com/weiesky/cc-viewer/commit/282306a9507f1794fd3a9f35f4aef696e542b68b) — fix(web): SDK-mode plan approval uses the plan card modal
 - B0 本地关键代码对照：上游 SDK Plan 使用全局卡片 modal；本地 ChatView.jsx 注释明确 SDK Plan 在 inline 卡片而非全局 modal。视觉与交互是否合并应按 Codex 审批协议验证，不改写 PTY，归 B11。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-282306a950)。
@@ -2924,6 +3028,8 @@
   - `packages/app/test/api-target-files-fs.test.js` → 无直接路径匹配
   - `packages/app/test/branch-lib-file-access-policy.test.js` → 无直接路径匹配
   - `scripts/tarball-baseline.json` → 无直接路径匹配
+
+- 2026-11-21 B6范围核定：AGENTS/skill目录、target身份/编辑/管理复用B5；输入/skills展示等B7及其他混合范围保持。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
 <a id="commit-3d65bedcd1"></a>
 ## [3d65bedcd1](https://github.com/weiesky/cc-viewer/commit/3d65bedcd1b47a8de7f0ff1bdfec3a11efbc9fa0) — fix(web): keep the composer blood bar visible when the SDK scratch terminal opens
@@ -3224,6 +3330,8 @@
   - `apps/web/test/queue-bubbles.test.js` → 无直接路径匹配
   - `history.md` → 无直接路径匹配
 
+- 2026-11-21 B6范围核定：B7输入/导航/对话布局或缓存候选，非B6格式预览/引用；保留B7逐笔核验，不搬整条。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
 <a id="commit-566ade13fc"></a>
 ## [566ade13fc](https://github.com/weiesky/cc-viewer/commit/566ade13fc3bf2c3fd8d90044b1f36602c6980bf) — feat(web): open CLAUDE.md and skill folders
 - B0 本地关键代码对照：上游支持打开 CLAUDE.md 和 skill 文件夹；本地 CachePopoverContent.jsx 已展示 AGENTS.md，skills 导入也存在。需按 Codex AGENTS/skill 作用域核对入口及安全策略，归 B5/B7。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-566ade13fc)。
@@ -3259,6 +3367,8 @@
   - `packages/app/server/routes/skills.js` → 无直接路径匹配
   - `packages/app/test/api-files-content.test.js` → 无直接路径匹配
   - `packages/app/test/api-target-files.test.js` → 无直接路径匹配
+
+- 2026-11-21 B6范围核定：AGENTS/skill目录、target身份/编辑/管理复用B5；输入/skills展示等B7及其他混合范围保持。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
 <a id="commit-2cd4488ce9"></a>
 ## [2cd4488ce9](https://github.com/weiesky/cc-viewer/commit/2cd4488ce984abf10f9338ec5f1ad6e88c359281) — Merge pull request #162 from weiesky/fix/file-browser-view-scope
@@ -3696,6 +3806,8 @@
   - `packages/app/test/view-routes-project-r4.test.js` → 无直接路径匹配
   - `packages/app/test/view-routes-project.test.js` → 无直接路径匹配
 
+- 2026-11-21 B6范围核定：复用B5文件/搜索/菜单/路径/引用已验子项，B6新增预览统一dispatcher和实例链保持；混合其余包仍独立。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
 <a id="commit-c23590396f"></a>
 ## [c23590396f](https://github.com/weiesky/cc-viewer/commit/c23590396ff1d63f6f23f925f015889d26bfc3b1) — chore(release): 1.9.14
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-c23590396f)
@@ -3968,6 +4080,8 @@
   - `apps/web/test/floating-input-stack.test.js` → 无直接路径匹配
   - `history.md` → 无直接路径匹配
 
+- 2026-11-21 B6范围核定：B7输入/导航/对话布局或缓存候选，非B6格式预览/引用；保留B7逐笔核验，不搬整条。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
 <a id="commit-5d39fa11f3"></a>
 ## [5d39fa11f3](https://github.com/weiesky/cc-viewer/commit/5d39fa11f3d14e480ca46c9adad669048b19756f) — chore(release): 1.9.11
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-5d39fa11f3)
@@ -4003,6 +4117,8 @@
   - `apps/web/src/components/chat/ChatInputBar.module.css` → 本地候选：`src/components/chat/ChatInputBar.module.css`
   - `apps/web/test/chat-ghost-clamp.test.js` → 无直接路径匹配
   - `history.md` → 无直接路径匹配
+
+- 2026-11-21 B6范围核定：混合Homebrew CI及ghost输入建议，B11/B7保留，无B6独立功能。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
 <a id="commit-c66b5fe2ed"></a>
 ## [c66b5fe2ed](https://github.com/weiesky/cc-viewer/commit/c66b5fe2ed6e855f0610127eba3de96ac821adea) — feat(web): move proxy hot-switch chip into the chat input bar (#158)
@@ -4336,6 +4452,8 @@
   - `apps/web/src/components/chat/ChatInputBar.jsx` → 本地候选：`src/components/chat/ChatInputBar.jsx`
   - `apps/web/test/upload-plus-menu.test.js` → 无直接路径匹配
 
+- 2026-11-21 B6范围核定：B5文件上传/共享导入已验，composer (+)及级联输入菜单留B7，B6不重排入口。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
 <a id="commit-9dbf4e295a"></a>
 ## [9dbf4e295a](https://github.com/weiesky/cc-viewer/commit/9dbf4e295a08e472c0b15cfb66de1cc80c77cfa3) — fix(web): SDK 模式打开终端不再隐藏对话输入框
 - 2026-11-20 B4 E12：真实terminalVisible与sdkMode分传、原输入区/portal门控；持久化复用B2。Web267/267、构建、隔离Safari展开/编辑/开关刷新通过；录音未实例化。见[B4.15](./B4-implementation.md#b415-e12-scratch-输入区原始状态与可见性)。
@@ -4368,6 +4486,8 @@
   - `apps/web/src/components/common/sharedChrome.module.css` → 本地候选：`src/components/common/sharedChrome.module.css`
   - `apps/web/test/upload-plus-menu.test.js` → 无直接路径匹配
   - `history.md` → 无直接路径匹配
+
+- 2026-11-21 B6范围核定：B5文件上传/共享导入已验，composer (+)及级联输入菜单留B7，B6不重排入口。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
 <a id="commit-51c23e9090"></a>
 ## [51c23e9090](https://github.com/weiesky/cc-viewer/commit/51c23e9090f349b983a2dba52c738c559da5bf1b) — fix(web): 修复 SDK 模式 plan 审批卡死
@@ -4562,6 +4682,8 @@
   - `apps/web/test/skill-display-name.test.js` → 无直接路径匹配
   - `history.md` → 无直接路径匹配
 
+- 2026-11-21 B6范围核定：AGENTS/skill目录、target身份/编辑/管理复用B5；输入/skills展示等B7及其他混合范围保持。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
 <a id="commit-ec440163c0"></a>
 ## [ec440163c0](https://github.com/weiesky/cc-viewer/commit/ec440163c0702f493609216e1ff0d7af801fa47e) — Merge pull request #153 from weiesky/fix/file-tree-row-shrink
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-ec440163c0)
@@ -4592,6 +4714,8 @@
 - 上游改动路径（2 个）：
   - `apps/web/src/components/files/FileExplorer.module.css` → 本地候选：`src/components/files/FileExplorer.module.css`
   - `history.md` → 无直接路径匹配
+
+- 2026-11-21 B6范围核定：复用B5文件/搜索/菜单/路径/引用已验子项，B6新增预览统一dispatcher和实例链保持；混合其余包仍独立。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
 <a id="commit-983d08b571"></a>
 ## [983d08b571](https://github.com/weiesky/cc-viewer/commit/983d08b57180a76b2b7ec0b122bef7eec33e47c4) — chore(release): 1.9.6
@@ -5663,6 +5787,8 @@
   - `pnpm-lock.yaml` → 无直接路径匹配
   - `scripts/tarball-baseline.json` → 无直接路径匹配
 
+- 2026-11-21用户截图复核：普通CLI/PTY增加工作区入口被本地sdkMode门槛隐藏，上游HeaderProjectSwitcher普通项目标签旁应渲染NewProjectButton。该B2子项恢复待纠偏，既有SDK GUI不覆盖；本轮仅核对/更正状态，无运行时实现提交，见[缺口记录](./B2-pty-workspace-entry-gap-2026-11-21.md)。
+
 <a id="commit-2ae12ca122"></a>
 ## [2ae12ca122](https://github.com/weiesky/cc-viewer/commit/2ae12ca122c9d3210e8f7464970fc8c8df91b067) — chore(star-history): refresh chart [skip ci]
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-2ae12ca122)
@@ -6670,6 +6796,8 @@
   - `apps/web/test/file-browser-modal.test.js` → 无直接路径匹配
   - `apps/web/test/file-types.test.js` → 无直接路径匹配
 
+- 2026-11-21 B6范围核定：复用B5文件/搜索/菜单/路径/引用已验子项，B6新增预览统一dispatcher和实例链保持；混合其余包仍独立。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
 <a id="commit-5aa5728b95"></a>
 ## [5aa5728b95](https://github.com/weiesky/cc-viewer/commit/5aa5728b95024a2fbf9aea98f1275844a42b611f) — feat(files): unify open-project icon to open in-app web file browser
 - B0 本地关键代码对照：本地 FileExplorer.jsx header 的 OpenFolderIcon 使用 /api/open-project-dir，菜单 reveal 也调用该端点；上游改为应用内文件浏览器，需核验本地/远程体验及保留原生打开能力，归 B5。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-5aa5728b95)。
@@ -6684,6 +6812,8 @@
 - 上游改动路径（2 个）：
   - `apps/web/src/components/files/FileExplorer.jsx` → 本地候选：`src/components/files/FileExplorer.jsx`
   - `apps/web/src/i18n.js` → 本地候选：`src/i18n.js`
+
+- 2026-11-21 B6范围核定：复用B5文件/搜索/菜单/路径/引用已验子项，B6新增预览统一dispatcher和实例链保持；混合其余包仍独立。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
 <a id="commit-bf2d6f2ad8"></a>
 ## [bf2d6f2ad8](https://github.com/weiesky/cc-viewer/commit/bf2d6f2ad8fba572239cc8ee9ccc7d22f4b6d6ab) — feat(chat): task-list HUD progress dots + reset task list on new prompt
@@ -6775,6 +6905,8 @@
   - `packages/app/server/routes/files-fs.js` → 无直接路径匹配
   - `packages/app/test/api-files-fs.test.js` → 无直接路径匹配
 
+- 2026-11-21 B6范围核定：复用B5文件/搜索/菜单/路径/引用已验子项，B6新增预览统一dispatcher和实例链保持；混合其余包仍独立。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
 <a id="commit-2a0d1b30d3"></a>
 ## [2a0d1b30d3](https://github.com/weiesky/cc-viewer/commit/2a0d1b30d325bcec1222180b188d0d083d084a55) — chore(release): 1.8.12
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-2a0d1b30d3)
@@ -6819,6 +6951,8 @@
   - `history.md` → 无直接路径匹配
   - `packages/app/server/routes/files-content.js` → 无直接路径匹配
   - `packages/app/test/api-files-content.test.js` → 无直接路径匹配
+
+- 2026-11-21 B6范围核定：复用B5文件/搜索/菜单/路径/引用已验子项，B6新增预览统一dispatcher和实例链保持；混合其余包仍独立。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
 <a id="commit-55544f6e40"></a>
 ## [55544f6e40](https://github.com/weiesky/cc-viewer/commit/55544f6e409c978da32ae9e02faa50070b515e33) — chore(release): 1.8.11
@@ -6879,6 +7013,8 @@
   - `packages/app/test/branch-routes-skills.test.js` → 无直接路径匹配
   - `packages/app/test/route-dispatch.test.js` → 无直接路径匹配
   - `packages/app/test/skills-import.test.js` → 无直接路径匹配
+
+- 2026-11-21 B6范围核定：复用B5文件/搜索/菜单/路径/引用已验子项，B6新增预览统一dispatcher和实例链保持；混合其余包仍独立。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
 <a id="commit-71cee60794"></a>
 ## [71cee60794](https://github.com/weiesky/cc-viewer/commit/71cee60794ccdab9eb5eaeef5e84a9e52a54019e) — fix(ci): close the release-pipeline gaps that made releases fail repeatedly
@@ -6994,6 +7130,8 @@
   - `apps/web/test/promptNav.test.js` → 无直接路径匹配
   - `history.md` → 无直接路径匹配
 
+- 2026-11-21 B6范围核定：B7输入/导航/对话布局或缓存候选，非B6格式预览/引用；保留B7逐笔核验，不搬整条。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
 <a id="commit-85b9aabce4"></a>
 ## [85b9aabce4](https://github.com/weiesky/cc-viewer/commit/85b9aabce418b7087319167c3866b2fb562c1e7d) — fix(ci): widen bump-homebrew npm-registry wait window to 10min
 - B0 本地关键代码对照：上游 Homebrew 等待 npm 注册表传播改为最多 10 分钟；本地 .github/workflows 仅见 npm-publish.yml，不能直接套用缺失的上游 job；发布链是否需要 Homebrew 归 B11。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-85b9aabce4)。
@@ -7043,6 +7181,8 @@
   - `apps/web/test/promptNav.test.js` → 无直接路径匹配
   - `history.md` → 无直接路径匹配
   - `packages/app/test/branch-routes-files-fs.test.js` → 无直接路径匹配
+
+- 2026-11-21 B6范围核定：B7输入/导航/对话布局或缓存候选，非B6格式预览/引用；保留B7逐笔核验，不搬整条。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
 <a id="commit-9b1a2c913a"></a>
 ## [9b1a2c913a](https://github.com/weiesky/cc-viewer/commit/9b1a2c913a4897acd128265d7c08ed968a2328e2) — docs(claude): document release tag ordering — changeset version bump must land before tagging
@@ -7188,6 +7328,8 @@
   - `packages/app/server/lib/search-worker.js` → 无直接路径匹配
   - `packages/app/test/search-worker.test.js` → 无直接路径匹配
 
+- 2026-11-21 B6范围核定：复用B5文件/搜索/菜单/路径/引用已验子项，B6新增预览统一dispatcher和实例链保持；混合其余包仍独立。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
 <a id="commit-44320725ab"></a>
 ## [44320725ab](https://github.com/weiesky/cc-viewer/commit/44320725ab0c33efc0ee6cd846c109becd203caa) — chore(release): 1.8.6
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-44320725ab)
@@ -7234,6 +7376,8 @@
   - `apps/web/test/tool-run-merge.test.js` → 无直接路径匹配
   - `history.md` → 无直接路径匹配
   - `package.json` → 本地候选：`package.json`
+
+- 2026-11-21 B6范围核定：B7输入/导航/对话布局或缓存候选，非B6格式预览/引用；保留B7逐笔核验，不搬整条。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
 <a id="commit-52adf8968a"></a>
 ## [52adf8968a](https://github.com/weiesky/cc-viewer/commit/52adf8968a258fce495cfcd8d98b0edbc526cde4) — chore(release): 1.8.5
@@ -7286,6 +7430,8 @@
   - `packages/app/test/task-bridge.test.js` → 无直接路径匹配
   - `packages/app/test/task-event-route.test.js` → 无直接路径匹配
   - `packages/app/test/task-state.test.js` → 无直接路径匹配
+
+- 2026-11-21 B6范围核定：原Task HUD及native任务协议已在B4完成，B6无新增。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
 <a id="commit-fa77ecd681"></a>
 ## [fa77ecd681](https://github.com/weiesky/cc-viewer/commit/fa77ecd6818e2a4874d2020dd09e0d6f6dcde672) — fix(v2): exclude proxy retry-stat shards from legacy v1 log sniffing
@@ -7371,6 +7517,8 @@
   - `history.md` → 无直接路径匹配
   - `packages/app/CHANGELOG.md` → 无直接路径匹配
   - `packages/app/package.json` → 本地候选：`package.json`
+
+- 2026-11-21 B6范围核定：复用B3已验冷读终态/渲染窗口；没有独立B6预览改动，其他子项不扩大完成。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
 <a id="commit-d858204313"></a>
 ## [d858204313](https://github.com/weiesky/cc-viewer/commit/d85820431363b750e522be204e122636d6682aea) — fix(git): show local commits on branches without an upstream in the changes panel
@@ -7639,6 +7787,8 @@
 - 处理建议：对比现有文件 API、前端及权限；按入口核验路径、大小、二进制和平台。
 - 上游改动路径（1 个）：
   - `docs/research/auto-testcase-generation.zh.md` → 无直接路径匹配
+
+- 2026-11-21 B6范围核定：仅研究/发布历史元数据，B11保留，不复制上游版本或研究文档作为B6实现。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
 <a id="commit-c185a7484e"></a>
 ## [c185a7484e](https://github.com/weiesky/cc-viewer/commit/c185a7484e2a3f069977d522741efc02c885420d) — refactor(context): rename Context tab per-exchange "Turn N" concept to "Step N"
@@ -14854,6 +15004,8 @@
 - 上游改动路径（1 个）：
   - `src/components/chat/ChatView.module.css` → 本地候选：`src/components/chat/ChatView.module.css`
 
+- 2026-11-21 B6范围核定：B7输入/导航/对话布局或缓存候选，非B6格式预览/引用；保留B7逐笔核验，不搬整条。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
 <a id="commit-e12dcaded9"></a>
 ## [e12dcaded9](https://github.com/weiesky/cc-viewer/commit/e12dcaded939f2d9bee67c226e03fc0aaed8d253) — ui(chat): PC composer polish — 1000px cap, themed strip, white card + shadow, focus-expand animation
 - B0 本地关键代码对照：本地 ChatInputBar.module.css 已有 1000px 居中 padding 和 focus-within，不能仅凭样式断定完整对齐；逐项核对桌面视觉、动画和移动端回归，归 B7。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-e12dcaded9)。
@@ -14872,6 +15024,8 @@
   - `src/components/chat/ChatView.jsx` → 本地候选：`src/components/chat/ChatView.jsx`
   - `src/components/chat/ChatView.module.css` → 本地候选：`src/components/chat/ChatView.module.css`
   - `src/global.css` → 本地候选：`src/global.css`
+
+- 2026-11-21 B6范围核定：B7输入/导航/对话布局或缓存候选，非B6格式预览/引用；保留B7逐笔核验，不搬整条。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
 <a id="commit-f3a8413db9"></a>
 ## [f3a8413db9](https://github.com/weiesky/cc-viewer/commit/f3a8413db9f99691ef94f54279cedc2913e0c1f0) — fix(chat): wire-agent identity for teammate/subagent classification (1.7.17)
@@ -14929,6 +15083,8 @@
   - `test/session-boundary-parity.test.js` → 无直接路径匹配
   - `test/v2-adapter-incremental.test.js` → 无直接路径匹配
 
+- 2026-11-21 B6范围核定：复用B3已验冷读终态/渲染窗口；没有独立B6预览改动，其他子项不扩大完成。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
 <a id="commit-4c2765d308"></a>
 ## [4c2765d308](https://github.com/weiesky/cc-viewer/commit/4c2765d308d530f61b47d814519816a9e21f2bd6) — chore(star-history): refresh chart [skip ci]
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-4c2765d308)
@@ -14977,6 +15133,8 @@
   - `test/v2-image-pipeline.test.js` → 无直接路径匹配
   - `test/v2-transcript-incremental.test.js` → 无直接路径匹配
   - `test/v2-transcript-normalizer.test.js` → 无直接路径匹配
+
+- 2026-11-21 B6范围核定：B6图像显示复用B4已核Codex图像管线；Claude JSONL normalizer不移植，其他协议/元数据仍按B3/B11。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
 <a id="commit-8c8b96eafe"></a>
 ## [8c8b96eafe](https://github.com/weiesky/cc-viewer/commit/8c8b96eafe3c6229c3c4dedbd462632dfda51a87) — fix(release): bump version to 1.7.14 for re-publish

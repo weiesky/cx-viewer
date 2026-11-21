@@ -672,3 +672,48 @@ test('cold SDK identity hydration preserves the wait replayed before the mode an
   assert.deepEqual([...chat._slowUpstreamPending.keys()], ['cold']);
   chat._clearSlowUpstreamToast();
 });
+
+test('quote-only SDK sends exact blockquote, failed sends retain chips, slash retains them', t => {
+  const f = fixture(t), socket = f.open(), chat = new f.Chat({ sdkMode: true, mainAgentSessions: [], requests: [] });
+  chat.setState = (patch, callback) => { Object.assign(chat.state, typeof patch === 'function' ? patch(chat.state) : patch); callback?.(); };
+  chat.context = f.provider;
+  chat._inputRef.current = { value: '', style: {}, scrollHeight: 40 };
+  chat._addPendingQuote('line one\nline two'); chat._addPendingQuote('line one\nline two');
+  assert.equal(chat.state.pendingQuotes.length, 1);
+  chat.handleInputSend();
+  assert.equal(socket.sent.at(-1).text, '> line one\n> line two\n\n');
+  assert.deepEqual(chat.state.pendingQuotes, []);
+  chat._addPendingQuote('retained'); chat._inputRef.current.value = '/model fast'; chat.handleInputSend();
+  assert.equal(socket.sent.at(-1).text, '/model fast'); assert.equal(chat.state.pendingQuotes[0].text, 'retained');
+  const { message } = require('antd'), oldError = message.error; message.error = () => {}; t.after(() => { message.error = oldError; });
+  chat._inputRef.current.value = 'unsent'; socket.fail = true; chat.handleInputSend();
+  assert.equal(chat._inputRef.current.value, 'unsent'); assert.equal(chat.state.pendingQuotes[0].text, 'retained');
+});
+
+test('multiline PTY quote uses correlated sanitized paste and restores complete text on failed ack', t => {
+  const f = fixture(t), socket = f.open(), chat = new f.Chat({ sdkMode: false, mainAgentSessions: [], requests: [] });
+  chat.setState = (patch, callback) => { Object.assign(chat.state, typeof patch === 'function' ? patch(chat.state) : patch); callback?.(); };
+  chat.context = f.provider;
+  chat._inputRef.current = { value: 'follow up', style: {}, scrollHeight: 40 };
+  chat._addPendingQuote('selected\x1b[201~\ntext'); chat.handleInputSend();
+  const frame = socket.sent.at(-1);
+  assert.equal(frame.type, 'input-sequential'); assert.ok(frame.seq);
+  assert.deepEqual(frame.chunks, ['\x1b[200~> selected\n> text\n\nfollow up\x1b[201~', '\r']);
+  assert.deepEqual(chat.state.pendingQuotes, []); assert.equal(chat.state.pendingInputs.length, 1);
+  const { message } = require('antd'), oldError = message.error; message.error = () => {}; t.after(() => { message.error = oldError; });
+  chat._settleBracketPasteSequential(frame.seq, false);
+  assert.equal(chat._inputRef.current.value, '> selected\x1b[201~\n> text\n\nfollow up');
+  assert.deepEqual(chat.state.pendingInputs, []); assert.equal(chat._pendingSequentialInputs.size, 0);
+});
+
+test('quote drafts survive same-thread live rebuilds and clear on explicit native resume', t => {
+  const f=fixture(t), tail={conversationId:'thread:a', sessionId:'s', messages:[{role:'user',_timestamp:'first'}]};
+  const chat=new f.Chat({sdkMode:true,sdkResumeId:'a',mainAgentSessions:[tail],requests:[]});
+  chat.setState=(patch,callback)=>{Object.assign(chat.state,typeof patch==='function'?patch(chat.state):patch);callback?.();};
+  chat.startRender=()=>{};chat._toolFileMonitor.check=()=>{};chat._updateSuggestion=()=>{};
+  chat._addPendingQuote('keep me'); const prior=chat.props, state={...chat.state};
+  chat.props={...prior,mainAgentSessions:[{...tail,messages:[...tail.messages,{role:'assistant',_timestamp:'second'}]}]};
+  chat.componentDidUpdate(prior,state);assert.equal(chat.state.pendingQuotes[0].text,'keep me');
+  const next=chat.props; chat.props={...next,sdkResumeId:'b'};chat.componentDidUpdate(next,{...chat.state});
+  assert.deepEqual(chat.state.pendingQuotes,[]);
+});

@@ -2,8 +2,13 @@ import React from 'react';
 import { Checkbox, Input } from 'antd';
 import { t } from '../../i18n';
 import { optionAriaLabel, hasOptionDescription } from '../../utils/askOptionDesc';
+import { hasActiveTextSelection } from './selectionQuote';
 import AskTimeoutCountdown from './AskTimeoutCountdown';
 import styles from './ChatMessage.module.css';
+
+function guardWhileSelecting(fn) {
+  return () => { if (!hasActiveTextSelection()) fn(); };
+}
 
 /**
  * Self-contained request_user_input interactive form.
@@ -116,7 +121,7 @@ export default class AskQuestionForm extends React.Component {
                         tabIndex={0}
                         aria-label={optionAriaLabel(opt)}
                         className={`${styles.askRadioItem}${isSelected ? ' ' + styles.askRadioItemSelected : ''}`}
-                        onClick={activate}
+                        onClick={guardWhileSelecting(activate)}
                         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } }}
                       >
                         <span className={styles.askRadioDot}>{isSelected ? '◉' : '○'}</span>
@@ -141,7 +146,7 @@ export default class AskQuestionForm extends React.Component {
                         tabIndex={0}
                         aria-label={t('ui.askOther')}
                         className={`${styles.askRadioItem}${otherActive[qi] ? ' ' + styles.askRadioItemSelected : ''}`}
-                        onClick={activate}
+                        onClick={guardWhileSelecting(activate)}
                         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } }}
                       >
                         <span className={styles.askRadioDot}>{otherActive[qi] ? '◉' : '○'}</span>
@@ -176,7 +181,7 @@ export default class AskQuestionForm extends React.Component {
                         tabIndex={0}
                         aria-label={optionAriaLabel(opt)}
                         className={`${styles.askRadioItem}${checked ? ' ' + styles.askRadioItemSelected : ''}`}
-                        onClick={activate}
+                        onClick={guardWhileSelecting(activate)}
                         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } }}
                       >
                         <span className={styles.askRadioDot}>{checked ? '☑' : '☐'}</span>
@@ -201,7 +206,7 @@ export default class AskQuestionForm extends React.Component {
                         tabIndex={0}
                         aria-label={t('ui.askOther')}
                         className={`${styles.askRadioItem}${otherActive[qi] ? ' ' + styles.askRadioItemSelected : ''}`}
-                        onClick={activate}
+                        onClick={guardWhileSelecting(activate)}
                         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } }}
                       >
                         <span className={styles.askRadioDot}>{otherActive[qi] ? '☑' : '☐'}</span>
@@ -231,7 +236,7 @@ export default class AskQuestionForm extends React.Component {
           );
 
           return (
-            <div key={qi} className={qi < questions.length - 1 ? styles.questionSpacing : undefined}>
+            <div key={qi} data-ccv-quotable="ask-question" className={qi < questions.length - 1 ? styles.questionSpacing : undefined}>
               {headerAndQuestion}
               {hasPreview ? (
                 <div className={styles.askMarkdownLayout}>

@@ -1,0 +1,81 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "workPackage": "B6",
+  "status": "complete in documented scope; mixed work packages and unverified environments retained",
+  "branch": "codex/b6-preview-content",
+  "productionCommit": "755b2b522ce2a05e5d2674d430898bb2a2127dde",
+  "verificationCommit": "1c91dec2d7400095da9304473875b4d67656ea4f",
+  "candidateCount": 46,
+  "implementationAndAuditCommits": 13,
+  "closureIteration": "E14 (documentation only)",
+  "checks": {
+    "command": "env -u CXV_BYPASS_PERMISSIONS pnpm run release:check",
+    "exitCode": 0,
+    "tests": 1986,
+    "parts": [
+      5,
+      610,
+      1159,
+      212
+    ],
+    "skipped": 0,
+    "build": "passed",
+    "packFiles": 720,
+    "log": "/tmp/cxv-b6-release-final-controlled.log",
+    "logSha256": "bd49e87c2d74893124b3e6156ae7f5673e2f98196735f762509ec369bba5348b",
+    "productionChangesAfterValidation": false
+  },
+  "installed": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-ijviyf8t",
+    "files": 720,
+    "source_bytes_match": true,
+    "web_asset_files": 211,
+    "runtime_tests": "525/525",
+    "b12_regression": "passed",
+    "installed_cli_relative_cd_boot": "passed",
+    "uses_fake_codex": true,
+    "uses_real_model_network": false
+  },
+  "installedLogSha256": "4477fe81e43d0bdc83def810f676cc2305f03eaa60a7ebb71bc32a05717419d0",
+  "finalReleaseBytesComparedWithInstalled": {
+    "sourceAndLicense": true,
+    "webFiles": 211,
+    "allWebBytesExact": true
+  },
+  "gui": {
+    "desktopRuns": 2,
+    "responsiveEmulatedRuns": 4,
+    "screenshots": 26,
+    "imagesVisuallyInspected": 26,
+    "warmCycles": 10,
+    "browsers": [
+      "Chromium159.0.8154.6",
+      "WebKit27.2"
+    ],
+    "receipt": "B6-gui-2026-11-21.json",
+    "styleChecks": "B6-source-style-2026-11-21.json"
+  },
+  "failedCheckHistory": [
+    {
+      "log": "/tmp/cxv-b6-release-latest.log",
+      "reason": "Inherited CXV_BYPASS_PERMISSIONS=1 differs from perm-bridge test expectation; controlled final run passed."
+    },
+    {
+      "log": "/tmp/cxv-b6-release-controlled.log",
+      "reason": "Existing exec-with-stdin 50ms timeout test intermittently resolved; targeted 3/3 and final full run passed. Root cause not repaired in B6."
+    }
+  ],
+  "limits": [
+    "Phone/pad emulation, not physical touch/keyboard/audio hardware.",
+    "Browser copy event/DataTransfer verified, not cross-application system clipboard.",
+    "Loopback HTTP and Host/Origin cases, not real LAN/TLS.",
+    "Fake AppServer, no external model/OAuth/remote MCP verification.",
+    "No other OS/minimum Node verification.",
+    "Original iPad Replace horizontal scroll and Markdown cold line-scroll defect retained.",
+    "Existing IM concurrency and stdin timeout intermittent cases not claimed fixed.",
+    "Native profile/image-input/add-dir/review unsupported; exec/explicit AppServer gradual rollout and 353K retained."
+  ],
+  "delivery": "Local independent commits only, no push, PR, merge or active install switch. Task-owned fixture stopped.",
+  "nextWorkPackage": "B7",
+  "b7Started": false
+}

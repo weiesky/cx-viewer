@@ -1,0 +1,102 @@
+[
+  {
+    "engine": "chromium",
+    "version": "159.0.8154.6",
+    "mode": "phone",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "emulated": true,
+    "archiveLayout": {
+      "columns": "650px",
+      "rows": "397.453px 548.875px",
+      "width": 390.0000305175781,
+      "viewport": 390,
+      "clientWidth": 390
+    },
+    "subtitleSafeRaw": true,
+    "audioControls": true,
+    "screenshots": [
+      "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B6-preview-2026-11-21/chromium-phone-archive.png",
+      "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B6-preview-2026-11-21/chromium-phone-subtitle.png",
+      "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B6-preview-2026-11-21/chromium-phone-audio.png"
+    ],
+    "errors": []
+  },
+  {
+    "engine": "chromium",
+    "version": "159.0.8154.6",
+    "mode": "pad",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    },
+    "emulated": true,
+    "archiveLayout": {
+      "columns": "389.109px 634.891px",
+      "rows": "339px",
+      "width": 1024,
+      "viewport": 1024,
+      "clientWidth": 1024
+    },
+    "subtitleSafeRaw": true,
+    "audioControls": true,
+    "screenshots": [
+      "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B6-preview-2026-11-21/chromium-pad-archive.png",
+      "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B6-preview-2026-11-21/chromium-pad-subtitle.png",
+      "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B6-preview-2026-11-21/chromium-pad-audio.png"
+    ],
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "version": "27.2",
+    "mode": "phone",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "emulated": true,
+    "archiveLayout": {
+      "columns": "650px",
+      "rows": "397.453125px 548.875px",
+      "width": 390,
+      "viewport": 390,
+      "clientWidth": 390
+    },
+    "subtitleSafeRaw": true,
+    "audioControls": true,
+    "screenshots": [
+      "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B6-preview-2026-11-21/webkit-phone-archive.png",
+      "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B6-preview-2026-11-21/webkit-phone-subtitle.png",
+      "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B6-preview-2026-11-21/webkit-phone-audio.png"
+    ],
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "version": "27.2",
+    "mode": "pad",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    },
+    "emulated": true,
+    "archiveLayout": {
+      "columns": "389.109375px 634.890625px",
+      "rows": "339px",
+      "width": 1024,
+      "viewport": 1024,
+      "clientWidth": 1024
+    },
+    "subtitleSafeRaw": true,
+    "audioControls": true,
+    "screenshots": [
+      "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B6-preview-2026-11-21/webkit-pad-archive.png",
+      "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B6-preview-2026-11-21/webkit-pad-subtitle.png",
+      "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B6-preview-2026-11-21/webkit-pad-audio.png"
+    ],
+    "errors": []
+  }
+]

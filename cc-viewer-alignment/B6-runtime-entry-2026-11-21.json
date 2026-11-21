@@ -1,0 +1,48 @@
+{
+  "checkedAt": "2026-11-21T10:52:10.168Z",
+  "repository": "/Users/sky/.npm-global/lib/node_modules/cx-viewer",
+  "repositoryIsSymlink": false,
+  "npmPrefix": "/Users/sky/.npm-global",
+  "cxvLink": "/Users/sky/.npm-global/bin/cxv",
+  "cxvLinkTarget": "/Users/sky/.npm-global/lib/node_modules/cx-viewer/packages/app/cli.js",
+  "activeViewer": {
+    "port": 7008,
+    "pid": 72817,
+    "processSnapshot": "72817 12361 Sat Nov 21 17:57:22 2026",
+    "currentAgentParentSnapshot": "72825 72817 /Users/sky/.npm-global/lib/node_modules/@openai/codex/node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/bin/codex",
+    "startedBeforeB6BackendChanges": true
+  },
+  "currentWebIndex": {
+    "path": "packages/app/dist/index.html",
+    "sha256": "e25b8c99274846786fb3203a5180d8a2526970d83f04324ea375f5c08ff9f311"
+  },
+  "http": [
+    {
+      "path": "/",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytes": 2048,
+      "sha256": "e25b8c99274846786fb3203a5180d8a2526970d83f04324ea375f5c08ff9f311",
+      "matchesCurrentWebIndex": true
+    },
+    {
+      "path": "/api/archive-raw",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytes": 2048,
+      "sha256": "e25b8c99274846786fb3203a5180d8a2526970d83f04324ea375f5c08ff9f311",
+      "matchesCurrentWebIndex": true
+    },
+    {
+      "path": "/api/audio-stream",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytes": 2048,
+      "sha256": "e25b8c99274846786fb3203a5180d8a2526970d83f04324ea375f5c08ff9f311",
+      "matchesCurrentWebIndex": true
+    }
+  ],
+  "conclusion": "Global cxv bin targets this repository. Existing backend process has not loaded B6 routes; both new endpoints return SPA index, although root already serves the latest disk build.",
+  "action": "Read-only diagnosis. No relink, reinstall, process restart, signal, configuration change or real model request.",
+  "next": "After preserving/leaving this hosted session, restart its original cxv command and reload the page. Repeat missing-parameter checks: new routes must return API errors, not HTML."
+}

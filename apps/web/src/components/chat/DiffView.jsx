@@ -93,7 +93,7 @@ function DiffView({ file_path, open_file_path, old_string, new_string, startLine
             })}
           </div>
           {/* Scrollable code area */}
-          <div className={styles.codeWrap}>
+          <div className={styles.codeWrap} data-ccv-quotable="diff-code">
             <div className={styles.codeInner}>
               {diffLines.map((dl, i) => (
                 <div key={i} className={`${styles.codeLine} ${rowCls(dl.type)}`}>
