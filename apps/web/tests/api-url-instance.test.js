@@ -45,3 +45,17 @@ test('unanchored and server-rendered pages keep their existing URL behavior', as
     assert.equal(mod.appendWorkspaceInstance('/events'), '/events');
   },
 ));
+
+test('native guidance and skill target parameters preserve identity, viewed instance, base path and token', async () => fixture(
+  'http://viewer.example/?instance=b&token=synthetic', mod => {
+    for (const target of [{ kind: 'codex-md', id: 'native_opaque-id' }, { kind: 'skill', source: 'user', path: '/home/中文 skill' }]) {
+      const url = new URL(mod.apiUrl(mod.withViewParams(mod.withTargetParams('/api/file-content?path=space%20note.txt', target), { instance: 'a' })), window.location.href);
+      assert.equal(url.pathname, '/viewer/api/file-content');
+      assert.equal(url.searchParams.get('instance'), 'a'); assert.equal(url.searchParams.get('token'), 'synthetic');
+      assert.equal(url.searchParams.get('path'), 'space note.txt'); assert.equal(url.searchParams.get('kind'), target.kind);
+      if (target.id) assert.equal(url.searchParams.get('id'), target.id);
+      else { assert.equal(url.searchParams.get('source'), target.source); assert.equal(url.searchParams.get('targetPath'), target.path); }
+    }
+    assert.equal(mod.withTargetParams('/api/files', null), '/api/files');
+  },
+));

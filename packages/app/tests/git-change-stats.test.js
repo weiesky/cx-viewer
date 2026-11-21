@@ -29,7 +29,7 @@ test('countUntrackedLines counts text lines, skips binary files, and reports cap
       { insertions: 1, capped: true },
     );
   } finally {
-    rmSync(root, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   }
 });
 
@@ -51,6 +51,6 @@ test('getGitWorkingTreeLineStats combines tracked and untracked line changes', a
       insertions_capped: false,
     });
   } finally {
-    rmSync(root, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   }
 });

@@ -11,6 +11,7 @@ mkdirSync(project);
 process.env.CXV_LOG_DIR = join(project, 'state[1]');
 process.env.CXV_PROXY_PROFILE_PATH = join(project, 'profile[1].json');
 const { CREDENTIAL_PATHS } = await import('../lib/credential-file-policy.js');
+const { runNodeScan } = await import('../lib/search-worker.js');
 const { searchCode, hasRipgrep } = await import('../lib/code-search.js');
 const { searchReplace } = await import('../lib/code-replace.js');
 const marker = 'BOUNDARY_NEEDLE';
@@ -50,7 +51,7 @@ test('named-file and all-file replacements cannot alter private keys or plaintex
   for (const path of privateFiles) assert.equal(readFileSync(path, 'utf8'), marker);
 });
 
-test('node search and replacement reject a private descriptor substituted after path checks', async () => {
+test('worker scan body and replacement reject a private descriptor substituted after path checks', async () => {
   rmSync(alias, { force: true });
   const path = join(project, 'public.txt');
   writeFileSync(path, marker);
@@ -63,7 +64,8 @@ test('node search and replacement reject a private descriptor substituted after 
   };
   syncBuiltinESMExports();
   try {
-    const search = await searchCode({ root: project, query: marker, engine: 'node' });
+    // fs monkeypatches are isolate-local: exercise the actual worker body here.
+    const search = await runNodeScan({ root: project, query: marker });
     assert.deepEqual(search.results, []);
     const replace = await searchReplace({ root: project, query: marker, replacement: 'replace', scope: 'file', file: 'public.txt' });
     assert.equal(replace.total, 0);

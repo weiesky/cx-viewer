@@ -1,0 +1,22 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": "a30d8c92a7a56803d501ea50775f9993c96a19d5",
+  "previousLocal": "7865e00",
+  "localSubject": "fix(git): restore original ten second command timeout",
+  "checks": {
+    "gitApi": 37,
+    "skip": 0,
+    "log": "/tmp/cxv-b5-e24-git-final.log",
+    "slowRealGit": {
+      "revParseDelayMs": 3200,
+      "showDelayMs": 5200,
+      "realGitCommitAndBytesPreserved": true
+    },
+    "slowProbe": "/tmp/cxv-b5-e24-slowgit.mjs"
+  },
+  "adaptation": "Keep native size-preflight/rename calls using same original budget; original log8s remains",
+  "limits": [
+    "No GUI or full/install rerun for timeout-only change; latest E23 full1690/install437",
+    "Other a30d SSE items not marked complete here"
+  ]
+}

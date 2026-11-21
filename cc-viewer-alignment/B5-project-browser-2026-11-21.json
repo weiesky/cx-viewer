@@ -1,0 +1,173 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": [
+    "865604d68e05e62aaebf8de7a04afa9a9f1e999d",
+    "365af800e58f34a57b2339cf705f56390874f20b",
+    "5aa5728b95024a2fbf9aea98f1275844a42b611f",
+    "ab1b89ee133664c9f2c0e3e17ada8711180f4dc5",
+    "dd23ce8df14dbe3522a03d3662aa5c3365d0ef37",
+    "c29af25e64d3491fe7c58dc80bf859eda7831ba4"
+  ],
+  "scope": "Original project browser modal, shared hooks, header entry and portal guards; target browser and global zones/drag references remain pending",
+  "adaptations": [
+    "Native withViewParams appends only exact instance; existing apiUrl remains current-view/base/token authority. Workspace subtree already remounts by exact instance.",
+    "Shared menu/import/move and existing sanitized image/text viewers reused.",
+    "Pure original previewKind classifier copied, but B6 dispatcher/format routing is not activated. isSystemOpenFile extracted using shared getExt while retaining existing PDF system-open compatibility until B6.",
+    "Original optional target branches are present in copied modal; no external target entry/API is exposed or claimed implemented."
+  ],
+  "cssSha256": "d42e085de0796ab003cc838405078353dc5bbc3d7715a0f32f0856de44d8973d",
+  "cssMatchesFrozenSource": true,
+  "checks": {
+    "full": 1657,
+    "groups": [
+      5,
+      361,
+      1079,
+      212
+    ],
+    "skip": 0,
+    "build": "passed",
+    "packFiles": 705,
+    "releaseLog": "/tmp/cxv-b5-e13-release.log"
+  },
+  "installation": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-y1mfcy0q",
+    "files": 705,
+    "source_bytes_match": true,
+    "web_asset_files": 204,
+    "runtime_tests": "400/400",
+    "b12_regression": "passed",
+    "installed_cli_relative_cd_boot": "passed",
+    "uses_fake_codex": true,
+    "uses_real_model_network": false
+  },
+  "gui": [
+    {
+      "log": "/tmp/cxv-b5-e13-webkit-browser-final3.log",
+      "result": {
+        "engine": "webkit",
+        "mode": "browser",
+        "browserVersion": "27.2",
+        "noOsFolderRequest": true,
+        "originalTreeWidth": 240,
+        "modalWidth": 1200,
+        "imageThumbnail": true,
+        "nestedTreeClickNoDuplicatePrefix": true,
+        "previewEditingExactScope": true,
+        "toolbarUpload": true,
+        "toolbarRejectsDrop": true,
+        "gridMoveAndRootCrumb": true,
+        "failedDirectoryRetryAndEmpty": true,
+        "reopenFreshRoot": true,
+        "blankCreateAndModalRename": true,
+        "staticDeleteStillTargetsAAfterSwitchB": true,
+        "siblingCanaryPreserved": true,
+        "screenshots": [
+          "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B5-browser-2026-11-21/webkit-browser-nested-preview.png",
+          "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B5-browser-2026-11-21/webkit-browser-grid-menus.png"
+        ]
+      },
+      "exit": 0,
+      "pageErrors": []
+    },
+    {
+      "log": "/tmp/cxv-b5-e13-chromium-browser-final3.log",
+      "result": {
+        "engine": "chromium",
+        "mode": "browser",
+        "browserVersion": "159.0.8154.6",
+        "noOsFolderRequest": true,
+        "originalTreeWidth": 240,
+        "modalWidth": 1200,
+        "imageThumbnail": true,
+        "nestedTreeClickNoDuplicatePrefix": true,
+        "previewEditingExactScope": true,
+        "toolbarUpload": true,
+        "toolbarRejectsDrop": true,
+        "gridMoveAndRootCrumb": true,
+        "failedDirectoryRetryAndEmpty": true,
+        "reopenFreshRoot": true,
+        "blankCreateAndModalRename": true,
+        "staticDeleteStillTargetsAAfterSwitchB": true,
+        "siblingCanaryPreserved": true,
+        "screenshots": [
+          "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B5-browser-2026-11-21/chromium-browser-nested-preview.png",
+          "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B5-browser-2026-11-21/chromium-browser-grid-menus.png"
+        ]
+      },
+      "exit": 0,
+      "pageErrors": []
+    },
+    {
+      "log": "/tmp/cxv-b5-e13-webkit-browser-pad-final3.log",
+      "result": {
+        "engine": "webkit",
+        "mode": "browser-pad",
+        "browserVersion": "27.2",
+        "noOsFolderRequest": true,
+        "originalTreeWidth": 240,
+        "modalWidth": 802,
+        "imageThumbnail": true,
+        "nestedTreeClickNoDuplicatePrefix": true,
+        "previewEditingExactScope": true,
+        "toolbarUpload": true,
+        "toolbarRejectsDrop": true,
+        "gridMoveAndRootCrumb": true,
+        "failedDirectoryRetryAndEmpty": true,
+        "reopenFreshRoot": true,
+        "blankCreateAndModalRename": true,
+        "staticDeleteStillTargetsAAfterSwitchB": true,
+        "siblingCanaryPreserved": true,
+        "screenshots": [
+          "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B5-browser-2026-11-21/webkit-browser-pad-nested-preview.png",
+          "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B5-browser-2026-11-21/webkit-browser-pad-grid-menus.png"
+        ]
+      },
+      "exit": 0,
+      "pageErrors": []
+    }
+  ],
+  "screenshots": [
+    {
+      "path": "cc-viewer-alignment/evidence/B5-browser-2026-11-21/chromium-browser-grid-menus.png",
+      "sha256": "dd77349fa7ed42c6b7d924c30dc24dba635000e0c11bd0ce054b74e057730a4a",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-browser-2026-11-21/chromium-browser-nested-preview.png",
+      "sha256": "01179e0f6a51d2e65582927084048a652f8ce557d1d47907ec58964dcdaf1307",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-browser-2026-11-21/webkit-browser-grid-menus.png",
+      "sha256": "764ee08f3a9ad475a0c6d94f70de3cbbf29526b5d2b9d1d976fde492ac5b29c1",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-browser-2026-11-21/webkit-browser-nested-preview.png",
+      "sha256": "1ec0fc1a07632944c3650842683a2c8ed6200cebb043005d68f0fcfe3bccfbaa",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-browser-2026-11-21/webkit-browser-pad-grid-menus.png",
+      "sha256": "f2594e92c1d3d2fcda897d9a18b2302db6eebb91981526eabc6ad8e360c3d373",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-browser-2026-11-21/webkit-browser-pad-nested-preview.png",
+      "sha256": "c57164335622d10e6147ea859e9f3843f00845351a868a7e6d28792a978e5033",
+      "visuallyInspected": true
+    }
+  ],
+  "attemptNotes": [
+    "First width probe measured animated/bordered geometry; now wait original motion and inspect CSS content width (240px).",
+    "Original navigation auto-expands ancestors; initial probe collapsed them. It now checks aria-expanded before toggling. Image decoding awaited. No product layout/focus/timing workaround."
+  ],
+  "notClaimed": [
+    "Complete B5/365/ab1b mixed commits",
+    "External target API/root/write policy",
+    "Global drop-zone or chat/PTY reference drag migration",
+    "Physical devices/other OS/minimum Node/real external model",
+    "Real remote session; local project browser and iPad emulation tested"
+  ]
+}

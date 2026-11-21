@@ -1,0 +1,33 @@
+{
+  "date": "2026-11-21",
+  "upstream": "ba3eee8fd5520b0a6ce66ebd6da749fc8cb120b5",
+  "fixedBaseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "scope": "attachment download backend; remote-only context-menu item is next",
+  "followups": [
+    "ab1b89ee13 viewed root",
+    "7a75e1be81 target-specific wrapper remains separate",
+    "f96811cddb/20313b254c preview-only routes remain separate"
+  ],
+  "targetTests": 49,
+  "skip": 0,
+  "testLog": "/tmp/cxv-b5-e5-regression.log",
+  "build": "passed",
+  "buildLog": "/tmp/cxv-b5-e5-build.log",
+  "testScenarios": [
+    "12MiB exact SHA256 and RFC5987 Unicode/quote/newline filename",
+    "HEAD exact content-length, empty body",
+    "same-name instance A/B, stale instance, absolute sibling and editorSession bypass rejection",
+    "missing, traversal, directory and hostile Origin rejection",
+    "private credential roots, symbolic escapes and hardlinks",
+    "private descriptor substitution rejected/closed before headers",
+    "64MiB sparse attachment disconnect closes owned fd",
+    "injected read error truncates response/closes fd rather than empty success; subsequent HTTP still serves"
+  ],
+  "backendSha256": "c85d18d7040db2f45942c76e2cd5e9e15d1e348db23591ce3e6b751209752a5d",
+  "notRun": [
+    "full suite after E5 (E4 1598 remains prior checkpoint)",
+    "new package install after E5",
+    "remote GUI download until menu integration",
+    "Windows/Linux/minimum Node"
+  ]
+}

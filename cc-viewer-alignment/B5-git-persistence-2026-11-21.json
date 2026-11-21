@@ -1,0 +1,58 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": "649f853e5e910b3fd1a964f441682d4f08499d2b",
+  "previousLocal": "258566c",
+  "localSubject": "fix(git): restore original panel visibility persistence",
+  "adaptation": "Only original storage namespace ccv_ to existing native cxv_; original constructor IIFE/setter/active-passive distinctions retained",
+  "checks": {
+    "web": 431,
+    "skip": 0,
+    "buildAndAssembly": "passed",
+    "webLog": "/tmp/cxv-b5-e29-web-final.log",
+    "buildLog": "/tmp/cxv-b5-e29-build-final2.log"
+  },
+  "gui": [
+    {
+      "log": "/tmp/cxv-b5-e29-chromium.log",
+      "result": {
+        "engine": "chromium",
+        "mode": "git-persist",
+        "browserVersion": "159.0.8154.6",
+        "originalVisibilityRestore": true,
+        "activeClosePersistsFalse": true,
+        "passiveFileOpenKeepsIntent": true,
+        "treePriorityPreventsDoubleRestore": true,
+        "activeTreeClosePersists": true,
+        "sameNameScopeBOnly": true,
+        "padRestoresPhoneDoesNot": true
+      },
+      "desktopPadPhonePageErrors": []
+    },
+    {
+      "log": "/tmp/cxv-b5-e29-webkit.log",
+      "result": {
+        "engine": "webkit",
+        "mode": "git-persist",
+        "browserVersion": "27.2",
+        "originalVisibilityRestore": true,
+        "activeClosePersistsFalse": true,
+        "passiveFileOpenKeepsIntent": true,
+        "treePriorityPreventsDoubleRestore": true,
+        "activeTreeClosePersists": true,
+        "sameNameScopeBOnly": true,
+        "padRestoresPhoneDoesNot": true
+      },
+      "desktopPadPhonePageErrors": []
+    }
+  ],
+  "earlyChecks": [
+    "Initial replacement anchor assertion aborted without product mutation; new tests failed on old code",
+    "Early assembly rejected source newer than build; discarded and final clean rebuild after pending builds finished"
+  ],
+  "limits": [
+    "No CSS/DOM changes or new screenshots; only original visibility behavior",
+    "Full/install not repeated; latest E28 full1737/install444 predates two new web tests",
+    "649 mixed B2/B3/B4/other subitems not all marked complete",
+    "Remote target admin choice still pending"
+  ]
+}

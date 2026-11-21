@@ -1049,3 +1049,20 @@
   display: block;
   margin-bottom: 4px;
 }
+
+.terminalContainer.terminalContainerDragOver {
+  box-shadow: inset 0 0 0 4px var(--color-primary), 0 0 12px var(--color-primary-bg-light);
+}
+
+:global([data-theme="light"]) .terminalContainer.terminalContainerDragOver {
+  box-shadow: inset 0 0 0 4px var(--color-primary), 0 0 12px var(--color-primary-bg-light);
+}
+
+.scratchInner.scratchInnerDragOver,
+.scratchPanesFocused .scratchPane.scratchPaneActive .scratchInner.scratchInnerDragOver {
+  border-color: var(--color-primary);
+}
+
+:global([data-theme="light"]) .scratchPanesFocused .scratchPane.scratchPaneActive .scratchInner.scratchInnerDragOver {
+  border-color: var(--color-primary);
+}

@@ -2,8 +2,9 @@
  * File API business logic — extracted from server.js
  * Provides path validation, file read/write with security checks.
  */
-import { resolve, relative, sep, isAbsolute } from 'node:path';
-import { constants, closeSync, fstatSync, ftruncateSync, openSync, realpathSync, existsSync, statSync, readFileSync, writeFileSync, renameSync } from 'node:fs';
+import { resolve, relative, sep, isAbsolute, dirname } from 'node:path';
+import { constants, mkdirSync, closeSync, fstatSync, ftruncateSync, openSync, realpathSync, existsSync, statSync, readSync, writeFileSync, renameSync } from 'node:fs';
+import { getUtf16Encoding, isBinaryBuffer } from './binary-sniff.js';
 import { canonicalPath } from './canonical-path.js';
 import { assertPublicFilePath } from './credential-file-policy.js';
 
@@ -63,15 +64,28 @@ export function resolveFilePath(cwd, reqPath, isEditorSession) {
  * @param {boolean} isEditorSession
  * @returns {{ path: string, content: string, size: number }}
  */
-export function readFileContent(cwd, reqPath, isEditorSession) {
+export function readFileContent(cwd, reqPath, isEditorSession, assertAccess) {
   const targetFile = resolveFilePath(cwd, reqPath, isEditorSession);
+  assertAccess?.(targetFile);
   const displayPath = isEditorSession !== true && (isAbsolute(reqPath) || reqPath.includes('..'))
     ? relative(realpathSync(resolve(cwd)), targetFile)
     : reqPath;
-  return _readAndReturn(targetFile, displayPath);
+  return _readAndReturn(targetFile, displayPath, assertAccess);
 }
 
-function _readAndReturn(targetFile, displayPath) {
+// Positioned reads preserve the write descriptor's offset until validation passes.
+function readEditorBytes(fd, size) {
+  const raw = Buffer.alloc(size);
+  let offset = 0;
+  while (offset < size) {
+    const count = readSync(fd, raw, offset, size - offset, offset);
+    if (!count) break;
+    offset += count;
+  }
+  return raw.subarray(0, offset);
+}
+
+function _readAndReturn(targetFile, displayPath, assertAccess) {
   if (!existsSync(targetFile)) {
     throw new FileApiError('NOT_FOUND', `File not found: ${targetFile}`);
   }
@@ -80,10 +94,16 @@ function _readAndReturn(targetFile, displayPath) {
   try {
     const stat = fstatSync(fd);
     assertPublicFilePath(targetFile, stat);
+    assertAccess?.(targetFile, stat);
     if (!stat.isFile()) throw new FileApiError('NOT_FILE', 'Not a file');
     if (stat.size > 5 * 1024 * 1024) throw new FileApiError('TOO_LARGE', 'File too large');
-    const content = readFileSync(fd, 'utf-8');
-    return { path: displayPath, content, size: stat.size };
+    const raw = readEditorBytes(fd, stat.size);
+    if (isBinaryBuffer(raw)) throw Object.assign(new FileApiError('BINARY', 'Binary file'), { reason: 'binary', size: stat.size });
+    const encoding = getUtf16Encoding(raw);
+    const content = encoding === 'utf16le' ? raw.subarray(2).toString('utf16le')
+      : encoding === 'utf16be' ? raw.subarray(2).swap16().toString('utf16le')
+      : raw.toString('utf-8');
+    return { path: displayPath, content, size: stat.size, ...(encoding ? { encoding, readOnly: true } : {}) };
   } finally { closeSync(fd); }
 }
 
@@ -95,7 +115,7 @@ function _readAndReturn(targetFile, displayPath) {
  * @param {boolean} isEditorSession
  * @returns {{ path: string, size: number }}
  */
-export function writeFileContent(cwd, reqPath, content, isEditorSession) {
+export function writeFileContent(cwd, reqPath, content, isEditorSession, assertAccess, createParents = false) {
   if (typeof reqPath !== 'string' || !reqPath) {
     throw new FileApiError('INVALID_PATH', 'Invalid path');
   }
@@ -106,13 +126,22 @@ export function writeFileContent(cwd, reqPath, content, isEditorSession) {
     throw new FileApiError('INVALID_CONTENT', 'Content must be a string');
   }
   const targetFile = resolveFilePath(cwd, reqPath, isEditorSession);
+  assertAccess?.(targetFile);
+  if (createParents) mkdirSync(dirname(targetFile), { recursive: true });
   // Validate the descriptor before truncating, so a raced-in key/backup inode
   // cannot be damaged even if the pathname looked public before open().
-  const fd = openSync(targetFile, constants.O_WRONLY | constants.O_CREAT | (constants.O_NOFOLLOW || 0) | (constants.O_NONBLOCK || 0), 0o666);
+  const fd = openSync(targetFile, constants.O_RDWR | constants.O_CREAT | (constants.O_NOFOLLOW || 0) | (constants.O_NONBLOCK || 0), 0o666);
   try {
     const stat = fstatSync(fd);
     assertPublicFilePath(targetFile, stat);
+    assertAccess?.(targetFile, stat);
     if (!stat.isFile()) throw new FileApiError('NOT_FILE', 'Not a file');
+    // A direct/stale editor POST must not transcode a binary or UTF-16 file.
+    // Inspect the same validated descriptor before truncation, within the read cap.
+    if (stat.size > 5 * 1024 * 1024) throw new FileApiError('TOO_LARGE', 'File too large');
+    const raw = readEditorBytes(fd, stat.size);
+    if (isBinaryBuffer(raw)) throw Object.assign(new FileApiError('BINARY', 'Binary file'), { reason: 'binary', size: stat.size });
+    if (getUtf16Encoding(raw)) throw new FileApiError('READ_ONLY_ENCODING', 'File encoding is read-only');
     ftruncateSync(fd, 0);
     writeFileSync(fd, content, 'utf-8');
     return { path: reqPath, size: fstatSync(fd).size };
@@ -141,6 +170,8 @@ export function renameSyncWithRetry(src, dst, opts = {}) {
 /** Map FileApiError codes to HTTP status codes */
 export const ERROR_STATUS_MAP = {
   ACCESS_DENIED: 403,
+  BINARY: 415,
+  READ_ONLY_ENCODING: 415,
   INVALID_PATH: 400,
   NOT_FOUND: 404,
   NOT_FILE: 400,

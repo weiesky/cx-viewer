@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Modal, Dropdown, message } from 'antd';
+import { Modal, Dropdown, message, Button } from 'antd';
+import { ReloadOutlined } from '@ant-design/icons';
 import { t } from '../../i18n';
 import { apiUrl } from '../../utils/apiUrl';
 import { getFileIcon } from '../../utils/fileIcons';
 import { fetchAllRepos } from '../../utils/gitApi';
+import { toWorkspacePath } from '../../utils/gitWorkspacePath';
+import { FILE_DRAG_TYPE, FOLDER_DRAG_TYPE } from '../../utils/fileDragDrop';
 import { buildGitTree } from '../../utils/gitTreeBuilder';
 import { loadGitChangesCollapsedDirs, saveGitChangesCollapsedDirs } from '../../utils/fileExpandedPathsStorage';
 import { useSessionStoragePersistedSet } from '../../hooks/useSessionStoragePersistedSet';
-import RefreshIcon from '../common/RefreshIcon';
 import styles from './GitChanges.module.css';
 
 const STATUS_COLORS = {
@@ -19,13 +21,43 @@ const STATUS_COLORS = {
   'U': '#e2c08d',
   '?': '#73c991',
   '??': '#73c991',
+  // Unmerged/conflict porcelain codes — red, same as D, to stand out from regular changes.
+  'UU': '#f14c4c',
+  'AA': '#f14c4c',
+  'DD': '#f14c4c',
+  'AU': '#f14c4c',
+  'UA': '#f14c4c',
+  'DU': '#f14c4c',
+  'UD': '#f14c4c',
 };
 
 const STATUS_LABELS = {
   '??': 'U',
 };
 
-function TreeDir({ name, node, depth, repoPath, onFileClick, onOpenFile, onRestore, selectedFile, selectedRepo, commitHash, selectedCommitHash, collapsedDirs, onToggleDir, parentPath = '' }) {
+// Same dataTransfer contract as the dragstart payload written by FileExplorer
+// (components/files/FileExplorer.jsx); the FILE/FOLDER type constants live in
+// utils/fileDragDrop.js.
+// NOTE: rows reuse the shared 'text/x-internal-move' marker, so a git row is also a
+// valid *move* source for FileExplorer/FileBrowserModal drop targets. That path is
+// currently unreachable: the UI cannot start a sidebar-row drag onto those targets
+// (the two panels are mutually exclusive, and the modal is read-only / masked).
+function writeFileDragPayload(e, path, isDir) {
+  if (!path) return;
+  e.dataTransfer.setData('text/plain', path);
+  e.dataTransfer.setData('text/x-internal-move', '1');
+  e.dataTransfer.setData(isDir ? FOLDER_DRAG_TYPE : FILE_DRAG_TYPE, '1');
+  e.dataTransfer.effectAllowed = 'copyMove';
+}
+
+// Rename/copy rows carry a porcelain pseudo-path ("old -> new") that the server does
+// not split (server/routes/git.js). The XY status can be a pair (e.g. 'RM' after a
+// staged rename + edit), so reject any status containing R or C.
+function isFileRowDraggable(status) {
+  return typeof status === 'string' && !status.includes('R') && !status.includes('C');
+}
+
+function TreeDir({ name, node, depth, repoPath, onFileClick, onOpenFile, onRestore, onAttachToChat, onInsertPathToChat, selectedFile, selectedRepo, commitHash, selectedCommitHash, collapsedDirs, onToggleDir, parentPath = '' }) {
   const dirNames = Object.keys(node.dirs).sort();
   const files = [...node.files].sort((a, b) => a.name.localeCompare(b.name));
   // 累计 dirPath：父级 + name；name 空（根节点）时透传 parentPath 不变。
@@ -46,17 +78,41 @@ function TreeDir({ name, node, depth, repoPath, onFileClick, onOpenFile, onResto
       if (onToggleDir && dirKey) onToggleDir(dirKey);
     }
   }, [onToggleDir, dirKey]);
+  // Both the working tree and unpushed-commit file lists are drag sources. Directory
+  // rows are always draggable; file rows skip renames/copies whose path is a pseudo-path.
+  const [draggingDir, setDraggingDir] = useState(false);
+  const [draggingFilePath, setDraggingFilePath] = useState(null);
+  const handleDragEnd = useCallback(() => {
+    setDraggingDir(false);
+    setDraggingFilePath(null);
+  }, []);
+  const handleDirDragStart = useCallback((e) => {
+    // A cross-directory rename pseudo-path ("a -> dir/b") is split by buildGitTree into
+    // a fake directory node; it has no valid path, so do not start a drag for it.
+    if (dirPath.includes(' -> ')) { e.preventDefault(); return; }
+    writeFileDragPayload(e, toWorkspacePath(repoPath, dirPath), true);
+    setDraggingDir(true);
+  }, [repoPath, dirPath]);
+  // One shared handler keeps the drag logic in a single place; each row binds its own
+  // fullPath via a lightweight inline closure at the call site.
+  const handleFileDragStart = useCallback((e, fullPath) => {
+    writeFileDragPayload(e, toWorkspacePath(repoPath, fullPath), false);
+    setDraggingFilePath(fullPath);
+  }, [repoPath]);
   return (
     <>
       {name && (
         <div
-          className={`${styles.dirItem} ${collapsible ? styles.dirItemClickable : ''}`}
+          className={`${styles.dirItem} ${collapsible ? styles.dirItemClickable : ''} ${draggingDir ? styles.dirItemDragging : ''}`}
           style={{ paddingLeft: 8 + depth * 16 }}
           onClick={collapsible ? handleClick : undefined}
           onKeyDown={collapsible ? handleKeyDown : undefined}
           role={collapsible ? 'button' : undefined}
           tabIndex={collapsible ? 0 : undefined}
           aria-expanded={collapsible ? !isCollapsed : undefined}
+          draggable
+          onDragStart={handleDirDragStart}
+          onDragEnd={handleDragEnd}
         >
           <span className={styles.dirArrow}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={isCollapsed ? '' : styles.rotated90}>
@@ -68,18 +124,22 @@ function TreeDir({ name, node, depth, repoPath, onFileClick, onOpenFile, onResto
         </div>
       )}
       {!isCollapsed && dirNames.map(dir => (
-        <TreeDir key={dir} name={dir} node={node.dirs[dir]} depth={name ? depth + 1 : depth} repoPath={repoPath} onFileClick={onFileClick} onOpenFile={onOpenFile} onRestore={onRestore} selectedFile={selectedFile} selectedRepo={selectedRepo} commitHash={commitHash} selectedCommitHash={selectedCommitHash} collapsedDirs={collapsedDirs} onToggleDir={onToggleDir} parentPath={dirPath} />
+        <TreeDir key={dir} name={dir} node={node.dirs[dir]} depth={name ? depth + 1 : depth} repoPath={repoPath} onFileClick={onFileClick} onOpenFile={onOpenFile} onRestore={onRestore} onAttachToChat={onAttachToChat} onInsertPathToChat={onInsertPathToChat} selectedFile={selectedFile} selectedRepo={selectedRepo} commitHash={commitHash} selectedCommitHash={selectedCommitHash} collapsedDirs={collapsedDirs} onToggleDir={onToggleDir} parentPath={dirPath} />
       ))}
       {!isCollapsed && files.map(file => {
         const isSelected = selectedFile === file.fullPath && selectedRepo === repoPath
           && (commitHash || null) === (selectedCommitHash || null);
+        const fileRowDraggable = isFileRowDraggable(file.status);
         return (
         <Dropdown key={`${commitHash || 'wt'}::${file.fullPath}`} menu={{ items: [
           { key: 'reveal', label: t('ui.contextMenu.revealInExplorer') },
           { key: 'copyPath', label: t('ui.contextMenu.copyPath') },
           { key: 'copyRelPath', label: t('ui.contextMenu.copyRelativePath') },
+          // Keyboard / no-drag affordance mirroring FileExplorer's file menu.
+          { key: 'attachToChat', label: t('ui.contextMenu.attachToChat') },
+          { key: 'insertPathToChat', label: t('ui.contextMenu.insertPathToChat') },
         ], onClick: ({ key }) => {
-          const resolvedPath = repoPath && repoPath !== '.' ? `${repoPath}/${file.fullPath}` : file.fullPath;
+          const resolvedPath = toWorkspacePath(repoPath, file.fullPath);
           if (key === 'reveal') {
             fetch(apiUrl('/api/reveal-file'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: resolvedPath }) }).catch(() => {});
           } else if (key === 'copyPath') {
@@ -87,12 +147,19 @@ function TreeDir({ name, node, depth, repoPath, onFileClick, onOpenFile, onResto
               .then(r => r.json()).then(data => { if (data.fullPath) navigator.clipboard.writeText(data.fullPath).then(() => message.success(t('ui.copied'))).catch(() => {}); }).catch(() => {});
           } else if (key === 'copyRelPath') {
             navigator.clipboard.writeText(resolvedPath).then(() => message.success(t('ui.copied'))).catch(() => {});
+          } else if (key === 'attachToChat') {
+            onAttachToChat && onAttachToChat(resolvedPath);
+          } else if (key === 'insertPathToChat') {
+            onInsertPathToChat && onInsertPathToChat(resolvedPath);
           }
         }}} trigger={['contextMenu']}>
           <div
-            className={`${styles.changeItem} ${isSelected ? styles.changeItemSelected : ''}`}
+            className={`${styles.changeItem} ${isSelected ? styles.changeItemSelected : ''} ${draggingFilePath === file.fullPath ? styles.changeItemDragging : ''}`}
             style={{ paddingLeft: 8 + (name ? depth + 1 : depth) * 16 }}
             onClick={() => onFileClick && onFileClick(repoPath, file.fullPath, commitHash || null)}
+            draggable={fileRowDraggable}
+            onDragStart={fileRowDraggable ? (e) => handleFileDragStart(e, file.fullPath) : undefined}
+            onDragEnd={fileRowDraggable ? handleDragEnd : undefined}
           >
             <span className={styles.icon}>{getFileIcon(file.name)}</span>
             <span className={styles.fileName}>{file.name}</span>
@@ -117,7 +184,19 @@ function TreeDir({ name, node, depth, repoPath, onFileClick, onOpenFile, onResto
   );
 }
 
-function CommitRow({ commit, repoPath, expanded, onToggle, onFileClick, onOpenFile, selectedFile, selectedRepo, selectedCommitHash, depth = 0 }) {
+// Shared +n/-n line-stat badge pair; renders nothing when both counters are zero.
+// Used by the panel total, the repo header, and each unpushed-commit row.
+function StatBadges({ insertions, deletions, capped = false }) {
+  if (!(insertions > 0 || deletions > 0 || capped)) return null;
+  return (
+    <>
+      <span className={`${styles.statBadge} ${styles.statInsert}`} title={capped ? 'Insertion count is capped for large untracked files' : undefined}>+{insertions}{capped ? '…' : ''}</span>
+      <span className={`${styles.statBadge} ${styles.statDelete}`}>-{deletions}</span>
+    </>
+  );
+}
+
+function CommitRow({ commit, repoPath, expanded, onToggle, onFileClick, onOpenFile, onAttachToChat, onInsertPathToChat, selectedFile, selectedRepo, selectedCommitHash, depth = 0 }) {
   // Memoize tree build to avoid recomputing on every parent re-render
   // (e.g. when another commit is expanded or a file is selected elsewhere).
   const fileTree = useMemo(() => buildGitTree(commit.files), [commit.files]);
@@ -133,13 +212,23 @@ function CommitRow({ commit, repoPath, expanded, onToggle, onFileClick, onOpenFi
         : d.toLocaleDateString([], { month: 'short', day: 'numeric' });
     } catch { return ''; }
   }, [commit.date]);
+  // Dragging the commit row itself passes the commit id (hash) to the drop target.
+  const [draggingCommit, setDraggingCommit] = useState(false);
+  const handleCommitDragStart = useCallback((e) => {
+    writeFileDragPayload(e, commit.hash, false);
+    setDraggingCommit(true);
+  }, [commit.hash]);
+  const handleCommitDragEnd = useCallback(() => setDraggingCommit(false), []);
   return (
     <>
       <div
-        className={styles.commitItem}
+        className={`${styles.commitItem} ${draggingCommit ? styles.changeItemDragging : ''}`}
         style={{ paddingLeft: 8 + depth * 16 }}
         onClick={onToggle}
         title={commit.subject}
+        draggable
+        onDragStart={handleCommitDragStart}
+        onDragEnd={handleCommitDragEnd}
       >
         <span className={`${styles.commitArrow} ${expanded ? styles.commitArrowExpanded : ''}`}>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -148,9 +237,13 @@ function CommitRow({ commit, repoPath, expanded, onToggle, onFileClick, onOpenFi
         </span>
         <span className={styles.commitHash}>{commit.shortHash}</span>
         <span className={styles.commitSubject}>{commit.subject}</span>
-        {commit.author && <span className={styles.commitMeta}>{commit.author}</span>}
         {dateLabel && <span className={styles.commitMeta}>{dateLabel}</span>}
-        <span className={styles.commitFileBadge}>{commit.files.length}</span>
+        <StatBadges insertions={commit.insertions} deletions={commit.deletions} />
+        {!(commit.insertions > 0 || commit.deletions > 0) && commit.files.length > 0 && (
+          // Zero line stats (binary-only, pure rename, mode-only) still touched files —
+          // fall back to the file count so the row is not indistinguishable from a no-op.
+          <span className={styles.statBadge}>{commit.files.length}</span>
+        )}
       </div>
       {expanded && commit.files.length > 0 && (
         <TreeDir
@@ -161,6 +254,8 @@ function CommitRow({ commit, repoPath, expanded, onToggle, onFileClick, onOpenFi
           onFileClick={onFileClick}
           onOpenFile={onOpenFile}
           onRestore={null}
+          onAttachToChat={onAttachToChat}
+          onInsertPathToChat={onInsertPathToChat}
           selectedFile={selectedFile}
           selectedRepo={selectedRepo}
           commitHash={commit.hash}
@@ -171,7 +266,7 @@ function CommitRow({ commit, repoPath, expanded, onToggle, onFileClick, onOpenFi
   );
 }
 
-export default function GitChanges({ style, onClose, onFileClick, onOpenFile, refreshTrigger, onManualRefresh, projectName }) {
+export default function GitChanges({ style, onClose, onFileClick, onOpenFile, onAttachToChat, onInsertPathToChat, refreshTrigger, onManualRefresh, projectName }) {
   const [repos, setRepos] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -193,6 +288,8 @@ export default function GitChanges({ style, onClose, onFileClick, onOpenFile, re
     save: saveGitChangesCollapsedDirs,
   });
   const mounted = useRef(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const manualRefreshRef = useRef(false);
 
   // dir row 点击切换；key 由 TreeDir 算好（`${repoPath}::${dirPath}`），父级只管 Set 增删。
   const onToggleDir = useCallback((dirKey) => {
@@ -205,12 +302,13 @@ export default function GitChanges({ style, onClose, onFileClick, onOpenFile, re
   }, []);
 
   const refreshAllRepos = useCallback(() => {
-    fetchAllRepos()
+    return fetchAllRepos()
       .then(results => { if (mounted.current) setRepos(results); })
       .catch(() => {});
   }, []);
 
   const handleRestore = useCallback((repoPath, filePath, fileName) => {
+    const restoreUrl = apiUrl('/api/git-restore');
     Modal.confirm({
       title: t('ui.gitChanges.restoreConfirm', { name: fileName }),
       okType: 'danger',
@@ -220,12 +318,12 @@ export default function GitChanges({ style, onClose, onFileClick, onOpenFile, re
       onOk: async () => {
         let errMsg;
         try {
-          const r = await fetch(apiUrl('/api/git-restore'), {
+          const r = await fetch(restoreUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ path: filePath, repo: repoPath }),
           });
-          if (r.ok) { refreshAllRepos(); return; }
+          if (r.ok) { if (mounted.current) refreshAllRepos(); return; }
           errMsg = `HTTP ${r.status}`;
           try { const data = await r.json(); if (data?.error) errMsg = data.error; } catch {}
         } catch (err) {
@@ -256,9 +354,21 @@ export default function GitChanges({ style, onClose, onFileClick, onOpenFile, re
     return () => { mounted.current = false; };
   }, []);
 
+  const handleManualRefresh = useCallback(() => {
+    manualRefreshRef.current = true;
+    setRefreshing(true);
+    onManualRefresh && onManualRefresh();
+  }, [onManualRefresh]);
+
   // 工具触发的增量刷新
   useEffect(() => {
-    if (refreshTrigger > 0) refreshAllRepos();
+    if (refreshTrigger > 0) {
+      const isManual = manualRefreshRef.current;
+      manualRefreshRef.current = false;
+      Promise.resolve(refreshAllRepos()).finally(() => {
+        if (isManual && mounted.current) setRefreshing(false);
+      });
+    }
   }, [refreshTrigger]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Prune per-repo state (`expandedCommits`, `collapsedUnpushed`) for repos that
@@ -304,20 +414,23 @@ export default function GitChanges({ style, onClose, onFileClick, onOpenFile, re
         <span className={styles.headerTitle}>
           {t('ui.gitChanges')}
           {/* 手动刷新：用户终端里执行 git checkout/stash/rebase 等不被 tool_result 感知的
-              git 操作时兜底；复用既有 gitChangesRefresh++ 链路触发 fetchAllRepos。RefreshIcon
-              内部封装 300ms cooldown，防狂点并发请求。 */}
+              git 操作时兜底；复用既有 gitChangesRefresh++ 链路触发 fetchAllRepos。
+              与「上下文消耗」刷新按钮同款 antd text 小按钮 + ReloadOutlined，点击后
+              无限旋转直到 fetch 完成（仅手动点击时转，见 refreshing/manualRefreshRef）。 */}
           {onManualRefresh && (
-            <RefreshIcon onClick={onManualRefresh} title={t('ui.gitChanges.refresh')} />
+            <Button
+              size="small"
+              type="text"
+              className={styles.refreshBtn}
+              icon={<ReloadOutlined />}
+              onClick={handleManualRefresh}
+              loading={refreshing}
+              disabled={refreshing}
+              aria-label={t('ui.gitChanges.refresh')}
+              title={t('ui.gitChanges.refresh')}
+            />
           )}
-          {(totalInsertions > 0 || totalDeletions > 0 || totalInsertionsCapped) && (
-            <>
-              <span
-                className={`${styles.statBadge} ${styles.statInsert}`}
-                title={totalInsertionsCapped ? 'Insertion count is capped for large untracked files' : undefined}
-              >+{totalInsertions}{totalInsertionsCapped ? '…' : ''}</span>
-              <span className={`${styles.statBadge} ${styles.statDelete}`}>-{totalDeletions}</span>
-            </>
-          )}
+          <StatBadges insertions={totalInsertions} deletions={totalDeletions} capped={totalInsertionsCapped} />
         </span>
         <button className={styles.collapseBtn} onClick={onClose} title="Close">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -339,7 +452,7 @@ export default function GitChanges({ style, onClose, onFileClick, onOpenFile, re
             setSelectedFile(fp); setSelectedRepo(rp); setSelectedCommitHash(ch || null);
             onFileClick && onFileClick(rp, fp, ch || null);
           };
-          const showUnpushed = repo.hasUpstream && repo.commits && repo.commits.length > 0;
+          const showUnpushed = repo.commits && repo.commits.length > 0;
           const unpushedCollapsed = !!collapsedUnpushed[repo.path];
           const expandedSet = expandedCommits[repo.path] || new Set();
           const toggleCommit = (hash) => setExpandedCommits(prev => {
@@ -358,6 +471,8 @@ export default function GitChanges({ style, onClose, onFileClick, onOpenFile, re
                   onToggle={() => toggleCommit(c.hash)}
                   onFileClick={handleClickFile}
                   onOpenFile={onOpenFile}
+                  onAttachToChat={onAttachToChat}
+                  onInsertPathToChat={onInsertPathToChat}
                   selectedFile={selectedFile}
                   selectedRepo={selectedRepo}
                   selectedCommitHash={selectedCommitHash}
@@ -374,7 +489,7 @@ export default function GitChanges({ style, onClose, onFileClick, onOpenFile, re
               className={styles.unpushedHeader}
               style={{ paddingLeft: 8 + baseDepth * 16 }}
               onClick={() => setCollapsedUnpushed(prev => ({ ...prev, [repo.path]: !prev[repo.path] }))}
-              title={repo.upstream ? `${repo.upstream}..HEAD` : ''}
+              title={repo.upstream ? `${repo.upstream}..HEAD` : t('ui.gitChanges.noUpstreamTip')}
             >
               <span className={`${styles.commitArrow} ${unpushedCollapsed ? '' : styles.commitArrowExpanded}`}>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -404,6 +519,8 @@ export default function GitChanges({ style, onClose, onFileClick, onOpenFile, re
               repoPath={repo.path}
               onFileClick={handleClickFile}
               onOpenFile={onOpenFile}
+              onAttachToChat={onAttachToChat}
+              onInsertPathToChat={onInsertPathToChat}
               onRestore={handleRestore}
               selectedFile={selectedFile}
               selectedRepo={selectedRepo}
@@ -440,15 +557,7 @@ export default function GitChanges({ style, onClose, onFileClick, onOpenFile, re
                   <path d="M18 9a9 9 0 0 1-9 9"/>
                 </svg>
                 <span className={styles.repoName}>{repo.name}</span>
-                {(repo.insertions > 0 || repo.deletions > 0 || repo.insertionsCapped) && (
-                  <>
-                    <span
-                      className={`${styles.statBadge} ${styles.statInsert}`}
-                      title={repo.insertionsCapped ? 'Insertion count is capped for large untracked files' : undefined}
-                    >+{repo.insertions}{repo.insertionsCapped ? '…' : ''}</span>
-                    <span className={`${styles.statBadge} ${styles.statDelete}`}>-{repo.deletions}</span>
-                  </>
-                )}
+                <StatBadges insertions={repo.insertions} deletions={repo.deletions} capped={repo.insertionsCapped} />
                 <span className={styles.repoBadge}>{repo.changes.length}</span>
               </div>
               {!collapsed && (

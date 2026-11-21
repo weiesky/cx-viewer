@@ -1,0 +1,37 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": [
+    "566ade13fc3bf2c3fd8d90044b1f36602c6980bf",
+    "7a75e1be81b3e90f55f8888c423e66e05c1cde64",
+    "208f1348279758d95b72798442105c3236fa1dd3"
+  ],
+  "previousLocal": "762df84",
+  "localSubject": "feat(files): add native target file access policy prerequisite",
+  "endpointWiring": false,
+  "originalTablesSha256": "345860e20ff4171609000c5ab390c091fe4ac0cfe7a2226ba2289e6f47c38fc2",
+  "originalTablesExact": true,
+  "nativeAdaptations": [
+    "Reuse credential-file-policy paths/inodes without reading native private content",
+    "Codex configured/default/startup owners, .agents skills roots, registered and viewed native cwd",
+    "Codex sessions/archive/shell snapshots/history/session index/SQLite/raw memory and shallow Viewer V2 archives use dedicated scoped APIs; general target file access denied",
+    "Native LOG_DIR/registry have no upstream invalidation hooks: fresh per-request roots snapshot, reused for listing entries",
+    "Missing protected variants rejected before files exist; symlinks and hard-link aliases denied"
+  ],
+  "checks": {
+    "policyAndExistingNativeCredentialTests": 9,
+    "skip": 0,
+    "log": "/tmp/cxv-b5-e26-policy-final2.log",
+    "firstFailure": "Missing auth.json.new was not in metadata names list; corrected prefix guard for new variants/SQLite/history before creation"
+  },
+  "nativePrimaryEvidence": [
+    "https://github.com/openai/codex/blob/main/codex-rs/rollout/src/lib.rs",
+    "https://github.com/openai/codex/blob/main/codex-rs/rollout/src/session_index.rs",
+    "https://github.com/openai/codex/blob/main/codex-rs/core/src/shell_snapshot.rs",
+    "https://github.com/openai/codex/blob/main/codex-rs/state/src/lib.rs"
+  ],
+  "limits": [
+    "Policy prerequisite only: target routes/content/raw/download not wired yet",
+    "Full/installed not rerun; E23 full1690/install437 remains separate",
+    "Remote target admin semantics differs from existing native auth state and requires reconciliation before exposure"
+  ]
+}

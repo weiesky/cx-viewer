@@ -1,0 +1,36 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "previousLocal": "8a35d54",
+  "localSubject": "test(cli): wait for the browser URL before declaring resume ready",
+  "trigger": "E22 full run read empty opened file between shell creation and printf write; URL parser failed",
+  "change": "Existing wait predicate now requires a nonempty URL; production CLI unchanged",
+  "checks": {
+    "full": 1690,
+    "parts": [
+      5,
+      389,
+      1084,
+      212
+    ],
+    "skip": 0,
+    "build": "passed",
+    "packFiles": 705,
+    "log": "/tmp/cxv-b5-e23-release.log"
+  },
+  "installed": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-5aqh9jrb",
+    "files": 705,
+    "source_bytes_match": true,
+    "web_asset_files": 204,
+    "runtime_tests": "437/437",
+    "b12_regression": "passed",
+    "installed_cli_relative_cd_boot": "passed",
+    "uses_fake_codex": true,
+    "uses_real_model_network": false
+  },
+  "installedLog": "/tmp/cxv-b5-e23-install.log",
+  "limits": [
+    "B5 target/root and candidate audit still pending; full checks do not prove visual alignment",
+    "External model/LAN/physical devices and other platforms not checked"
+  ]
+}

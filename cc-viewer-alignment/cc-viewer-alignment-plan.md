@@ -1,6 +1,6 @@
 # cc-viewer → cx-viewer 分批对齐规划
 
-2026-11-21 B4已完成（第5/12工作包），B2/B3已收口；固定上游74cd752d99caf122e750216d2af3bb9f467c4de1。任务/Agent身份与生命周期、审批问答、失败恢复/慢请求、活性/重放、原HUD/MCP/model chip/浮动输入区/压缩提示、启动参数及SDK主通道PTY隔离已分笔核验。用户明确允许临时Playwright后，E66完成G1–G5实际Chromium159/WebKit27.2 GUI：分叉与审批预抢刷新各一份、原生滚动条11px实际可拖、多行/HUD/队列/空态错误/长回复、phone/pad仿真、压缩恢复清理、SDK说明及分类不可用/普通PTY与离线门控。12张原截图与哈希见B4-final-gui回执。最终1580/1580、0skip、构建与pack:dry-run通过；E64新安装291运行时、702文件/204Web精确字节、B1.2/CLI通过，本轮无生产变更。默认exec/显式AppServer渐进方案及既选353K用量条保持。本轮按授权以1commit/1PR交付，原72笔hash映射与可恢复备份见local-commit-consolidation-2026-11-21.md；GitHub最终合并状态以关联PR为准，完成后下一工作包B5。B7普通PTY队列/技能导航、B8角色分源/模型提示、B9自动审批/调度、B10 service总线与B11旧IM/发布等混合项继续独立未完成。保留IM并发偶发未定、原生profile/image-input/add-dir/review不支持，真实外部模型/慢网/权限/dynamic图像/OAuth/远端MCP、物理音频/设备及其他平台/最低Node未验边界。详见[B4完成矩阵](./B4-completion-matrix.md)。
+2026-11-21 B5已完成（第6/12工作包），固定上游74cd752d99caf122e750216d2af3bb9f467c4de1。E1–E45分笔完成搜索/原文件树与浏览菜单/导入移动下载编辑/引用/Git/Markdown路径，以及原AGENTS和project/user/plugin技能目录；E46汇总。E39普通入口组合native凭据/历史/owner策略，E40–44补原case-only回滚、delete/EXDEV、目录alias及平台sep；E45修复.agents祖先导航，仅目标祖先目录元数据例外，不放宽内容或写策略。用户已交互选择上游远程管理员，认证设置/内部bridge仍限本机。最终1781/1781、0skip、build/pack712；真实新安装487/487、必需源码与204Web文件精确字节、B1.2/隔离CLI通过。目标GUI为实际Chromium159/WebKit27.2的E38八场26图及E45 user/plugin两场6图，原FileBrowser整CSS相同；phone/pad仅仿真、remote仅偏好模拟及隔离HTTP。B4已由PR #4合并main（288faea），B5按用户最新授权将原46笔合为1commit，经1个面向main的PR自查后合并，原hash映射/恢复备份保留；交付预检仅清理1个末尾LF，搜索15/15、新构建/pack712及新安装产物字节通过；关联[PR #5](https://github.com/weiesky/cx-viewer/pull/5)，最终GitHub合并状态以该PR与整合回执为准。B6留待下一个会话执行，本会话不启动。见[B5交付记录](./B5-local-commit-consolidation-2026-11-21.md)。iPad替换横滚按已选保留；Markdown冷开行号原缺陷未计滚动通过；B7窄split/主PTY新GUI待核。B6–B11混合子项及IM并发偶发未定独立，真实LAN/TLS、外部模型、物理设备/音频、其他OS/最低Node未验；native profile/image-input/add-dir/review不支持边界保持。默认exec/显式AppServer渐进与353K用量条不变。见[B5完成矩阵](./B5-completion-matrix.md)。
 
 2026-11-18 GitHub 同步：已按用户请求将 main 6045b53 与 codex/pnpm-workspace 2c0edc8 原子推送到 origin 同名分支，远端完整 hash 已读回核对，上游跟踪已设置。未执行强推、分支合并或活动安装切换；未提交的 AGENTS.md 与 cc-viewer-alignment 文档仍保留本地。
 
@@ -34,7 +34,7 @@
 
 ## 4. 工作包与当前进度
 
-进度更新至2026-11-20 B3完成并推送main（7c3d849）；B2保持2026-11-19用户验收收口。2026-11-19 main聚合覆盖原本地63笔（含A2结构前置、B1.2收尾及B2），原hash仍保留映射；本地提交数不等于已完成上游提交数。B1真实迁移和其他平台验收仍保留原边界，B3本地迁移已完成，下一工作包B4；最终结果见[B3完成矩阵](./B3-completion-matrix.md)。
+进度更新至2026-11-21 B5完成；B4已通过PR #4合并main，B5按最新授权以1commit/1PR自查合并，备份与原映射保留，B6留待下一个会话执行，本会话不启动。各包范围与未验环境见下表及B5完成矩阵。
 
 | 工作包 | 当前状态 | 已完成与下一步 |
 | --- | --- | --- |
@@ -42,11 +42,12 @@
 | B1 | B1.2 本地实现与隔离安装验收完成；真实验收待执行 | 配置保护、凭据库、auth/proxy/IM 条件启用运行时、回执保护、私有备份及 auth/proxy/IM 显式迁移入口已实现；按配置恢复、无损 key 修复及坏库现场留存已实现；已确认不提供有损整库回退，本地安装验收完成；真实验收尚待。 |
 | B2 | 已完成：用户验收收口 | 身份/队列/恢复/工作区UI按基线纠偏，未覆盖环境单列保留。 |
 | B3 | 已完成并推送main（第4/12工作包） | 聚合提交[7c3d849](https://github.com/weiesky/cx-viewer/commit/7c3d849b9e7acda1c974077843406c23627dbdcb)已快进推送；渐进分片、恢复/历史授权、mux背压、分页/增量扫描完成，1410项通过，见[B3完成矩阵](./B3-completion-matrix.md)。目标环境边界明示，下一包B4。 |
-| B4 | 实施中（第5/12工作包）；最新源码1575项/构建通过；E56原生压缩提示已验；E55浮动输入区/scrollbar源码已验，新安装286项通过，GUI待；E53中断分叉与缓存修复的最终GUI复验待连接恢复，Context差异及剩余候选继续，见[B4实施](./B4-implementation.md)。 |
-| B5–B10 | 尚未逐包完成 | B5部分安全前置已有实现，混合提交仍分包核验。 |
+| B4 | 已完成并由PR #4合并main（第5/12工作包） | E66实际GUI/1580完整及既有安装通过；见[B4完成矩阵](./B4-completion-matrix.md)。 |
+| B5 | 已完成（第6/12工作包），1commit/1PR交付，GitHub实际状态以关联PR为准 | 1781完整/487新安装/原GUI与32目标图；下一B6，见[B5完成矩阵](./B5-completion-matrix.md)。 |
+| B6–B10 | 尚未逐包完成 | B6为下一实施入口，混合候选逐子项保留。 |
 | B11 / 工程前置 | A1 6287d2a 已主线，A2 3b15a6d 已工作树提交并通过本地验证 | 继续在新结构实施 B1 余项及 B2–B10；全局实例未切换，B11 其他验收继续。 |
 
-当前最新源码/构建/安装检查点为B4 E53：1570/1570、0 skip，新安装702文件/204Web精确字节/285运行时、B1.2/隔离CLI通过；E53最终GUI因CUA连接故障待，未标通过。B2/B3历史验收与各项平台边界保留，详见[B4实施](./B4-implementation.md)、[B3矩阵](./B3-completion-matrix.md)和[B2矩阵](./B2-completion-matrix.md)。
+当前最新源码/构建/安装检查点为B5 E46：1781/1781、0skip，build/pack712通过；真实新安装487/487、必需源码/204Web精确字节、B1.2与隔离CLI通过。双引擎目标GUI32图及其他B5原回执见[B5完成矩阵](./B5-completion-matrix.md)。
 
 ### B0 — 台账校验与版本测试基线
 
@@ -108,20 +109,23 @@
 
 ### B5 — 文件操作与搜索
 
-**部分前置已完成**：b4051ed 已修复内容 GET/POST 和 raw 的非编辑器相对符号链接越界，隔离全量 1019/1019 通过；全端点、vault/key/备份策略及跨平台尚未验收，见 [B1 安全前置记录](./B1-config-implementation.md)。
+**当前状态：已完成（第6/12工作包，2026-11-21）。** E1–45独立迁移/审计，E46收口；1781/1781、0skip/build/pack712、真实安装487/487与源码/204Web字节/B1.2/CLI通过。实际双引擎目标8场26图、user/plugin另2场6图；47候选混合子项及原缺陷/未验环境单列。下一工作包B6，见[B5完成矩阵](./B5-completion-matrix.md)。
+
+**历史前置**：b4051ed等原相对符号链接越界修复已保留；B5最终端点/target/native owner及授权验证见E26–45和完成矩阵，其他平台仍未验。
 
 **完整上游提交索引**：[B5 时间顺序索引](./cc-viewer-alignment-commit-index.md#b5)；[B0 交叉候选](./B0-cross-index.md#cross-b5)。逐项核对索引及交叉工作包中的修复、合并和后续替代记录。
 
-**工作项**：①逐项验收树、浏览、上传下载、编辑、搜索和拖动；②接入对话/终端前定义绝对路径、相对路径、引用转义和文件夹语义；③搜索 worker 与大列表虚拟化按性能基准择需实施；④修复项目切换后的路径归属。
+**工作项**：①逐项验收树、浏览、上传下载、编辑、搜索和拖动；②接入对话/终端前定义绝对路径、相对路径、引用转义和文件夹语义；③搜索 worker 与大列表虚拟化已按原基线迁入并有前后基准；④修复项目切换后的路径归属。
 
-**高优先级核验**：[`96c477d582`](./cc-viewer-alignment-commit-ledger.md#commit-96c477d582) 对应 `server.js` 的 `git check-ignore` 子进程 stdin 缺少错误处理；隔离子进程已用本地函数源码和提前退出的子进程复现未捕获 EPIPE；实施时覆盖早退出、缺失可执行文件、超时、一次性完成及资源回收。
+**EPIPE核验已完成**：96c477d582的既有stdin防护已由E1按真实提前退出/缺失命令/超时和HTTP失败回退复核，24项通过；原本地ecc1048映射保留，见[B5实施](./B5-implementation.md)。
 
 **候选文件**：`lib/file-api.js`、`lib/code-search.js`、`src/components/files/FileExplorer.jsx`、`src/components/search/SearchPanel.jsx`、`src/components/chat/ChatView.jsx`、`src/components/mobile/MobileFileExplorer.jsx`。**验收**：realpath、符号链接、目录越界、同名项目、空格/换行路径、移动端及写操作授权；运行文件、搜索、端点和 UI 测试。**依赖**：B2 工作区归属。
 
-B5 安全复核：临时目录已复现非 editorSession 的项目相对符号链接可读写项目外文件；隔离 HTTP 服务上 file-content 的 GET/POST 均已复现；其他文件端点需分别验证。
+B5安全复核：E7/E26/E33/E36/E39组合native凭据/历史/descriptor/alias/祖先与缺失叶策略，覆盖通用文件工具；目标身份/管理员与跨项目异步归属已验。专属image/voice/IM按原scope，OS terminal按原管理员/containment意图；不声称全部TOCTOU或跨平台已解决。
 
 ### B6 — 预览与内容引用
 
+**会话交接：用户已明确B6留待下一个会话执行，本会话只完成B5文档与PR交付。** 从下方固定索引读取实际diff/完整调用链/CSS及后续修复，再按依赖小步迁移；不从历史规划直接改版。
 **完整上游提交索引**：[B6 时间顺序索引](./cc-viewer-alignment-commit-index.md#b6)；[B0 交叉候选](./B0-cross-index.md#cross-b6)。逐项核对索引及交叉工作包中的修复、合并和后续替代记录。
 
 **工作项**：统一类型与二进制识别；有界 ZIP/TAR/GZIP 目录/条目预览，支持图片音频字幕与不支持格式的下载回退；对话选中文本、diff 和工具参数引用；Markdown 源复制。新增依赖之前先核对已安装依赖和许可。
@@ -183,7 +187,7 @@ B5 安全复核：临时目录已复现非 editorSession 的项目相对符号�
 ## 6. 当前未完成与需决策项
 
 - B0 已完结；原 15 条待归类项已由人工分流明确归属，见 [B0 交接](./B0-handoff.md)。337 条提交的功能对齐与环境验收继续由 B1–B11 逐项完成，不以累计本地提交数抵扣整条上游提交。
-- B2已用户验收，B3已完成并以7c3d849推送main；B4为下一实施入口（准备中），本轮无B4新增实现；B1.2 本地实现与隔离安装验收已收尾，已确认不提供有损整库回退，真实用户/目标环境验收仍待；三类迁移、live 可读库的按配置恢复、可证明无损的 key 修复及损坏现场留存已实现，用户已选择 auth 恢复整份 preferences，真实用户迁移尚未执行。真实迁移前停用共享配置的进程、备份并验证可恢复；迁移完成仍停用时追加含新 key 的正常快照，迁移前快照不能保证包含新 key。
+- B2已用户验收，B3已完成并以7c3d849推送main；B4已完成并由PR #4合并main，B5已完成本地迁移验收，下一工作包B6；B1.2 本地实现与隔离安装验收已收尾，已确认不提供有损整库回退，真实用户/目标环境验收仍待；三类迁移、live 可读库的按配置恢复、可证明无损的 key 修复及损坏现场留存已实现，用户已选择 auth 恢复整份 preferences，真实用户迁移尚未执行。真实迁移前停用共享配置的进程、备份并验证可恢复；迁移完成仍停用时追加含新 key 的正常快照，迁移前快照不能保证包含新 key。
 - 工程前置 A1/A2 已分别提交 6287d2a/3b15a6d，并完成当前 macOS/Node 24 的源码/npm/桌面 Node payload 验证。当前全局实例未切换，后续开发使用新结构工作树；Changesets 和进一步 core/content 抽取分别确认。
 - 自动审批、自动答题、定时任务及插件服务的权限语义仍须在对应工作包实施前明确。现有台账初筛标签保留历史线索，实施前仍需阅读完整 diff、后续修复和当前数据流。
 - 已通过的隔离测试不替代真实模型 CLI、GUI、移动端、Windows/Electron、跨平台、断电或持续高负载验证；失败记录及环境要求随工作包保留。

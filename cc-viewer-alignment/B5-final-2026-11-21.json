@@ -1,0 +1,87 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "previousLocal": "d1faf28ec701c50630019acaa6e72b1c98a84dd2",
+  "localSubject": "docs(alignment): close B5 baseline alignment and acceptance",
+  "workPackage": "B5",
+  "status": "complete in documented B5 scope; mixed work packages and environment limits retained",
+  "candidateCount": 47,
+  "localImplementationAndAuditCommits": 45,
+  "commitMap": "B5-local-commit-map-2026-11-21.json",
+  "checks": {
+    "full": 1781,
+    "parts": [
+      5,
+      434,
+      1130,
+      212
+    ],
+    "skip": 0,
+    "build": "passed",
+    "packFiles": 712,
+    "releaseLog": "/tmp/cxv-b5-e45-release-final.log",
+    "releaseLogSha256": "f316bb2026ab36a6ed72bb3eec284c087213fbfd1268b285a1a75449af568caf",
+    "sourceChangesAfterValidation": false
+  },
+  "installed": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-40h1cp33",
+    "files": 712,
+    "source_bytes_match": true,
+    "web_asset_files": 204,
+    "runtime_tests": "487/487",
+    "b12_regression": "passed",
+    "installed_cli_relative_cd_boot": "passed",
+    "uses_fake_codex": true,
+    "uses_real_model_network": false
+  },
+  "installedLog": "/tmp/cxv-b5-e46-installed-final.log",
+  "installedLogSha256": "ee8689c16577d708f1a39e6d1415e06340e21d27033c86278d159a2d344cadb8",
+  "visualEvidence": {
+    "targetOriginalBrowserRuns": 8,
+    "targetGuidanceProjectImages": 26,
+    "userPluginBrowserRuns": 2,
+    "userPluginImages": 6,
+    "imageHashesRechecked": 32,
+    "browsers": [
+      "Chromium159.0.8154.6",
+      "WebKit27.2"
+    ],
+    "fileBrowserCssExact": true,
+    "fileBrowserCssSha256": "d42e085de0796ab003cc838405078353dc5bbc3d7715a0f32f0856de44d8973d",
+    "receipts": [
+      "B5-target-browser-2026-11-21.json",
+      "B5-target-sources-2026-11-21.json"
+    ],
+    "otherB5Gui": "See original per-iteration receipts in completion matrix; not rerun for documentation-only close"
+  },
+  "authorizationAudit": {
+    "project": "Frozen exact native instance/cwd, project containment and combined credential/native owner protections; import/move/rename/create/delete/list/search/replace/content/raw/download/metadata/reveal/default-open checked",
+    "target": "Server-owned AGENTS/skill identity, navigation-relative paths, chosen valid token/session admin, same-origin and per-entry policy; seven context actions and content/raw/download tested",
+    "nativeAdaptations": [
+      "Default project isolation retained vs upstream global absolute allowlist",
+      "Descriptor/inode and credential/native owner/ancestor guards retained",
+      "Opaque sandbox HTML raw GET/HEAD proof bound to target/view/auth context, granting session validity checked",
+      "Exact selected target ancestor navigation metadata only for native .agents; content and writes unchanged",
+      "Dedicated image/voice/IM remain own existing scopes; no general private-history exception",
+      "OS terminal retains upstream admin/containment intent"
+    ]
+  },
+  "preservedBaselineDefects": [
+    "User chose original iPad ReplaceAll confirmation horizontal scroll issue",
+    "Cold Markdown line123 still first line reproduced in full frozen original component/editor versions; not a scroll pass"
+  ],
+  "otherWorkPackages": "B6 preview formats/content refs; B7 input/skills/PTY queues; B8 role/model; B9 approval/scheduler; B10 service bus; B11 legacy IM/release remain independent",
+  "limits": [
+    "Phone/pad emulation, remote preference simulation + loopback auth; no real LAN/TLS login-browser claim",
+    "Fake Codex/offline isolated HOME; no external model or real credential mutation",
+    "No physical audio/device, Windows/Linux, minimum Node, real slow network/OAuth/remote MCP pass",
+    "EXDEV fault injection, not a real second volume; no total TOCTOU-elimination claim",
+    "Native profile/image-input/add-dir/review unsupported; ordinary main-PTY new GUI and narrow split issue remain B7 boundaries"
+  ],
+  "delivery": "Original E1-E46 acceptance checkpoint retained. User subsequently authorized consolidation to one commit and one PR to main, self-reviewed merge; final GitHub status is recorded in B5-local-commit-consolidation-2026-11-21.md and local consolidation.json.",
+  "nextWorkPackage": "B6",
+  "productionChange": false,
+  "nextSession": "B6 explicitly deferred to the next conversation; no B6 implementation in this conversation",
+  "consolidationRecord": "B5-local-commit-consolidation-2026-11-21.md",
+  "consolidationPreflight": "B5-pr-preflight-2026-11-21.json",
+  "deliveryPullRequest": "https://github.com/weiesky/cx-viewer/pull/5"
+}

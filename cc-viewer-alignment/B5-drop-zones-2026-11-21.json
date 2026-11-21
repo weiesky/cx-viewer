@@ -1,0 +1,80 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": [
+    "365af800e58f34a57b2339cf705f56390874f20b",
+    "ea995f38833b20201b47ebd2c13ec5e54e24aa95"
+  ],
+  "previousLocal": "d23fac0",
+  "localSubject": "feat(files): restore original desktop drop zones",
+  "web": {
+    "passed": 366,
+    "skip": 0,
+    "log": "/tmp/cxv-b5-e14-web-final2.log"
+  },
+  "build": "passed Web build plus assemble-dist",
+  "latestFullAndInstall": "E13:1657/400, not rerun for frontend-only E14",
+  "gui": [
+    {
+      "log": "/tmp/cxv-b5-e14-webkit-final3.log",
+      "result": {
+        "engine": "webkit",
+        "browserVersion": "27.2",
+        "mode": "zones",
+        "syntheticExternalEvents": true,
+        "chatMask": true,
+        "abortClearsMask": true,
+        "sidebarOwnOutline": true,
+        "headerAndPortalNoUploads": true,
+        "internalMoveNotAcceptedByGlobalHandler": true,
+        "actualUploadBytesExact": true,
+        "uploads": 1
+      },
+      "pageErrors": []
+    },
+    {
+      "log": "/tmp/cxv-b5-e14-chromium-final3.log",
+      "result": {
+        "engine": "chromium",
+        "browserVersion": "159.0.8154.6",
+        "mode": "zones",
+        "syntheticExternalEvents": true,
+        "chatMask": true,
+        "abortClearsMask": true,
+        "sidebarOwnOutline": true,
+        "headerAndPortalNoUploads": true,
+        "internalMoveNotAcceptedByGlobalHandler": true,
+        "actualUploadBytesExact": true,
+        "uploads": 1
+      },
+      "pageErrors": []
+    }
+  ],
+  "screenshots": [
+    {
+      "path": "cc-viewer-alignment/evidence/B5-drop-zones-2026-11-21/chromium-chat-mask.png",
+      "sha256": "4c753148257df0887a43158c763fc82bc00e92c9cb48c7822ae3fdb50ffd4376",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-drop-zones-2026-11-21/chromium-sidebar-mask.png",
+      "sha256": "91a68cc064cfd1606ae7ce84ac280770d1d8e6c45435a08897810f750cf14cd2",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-drop-zones-2026-11-21/webkit-chat-mask.png",
+      "sha256": "45935c5af76c2e4205b9962a3a0ab5b983aaea485b17563057d430b27f5f6fdd",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-drop-zones-2026-11-21/webkit-sidebar-mask.png",
+      "sha256": "1e1b9c6564d909cbac8926ee45b9911bd193cff07a5a1770e7b6e9c2e3d6d9b7",
+      "visuallyInspected": true
+    }
+  ],
+  "limits": [
+    "Synthetic external Files events, not OS drag gestures",
+    "Mobile original path retained, no new mobile GUI claim",
+    "Accepted E4 pad scroll defect remains",
+    "B5 target policy and references/Git pending"
+  ]
+}

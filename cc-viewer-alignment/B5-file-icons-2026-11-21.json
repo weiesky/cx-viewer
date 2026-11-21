@@ -1,0 +1,318 @@
+{
+  "date": "2026-11-21",
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": [
+    "a278d68954bc41150533177f8e1bbfec320d00a2",
+    "637fbb0218d0963b35308cbcd6288bdc3578c133"
+  ],
+  "laterEffectiveIconOnly": [
+    "91a523d043dbc27bd404f1cd911d2cc588847b8b",
+    "f96811cddb3f1f5516ef7823bcc2a36d142a95e3",
+    "20313b254cffff4f8fec955b74a7b5233a0620ee",
+    "18bd742bc50d38ce52abf9f8df89930c49b50807"
+  ],
+  "scope": "Shared type classification, SVG glyphs and dark/light tokens; no B6 format preview dispatcher",
+  "exactSourceSha256": {
+    "apps/web/src/utils/fileTypes.js": "05623abfb5563dc55700eb8e512dab72583687e4f6409a1638ba991b94c942a9",
+    "apps/web/src/utils/fileIcons.jsx": "ef2502c64f368ae5f9a53fb6d8b20f8fa529ca0308d14b1f2b734af85561604f"
+  },
+  "exactCssBlockSha256": {
+    "dark": "9948e5da2d5d8026a20e0a4e67d8caa96b00c92a0be677a95a25eeaacfabe2b0",
+    "light": "f15d8ef1334ce0b67d7f0df15ea720db7e8a91827e9504d318177d13702af143"
+  },
+  "tests": {
+    "webPass": 352,
+    "classifierCases": 15,
+    "skip": 0,
+    "build": "passed",
+    "packFiles": 705,
+    "log": "/tmp/cxv-b5-e9-web.log",
+    "buildLog": "/tmp/cxv-b5-e9-build.log",
+    "packLog": "/tmp/cxv-b5-e9-pack.log",
+    "lastCompleteSuite": {
+      "step": "E8",
+      "pass": 1625,
+      "groups": [
+        5,
+        337,
+        1071,
+        212
+      ]
+    },
+    "lastRuntimeInstall": {
+      "step": "E8",
+      "pass": 392
+    }
+  },
+  "installation": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-i79e6i71",
+    "files": 705,
+    "source_bytes_match": true,
+    "web_asset_files": 204,
+    "web_asset_bytes_match": true,
+    "runtime_tests": "not run (artifact-only)"
+  },
+  "gui": [
+    {
+      "log": "/tmp/cxv-b5-e9-chromium-icons-final2.log",
+      "result": {
+        "engine": "chromium",
+        "mode": "icons",
+        "browserVersion": "159.0.8154.6",
+        "surfaces": [
+          {
+            "kind": "files",
+            "theme": "light",
+            "files": 16,
+            "codeStroke": "rgb(183, 160, 0)",
+            "officeStrokes": [
+              "rgb(34, 69, 120)",
+              "rgb(26, 92, 56)",
+              "rgb(168, 57, 30)"
+            ]
+          },
+          {
+            "kind": "files",
+            "theme": "dark",
+            "files": 16,
+            "codeStroke": "rgb(232, 212, 77)",
+            "officeStrokes": [
+              "rgb(43, 87, 154)",
+              "rgb(33, 115, 70)",
+              "rgb(210, 71, 38)"
+            ]
+          },
+          {
+            "kind": "git",
+            "theme": "light",
+            "files": 16,
+            "codeStroke": "rgb(183, 160, 0)",
+            "officeStrokes": [
+              "rgb(34, 69, 120)",
+              "rgb(26, 92, 56)",
+              "rgb(168, 57, 30)"
+            ]
+          },
+          {
+            "kind": "git",
+            "theme": "dark",
+            "files": 16,
+            "codeStroke": "rgb(232, 212, 77)",
+            "officeStrokes": [
+              "rgb(43, 87, 154)",
+              "rgb(33, 115, 70)",
+              "rgb(210, 71, 38)"
+            ]
+          }
+        ],
+        "sharedSvgGlyphs": true,
+        "themeChangesWithoutRemount": true,
+        "screenshots": [
+          "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B5-icons-2026-11-21/chromium-desktop-files-light.png",
+          "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B5-icons-2026-11-21/chromium-desktop-files-dark.png",
+          "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B5-icons-2026-11-21/chromium-desktop-git-light.png",
+          "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B5-icons-2026-11-21/chromium-desktop-git-dark.png"
+        ]
+      },
+      "exit": 0,
+      "pageErrors": []
+    },
+    {
+      "log": "/tmp/cxv-b5-e9-webkit-icons-final2.log",
+      "result": {
+        "engine": "webkit",
+        "mode": "icons",
+        "browserVersion": "27.2",
+        "surfaces": [
+          {
+            "kind": "files",
+            "theme": "light",
+            "files": 16,
+            "codeStroke": "rgb(183, 160, 0)",
+            "officeStrokes": [
+              "rgb(34, 69, 120)",
+              "rgb(26, 92, 56)",
+              "rgb(168, 57, 30)"
+            ]
+          },
+          {
+            "kind": "files",
+            "theme": "dark",
+            "files": 16,
+            "codeStroke": "rgb(232, 212, 77)",
+            "officeStrokes": [
+              "rgb(43, 87, 154)",
+              "rgb(33, 115, 70)",
+              "rgb(210, 71, 38)"
+            ]
+          },
+          {
+            "kind": "git",
+            "theme": "light",
+            "files": 16,
+            "codeStroke": "rgb(183, 160, 0)",
+            "officeStrokes": [
+              "rgb(34, 69, 120)",
+              "rgb(26, 92, 56)",
+              "rgb(168, 57, 30)"
+            ]
+          },
+          {
+            "kind": "git",
+            "theme": "dark",
+            "files": 16,
+            "codeStroke": "rgb(232, 212, 77)",
+            "officeStrokes": [
+              "rgb(43, 87, 154)",
+              "rgb(33, 115, 70)",
+              "rgb(210, 71, 38)"
+            ]
+          }
+        ],
+        "sharedSvgGlyphs": true,
+        "themeChangesWithoutRemount": true,
+        "screenshots": [
+          "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B5-icons-2026-11-21/webkit-desktop-files-light.png",
+          "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B5-icons-2026-11-21/webkit-desktop-files-dark.png",
+          "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B5-icons-2026-11-21/webkit-desktop-git-light.png",
+          "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B5-icons-2026-11-21/webkit-desktop-git-dark.png"
+        ]
+      },
+      "exit": 0,
+      "pageErrors": []
+    },
+    {
+      "log": "/tmp/cxv-b5-e9-webkit-icons-phone-final2.log",
+      "result": {
+        "engine": "webkit",
+        "mode": "icons-phone",
+        "browserVersion": "27.2",
+        "surfaces": [
+          {
+            "kind": "files",
+            "theme": "light",
+            "files": 16,
+            "codeStroke": "rgb(183, 160, 0)",
+            "officeStrokes": [
+              "rgb(34, 69, 120)",
+              "rgb(26, 92, 56)",
+              "rgb(168, 57, 30)"
+            ]
+          },
+          {
+            "kind": "files",
+            "theme": "dark",
+            "files": 16,
+            "codeStroke": "rgb(232, 212, 77)",
+            "officeStrokes": [
+              "rgb(43, 87, 154)",
+              "rgb(33, 115, 70)",
+              "rgb(210, 71, 38)"
+            ]
+          },
+          {
+            "kind": "git",
+            "theme": "light",
+            "files": 16,
+            "codeStroke": "rgb(183, 160, 0)",
+            "officeStrokes": [
+              "rgb(34, 69, 120)",
+              "rgb(26, 92, 56)",
+              "rgb(168, 57, 30)"
+            ]
+          },
+          {
+            "kind": "git",
+            "theme": "dark",
+            "files": 16,
+            "codeStroke": "rgb(232, 212, 77)",
+            "officeStrokes": [
+              "rgb(43, 87, 154)",
+              "rgb(33, 115, 70)",
+              "rgb(210, 71, 38)"
+            ]
+          }
+        ],
+        "sharedSvgGlyphs": true,
+        "themeChangesWithoutRemount": true,
+        "screenshots": [
+          "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B5-icons-2026-11-21/webkit-phone-files-light.png",
+          "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B5-icons-2026-11-21/webkit-phone-files-dark.png",
+          "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B5-icons-2026-11-21/webkit-phone-git-light.png",
+          "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B5-icons-2026-11-21/webkit-phone-git-dark.png"
+        ]
+      },
+      "exit": 0,
+      "pageErrors": []
+    }
+  ],
+  "screenshots": [
+    {
+      "path": "cc-viewer-alignment/evidence/B5-icons-2026-11-21/chromium-desktop-files-dark.png",
+      "sha256": "9448576723179fd4b191d1214f07d88f961d7ff9dd3acd64e30c934b413270be",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-icons-2026-11-21/chromium-desktop-files-light.png",
+      "sha256": "e7a19f551c0c3e8b113952ea4d853b46214981c17e5b90b734761145979675f6",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-icons-2026-11-21/chromium-desktop-git-dark.png",
+      "sha256": "06bc26bd71ace26dea1141ab65fce03a2c4eaf180bde151087de2f51a846d063",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-icons-2026-11-21/chromium-desktop-git-light.png",
+      "sha256": "8c881b6f7261c02cdd175f1f7253f97ddbaa6e4de68fa7221a298f6deed5f2f9",
+      "visuallyInspected": false
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-icons-2026-11-21/webkit-desktop-files-dark.png",
+      "sha256": "0330bf788378d8b7caca8ce30d609778f2ac0e834f5f61f9fca6e481e358ee4e",
+      "visuallyInspected": false
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-icons-2026-11-21/webkit-desktop-files-light.png",
+      "sha256": "55d5bde81d7ee205db77c09eebd90fef2adb735e4f80125146a695508aa96577",
+      "visuallyInspected": false
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-icons-2026-11-21/webkit-desktop-git-dark.png",
+      "sha256": "b26ef5f93958f190839c0b29c3b9f37c85b883f5f99f0da47ea27bf91ec26cb6",
+      "visuallyInspected": false
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-icons-2026-11-21/webkit-desktop-git-light.png",
+      "sha256": "0d271820c5303725c98b662e28dd094cb6827d5ea07a0f8e496b9ebef1803eb4",
+      "visuallyInspected": false
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-icons-2026-11-21/webkit-phone-files-dark.png",
+      "sha256": "cfed3568d0f313ecc41cb8402b89d121d35d6ca0ddacd6a0836d5c22c4d83b6f",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-icons-2026-11-21/webkit-phone-files-light.png",
+      "sha256": "529003f18fde26ce959e58f4b6afb09e9ae4909eb68e4c62871ceb69a0055ca9",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-icons-2026-11-21/webkit-phone-git-dark.png",
+      "sha256": "515b32640d9c926517d2c57bc05a7dd87f711ba523ad7e2da2b26b7500e97002",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-icons-2026-11-21/webkit-phone-git-light.png",
+      "sha256": "1f6f4b252d79b5d3ad843c710a55ea09cc351922dda5808aff78f25b42c04ce1",
+      "visuallyInspected": false
+    }
+  ],
+  "limitations": [
+    "Phone uses 390x844 WebKit touch/UA emulation, not physical hardware",
+    "Theme attributes toggled directly to verify CSS token changes without remount; not a complete theme-settings flow test",
+    "First Git probe selected restore-button SVG; corrected to icon span. First phone button exact accessible name ignored icon label; corrected to original visible text. No product changes for probes.",
+    "No full backend/runtime rerun for this frontend-only change; E8 checks remain separately recorded",
+    "In-app modal and B5 as a whole remain incomplete"
+  ]
+}

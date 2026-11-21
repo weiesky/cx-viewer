@@ -1,0 +1,93 @@
+{
+  "date": "2026-11-21",
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": "f96811cddb3f1f5516ef7823bcc2a36d142a95e3",
+  "scope": "Content-detected binary refusal and BOM UTF-16 read-only editing prerequisite; format preview routing remains B6",
+  "adaptations": [
+    "Reuse current exact instance and descriptor/private-file policy rather than Claude view/target helpers",
+    "HTTP FileApiError carries original binary reason and size; existing 404 onFileMissing retained",
+    "Native UTF-8 write endpoint also validates bounded bytes through same O_RDWR descriptor before truncate; binary/UTF-16 and over-cap existing files rejected. Positioned reads preserve descriptor offset for later writes."
+  ],
+  "sourceSha256": {
+    "packages/app/lib/binary-sniff.js": "ebbee2b670da9b2af44b2701e2dbb6af287221f84bd6fc6c8218d473367328d5",
+    "apps/web/src/components/viewers/UnsupportedFilePreview.module.css": "0ec69c3b53a51094d7eaa9f038a5be86b83669fac98d8b0906383792f65e95d8"
+  },
+  "green": {
+    "targetPass": 28,
+    "fullPass": 1625,
+    "groups": [
+      5,
+      337,
+      1071,
+      212
+    ],
+    "skip": 0,
+    "build": "passed",
+    "packFiles": 705,
+    "targetLog": "/tmp/cxv-b5-e8-tests.log",
+    "releaseLog": "/tmp/cxv-b5-e8-release.log"
+  },
+  "gui": {
+    "engines": [
+      "Chromium159",
+      "WebKit27.2"
+    ],
+    "pageErrors": [],
+    "checks": [
+      "UTF-16 LE/BE and markdown preview/text are read-only without MDX editing or save posts",
+      "binary has no editor, original download component exact bytes",
+      "late aborted binary response cannot replace newly selected UTF-8 text",
+      "ordinary UTF-8 edits and saves once, same-named sibling unchanged"
+    ],
+    "logs": [
+      "/tmp/cxv-b5-e8-gui-webkit-final2.log",
+      "/tmp/cxv-b5-e8-gui-chromium-final2.log"
+    ],
+    "screenshots": [
+      {
+        "path": "cc-viewer-alignment/evidence/B5-encoding-2026-11-21/chromium-binary-download.png",
+        "sha256": "f98778114a38082c0d51ee38864bb4b586b9d18a101b8c8ca000e052910ded70",
+        "visuallyInspected": true
+      },
+      {
+        "path": "cc-viewer-alignment/evidence/B5-encoding-2026-11-21/chromium-utf16-read-only.png",
+        "sha256": "620a92fc47e094d9e427e79fcd3987eb98cdacaf54bd5bb7fb8bf26c2362bda4",
+        "visuallyInspected": true
+      },
+      {
+        "path": "cc-viewer-alignment/evidence/B5-encoding-2026-11-21/webkit-binary-download.png",
+        "sha256": "951154083431447aea037fd78dd311461bafde43d44c7f8f942197565d91b971",
+        "visuallyInspected": true
+      },
+      {
+        "path": "cc-viewer-alignment/evidence/B5-encoding-2026-11-21/webkit-utf16-read-only.png",
+        "sha256": "e618d85c1c3eaeada098bad2407e62aff181b0b912936f5113e5a225887b1c2d",
+        "visuallyInspected": true
+      }
+    ]
+  },
+  "failedProbeAttempts": [
+    "Initial test creation used package cwd with repo-relative paths and created no files; corrected before actual 28-test run",
+    "GUI locator initially assumed view mode reset and invented translated titles; corrected to persistent mode and original Markdown/文本编辑 labels",
+    "Download link accessible name includes icon label; use actual link with original visible text and Promise.all for proper rejection cleanup",
+    "First fresh-install runtime suite exceeded old 90s limit; not counted passed. Re-run uses 180s and preserves timeout output."
+  ],
+  "notClaimed": [
+    "Complete B5 or f968 preview dispatcher migration",
+    "B6 archive/audio/subtitle/image format previews",
+    "External editor paths outside project download support",
+    "Other OS/minimum Node/physical devices/real external model"
+  ],
+  "installation": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-2dvtumed",
+    "files": 705,
+    "source_bytes_match": true,
+    "web_asset_files": 204,
+    "runtime_tests": "392/392",
+    "b12_regression": "passed",
+    "installed_cli_relative_cd_boot": "passed",
+    "uses_fake_codex": true,
+    "uses_real_model_network": false,
+    "log": "/tmp/cxv-b5-e8-install-final.log"
+  }
+}

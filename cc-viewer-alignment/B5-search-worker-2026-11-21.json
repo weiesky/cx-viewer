@@ -1,0 +1,119 @@
+{
+  "date": "2026-11-21",
+  "upstream": "bd50636219e086ba082ab4bb36e5c0b6a996172e",
+  "fixedBaseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "scope": "node search worker backend only; virtual results/navigation/embedded panel remain separate",
+  "before": {
+    "platform": "darwin",
+    "node": "v24.14.0",
+    "fixtureFiles": 384,
+    "fixtureBytes": 103243776,
+    "harness": "actual searchCode plus concurrent loopback HTTP health server",
+    "rounds": [
+      {
+        "elapsedMs": 390.459542,
+        "filesScanned": 384,
+        "truncated": false,
+        "healthSamples": 4,
+        "maxHealthMs": 105.61404099999999,
+        "maxLoopDelayMs": 84.344831
+      },
+      {
+        "elapsedMs": 393.10024999999996,
+        "filesScanned": 384,
+        "truncated": false,
+        "healthSamples": 8,
+        "maxHealthMs": 96.64424999999994,
+        "maxLoopDelayMs": 83.820543
+      },
+      {
+        "elapsedMs": 394.774042,
+        "filesScanned": 384,
+        "truncated": false,
+        "healthSamples": 6,
+        "maxHealthMs": 108.25333299999988,
+        "maxLoopDelayMs": 79.691775
+      }
+    ]
+  },
+  "afterFinal": {
+    "platform": "darwin",
+    "node": "v24.14.0",
+    "fixtureFiles": 384,
+    "fixtureBytes": 103243776,
+    "harness": "actual searchCode plus concurrent loopback HTTP health server",
+    "rounds": [
+      {
+        "elapsedMs": 405.03424999999993,
+        "filesScanned": 384,
+        "truncated": false,
+        "healthSamples": 67,
+        "maxHealthMs": 13.496167000000014,
+        "maxLoopDelayMs": 10.772479
+      },
+      {
+        "elapsedMs": 407.757792,
+        "filesScanned": 384,
+        "truncated": false,
+        "healthSamples": 69,
+        "maxHealthMs": 2.724707999999964,
+        "maxLoopDelayMs": 6.914047
+      },
+      {
+        "elapsedMs": 417.29025,
+        "filesScanned": 384,
+        "truncated": false,
+        "healthSamples": 70,
+        "maxHealthMs": 2.9093339999999444,
+        "maxLoopDelayMs": 7.106559
+      }
+    ]
+  },
+  "orphanProbe": {
+    "unadaptedWorkerChildAliveAfterAbort": true,
+    "adaptedParentOwnedChildAliveAfterAbort": false,
+    "script": "/tmp/cxv-b5-git-cancel.mjs",
+    "regression": "packages/app/tests/search-worker-policy.test.js"
+  },
+  "adaptations": [
+    "Keep async Git enumeration parent-owned with existing AbortSignal and timeout cleanup; file traversal/read/regex stay on worker.",
+    "Transfer parent frozen and current private roots rather than derive new threadId/log-owner policy.",
+    "Retain local realpath containment, O_NOFOLLOW/nonblocking descriptor checks, descriptor inode credential gate, and positive-glob/ripgrep policy.",
+    "Remove abort subscription after settle. Existing descriptor race monkeypatch executes exported actual worker body because fs patches do not cross isolates."
+  ],
+  "targetTests": {
+    "passed": 73,
+    "skipped": 0,
+    "log": "/tmp/cxv-b5-e2-tests-final.log"
+  },
+  "sources": {
+    "packages/app/lib/code-search.js": "090cc98d44558d839c8ec2e5c6e06f04c02068fdb9087fdb9917bac31a26aa7b",
+    "packages/app/lib/search-worker.js": "f9efa9ab73fb2482bd542c7f4dea536f3fabc3900be6484c4ea5739a9f87036d",
+    "packages/app/lib/search-candidates.js": "9bb86adb330ef642ec644cb778e2ef32cbc5708b45aac4a2fa59e9d09370f70c",
+    "packages/app/lib/credential-file-policy.js": "8297b88708ed5923b119c5e79c052213e38c6564808cb2111ccfc4a7edc6c22b"
+  },
+  "releaseCheck": {
+    "passed": 1596,
+    "groups": [
+      5,
+      332,
+      1047,
+      212
+    ],
+    "skip": 0,
+    "build": "passed",
+    "packFiles": 704,
+    "log": "/tmp/cxv-b5-e2-release.log"
+  },
+  "installed": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-xrxfz5kx",
+    "files": 704,
+    "source_bytes_match": true,
+    "web_asset_files": 204,
+    "runtime_tests": "364/364",
+    "b12_regression": "passed",
+    "installed_cli_relative_cd_boot": "passed",
+    "uses_fake_codex": true,
+    "uses_real_model_network": false
+  }
+}

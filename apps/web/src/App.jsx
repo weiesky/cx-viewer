@@ -324,15 +324,7 @@ class App extends AppBase {
             <div className={styles.loadingText}>Loading...({fileLoadingCount})</div>
           </div>
         )}
-        {this.state.isDragging && (
-          <div className={styles.dragOverlay}>
-            <div className={styles.dragOverlayContent}>
-              <UploadOutlined className={styles.dragIcon} />
-              <p>{t('ui.dragDropHint')}</p>
-            </div>
-          </div>
-        )}
-        <Layout className={styles.layout} ref={this._layoutRef} onDragOver={this._onDragOver} onDragLeave={this._onDragLeave} onDrop={this._onDrop}>
+        <Layout className={styles.layout} ref={this._layoutRef} data-external-drag-zone={this.state.dragZone || undefined} onDragOver={this._onDragOver} onDragLeave={this._onDragLeave} onDrop={this._onDrop}>
           <Layout.Header className={styles.header} inert={(typeof window !== 'undefined' && window.tabBridge && !this.state.sdkMode) ? '' : undefined} style={(typeof window !== 'undefined' && window.tabBridge && !this.state.sdkMode) ? { height: 0, minHeight: 0, padding: 0, overflow: 'hidden', border: 'none', lineHeight: 0 } : undefined}>
             <AppHeader
               ref={this.appHeaderRef}

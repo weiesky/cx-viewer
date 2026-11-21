@@ -1,0 +1,104 @@
+{
+  "date": "2026-11-21",
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": [
+    "365af800e58f34a57b2339cf705f56390874f20b",
+    "ab1b89ee133664c9f2c0e3e17ada8711180f4dc5"
+  ],
+  "effectiveRelativePathAncestor": "a3b85011e2bd9a5b32f7df2345e2a36e3563a9bb",
+  "scope": "Shared project move helper, original empty-root API fix and blank-area dragover propagation; modal/drop-zone guards remain pending",
+  "adaptations": [
+    "Reuse current apiUrl exact instance at request start instead of Claude view params",
+    "Reject non-string source with 400 before string/path operations; current descriptor/private-root/EXDEV copy protections preserved"
+  ],
+  "sourceSha256": "8f1937b0fd5e973bbcd5e6b7c2120ba11c415bf6eea855a5d5e1e2a65ea653ba",
+  "checks": {
+    "apiPass": 30,
+    "webPass": 358,
+    "fullPass": 1651,
+    "groups": [
+      5,
+      358,
+      1076,
+      212
+    ],
+    "skip": 0,
+    "build": "passed",
+    "packFiles": 705,
+    "apiLog": "/tmp/cxv-b5-e11-api-final.log",
+    "webLog": "/tmp/cxv-b5-e11-web.log",
+    "releaseLog": "/tmp/cxv-b5-e11-release.log"
+  },
+  "gui": [
+    {
+      "log": "/tmp/cxv-b5-e11-webkit-moves.log",
+      "result": {
+        "engine": "webkit",
+        "mode": "moves",
+        "browserVersion": "27.2",
+        "nativeHtmlDragGestures": true,
+        "actualMoveEndpoint": true,
+        "blankAreaMovesToRoot": true,
+        "folderDropWorks": true,
+        "relativeReturnedPaths": true,
+        "exactBytesAndSiblingCanaryPreserved": true,
+        "moves": [
+          {
+            "fromPath": "search-fixture/movable.txt",
+            "toDir": ""
+          },
+          {
+            "fromPath": "movable.txt",
+            "toDir": "move-target"
+          }
+        ]
+      },
+      "exit": 0,
+      "pageErrors": []
+    },
+    {
+      "log": "/tmp/cxv-b5-e11-chromium-moves.log",
+      "result": {
+        "engine": "chromium",
+        "mode": "moves",
+        "browserVersion": "159.0.8154.6",
+        "nativeHtmlDragGestures": true,
+        "actualMoveEndpoint": true,
+        "blankAreaMovesToRoot": true,
+        "folderDropWorks": true,
+        "relativeReturnedPaths": true,
+        "exactBytesAndSiblingCanaryPreserved": true,
+        "moves": [
+          {
+            "fromPath": "search-fixture/movable.txt",
+            "toDir": ""
+          },
+          {
+            "fromPath": "movable.txt",
+            "toDir": "move-target"
+          }
+        ]
+      },
+      "exit": 0,
+      "pageErrors": []
+    }
+  ],
+  "notClaimed": [
+    "Whole 365/ab1b mixed commits or B5 completed",
+    "External target move/portal drop zones",
+    "Physical touch/OS external drag or other platforms/minimum Node",
+    "New screenshot evidence: no DOM/CSS layout change"
+  ],
+  "installation": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-rdw79nic",
+    "files": 705,
+    "source_bytes_match": true,
+    "web_asset_files": 204,
+    "runtime_tests": "397/397",
+    "b12_regression": "passed",
+    "installed_cli_relative_cd_boot": "passed",
+    "uses_fake_codex": true,
+    "uses_real_model_network": false,
+    "log": "/tmp/cxv-b5-e11-install.log"
+  }
+}

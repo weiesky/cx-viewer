@@ -1,0 +1,74 @@
+{
+  "date": "2026-11-21",
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": [
+    "365af800e58f34a57b2339cf705f56390874f20b",
+    "ab1b89ee133664c9f2c0e3e17ada8711180f4dc5"
+  ],
+  "scope": "Shared existing external-file import pipeline and exact original-operation view binding; modal/move/zones remain pending",
+  "adaptation": "Freeze apiUrl(/api/import-file) before first await, append only encoded dir to the frozen endpoint; no dynamic scope lookup after scan/confirmation/concurrent upload yields. Preserve existing no-instance boot semantics, token/base path, original batch/concurrency/results behavior.",
+  "sourceSha256": "a8c8f9e1808aeb903e31e13c08e3592b876fe68ef95bc76cf0a7443681120673",
+  "checks": {
+    "webPass": 357,
+    "newBoundaryCases": 5,
+    "skip": 0,
+    "webLog": "/tmp/cxv-b5-e10-web-final.log",
+    "build": "passed",
+    "buildLog": "/tmp/cxv-b5-e10-build.log",
+    "packFiles": 705,
+    "packLog": "/tmp/cxv-b5-e10-pack.log",
+    "lastCompleteSuite": "E8:1625",
+    "lastRuntimeInstall": "E8:392",
+    "lastArtifactInstall": "E9:705 files/204 exact web assets"
+  },
+  "gui": [
+    {
+      "log": "/tmp/cxv-b5-e10-webkit-imports.log",
+      "result": {
+        "engine": "webkit",
+        "mode": "imports",
+        "browserVersion": "27.2",
+        "syntheticDrop": true,
+        "actualMultipartEndpoint": true,
+        "scanHeldBeforeUpload": true,
+        "samePageAtoBSwitch": true,
+        "resumedUploadStillTargetsA": true,
+        "nestedBytesExact": true,
+        "siblingHasNoNewFile": true
+      },
+      "exit": 0,
+      "pageErrors": []
+    },
+    {
+      "log": "/tmp/cxv-b5-e10-chromium-imports.log",
+      "result": {
+        "engine": "chromium",
+        "mode": "imports",
+        "browserVersion": "159.0.8154.6",
+        "syntheticDrop": true,
+        "actualMultipartEndpoint": true,
+        "scanHeldBeforeUpload": true,
+        "samePageAtoBSwitch": true,
+        "resumedUploadStillTargetsA": true,
+        "nestedBytesExact": true,
+        "siblingHasNoNewFile": true
+      },
+      "exit": 0,
+      "pageErrors": []
+    }
+  ],
+  "unitChecks": [
+    "delayed scan retains exact A instance after URL switches B",
+    "no-instance boot upload stays no-instance after URL switches B",
+    "1001-file confirmation cancel produces no uploads; confirm retains original instance and peaks at 3 concurrent writes",
+    "partial denial/network failure reports original summary and refreshes only on successful server-normalized path",
+    "101 entries drained across directory-reader batches with nested paths, OS skip and depth cap"
+  ],
+  "notClaimed": [
+    "Native OS drag gesture; browser event was synthetic, actual HTTP multipart and filesystem were real",
+    "Modal upload UI/move/drop-zone migration or whole mixed commits complete",
+    "New full backend/runtime/install check after frontend-only extraction",
+    "New visual screenshot evidence: DOM and CSS unchanged",
+    "B5 completed"
+  ]
+}

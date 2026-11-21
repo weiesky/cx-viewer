@@ -1,0 +1,72 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": [
+    "566ade13fc3bf2c3fd8d90044b1f36602c6980bf",
+    "7a75e1be81b3e90f55f8888c423e66e05c1cde64"
+  ],
+  "previousLocal": "aeddcbe",
+  "subject": "fix(files): preserve navigation to native user skill roots",
+  "tests": 35,
+  "skip": 0,
+  "testLog": "/tmp/cxv-b5-e45-ancestors-final.log",
+  "guiLogs": {
+    "chromium": {
+      "engine": "chromium",
+      "mode": "target-sources",
+      "userKeyboardFolder": true,
+      "userAncestorTree": true,
+      "userAncestorNavigation": true,
+      "privateSiblingFiltered": true,
+      "userBytes": true,
+      "pluginKeyboardFolder": true,
+      "pluginBytes": true,
+      "actualBrowser": "159.0.8154.6"
+    },
+    "webkit": {
+      "engine": "webkit",
+      "mode": "target-sources",
+      "userKeyboardFolder": true,
+      "userAncestorTree": true,
+      "userAncestorNavigation": true,
+      "privateSiblingFiltered": true,
+      "userBytes": true,
+      "pluginKeyboardFolder": true,
+      "pluginBytes": true,
+      "actualBrowser": "27.2"
+    }
+  },
+  "images": [
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-sources-2026-11-21/chromium-plugin-skill.png",
+      "sha256": "0fb96ccfa4ddcfc7659a0f511ca725772b498d4ce3e18f5c79d3de98cff72135"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-sources-2026-11-21/chromium-skill-manager.png",
+      "sha256": "831dad168d6d06a7cef3a2a6cfc3f33641b2a55f8d111278f3ccd14620ffb12b"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-sources-2026-11-21/chromium-user-skill.png",
+      "sha256": "91310cded2954b03e9a4cc82c39b1ef36aaa81fb6bb22e5e36118f4dd154451e"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-sources-2026-11-21/webkit-plugin-skill.png",
+      "sha256": "b9f97294a5fc7d5f381b19c5c5ab7e6d01100117a5f0b91144d03af1c9c61f60"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-sources-2026-11-21/webkit-skill-manager.png",
+      "sha256": "05e8b2b2282ac4c34e7f392705b56bb5f845f436f88616265180a854f6816aaa"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-sources-2026-11-21/webkit-user-skill.png",
+      "sha256": "2a9146beec483997df2444c6917516d57d1fcf7d554e91accbd6e2f84fb0b45c"
+    }
+  ],
+  "visualQa": "All six originals inspected in temporary QA sheet; Chromium user also full-sized",
+  "nativeAdaptation": "Only exact service-owned target ancestor directory metadata may bypass outside-allowlist, never credential/history owner policy; sibling content and ancestor writes remain forbidden",
+  "limits": [
+    "Desktop browsers; phone/pad guidance/project surfaces separately E38",
+    "No real LAN/TLS/model/physical-device claim",
+    "No UI/CSS production changes",
+    "Full/install aggregation pending"
+  ]
+}

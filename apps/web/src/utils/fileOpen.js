@@ -5,6 +5,7 @@
  * 以后新增类型只需修改这里。
  */
 
+import { getExt } from './fileTypes.js';
 import { apiUrl } from './apiUrl';
 
 /** 需要系统默认应用打开的扩展名 */
@@ -23,9 +24,12 @@ const SYSTEM_OPEN_EXTS = new Set([
  *   'file-explorer' | 'git-changes' | 'git-diff' | 'chat-message'
  * @returns {boolean} 是否已处理
  */
+export function isSystemOpenFile(path) {
+  return SYSTEM_OPEN_EXTS.has(getExt(path));
+}
+
 export function tryOpenWithSystem(path, source) {
-  const ext = (path || '').split('.').pop().toLowerCase();
-  if (!SYSTEM_OPEN_EXTS.has(ext)) return false;
+  if (!isSystemOpenFile(path)) return false;
 
   fetch(apiUrl('/api/open-file'), {
     method: 'POST',

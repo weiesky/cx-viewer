@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import WebSocket from 'ws';
 
 const temp = mkdtempSync(join(tmpdir(), 'cxv-terminal-ws-'));
-process.env.CXV_LOG_DIR = temp;
+process.env.CXV_LOG_DIR = join(temp, 'viewer-state');
 process.env.CXV_PROJECT_DIR = temp;
 process.env.CXV_START_PORT = '19940';
 process.env.CXV_MAX_PORT = '19949';
@@ -15,6 +15,8 @@ process.env.CXV_WORKSPACE_MODE = '1';
 process.env.CXV_CLI_MODE = '1';
 process.env.HTTPS_PROXY = 'http://proxy.invalid';
 process.env.HOME = temp;
+process.env.CODEX_HOME = join(temp, 'codex');
+process.env.CXV_PROXY_PROFILE_PATH = join(temp, 'profile.json');
 
 let server;
 let ptyManager;

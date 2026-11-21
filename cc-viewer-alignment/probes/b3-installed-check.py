@@ -1,4 +1,4 @@
-import json, os, re, shutil, shlex, socket, subprocess, tempfile, time, urllib.request
+import json, os, re, shutil, shlex, socket, subprocess, sys, tempfile, time, urllib.request
 from pathlib import Path
 repo = Path(__file__).resolve().parents[2]
 source = repo / 'packages/app'
@@ -9,7 +9,13 @@ env = {**os.environ, 'HOME': str(home), 'CODEX_HOME': str(home / 'codex'), 'CXV_
 env.pop('CXV_BYPASS_PERMISSIONS', None)
 
 def run(args, cwd, logfile, timeout=180):
-    result = subprocess.run(args, cwd=cwd, env=env, capture_output=True, text=True, timeout=timeout)
+    try:
+        result = subprocess.run(args, cwd=cwd, env=env, capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired as error:
+        output = lambda value: value.decode(errors='replace') if isinstance(value, bytes) else (value or '')
+        (base / logfile).write_text(output(error.stdout) + output(error.stderr))
+        print(json.dumps({'base': str(base), 'failed': logfile, 'timeout_seconds': timeout}))
+        raise
     (base / logfile).write_text(result.stdout + result.stderr)
     if result.returncode:
         print(json.dumps({'base': str(base), 'failed': logfile, 'exit': result.returncode}))
@@ -20,16 +26,21 @@ pack_output = run(['npm', 'pack', '--json', '--pack-destination', str(base), '--
 pack = json.loads(pack_output[pack_output.index('[\n'):])[0]
 run(['npm', 'install', '--prefix', str(base), '--omit=dev', '--no-audit', '--no-fund', '--cache', '/tmp/cx-viewer-npm-cache', str(base / pack['filename'])], base, 'install.log')
 installed = base / 'node_modules/cx-viewer'
-files = ['server/lib/ws-mux.js', 'server/lib/error-report.js', 'src/utils/errorReport.js', 'lib/log-v2/materializer.js', 'lib/log-v2/shards.js', 'lib/log-v2/schema.js', 'server.js', 'cli.js', 'src/utils/contentFilter.js', 'src/utils/requestType.js', 'scratch-pty-manager.js', 'proxy.js', 'interceptor.js', 'workspace-registry.js', 'lib/capture-context.js', 'lib/sdk-manager.js', 'lib/sdk-exec-transport.js', 'lib/codex-appserver-client.js', 'lib/appserver-bridge.js', 'lib/codex-thread-source.js', 'lib/log-v2/identity.js', 'lib/log-v2/session-summary.js', 'lib/log-v2/request-summary.js', 'lib/sdk-appserver-transport.js', 'lib/sdk-appserver-approvals.js', 'lib/sdk-appserver-agents.js', 'lib/codex-server-request.js', 'lib/terminal-ws-ping.js', 'lib/sdk-exec-launcher.sh', 'lib/sdk-exec-runner.mjs', 'lib/cli-args.js', 'lib/sdk-adapter.js', 'lib/sdk-resume-history.js', 'lib/log-v2/project-id.js', 'lib/log-v2/writer.js', 'lib/voice-pack-routes.js', 'server/lib/voice-pack-manager.js', 'server/lib/voice-pack-events.js', 'server/lib/approval-modal-prefs.js']
+files = ['server/lib/ws-mux.js', 'server/lib/error-report.js', 'src/utils/errorReport.js', 'lib/log-v2/materializer.js', 'lib/log-v2/shards.js', 'lib/log-v2/schema.js', 'server.js', 'cli.js', 'src/utils/contentFilter.js', 'src/utils/requestType.js', 'scratch-pty-manager.js', 'proxy.js', 'interceptor.js', 'workspace-registry.js', 'lib/capture-context.js', 'lib/sdk-manager.js', 'lib/sdk-exec-transport.js', 'lib/codex-appserver-client.js', 'lib/appserver-bridge.js', 'lib/codex-thread-source.js', 'lib/log-v2/identity.js', 'lib/log-v2/session-summary.js', 'lib/log-v2/request-summary.js', 'lib/sdk-appserver-transport.js', 'lib/sdk-appserver-approvals.js', 'lib/sdk-appserver-agents.js', 'lib/codex-server-request.js', 'lib/terminal-ws-ping.js', 'lib/binary-sniff.js', 'lib/file-api.js', 'lib/public-file-read.js', 'lib/skills-api.js', 'lib/file-access-policy.js', 'lib/files-exists.js', 'lib/target-scope.js', 'lib/target-files.js', 'lib/file-browser-access.js', 'lib/target-files-fs.js', 'lib/os-open.js', 'lib/code-search.js', 'lib/search-worker.js', 'lib/search-candidates.js', 'lib/credential-file-policy.js', 'lib/sdk-exec-launcher.sh', 'lib/sdk-exec-runner.mjs', 'lib/cli-args.js', 'lib/sdk-adapter.js', 'lib/sdk-resume-history.js', 'lib/log-v2/project-id.js', 'lib/log-v2/writer.js', 'lib/voice-pack-routes.js', 'server/lib/voice-pack-manager.js', 'server/lib/voice-pack-events.js', 'server/lib/approval-modal-prefs.js']
 assert all((source / name).read_bytes() == (installed / name).read_bytes() for name in files)
 assert os.access(installed / 'lib/sdk-exec-launcher.sh', os.X_OK)
 assets = [path.relative_to(source) for path in (source / 'dist').rglob('*') if path.is_file()]
 assert assets and all((source / path).read_bytes() == (installed / path).read_bytes() for path in assets)
+if sys.argv[1:] == ['--artifact-only']:
+    result = {'base': str(base), 'files': len(pack['files']), 'source_bytes_match': True, 'web_asset_files': len(assets), 'web_asset_bytes_match': True, 'runtime_tests': 'not run (artifact-only)'}
+    (base / 'result.json').write_text(json.dumps(result, indent=2) + '\n')
+    print(json.dumps(result))
+    raise SystemExit(0)
 (installed / 'tests').mkdir(exist_ok=True)
-tests = ['frontend-classification.test.js', 'log-v2-identity.test.js', 'log-v2-session-summary.test.js', 'log-v2-request-summary.test.js', 'cli-args.test.js', 'ws-mux.test.js', 'ws-mux-backpressure.test.js', 'ws-mux-routes.test.js', 'log-v2-materializer.test.js', 'log-v2-shards.test.js', 'log-v2-concurrency.test.js', 'sdk-cli-resume.test.js', 'log-v2-resume-watermark.test.js', 'sdk-resume-history.test.js', 'scratch-pty-manager.test.js', 'sdk-manager.test.js', 'codex-appserver-client.test.js', 'sdk-appserver-transport.test.js', 'sdk-appserver-manager.test.js', 'sdk-appserver-approvals.test.js', 'sdk-appserver-agents.test.js', 'sdk-task-state.test.js', 'sdk-process-ownership.test.js', 'sdk-queue.test.js', 'terminal-ws-ping.test.js', 'sdk-session-registry.test.js', 'proxy-lifecycle.test.js', 'proxy-slow-upstream.test.js', 'proxy-workspace-capture.test.js', 'log-v2-project-allocation.test.js', 'sdk-workspace-auth.test.js', 'sdk-workspace-connections.test.js', 'voice-pack-api.test.js']
+tests = ['frontend-classification.test.js', 'log-v2-identity.test.js', 'log-v2-session-summary.test.js', 'log-v2-request-summary.test.js', 'cli-args.test.js', 'ws-mux.test.js', 'ws-mux-backpressure.test.js', 'ws-mux-routes.test.js', 'log-v2-materializer.test.js', 'log-v2-shards.test.js', 'log-v2-concurrency.test.js', 'sdk-cli-resume.test.js', 'log-v2-resume-watermark.test.js', 'sdk-resume-history.test.js', 'scratch-pty-manager.test.js', 'sdk-manager.test.js', 'codex-appserver-client.test.js', 'sdk-appserver-transport.test.js', 'sdk-appserver-manager.test.js', 'sdk-appserver-approvals.test.js', 'sdk-appserver-agents.test.js', 'sdk-task-state.test.js', 'sdk-process-ownership.test.js', 'sdk-queue.test.js', 'terminal-ws-ping.test.js', 'sdk-session-registry.test.js', 'proxy-lifecycle.test.js', 'proxy-slow-upstream.test.js', 'proxy-workspace-capture.test.js', 'log-v2-project-allocation.test.js', 'sdk-workspace-auth.test.js', 'sdk-workspace-connections.test.js', 'voice-pack-api.test.js', 'search-worker.test.js', 'search-worker-policy.test.js', 'code-search.test.js', 'credential-search-boundary.test.js', 'search-endpoint.test.js', 'file-download.test.js', 'binary-sniff.test.js', 'file-content-binary.test.js', 'native-credential-file-policy.test.js', 'file-api.test.js', 'file-move.test.js', 'html-preview-scope.test.js', 'git-change-stats.test.js', 'git-unpushed-fallback.test.js', 'git-endpoints.test.js', 'file-access-policy.test.js', 'files-exists.test.js', 'target-scope.test.js', 'target-files.test.js', 'file-browser-native-state.test.js', 'skills-api.test.js']
 for name in tests:
     shutil.copyfile(source / 'tests' / name, installed / 'tests' / name)
-runtime = run(['node', '--test', '--test-concurrency=1', *['tests/' + name for name in tests]], installed, 'runtime.log', 90)
+runtime = run(['node', '--test', '--test-concurrency=1', *['tests/' + name for name in tests]], installed, 'runtime.log', 180)
 passed = re.search(r'pass (\d+)', runtime).group(1)
 total = re.search(r'tests (\d+)', runtime).group(1)
 assert passed == total

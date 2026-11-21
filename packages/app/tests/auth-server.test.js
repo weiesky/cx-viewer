@@ -14,9 +14,12 @@ import { rawProjectDirectoryToken } from '../lib/log-v2/project-id.js';
 const tmpDir = mkdtempSync(join(tmpdir(), 'cxv-auth-server-'));
 const switchedLogDir = join('/tmp', `cxv-auth-server-switch-${process.pid}`);
 const projectDir = join(tmpDir, 'project');
+const logDir = join(tmpDir, 'viewer-state');
 mkdirSync(projectDir);
 
-process.env.CXV_LOG_DIR = tmpDir;
+process.env.CXV_LOG_DIR = logDir;
+process.env.HOME = join(tmpDir, 'home');
+process.env.CODEX_HOME = join(tmpDir, 'home', 'codex');
 process.env.CXV_PROXY_PROFILE_PATH = join(tmpDir, 'profile-config', 'profile.json');
 process.env.CXV_PROJECT_DIR = projectDir;
 process.env.CXV_START_PORT = '19860';
@@ -142,7 +145,7 @@ describe('single-port remote password access', { concurrency: false }, () => {
   });
 
   it('exposes only raw frames referenced by the selected business log', async () => {
-    const rawDir = join(tmpDir, 'v2-raw', rawProjectDirectoryToken('project'));
+    const rawDir = join(logDir, 'v2-raw', rawProjectDirectoryToken('project'));
     mkdirSync(rawDir, { recursive: true });
     const ref = {
       version: 1,
@@ -153,7 +156,7 @@ describe('single-port remote password access', { concurrency: false }, () => {
       toSeq: 3,
     };
     const writer = LogV2Writer.open({
-      rootDir: tmpDir,
+      rootDir: logDir,
       projectId: 'project',
       canonicalCwd: projectDir,
       sessionId: 'raw-api',
@@ -167,7 +170,7 @@ describe('single-port remote password access', { concurrency: false }, () => {
       body: { input: [{ role: 'user', content: 'raw test' }] },
       _codexRaw: ref,
     }, resolveAppServerThreadIdentity({ id: 'raw-api', sessionId: 'raw-api' }));
-    const file = relative(tmpDir, join(writer.sessionDir, 'timeline.jsonl')).split(sep).join('/');
+    const file = relative(logDir, join(writer.sessionDir, 'timeline.jsonl')).split(sep).join('/');
     writeFileSync(join(rawDir, ref.sidecar), [
       JSON.stringify({ stream_id: ref.streamId, seq: 1, value: 'before' }),
       JSON.stringify({ stream_id: ref.streamId, seq: 2, value: 'visible' }),
@@ -255,7 +258,7 @@ describe('single-port remote password access', { concurrency: false }, () => {
   });
 
   it('reports corrupt preferences as a conflict without overwriting their bytes', async () => {
-    const path = join(tmpDir, 'preferences.json');
+    const path = join(logDir, 'preferences.json');
     const original = readFileSync(path);
     const corrupt = '{"auth":{"enabled":true,"password":"truncated';
     try {
@@ -277,7 +280,7 @@ describe('single-port remote password access', { concurrency: false }, () => {
   });
 
   it('fails closed for malformed stored passwords over HTTP and WS and refuses destructive saves', async () => {
-    const path = join(tmpDir, 'preferences.json');
+    const path = join(logDir, 'preferences.json');
     const original = readFileSync(path);
     const remoteHeaders = { Host: `viewer.example:${port}` };
     try {
@@ -318,7 +321,7 @@ describe('single-port remote password access', { concurrency: false }, () => {
   });
 
   it('workspace add reports registry corruption and succeeds after explicit restoration', async () => {
-    const path = join(tmpDir, 'workspaces.json');
+    const path = join(logDir, 'workspaces.json');
     const original = existsSync(path) ? readFileSync(path) : null;
     const corrupt = '{"workspaces":[';
     const add = () => call('127.0.0.1', port, '/api/workspaces/add', {
@@ -464,7 +467,8 @@ describe('single-port remote password access', { concurrency: false }, () => {
       assert.equal(lstatSync(join(projectDir, 'renamed-link')).isSymbolicLink(), true);
       assert.equal((await post('move-file', { fromPath: 'project/renamed-link', toDir: '.' })).status, 200);
       assert.equal(lstatSync(join(tmpDir, 'renamed-link')).isSymbolicLink(), true);
-      assert.equal((await post('delete-file', { path: 'renamed-link' })).status, 200);
+      assert.equal((await post('delete-file', { path: 'renamed-link' })).status, 400);
+      assert.equal(lstatSync(join(tmpDir, 'renamed-link')).isSymbolicLink(), true);
       assert.equal(readFileSync(target, 'utf8'), 'public');
 
       const source = join(projectDir, 'copy-source');
@@ -639,7 +643,7 @@ describe('single-port remote password access', { concurrency: false }, () => {
   it('aggregate project stats omit cache files that alias private data', { skip: process.platform === 'win32' }, async () => {
     const { CREDENTIAL_PATHS } = await import('../lib/credential-file-policy.js');
     const secret = join(CREDENTIAL_PATHS.root, 'stats-fixture');
-    const cacheDir = join(tmpDir, 'v2-stats');
+    const cacheDir = join(logDir, 'v2-stats');
     const alias = join(cacheDir, 'private-fixture.json');
     const ordinary = join(cacheDir, 'ordinary-fixture.json');
     mkdirSync(CREDENTIAL_PATHS.root, { recursive: true, mode: 0o700 });

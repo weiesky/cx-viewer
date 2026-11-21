@@ -1,0 +1,35 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": [
+    "0c7195b68967f3c92a84b5ea5e0c271672c798e0",
+    "08809f6e69315476690c62bbe238bd5c199b338d",
+    "082673509ec6407bb835fa8992440eb13a6cf1c2",
+    "0cbb5452887476d3838c772e9fcd04cf3d01ce63",
+    "c29af25e64d3491fe7c58dc80bf859eda7831ba4"
+  ],
+  "existingLocal": "7c3d849b9e7acda1c974077843406c23627dbdcb",
+  "previousLocal": "6ba4304",
+  "productionChange": false,
+  "history": "088 incremental was reverted by082; 0cbb independently reintroduced it; c29 trims retained tool-use payloads too. Final baseline is incremental.",
+  "nativeAdaptations": [
+    "shell_command/apply_patch/exec patch extraction instead of Claude tool names",
+    "request.body.input instead of messages",
+    "WeakMap stores array reference plus length so Codex replaced arrays rescan even at same length"
+  ],
+  "checks": {
+    "existingBehaviorTests": 9,
+    "skip": 0,
+    "log": "/tmp/cxv-b5-e25-tool.log",
+    "cases": [
+      "successful git commit once, failed result/status no refresh",
+      "stable1000-message prefix not revisited; tail merges retain previous metadata",
+      "equal/shorter array replacement and cross-source two-pass collection",
+      "20001 retained payloads trimmed to15000; reset dedup and dispose"
+    ]
+  },
+  "limits": [
+    "No new browser check for existing controller-only audit",
+    "Mixed B3/B4/B10/B11 parts not declared complete here",
+    "B5 target/full endpoint audit remains"
+  ]
+}

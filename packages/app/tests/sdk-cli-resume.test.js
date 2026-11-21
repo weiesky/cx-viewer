@@ -79,7 +79,7 @@ for (const event of [
       assert.equal(response.status, 200, await response.clone().text());
       return response;
     };
-    state.ready = () => state.wait(() => existsSync(join(home, 'opened')));
+    state.ready = () => state.wait(() => existsSync(join(home, 'opened')) && readFileSync(join(home, 'opened'), 'utf8').trim().length > 0);
     return state;
   };
   try { await run({ root, home, logs, cwd, sibling, seed, start }); }

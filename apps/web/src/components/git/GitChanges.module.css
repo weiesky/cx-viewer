@@ -327,11 +327,24 @@
   flex-shrink: 0;
 }
 
-.commitFileBadge {
-  font-size: 10px;
-  color: var(--text-disabled);
-  background: var(--bg-elevated);
-  padding: 1px 6px;
-  border-radius: 8px;
-  flex-shrink: 0;
+/* Drag source feedback — mirrors FileExplorer .treeItemDragging. */
+.dirItemDragging,
+.changeItemDragging {
+  opacity: 0.5;
+}
+
+/* 头部刷新按钮：复用「上下文消耗」的 antd text 小按钮，但压缩到贴合 11px 标题栏。
+   antd small 默认 24px 高、内边距偏大，这里收窄成 16×16、图标 12px，与旧 RefreshIcon 占位一致。 */
+.refreshBtn {
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  padding: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  border-radius: 3px;
+}
+
+.refreshBtn:hover {
+  color: var(--text-secondary);
 }

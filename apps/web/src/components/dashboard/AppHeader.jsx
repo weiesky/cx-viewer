@@ -24,6 +24,7 @@ import ToolsHelp from '../common/ToolsHelp';
 import OpenFolderIcon from '../common/OpenFolderIcon';
 import CachePopoverContent from './CachePopoverContent';
 import LiveTagPopover from './LiveTagPopover';
+import FileBrowserModal from '../files/FileBrowserModal';
 import MemoryDetailModal from '../common/MemoryDetailModal';
 import SkillsManagerModal from '../settings/SkillsManagerModal';
 import ProjectPrefsManagerModal from '../settings/ProjectPrefsManagerModal';
@@ -113,6 +114,7 @@ class AppHeader extends React.Component {
       _codexMd: null,
       // AGENTS.md 明细 Modal：与 _memoryDetail 分槽，避免 memory 链接点击与 CODEX 链接点击交叉污染
       _codexMdDetail: null,
+      _targetBrowser: null,
       // 密码登录认证态：/api/auth/state 返回 effective + scope 信息。
       // isAdmin 仅本机(127.0.0.1)为 true，决定二维码下方是否显示管理区。
       // scope='project'|'global'(当前生效来源)；hasProjectOverride=本项目是否有专用配置；
@@ -388,7 +390,7 @@ class AppHeader extends React.Component {
       // _codexMd 候选随项目变化（cwd 父链不同），同步作废
       this._codexMdSeq++;
       this._codexMdDetailSeq++;
-      this.setState({ _codexMd: null, _codexMdDetail: null });
+      this.setState({ _codexMd: null, _codexMdDetail: null, _targetBrowser: null });
     }
   }
 
@@ -668,22 +670,35 @@ class AppHeader extends React.Component {
     const seq = ++this._codexMdDetailSeq;
     const scopeLabel = scope === 'global' ? t('ui.codexMdScopeGlobal') : t('ui.codexMdScopeProject');
     const title = `${scopeLabel} · ${tail}`;
-    this.setState({ _codexMdDetail: { name: title, loading: true } });
+    this.setState({ _codexMdDetail: { name: title, id, loading: true } });
     try {
       const r = await fetch(apiUrl(`/api/codex-md?id=${encodeURIComponent(id)}`));
       const data = await r.json();
       if (seq !== this._codexMdDetailSeq) return;
       if (!r.ok) {
-        this.setState({ _codexMdDetail: { name: title, error: data.error || `http:${r.status}` } });
+        this.setState({ _codexMdDetail: { name: title, id, error: data.error || `http:${r.status}` } });
         return;
       }
-      this.setState({ _codexMdDetail: { name: title, content: data.content || '' } });
+      this.setState({ _codexMdDetail: { name: title, id, content: data.content || '' } });
     } catch (e) {
       if (seq === this._codexMdDetailSeq) {
-        this.setState({ _codexMdDetail: { name: title, error: e.message || 'network' } });
+        this.setState({ _codexMdDetail: { name: title, id, error: e.message || 'network' } });
       }
     }
   };
+
+  openCodexMdFolder = () => {
+    const detail = this.state._codexMdDetail;
+    if (detail?.id) this.setState({ _targetBrowser: { target: { kind: 'codex-md', id: detail.id }, label: detail.name, instance: new URLSearchParams(window.location.search).get('instance') } });
+  };
+
+  openSkillFolder = (skill) => {
+    if (skill?.path) this.setState({ _targetBrowser: { target: { kind: 'skill', source: skill.source, path: skill.path }, label: skill.name, instance: new URLSearchParams(window.location.search).get('instance') } });
+  };
+
+  closeTargetBrowser = () => this.setState({ _targetBrowser: null });
+
+
 
   // 加载 Codex 生成的嵌套 Markdown；前端负责链接 UX 归一化，server 是最终安全边界。
   // seq 防快速连点：用户连点两个不同明细时，慢的回包不应覆盖快的（否则用户最后看到的是错的内容）。
@@ -1476,8 +1491,14 @@ class AppHeader extends React.Component {
         <MemoryDetailModal
           detail={this.state._codexMdDetail}
           onClose={() => this.setState({ _codexMdDetail: null })}
+            onOpenFolder={this.openCodexMdFolder}
           linkMode="passthrough"
         />
+          {this.state._targetBrowser && (
+            <FileBrowserModal open target={this.state._targetBrowser.target}
+              rootLabel={this.state._targetBrowser.label} project={this.props.projectName}
+              instance={this.state._targetBrowser.instance} zIndex={1120} onClose={this.closeTargetBrowser} />
+          )}
         <Drawer
           title={t('ui.settings')}
           placement="left"
@@ -1861,6 +1882,7 @@ class AppHeader extends React.Component {
         toggling={modal.toggling}
         onToggle={(s) => this.handleToggleSkill(s)}
         onDelete={(s) => this.handleDeleteSkill(s)}
+            onOpenFolder={this.openSkillFolder}
         onClose={() => this.setState(prev => ({ _skillsModal: { ...prev._skillsModal, open: false } }))}
       />
     );

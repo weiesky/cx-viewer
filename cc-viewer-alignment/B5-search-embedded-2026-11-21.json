@@ -1,0 +1,244 @@
+{
+  "upstream": "a6b82f16dff7991670ca8bdf3f01c6ae6f0d5d4b",
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "date": "2026-11-21",
+  "gui": {
+    "chromium": {
+      "engine": "chromium",
+      "browserVersion": "159.0.8154.6",
+      "isolatedRoot": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-tasks-gui-6thMPj",
+      "totalMatches": 2000,
+      "mountedRows": 15,
+      "longJumpIndex": 40,
+      "revealsAncestors": true,
+      "refreshRestoresQuery": true,
+      "refreshDoesNotStealFocus": true,
+      "clampedSearchRatio": 0.799993365180467,
+      "rejectsDrop": true,
+      "replaceCancelPreservesBytes": true,
+      "replaceConfirmApplies": true,
+      "siblingBytesPreserved": true,
+      "closeDuringDragCleansCursor": true,
+      "pageErrors": [],
+      "screenshot": "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B5-search-2026-11-21/chromium-e4-embedded-search.png"
+    },
+    "webkit": {
+      "engine": "webkit",
+      "browserVersion": "27.2",
+      "isolatedRoot": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-tasks-gui-DXPNBz",
+      "totalMatches": 2000,
+      "mountedRows": 16,
+      "longJumpIndex": 40,
+      "revealsAncestors": true,
+      "refreshRestoresQuery": true,
+      "refreshDoesNotStealFocus": true,
+      "clampedSearchRatio": 0.799993365180467,
+      "rejectsDrop": true,
+      "replaceCancelPreservesBytes": true,
+      "replaceConfirmApplies": true,
+      "siblingBytesPreserved": true,
+      "closeDuringDragCleansCursor": true,
+      "pageErrors": [],
+      "screenshot": "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B5-search-2026-11-21/webkit-e4-embedded-search.png"
+    },
+    "webkitPad": {
+      "engine": "webkit",
+      "mode": "pad",
+      "browserVersion": "27.2",
+      "isolatedRoot": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-tasks-gui-OZQfpr",
+      "geometry": {
+        "scrollX": 0,
+        "innerWidth": 834,
+        "documentWidth": 834,
+        "ancestors": [
+          {
+            "class": "_fileExplorer_13fyt_1",
+            "x": -202,
+            "width": 240,
+            "scrollLeft": 0,
+            "scrollWidth": 240,
+            "overflow": "hidden"
+          },
+          {
+            "class": "_innerSplitArea_chx5c_389",
+            "x": -202,
+            "width": 793,
+            "scrollLeft": 0,
+            "scrollWidth": 793,
+            "overflow": "visible"
+          },
+          {
+            "class": "_splitContainer_chx5c_39",
+            "x": -243,
+            "width": 834,
+            "scrollLeft": 0,
+            "scrollWidth": 834,
+            "overflow": "hidden"
+          },
+          {
+            "class": "_mobileChatInner_1xs3u_429",
+            "x": -243,
+            "width": 834,
+            "scrollLeft": 0,
+            "scrollWidth": 834,
+            "overflow": "visible"
+          },
+          {
+            "class": "_mobileCLIBody_1xs3u_889",
+            "x": 0,
+            "width": 834,
+            "scrollLeft": 243,
+            "scrollWidth": 1668,
+            "overflow": "hidden"
+          },
+          {
+            "class": "_mobileCLIRoot_1xs3u_811",
+            "x": 0,
+            "width": 834,
+            "scrollLeft": 0,
+            "scrollWidth": 834,
+            "overflow": "hidden auto"
+          },
+          {
+            "class": "",
+            "x": 0,
+            "width": 834,
+            "scrollLeft": 0,
+            "scrollWidth": 834,
+            "overflow": "visible"
+          },
+          {
+            "class": "",
+            "x": 0,
+            "width": 834,
+            "scrollLeft": 0,
+            "scrollWidth": 834,
+            "overflow": "hidden auto"
+          },
+          {
+            "class": "pad-mode",
+            "x": 0,
+            "width": 834,
+            "scrollLeft": 0,
+            "scrollWidth": 834,
+            "overflow": "visible"
+          }
+        ],
+        "explorer": {
+          "x": -202,
+          "width": 240
+        }
+      },
+      "positions": [
+        {
+          "label": "opened",
+          "x": 41,
+          "scrollLeft": 0
+        },
+        {
+          "label": "before-open-file",
+          "x": 41,
+          "scrollLeft": 0
+        },
+        {
+          "label": "before-reload",
+          "x": 41,
+          "scrollLeft": 0
+        },
+        {
+          "label": "after-reload",
+          "x": 41,
+          "scrollLeft": 0
+        },
+        {
+          "label": "after-drag",
+          "x": 41,
+          "scrollLeft": 0
+        },
+        {
+          "label": "after-cancel",
+          "x": 41,
+          "scrollLeft": 0
+        },
+        {
+          "label": "after-confirm",
+          "x": -202,
+          "scrollLeft": 243
+        }
+      ],
+      "totalMatches": 2000,
+      "mountedRows": 21,
+      "longJumpIndex": 40,
+      "revealsAncestors": true,
+      "refreshRestoresQuery": true,
+      "refreshDoesNotStealFocus": true,
+      "clampedSearchRatio": 0.7999945510026155,
+      "rejectsDrop": true,
+      "replaceCancelPreservesBytes": true,
+      "replaceConfirmApplies": true,
+      "siblingBytesPreserved": true,
+      "closeDuringDragCleansCursor": true,
+      "pageErrors": [],
+      "screenshot": "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B5-search-2026-11-21/webkit-e4-pad-embedded-search.png"
+    }
+  },
+  "sourceParity": {
+    "SearchPanel": "exact except ccv→cxv namespace/ids and reuse current exact-instance URL scope instead of Claude project/instance body parameters",
+    "SearchCssSha256": "707831e627934467f6a3edd7bc8400e6ac7cd68d664b9759d54005f4e2003577",
+    "embeddedFileCssSha256": "97f941eb355404a92467ddf1eb28f0b75d80d2a073617a6636b07e3b6c56e9d5"
+  },
+  "validation": {
+    "web": 334,
+    "full": 1598,
+    "groups": [
+      5,
+      334,
+      1047,
+      212
+    ],
+    "skip": 0,
+    "build": "passed",
+    "packFiles": 704,
+    "releaseLog": "/tmp/cxv-b5-e4-release.log",
+    "installed": "not rerun; E2 364 runtime/204 assets is the previous installation checkpoint"
+  },
+  "knownDefect": {
+    "environment": "WebKit27.2, 834x1194 iPad UA + ipad=1",
+    "trigger": "confirm Replace All, after asynchronous replacement returns",
+    "before": {
+      "explorerX": 41,
+      "mobileCLIBodyScrollLeft": 0
+    },
+    "after": {
+      "explorerX": -202,
+      "mobileCLIBodyScrollLeft": 243,
+      "mobileCLIBodyScrollWidth": 1668
+    },
+    "analysis": "SearchPanel and its CSS are baseline-exact after namespace/scope adapter; mobileCLIBody and transformed overlay CSS are also baseline-identical. Source of the native/antd focus-scroll interaction is not conclusively isolated. Do not claim full pad visual pass.",
+    "userDecision": "保留并登记基线缺陷 (interactive choice 2026-11-21)",
+    "productionWorkaroundAdded": false
+  },
+  "initialTestCorrections": [
+    "Ancestor title locator did not match actual tree labels; assert real tree text after opening.",
+    "Ant Design renders Cancel as spaced two-character text; use actual default button.",
+    "Unrelated public geolocation CORS errors on WebKit; fixture stubs all three country sources locally, no production change.",
+    "isMobile/isPad are env module constants, not ChatView props; remove invalid prop-based unit assertions and use real browser pad emulation."
+  ],
+  "screenshots": [
+    {
+      "path": "cc-viewer-alignment/evidence/B5-search-2026-11-21/chromium-e4-embedded-search.png",
+      "sha256": "44ab107c1dfcd0568ac23ceb5d88ff65631d1516d80797da2aa842ecd5dbd2aa",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-search-2026-11-21/webkit-e4-embedded-search.png",
+      "sha256": "249acd1f71b4ef5b0bceaef52a03624999e43bd42d5aa6de0cc12fdf6d77786f",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-search-2026-11-21/webkit-e4-pad-embedded-search.png",
+      "sha256": "f033aa70d0e9cb8aae83599f6919932651a63367eee1e514847e8e75fe4f3f0d",
+      "visuallyInspected": true
+    }
+  ]
+}

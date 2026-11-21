@@ -1,0 +1,74 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": [
+    "7797672148114a3e097b10d0d568562cc0118f5f"
+  ],
+  "previousLocal": "ea25ffd",
+  "localSubject": "style(git): restore commit rows without author names",
+  "productChange": "One original author span deleted; backend author retained; no CSS change",
+  "checks": {
+    "buildAndAssembly": "passed",
+    "log": "/tmp/cxv-b5-e18-build.log",
+    "previousTests": "E17 34API/379Web, not rerun for low-impact one-line display removal"
+  },
+  "gui": [
+    {
+      "log": "/tmp/cxv-b5-e18-webkit.log",
+      "result": {
+        "engine": "webkit",
+        "mode": "git-author",
+        "browserVersion": "27.2",
+        "actualNoRemoteRepos": true,
+        "originalUnpushedSectionAndTooltip": true,
+        "commitFilesExpand": true,
+        "lineStatsAndBinaryEmptyFallback": true,
+        "authorHidden": true,
+        "exactInstanceAtoB": true,
+        "noSiblingCommits": true
+      },
+      "pageErrors": []
+    },
+    {
+      "log": "/tmp/cxv-b5-e18-chromium.log",
+      "result": {
+        "engine": "chromium",
+        "mode": "git-author",
+        "browserVersion": "159.0.8154.6",
+        "actualNoRemoteRepos": true,
+        "originalUnpushedSectionAndTooltip": true,
+        "commitFilesExpand": true,
+        "lineStatsAndBinaryEmptyFallback": true,
+        "authorHidden": true,
+        "exactInstanceAtoB": true,
+        "noSiblingCommits": true
+      },
+      "pageErrors": []
+    }
+  ],
+  "screenshots": [
+    {
+      "path": "cc-viewer-alignment/evidence/B5-git-author-2026-11-21/chromium-A.png",
+      "sha256": "0decae22b540a74ccebab87b36bc8f3bd9b93c13315a60a176dc34ee0753b473",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-git-author-2026-11-21/chromium-B.png",
+      "sha256": "f5e247f2b25e478657390732d4138e30d4139badfab920fb53c96c69dd4faf0a",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-git-author-2026-11-21/webkit-A.png",
+      "sha256": "e38852e8a306be092cfb6e9304f0bf54f8cbb25c73d8374e8e767dd05fdacab5",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-git-author-2026-11-21/webkit-B.png",
+      "sha256": "5043fff1a513033725c394a080d8b1a6c8b9bcc884fb686207c73fe5399dfdb2",
+      "visuallyInspected": true
+    }
+  ],
+  "limits": [
+    "Remaining Git subitems and B5 target/policy pending",
+    "Other platforms/minimum Node unverified"
+  ]
+}

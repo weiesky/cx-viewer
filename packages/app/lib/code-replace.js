@@ -11,6 +11,7 @@ import {
 import { join, dirname, basename, sep, isAbsolute } from 'node:path';
 import { renameSyncWithRetry } from './file-api.js';
 import { assertPublicFilePath, isPublicFilePath } from './credential-file-policy.js';
+import { assertNativeFilePath, isNativeFilePathPublic } from './file-access-policy.js';
 import {
   buildQueryRegExp, looksCatastrophic, isHidden, hasIgnoredSegment, normRel, DEFAULTS, searchCode, isBinary,
 } from './code-search.js';
@@ -159,7 +160,7 @@ export async function searchReplace(opts) {
     }
 
     const full = join(root, rel);
-    if (!isPublicFilePath(full)) { skip(rel, 'forbidden'); continue; }
+    if (!isPublicFilePath(full) || !isNativeFilePathPublic(full)) { skip(rel, 'forbidden'); continue; }
     let lst;
     try { lst = lstatSync(full); } catch { skip(rel, 'changed'); continue; }
     if (lst.isSymbolicLink()) { skip(rel, 'symlink'); continue; }
@@ -180,6 +181,7 @@ export async function searchReplace(opts) {
       const opened = fstatSync(fd);
       if (!opened.isFile() || opened.size > maxFileSize) { skip(rel, 'changed'); continue; }
       assertPublicFilePath(real, opened);
+      assertNativeFilePath(real, opened);
       raw = readFileSync(fd);
     } catch (error) { skip(rel, error.code === 'ACCESS_DENIED' ? 'forbidden' : 'changed'); continue; }
     finally { if (fd !== undefined) closeSync(fd); }
@@ -200,9 +202,11 @@ export async function searchReplace(opts) {
     const tmp = makeTmpPath(real);
     try {
       assertPublicFilePath(tmp);
+      assertNativeFilePath(tmp);
       writeFileSync(tmp, newContent, 'utf8');
       chmodSync(tmp, st.mode & 0o777); // preserve exec bit / restrictive perms (tmp is created 0644)
       assertPublicFilePath(real);
+      assertNativeFilePath(real);
       renameSyncWithRetry(tmp, real);
     } catch {
       try { unlinkSync(tmp); } catch { /* nothing to clean */ }

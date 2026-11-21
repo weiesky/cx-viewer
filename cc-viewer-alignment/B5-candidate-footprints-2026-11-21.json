@@ -1,0 +1,1409 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "count": 47,
+  "note": "Actual first-parent diff fingerprints and touched paths. Traceability only, not completion of mixed subitems. Source reads and behavior evidence recorded per E entry.",
+  "commits": [
+    {
+      "upstream": "dc1aeb28402abcaf4bc0479d343d5fccafc2e68c",
+      "parents": [
+        "c185a7484e2a3f069977d522741efc02c885420d"
+      ],
+      "firstParentDiffSha256": "9b7e2d876b97a486c97e0152da08f3c70b2d4ac9b27691cd192eae080ed673b9",
+      "paths": [
+        "docs/research/auto-testcase-generation.zh.md"
+      ]
+    },
+    {
+      "upstream": "9eb178145bb218e0a84d806f350ac84f7287a537",
+      "parents": [
+        "3a2159219b0d02858bb385ebc12a5009397b7b36"
+      ],
+      "firstParentDiffSha256": "e7b24bad974ec3029f59cf41f02aa15d634ffbbcb0e226625b47deaa1ebb3184",
+      "paths": [
+        "apps/web/src/App.jsx",
+        "apps/web/src/AppBase.jsx",
+        "apps/web/src/components/dashboard/UsageWindowPill.jsx",
+        "apps/web/src/components/dashboard/UsageWindowPill.module.css",
+        "apps/web/src/i18n.js"
+      ]
+    },
+    {
+      "upstream": "d85820431363b750e522be204e122636d6682aea",
+      "parents": [
+        "73557f198905d082128b404388d1c80199454102"
+      ],
+      "firstParentDiffSha256": "cab241cf06b0d42031b971269723e6a3e26920bef22604d344a6e2c6e922ea86",
+      "paths": [
+        ".changeset/gentle-donuts-appear.md",
+        "apps/web/src/components/git/GitChanges.jsx",
+        "apps/web/src/i18n.js",
+        "apps/web/src/utils/gitApi.js",
+        "apps/web/test/git-api.test.js",
+        "apps/web/test/new-ui-i18n.test.js",
+        "history.md",
+        "packages/app/server/lib/git-diff.js",
+        "packages/app/test/api-git-routes.test.js",
+        "packages/app/test/branch-lib-git-diff.test.js",
+        "packages/app/test/git-unpushed.test.js"
+      ]
+    },
+    {
+      "upstream": "bd50636219e086ba082ab4bb36e5c0b6a996172e",
+      "parents": [
+        "44320725ab0c33efc0ee6cd846c109becd203caa"
+      ],
+      "firstParentDiffSha256": "1c1ff7a2b03570ec0e56c61f744dd91c732d458dce9ec5f0b423011c17fabd7a",
+      "paths": [
+        ".changeset/search-worker-virtualized-results.md",
+        "apps/web/src/components/chat/ChatMessage.module.css",
+        "apps/web/src/components/search/SearchPanel.jsx",
+        "apps/web/src/components/search/SearchPanel.module.css",
+        "apps/web/src/i18n.js",
+        "history.md",
+        "packages/app/server/lib/code-search.js",
+        "packages/app/server/lib/search-worker.js",
+        "packages/app/test/search-worker.test.js"
+      ]
+    },
+    {
+      "upstream": "ba3eee8fd5520b0a6ce66ebd6da749fc8cb120b5",
+      "parents": [
+        "ef28ec388d680dff48caf18bb20d757f4c50634f"
+      ],
+      "firstParentDiffSha256": "aa896df77f3c3efb365109ebd36ba3923fe4d2fc0ba0794d1436ea84ec18c086",
+      "paths": [
+        ".changeset/download-file-remote.md",
+        "apps/web/src/components/files/FileExplorer.jsx",
+        "apps/web/src/i18n.js",
+        "history.md",
+        "packages/app/server/routes/files-content.js",
+        "packages/app/test/api-files-content.test.js"
+      ]
+    },
+    {
+      "upstream": "6880f77320fa163442eaa64ff6385dc46a1b69f1",
+      "parents": [
+        "71cee60794ccdab9eb5eaeef5e84a9e52a54019e"
+      ],
+      "firstParentDiffSha256": "96ce72938568829b681b833f5c90deae979dfe30b7733b02b02939c5354c85e7",
+      "paths": [
+        "apps/electron/electron/main.js",
+        "apps/web/src/components/chat/ChatView.jsx",
+        "apps/web/src/components/dashboard/CachePopoverContent.jsx",
+        "apps/web/src/components/dashboard/TeamSessionPanel.jsx",
+        "apps/web/src/components/settings/ImConversationModal.jsx",
+        "apps/web/src/components/settings/ImPlatformSettings.jsx",
+        "apps/web/src/global.css",
+        "apps/web/src/i18n.js",
+        "apps/web/src/utils/markdown.js",
+        "apps/web/src/utils/markdownCodePathClassify.js",
+        "apps/web/src/utils/markdownCodeSpanRenderer.js",
+        "apps/web/src/utils/markdownHrefClassify.js",
+        "apps/web/src/utils/markdownLinkRenderer.js",
+        "apps/web/src/utils/mdCodePathVerify.js",
+        "apps/web/src/utils/skillImportErrors.js",
+        "apps/web/test/markdown-code-path-classify.test.js",
+        "apps/web/test/markdown-href-classify.test.js",
+        "apps/web/test/markdown-render.test.js",
+        "apps/web/test/md-file-exists.test.js",
+        "apps/web/test/new-ui-i18n.test.js",
+        "apps/web/test/skill-import-errors.test.js",
+        "packages/app/server/lib/skills-api.js",
+        "packages/app/server/routes/files-fs.js",
+        "packages/app/server/routes/skills.js",
+        "packages/app/test/api-files-exists.test.js",
+        "packages/app/test/api-im.test.js",
+        "packages/app/test/api-skills-gap.test.js",
+        "packages/app/test/branch-routes-skills.test.js",
+        "packages/app/test/route-dispatch.test.js",
+        "packages/app/test/skills-import.test.js"
+      ]
+    },
+    {
+      "upstream": "865604d68e05e62aaebf8de7a04afa9a9f1e999d",
+      "parents": [
+        "55544f6e409c978da32ae9e02faa50070b515e33"
+      ],
+      "firstParentDiffSha256": "af2acf845220b31f8397d495124006ca8d48640a7a88fc6fb4f9c47f3fc7481f",
+      "paths": [
+        ".changeset/file-grid-thumbnails.md",
+        "apps/web/src/components/common/HtmlPreviewModal.jsx",
+        "apps/web/src/components/common/OpenFolderIcon.jsx",
+        "apps/web/src/components/files/FileBrowserModal.jsx",
+        "apps/web/src/components/files/FileBrowserModal.module.css",
+        "apps/web/src/components/files/FileExplorer.jsx",
+        "apps/web/src/components/files/FileExplorer.module.css",
+        "apps/web/src/components/files/fileContextMenu.js",
+        "apps/web/src/components/files/fileContextMenuActions.jsx",
+        "apps/web/src/i18n.js",
+        "apps/web/src/utils/fileIcons.jsx",
+        "apps/web/test/file-browser-modal.test.js",
+        "apps/web/test/file-context-menu.test.js",
+        "history.md",
+        "packages/app/server/routes/files-content.js",
+        "packages/app/test/api-files-content.test.js"
+      ]
+    },
+    {
+      "upstream": "365af800e58f34a57b2339cf705f56390874f20b",
+      "parents": [
+        "2a0d1b30d325bcec1222180b188d0d083d084a55"
+      ],
+      "firstParentDiffSha256": "094a3de9d47eef426e35f6304bbceedaf0b3207eaefabc8f62d17b283e529edf",
+      "paths": [
+        "apps/web/src/App.jsx",
+        "apps/web/src/App.module.css",
+        "apps/web/src/AppBase.jsx",
+        "apps/web/src/components/chat/ChatView.jsx",
+        "apps/web/src/components/chat/ChatView.module.css",
+        "apps/web/src/components/files/FileBrowserModal.jsx",
+        "apps/web/src/components/files/FileBrowserModal.module.css",
+        "apps/web/src/components/files/FileExplorer.jsx",
+        "apps/web/src/components/files/fileDropTarget.js",
+        "apps/web/src/components/files/fileMove.js",
+        "apps/web/src/components/files/importFiles.js",
+        "apps/web/src/hooks/useFileDropTarget.js",
+        "apps/web/src/i18n.js",
+        "apps/web/src/utils/dragGuards.js",
+        "apps/web/test/_shims/antd-stub.mjs",
+        "apps/web/test/drag-drop-zones.test.js",
+        "apps/web/test/file-browser-modal.test.js",
+        "apps/web/test/file-move.test.js",
+        "apps/web/test/files-import.test.js",
+        "history.md",
+        "packages/app/server/routes/files-fs.js",
+        "packages/app/test/api-files-fs.test.js"
+      ]
+    },
+    {
+      "upstream": "5aa5728b95024a2fbf9aea98f1275844a42b611f",
+      "parents": [
+        "bf2d6f2ad8fba572239cc8ee9ccc7d22f4b6d6ab"
+      ],
+      "firstParentDiffSha256": "a931f239a36dff5564deac7addff49631d6857f8afd33e56d721e9bf5f3e3a63",
+      "paths": [
+        "apps/web/src/components/files/FileExplorer.jsx",
+        "apps/web/src/i18n.js"
+      ]
+    },
+    {
+      "upstream": "a278d68954bc41150533177f8e1bbfec320d00a2",
+      "parents": [
+        "5aa5728b95024a2fbf9aea98f1275844a42b611f"
+      ],
+      "firstParentDiffSha256": "ab845172f1d66b3eba3399bc1d9cc11f60390272be531ea72d83da890e19029d",
+      "paths": [
+        "apps/web/src/components/mobile/MobileFileExplorer.jsx",
+        "apps/web/src/components/mobile/MobileGitDiff.jsx",
+        "apps/web/src/utils/fileIcons.jsx",
+        "apps/web/src/utils/fileTypes.js",
+        "apps/web/test/file-browser-modal.test.js",
+        "apps/web/test/file-types.test.js"
+      ]
+    },
+    {
+      "upstream": "637fbb0218d0963b35308cbcd6288bdc3578c133",
+      "parents": [
+        "a278d68954bc41150533177f8e1bbfec320d00a2"
+      ],
+      "firstParentDiffSha256": "3f733cf121928a15affd9f012be1aa900a2cdeb9009bc2044f6edec078c44431",
+      "paths": [
+        "apps/web/src/global.css"
+      ]
+    },
+    {
+      "upstream": "96c477d582f45f6ba102a083de9c9f0c4a07cad2",
+      "parents": [
+        "d7f355ba895e24bb5e46c820a7d3105a76018ea3"
+      ],
+      "firstParentDiffSha256": "3167b90a5d4d1fc6f1ff8676585158c2231668bba3a6f3ccf5d9d1e238575fbb",
+      "paths": [
+        "history.md",
+        "packages/app/server/server.js"
+      ]
+    },
+    {
+      "upstream": "2e17699fd752faedd74a354956cd0c175a8181bc",
+      "parents": [
+        "b604b1e4f13a5cae8ba522c970b369e91bbb3d04"
+      ],
+      "firstParentDiffSha256": "eac706f5355f841109eaccd74eed5a7eb9212a54a4f1d77afd1a2fdb7ceef5c9",
+      "paths": [
+        "apps/web/src/components/git/GitChanges.jsx",
+        "apps/web/src/components/git/GitChanges.module.css",
+        "apps/web/src/utils/gitApi.js",
+        "history.md",
+        "packages/app/CHANGELOG.md",
+        "packages/app/package.json",
+        "packages/app/server/lib/git-diff.js",
+        "packages/app/test/branch-lib-git-diff.test.js",
+        "packages/app/test/git-unpushed.test.js"
+      ]
+    },
+    {
+      "upstream": "eb2e9703a2837550a9bf2a62a8bb5d20fac7f723",
+      "parents": [
+        "2ae12ca122c9d3210e8f7464970fc8c8df91b067"
+      ],
+      "firstParentDiffSha256": "a3a73d8a6bba2c2481c0f3f81692f9eafbb807df239bbb3de58a901154ce096e",
+      "paths": [
+        "apps/electron/electron/tab-worker.js",
+        "apps/web/package.json",
+        "apps/web/src/App.jsx",
+        "apps/web/src/App.module.css",
+        "apps/web/src/AppBase.jsx",
+        "apps/web/src/Mobile.jsx",
+        "apps/web/src/components/chat/ChatInputBar.jsx",
+        "apps/web/src/components/chat/ChatMessage.jsx",
+        "apps/web/src/components/chat/ChatMessage.module.css",
+        "apps/web/src/components/chat/ChatView.jsx",
+        "apps/web/src/components/chat/ChatView.module.css",
+        "apps/web/src/components/chat/ResumeSessionsPopover.jsx",
+        "apps/web/src/components/chat/ResumeSessionsPopover.module.css",
+        "apps/web/src/components/common/ConceptHelp.jsx",
+        "apps/web/src/components/common/Loading.jsx",
+        "apps/web/src/components/common/Loading.module.css",
+        "apps/web/src/components/common/QuickAutoApproveRows.jsx",
+        "apps/web/src/components/common/ResumeSessionsRow.jsx",
+        "apps/web/src/components/common/ResumeSessionsRow.module.css",
+        "apps/web/src/components/common/quickMenuIcons.jsx",
+        "apps/web/src/components/dashboard/AppHeader.jsx",
+        "apps/web/src/components/dashboard/AppHeader.module.css",
+        "apps/web/src/components/dashboard/DetailPanel.jsx",
+        "apps/web/src/components/dashboard/DirBrowser.jsx",
+        "apps/web/src/components/dashboard/NewProjectModal.jsx",
+        "apps/web/src/components/dashboard/WorkspaceList.jsx",
+        "apps/web/src/components/dashboard/WorkspaceList.module.css",
+        "apps/web/src/components/files/FileBrowserModal.jsx",
+        "apps/web/src/components/files/FileContentView.jsx",
+        "apps/web/src/components/files/FileExplorer.jsx",
+        "apps/web/src/components/files/MdxEditorPanel.module.css",
+        "apps/web/src/components/git/GitChanges.jsx",
+        "apps/web/src/components/git/GitDiffView.jsx",
+        "apps/web/src/components/mobile/MobileFileExplorer.jsx",
+        "apps/web/src/components/mobile/MobileGitDiff.jsx",
+        "apps/web/src/components/proxy-stats/ProxyStatsDashboard.jsx",
+        "apps/web/src/components/proxy-stats/ProxyStatsModal.jsx",
+        "apps/web/src/components/search/SearchPanel.jsx",
+        "apps/web/src/components/settings/ImAppendSystemModal.jsx",
+        "apps/web/src/components/settings/ImConversationModal.jsx",
+        "apps/web/src/components/settings/ProjectAliasEditor.jsx",
+        "apps/web/src/components/settings/ProjectAliasEditor.module.css",
+        "apps/web/src/components/settings/ProjectPrefsManagerModal.jsx",
+        "apps/web/src/components/settings/RetryConfigModal.jsx",
+        "apps/web/src/components/settings/SkillsManagerModal.jsx",
+        "apps/web/src/components/settings/SystemTextModal.jsx",
+        "apps/web/src/components/terminal/CustomUltraplanEditModal.jsx",
+        "apps/web/src/components/terminal/PresetExpertPickerModal.jsx",
+        "apps/web/src/components/terminal/TerminalPanel.jsx",
+        "apps/web/src/components/terminal/TerminalWsContext.jsx",
+        "apps/web/src/components/viewers/ImageViewer.jsx",
+        "apps/web/src/global.css",
+        "apps/web/src/hooks/useProjectAlias.js",
+        "apps/web/src/i18n.js",
+        "apps/web/src/utils/apiUrl.js",
+        "apps/web/src/utils/gitApi.js",
+        "apps/web/src/utils/mdCodePathVerify.js",
+        "apps/web/src/utils/projectAlias.js",
+        "apps/web/src/utils/projectTabOrder.js",
+        "apps/web/src/utils/resumeSessions.js",
+        "apps/web/src/utils/searchApi.js",
+        "apps/web/src/utils/seqResourceLoaders.js",
+        "apps/web/src/utils/sessionManager.js",
+        "apps/web/src/utils/terminalAnchor.js",
+        "apps/web/src/utils/userImageRefs.js",
+        "apps/web/src/utils/viewScope.js",
+        "apps/web/src/utils/viewStateCache.js",
+        "apps/web/src/utils/viewedWorkspaceStorage.js",
+        "apps/web/test/api-url-gap.test.js",
+        "apps/web/test/branch-utils-projectAlias.test.js",
+        "apps/web/test/detach-view-reset.test.js",
+        "apps/web/test/file-browser-modal.test.js",
+        "apps/web/test/live-processes-refresh.test.js",
+        "apps/web/test/new-ui-i18n.test.js",
+        "apps/web/test/project-tab-order.test.js",
+        "apps/web/test/projectAlias.test.js",
+        "apps/web/test/resume-history-i18n.test.js",
+        "apps/web/test/resume-history-menu.test.js",
+        "apps/web/test/resume-sessions-map.test.js",
+        "apps/web/test/session-manager.test.js",
+        "apps/web/test/sse-connection-gen.test.js",
+        "apps/web/test/stream-switch-bleed.test.js",
+        "apps/web/test/terminal-anchor.test.js",
+        "apps/web/test/user-markdown.test.js",
+        "apps/web/test/view-cache-restore.test.js",
+        "apps/web/test/view-scope.test.js",
+        "apps/web/test/view-state-cache.test.js",
+        "apps/web/test/view-switch-sse-scope.test.js",
+        "apps/web/test/viewed-workspace-storage.test.js",
+        "docs/handoff-samename-chat-panel.md",
+        "history.md",
+        "packages/app/CHANGELOG.md",
+        "packages/app/cli.js",
+        "packages/app/package.json",
+        "packages/app/server/interceptor.js",
+        "packages/app/server/lib/chat-queue.js",
+        "packages/app/server/lib/same-origin.js",
+        "packages/app/server/lib/v2/convert.js",
+        "packages/app/server/lib/v2/layout.js",
+        "packages/app/server/lib/v2/live-feed.js",
+        "packages/app/server/lib/v2/resume-list.js",
+        "packages/app/server/lib/v2/session-select.js",
+        "packages/app/server/lib/v2/v2-writer.js",
+        "packages/app/server/lib/v2/view-router.js",
+        "packages/app/server/lib/view-root.js",
+        "packages/app/server/pty-manager.js",
+        "packages/app/server/routes/ask-perm.js",
+        "packages/app/server/routes/events.js",
+        "packages/app/server/routes/expert.js",
+        "packages/app/server/routes/files-content.js",
+        "packages/app/server/routes/files-fs.js",
+        "packages/app/server/routes/git.js",
+        "packages/app/server/routes/preferences.js",
+        "packages/app/server/routes/project-meta.js",
+        "packages/app/server/routes/proxy-stats.js",
+        "packages/app/server/routes/resume.js",
+        "packages/app/server/routes/search.js",
+        "packages/app/server/routes/skills.js",
+        "packages/app/server/routes/v2.js",
+        "packages/app/server/routes/workspaces.js",
+        "packages/app/server/server.js",
+        "packages/app/server/system-prompt-templates/presets/kimi-k3.md",
+        "packages/app/server/workspace-registry.js",
+        "packages/app/test/branch-routes-workspaces.test.js",
+        "packages/app/test/chat-queue-resume.test.js",
+        "packages/app/test/events-incremental-project.test.js",
+        "packages/app/test/events-samename-cwd.test.js",
+        "packages/app/test/interceptor-continuation-sync.test.js",
+        "packages/app/test/interceptor-instance-header.test.js",
+        "packages/app/test/interceptor-resume-crossproject.test.js",
+        "packages/app/test/interceptor-resume-project.test.js",
+        "packages/app/test/live-processes-close.test.js",
+        "packages/app/test/pty-manager-anchor.test.js",
+        "packages/app/test/pty-manager-gap.test.js",
+        "packages/app/test/pty-manager-instance.test.js",
+        "packages/app/test/pty-manager.test.js",
+        "packages/app/test/resume-route.test.js",
+        "packages/app/test/resume-sessions.test.js",
+        "packages/app/test/scratch-pty-manager.test.js",
+        "packages/app/test/stream-chunk-scope.test.js",
+        "packages/app/test/streaming-status-scope.test.js",
+        "packages/app/test/v2-core.test.js",
+        "packages/app/test/v2-layout-normalize-cwd.test.js",
+        "packages/app/test/v2-live-feed-instance.test.js",
+        "packages/app/test/v2-resume-switch.test.js",
+        "packages/app/test/v2-session-select.test.js",
+        "packages/app/test/view-root.test.js",
+        "packages/app/test/view-router.test.js",
+        "packages/app/test/view-routes-project-r4.test.js",
+        "packages/app/test/view-routes-project.test.js",
+        "packages/app/test/workspace-registry.test.js",
+        "pnpm-lock.yaml",
+        "scripts/tarball-baseline.json"
+      ]
+    },
+    {
+      "upstream": "649f853e5e910b3fd1a964f441682d4f08499d2b",
+      "parents": [
+        "eb2e9703a2837550a9bf2a62a8bb5d20fac7f723"
+      ],
+      "firstParentDiffSha256": "6ed3df0053c348cffa612e628fb90afd60f28abab11e2f5e4c27d7e088f49e65",
+      "paths": [
+        ".changeset/close-bound-project-rebind.md",
+        ".changeset/git-changes-open-persist.md",
+        ".changeset/nav-sidebar-detach-chip-cleanup.md",
+        ".changeset/new-workspace-perf-and-style.md",
+        ".changeset/workspace-help-modal.md",
+        "apps/web/src/App.jsx",
+        "apps/web/src/AppBase.jsx",
+        "apps/web/src/components/chat/ChatView.jsx",
+        "apps/web/src/components/chat/ChatView.module.css",
+        "apps/web/src/components/common/QuickAutoApproveRows.jsx",
+        "apps/web/src/components/common/sharedChrome.module.css",
+        "apps/web/src/components/dashboard/AppHeader.module.css",
+        "apps/web/src/components/dashboard/NewProjectModal.jsx",
+        "apps/web/src/components/dashboard/WorkspaceList.jsx",
+        "apps/web/src/components/dashboard/WorkspaceList.module.css",
+        "apps/web/src/global.css",
+        "apps/web/src/i18n.js",
+        "apps/web/src/utils/reboundScope.js",
+        "apps/web/src/utils/resumeSessions.js",
+        "apps/web/test/git-changes-open-persist.test.js",
+        "apps/web/test/live-processes-refresh.test.js",
+        "apps/web/test/new-ui-i18n.test.js",
+        "apps/web/test/rebound-scope.test.js",
+        "apps/web/test/resume-history-menu.test.js",
+        "apps/web/test/resume-sessions-map.test.js",
+        "apps/web/test/workspace-list-modal.test.js",
+        "history.md",
+        "packages/app/server/lib/v2/layout.js",
+        "packages/app/server/pty-manager.js",
+        "packages/app/server/routes/resume.js",
+        "packages/app/server/routes/workspaces.js",
+        "packages/app/server/workspace-registry.js",
+        "packages/app/test/api-workspaces.test.js",
+        "packages/app/test/branch-workspace-registry.test.js",
+        "packages/app/test/live-processes-close.test.js",
+        "packages/app/test/workspace-registry-limit.test.js",
+        "packages/app/test/workspace-registry.test.js"
+      ]
+    },
+    {
+      "upstream": "7f7f78e2d8c04ae578c892981acde12999ed1d05",
+      "parents": [
+        "956af1723f07312dd4580418d6d097bacbb1c448"
+      ],
+      "firstParentDiffSha256": "23171882be661cee9f7cf9562d05110833156d6f90cdf4c76065d39b8e62abbf",
+      "paths": [
+        ".changeset/dirbrowser-direct-launch.md",
+        "apps/web/src/components/dashboard/WorkspaceList.jsx",
+        "history.md"
+      ]
+    },
+    {
+      "upstream": "a30d8c92a7a56803d501ea50775f9993c96a19d5",
+      "parents": [
+        "5c28d4c50a952110c32b04922cee56bdf9bd8560"
+      ],
+      "firstParentDiffSha256": "fb62761d566544d5f63c68e41385f2402c466e23ca10e3fbef0c9b37a7e8978e",
+      "paths": [
+        ".changeset/per-workspace-sse-channels.md",
+        "apps/web/src/AppBase.jsx",
+        "apps/web/src/utils/sseChannels.js",
+        "apps/web/test/warm-switch-instant.test.js",
+        "history.md",
+        "packages/app/server/lib/git-diff.js",
+        "packages/app/server/lib/v2/view-router.js",
+        "packages/app/server/routes/resume.js",
+        "packages/app/server/routes/workspaces.js",
+        "packages/app/server/server.js",
+        "packages/app/test/stream-chunk-scope.test.js",
+        "packages/app/test/streaming-status-scope.test.js"
+      ]
+    },
+    {
+      "upstream": "7830664780a5c16219edbb7e79662ad0ad27db9b",
+      "parents": [
+        "983d08b57180a76b2b7ec0b122bef7eec33e47c4"
+      ],
+      "firstParentDiffSha256": "cba22b5ed745ba0c0a93d0f550fbacb8212583281c131cb62a69e38d166f123c",
+      "paths": [
+        "apps/web/src/components/files/FileExplorer.module.css",
+        "history.md"
+      ]
+    },
+    {
+      "upstream": "a2be00c45b71be0faf6b8bf1e1e93916b9cc1eb7",
+      "parents": [
+        "51c23e9090f349b983a2dba52c738c559da5bf1b"
+      ],
+      "firstParentDiffSha256": "13529a42903299937837eec410863f9988f3afbfdc62d8edbcb174187cf76296",
+      "paths": [
+        "apps/web/src/components/chat/ChatInputBar.jsx",
+        "apps/web/src/components/chat/ChatInputBar.module.css",
+        "apps/web/src/components/common/sharedChrome.module.css",
+        "apps/web/test/upload-plus-menu.test.js",
+        "history.md"
+      ]
+    },
+    {
+      "upstream": "3cf3e9585f9f93cb59b021a81d789c8f4ef5e528",
+      "parents": [
+        "9dbf4e295a08e472c0b15cfb66de1cc80c77cfa3"
+      ],
+      "firstParentDiffSha256": "cf1ce7d5a3c8ef13b7694c3c30e3ba4be8a226eee7b6b32daf8dc2ea97b9bdbf",
+      "paths": [
+        "apps/web/src/components/chat/ChatInputBar.jsx",
+        "apps/web/test/upload-plus-menu.test.js"
+      ]
+    },
+    {
+      "upstream": "a336d3919f585712a1dcc608515e29589c0621f5",
+      "parents": [
+        "9b1bb4e729473360cbe60e508f0558a702370a08"
+      ],
+      "firstParentDiffSha256": "09e235672dc0c779bd400f2203521fcd2133f3f2f9681d667b9af0aac4be55b9",
+      "paths": [
+        "apps/web/src/components/terminal/TerminalPanel.jsx",
+        "apps/web/test/upload-terminal-plus-menu.test.js",
+        "history.md"
+      ]
+    },
+    {
+      "upstream": "3bd2aa96961379537a8ccfb50667cab4b2335aa9",
+      "parents": [
+        "c66b5fe2ed6e855f0610127eba3de96ac821adea"
+      ],
+      "firstParentDiffSha256": "c97760c28c8a6758427e23d9da009ac7e520babd183b482f9d9146de2e45c074",
+      "paths": [
+        ".changeset/chat-ghost-two-line-clamp.md",
+        ".github/workflows/bump-homebrew.yml",
+        "apps/web/src/components/chat/ChatInputBar.jsx",
+        "apps/web/src/components/chat/ChatInputBar.module.css",
+        "apps/web/test/chat-ghost-clamp.test.js",
+        "history.md"
+      ]
+    },
+    {
+      "upstream": "ab1b89ee133664c9f2c0e3e17ada8711180f4dc5",
+      "parents": [
+        "c23590396ff1d63f6f23f925f015889d26bfc3b1"
+      ],
+      "firstParentDiffSha256": "d8695ebcad522a8f1982b4a78c82f6c66340617696e6224db7ddbc4c56dadbd6",
+      "paths": [
+        ".changeset/calm-files-follow-view.md",
+        "apps/web/src/components/chat/ChatView.jsx",
+        "apps/web/src/components/common/HtmlPreviewModal.jsx",
+        "apps/web/src/components/files/FileBrowserModal.jsx",
+        "apps/web/src/components/files/FileContentView.jsx",
+        "apps/web/src/components/files/FileExplorer.jsx",
+        "apps/web/src/components/files/fileContextMenuActions.jsx",
+        "apps/web/src/components/files/fileMove.js",
+        "apps/web/src/components/files/importFiles.js",
+        "apps/web/src/utils/fileOpen.js",
+        "apps/web/test/chat-file-open-scope.test.js",
+        "apps/web/test/file-browser-modal.test.js",
+        "apps/web/test/file-context-menu-actions.test.js",
+        "apps/web/test/file-move.test.js",
+        "apps/web/test/file-open.test.js",
+        "apps/web/test/files-import.test.js",
+        "apps/web/test/html-preview-scope.test.js",
+        "history.md",
+        "packages/app/server/lib/view-root.js",
+        "packages/app/server/routes/files-content.js",
+        "packages/app/server/routes/files-fs.js",
+        "packages/app/test/api-files-content.test.js",
+        "packages/app/test/branch-routes-files-fs.test.js",
+        "packages/app/test/files-fs-deep.test.js",
+        "packages/app/test/files-view-write.test.js",
+        "packages/app/test/view-routes-project-r4.test.js",
+        "packages/app/test/view-routes-project.test.js"
+      ]
+    },
+    {
+      "upstream": "0c7195b68967f3c92a84b5ea5e0c271672c798e0",
+      "parents": [
+        "9c36b5b5a74eff61c88d27bdea1537666e771a73"
+      ],
+      "firstParentDiffSha256": "6a8d834fb4394360173605863b48bb370b65ec0183de841a0c602d8df0b73562",
+      "paths": [
+        "apps/web/src/utils/commandValidator.js",
+        "apps/web/test/commandValidator.test.js",
+        "apps/web/test/tool-file-change-controller.test.js",
+        "history.md"
+      ]
+    },
+    {
+      "upstream": "2cd4488ce984abf10f9338ec5f1ad6e88c359281",
+      "parents": [
+        "b9d592fc13fa01acab96432a28c764864fb4729a",
+        "a99506d5f53295fe5cb7c2d0403473305a19da4b"
+      ],
+      "firstParentDiffSha256": "63a948ce3d56fa340261f400c496af1f1cdd05de208dfb52193e41e4eceaf8e2",
+      "paths": [
+        "apps/web/src/App.jsx",
+        "apps/web/src/AppBase.jsx",
+        "apps/web/src/Mobile.jsx",
+        "apps/web/src/components/approval/ToolApprovalPanel.jsx",
+        "apps/web/src/components/approval/ToolApprovalPanel.module.css",
+        "apps/web/src/components/chat/ChatInputBar.jsx",
+        "apps/web/src/components/chat/ChatView.jsx",
+        "apps/web/src/components/chat/ChatView.module.css",
+        "apps/web/src/components/chat/optimisticQueueMessage.js",
+        "apps/web/src/components/chat/queuedPromptDisplay.js",
+        "apps/web/src/components/common/HoverPreviewTip.module.css",
+        "apps/web/src/components/common/HtmlPreviewModal.jsx",
+        "apps/web/src/components/common/MemoryDetailModal.jsx",
+        "apps/web/src/components/common/QuickAutoApproveRows.jsx",
+        "apps/web/src/components/common/sharedChrome.module.css",
+        "apps/web/src/components/common/useMemoryLinkTip.jsx",
+        "apps/web/src/components/dashboard/AppHeader.jsx",
+        "apps/web/src/components/dashboard/CachePopoverContent.jsx",
+        "apps/web/src/components/dashboard/CachePopoverContent.module.css",
+        "apps/web/src/components/dashboard/LiveTagPopover.jsx",
+        "apps/web/src/components/dashboard/SdkContextComposition.jsx",
+        "apps/web/src/components/dashboard/SdkContextComposition.module.css",
+        "apps/web/src/components/dashboard/SdkContextPalette.module.css",
+        "apps/web/src/components/dashboard/SdkContextUsageProvider.jsx",
+        "apps/web/src/components/dashboard/SdkContextUsageTab.jsx",
+        "apps/web/src/components/dashboard/SdkContextUsageTab.module.css",
+        "apps/web/src/components/files/FileBrowserModal.jsx",
+        "apps/web/src/components/files/FileContentView.jsx",
+        "apps/web/src/components/files/FileExplorer.jsx",
+        "apps/web/src/components/files/fileContextMenuActions.jsx",
+        "apps/web/src/components/files/fileMove.js",
+        "apps/web/src/components/files/importFiles.js",
+        "apps/web/src/components/terminal/TerminalWsContext.jsx",
+        "apps/web/src/i18n.js",
+        "apps/web/src/utils/commandValidator.js",
+        "apps/web/src/utils/contextUsageView.js",
+        "apps/web/src/utils/fileOpen.js",
+        "apps/web/src/utils/markdown.js",
+        "apps/web/src/utils/planAutoApprove.js",
+        "apps/web/src/utils/responseThinking.js",
+        "apps/web/src/utils/sessionManager.js",
+        "apps/web/src/utils/sessionMerge.js",
+        "apps/web/src/utils/v3Assembler.js",
+        "apps/web/src/utils/viewChannelState.js",
+        "apps/web/src/utils/viewStateCache.js",
+        "apps/web/test/chat-file-open-scope.test.js",
+        "apps/web/test/commandValidator.test.js",
+        "apps/web/test/context-i18n.test.js",
+        "apps/web/test/context-usage-view.test.js",
+        "apps/web/test/file-browser-modal.test.js",
+        "apps/web/test/file-context-menu-actions.test.js",
+        "apps/web/test/file-move.test.js",
+        "apps/web/test/file-open.test.js",
+        "apps/web/test/files-import.test.js",
+        "apps/web/test/fixtures/sdk-context-provider-probe.jsx",
+        "apps/web/test/html-preview-scope.test.js",
+        "apps/web/test/new-ui-i18n.test.js",
+        "apps/web/test/optimistic-queue-chat.test.js",
+        "apps/web/test/optimistic-queue-message.test.js",
+        "apps/web/test/plan-approval-panel.test.js",
+        "apps/web/test/plan-auto-approve-runtime.test.js",
+        "apps/web/test/plan-auto-approve-target.test.js",
+        "apps/web/test/queue-bubbles.test.js",
+        "apps/web/test/queued-prompt-display.test.js",
+        "apps/web/test/response-thinking-chat.test.js",
+        "apps/web/test/response-thinking.test.js",
+        "apps/web/test/resume-history-menu.test.js",
+        "apps/web/test/sdk-context-blood-bar.test.js",
+        "apps/web/test/sdk-context-provider.test.js",
+        "apps/web/test/sdk-context-usage-tab.test.js",
+        "apps/web/test/sdk-error-dialogue.test.js",
+        "apps/web/test/sdk-panel-stable-dispatch.test.js",
+        "apps/web/test/sdk-plan-approval-guard.test.js",
+        "apps/web/test/sdk-workspace-anchors.test.js",
+        "apps/web/test/terminal-ws-attach.test.js",
+        "apps/web/test/tool-file-change-controller.test.js",
+        "apps/web/test/view-state-cache.test.js",
+        "docs/refactor/WIRE_FORMAT_V2.md",
+        "docs/refactor/WIRE_FORMAT_V2_PLAN.md",
+        "docs/refactor/WIRE_FORMAT_V3.md",
+        "docs/research/kimi-thinking-sdk-investigation.md",
+        "history.md",
+        "packages/app/CHANGELOG.md",
+        "packages/app/package.json",
+        "packages/app/server/lib/chat-queue.js",
+        "packages/app/server/lib/scheduled-task-executor.js",
+        "packages/app/server/lib/sdk-manager.js",
+        "packages/app/server/lib/v2/conversation-store.js",
+        "packages/app/server/lib/v2/v2-writer.js",
+        "packages/app/server/lib/view-root.js",
+        "packages/app/server/pty-manager.js",
+        "packages/app/server/routes/files-content.js",
+        "packages/app/server/routes/files-fs.js",
+        "packages/app/server/routes/resume.js",
+        "packages/app/server/routes/sdk-context.js",
+        "packages/app/server/server.js",
+        "packages/app/test/api-files-content.test.js",
+        "packages/app/test/api-project-memory.test.js",
+        "packages/app/test/branch-routes-files-fs.test.js",
+        "packages/app/test/branch-server.test.js",
+        "packages/app/test/chat-queue.test.js",
+        "packages/app/test/files-fs-deep.test.js",
+        "packages/app/test/files-view-write.test.js",
+        "packages/app/test/pty-manager-instance.test.js",
+        "packages/app/test/scheduled-task-executor.test.js",
+        "packages/app/test/sdk-context-route.test.js",
+        "packages/app/test/sdk-manager-query.test.js",
+        "packages/app/test/sdk-session-registry.test.js",
+        "packages/app/test/v2-core.test.js",
+        "packages/app/test/view-routes-project-r4.test.js",
+        "packages/app/test/view-routes-project.test.js",
+        "packages/app/test/ws-instance-isolation.test.js",
+        "packages/core/src/contentFilter.js",
+        "packages/core/src/queued-prompt.js",
+        "packages/core/src/v2-transcript-normalizer.js",
+        "packages/core/test/fixtures/queued-prompt-real-formats.json",
+        "packages/core/test/queued-prompt.test.js",
+        "packages/core/test/v2-transcript-normalizer.test.js",
+        "scripts/tarball-baseline.json",
+        "test/content-filter-unit.test.js",
+        "test/v3-assembler.test.js"
+      ]
+    },
+    {
+      "upstream": "566ade13fc3bf2c3fd8d90044b1f36602c6980bf",
+      "parents": [
+        "2cd4488ce984abf10f9338ec5f1ad6e88c359281"
+      ],
+      "firstParentDiffSha256": "5a8bb13c4fddc9ae08d9840f9c4051142e97905ca9d0040b8e864d2063f333c2",
+      "paths": [
+        ".changeset/open-skill-claude-folders.md",
+        "apps/web/src/Mobile.jsx",
+        "apps/web/src/components/common/MemoryDetailModal.jsx",
+        "apps/web/src/components/common/sharedChrome.module.css",
+        "apps/web/src/components/dashboard/AppHeader.jsx",
+        "apps/web/src/components/files/FileBrowserModal.jsx",
+        "apps/web/src/components/files/FileBrowserModal.module.css",
+        "apps/web/src/components/files/FileContentView.jsx",
+        "apps/web/src/components/settings/SkillsManagerModal.jsx",
+        "apps/web/src/components/settings/SkillsManagerModal.module.css",
+        "apps/web/src/i18n.js",
+        "apps/web/src/utils/fileOpen.js",
+        "apps/web/src/utils/skillModalController.js",
+        "apps/web/test/external-folder-targets.test.js",
+        "apps/web/test/file-browser-modal.test.js",
+        "apps/web/test/file-open.test.js",
+        "apps/web/test/new-ui-i18n.test.js",
+        "history.md",
+        "packages/app/server/lib/file-access-policy.js",
+        "packages/app/server/routes/files-content.js",
+        "packages/app/server/routes/skills.js",
+        "packages/app/test/api-files-content.test.js",
+        "packages/app/test/api-target-files.test.js"
+      ]
+    },
+    {
+      "upstream": "67226f50c171780b4da62c27a211219edf3bb648",
+      "parents": [
+        "2cd4488ce984abf10f9338ec5f1ad6e88c359281",
+        "aaa3a59444884254cf8d5cf93ce032b35ef8aa24"
+      ],
+      "firstParentDiffSha256": "2a0ca8e9193af5e20e119f8cbf9e5903b7611d2a31cee58a2c6e92b3817f65b7",
+      "paths": [
+        ".changeset/kimi-k3-no-auto-real-verify.md",
+        ".changeset/open-skill-claude-folders.md",
+        ".changeset/queue-send-now-inline-ack.md",
+        ".changeset/server-auto-approve-countdown.md",
+        ".changeset/ultrareview-template-teammates.md",
+        "apps/web/src/Mobile.jsx",
+        "apps/web/src/components/approval/ToolApprovalPanel.jsx",
+        "apps/web/src/components/chat/ChatMessage.jsx",
+        "apps/web/src/components/chat/ChatView.jsx",
+        "apps/web/src/components/chat/ChatView.module.css",
+        "apps/web/src/components/chat/controllers/permissionController.js",
+        "apps/web/src/components/chat/optimisticQueueMessage.js",
+        "apps/web/src/components/common/MemoryDetailModal.jsx",
+        "apps/web/src/components/common/sharedChrome.module.css",
+        "apps/web/src/components/dashboard/AppHeader.jsx",
+        "apps/web/src/components/files/FileBrowserModal.jsx",
+        "apps/web/src/components/files/FileBrowserModal.module.css",
+        "apps/web/src/components/files/FileContentView.jsx",
+        "apps/web/src/components/settings/SkillsManagerModal.jsx",
+        "apps/web/src/components/settings/SkillsManagerModal.module.css",
+        "apps/web/src/i18n.js",
+        "apps/web/src/utils/deadlineCountdown.js",
+        "apps/web/src/utils/fileOpen.js",
+        "apps/web/src/utils/skillModalController.js",
+        "apps/web/src/utils/ultraplanTemplates.js",
+        "apps/web/test/deadline-countdown.test.js",
+        "apps/web/test/external-folder-targets.test.js",
+        "apps/web/test/file-browser-modal.test.js",
+        "apps/web/test/file-open.test.js",
+        "apps/web/test/new-ui-i18n.test.js",
+        "apps/web/test/optimistic-queue-chat.test.js",
+        "apps/web/test/optimistic-queue-message.test.js",
+        "apps/web/test/permission-controller.test.js",
+        "apps/web/test/plan-auto-approve-runtime.test.js",
+        "apps/web/test/queue-bubbles.test.js",
+        "apps/web/test/quick-settings-i18n.test.js",
+        "apps/web/test/sdk-plan-approval-guard.test.js",
+        "history.md",
+        "packages/app/cli.js",
+        "packages/app/concepts/ar/UltraPlan.md",
+        "packages/app/concepts/da/UltraPlan.md",
+        "packages/app/concepts/de/UltraPlan.md",
+        "packages/app/concepts/en/UltraPlan.md",
+        "packages/app/concepts/es/UltraPlan.md",
+        "packages/app/concepts/fr/UltraPlan.md",
+        "packages/app/concepts/it/UltraPlan.md",
+        "packages/app/concepts/ja/UltraPlan.md",
+        "packages/app/concepts/ko/UltraPlan.md",
+        "packages/app/concepts/no/UltraPlan.md",
+        "packages/app/concepts/pl/UltraPlan.md",
+        "packages/app/concepts/pt-BR/UltraPlan.md",
+        "packages/app/concepts/ru/UltraPlan.md",
+        "packages/app/concepts/th/UltraPlan.md",
+        "packages/app/concepts/tr/UltraPlan.md",
+        "packages/app/concepts/uk/UltraPlan.md",
+        "packages/app/concepts/zh-TW/UltraPlan.md",
+        "packages/app/concepts/zh/UltraPlan.md",
+        "packages/app/server/lib/ask/perm-bridge.js",
+        "packages/app/server/lib/auto-approve.js",
+        "packages/app/server/lib/file-access-policy.js",
+        "packages/app/server/lib/sdk-manager.js",
+        "packages/app/server/routes/ask-perm.js",
+        "packages/app/server/routes/files-content.js",
+        "packages/app/server/routes/skills.js",
+        "packages/app/server/server.js",
+        "packages/app/server/system-prompt-templates/presets/kimi-k3.md",
+        "packages/app/test/api-ask-perm-extra.test.js",
+        "packages/app/test/api-files-content.test.js",
+        "packages/app/test/api-target-files.test.js",
+        "packages/app/test/auto-approve.test.js",
+        "packages/app/test/branch-lib-sdk-manager.test.js",
+        "packages/app/test/branch-routes-ask-perm.test.js",
+        "packages/app/test/branch-server.test.js",
+        "packages/app/test/perm-bridge.test.js",
+        "packages/app/test/sdk-manager-auto-approve.test.js",
+        "packages/app/test/server-cli-mode.test.js",
+        "packages/app/test/server-ws-branches.test.js",
+        "packages/app/ultraAgents/code-expert.json",
+        "packages/content/concepts/ar/UltraPlan.md",
+        "packages/content/concepts/da/UltraPlan.md",
+        "packages/content/concepts/de/UltraPlan.md",
+        "packages/content/concepts/en/UltraPlan.md",
+        "packages/content/concepts/es/UltraPlan.md",
+        "packages/content/concepts/fr/UltraPlan.md",
+        "packages/content/concepts/it/UltraPlan.md",
+        "packages/content/concepts/ja/UltraPlan.md",
+        "packages/content/concepts/ko/UltraPlan.md",
+        "packages/content/concepts/no/UltraPlan.md",
+        "packages/content/concepts/pl/UltraPlan.md",
+        "packages/content/concepts/pt-BR/UltraPlan.md",
+        "packages/content/concepts/ru/UltraPlan.md",
+        "packages/content/concepts/th/UltraPlan.md",
+        "packages/content/concepts/tr/UltraPlan.md",
+        "packages/content/concepts/uk/UltraPlan.md",
+        "packages/content/concepts/zh-TW/UltraPlan.md",
+        "packages/content/concepts/zh/UltraPlan.md",
+        "packages/content/ultraAgents/code-expert.json",
+        "scripts/tarball-baseline.json"
+      ]
+    },
+    {
+      "upstream": "7a75e1be81b3e90f55f8888c423e66e05c1cde64",
+      "parents": [
+        "3d65bedcd1b47a8de7f0ff1bdfec3a11efbc9fa0"
+      ],
+      "firstParentDiffSha256": "27a7503dde48b469e72978c079d5b2d1423207b9440d0d793fe472670fa0b2b7",
+      "paths": [
+        ".changeset/target-browser-context-menu.md",
+        "apps/web/src/components/files/FileBrowserModal.jsx",
+        "apps/web/src/components/files/FileContentView.jsx",
+        "apps/web/src/components/files/fileContextMenu.js",
+        "apps/web/src/components/files/fileContextMenuActions.jsx",
+        "apps/web/src/utils/apiUrl.js",
+        "apps/web/test/external-folder-targets.test.js",
+        "apps/web/test/file-browser-modal.test.js",
+        "apps/web/test/file-context-menu-actions.test.js",
+        "apps/web/test/file-context-menu.test.js",
+        "history.md",
+        "packages/app/server/lib/file-access-policy.js",
+        "packages/app/server/lib/os-open.js",
+        "packages/app/server/lib/target-scope.js",
+        "packages/app/server/routes/files-content.js",
+        "packages/app/server/routes/files-fs.js",
+        "packages/app/server/routes/target-files-fs.js",
+        "packages/app/server/server.js",
+        "packages/app/test/api-target-files-fs.test.js",
+        "packages/app/test/branch-lib-file-access-policy.test.js",
+        "scripts/tarball-baseline.json"
+      ]
+    },
+    {
+      "upstream": "208f1348279758d95b72798442105c3236fa1dd3",
+      "parents": [
+        "16002116588f9cb601cf91ebd154b19e1ecb9295"
+      ],
+      "firstParentDiffSha256": "ae34ae4a5ad28bf4114bfd91e42c0604524c209099a3ff250301a405d895b507",
+      "paths": [
+        ".changeset/fix-fork-review-1-9-17.md",
+        "apps/web/src/AppBase.jsx",
+        "apps/web/src/components/approval/ApprovalModal.jsx",
+        "apps/web/src/utils/approvalDismissal.js",
+        "apps/web/src/utils/planFallbackCountdown.js",
+        "apps/web/test/approval-dismissal.test.js",
+        "apps/web/test/plan-fallback-countdown.test.js",
+        "history.md",
+        "packages/app/server/routes/files-content.js",
+        "packages/app/test/api-target-files-fs.test.js"
+      ]
+    },
+    {
+      "upstream": "08809f6e69315476690c62bbe238bd5c199b338d",
+      "parents": [
+        "7039adeec33cc99648cb4c4bf714a7fea35eba80"
+      ],
+      "firstParentDiffSha256": "0e90cb2dfca04c84d9aea4cd8b02fe79e67e1c4d47f86da9d8d25fe09ff5543f",
+      "paths": [
+        ".changeset/agent-loop-authoritative-signals.md",
+        ".changeset/fix-history-resume-live-refresh.md",
+        ".changeset/fix-sdk-lost-result-generation-guard.md",
+        "apps/web/public/voice-packs/default/agentLoopStart.wav",
+        "apps/web/public/voice-packs/default/pack.json",
+        "apps/web/public/voice-packs/sanguo/agentLoopStart.wav",
+        "apps/web/public/voice-packs/sanguo/pack.json",
+        "apps/web/src/AppBase.jsx",
+        "apps/web/src/components/chat/ChatView.jsx",
+        "apps/web/src/components/chat/ChatView.module.css",
+        "apps/web/src/components/chat/controllers/toolFileChangeController.js",
+        "apps/web/src/components/files/FileBrowserModal.jsx",
+        "apps/web/src/components/git/GitChanges.jsx",
+        "apps/web/src/i18n.js",
+        "apps/web/src/utils/approvalDismissal.js",
+        "apps/web/src/utils/viewChannelState.js",
+        "apps/web/src/utils/voicePackPlayer.js",
+        "apps/web/test/agent-loop-voice.test.js",
+        "apps/web/test/approval-dismissal.test.js",
+        "apps/web/test/file-browser-modal.test.js",
+        "apps/web/test/new-ui-i18n.test.js",
+        "apps/web/test/sdk-error-dialogue.test.js",
+        "apps/web/test/sdk-retry-inline.test.js",
+        "apps/web/test/stop-button-turn-active.test.js",
+        "apps/web/test/tool-file-change-controller.test.js",
+        "apps/web/test/turn-active-gating.test.js",
+        "apps/web/test/voice-pack-player.test.js",
+        "docs/plugin-services.md",
+        "docs/plugin-services.zh.md",
+        "docs/plugins.md",
+        "docs/plugins.zh.md",
+        "docs/refactor/WIRE_FORMAT_V2.md",
+        "docs/refactor/WIRE_FORMAT_V3.md",
+        "history.md",
+        "package.json",
+        "packages/app/cli.js",
+        "packages/app/package.json",
+        "packages/app/server/lib/attach-buffer.js",
+        "packages/app/server/lib/plugin-loader.js",
+        "packages/app/server/lib/plugin-runtime.js",
+        "packages/app/server/lib/sdk-manager.js",
+        "packages/app/server/lib/v2/live-feed.js",
+        "packages/app/server/lib/v2/meta-rows.js",
+        "packages/app/server/routes/events.js",
+        "packages/app/server/server.js",
+        "packages/app/test/agent-loop-server-events.test.js",
+        "packages/app/test/cli-sdk-process-wiring.test.js",
+        "packages/app/test/events-attach-buffer.test.js",
+        "packages/app/test/plugin-runtime.test.js",
+        "packages/app/test/sdk-agent-loop.test.js",
+        "packages/app/test/sdk-manager-lost-result.test.js",
+        "packages/app/test/sdk-session-state.test.js",
+        "packages/app/test/sse-attach-buffer.test.js",
+        "packages/app/test/turn-end-scope-behavior.test.js",
+        "packages/app/test/turn-end-scope.test.js",
+        "packages/app/test/v2-meta-rows.test.js",
+        "packages/app/test/voice-pack-manager.test.js",
+        "packages/core/src/voice-pack-events.js",
+        "packages/core/test/voice-pack-events.test.js",
+        "pnpm-lock.yaml",
+        "scripts/gen-default-voicepack.js",
+        "scripts/tarball-baseline.json",
+        "test/v2-live-feed.test.js",
+        "test/voice-pack-sanguo-integration.test.js"
+      ]
+    },
+    {
+      "upstream": "082673509ec6407bb835fa8992440eb13a6cf1c2",
+      "parents": [
+        "08809f6e69315476690c62bbe238bd5c199b338d"
+      ],
+      "firstParentDiffSha256": "6266a624ea05e5282f9c923b0543081b5a36d7e0080529931123f925ca4a6ee2",
+      "paths": [
+        ".changeset/agent-loop-authoritative-signals.md",
+        ".changeset/fix-history-resume-live-refresh.md",
+        ".changeset/fix-sdk-lost-result-generation-guard.md",
+        "apps/web/public/voice-packs/default/agentLoopStart.wav",
+        "apps/web/public/voice-packs/default/pack.json",
+        "apps/web/public/voice-packs/sanguo/agentLoopStart.wav",
+        "apps/web/public/voice-packs/sanguo/pack.json",
+        "apps/web/src/AppBase.jsx",
+        "apps/web/src/components/chat/ChatView.jsx",
+        "apps/web/src/components/chat/ChatView.module.css",
+        "apps/web/src/components/chat/controllers/toolFileChangeController.js",
+        "apps/web/src/components/files/FileBrowserModal.jsx",
+        "apps/web/src/components/git/GitChanges.jsx",
+        "apps/web/src/i18n.js",
+        "apps/web/src/utils/approvalDismissal.js",
+        "apps/web/src/utils/viewChannelState.js",
+        "apps/web/src/utils/voicePackPlayer.js",
+        "apps/web/test/agent-loop-voice.test.js",
+        "apps/web/test/approval-dismissal.test.js",
+        "apps/web/test/file-browser-modal.test.js",
+        "apps/web/test/new-ui-i18n.test.js",
+        "apps/web/test/sdk-error-dialogue.test.js",
+        "apps/web/test/sdk-retry-inline.test.js",
+        "apps/web/test/stop-button-turn-active.test.js",
+        "apps/web/test/tool-file-change-controller.test.js",
+        "apps/web/test/turn-active-gating.test.js",
+        "apps/web/test/voice-pack-player.test.js",
+        "docs/plugin-services.md",
+        "docs/plugin-services.zh.md",
+        "docs/plugins.md",
+        "docs/plugins.zh.md",
+        "docs/refactor/WIRE_FORMAT_V2.md",
+        "docs/refactor/WIRE_FORMAT_V3.md",
+        "history.md",
+        "package.json",
+        "packages/app/cli.js",
+        "packages/app/package.json",
+        "packages/app/server/lib/attach-buffer.js",
+        "packages/app/server/lib/plugin-loader.js",
+        "packages/app/server/lib/plugin-runtime.js",
+        "packages/app/server/lib/sdk-manager.js",
+        "packages/app/server/lib/v2/live-feed.js",
+        "packages/app/server/lib/v2/meta-rows.js",
+        "packages/app/server/routes/events.js",
+        "packages/app/server/server.js",
+        "packages/app/test/agent-loop-server-events.test.js",
+        "packages/app/test/cli-sdk-process-wiring.test.js",
+        "packages/app/test/events-attach-buffer.test.js",
+        "packages/app/test/plugin-runtime.test.js",
+        "packages/app/test/sdk-agent-loop.test.js",
+        "packages/app/test/sdk-manager-lost-result.test.js",
+        "packages/app/test/sdk-session-state.test.js",
+        "packages/app/test/sse-attach-buffer.test.js",
+        "packages/app/test/turn-end-scope-behavior.test.js",
+        "packages/app/test/turn-end-scope.test.js",
+        "packages/app/test/v2-meta-rows.test.js",
+        "packages/app/test/voice-pack-manager.test.js",
+        "packages/core/src/voice-pack-events.js",
+        "packages/core/test/voice-pack-events.test.js",
+        "pnpm-lock.yaml",
+        "scripts/gen-default-voicepack.js",
+        "scripts/tarball-baseline.json",
+        "test/v2-live-feed.test.js",
+        "test/voice-pack-sanguo-integration.test.js"
+      ]
+    },
+    {
+      "upstream": "7797672148114a3e097b10d0d568562cc0118f5f",
+      "parents": [
+        "dd23ce8df14dbe3522a03d3662aa5c3365d0ef37"
+      ],
+      "firstParentDiffSha256": "7b1fbb793c4083f5ef60d803e49ef2268087c1ef20d2aa94091609cc3dd54f09",
+      "paths": [
+        "apps/web/src/components/git/GitChanges.jsx",
+        "history.md"
+      ]
+    },
+    {
+      "upstream": "dd23ce8df14dbe3522a03d3662aa5c3365d0ef37",
+      "parents": [
+        "88995a10461973689656841a8476ee4e6c60281b"
+      ],
+      "firstParentDiffSha256": "118f551d5e9c39f795546378373814bc0fbfeb40161f63d0778614ca646a7484",
+      "paths": [
+        "apps/web/src/components/files/FileBrowserModal.jsx",
+        "apps/web/test/file-browser-modal.test.js",
+        "history.md"
+      ]
+    },
+    {
+      "upstream": "c29af25e64d3491fe7c58dc80bf859eda7831ba4",
+      "parents": [
+        "66bfeb8c18ab80c70d5731827a2c05b748c01124"
+      ],
+      "firstParentDiffSha256": "c058ce654a08852179ea1ca691185b206de6b0d411e2506cf57ada0b4667e0aa",
+      "paths": [
+        ".changeset/fix-v1-9-19-upstream-review.md",
+        "apps/web/src/AppBase.jsx",
+        "apps/web/src/components/chat/ChatView.jsx",
+        "apps/web/src/components/chat/controllers/toolFileChangeController.js",
+        "apps/web/src/components/files/FileBrowserModal.jsx",
+        "apps/web/test/file-browser-modal.test.js",
+        "apps/web/test/tool-file-change-controller.test.js",
+        "history.md",
+        "packages/app/server/lib/v2/meta-rows.js",
+        "packages/app/test/sdk-manager-lost-result.test.js",
+        "packages/app/test/sdk-manager-query.test.js"
+      ]
+    },
+    {
+      "upstream": "ccf74880a592b0d61b01b7faa5058dc6839dcb0d",
+      "parents": [
+        "1bfc1585e833d037a7dab6fe23e5a8c0aac48c08"
+      ],
+      "firstParentDiffSha256": "4dc783f822a49b3072c7f0714710f916926ed342f86907ff755c8a8159d5597c",
+      "paths": [
+        "apps/web/src/components/git/GitChanges.jsx"
+      ]
+    },
+    {
+      "upstream": "7a0ba39edf6a0b54ca7a425e0f08ab410e515407",
+      "parents": [
+        "32165d3a0bafe168a7d10e67cee6d017f4190cc3"
+      ],
+      "firstParentDiffSha256": "9348098731467ae5ccd222cdd4cce8373e5483b4438e778c9e6c971046d8d9d7",
+      "paths": [
+        "packages/app/test/api-git-routes.test.js",
+        "packages/app/test/git-diff.test.js",
+        "packages/app/test/git-repos.test.js",
+        "packages/app/test/git-restore.test.js",
+        "packages/app/test/git-unpushed.test.js",
+        "packages/app/test/scheduled-task-routes.test.js",
+        "packages/app/test/scheduled-task-runs-store.test.js",
+        "packages/app/test/scheduled-task-scheduler.test.js",
+        "packages/app/test/scheduled-task-store.test.js"
+      ]
+    },
+    {
+      "upstream": "a6b82f16dff7991670ca8bdf3f01c6ae6f0d5d4b",
+      "parents": [
+        "96f3a7a44e014192000378b974ea757f194d08e9"
+      ],
+      "firstParentDiffSha256": "90095af976b3a1b88c28cac06fc55a8aa5a027434554e66d191be5e650819efd",
+      "paths": [
+        ".changeset/search-into-file-explorer.md",
+        "README.md",
+        "apps/web/src/components/chat/ChatView.jsx",
+        "apps/web/src/components/files/FileExplorer.jsx",
+        "apps/web/src/components/files/FileExplorer.module.css",
+        "apps/web/src/components/search/SearchPanel.jsx",
+        "apps/web/src/components/search/SearchPanel.module.css",
+        "apps/web/src/i18n.js",
+        "apps/web/test/git-changes-open-persist.test.js",
+        "apps/web/test/search-into-file-explorer.test.js",
+        "history.md"
+      ]
+    },
+    {
+      "upstream": "ea995f38833b20201b47ebd2c13ec5e54e24aa95",
+      "parents": [
+        "a6b82f16dff7991670ca8bdf3f01c6ae6f0d5d4b"
+      ],
+      "firstParentDiffSha256": "d4b10b2aed5737a250e96f3abd658478d0d1a8a46fcfcbcda26a6ca483928fec",
+      "paths": [
+        ".changeset/file-drag-drop.md",
+        "apps/web/src/AppBase.jsx",
+        "apps/web/src/components/chat/ChatInputBar.jsx",
+        "apps/web/src/components/chat/ChatInputBar.module.css",
+        "apps/web/src/components/chat/ChatView.jsx",
+        "apps/web/src/components/files/FileExplorer.jsx",
+        "apps/web/src/components/terminal/ScratchTerminal.jsx",
+        "apps/web/src/components/terminal/TerminalPanel.jsx",
+        "apps/web/src/components/terminal/TerminalPanel.module.css",
+        "apps/web/src/utils/fileDragDrop.js",
+        "apps/web/test/drag-drop-zones.test.js",
+        "apps/web/test/file-drag-drop.test.js",
+        "history.md"
+      ]
+    },
+    {
+      "upstream": "beaa2e86f2dfa451a2044348c6c14fa874419e6f",
+      "parents": [
+        "ea995f38833b20201b47ebd2c13ec5e54e24aa95"
+      ],
+      "firstParentDiffSha256": "5ac2256801340effb8c405bae266784916999dee1f873609a822c04650c2780d",
+      "paths": [
+        ".changeset/folder-drag-drop.md",
+        "apps/web/src/components/chat/ChatInputBar.jsx",
+        "apps/web/src/components/chat/ChatView.jsx",
+        "apps/web/src/components/files/FileExplorer.jsx",
+        "apps/web/src/components/terminal/TerminalPanel.jsx",
+        "apps/web/src/utils/fileDragDrop.js",
+        "apps/web/test/file-drag-drop.test.js",
+        "history.md"
+      ]
+    },
+    {
+      "upstream": "91a523d043dbc27bd404f1cd911d2cc588847b8b",
+      "parents": [
+        "beaa2e86f2dfa451a2044348c6c14fa874419e6f"
+      ],
+      "firstParentDiffSha256": "bd2669e0dc648167d0424020f1e738fee4256f52d467c906c51ef575ce83dc8a",
+      "paths": [
+        ".changeset/archive-preview.md",
+        "LICENSE.md",
+        "apps/electron/electron-builder.yml",
+        "apps/electron/scripts/assemble-app.mjs",
+        "apps/web/src/components/files/FileContentView.jsx",
+        "apps/web/src/components/viewers/ArchivePreview.jsx",
+        "apps/web/src/components/viewers/ArchivePreview.module.css",
+        "apps/web/src/i18n.js",
+        "apps/web/src/utils/archivePreview.js",
+        "apps/web/src/utils/fileTypes.js",
+        "apps/web/src/vendor/archive/LICENSE",
+        "apps/web/src/vendor/archive/README.md",
+        "apps/web/src/vendor/archive/detect.js",
+        "apps/web/src/vendor/archive/gzip.js",
+        "apps/web/src/vendor/archive/index.js",
+        "apps/web/src/vendor/archive/inflate.js",
+        "apps/web/src/vendor/archive/tar.js",
+        "apps/web/src/vendor/archive/util.js",
+        "apps/web/src/vendor/archive/zip.js",
+        "apps/web/test/archive-preview-wiring.test.js",
+        "apps/web/test/archive-preview.test.js",
+        "apps/web/test/file-types.test.js",
+        "history.md",
+        "packages/app/server/routes/files-content.js",
+        "packages/app/test/api-files-content.test.js",
+        "packages/app/test/api-target-files.test.js",
+        "packages/app/test/branch-routes-files-content.test.js",
+        "packages/app/test/route-dispatch.test.js"
+      ]
+    },
+    {
+      "upstream": "f96811cddb3f1f5516ef7823bcc2a36d142a95e3",
+      "parents": [
+        "91a523d043dbc27bd404f1cd911d2cc588847b8b"
+      ],
+      "firstParentDiffSha256": "1a991a376c2addcb6b364f02c4656a81dae8db78bd65ea320760a20c5d0f6e43",
+      "paths": [
+        ".changeset/preview-placeholders.md",
+        "apps/web/src/components/chat/ChatView.jsx",
+        "apps/web/src/components/files/FileBrowserModal.jsx",
+        "apps/web/src/components/files/FileContentView.jsx",
+        "apps/web/src/components/files/FileExplorer.jsx",
+        "apps/web/src/components/viewers/UnsupportedFilePreview.jsx",
+        "apps/web/src/components/viewers/UnsupportedFilePreview.module.css",
+        "apps/web/src/i18n.js",
+        "apps/web/src/utils/archivePreview.js",
+        "apps/web/src/utils/commandValidator.js",
+        "apps/web/src/utils/fileOpen.js",
+        "apps/web/src/utils/fileTypes.js",
+        "apps/web/src/utils/previewKind.js",
+        "apps/web/test/archive-preview-wiring.test.js",
+        "apps/web/test/external-folder-targets.test.js",
+        "apps/web/test/file-browser-modal.test.js",
+        "apps/web/test/file-open.test.js",
+        "apps/web/test/file-types.test.js",
+        "apps/web/test/preview-kind.test.js",
+        "apps/web/test/preview-wiring.test.js",
+        "history.md",
+        "packages/app/server/lib/binary-sniff.js",
+        "packages/app/server/routes/files-content.js",
+        "packages/app/test/api-files-content.test.js",
+        "packages/app/test/binary-sniff.test.js",
+        "scripts/tarball-baseline.json"
+      ]
+    },
+    {
+      "upstream": "6dd3b3b7e55acce07fb558cd27ca7e55de5d0647",
+      "parents": [
+        "9e248272640c3165f641124502e716369e961313"
+      ],
+      "firstParentDiffSha256": "2384f59abaf41d717d67424058deb022effdb022b1b296e5a4340d29c059031d",
+      "paths": [
+        ".changeset/archive-preview.md",
+        ".changeset/ask-auto-answer.md",
+        ".changeset/file-drag-drop.md",
+        ".changeset/folder-drag-drop.md",
+        ".changeset/kimi-k3-tool-error-circuit-breaker.md",
+        ".changeset/preview-placeholders.md",
+        ".changeset/search-into-file-explorer.md",
+        ".changeset/system-prompt-no-autopin.md",
+        "history.md",
+        "packages/app/CHANGELOG.md",
+        "packages/app/package.json"
+      ]
+    },
+    {
+      "upstream": "20313b254cffff4f8fec955b74a7b5233a0620ee",
+      "parents": [
+        "919fded8456a518eb667a105b0550fd6d42cb978"
+      ],
+      "firstParentDiffSha256": "de0d7b2459a57f341d200dcb237cbe430c5cec4fe4acb259d9882acc469c4170",
+      "paths": [
+        ".changeset/audio-preview.md",
+        "apps/web/src/components/chat/ChatView.jsx",
+        "apps/web/src/components/files/FileContentView.jsx",
+        "apps/web/src/components/viewers/AudioPreview.jsx",
+        "apps/web/src/components/viewers/AudioPreview.module.css",
+        "apps/web/src/components/viewers/UnsupportedFilePreview.jsx",
+        "apps/web/src/i18n.js",
+        "apps/web/src/utils/fileTypes.js",
+        "apps/web/src/utils/previewKind.js",
+        "apps/web/test/audio-preview.test.js",
+        "apps/web/test/file-types.test.js",
+        "apps/web/test/preview-kind.test.js",
+        "apps/web/test/preview-wiring.test.js",
+        "history.md",
+        "packages/app/server/lib/audio-stream.js",
+        "packages/app/server/routes/files-content.js",
+        "packages/app/test/api-audio-stream.test.js",
+        "packages/app/test/api-files-content.test.js",
+        "packages/app/test/api-target-files.test.js",
+        "packages/app/test/audio-stream.test.js",
+        "scripts/tarball-baseline.json"
+      ]
+    },
+    {
+      "upstream": "18bd742bc50d38ce52abf9f8df89930c49b50807",
+      "parents": [
+        "20313b254cffff4f8fec955b74a7b5233a0620ee"
+      ],
+      "firstParentDiffSha256": "0f910f35ce57c90fbcbac96bebeaee98d8d61c4e846f9016a885765ba27ca9e0",
+      "paths": [
+        ".changeset/subtitle-image-preview.md",
+        "apps/web/src/components/chat/ChatInputBar.jsx",
+        "apps/web/src/components/files/FileBrowserModal.jsx",
+        "apps/web/src/components/files/FileContentView.jsx",
+        "apps/web/src/components/terminal/TerminalPanel.jsx",
+        "apps/web/src/components/terminal/UltraPlanModal.jsx",
+        "apps/web/src/components/terminal/UltraplanPanel.jsx",
+        "apps/web/src/components/viewers/ArchivePreview.jsx",
+        "apps/web/src/components/viewers/SubtitlePreview.jsx",
+        "apps/web/src/components/viewers/SubtitlePreview.module.css",
+        "apps/web/src/i18n.js",
+        "apps/web/src/utils/commandValidator.js",
+        "apps/web/src/utils/fileIcons.jsx",
+        "apps/web/src/utils/fileTypes.js",
+        "apps/web/src/utils/previewKind.js",
+        "apps/web/src/utils/subtitleParser.js",
+        "apps/web/src/utils/userImageRefs.js",
+        "apps/web/src/vendor/archive/README.md",
+        "apps/web/src/vendor/archive/util.js",
+        "apps/web/test/archive-preview-wiring.test.js",
+        "apps/web/test/archive-preview.test.js",
+        "apps/web/test/commandValidator.test.js",
+        "apps/web/test/file-browser-modal.test.js",
+        "apps/web/test/file-types.test.js",
+        "apps/web/test/preview-kind.test.js",
+        "apps/web/test/preview-wiring.test.js",
+        "apps/web/test/subtitle-parser.test.js",
+        "apps/web/test/subtitle-preview.test.js",
+        "history.md",
+        "packages/app/server/routes/files-content.js",
+        "packages/app/test/api-files-content.test.js"
+      ]
+    },
+    {
+      "upstream": "a2f5cd4b43fa8f8003e60774b5c71160e6de509e",
+      "parents": [
+        "dd8709356b27c7ce3321269fc68466f051c613bf"
+      ],
+      "firstParentDiffSha256": "c59637c9246df282932514aa2eb558fddf142a52bdc6b2a151df3b27fe805ba2",
+      "paths": [
+        ".changeset/git-changes-drag-drop.md",
+        "apps/web/src/components/chat/ChatView.jsx",
+        "apps/web/src/components/git/GitChanges.jsx",
+        "apps/web/src/components/git/GitChanges.module.css",
+        "apps/web/src/utils/gitWorkspacePath.js",
+        "apps/web/test/file-drag-drop.test.js",
+        "history.md"
+      ]
+    },
+    {
+      "upstream": "24c4f60b5480aefa9b26d635d68700f5de5f4ffe",
+      "parents": [
+        "0ff31548221e65e3317c6ba132568ae98846d90e",
+        "a2f5cd4b43fa8f8003e60774b5c71160e6de509e"
+      ],
+      "firstParentDiffSha256": "2258dc71cfba936982bb9882427942fa90a43942c2017d900e160ae822c57057",
+      "paths": [
+        ".changeset/approval-modal-auto-close.md",
+        ".changeset/git-changes-drag-drop.md",
+        "apps/web/src/components/chat/ChatView.jsx",
+        "apps/web/src/components/chat/controllers/askFlowController.js",
+        "apps/web/src/components/git/GitChanges.jsx",
+        "apps/web/src/components/git/GitChanges.module.css",
+        "apps/web/src/utils/gitWorkspacePath.js",
+        "apps/web/test/ask-flow-controller.test.js",
+        "apps/web/test/file-drag-drop.test.js",
+        "apps/web/test/plan-auto-approve-runtime.test.js",
+        "apps/web/test/sdk-plan-approval-guard.test.js",
+        "history.md",
+        "packages/app/server/server.js",
+        "packages/app/test/ws-instance-isolation.test.js"
+      ]
+    },
+    {
+      "upstream": "5fc4c752297c7df9f581c913aa2a1852a0b27a38",
+      "parents": [
+        "add350bc526ad9352dc1a715dee8c7d3909dc9ee"
+      ],
+      "firstParentDiffSha256": "7608d860b890aee4205ef8241566cf1edca1be42ae4b15c5a3656ecdd07e1a95",
+      "paths": [
+        ".changeset/unify-refresh-button-style.md",
+        "apps/web/src/components/files/FileExplorer.jsx",
+        "apps/web/src/components/files/FileExplorer.module.css",
+        "apps/web/src/components/git/GitChanges.jsx",
+        "apps/web/src/components/git/GitChanges.module.css"
+      ]
+    }
+  ]
+}

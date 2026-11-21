@@ -1,0 +1,80 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": [
+    "2e17699fd752faedd74a354956cd0c175a8181bc"
+  ],
+  "previousLocal": "7feaab8",
+  "localSubject": "feat(git): restore per-commit line stats and file statuses",
+  "checks": {
+    "api": 34,
+    "web": 379,
+    "skip": 0,
+    "buildAndAssembly": "passed",
+    "apiLog": "/tmp/cxv-b5-e17-api.log",
+    "webLog": "/tmp/cxv-b5-e17-web.log"
+  },
+  "adaptations": [
+    "Existing path decoder/private safety and capped working-tree count retained",
+    "Commit list uses original no-renames A+D; existing new-path R detail retained with original bytes, old-path D detail added so neither side disappears"
+  ],
+  "fullAndInstall": "Not rerun: E15 full1675/artifact705; E13 runtime400",
+  "gui": [
+    {
+      "log": "/tmp/cxv-b5-e17-webkit.log",
+      "result": {
+        "engine": "webkit",
+        "mode": "git-stats",
+        "browserVersion": "27.2",
+        "actualNoRemoteRepos": true,
+        "originalUnpushedSectionAndTooltip": true,
+        "commitFilesExpand": true,
+        "lineStatsAndBinaryEmptyFallback": true,
+        "exactInstanceAtoB": true,
+        "noSiblingCommits": true
+      },
+      "pageErrors": []
+    },
+    {
+      "log": "/tmp/cxv-b5-e17-chromium.log",
+      "result": {
+        "engine": "chromium",
+        "mode": "git-stats",
+        "browserVersion": "159.0.8154.6",
+        "actualNoRemoteRepos": true,
+        "originalUnpushedSectionAndTooltip": true,
+        "commitFilesExpand": true,
+        "lineStatsAndBinaryEmptyFallback": true,
+        "exactInstanceAtoB": true,
+        "noSiblingCommits": true
+      },
+      "pageErrors": []
+    }
+  ],
+  "screenshots": [
+    {
+      "path": "cc-viewer-alignment/evidence/B5-git-stats-2026-11-21/chromium-A.png",
+      "sha256": "ad25557b8497459f89f89c1ae0a77219fb989dcbcb0e14c09b06b087c16fc6b1",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-git-stats-2026-11-21/chromium-B.png",
+      "sha256": "e845c39941846c1b140740c27a0b89ab5e697437e156c31ae496695abab6cca3",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-git-stats-2026-11-21/webkit-A.png",
+      "sha256": "8f8771c5cb02f9e0b6da295fb93c72b188cb3f8c783f1bbb69d500fc6f912d9e",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-git-stats-2026-11-21/webkit-B.png",
+      "sha256": "4c40cbcf9f2da4182eab2f4bea2a843f64d1c2ca157f5fb64f231336768b4a6e",
+      "visuallyInspected": true
+    }
+  ],
+  "limits": [
+    "Author column removal/remaining Git final layout next",
+    "B5 target authorization and other subitems incomplete",
+    "Other platform/minimum Node unverified"
+  ]
+}

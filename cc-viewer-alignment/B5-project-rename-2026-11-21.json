@@ -1,0 +1,16 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": "ab1b89ee133664c9f2c0e3e17ada8711180f4dc5",
+  "previousLocal": "f66e728",
+  "subject": "fix(files): restore project case-only rename and retry",
+  "redLog": "/tmp/cxv-b5-e40-rename-red.log",
+  "finalLog": "/tmp/cxv-b5-e40-rename-final.log",
+  "tests": 19,
+  "skip": 0,
+  "scope": "real host HTTP/FS case-only file+directory, rollback bytes, retry, exact instance and private aliases",
+  "limits": [
+    "No NTFS/other OS claim",
+    "Latest full/install remain E39 1772/478",
+    "No UI/CSS changes"
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "date": "2026-11-21",
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstreamGuard": "7a75e1be81b3e90f55f8888c423e66e05c1cde64",
+  "ancestralGuard": "253f7f67fe6aef1995f810c44c6bdcb99cf261f3",
+  "scope": "Codex native auth/config denial prerequisite; external target allowlist/navigation/write API remains incomplete",
+  "adapter": "Existing Codex config directory resolver, default ~/.codex plus initial/current owner; auth.json, .credentials.json, config.toml and existing suffix backup variants; metadata/inode inspection only. Reuses existing credential policy and parent-to-worker private root snapshot.",
+  "red": {
+    "pass": 1,
+    "fail": 3,
+    "log": "/tmp/cxv-b5-e7-red.log"
+  },
+  "green": {
+    "targetPass": 49,
+    "fullPass": 1613,
+    "groups": [
+      5,
+      337,
+      1059,
+      212
+    ],
+    "skip": 0,
+    "build": "passed",
+    "packFiles": 704,
+    "targetLog": "/tmp/cxv-b5-e7-tests-final.log",
+    "releaseLog": "/tmp/cxv-b5-e7-release.log"
+  },
+  "verified": [
+    "synthetic explicit-editor content read/write denied with original bytes preserved",
+    "custom/default/startup/current Codex home owner and existing backup variants",
+    "native AGENTS/SKILL and same-named project fixtures still available",
+    "native directory ancestor mutation denied",
+    "symbolic/hardlink alias denial, actual Worker search",
+    "actual HTTP content GET/POST/raw/download/list/search refuses native credential content and keeps auth route serving"
+  ],
+  "realCredentialContentsReadOrModified": false,
+  "notClaimed": [
+    "new installation after E7; prior E6 371 is retained separately",
+    "complete global read/write allowlist or target browser implementation",
+    "Windows/Linux/minimum Node/real remote access"
+  ],
+  "sourceSha256": "81d845b938d7d89f1577cb210f995ccb57d71b947a46aff8bc01bf81affc8ebb"
+}

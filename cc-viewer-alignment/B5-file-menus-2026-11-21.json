@@ -1,0 +1,97 @@
+{
+  "date": "2026-11-21",
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": [
+    "865604d68e05e62aaebf8de7a04afa9a9f1e999d",
+    "ba3eee8fd5520b0a6ce66ebd6da749fc8cb120b5",
+    "7830664780a5c16219edbb7e79662ad0ad27db9b"
+  ],
+  "scope": "shared project file menus, remote-only download item and non-shrinking blank-area/tree rows; modal and external targets remain separate",
+  "validation": {
+    "web": 337,
+    "full": 1608,
+    "groups": [
+      5,
+      337,
+      1054,
+      212
+    ],
+    "skip": 0,
+    "build": "passed",
+    "packFiles": 704,
+    "releaseLog": "/tmp/cxv-b5-e6-release.log",
+    "installed": {
+      "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-58hlyesz",
+      "files": 704,
+      "source_bytes_match": true,
+      "web_asset_files": 204,
+      "runtime_tests": "371/371",
+      "b12_regression": "passed",
+      "installed_cli_relative_cd_boot": "passed",
+      "uses_fake_codex": true,
+      "uses_real_model_network": false
+    }
+  },
+  "gui": {
+    "webkit": {
+      "engine": "webkit",
+      "mode": "menus",
+      "isolatedRoot": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-tasks-gui-J7FZ9E",
+      "rowCount": 82,
+      "rowHeightPx": 26,
+      "actualOverflowScroll": true,
+      "localDownloadHidden": true,
+      "blankAreaCreatesFile": true,
+      "inlineRename": true,
+      "deleteCancelKeepsBytes": true,
+      "confirmationAfterViewSwitchStillTargetsA": true,
+      "siblingCanaryPreserved": true,
+      "remotePreferencesSimulated": true,
+      "realDownloadBytesExact": true,
+      "screenshot": "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B5-menus-2026-11-21/webkit-shared-menus-download.png",
+      "mainPageErrors": []
+    },
+    "chromium": {
+      "engine": "chromium",
+      "mode": "menus",
+      "isolatedRoot": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b4-tasks-gui-sprEI9",
+      "rowCount": 82,
+      "rowHeightPx": 26,
+      "actualOverflowScroll": true,
+      "localDownloadHidden": true,
+      "blankAreaCreatesFile": true,
+      "inlineRename": true,
+      "deleteCancelKeepsBytes": true,
+      "confirmationAfterViewSwitchStillTargetsA": true,
+      "siblingCanaryPreserved": true,
+      "remotePreferencesSimulated": true,
+      "realDownloadBytesExact": true,
+      "screenshot": "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B5-menus-2026-11-21/chromium-shared-menus-download.png",
+      "mainPageErrors": []
+    }
+  },
+  "sourceAdaptation": "Freeze existing apiUrl results at handler creation so a static confirm outliving an exact-instance subtree cannot retarget new current URL. Original menu order/labels/DOM/confirmation/error behavior and clipboard helper retained. Target-only menu changes are not exposed yet.",
+  "initialGuiCorrections": [
+    "Wait for antd dropdown dismissal/motion and selected-row scroll before next context action; initial Chromium popups closed during these pending transitions.",
+    "Danger delete uses two default-style buttons, unlike primary New File; use the actual cancel/confirm button positions.",
+    "Use an explicitly owned BrowserContext for a second page, and pre-create fixture files before initial navigation.",
+    "Stub unrelated country lookup in init script; preserve original file API calls. Earlier full-document navigation cancelled API requests and WebKit reported access-control diagnostics despite existing catches; the final fixture uses a second page for remote-affordance mode."
+  ],
+  "notRun": [
+    "real remote/LAN download (only _isLocal preference bit is simulated)",
+    "physical mobile devices and other platforms",
+    "application-internal file browser modal and target browser (next)"
+  ],
+  "screenshots": [
+    {
+      "path": "cc-viewer-alignment/evidence/B5-menus-2026-11-21/webkit-shared-menus-download.png",
+      "sha256": "f3788a78f560578933df6c4b1e7bdd26ab46851ee8181fb8760655f7d924c220",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-menus-2026-11-21/chromium-shared-menus-download.png",
+      "sha256": "9b2f3efd553c2c7a5946edd733e73ff8ea994928d406fa210191fcc0953e895f",
+      "visuallyInspected": true
+    }
+  ]
+}
