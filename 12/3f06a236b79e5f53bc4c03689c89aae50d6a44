@@ -1,0 +1,54 @@
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_4122b07c8b4292::t_dbb0a695e2e40c 1225,1227-1273
+  s_4122b07c8b4292::t_d19f8ce2b209d4 1226
+cc-viewer-alignment/probes/b5-search-gui.mjs
+  s_4122b07c8b4292::t_a95d8403073081 19,70,72,77,89-102,109-114,128,139-142
+  s_4122b07c8b4292::t_faffafdef7ea63 20,59-68,71,76,88,108,118
+  s_4122b07c8b4292::t_725866f2608974 21
+  s_4122b07c8b4292::t_920ebb5c623a03 48,51
+  s_4122b07c8b4292::t_9ff36f85d25d55 107
+  s_4122b07c8b4292::t_0a7111ef05793e 1-18,22-47,49-50,52-58,69,73-75,78-87,103-106,115-117,119-127,129-138,143-149
+apps/web/src/components/chat/ChatView.jsx
+  s_4122b07c8b4292::t_a14e3aab2afa20 3597-3604,4123,4142
+  s_4122b07c8b4292::t_7cdb364a96010b 297,542-546,3582,3593,3595-3596,3605-3606,4098,4114-4122,4124-4141,4143-4164,4197
+AGENTS.md
+  s_4122b07c8b4292::t_1abd2732dd4b63 26
+apps/web/src/components/files/FileExplorer.jsx
+  s_4122b07c8b4292::t_4c421ce7f06e3a 8,544,549-555,904-958,973-991,1008-1048
+apps/web/src/components/files/FileExplorer.module.css
+  s_4122b07c8b4292::t_1fcca13eb0cded 52-138
+apps/web/src/components/search/SearchPanel.jsx
+  s_4122b07c8b4292::t_149930eb7d1dee 119,149-151,284-305,420-435,453-462,468-472,480-489,494-503
+apps/web/src/components/search/SearchPanel.module.css
+  s_4122b07c8b4292::t_93b974eaea7f47 10-29,93,107-160,166-172,174,177,179-183,221-230
+apps/web/src/i18n.js
+  s_4122b07c8b4292::t_98c6c68afc14ca 4-29,4601-4604,4607-4610
+cc-viewer-alignment/B5-candidate-matrix.md
+  s_4122b07c8b4292::t_222ebdf92ded24 10,43
+cc-viewer-alignment/B5-implementation.md
+  s_4122b07c8b4292::t_a6be77ee73f869 38-50
+cc-viewer-alignment/B5-search-embedded-2026-11-21.json
+  s_4122b07c8b4292::t_eda74c5bf2f6e6 1-244
+cc-viewer-alignment/README.md
+  s_4122b07c8b4292::t_9b7361aaf135a9 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4122b07c8b4292::t_5520b4324327a8 15915-15919
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_4122b07c8b4292::t_28dd6b64bd9a2e 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "123f06a236b79e5f53bc4c03689c89aae50d6a44",
+  "prompts": {},
+  "sessions": {
+    "s_4122b07c8b4292": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fbcc-5a47-7112-a38d-fb834f2c5f53",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
