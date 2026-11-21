@@ -1,0 +1,33 @@
+AGENTS.md
+  s_76602f25d7665d::t_3d3fe8735061e2 26
+apps/web/src/i18n.js
+  s_76602f25d7665d::t_281a01807c69aa 10348-10365
+cc-viewer-alignment/B7-E39-quick-prompts-source.json
+  s_76602f25d7665d::t_9723e7d0ab0bff 1-8
+cc-viewer-alignment/B7-candidate-index-2026-11-21.json
+  s_76602f25d7665d::t_52bc21b9f861ea 394-402
+cc-viewer-alignment/B7-implementation.md
+  s_76602f25d7665d::t_a6a2a87068148e 371-378
+cc-viewer-alignment/README.md
+  s_76602f25d7665d::t_c740c3bf733388 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_76602f25d7665d::t_10248df512c09d 3,4322-4323
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_76602f25d7665d::t_c8f14857b85623 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "cf8aa3c0e20328d0eb6e06ce0f9cf4d4e36c2a25",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
