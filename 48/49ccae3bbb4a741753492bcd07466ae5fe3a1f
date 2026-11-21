@@ -1,0 +1,36 @@
+cc-viewer-alignment/B6-completion-matrix.md
+  s_76602f25d7665d::t_c51e80ddb2d28c 1-33
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_76602f25d7665d::t_8dde3d6251b651 3,154-155,187-188,218-219,748-749,792-793,1193-1194,1247
+  s_76602f25d7665d::t_8d303f38c4c465 1248
+cc-viewer-alignment/B6-implementation.md
+  s_76602f25d7665d::t_8dde3d6251b651 7,120-126
+cc-viewer-alignment/B6-final-2026-11-21.json
+  s_76602f25d7665d::t_c51e80ddb2d28c 1-81
+cc-viewer-alignment/B6-candidate-matrix.md
+  s_76602f25d7665d::t_8dde3d6251b651 3
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_76602f25d7665d::t_8dde3d6251b651 3,37,47-48,51,129,191
+cc-viewer-alignment/README.md
+  s_76602f25d7665d::t_8dde3d6251b651 5,23-24
+AGENTS.md
+  s_76602f25d7665d::t_8dde3d6251b651 26
+cc-viewer-alignment/B6-local-commit-map-2026-11-21.json
+  s_76602f25d7665d::t_c51e80ddb2d28c 1-134
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "4849ccae3bbb4a741753492bcd07466ae5fe3a1f",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
