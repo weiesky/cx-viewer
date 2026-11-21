@@ -1,0 +1,272 @@
+packages/app/tests/archive-preview-api.test.js
+  s_76602f25d7665d::t_77280ca8043adb 48
+  s_76602f25d7665d::t_9040c75d2e54dc 1-47,49-55
+  s_76602f25d7665d::t_ebbef29e711ad4 56-63
+apps/web/src/components/files/FileContentView.jsx
+  s_76602f25d7665d::t_30a8b8e7640360 7,317-324,341,367,1096-1106,1123-1124
+  s_76602f25d7665d::t_f874e58a1a8a93 1125
+  s_76602f25d7665d::t_ef2b7dbf27358d 325-332,1107-1110
+  s_76602f25d7665d::t_40afbd174b3a8a 1111-1113
+  s_76602f25d7665d::t_35316d1486088f 333-340,1114-1122
+apps/web/src/components/viewers/ArchivePreview.jsx
+  s_76602f25d7665d::t_30a8b8e7640360 1-231
+packages/app/server.js
+  s_76602f25d7665d::t_30a8b8e7640360 3913-3914,3918-3922,3933,3951,4012-4013,4015,4030
+  s_76602f25d7665d::t_77280ca8043adb 4031-4044
+  s_76602f25d7665d::t_ef2b7dbf27358d 37,3885-3907
+  s_76602f25d7665d::t_ce0f42ec9d8d6f 3908-3911
+  s_76602f25d7665d::t_6a803d91fdb39b 4022-4023
+apps/web/src/i18n.js
+  s_76602f25d7665d::t_30a8b8e7640360 90,92-105,107-108,110-141,143-144,146-153,155-159,161-168,170-171,173-174,176-177,179-183,185-189,191-204,206-207,209-213,215-225
+  s_76602f25d7665d::t_ef2b7dbf27358d 83-89,444
+  s_76602f25d7665d::t_0a9641e66dd6e8 58-70,72-79,81-82
+  s_76602f25d7665d::t_b94360fcc21fd9 25-57
+  s_76602f25d7665d::t_436dda61e66fca 4-24
+  s_76602f25d7665d::t_235f4251eed4dc 71,80,91,106,109,142,145,154,160,169,172,175,178,184,190,205,208,214
+LICENSE.md
+  s_76602f25d7665d::t_30a8b8e7640360 22-32
+  s_76602f25d7665d::t_a5d2536287c79b 5-21
+  s_76602f25d7665d::t_7b14ed1fb652e0 33-58
+AGENTS.md
+  s_76602f25d7665d::t_ce1a62563cd754 28
+  s_76602f25d7665d::t_3280db3eb7b149 27
+  s_76602f25d7665d::t_26ac5d70ab84a2 26,31
+apps/web/src/components/viewers/ArchivePreview.module.css
+  s_76602f25d7665d::t_5169874f82f191 1-73
+apps/web/src/utils/archivePreview.js
+  s_76602f25d7665d::t_a6372ef20f94e1 1-67
+apps/web/src/vendor/archive/LICENSE
+  s_76602f25d7665d::t_a81c1d26db0b87 1-21
+apps/web/src/vendor/archive/README.md
+  s_76602f25d7665d::t_c15301393e9591 1-11
+apps/web/src/vendor/archive/detect.js
+  s_76602f25d7665d::t_9505a23001865c 1-50
+apps/web/src/vendor/archive/gzip.js
+  s_76602f25d7665d::t_864348e1f1c234 1-74
+apps/web/src/vendor/archive/index.js
+  s_76602f25d7665d::t_41b6ca3729e207 1-138
+apps/web/src/vendor/archive/inflate.js
+  s_76602f25d7665d::t_99c5b2bf4dc255 1-59
+apps/web/src/vendor/archive/tar.js
+  s_76602f25d7665d::t_511e4fff35f438 1-199
+apps/web/src/vendor/archive/util.js
+  s_76602f25d7665d::t_f70901a05a8c5e 1-263
+apps/web/src/vendor/archive/zip.js
+  s_76602f25d7665d::t_ace1733942717f 1-196
+apps/web/tests/archive-preview.test.js
+  s_76602f25d7665d::t_00b9023b4a73a1 1-303
+cc-viewer-alignment/B6-implementation.md
+  s_76602f25d7665d::t_265374a096758a 1-6,8-16
+  s_76602f25d7665d::t_9bc366029a5b3a 17-25
+  s_76602f25d7665d::t_a144a0dd78257e 26-34
+  s_76602f25d7665d::t_2da8fc75cc226d 35-42
+  s_76602f25d7665d::t_bb4e16ea4d029b 43-51
+  s_76602f25d7665d::t_c9b124485b9289 52-57,59
+  s_76602f25d7665d::t_38e03bee0fbc53 58,60-68
+  s_76602f25d7665d::t_23c3acc8e183f9 69-76
+  s_76602f25d7665d::t_532c2179735b9a 77-84
+  s_76602f25d7665d::t_5caffc65f87592 85-92
+  s_76602f25d7665d::t_b9cde6cfd402c8 93-100
+  s_76602f25d7665d::t_c354cb4a20ed42 101-108
+  s_76602f25d7665d::t_08b2634ea1e590 109-119
+  s_76602f25d7665d::t_8dde3d6251b651 7,120-126
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_76602f25d7665d::t_3a5326b84f6c78 6,738-739,1189-1190,1239-1240
+  s_76602f25d7665d::t_54550ce50fcde7 786-787
+  s_76602f25d7665d::t_0f31461a8d29b1 740-741
+  s_76602f25d7665d::t_9990386575c848 742-743,1191-1192
+  s_76602f25d7665d::t_16e8c78579ba83 214-215
+  s_76602f25d7665d::t_d0bd662e52f072 190
+  s_76602f25d7665d::t_1eee0323374f24 148-149,181
+  s_76602f25d7665d::t_1d098423952535 744-745,1241-1242
+  s_76602f25d7665d::t_3b422c85f23d78 788-789,1243-1244
+  s_76602f25d7665d::t_fed39609cc5ee1 150-151,183-184,216-217,334-335,746-747,790-791,993-994,1118-1121,1193-1194,1245-1246,1272-1273,1300-1301,1326-1327,1442-1443,1637-1638,2172-2173,2282-2283,2462-2463,2568-2569,2966-2967,3032-3033,3333-3334,3371-3372,3809-3810,4083-4084,4121-4122,4455-4456,4490-4491,4685-4686,4718-4719,6799-6800,6816-6817,6908-6909,6955-6956,7017-7018,7133-7134,7185-7186,7331-7332,7380-7381,7434-7435,7521-7522,7791-7792,15007-15008,15028-15029,15086-15087,15137
+  s_76602f25d7665d::t_05dccadce86eb2 15138
+  s_76602f25d7665d::t_bcb0d2d1a0469f 152-153
+  s_76602f25d7665d::t_c354cb4a20ed42 185
+  s_76602f25d7665d::t_9d6f3322d47e1d 186
+  s_76602f25d7665d::t_08b2634ea1e590 154-155,187-188,218-219,748-749,792-793,1247
+  s_76602f25d7665d::t_dde396094518ba 1248
+  s_76602f25d7665d::t_8dde3d6251b651 3,156-157,189-190,220-221,750-751,794-795,1195-1196,1249
+  s_76602f25d7665d::t_8d303f38c4c465 1250
+  s_76602f25d7665d::t_ce1a62563cd754 5-6
+  s_76602f25d7665d::t_3280db3eb7b149 5790-5791
+  s_76602f25d7665d::t_fbcb3d017b0813 4,182
+packages/app/server/lib/audio-stream.js
+  s_76602f25d7665d::t_ef2b7dbf27358d 1-268
+apps/web/src/components/viewers/AudioPreview.jsx
+  s_76602f25d7665d::t_ef2b7dbf27358d 1-50
+apps/web/src/components/chat/ChatView.jsx
+  s_76602f25d7665d::t_662335cb0febf8 31,4565-4568
+  s_76602f25d7665d::t_c5d6c10c1aa11d 2,227-233,353-354,666,824-825,877-887,1300,1514-1591,1593-1671,2639,3450,3454-3460,3464,3470,3483,3562-3564,3581,3606,4099-4122,4470,4797-4798,4922
+  s_76602f25d7665d::t_ce61918c16faf4 1592
+  s_76602f25d7665d::t_10a82f29086c95 3-4,4382
+apps/web/src/components/viewers/AudioPreview.module.css
+  s_76602f25d7665d::t_a9e33b09edaed2 1-49
+packages/app/tests/audio-preview-api.test.js
+  s_76602f25d7665d::t_fd611a81b7582e 1-2,5-75
+  s_76602f25d7665d::t_6587180783ee23 3-4,76-77,79-83,85-89,91-93
+  s_76602f25d7665d::t_bfbde513256e06 78,84,90,94
+packages/app/tests/audio-stream.test.js
+  s_76602f25d7665d::t_daf67af91ca8f4 1-123
+apps/web/src/components/viewers/SubtitlePreview.jsx
+  s_76602f25d7665d::t_a0f84b80fbcbb1 1-167
+apps/web/src/components/viewers/SubtitlePreview.module.css
+  s_ef9ee44cb3b089::t_67cae192de7d57 1-67
+apps/web/src/utils/subtitleParser.js
+  s_ef9ee44cb3b089::t_5de7b1ef8d0ff2 1-221
+apps/web/tests/subtitle-parser.test.js
+  s_76602f25d7665d::t_92f7451c40c77a 1-263
+apps/web/src/components/chat/ChatInputBar.jsx
+  s_76602f25d7665d::t_18ac9c5df80c61 429
+  s_76602f25d7665d::t_aed3b80cb70001 52,71-77,381,383-426,717,719
+apps/web/src/components/terminal/TerminalPanel.jsx
+  s_76602f25d7665d::t_ebe41bb3ae71d5 1703
+apps/web/src/components/terminal/UltraPlanModal.jsx
+  s_76602f25d7665d::t_e9d2c7add69796 270
+apps/web/src/components/terminal/UltraplanPanel.jsx
+  s_76602f25d7665d::t_4e56ec06e56c54 256
+apps/web/src/utils/commandValidator.js
+  s_76602f25d7665d::t_f7bccee3af5ef6 5-12,15
+apps/web/src/utils/fileOpen.js
+  s_76602f25d7665d::t_991cccf2e182c4 14
+apps/web/tests/commandValidator.test.js
+  s_76602f25d7665d::t_6104192dee422c 1-177
+apps/web/tests/preview-kind.test.js
+  s_76602f25d7665d::t_1e4df792507ae0 1-76
+packages/app/src/utils/userImageRefs.js
+  s_76602f25d7665d::t_ad99723ef7426d 13,17
+apps/web/src/components/chat/ChatInputBar.module.css
+  s_76602f25d7665d::t_eaeb9214aa1e6f 697-737
+apps/web/src/components/chat/ChatMessage.jsx
+  s_76602f25d7665d::t_3798ad7f4b2f41 854
+  s_76602f25d7665d::t_b4f2feed86919e 783
+apps/web/src/components/chat/ChatView.module.css
+  s_76602f25d7665d::t_ce5c4e5d3fd2b8 744-775
+apps/web/src/components/chat/selectionQuote.js
+  s_76602f25d7665d::t_dcafee69932582 1-7,14-22,40-43,46,68-109,120-132
+  s_76602f25d7665d::t_fa08be6d744eca 8-13,23-33,50-59,64-65,67,110-119
+  s_ef9ee44cb3b089::t_653e8000668512 34-49
+  s_76602f25d7665d::t_fbcb3d017b0813 60-63,66
+apps/web/tests/chat-quote-i18n.test.js
+  s_76602f25d7665d::t_5b42cef5003fe5 1,5,7-12,14-49,51-113,114-129,164-197,203-207,209-220,231-233,235-239,241-243,245-247,249-253,355-356
+  s_76602f25d7665d::t_f83d5a9ed18f02 2-4,6,13,50,130-163,198-202,208,221-230,234,240,244,248,254-354
+apps/web/tests/terminal-ws-liveness.test.js
+  s_76602f25d7665d::t_7a96b34790e148 675-719
+apps/web/src/components/chat/AskQuestionForm.jsx
+  s_76602f25d7665d::t_d9c74beb9336d3 5,9-12,124,149,184,209,239
+apps/web/src/components/chat/ChatMessage.module.css
+  s_76602f25d7665d::t_73ddade687a35f 1178-1182,1212-1214
+apps/web/src/components/chat/DiffView.jsx
+  s_76602f25d7665d::t_72565364011b54 96
+apps/web/src/components/chat/DiffView.module.css
+  s_76602f25d7665d::t_b7e12c112df070 75
+apps/web/src/utils/markdownCopy.js
+  s_ef9ee44cb3b089::t_f9dc7de7935463 1-81
+apps/web/tests/markdown-copy.test.js
+  s_ef9ee44cb3b089::t_662bf5735824f0 1-310
+apps/web/vite.config.js
+  s_76602f25d7665d::t_dd705ab4f4b7ef 65
+apps/web/tests/preview-i18n-params.test.js
+  s_76602f25d7665d::t_235f4251eed4dc 1-16
+cc-viewer-alignment/B6-candidate-matrix.md
+  s_76602f25d7665d::t_fed39609cc5ee1 1-2,4-52
+  s_76602f25d7665d::t_8dde3d6251b651 3
+cc-viewer-alignment/B6-candidate-footprints-2026-11-21.json
+  s_76602f25d7665d::t_fed39609cc5ee1 1-1085
+cc-viewer-alignment/B6-installed-2026-11-21.json
+  s_76602f25d7665d::t_2da79cd69833a5 1-24,39
+  s_76602f25d7665d::t_c354cb4a20ed42 25-38
+packages/app/tests/log-v2-schema.test.js
+  s_76602f25d7665d::t_f0a92a4cbd36ab 204-219
+cc-viewer-alignment/probes/b3-installed-check.py
+  s_76602f25d7665d::t_3e008c7aadc645 29,40
+packages/app/lib/log-v2/entry-codec.js
+  s_76602f25d7665d::t_6ad3a81539584f 147-149,156
+cc-viewer-alignment/probes/b6-preview-fixture.mjs
+  s_76602f25d7665d::t_20f360b76c1ac7 40
+  s_76602f25d7665d::t_815c6eea07b947 1-39,41-54
+cc-viewer-alignment/probes/b6-responsive-gui.mjs
+  s_76602f25d7665d::t_38b746d78e035e 8
+  s_76602f25d7665d::t_4b3f8c4881f398 1-7,9-26
+cc-viewer-alignment/B6-source-style-2026-11-21.json
+  s_76602f25d7665d::t_63cfe98a2c8b32 1-85
+cc-viewer-alignment/evidence/B6-preview-2026-11-21/result.json
+  s_76602f25d7665d::t_5889ff4f21a069 1-92
+cc-viewer-alignment/probes/b6-warm-conversation-gui.mjs
+  s_76602f25d7665d::t_88356e74fe7ae4 1-12,14-43
+  s_76602f25d7665d::t_38b746d78e035e 13
+cc-viewer-alignment/evidence/B6-preview-2026-11-21/README.md
+  s_76602f25d7665d::t_08b2634ea1e590 1-7
+cc-viewer-alignment/probes/b6-preview-gui.mjs
+  s_76602f25d7665d::t_21d7a02a583c81 51
+  s_76602f25d7665d::t_84fcb77df0a601 1-12,15-21,23-36,38-40,42-47,52-75,93-95,97-98
+  s_76602f25d7665d::t_b1e0ba8ecfb038 22,76-79,96
+  s_76602f25d7665d::t_38b746d78e035e 14
+  s_76602f25d7665d::t_3c3d6c39734b49 37,41
+  s_76602f25d7665d::t_91e26f4bd9aa27 13,48-50,80-92
+cc-viewer-alignment/B6-gui-2026-11-21.json
+  s_76602f25d7665d::t_282584d9d39b13 1-79,81-83,85-87,89-91,93-95,97-99,101-103,105-107,109-127
+  s_76602f25d7665d::t_f7445ace2d9760 80,84,88,92,96,100,104,108
+cc-viewer-alignment/evidence/B6-preview-2026-11-21/responsive-result.json
+  s_76602f25d7665d::t_3b783f85ec1e42 1-102
+cc-viewer-alignment/evidence/B6-preview-2026-11-21/warm-result.json
+  s_76602f25d7665d::t_fae28775b5884e 1-58
+cc-viewer-alignment/B6-completion-matrix.md
+  s_76602f25d7665d::t_c51e80ddb2d28c 1-33
+cc-viewer-alignment/B6-final-2026-11-21.json
+  s_76602f25d7665d::t_c51e80ddb2d28c 1-81
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_76602f25d7665d::t_8dde3d6251b651 3,37,47-48,51,129,193
+  s_76602f25d7665d::t_3280db3eb7b149 43,136
+  s_76602f25d7665d::t_40f696aa6352a6 137
+cc-viewer-alignment/README.md
+  s_76602f25d7665d::t_8dde3d6251b651 5,27-28
+  s_76602f25d7665d::t_ce1a62563cd754 9-10
+  s_76602f25d7665d::t_3280db3eb7b149 7-8
+  s_76602f25d7665d::t_fbcb3d017b0813 6
+cc-viewer-alignment/B6-local-commit-map-2026-11-21.json
+  s_76602f25d7665d::t_c51e80ddb2d28c 1-134
+cc-viewer-alignment/A1-A2-engineering.md
+  s_76602f25d7665d::t_ce1a62563cd754 9-12
+cc-viewer-alignment/B6-runtime-entry-2026-11-21.md
+  s_76602f25d7665d::t_ce1a62563cd754 1-38
+cc-viewer-alignment/B6-runtime-entry-2026-11-21.json
+  s_76602f25d7665d::t_1fb48aee5531ea 1-48
+cc-viewer-alignment/B2-completion-matrix.md
+  s_76602f25d7665d::t_3280db3eb7b149 7-8
+cc-viewer-alignment/B2-pty-workspace-entry-gap-2026-11-21.md
+  s_76602f25d7665d::t_3280db3eb7b149 1-19
+cc-viewer-alignment/B6-pr-preflight-2026-11-21.json
+  s_76602f25d7665d::t_70048721264095 1-52
+cc-viewer-alignment/B6-original-commits-2026-11-21.tsv
+  s_76602f25d7665d::t_3afb509811b575 1-16
+apps/web/package.json
+  s_76602f25d7665d::t_fbcb3d017b0813 56-57
+cc-viewer-alignment/B6-local-commit-consolidation-2026-11-21.md
+  s_76602f25d7665d::t_26ac5d70ab84a2 1-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "e885d8bf5376767fc6f211a9e0a7209de3983656",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    },
+    "s_ef9ee44cb3b089": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e5bd-4c89-7421-a8a2-63319454b8f5",
+        "model": "gpt-6.1-terra"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
