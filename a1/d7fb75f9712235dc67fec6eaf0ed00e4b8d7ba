@@ -1,0 +1,35 @@
+cc-viewer-alignment/probes/b7-native-owner-gui.mjs
+  s_76602f25d7665d::t_b6c34736a2b357 1-31
+AGENTS.md
+  s_76602f25d7665d::t_9df0853ebdbc7d 26
+cc-viewer-alignment/B7-E31b-before-owner.json
+  s_76602f25d7665d::t_8b9fbaa3ca0099 1-22
+cc-viewer-alignment/B7-implementation.md
+  s_76602f25d7665d::t_b972d43455855d 280-288
+cc-viewer-alignment/README.md
+  s_76602f25d7665d::t_42d40606c29515 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_76602f25d7665d::t_e142a9e62ffa48 3,5866-5867
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_76602f25d7665d::t_d9ee4e437456ab 3
+packages/app/lib/appserver-bridge.js
+  s_76602f25d7665d::t_7eced497419c06 59,386-389,1845-1853,2380,2399-2401,2438
+tests/appserver-bridge.test.js
+  s_76602f25d7665d::t_fd6ac530668953 19,2292-2312
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a1d7fb75f9712235dc67fec6eaf0ed00e4b8d7ba",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
