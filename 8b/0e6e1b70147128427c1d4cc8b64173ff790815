@@ -1,0 +1,50 @@
+cc-viewer-alignment/probes/b7-user-prompts-gui.mjs
+  s_76602f25d7665d::t_f55c260d16d415 1-19,23,25-35,37-39,41-47
+  s_76602f25d7665d::t_db4e0d6a24081c 20-22,24,36,40
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_76602f25d7665d::t_f54b99511f5bf7 1736,1743
+  s_76602f25d7665d::t_a772fc1e771c3e 1740
+  s_76602f25d7665d::t_b2445c06f568f5 25,1734-1735,1737-1739,1741-1742,1744-1769
+AGENTS.md
+  s_76602f25d7665d::t_6dabe781a95cfb 26
+apps/web/src/components/chat/ChatView.jsx
+  s_76602f25d7665d::t_8903892c81abec 55,339,4045-4049,4493,4945
+apps/web/src/components/chat/ChatView.module.css
+  s_76602f25d7665d::t_9e5622482a3c70 291-294,819-833
+apps/web/src/components/chat/UserPromptsModal.jsx
+  s_76602f25d7665d::t_b63f1c1f09baa7 1-221
+apps/web/src/components/chat/UserPromptsModal.module.css
+  s_76602f25d7665d::t_f433f156c7f07b 1-80
+apps/web/src/i18n.js
+  s_76602f25d7665d::t_85e06a2e0a76e4 12475-12606
+apps/web/src/utils/promptSegments.js
+  s_76602f25d7665d::t_19096e020c7ec8 1-36
+apps/web/tests/prompt-segments.test.js
+  s_76602f25d7665d::t_63386a3edbf14a 1-13
+cc-viewer-alignment/B7-E19-prompt-modal-source.json
+  s_76602f25d7665d::t_59d5a867689750 1-10
+cc-viewer-alignment/B7-implementation.md
+  s_76602f25d7665d::t_6aee6c0d3f1c54 160-168
+cc-viewer-alignment/README.md
+  s_76602f25d7665d::t_860d7769e30b59 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_76602f25d7665d::t_9ce01d6c410286 3,1357-1358
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_76602f25d7665d::t_3e099f01c206b9 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "8b0e6e1b70147128427c1d4cc8b64173ff790815",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
