@@ -1,0 +1,32 @@
+cc-viewer-alignment/B6-candidate-matrix.md
+  s_76602f25d7665d::t_fed39609cc5ee1 1-52
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_76602f25d7665d::t_fed39609cc5ee1 148-149,175-176,202-203,316-317,728-729,768-769,967-968,1092-1095,1167-1168,1217-1218,1240-1241,1268-1269,1294-1295,1410-1411,1605-1606,2140-2141,2250-2251,2430-2431,2536-2537,2934-2935,3000-3001,3301-3302,3339-3340,3777-3778,4051-4052,4089-4090,4423-4424,4458-4459,4653-4654,4686-4687,6765-6766,6782-6783,6874-6875,6921-6922,6983-6984,7099-7100,7151-7152,7297-7298,7346-7347,7400-7401,7487-7488,7757-7758,14973-14974,14994-14995,15052-15053,15103
+  s_76602f25d7665d::t_05dccadce86eb2 3,15104
+cc-viewer-alignment/B6-candidate-footprints-2026-11-21.json
+  s_76602f25d7665d::t_fed39609cc5ee1 1-1085
+AGENTS.md
+  s_76602f25d7665d::t_e573f24b12f81f 26
+cc-viewer-alignment/B6-implementation.md
+  s_76602f25d7665d::t_5caffc65f87592 7,85-92
+cc-viewer-alignment/README.md
+  s_76602f25d7665d::t_6406e491cf92fa 5
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_76602f25d7665d::t_2ed7c270565a8d 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "89b99987ec8481c2f9924ae498a60d581118f3e9",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
