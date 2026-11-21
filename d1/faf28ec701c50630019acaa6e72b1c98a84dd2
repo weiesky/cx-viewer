@@ -1,0 +1,38 @@
+packages/app/tests/target-files.test.js
+  s_4122b07c8b4292::t_f4d00c75804d19 75-95
+cc-viewer-alignment/README.md
+  s_4122b07c8b4292::t_ac1231fb8bbd8b 5
+cc-viewer-alignment/probes/b5-target-sources-gui.mjs
+  s_4122b07c8b4292::t_8c4a329ba9f0a1 1-16,19-47
+  s_4122b07c8b4292::t_2032b007acc88f 17-18
+AGENTS.md
+  s_4122b07c8b4292::t_ac1231fb8bbd8b 26
+cc-viewer-alignment/B5-implementation.md
+  s_4122b07c8b4292::t_ac1231fb8bbd8b 392-397
+cc-viewer-alignment/probes/b5-search-gui.mjs
+  s_4122b07c8b4292::t_8c4a329ba9f0a1 131-142,192-195
+cc-viewer-alignment/B5-target-sources-2026-11-21.json
+  s_4122b07c8b4292::t_ac1231fb8bbd8b 1-72
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4122b07c8b4292::t_ac1231fb8bbd8b 16109-16112
+packages/app/lib/target-files.js
+  s_4122b07c8b4292::t_de8535bb329cd5 5-6,9-18,21,23-28,53,55,57-58,70
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_4122b07c8b4292::t_ac1231fb8bbd8b 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d1faf28ec701c50630019acaa6e72b1c98a84dd2",
+  "prompts": {},
+  "sessions": {
+    "s_4122b07c8b4292": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fbcc-5a47-7112-a38d-fb834f2c5f53",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
