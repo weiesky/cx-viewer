@@ -1,0 +1,71 @@
+packages/app/lib/code-search.js
+  s_4122b07c8b4292::t_d84b8f043e6ab7 20,225,258,333,406
+packages/app/tests/search-endpoint.test.js
+  s_4122b07c8b4292::t_c3d8ae32ad163f 17-18
+  s_4122b07c8b4292::t_106d3d52aca366 16
+packages/app/tests/file-browser-native-state.test.js
+  s_4122b07c8b4292::t_ca04bb9144fa88 3-6,63-64,74-118
+  s_4122b07c8b4292::t_e5112264b39a68 53
+  s_4122b07c8b4292::t_ade666b4f4b9a8 1-2,7-52,54-62,65-73,119
+  s_4122b07c8b4292::t_234c1befb799ea 120-139,141-142
+  s_4122b07c8b4292::t_2ef529979fbc13 140
+packages/app/tests/search-worker-policy.test.js
+  s_4122b07c8b4292::t_e0230d03664d4a 3-4,16,20,34-40,42,44,49,51,68
+packages/app/tests/terminal-websocket.test.js
+  s_4122b07c8b4292::t_c3d8ae32ad163f 18-19
+  s_4122b07c8b4292::t_106d3d52aca366 10
+cc-viewer-alignment/B5-implementation.md
+  s_4122b07c8b4292::t_42741b74d59a08 352-361
+packages/app/lib/skills-api.js
+  s_4122b07c8b4292::t_234c1befb799ea 56,60,122-124,261
+  s_4122b07c8b4292::t_d84b8f043e6ab7 16,161
+packages/app/lib/file-access-policy.js
+  s_4122b07c8b4292::t_d84b8f043e6ab7 4,94,106-123
+  s_4122b07c8b4292::t_e91a336c1b9b66 124
+packages/app/lib/code-replace.js
+  s_4122b07c8b4292::t_d84b8f043e6ab7 14,163,184,205,209
+cc-viewer-alignment/probes/b3-installed-check.py
+  s_4122b07c8b4292::t_bedcbb06a5d1cd 29,40
+packages/app/tests/auth-server.test.js
+  s_4122b07c8b4292::t_106d3d52aca366 17,20,148,159,173,261,283,324,645
+  s_4122b07c8b4292::t_c3d8ae32ad163f 21-22
+packages/app/lib/public-file-read.js
+  s_4122b07c8b4292::t_d84b8f043e6ab7 5,7,12
+packages/app/server.js
+  s_4122b07c8b4292::t_e5112264b39a68 704-705,717,2151,2865,2868
+  s_4122b07c8b4292::t_a14b7ef689a0c2 17,35,700-703,1884,1911,1915,2934,2989,3015,3033-3034,3090,3159-3160,3172,3209-3210,3229,3311,3417
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4122b07c8b4292::t_42741b74d59a08 16085-16088
+AGENTS.md
+  s_4122b07c8b4292::t_d6b26657ccc5fc 26
+cc-viewer-alignment/B5-candidate-matrix.md
+  s_4122b07c8b4292::t_d6b26657ccc5fc 29,32-35
+cc-viewer-alignment/B5-native-file-tools-2026-11-21.json
+  s_4122b07c8b4292::t_11d6736be55ec3 1-60
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_4122b07c8b4292::t_d6b26657ccc5fc 3,111
+cc-viewer-alignment/B5-target-permission-boundary.md
+  s_4122b07c8b4292::t_3c3a04b92ce78d 3,23
+packages/app/lib/search-worker.js
+  s_4122b07c8b4292::t_e5112264b39a68 109,112
+  s_4122b07c8b4292::t_e0230d03664d4a 9
+  s_4122b07c8b4292::t_d84b8f043e6ab7 22,111,163
+cc-viewer-alignment/README.md
+  s_4122b07c8b4292::t_d6b26657ccc5fc 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f66e728192b5534f6e7ad88d0a62e8d985aef56a",
+  "prompts": {},
+  "sessions": {
+    "s_4122b07c8b4292": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fbcc-5a47-7112-a38d-fb834f2c5f53",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
