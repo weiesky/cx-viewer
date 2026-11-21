@@ -1,0 +1,55 @@
+cc-viewer-alignment/B7-minimal-chat/result.json
+  s_76602f25d7665d::t_bcd6819095b25f 1-8,10-28,30-48,50-68,70-84
+  s_76602f25d7665d::t_115ed9bad16e2f 9
+  s_76602f25d7665d::t_6b8cf1addcc2f2 29
+  s_76602f25d7665d::t_8e876b1868e388 49
+  s_76602f25d7665d::t_293c9b7f180b21 69
+cc-viewer-alignment/probes/b7-minimal-chat-gui.mjs
+  s_76602f25d7665d::t_084523377f6815 42-52
+  s_76602f25d7665d::t_bef7da760cbd0d 1-41,53-57
+cc-viewer-alignment/B7-E42-minimal-chat-source.json
+  s_76602f25d7665d::t_7f645c2d911e9d 15-16
+  s_76602f25d7665d::t_d55bf6a4c1a324 1-14,17-31
+apps/web/src/App.jsx
+  s_76602f25d7665d::t_bea81c9f928880 465
+apps/web/src/AppBase.jsx
+  s_76602f25d7665d::t_b05fba875c4780 332,343,2760-2763
+apps/web/src/Mobile.jsx
+  s_76602f25d7665d::t_053a8f474fccf4 726,1065-1073
+apps/web/src/components/chat/ChatMessage.jsx
+  s_76602f25d7665d::t_5a5e64139c5a76 10,186,1036,1039,1219,1222-1223,1285,1322-1323,1421,1424-1425,1427-1428,1466,1469-1473,1646-1699,1702-1703
+apps/web/src/components/chat/ChatMessage.module.css
+  s_76602f25d7665d::t_a09fcd5e2cd9f4 1585-1635
+apps/web/src/components/chat/ChatView.jsx
+  s_76602f25d7665d::t_b050cba079346b 22,274,772,1230,2081,2289,2295,2323,2370,2380,2538-2540,2544-2545,2561-2563,2570-2583,4660,4700-4701
+apps/web/src/components/dashboard/AppHeader.jsx
+  s_76602f25d7665d::t_998197cbb403da 1217,1622-1635
+apps/web/src/components/settings/PreferencesForm.jsx
+  s_76602f25d7665d::t_cfda0752e403c9 63-67
+apps/web/src/i18n.js
+  s_76602f25d7665d::t_60986713f11e2f 7249-7288
+apps/web/src/utils/toolDisplayPolicy.js
+  s_76602f25d7665d::t_c3fc9a23f1986f 1-6
+apps/web/src/utils/toolRunMerge.js
+  s_76602f25d7665d::t_e0a473e9f4db3c 1-189
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_76602f25d7665d::t_46229e506261ae 51-52,2021-2048
+apps/web/tests/tool-run-merge.test.js
+  s_76602f25d7665d::t_6a438718f13291 1-288
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "0996ef4e8d5da4b68e2a8fc77e679d51f1e847df",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
