@@ -1,0 +1,29 @@
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_4122b07c8b4292::t_a2034e46baf672 3,111
+cc-viewer-alignment/README.md
+  s_4122b07c8b4292::t_a2034e46baf672 5
+cc-viewer-alignment/B5-implementation.md
+  s_4122b07c8b4292::t_aa382db224962a 316-321
+cc-viewer-alignment/B5-target-permission-boundary.md
+  s_4122b07c8b4292::t_aa382db224962a 25-39
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4122b07c8b4292::t_aa382db224962a 16065-16068
+AGENTS.md
+  s_4122b07c8b4292::t_a2034e46baf672 26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "c27fd53098677478d8d54b60145fa4071265bb10",
+  "prompts": {},
+  "sessions": {
+    "s_4122b07c8b4292": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fbcc-5a47-7112-a38d-fb834f2c5f53",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
