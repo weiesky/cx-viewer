@@ -1,0 +1,45 @@
+cc-viewer-alignment/B5-candidate-matrix.md
+  s_4122b07c8b4292::t_e1bd359937f13e 3
+  s_4122b07c8b4292::t_524927d83e6601 13,19-20,29,31-35
+cc-viewer-alignment/B5-completion-matrix.md
+  s_4122b07c8b4292::t_3429151331ebdc 1-2,4-39,46-47
+  s_4122b07c8b4292::t_49e9c4100dab02 3,40-45
+AGENTS.md
+  s_4122b07c8b4292::t_e1bd359937f13e 26
+cc-viewer-alignment/B5-target-permission-boundary.md
+  s_4122b07c8b4292::t_5c2a50e4e9dc6f 3,23
+cc-viewer-alignment/B5-cross-package-audit.md
+  s_4122b07c8b4292::t_60a2c820dd8c47 15,23,25-28
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_4122b07c8b4292::t_1a00d7e91ad074 45-47
+  s_4122b07c8b4292::t_e1bd359937f13e 3,37,50,112,114,124,189
+cc-viewer-alignment/README.md
+  s_4122b07c8b4292::t_e1bd359937f13e 5
+  s_4122b07c8b4292::t_1a00d7e91ad074 22
+cc-viewer-alignment/B5-local-commit-map-2026-11-21.json
+  s_4122b07c8b4292::t_9659e49b1ae758 1-14,17-24,27-34,37-44,47-54,57-66,69-77,80-87,90-98,101-109,112-120,123-128,131-136,139-144,147-152,155-160,163-168,171-176,179-184,187-192,195-200,203-208,211-216,219-224,227-232,235-243,246-251,254-259,262-267,270-275,278-283,286-291,294-299,302-309,312-317,320-325,328-333,336-341,344-349,352-359,362-370,373-380,383-388,391-398,401-408,411-413
+  s_4122b07c8b4292::t_bd2e804c9bfb6d 15-16,25-26,35-36,45-46,55-56,67-68,78-79,88-89,99-100,110-111,121-122,129-130,137-138,145-146,153-154,161-162,169-170,177-178,185-186,193-194,201-202,209-210,217-218,225-226,233-234,244-245,252-253,260-261,268-269,276-277,284-285,292-293,300-301,310-311,318-319,326-327,334-335,342-343,350-351,360-361,371-372,381-382,389-390,399-400,409-410
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4122b07c8b4292::t_889ec5f1d42199 16113-16118
+cc-viewer-alignment/B5-implementation.md
+  s_4122b07c8b4292::t_e1bd359937f13e 3,11
+  s_4122b07c8b4292::t_2b18b8cb495877 398-407
+cc-viewer-alignment/B5-final-2026-11-21.json
+  s_4122b07c8b4292::t_9659e49b1ae758 1-83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a3617be1383d43cb605fd9a7951b73b2d3a40cba",
+  "prompts": {},
+  "sessions": {
+    "s_4122b07c8b4292": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fbcc-5a47-7112-a38d-fb834f2c5f53",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
