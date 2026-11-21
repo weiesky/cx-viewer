@@ -1,0 +1,36 @@
+packages/app/lib/skills-api.js
+  s_76602f25d7665d::t_5065cc00a79f9f 212
+cc-viewer-alignment/probes/b7-native-skills.mjs
+  s_76602f25d7665d::t_ec4191fdd7c699 10-11,30
+  s_76602f25d7665d::t_3b25ffbc14d22e 31
+AGENTS.md
+  s_76602f25d7665d::t_f1d068838e2921 26
+cc-viewer-alignment/B7-E24-native-skill-roots.json
+  s_76602f25d7665d::t_30ae858c741f0d 1-16
+cc-viewer-alignment/B7-implementation.md
+  s_76602f25d7665d::t_8997418031b7a4 209-216
+cc-viewer-alignment/README.md
+  s_76602f25d7665d::t_70bf41d12040ec 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_76602f25d7665d::t_4a2c64ad4ade64 3,3389-3390,4563-4564
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_76602f25d7665d::t_e07b9f3a1d9e26 3
+packages/app/tests/skills-api.test.js
+  s_76602f25d7665d::t_8f32d06bce34cf 123-139
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a7bd8a7895aa3a2c0b405258b2b9dfefe091de0a",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
