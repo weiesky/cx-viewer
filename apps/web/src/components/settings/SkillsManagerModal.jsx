@@ -5,6 +5,7 @@ import { t } from '../../i18n';
 import { isMobile } from '../../env';
 import { skillKey, skillOrderKey } from '../../utils/skillsParser';
 import ConfirmRemoveButton from '../common/ConfirmRemoveButton';
+import OpenFolderIcon from '../common/OpenFolderIcon';
 import styles from './SkillsManagerModal.module.css';
 import headerStyles from '../common/sharedChrome.module.css';
 
@@ -36,6 +37,7 @@ export default function SkillsManagerModal({
   toggling,
   onToggle,
   onDelete,
+  onOpenFolder,
 }) {
   const togglingSet = toggling instanceof Set ? toggling : new Set();
   const userOrProject = skills.filter(s => s.source === 'user' || s.source === 'project');
@@ -78,6 +80,7 @@ export default function SkillsManagerModal({
                         <span className={`${styles.skillSourceBadge} ${styles['skillSource_' + s.source]}`}>
                           {t('ui.skillSource.' + s.source)}
                         </span>
+                        {s.path && onOpenFolder && <OpenFolderIcon title={t('ui.openFolder')} size={16} onClick={() => onOpenFolder(s)} />}
                         <div className={styles.skillCardName}>{s.name}</div>
                         {s.duplicate && (
                           <Tooltip title={t('ui.skillDuplicateBadge')}>
@@ -112,6 +115,8 @@ export default function SkillsManagerModal({
               <div className={styles.skillsReadonlyLabel}>{t('ui.skillsPluginLabel')}</div>
               <div className={headerStyles.toolChipGrid}>
                 {pluginSkills.map((s, i) => (
+                  <span key={`plugin-${s.name}-${i}`} className={styles.skillFolderChip}>
+                    {s.path && onOpenFolder && <OpenFolderIcon title={t('ui.openFolder')} size={16} onClick={() => onOpenFolder(s)} />}
                   <Tooltip
                     key={`plugin-${s.name}-${i}`}
                     title={(
@@ -130,6 +135,7 @@ export default function SkillsManagerModal({
                       {s.name}
                     </button>
                   </Tooltip>
+                  </span>
                 ))}
               </div>
             </div>

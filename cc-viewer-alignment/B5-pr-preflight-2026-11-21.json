@@ -1,0 +1,53 @@
+{
+  "originalHead": "a3617be1383d43cb605fd9a7951b73b2d3a40cba",
+  "scope": "Consolidation and next-session handoff; only production difference is one trailing LF removed",
+  "productionDiff": [
+    {
+      "path": "packages/app/lib/search-candidates.js",
+      "originalSha256": "9bb86adb330ef642ec644cb778e2ef32cbc5708b45aac4a2fa59e9d09370f70c",
+      "currentSha256": "35c85a93395a72e9f38b0ca24f6438be38a3a4650ca00a450df9f5a9d0204ace",
+      "removedBytes": 1,
+      "onlyTrailingLF": true
+    }
+  ],
+  "allOtherTrackedProductionFilesUnchanged": true,
+  "searchRegression": {
+    "tests": 15,
+    "skip": 0
+  },
+  "build": "passed",
+  "packFiles": 712,
+  "artifactOnlyInstalled": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-p6qe2v0v",
+    "files": 712,
+    "source_bytes_match": true,
+    "web_asset_files": 204,
+    "web_asset_bytes_match": true,
+    "runtime_tests": "not run (artifact-only)"
+  },
+  "logs": {
+    "search": {
+      "path": "/tmp/cxv-b5-pr-search-preflight.log",
+      "sha256": "b86052da07774a2305f15658c0033f73c3eb5da64b2217c33c36a1a17cf12f66"
+    },
+    "build": {
+      "path": "/tmp/cxv-b5-pr-build-preflight.log",
+      "sha256": "fcd0b83134ee56b96ca7e1a9162d84aeabbfa47bd2d832300bc64661bdd3061b"
+    },
+    "pack": {
+      "path": "/tmp/cxv-b5-pr-pack-preflight.log",
+      "sha256": "4401a5cdd26e187dcdd3868e73370ce542c72bbd495ccb120a801edd61005e93"
+    },
+    "artifact": {
+      "path": "/tmp/cxv-b5-pr-artifact-preflight-final2.log",
+      "sha256": "41a1696b590f0cc878376f6b838ffb17e1eeebedd34741252b5026faeda062b5"
+    }
+  },
+  "failuresRetained": [
+    "/tmp/cxv-b5-pr-artifact-preflight.log: stale Web build refused after branch checkout refreshed source mtime; rebuild required",
+    "/tmp/cxv-b5-pr-artifact-preflight-final.log: overlapping pack/assemble caused ENOENT; final sequential retry passed"
+  ],
+  "previousFullTests": 1781,
+  "previousInstalledRuntime": "487/487",
+  "runtimeRerun": "Only 15 focused search tests; artifact-only probe is not a 487-runtime rerun"
+}

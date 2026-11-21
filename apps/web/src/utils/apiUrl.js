@@ -35,3 +35,23 @@ export function apiUrl(path) {
   const fullPath = base ? base.replace(/\/$/, '') + path : path;
   return appendToken(appendWorkspaceInstance(fullPath));
 }
+
+// Explicit native instance for reusable browser components; apiUrl retains the
+// established current-view fallback and token/base-path handling.
+export function withViewParams(path, { instance } = {}) {
+  return instance ? `${path}${path.includes('?') ? '&' : '?'}instance=${encodeURIComponent(instance)}` : path;
+}
+
+// Target mode (the AGENTS.md / skill file-browser modal): append the target
+// identity the server uses to re-derive the navigation root — `kind` plus either
+// `id` (codex-md) or `source` + `targetPath` (skill). These go on the query
+// string so the read route (/api/target-files) and the write routes
+// (/api/target-*) resolve the SAME root. Pure string builder; combine with
+// withViewParams (project/instance) and apiUrl (base/token) at the call site.
+export function withTargetParams(path, target) {
+  if (!target) return path;
+  const params = new URLSearchParams({ kind: target.kind });
+  if (target.kind === 'codex-md') params.set('id', target.id);
+  else { params.set('source', target.source); params.set('targetPath', target.path); }
+  return `${path}${path.includes('?') ? '&' : '?'}${params.toString()}`;
+}

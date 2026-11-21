@@ -1,0 +1,30 @@
+{
+  "date": "2026-11-21",
+  "upstream": "bd50636219e086ba082ab4bb36e5c0b6a996172e",
+  "fixedBaseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "scope": "E3 virtual results and keyboard navigation only; embedded final layout remains E4",
+  "gui": {
+    "engine": "webkit",
+    "version": "27.2",
+    "renderedRows": 36,
+    "totalMatches": 2000,
+    "longJumpIndex": 40,
+    "openedTarget": "41\nNEEDLE_A line 41",
+    "otherWorkspaceExcluded": true,
+    "errors": []
+  },
+  "script": "/tmp/cxv-b5-search-gui-e3.mjs",
+  "fixture": "cxv-b4-tasks-gui-fWGO9G, isolated fake Codex",
+  "webTests": "332/332, 0 skip",
+  "build": "passed",
+  "initialBrowserFailures": [
+    "Default Playwright cache absent; reused B4 isolated PLAYWRIGHT_BROWSERS_PATH.",
+    "Chromium headless-shell page target crashed; WebKit27.2 ran successfully.",
+    "Fixture seed needed before live ChatView navigation appears; actual language is zh."
+  ],
+  "screenshot": {
+    "file": "cc-viewer-alignment/evidence/B5-search-2026-11-21/webkit-e3-virtual-search.png",
+    "sha256": "8a0bea703b5e1ea81f25a59a4876919b9a9b06f422722edea485fefe14b12b87",
+    "visuallyInspected": true
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": [
+    "5fc4c752297c7df9f581c913aa2a1852a0b27a38",
+    "eb2e9703a2837550a9bf2a62a8bb5d20fac7f723"
+  ],
+  "previousLocal": "1161998",
+  "localSubject": "style(files): restore original manual refresh feedback",
+  "cssSha256": "43f017de7ade3164e23ed8563e3338a7d455817d17dda3172a6220d74b20d396",
+  "cssMatchesOriginal": true,
+  "checks": {
+    "web": 384,
+    "skip": 0,
+    "buildAndAssembly": "passed",
+    "webLog": "/tmp/cxv-b5-e21-web-final.log",
+    "buildLog": "/tmp/cxv-b5-e21-build-final.log"
+  },
+  "baselineRendering": {
+    "dependency": "Antd5.29.3 in source install and upstream lock",
+    "sameOriginalJsxCssAndThemeIsolated": true,
+    "cssDeclaration": [
+      16,
+      16
+    ],
+    "actualOriginalAndLocal": [
+      24,
+      16
+    ],
+    "reason": "Icon-only width selector has higher specificity; original CSS retained"
+  },
+  "gui": [
+    {
+      "log": "/tmp/cxv-b5-e21-webkit-final2.log",
+      "result": {
+        "engine": "webkit",
+        "mode": "refresh",
+        "browserVersion": "27.2",
+        "originalCssDeclaredSize": [
+          16,
+          16
+        ],
+        "actualSizeMatchesExactOriginal": [
+          24,
+          16
+        ],
+        "manualLoadingUntilActualRootResponse": true,
+        "errorReasonAndRetry": true,
+        "automaticRefreshDoesNotSpin": true,
+        "gitWaitsForStatusAndCommitRequests": true,
+        "exactInstanceNewFileOnlyA": true,
+        "heldRequestsReleased": true
+      },
+      "pageErrors": []
+    },
+    {
+      "log": "/tmp/cxv-b5-e21-chromium-final2.log",
+      "result": {
+        "engine": "chromium",
+        "mode": "refresh",
+        "browserVersion": "159.0.8154.6",
+        "originalCssDeclaredSize": [
+          16,
+          16
+        ],
+        "actualSizeMatchesExactOriginal": [
+          24,
+          16
+        ],
+        "manualLoadingUntilActualRootResponse": true,
+        "errorReasonAndRetry": true,
+        "automaticRefreshDoesNotSpin": true,
+        "gitWaitsForStatusAndCommitRequests": true,
+        "exactInstanceNewFileOnlyA": true,
+        "heldRequestsReleased": true
+      },
+      "pageErrors": []
+    }
+  ],
+  "screenshots": [
+    {
+      "path": "cc-viewer-alignment/evidence/B5-refresh-2026-11-21/chromium-git-loading.png",
+      "sha256": "a99a52ef43c87f0c0b3cef96c43f49d6b0ebf0e6e2b6f2d4458cffa78f7a0cbd",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-refresh-2026-11-21/chromium-tree-loading.png",
+      "sha256": "b45d4952356b922fa7de5f0f1c49ae5e31736151016783a3a76894f17c167901",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-refresh-2026-11-21/webkit-git-loading.png",
+      "sha256": "fea82d8df373d68913915848e27b027d70859c483263429d0df63bd38652b91a",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-refresh-2026-11-21/webkit-tree-loading.png",
+      "sha256": "a1d5c77bf3973ea56b1e147099690a04b874fe25156143e0caad3d663f289525",
+      "visuallyInspected": true
+    }
+  ],
+  "limits": [
+    "Full and installed runtime not rerun for frontend change",
+    "Other platform/minimum Node/physical devices unverified",
+    "B5 async scope/target authorization still pending"
+  ]
+}

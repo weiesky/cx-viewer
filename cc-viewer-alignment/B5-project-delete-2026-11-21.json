@@ -1,0 +1,19 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": [
+    "a1c7ff20f532101dcb7029fc07314740632312ed",
+    "15b1f44d7026e7978276fc6f7b49e88c9aec8be4"
+  ],
+  "previousLocal": "c912829",
+  "subject": "fix(files): restore original project deletion guards",
+  "redLog": "/tmp/cxv-b5-e41-delete-red.log",
+  "finalLog": "/tmp/cxv-b5-e41-delete-final.log",
+  "tests": 55,
+  "skip": 0,
+  "actualFilesystemSwap": "directory swapped to outside symlink after final lstat; held/outside bytes retained",
+  "limits": [
+    "No total TOCTOU elimination",
+    "No other OS execution",
+    "Latest full/install E39 1772/478"
+  ]
+}

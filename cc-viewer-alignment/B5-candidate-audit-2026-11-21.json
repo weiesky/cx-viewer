@@ -1,0 +1,43 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "previousLocal": "ceda946",
+  "localSubject": "docs(alignment): audit B5 cross-package candidates and release evidence",
+  "candidateCount": 47,
+  "sourceFootprints": "B5-candidate-footprints-2026-11-21.json",
+  "scopeAudit": "B5-cross-package-audit.md",
+  "productionChange": false,
+  "checks": {
+    "full": 1739,
+    "parts": [
+      5,
+      431,
+      1091,
+      212
+    ],
+    "skip": 0,
+    "build": "passed",
+    "packFiles": 707,
+    "log": "/tmp/cxv-b5-e31-release.log"
+  },
+  "installed": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-8rdmxsju",
+    "files": 707,
+    "source_bytes_match": true,
+    "web_asset_files": 204,
+    "runtime_tests": "444/444",
+    "b12_regression": "passed",
+    "installed_cli_relative_cd_boot": "passed",
+    "uses_fake_codex": true,
+    "uses_real_model_network": false
+  },
+  "installedLog": "/tmp/cxv-b5-e31-install.log",
+  "remaining": [
+    "Target routes/entry/general file authorization depend on remote admin choice, question pending",
+    "Other work packages remain explicitly unfinished",
+    "Cold line scroll baseline defect preserved; no scrolling-pass claim"
+  ],
+  "limits": [
+    "No new GUI claim for docs-only audit; E28/E29 actual GUI evidence remains separate",
+    "1739/707/444 snapshot predates upcoming unconnected target-scope primitive"
+  ]
+}

@@ -22,6 +22,7 @@ import MobileFileExplorer from './components/mobile/MobileFileExplorer';
 import MobileStats from './components/mobile/MobileStats';
 import VoicePackSettings from './components/settings/VoicePackSettings';
 import CachePopoverContent from './components/dashboard/CachePopoverContent';
+import FileBrowserModal from './components/files/FileBrowserModal';
 import MemoryDetailModal from './components/common/MemoryDetailModal';
 import SkillsManagerModal from './components/settings/SkillsManagerModal';
 import ProjectPrefsManagerModal from './components/settings/ProjectPrefsManagerModal';
@@ -75,6 +76,7 @@ class Mobile extends AppBase {
       // AGENTS.md 候选清单 + 明细（与 AppHeader 等价；分槽避免与 _memoryDetail 交叉）
       _codexMd: null,
       _codexMdDetail: null,
+      _targetBrowser: null,
       // 与 PC 端对齐:插件管理 / CXV进程管理 / 代理热切换 modal 仅持 open 状态;
       // 实际数据 + handler 都在 PluginModal/ProcessModal/ProxyModal 内部
       pluginModalVisible: false,
@@ -216,30 +218,44 @@ class Mobile extends AppBase {
     const seq = ++this._codexMdDetailSeq;
     const scopeLabel = scope === 'global' ? t('ui.codexMdScopeGlobal') : t('ui.codexMdScopeProject');
     const title = `${scopeLabel} · ${tail}`;
-    this.setState({ _codexMdDetail: { name: title, loading: true } });
+    this.setState({ _codexMdDetail: { name: title, id, loading: true } });
     try {
       const r = await fetch(apiUrl(`/api/codex-md?id=${encodeURIComponent(id)}`));
       const data = await r.json();
       if (seq !== this._codexMdDetailSeq) return;
       if (!r.ok) {
-        this.setState({ _codexMdDetail: { name: title, error: data.error || `http:${r.status}` } });
+        this.setState({ _codexMdDetail: { name: title, id, error: data.error || `http:${r.status}` } });
         return;
       }
-      this.setState({ _codexMdDetail: { name: title, content: data.content || '' } });
+      this.setState({ _codexMdDetail: { name: title, id, content: data.content || '' } });
     } catch (e) {
       if (seq === this._codexMdDetailSeq) {
-        this.setState({ _codexMdDetail: { name: title, error: e.message || 'network' } });
+        this.setState({ _codexMdDetail: { name: title, id, error: e.message || 'network' } });
       }
     }
   };
 
+  openCodexMdFolder = () => {
+    const detail = this.state._codexMdDetail;
+    if (detail?.id) this.setState({ _targetBrowser: { target: { kind: 'codex-md', id: detail.id }, label: detail.name, instance: new URLSearchParams(window.location.search).get('instance') } });
+  };
+
+  openSkillFolder = (skill) => {
+    if (skill?.path) this.setState({ _targetBrowser: { target: { kind: 'skill', source: skill.source, path: skill.path }, label: skill.name, instance: new URLSearchParams(window.location.search).get('instance') } });
+  };
+
+  closeTargetBrowser = () => this.setState({ _targetBrowser: null });
+
+
+
   componentDidMount() {
     super.componentDidMount();
     // 检测项目是否有 git（优先多仓库 API，回退旧 API）
+    const gitStatusUrl = apiUrl('/api/git-status');
     fetch(apiUrl('/api/git-repos')).then(r => r.ok ? r.json() : Promise.reject()).then(data => {
       if (!data.repos?.length) this.setState({ hasGit: false, mobileGitDiffVisible: false });
     }).catch(() => {
-      fetch(apiUrl('/api/git-status')).then(r => {
+      fetch(gitStatusUrl).then(r => {
         if (!r.ok) this.setState({ hasGit: false, mobileGitDiffVisible: false });
       }).catch(() => this.setState({ hasGit: false, mobileGitDiffVisible: false }));
     });
@@ -330,6 +346,7 @@ class Mobile extends AppBase {
         _fsSkills: null,
         _codexMd: null,
         _codexMdDetail: null,
+        _targetBrowser: null,
       });
     }
   }
@@ -829,8 +846,14 @@ class Mobile extends AppBase {
           <MemoryDetailModal
             detail={this.state._codexMdDetail}
             onClose={() => this.setState({ _codexMdDetail: null })}
+            onOpenFolder={this.openCodexMdFolder}
             linkMode="passthrough"
           />
+          {this.state._targetBrowser && (
+            <FileBrowserModal open target={this.state._targetBrowser.target}
+              rootLabel={this.state._targetBrowser.label} project={this.state.projectName}
+              instance={this.state._targetBrowser.instance} zIndex={1120} onClose={this.closeTargetBrowser} />
+          )}
           <SkillsManagerModal
             open={this.state._skillsModal?.open || false}
             loading={this.state._skillsModal?.loading || false}
@@ -839,6 +862,7 @@ class Mobile extends AppBase {
             toggling={this.state._skillsModal?.toggling}
             onToggle={(s) => this.handleToggleSkill(s)}
             onDelete={(s) => this.handleDeleteSkill(s)}
+            onOpenFolder={this.openSkillFolder}
             onClose={() => this.setState(prev => ({ _skillsModal: { ...prev._skillsModal, open: false } }))}
           />
           <ProjectPrefsManagerModal

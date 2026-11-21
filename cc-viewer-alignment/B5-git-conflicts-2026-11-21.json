@@ -1,0 +1,72 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": [
+    "ccf74880a592b0d61b01b7faa5058dc6839dcb0d"
+  ],
+  "previousLocal": "30b046e",
+  "localSubject": "fix(git): restore red unmerged status badges",
+  "productChange": "Original 7 unmerged status constants only, no CSS or Mobile extension",
+  "buildAndAssembly": "passed",
+  "buildLog": "/tmp/cxv-b5-e19-build.log",
+  "gui": [
+    {
+      "log": "/tmp/cxv-b5-e19-webkit.log",
+      "result": {
+        "engine": "webkit",
+        "mode": "git-conflicts",
+        "browserVersion": "27.2",
+        "actualGitUnmergedIndex": true,
+        "statuses": [
+          "UU",
+          "AA",
+          "DD",
+          "AU",
+          "UA",
+          "DU",
+          "UD"
+        ],
+        "allOriginalRed": true,
+        "realScopedStatusEndpoint": true
+      },
+      "pageErrors": []
+    },
+    {
+      "log": "/tmp/cxv-b5-e19-chromium.log",
+      "result": {
+        "engine": "chromium",
+        "mode": "git-conflicts",
+        "browserVersion": "159.0.8154.6",
+        "actualGitUnmergedIndex": true,
+        "statuses": [
+          "UU",
+          "AA",
+          "DD",
+          "AU",
+          "UA",
+          "DU",
+          "UD"
+        ],
+        "allOriginalRed": true,
+        "realScopedStatusEndpoint": true
+      },
+      "pageErrors": []
+    }
+  ],
+  "screenshots": [
+    {
+      "path": "cc-viewer-alignment/evidence/B5-git-conflicts-2026-11-21/chromium.png",
+      "sha256": "a5b5e85e88cbee9795c6a29be9374bdba58968e0f58301df244b2ca54a1b2430",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-git-conflicts-2026-11-21/webkit.png",
+      "sha256": "5883af6e9659b8cee7abca5e6969fb650bf1297adabe82933d708b170f968b49",
+      "visuallyInspected": true
+    }
+  ],
+  "limits": [
+    "Fresh full/installation not rerun for constant-only change",
+    "Other platform/minimum Node/physical devices unverified",
+    "Remaining B5 Git/target/full authorization policy pending"
+  ]
+}

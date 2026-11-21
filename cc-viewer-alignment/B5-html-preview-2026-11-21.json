@@ -1,0 +1,66 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": [
+    "865604d68e05e62aaebf8de7a04afa9a9f1e999d",
+    "ab1b89ee133664c9f2c0e3e17ada8711180f4dc5"
+  ],
+  "scope": "shared sandboxed HTML preview and path-scoped relative resources",
+  "adaptation": "SDK exact instance in original view/<project>/<instance>/path shape; project may be empty when exact native identity is present. Existing SDK resolver, origin/auth/private-descriptor policy retained. Conflicting query identity refused; path routes cannot use editorSession bypass.",
+  "checks": {
+    "api": 28,
+    "web": 358,
+    "build": "passed",
+    "packFiles": 705,
+    "lastFull": "E11:1651",
+    "apiLog": "/tmp/cxv-b5-e12-api-final.log",
+    "webLog": "/tmp/cxv-b5-e12-web.log",
+    "buildLog": "/tmp/cxv-b5-e12-build.log",
+    "packLog": "/tmp/cxv-b5-e12-pack.log"
+  },
+  "gui": [
+    {
+      "log": "/tmp/cxv-b5-e12-chromium-html.log",
+      "result": {
+        "engine": "chromium",
+        "mode": "html",
+        "browserVersion": "159.0.8154.6",
+        "viewedBResourceLoaded": true,
+        "relativeJsCssRetainScope": true,
+        "cssApplied": true,
+        "scriptsExecuteInSandbox": true,
+        "parentAndStorageBlocked": true,
+        "fetchBlockedByCsp": true,
+        "rawRequestCount": 3
+      },
+      "exit": 0,
+      "pageErrors": []
+    },
+    {
+      "log": "/tmp/cxv-b5-e12-webkit-html-final.log",
+      "result": {
+        "engine": "webkit",
+        "mode": "html",
+        "browserVersion": "27.2",
+        "viewedBResourceLoaded": true,
+        "relativeJsCssRetainScope": true,
+        "cssApplied": true,
+        "scriptsExecuteInSandbox": true,
+        "parentAndStorageBlocked": true,
+        "fetchBlockedByCsp": true,
+        "rawRequestCount": 3
+      },
+      "exit": 0,
+      "pageErrors": []
+    }
+  ],
+  "attemptNotes": [
+    "First traversal probe used a URL-normalized dot segment (404); encoded slash traversal now actually reaches containment check and is refused (400).",
+    "First WebKit fixture switched before initial application mount; wait for initial file UI then use History/popstate. No product workaround."
+  ],
+  "notClaimed": [
+    "Complete B5/ab1b or external target browser",
+    "New layout screenshot: shared modal DOM/styles match existing original block",
+    "Token-only remote relative-resource authentication or real LAN",
+    "Full suite/new installation after E12; E11 1651/397 retained separately"
+  ]
+}

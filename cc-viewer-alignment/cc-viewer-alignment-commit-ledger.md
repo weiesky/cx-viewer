@@ -15897,3 +15897,226 @@ User explicitly approved temporary Playwright and later PR self-review/merge. Ac
 ### B4 original-history consolidation and PR delivery
 
 B4 E66 completion tip 78448bb32e50dfe6b51c30bd4fd5f60fa8f4e64f contains all72 local commits after GitHub main e268ec0039f26276c9aa75d0a5a95b3aa26d2b62. Preserve full original history in backup/b4-before-squash-2026-11-21-78448bb and verified local bundle; all72 fullhash/title entries retained in B4-original-commits-2026-11-21.tsv. New codex/b4-baseline-alignment branch squashes this exact tree into one PR commit; only delivery docs/mapping intentionally differ. Production/test/asset/probe blobs remain exact; actual PR checks and merge outcome are read back on GitHub and stored in local consolidation receipt, not claimed in advance. See local-commit-consolidation-2026-11-21.md.
+
+
+## B5 E1：既有 stdin EPIPE 子项复核（2026-11-21）
+
+上游 `96c477d582f45f6ba102a083de9c9f0c4a07cad2` → 既有本地 `ecc1048` → main聚合 `41d95af`；实际diff、固定最终helper与当前 `/api/files` 全调用链已核。复用stdin error/同步失败/一次性settle/计时释放；真实子进程与HTTP降级复跑见[B5.1](./B5-implementation.md)。本轮仅建47条候选矩阵和同步当前B5进度，无生产/DOM/CSS改动、无全包完成结论；其他平台与混合元数据独立。
+
+
+## B5 E2：搜索 worker 后端（2026-11-21）
+
+上游 `bd50636219e086ba082ab4bb36e5c0b6a996172e` 后端子项 → 本笔 `perf(search): move node scanning off the server event loop`。原Worker/协议/64文件+4MiB节奏直接迁入；保留本地凭据快照/realpath/descriptor、rg策略。实际挂起Git取消探针先证实上游Worker终止会留子进程，再复用父进程AbortSignal异步清单修正并验PID退出。最终73定向/1596完整、0skip、build与pack704通过；103MB基准前后原值、失败fixture与安装边界见[B5.2](./B5-implementation.md)及[B5回执](./B5-search-worker-2026-11-21.json)。前端/文档/发布混合项独立，未整条或整包完成。
+
+
+## B5 E3：原搜索虚拟结果与键盘导航（2026-11-21）
+
+`bd50636219e086ba082ab4bb36e5c0b6a996172e` 前端虚拟化/导航子项 → 本笔 `feat(search): restore upstream virtual results and keyboard navigation`。完整diff/最终演进与CSS已读，源组件仅沿用cxv存储命名、CSS逐字一致。332Web/build、隔离WebKit真实2000匹配/36DOM/跨虚拟区index40键盘/真实文件打开/同名工作区过滤通过，0pageerror；原截图及浏览器启动失败边界见[B5.3](./B5-implementation.md)。a6b82最终嵌入布局和B11元数据独立，未整条/整包完成。
+
+
+## B5 E4：原搜索嵌入文件树（2026-11-21）
+
+上游 `a6b82f16dff7991670ca8bdf3f01c6ae6f0d5d4b` → 本笔 `feat(search): embed the original search panel below the file tree`；完整实际diff/最终组件/CSS/调用链已核。原位置/控件/持久化/35–80%分界/drop拒绝/Escape与祖先展开迁入，CSS逐字、现有精确instance URL复用。334Web/1598完整、0skip、build/pack704通过，真实桌面双引擎2000匹配/虚拟导航/刷新/替换取消确认及同名隔离通过。iPad操作通过但确认替换后隐藏容器横滚裁切；用户交互明确选择“保留并登记基线缺陷”，无额外生产改动，未记完整pad视觉通过。原截图/哈希/可复跑探针见[B5.4](./B5-implementation.md)及[B5整合回执](./B5-search-embedded-2026-11-21.json)。元数据/B11独立。
+
+
+## B5 E5：流式附件下载后端（2026-11-21）
+
+`ba3eee8fd5520b0a6ce66ebd6da749fc8cb120b5` + `ab1b89ee13` viewed-root子项 → 本笔 `feat(files): stream downloads from the exact viewed workspace`。实际原diff/最终wrapper/raw/鉴权/调用链已读。原GET/HEAD attachment/无预览cap契约迁入，复用本地精确instance、realpath/credential/descriptor及Node pipeline断开/失败清理；49定向、0skip与build通过，12MiB哈希/Unicode换行文件名/跨实例和越界拒绝/私有inode替换/64MiB中断释放均实际验证。见[B5.5](./B5-implementation.md)与[B5下载回执](./B5-file-download-2026-11-21.json)。远程菜单/target外根仍后续，未整条/整包完成，无新全量或安装声明。
+
+
+## B5 E6：共享项目菜单与远程下载入口（2026-11-21）
+
+`865604d68e05e62aaebf8de7a04afa9a9f1e999d` 菜单子项、`ba3eee8fd5520b0a6ce66ebd6da749fc8cb120b5` remote gate/UI、`7830664780a5c16219edbb7e79662ad0ad27db9b` 行高 → 本笔 `feat(files): share the original file menus and remote download action`。实际diff/完整factory/builder/最终CSS及ab1b作用域修复已读。复用原结构/顺序/确认与clipboard，新column树带原26px不收缩；必要冻结现有精确URL，静态确认不跨写新view。337Web/1608完整、0skip、build/pack704、新安装371运行时/204精确Web/B1.2/CLI通过；实际双引擎82行/新建/rename/删除取消与切B后仅删A、真实下载字节通过，remote_isLocal位为模拟不冒充LAN。GUI脚本时序/Context/导航取消诊断已如实记录，未更改产品规避。见[B5.6](./B5-implementation.md)/[B5菜单回执](./B5-file-menus-2026-11-21.json)。865的应用内/target浏览器仍待，其他混合不整条完成。
+
+
+## B5 E7：原生认证/配置文件拒绝的 Codex 适配（2026-11-21）
+
+固定 `7a75e1be81b3e90f55f8888c423e66e05c1cde64` shared read/write guard（祖先 `253f7f67fe6aef1995f810c44c6bdcb99cf261f3`，非新增B0条目） → 本笔 `fix(files): protect native Codex credentials from file tools`。完整最终policy与实际guard diff、本地config owner/file/edit/raw/download/search调用链已核。复用已有凭据policy保护真实Codex owner的auth/config/现有备份，含inode/祖先和父→worker快照，真实凭据仅目录名/stat元数据，未读取内容或修改。合成红1/3后49定向/1613完整、0skip、build/pack704通过；真实HTTP拒绝和普通AGENTS/skills/fixture保持均验证。见[B5.7](./B5-implementation.md)/[回执](./B5-native-file-policy-2026-11-21.json)。外部target/root/全allowlist/原生history策略仍未完成，不折算整条7a75或整包B5。
+
+
+### B5 E8 — f968 二进制/编码前置（2026-11-21）
+
+上游 `f96811cddb3f1f5516ef7823bcc2a36d142a95e3` → 本地本笔 `fix(files): preserve binary and UTF-16 bytes in the text editor`；前笔E7 `8009214`。原sniff/415/UTF-16只读/Unsupported DOM+CSS/取消请求迁入；现有descriptor/精确instance/404恢复沿用，保存端增加同fd原字节保护。28定向/1625完整、0skip/build/pack705，Chromium159+WebKit27.2真实只读/下载/迟到取消/普通保存通过，4原截图核看。首轮安装超时不算通过；最终新安装392/392运行时/705文件/204Web精确字节/B1.2/CLI通过，结果见[B5.8](./B5-implementation.md#b58-e8-原二进制下载页与-utf-16-只读保护)与编码回执。B6格式预览/整个混合提交和B5未完成；pad按用户选择保留缺陷。
+
+
+### B5 E9 — a278/637 原共享文件主题图标（2026-11-21）
+
+上游 `a278d68954bc41150533177f8e1bbfec320d00a2` / `637fbb0218d0963b35308cbcd6288bdc3578c133` → 本地本笔 `feat(files): restore shared type icons and theme colors`；前笔E8 `4d18c42`。固定最终分类/字形及35行dark/light CSS逐字迁入，移动端去重复；15原分类/352Web、0skip/build/pack705、新安装705/204Web字节通过；桌面Chromium/WebKit及WebKit手机仿真两表面×16文件×两主题通过，12截图/6已核。原始失败定位和未验边界见[B5.9](./B5-implementation.md#b59-e9-原文件分类共享svg与主题色)与图标回执。没有冒充本笔重跑后端全量/运行时，E8的1625/392分开保留；B6预览/整个B5未完成。
+
+
+### B5 E10 — 365/ab1b 共享导入与异步scope（2026-11-21）
+
+上游 `365af800e58f34a57b2339cf705f56390874f20b` / `ab1b89ee133664c9f2c0e3e17ada8711180f4dc5` → 本地本笔 `fix(files): bind shared imports before asynchronous scanning`；前笔E9 `f7bfa97`。迁原共享importFiles并在首次await前冻结现有精确view URL，目录/确认/并发行为保持。357Web/0skip/build/pack705；双引擎合成drop+真实组件/History A→B/实际multipart和文件字节证明迟到扫描只写A、B无新文件。没有新DOM/CSS或原生OS手势通过声明；后端全量/安装仍引用E8/E9而未假称重跑。见[B5.10](./B5-implementation.md#b510-e10-原共享导入链路与异步归属)。弹窗/移动/drop zones/整个混合提交及B5未完成。
+
+
+### B5 E11 — 365/ab1b 共享移动与空根（2026-11-21）
+
+上游 `365af800e58f34a57b2339cf705f56390874f20b` / `ab1b89ee133664c9f2c0e3e17ada8711180f4dc5` → 本地本笔 `fix(files): restore shared moves into the project root`；E10映射 `6db909f`。迁原move helper/自子同目录guard、原toDir空根/blank dragover和固定最终相对路径返回，保留当前写路径安全并补source类型400。30API/358Web/1651完整、0skip/build/pack705；真实双引擎HTML拖动子目录→根→目录、真实HTTP/原字节/B保持通过。新生产安装397/397运行时、705文件/204Web精确字节、B1.2及隔离CLI通过。详见[B5.11](./B5-implementation.md#b511-e11-原共享移动与拖回根契约)及回执；原混合项/B5整体未完成。
+
+
+### B5 E12 — 原共享HTML/path scope（2026-11-21）
+
+865604d68e05e62aaebf8de7a04afa9a9f1e999d / ab1b89ee133664c9f2c0e3e17ada8711180f4dc5 → 本地本笔 `fix(files): keep HTML preview resources in the viewed workspace`；E11 `d49ff82`。28API/358Web/build/pack705；真实双引擎B HTML/相对JS CSS/沙箱运行及parent/storage/fetch阻止通过。Codex exact instance解析复用，冲突/陈旧/路径绕过拒绝；完整B5/target/真实LAN仍待，详见B5.12回执。
+
+
+### B5 E13 — 原项目浏览弹窗（2026-11-21）
+
+865604d68e05e62aaebf8de7a04afa9a9f1e999d / 365af800e58f34a57b2339cf705f56390874f20b / 5aa5728b95024a2fbf9aea98f1275844a42b611f / ab1b89ee133664c9f2c0e3e17ada8711180f4dc5 / dd23ce8df14dbe3522a03d3662aa5c3365d0ef37 / c29af25e64d3491fe7c58dc80bf859eda7831ba4 → 本地本笔 `feat(files): restore the original project browser modal`；E12 `6d9ccf1`。固定完整CSS原文、原树/网格/交互/hook迁入，native identity最小适配；完整1657/0skip/build/pack705，新安装400/705文件/204Web/B1.2/CLI通过。真实桌面双引擎+pad仿真浏览/编辑/上传/原生移动/菜单/陈旧确认归属/失败恢复和6原截图已核。B6分派/PDF策略、外部target/完整根策略、global zones及整个B5仍待；详见B5.13与回执。
+
+
+### B5 E14 — 原区域拖放反馈（2026-11-21）
+
+365af800e58f34a57b2339cf705f56390874f20b（ea995f38833b20201b47ebd2c13ec5e54e24aa95后续内部拖放排除）→ 本笔 `feat(files): restore original desktop drop zones`；E13 `d23fac0`。366Web/0skip/build+静态组装、实际双引擎原mask/清理/区域拒收/真实上传字节与4截图核看通过；Mobile保持原路径未新增GUI声明。完整/安装仍E13的1657/400，无假称重跑；引用协议/target及完整B5仍待，详见B5.14回执。
+
+
+### B5 E15 — 原文件与文件夹路径引用（2026-11-21）
+
+ea995f38833b20201b47ebd2c13ec5e54e24aa95 / beaa2e86f2dfa451a2044348c6c14fa874419e6f → 本笔 `feat(files): restore file and folder reference drops`；E14 `f498f6b`。原协议/DOM/反馈CSS直接迁，native已绑定WS与scratchOnly主PTY隔离复用。完整1675/0skip/build/pack705，新安装artifact-only705/204Web字节通过；实际双引擎原生HTML拖入composer+zsh scratch、SDK实际单次发送/无上传移动/危险拒绝/原字节与4截图已核。普通PTY新GUI/跨平台未验，narrow composer裁切归B7待核，不泛称全视觉对齐；见B5.15与回执。Git引用/target/完整B5仍待。
+
+
+### B5 E16 — 无upstream提交回退（2026-11-21）
+
+d85820431363b750e522be204e122636d6682aea → 本笔 `fix(git): show local commits without an upstream`；E15 `2747f20`。迁原range fallback/计数/section和tooltip，保留native现有安全/路径解码/logError。32API/379Web/0skip/build组装、实际双引擎无remote同名A/B提交及4截图已核；行数/作者等固定最终演进仍待，不将中间截图计最终视觉收口。未重复最近1675完整/400安装运行时，详见B5.16回执。
+
+
+### B5 E17 — 原逐提交行数/状态（2026-11-21）
+
+2e17699fd752faedd74a354956cd0c175a8181bc → 本笔 `feat(git): restore per-commit line stats and file statuses`；E16 `7feaab8`。原双pass/--no-renames列表、shared badges/零行fallback及CSS迁入；必要保留capped提示/Unicode解码，并为现有rename详情map补旧D端，已有新端R对比不丢内容。34API/379Web/0skip/build及实际双引擎5提交/双端diff/A→B/4截图已核；作者占位仍下一笔纠正，不认定最终Git视觉。最近全量/安装未重复，见B5.17与回执，发布元数据仍B11。
+
+
+### B5 E18 — 原Git行去作者（2026-11-21）
+
+7797672148114a3e097b10d0d568562cc0118f5f → 本笔 `style(git): restore commit rows without author names`；E17 `ea25ffd`。产品仅删原作者span；build组装/实际双引擎原5提交与4截图核看通过，API仍保author。无新增镜像测试/未假称重跑全量安装，见B5.18回执。
+
+
+### B5 E19 — 原未合并状态红色（2026-11-21）
+
+ccf74880a592b0d61b01b7faa5058dc6839dcb0d → 本笔 `fix(git): restore red unmerged status badges`；E18 `30b046e`。仅原七状态常量，无新CSS；build组装/实际七种Git未合并索引→真实scoped API→双引擎原色与2截图已核，详见B5.19回执。Mobile非原diff未擅扩展，全量/安装未重复，完整B5仍待。
+
+
+### B5 E20 — 原Git路径与提交引用（2026-11-21）
+
+a2f5cd4b43fa8f8003e60774b5c71160e6de509e / 24c4f60b5480aefa9b26d635d68700f5de5f4ffe(B5部分相对a2f无额外diff) → 本笔 `feat(git): restore file folder and commit reference drops`；E19 `78cfb74`。完整原TreeDir/payload/CommitRow/CSS迁，复用native消费者。384Web/0skip/build、实际双引擎根/嵌套Git原生拖动与菜单/rename guard/真实scratch输入、4截图核看通过；B4混合审批不重复计，B7窄栏仍待，见B5.20回执。完整B5/target仍未收口。
+
+
+### B5 E21 — 原刷新反馈（2026-11-21）
+
+5fc4c752297c7df9f581c913aa2a1852a0b27a38 / eb2e9703a2837550a9bf2a62a8bb5d20fac7f723(错误前置子项) → 本笔 `style(files): restore original manual refresh feedback`；E20 `1161998`。384Web/0skip/build、双引擎实际延迟root/Git两请求/错误重试/自动不转/4截图已核。原CSS块逐字相同；源码片段隔离实证两边同Antd5.29.3实际24×16，声明16×16仅高生效，保留原源码不加样式。首次JSX提取及错误尺寸断言失败已记录，未重复全量安装，见B5.21回执。scope/target及整体B5仍待。
+
+
+### B5 E22 — Git异步/确认归属（2026-11-21）
+
+ab1b89ee133664c9f2c0e3e17ada8711180f4dc5 / eb2e9703a2837550a9bf2a62a8bb5d20fac7f723(scope子项) → 本笔 `fix(git): pin async requests and restore confirmations to their workspace`；E21 `0a5c45d`。389Web/0skip/build及双引擎真实延迟JSON→A四请求、A确认跨B后仅A字节恢复通过。全量app1083/1084因独立CLI测试opened空串竞态失败，未认定全量通过；下一笔独立修fixture并重验，见B5.22。混合项和target策略仍待。
+
+
+### B5 E23 — CLI fixture就绪与重验（2026-11-21）
+
+E22 `8a35d54` → 独立测试修复 `test(cli): wait for the browser URL before declaring resume ready`，非新上游功能映射。真实全量1690/0skip/build/pack705；新安装437/437、705文件/204Web字节、B1.2/隔离CLI通过，见B5.23发布回执。旧E22失败不抹除，B5 target/全候选仍待。
+
+
+### B5 E24 — 原Git超时（2026-11-21）
+
+a30d8c92a7a56803d501ea50775f9993c96a19d5(B5子项) → `fix(git): restore original ten second command timeout`；E23 `7865e00`。37Git/API/0skip、真实Git延迟3200/5200ms仍精确返回通过，log8秒保持；native size/rename同预算。无DOM变更/未重复全量安装；见B5.24。
+
+
+### B5 E25 — 既有工具刷新历史审计（2026-11-21）
+
+0c7195b6 / 08809f6e→08267350回退→0cbb5452887476d3838c772e9fcd04cf3d01ce63重新引入 / c29af25e(B5工具子项) → 复用 `7c3d849b9e7acda1c974077843406c23627dbdcb`；本笔仅审计文档。9既有行为检查/0skip通过，native数组替换适配保留，最终基线增量未被误当永久回退。见B5.25；其他混合子项独立。
+
+
+### B5 E26 — 原allowlist/写策略的native前置（2026-11-21）
+
+566ade13fc3bf2c3fd8d90044b1f36602c6980bf / 7a75e1be81b3e90f55f8888c423e66e05c1cde64 / 208f1348279758d95b72798442105c3236fa1dd3(B5策略子项) → `feat(files): add native target file access policy prerequisite`；E25 `762df84`。9策略/凭据检查0skip，原表逐字复用/native所有权deny与新文件候选算法已核；首missing变体失败已纠正。尚未接线端点或入口，不整条完成；remote admin差异待决策，见B5.26。
+
+
+### B5 E27 — 原文件存在性oracle（2026-11-21）
+
+6880f77320fa163442eaa64ff6385dc46a1b69f1 / eb2e9703a2837550a9bf2a62a8bb5d20fac7f723(B5 probe子项) → `feat(files): restore scoped batch file existence probe`；E26 `67aa5da`。42HTTP/文件回归0skip通过，只有boolean且A/B不能跨，原生project-bound读取范围不扩，见B5.27。前端下一笔，混合技能导入/IM/Electron独立审计，不整条完成。
+
+
+### B5 E28 — 原Markdown文件路径（2026-11-21）
+
+6880f77320fa163442eaa64ff6385dc46a1b69f1 / eb2e9703a2837550a9bf2a62a8bb5d20fac7f723(B5前端子项) → `feat(markdown): restore local file links and verified code paths`；E27 `6a75814`。原三模块/CSS逐字、native exact-scope/URL冻结与无href键盘补充；429Web/1737完整0skip/build/pack707/新安装444与204Web字节通过，双引擎链接/缓存/205项排空和4截图核看。冷开:123停第一行已用完整原组件+原关键编辑器版本两引擎复现，原缺陷保留，滚动未认通过；见B5.28。混合项/target仍待。
+
+
+### B5 E29 — 原Git可见性持久化（2026-11-21）
+
+649f853e5e910b3fd1a964f441682d4f08499d2b(B5开关子项) → `fix(git): restore original panel visibility persistence`；E28 `258566c`。431Web/0skip/干净build组装，双引擎桌面/独立pad/phone实际恢复、主动/被动/互斥和同名B归属通过。原IIFE/setter仅namespace适配，无新布局；最初未写入/旧测试失败和构建时戳拒绝保留，见B5.29。其他混合项独立；整体target仍待。
+
+
+### B5 E30 — Git清理重试（2026-11-21）
+
+7a0ba39edf6a0b54ca7a425e0f08ab410e515407(B5 Git测试子项) → `test(git): restore original filesystem cleanup retries`；E29 `38e68a1`。仅4处既有rmSync参数迁原5/100，37真实Git/API 0skip；既有stopViewer await保留。B9 scheduler poll/清理不整条计完成，见B5.30。
+
+
+### B5 E31 — 47候选范围与发布重验（2026-11-21）
+
+本笔无生产变更，复核47条first-parent diff足迹/真实父和交叉归属，映射见B5-cross-package-audit.md；E30 `ceda946`。1739完整0skip/build/pack707、新安装444/707文件/204Web字节/B1.2/CLI通过。跨包未迁不抹除，target/general外部文件授权仍等交互选择，B5未完成；见B5.31。
+
+
+### B5 E32 — 未接线target身份/导航scope（2026-11-21）
+
+566ade13fc3bf2c3fd8d90044b1f36602c6980bf / 7a75e1be81b3e90f55f8888c423e66e05c1cde64(B5 scope前置) → `feat(files): add native target identity and navigation scope prerequisite`；E31 `47ebed4`。15目标/策略/凭据检查0skip，重用native opaque ID/实际skills owner/冻结cwd，无新root授权。未接线端点/入口，remote权限仍待，完整B5不认完成；见B5.32。
+
+
+### B5 E33 — native owner/祖先写保护与重验（2026-11-21）
+
+7a75e1be81b3e90f55f8888c423e66e05c1cde64(B5写保护native适配) → `fix(files): preserve native protected owners in target write policy`；E32 `19d0f34`。复用已有41d95af祖先guard，保留startup/live LOG_DIR owner。16定向、1746完整0skip/build/pack708、新安装451/708文件/204Web字节/B1.2/CLI通过；无新GUI声明。target读写/原入口与全端点授权仍待已发权限选择后完成，见B5.33及权限边界文档。
+
+### B5 E34 — 接线前授权调用链审计（2026-11-21）
+
+566ade13fc3bf2c3fd8d90044b1f36602c6980bf / 7a75e1be81b3e90f55f8888c423e66e05c1cde64 / 208f1348279758d95b72798442105c3236fa1dd3 固定最终路由及native调用链 → `docs(alignment): trace target authorization before endpoint wiring`。E33 hash `ef3cb51`；本笔审计发现与待验边界见B5.34及权限边界接线表，未迁生产代码、未运行新测试，不将审计当实施或视觉通过。远程权限交互待答、B5未完成。
+
+### B5 E35 — target读取与已选远程权限
+
+566ade13fc3bf2c3fd8d90044b1f36602c6980bf / 7a75e1be81b3e90f55f8888c423e66e05c1cde64 → `feat(files): enable target listing for authenticated administrators`。E34 `c27fd53`；用户工具已选上游远程管理员，21/38定向0skip，详B5.35；写端点/共用文件接口/入口与GUI未完成。
+
+### B5 E36 — 共用目标文件读写授权
+
+7a75e1be81b3e90f55f8888c423e66e05c1cde64 / 208f1348279758d95b72798442105c3236fa1dd3 → `feat(files): bind target content and downloads to authorized navigation roots`；E35 `d6681ef`。33定向0skip，原API/native descriptor与选定远程admin组合，差异/未验详B5.36；目标菜单端点/UI未完成。
+
+### B5 E37 — 原target菜单端点
+
+7a75e1be81b3e90f55f8888c423e66e05c1cde64 → `feat(files): restore target filesystem context actions`；E36 `481dc72`。29定向0skip，含真实FS/HTTP及OS argv拦截，保护适配和边界见B5.37；UI与GUI未完成。
+
+### B5 E38 — 原AGENTS/技能目标浏览入口及预览
+
+566ade13fc3bf2c3fd8d90044b1f36602c6980bf / 7a75e1be81b3e90f55f8888c423e66e05c1cde64 / 208f1348279758d95b72798442105c3236fa1dd3 → `feat(files): restore original guidance and skill folder browsing`；E37 `6eea43c`。Web434/target-auth51各0skip/build，双引擎desktop/phone/pad/模拟remote8场与26图通过；原CSS相同，native HMAC raw只读凭据的必要性、失败修正和未验边界见B5.38/回执；总审计与新安装未完成，不勾整包。
+
+### B5 E39 — 旧项目文件工具的native状态保护
+
+566ade13fc3bf2c3fd8d90044b1f36602c6980bf / 7a75e1be81b3e90f55f8888c423e66e05c1cde64（原私有历史/写保护native适配）→ `fix(files): apply native state policy across legacy file tools`；E38 `c7ef277`。7新HTTP/FS病例，57/99/49定向各0skip；1772全量0skip/build/pack712、新安装478/必需源码+204Web字节/B1.2/CLI通过。源保护复用、父Worker snapshot、专属IM服务保持与失败修正见B5.39/回执；普通项目其他fs差异/user-plugin GUI仍待，B5未整包完成。
+
+### B5 E40 - project case-only rename
+
+Upstream `ab1b89ee133664c9f2c0e3e17ada8711180f4dc5`; previous local `f66e728`; local subject `fix(files): restore project case-only rename and retry`. Actual diff/final source and later7a75 checked. 19/19 targeted,0skip; real host FS case-only file/dir and rollback bytes, transient retry, collisions and native scope/private guards. See B5.40; no new full/install/GUI claim.
+
+### B5 E41 - project deletion guards
+
+Upstream a1c7ff20f532101dcb7029fc07314740632312ed + 15b1f44d7026e7978276fc6f7b49e88c9aec8be4, retained by ab1b89ee/frozen74cd752d. Previous local c912829; subject `fix(files): restore original project deletion guards`. 55/55 targeted,0skip; actual symlink refusal/protected segments/race-window canaries and auth/target/native boundaries. B5.41; EXDEV and symlink directory types still pending.
+
+### B5 E42 - EXDEV symbolic targets
+
+Upstream 15b1f44d7026e7978276fc6f7b49e88c9aec8be4 (still active frozen74cd752d); previous local445a90c; subject `fix(files): restore symbolic target refusal on EXDEV`. 40/40,0skip actual HTTP/FS with EXDEV injection; link/target/nested identity and bytes preserved, private descendants blocked. B5.42; not a real cross-volume/platform claim.
+
+### B5 E43 - directory symlink classification
+
+Upstream2055145feacec37e020adde6f90f769ff6183939, retained by frozen74cd752d. Previous local8fb8a7c; subject `fix(files): classify safe directory aliases as directories`. 41/41,0skip HTTP/FS listing and expansion with native private/containment safeguards. B5.43; dangling filtering deliberately retained; no new GUI/full/install claim.
+
+### B5 E44 - platform file containment separators
+
+Upstream a1c7ff20f532101dcb7029fc07314740632312ed, frozen files-fs still uses sep. Previous local2d2af5a; subject `fix(files): use platform separators for project containment`. Seven ordinary file-route boundary comparisons;57/57 existing regressions,0skip. See B5.44; no Windows runtime claim.
+
+### B5 E45 - native user-skill ancestry and original source entry GUI
+
+Upstream566ade13fc3bf2c3fd8d90044b1f36602c6980bf +7a75e1be81b3e90f55f8888c423e66e05c1cde64; previous localaeddcbe; subject `fix(files): preserve navigation to native user skill roots`. Necessary native .agents ancestry metadata adaptation after real GUI/HTTP red;35/35,0skip and actual dual-engine user/plugin keyboard/navigation/bytes,6 inspected PNGs. Content/write boundaries unchanged. B5.45 and receipt; final full/install separate.
+
+### B5 E46 — 最终工作包收口
+
+固定上游 `74cd752d99caf122e750216d2af3bb9f467c4de1`；47条候选actual diff足迹与逐子项结论见[B5候选](./B5-candidate-matrix.md)及[交叉范围](./B5-cross-package-audit.md)。previous local `d1faf28`；local subject `docs(alignment): close B5 baseline alignment and acceptance`。E1–45精确本地hash及各节引用的完整上游hash见[B5本地映射](./B5-local-commit-map-2026-11-21.json)，不将引用关系等同整条混合提交完成。
+
+最终1781/1781（5+434+1130+212）、0skip、构建/pack712及真实新安装487/487、必需源码/204Web字节、B1.2/隔离CLI通过。E38/E45双引擎10场32目标原图hash复核、原FileBrowser整CSS字节相同；其他B5 GUI沿各笔回执。已选原缺陷及真实环境未验边界保留，不扩大完成范围。见[B5完成矩阵](./B5-completion-matrix.md)与[最终回执](./B5-final-2026-11-21.json)。本笔无生产变更；B5完成，下一B6。保持独立本地提交，未压缩/推送/开PR/合并B5。
+
+### B5 用户交付授权与下一会话交接（2026-11-21）
+
+用户在B5完成后明确要求原46笔合为一个commit，创建面向main的PR并由代理自查合并；B6留待下一个会话执行。原上游→本地映射及E46当时验收状态不改写，完整46笔hash见[原始清单](./B5-original-commits-2026-11-21.tsv)，恢复分支/bundle/hash、逐路径tree核验和实际PR流程见[B5整合记录](./B5-local-commit-consolidation-2026-11-21.md)。整合只更新交付文档，应用源码/测试/探针/依赖/GUI证据不变；1781/487是原最终实际验证，未因整理历史虚报重跑。最终PR/merge hash以GitHub关联PR和本地consolidation.json为准，本会话不实施B6。

@@ -1,0 +1,57 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": [
+    "ab1b89ee133664c9f2c0e3e17ada8711180f4dc5",
+    "eb2e9703a2837550a9bf2a62a8bb5d20fac7f723"
+  ],
+  "previousLocal": "0a5c45d",
+  "localSubject": "fix(git): pin async requests and restore confirmations to their workspace",
+  "adaptation": "Existing native apiUrl/WorkspaceRoot identity reused; freeze full base/token/instance URL before awaits and Modal.confirm, no new identity source or UI",
+  "checks": {
+    "web": 389,
+    "skip": 0,
+    "buildAndAssembly": "passed",
+    "webLog": "/tmp/cxv-b5-e22-web-final.log",
+    "buildLog": "/tmp/cxv-b5-e22-build-final.log",
+    "fullRelease": "FAILED: app1083/1084 sdk-cli-resume opened fixture readiness race; no full-pass claim",
+    "fullLog": "/tmp/cxv-b5-e22-release.log"
+  },
+  "gui": [
+    {
+      "log": "/tmp/cxv-b5-e22-chromium-final3.log",
+      "result": {
+        "engine": "chromium",
+        "mode": "git-scope",
+        "browserVersion": "159.0.8154.6",
+        "heldActualAListingJsonAcrossHistorySwitch": true,
+        "late4RepoRequestsRemainA": true,
+        "BHasNoAResult": true,
+        "staticRestoreAcrossSecondSwitchStillA": true,
+        "actualBytesARevertedBPreserved": true,
+        "noOldSubtreeRefreshOfB": true
+      }
+    },
+    {
+      "log": "/tmp/cxv-b5-e22-webkit-final3.log",
+      "result": {
+        "engine": "webkit",
+        "mode": "git-scope",
+        "browserVersion": "27.2",
+        "heldActualAListingJsonAcrossHistorySwitch": true,
+        "late4RepoRequestsRemainA": true,
+        "BHasNoAResult": true,
+        "staticRestoreAcrossSecondSwitchStillA": true,
+        "actualBytesARevertedBPreserved": true,
+        "noOldSubtreeRefreshOfB": true
+      }
+    }
+  ],
+  "probeCorrections": [
+    "Wait initial ChatView Git detection before holding panel listing JSON; initial attempt intercepted wrong request",
+    "Do not click Git navigation beneath persistent restore modal; inspect B seed reply then confirm old dialog"
+  ],
+  "limits": [
+    "Full allowlist/target policy still pending",
+    "No real external model/LAN/physical device checks"
+  ]
+}

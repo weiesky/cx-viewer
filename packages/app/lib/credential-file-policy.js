@@ -1,6 +1,8 @@
 // Frozen paths are shared with the future runtime adapter. This module does
 // not create the store or activate credential migration.
 import { lstatSync, readdirSync, statSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { getCodexConfigDir } from './codex-config.js';
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { canonicalPath } from './canonical-path.js';
 import { PRIVATE_CREDENTIAL_ROOTS } from './credential-paths.js';
@@ -81,11 +83,30 @@ export function createCredentialFilePolicy(privateRoots) {
   });
 }
 
+// The upstream file policy denies native OAuth/settings files even when its
+// config directory is browsable. Adapt that boundary to actual Codex owners.
+// Inspect names/inodes only: never read or modify native credential content.
+const initialNativeDirs = [resolve(getCodexConfigDir()), join(homedir(), '.codex')];
+const nativeNames = ['auth.json', '.credentials.json', 'config.toml', 'config.toml.cxv-backup'];
+function nativePrivatePaths() {
+  const dirs = new Set([...initialNativeDirs, resolve(getCodexConfigDir()), join(homedir(), '.codex')]);
+  const paths = [];
+  for (const dir of dirs) {
+    let entries;
+    try { entries = readdirSync(dir); }
+    catch (error) { if (error.code !== 'ENOENT') throw error; entries = []; }
+    const names = new Set([...nativeNames, ...entries.filter(name => /^(?:auth\.json|\.credentials\.json|config\.toml)(?:$|[._-])/i.test(name))]);
+    for (const name of names) paths.push(join(dir, name));
+  }
+  return paths;
+}
+
 const initialConfigPaths = [getPreferencesPath(), getDingTalkImConfigPath(), PROFILE_PATH, `${PROFILE_PATH}.bak`];
-const policy = createCredentialFilePolicy(() => [
-  ...PRIVATE_CREDENTIAL_ROOTS, ...initialConfigPaths,
+export const getPrivateFileRoots = () => [
+  ...PRIVATE_CREDENTIAL_ROOTS, ...initialConfigPaths, ...nativePrivatePaths(),
   getPreferencesPath(), getDingTalkImConfigPath(),
-]);
+];
+const policy = createCredentialFilePolicy(getPrivateFileRoots);
 export const assertPublicFilePath = policy.assertPath;
 export const assertPublicMutationPath = policy.assertMutationPath;
 export const isPublicFilePath = policy.allows;

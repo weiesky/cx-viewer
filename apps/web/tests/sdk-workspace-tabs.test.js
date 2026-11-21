@@ -22,6 +22,9 @@ mkdirSync(join(web, 'node_modules/.cache'), { recursive: true });
 const directory = mkdtempSync(join(web, 'node_modules/.cache/sdk-tabs-test-'));
 const output = join(directory, 'components.cjs');
 await build({ stdin: { contents: `export { default as Component } from './src/components/dashboard/SdkWorkspaceTabs.jsx';
+export { default as GitChanges } from './src/components/git/GitChanges.jsx';
+export { default as ChatInputBar } from './src/components/chat/ChatInputBar.jsx';
+export { default as ScratchTerminal } from './src/components/terminal/ScratchTerminal.jsx';
 export { default as TerminalPanel } from './src/components/terminal/TerminalPanel.jsx';
 export { default as WorkspaceRoot } from './src/components/dashboard/WorkspaceRoot.jsx';
 export { SettingsProvider } from './src/contexts/SettingsContext.jsx';
@@ -33,6 +36,14 @@ export { default as NewProjectModal } from './src/components/dashboard/NewProjec
 export { default as VoicePackSettings } from './src/components/settings/VoicePackSettings.jsx';
 export { _resetForTests as resetVoice, playEvent as playVoiceEvent } from './src/utils/voicePackPlayer.js';
 export { DEFAULT_BINDINGS, getDefaultBindingsForLocale } from '../../packages/app/server/lib/voice-pack-events.js';
+export { fetchAllRepos } from './src/utils/gitApi.js';
+export { checkPathsExist, peekPathExists, _resetForTests as resetMdProbe } from './src/utils/mdCodePathVerify.js';
+export { apiUrl, withViewParams } from './src/utils/apiUrl.js';
+export { default as OpenFolderIcon } from './src/components/common/OpenFolderIcon.jsx';
+export { moveFile, canDropMoveOn } from './src/components/files/fileMove.js';
+export { importFiles, expandEntries } from './src/components/files/importFiles.js';
+export { createFileMenuHandler } from './src/components/files/fileContextMenuActions.jsx';
+export { buildFileContextMenuItems } from './src/components/files/fileContextMenu.js';
 export { default as AppBase } from './src/AppBase.jsx';
 export { default as ChatView } from './src/components/chat/ChatView.jsx';
 export { default as DetailPanel } from './src/components/dashboard/DetailPanel.jsx';
@@ -259,6 +270,7 @@ function fixture(t, { blocked = false, component = 'Component', props = {} } = {
       useMemo(fn) { cursor++; return fn(); },
       useCallback(fn) { cursor++; return fn; },
       useRef(initial) { const index = cursor++; return (hooks[index] ||= { current: initial }); },
+      useLayoutEffect(fn, deps) { return this.useEffect(fn, deps); },
       useEffect(fn, deps) {
         const index = cursor++, old = hooks[index];
         if (!old || deps.some((value, i) => !Object.is(value, old.deps[i]))) {
@@ -266,7 +278,7 @@ function fixture(t, { blocked = false, component = 'Component', props = {} } = {
         }
       },
     };
-    try { tree = components[component]({ onResumed() {}, ...props }); }
+    try { tree = (typeof component === 'function' ? component : components[component])({ onResumed() {}, ...props }); }
     finally { dispatcher.current = previous; }
     const element = React.Children.toArray(tree?.props?.children).find(child => child?.type === DndContext);
     const rows = element ? React.Children.toArray(element.props.children.props.children.props.children)
@@ -283,7 +295,7 @@ function fixture(t, { blocked = false, component = 'Component', props = {} } = {
   const event = () => ({ prevented: false, stopped: false,
     preventDefault() { this.prevented = true; }, stopPropagation() { this.stopped = true; } });
   const reload = () => { cleanup(); hooks.length = 0; return draw(); };
-  return { draw, reload, tick, event, cleanup, AppBase, ChatView: components.ChatView, DetailPanel: components.DetailPanel, ProxyChip: components.ProxyChip, values, windowEvents, documentEvents, timers, requests, focused, navigations,
+  return { draw, reload, tick, event, cleanup, moveFile: components.moveFile, canDropMoveOn: components.canDropMoveOn, importFiles: components.importFiles, expandEntries: components.expandEntries, fileMenu: components.createFileMenuHandler, menuItems: components.buildFileContextMenuItems, AppBase, ChatView: components.ChatView, DetailPanel: components.DetailPanel, ProxyChip: components.ProxyChip, values, windowEvents, documentEvents, timers, requests, focused, navigations,
     get tree() { return tree; }, set live(rows) { live = rows; }, set listed(rows) { listed = rows; }, set history(data) { history = data; } };
 }
 
@@ -1221,4 +1233,464 @@ test('SDK compaction notice uses the original composer slot, keeps ten records a
   chat.props = { ...chat.props, sdkResumeId: 'resumed-thread' };
   chat.componentDidUpdate(prevProps, { ...chat.state });
   assert.deepEqual(chat.state.sdkCompactNotices, []);
+});
+
+test('embedded search restores desktop state and closes through the original explorer controls', t => {
+  const f = fixture(t);
+  f.values.set('cxv_searchOpen', 'true');
+  const props = { cliMode: true, sdkMode: true, projectName: 'alpha', mainAgentSessions: [], requests: [] };
+  const chat = new f.ChatView(props);
+  chat.setState = (patch, done) => { Object.assign(chat.state, typeof patch === 'function' ? patch(chat.state) : patch); done?.(); };
+  assert.equal(chat.state.searchOpen, true);
+  const panel = () => descendants(chat.render(), node => node.type?.name === 'FileExplorer')[0];
+  assert.ok(panel());
+  assert.equal(descendants(chat.render(), node => node.type?.name === 'SearchPanel').length, 0);
+  panel().props.onToggleSearch();
+  assert.equal(chat.state.searchOpen, false);
+  assert.equal(f.values.get('cxv_searchOpen'), 'false');
+  panel().props.onToggleSearch();
+  panel().props.onClose();
+  assert.equal(chat.state.searchOpen, false);
+  assert.equal(chat.state.fileExplorerOpen, false);
+  assert.equal(f.values.get('cxv_searchOpen'), 'false');
+});
+
+test('opening embedded results releases editor state, reveals ancestors and refreshes the clean viewer after replace', t => {
+  const f = fixture(t), values = new Map();
+  const previous = Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage');
+  Object.defineProperty(globalThis, 'sessionStorage', { configurable: true, value: {
+    setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key), getItem: key => values.get(key) ?? null,
+  } });
+  t.after(() => previous ? Object.defineProperty(globalThis, 'sessionStorage', previous) : delete globalThis.sessionStorage);
+  const chat = new f.ChatView({ cliMode: true, sdkMode: true, projectName: 'alpha', mainAgentSessions: [], requests: [] });
+  let callback;
+  chat.setState = (patch, done) => { Object.assign(chat.state, typeof patch === 'function' ? patch(chat.state) : patch); callback = done; };
+  chat.state.editorSessionId = 'editor-fixture'; chat.state.editorFilePath = 'old.txt';
+  const panel = descendants(chat.render(), node => node.type?.name === 'FileExplorer')[0];
+  panel.props.onOpenSearchResult('src/deep/note.txt', 7, { start: 1, end: 4 });
+  assert.equal(chat.state.currentFile, 'src/deep/note.txt');
+  assert.equal(chat.state.scrollToLine, 7);
+  assert.deepEqual(chat.state.scrollToMatch, { start: 1, end: 4 });
+  assert.equal(chat.state.editorSessionId, null); assert.equal(chat.state.editorFilePath, null);
+  assert.ok(chat.state.fileExplorerExpandedPaths.has('src/deep'));
+  assert.ok(f.requests.some(req => String(req.url).includes('/api/editor-done') && JSON.parse(req.options.body).sessionId === 'editor-fixture'));
+  chat.props = { ...chat.props, projectName: 'later-project' };
+  callback();
+  assert.deepEqual(JSON.parse(values.get('cxv_fileExpandedPaths:alpha')), ['src', 'src/deep']);
+  assert.equal(values.has('cxv_fileExpandedPaths:later-project'), false);
+  const refresh = chat.state.fileExplorerRefresh;
+  panel.props.onSearchReplaceApplied(['src/deep/note.txt']);
+  assert.equal(chat.state.fileExplorerRefresh, refresh + 1);
+  assert.equal(chat.state.fileVersion, 1);
+});
+
+
+test('static file confirmations retain the original exact-instance URL after a workspace switch', async t => {
+  const f = fixture(t), { Modal } = require('antd'), previous = Modal.confirm, dialogs = [];
+  Modal.confirm = config => dialogs.push(config); t.after(() => { Modal.confirm = previous; });
+  for (const initial of ['?instance=a', '']) {
+    window.location.search = initial;
+    const menu = f.fileMenu({ path: 'note.txt', name: 'note.txt', isDir: false });
+    menu({ key: 'delete' });
+    assert.equal(f.requests.length, initial ? 0 : 1, 'no mutation before confirmation');
+    window.location.search = '?instance=b';
+    await dialogs.at(-1).onOk();
+    const url = new URL(f.requests.at(-1).url, window.location.href);
+    assert.equal(url.searchParams.get('instance'), initial ? 'a' : null);
+    assert.equal(url.pathname.endsWith('/api/delete-file'), true);
+  }
+});
+
+test('shared menus retain server-returned paths and keep a failed write open for retry', async t => {
+  const f = fixture(t), { Modal, message } = require('antd'), previous = Modal.confirm, oldError = message.error;
+  let dialog, renamed = [], errors = [];
+  Modal.confirm = config => { dialog = config; }; message.error = error => errors.push(error);
+  t.after(() => { Modal.confirm = previous; message.error = oldError; });
+  document.getElementById = () => ({ value: 'new.txt' });
+  const handler = f.fileMenu({ path: 'src', name: 'src', isDir: true, onFileRenamed: (...args) => renamed.push(args) });
+  const originalFetch = globalThis.fetch; t.after(() => { globalThis.fetch = originalFetch; });
+  globalThis.fetch = async () => ({ ok: false, status: 403, json: async () => ({ error: 'Fixture denied' }) });
+  handler({ key: 'newFile' }); await assert.rejects(dialog.onOk(), /Fixture denied/);
+  assert.deepEqual(renamed, []); assert.equal(errors.length, 1);
+  globalThis.fetch = async () => ({ ok: true, json: async () => ({ path: 'server-normalized/new.txt' }) });
+  await dialog.onOk(); assert.deepEqual(renamed, [[null, 'server-normalized/new.txt']]);
+});
+
+test('container menus omit destructive root actions and remote downloads stay file-only', t => {
+  const f = fixture(t);
+  const keys = options => f.menuItems(options).map(item => item.key).filter(Boolean);
+  assert.equal(keys({ isDir: true, scope: 'container' }).includes('delete'), false);
+  assert.equal(keys({ isDir: true, scope: 'container' }).includes('rename'), false);
+  assert.equal(keys({ isDir: true, isRemote: true }).includes('download'), false);
+  assert.equal(keys({ isDir: false, isRemote: false }).includes('download'), false);
+  assert.equal(keys({ isDir: false, isRemote: true }).includes('download'), true);
+  let inline = 0;
+  f.fileMenu({ path: 'note.txt', name: 'note.txt', isDir: false, renameMode: 'inline', startEditing: () => inline++ })({ key: 'rename' });
+  assert.equal(inline, 1); assert.deepEqual(f.requests, []);
+});
+
+
+function importFixture(t) {
+  const f = fixture(t), { Modal, message } = require('antd'), notices = [], previous = {}, dialogs = [];
+  for (const name of ['loading', 'success', 'warning', 'error', 'info']) {
+    previous[name] = message[name]; message[name] = text => { notices.push([name, text]); return () => {}; };
+  }
+  const confirm = Modal.confirm; Modal.confirm = config => dialogs.push(config);
+  const fetch = globalThis.fetch;
+  t.after(() => { Object.assign(message, previous); Modal.confirm = confirm; globalThis.fetch = fetch; });
+  return { ...f, notices, dialogs };
+}
+
+for (const initial of ['?instance=a', '']) test('shared import freezes view before delayed scan: ' + (initial || 'boot view'), async t => {
+  const f = importFixture(t), uploads = [], refreshed = []; let release;
+  globalThis.fetch = async (url, options) => { uploads.push({ url, file: options.body.get('file') }); return { ok: true, json: async () => ({ relPath: 'dest/dir/file.txt' }) }; };
+  const entry = { name: 'file.txt', fullPath: '/dir/file.txt', isFile: true, file(resolve) { release = resolve; } };
+  window.location.search = initial;
+  const pending = f.importFiles({ topEntries: [entry], flatFiles: [] }, 'dest', { onFileRenamed: (...args) => refreshed.push(args) });
+  assert.equal(uploads.length, 0); window.location.search = '?instance=b';
+  release(new File(['bytes'], 'file.txt')); await pending;
+  const url = new URL(uploads[0].url, window.location.href);
+  assert.equal(url.searchParams.get('instance'), initial ? 'a' : null); assert.equal(url.searchParams.get('dir'), 'dest/dir');
+  assert.equal(await uploads[0].file.text(), 'bytes'); assert.deepEqual(refreshed, [[null, 'dest/dir/file.txt']]);
+});
+
+test('large import confirmation preserves original view and concurrency three; cancellation never uploads', async t => {
+  const f = importFixture(t), file = new File(['x'], 'batch.txt'), rows = Array(1001).fill(file), urls = [];
+  let active = 0, peak = 0;
+  globalThis.fetch = async url => { urls.push(url); peak = Math.max(peak, ++active); await f.tick(); active--; return { ok: true, json: async () => ({ relPath: 'batch.txt' }) }; };
+  let pending = f.importFiles(rows, ''); assert.equal(urls.length, 0); f.dialogs[0].onCancel(); await pending; assert.equal(urls.length, 0);
+  pending = f.importFiles(rows, ''); window.location.search = '?instance=b'; f.dialogs[1].onOk(); await pending;
+  assert.equal(urls.length, 1001); assert.equal(peak, 3);
+  assert.ok(urls.every(url => new URL(url, window.location.href).searchParams.get('instance') === 'a'));
+});
+
+test('shared import retains partial failures and only refreshes after actual success', async t => {
+  const f = importFixture(t), refreshed = [];
+  globalThis.fetch = async (url, options) => {
+    const name = options.body.get('file').name;
+    if (name === 'network.txt') throw new Error('synthetic network failure');
+    return { ok: name === 'ok.txt', json: async () => name === 'ok.txt' ? { relPath: 'normalized/ok.txt' } : { error: 'Denied' } };
+  };
+  await f.importFiles(['ok.txt', 'network.txt', 'denied.txt'].map(name => new File(['x'], name)), '', { onFileRenamed: (...args) => refreshed.push(args) });
+  assert.deepEqual(refreshed, [[null, 'normalized/ok.txt']]); assert.equal(f.notices.filter(([kind]) => kind === 'warning').length, 1);
+  await f.importFiles([new File(['x'], 'denied.txt')], '', { onFileRenamed: (...args) => refreshed.push(args) });
+  assert.equal(refreshed.length, 1); assert.equal(f.notices.filter(([kind]) => kind === 'error').length, 1);
+});
+
+test('shared folder scan drains batches, retains nested paths and skips OS entries/depth overflow', async t => {
+  const f = importFixture(t), file = name => ({ name, fullPath: '/folder/' + name, isFile: true, file: resolve => resolve(new File(['x'], name)) });
+  const batches = [Array.from({ length: 100 }, (_, n) => file(n + '.txt')), [file('last.txt'), file('.DS_Store')], []];
+  const dir = { name: 'folder', isDirectory: true, createReader: () => ({ readEntries: resolve => resolve(batches.shift()) }) };
+  const entries = await f.expandEntries([dir], 0); assert.equal(entries.length, 101); assert.equal(batches.length, 0);
+  assert.equal(entries.at(-1).relPath, 'folder/last.txt'); assert.deepEqual(await f.expandEntries([dir], 33), []);
+});
+
+
+test('shared move guards reject self/descendant/same-dir and keep root a valid destination', async t => {
+  const f = importFixture(t), refreshed = [];
+  for (const [source, dest] of [['', 'dest'], ['dir', 'dir'], ['dir', 'dir/sub'], ['dir/file.txt', 'dir'], ['file.txt', '']]) assert.equal(f.canDropMoveOn(source, dest), false);
+  assert.equal(f.canDropMoveOn('dir/file.txt', ''), true);
+  globalThis.fetch = async (url, options) => { f.requests.push({ url, options }); return { ok: true, json: async () => ({ newPath: 'file.txt' }) }; };
+  await f.moveFile('dir/file.txt', '', { onFileRenamed: (...args) => refreshed.push(args) });
+  assert.deepEqual(JSON.parse(f.requests[0].options.body), { fromPath: 'dir/file.txt', toDir: '' });
+  assert.equal(new URL(f.requests[0].url, window.location.href).searchParams.get('instance'), 'a');
+  assert.deepEqual(refreshed, [['dir/file.txt', 'file.txt']]);
+  globalThis.fetch = async () => ({ ok: false, json: async () => ({ error: 'Conflict' }) });
+  await f.moveFile('dir/file.txt', '', { onFileRenamed: (...args) => refreshed.push(args) });
+  assert.equal(refreshed.length, 1); assert.equal(f.notices.at(-1)[0], 'error');
+});
+
+
+test('portal drag handling cannot upload into the background application', t => {
+  const f = fixture(t), app = new f.AppBase({});
+  app.state.isDragging = true; app.setState = update => Object.assign(app.state, typeof update === 'function' ? update(app.state) : update);
+  app._captureDropContext = () => { throw new Error('portal drop reached upload context'); };
+  const event = { ...f.event(), target: { closest: () => ({}) }, dataTransfer: { types: ['Files'], files: [new File(['x'], 'portal.txt')] } };
+  app._onDragOver(event); assert.equal(app.state.isDragging, false); app._onDrop(event);
+  assert.deepEqual(f.requests, []);
+});
+
+test('original folder icon override handles pointer/keyboard without an OS request', t => {
+  let opened = 0; const f = fixture(t, { component: 'OpenFolderIcon', props: { onClick: () => opened++, apiEndpoint: '/api/open-project-dir' } });
+  f.draw(); f.tree.props.onClick(f.event());
+  f.tree.props.onKeyDown({ ...f.event(), key: 'Enter' });
+  f.tree.props.onKeyDown({ ...f.event(), key: ' ' });
+  assert.equal(opened, 3); assert.deepEqual(f.requests, []);
+});
+
+test('reusable browser URLs retain explicit native instance over the current view', t => {
+  fixture(t); const { apiUrl, withViewParams } = require(output);
+  window.location.search = '?instance=b';
+  const pinned = new URL(apiUrl(withViewParams('/api/files?path=sub', { project: 'same', instance: 'a' })), window.location.href);
+  assert.equal(pinned.searchParams.get('instance'), 'a'); assert.equal(pinned.searchParams.getAll('instance').length, 1);
+  assert.equal(pinned.searchParams.has('project'), false);
+  assert.equal(new URL(apiUrl(withViewParams('/api/files')), window.location.href).searchParams.get('instance'), 'b');
+});
+
+for (const region of ['chat', 'outside', 'explorer', 'portal']) test('external drop zone handles ' + region + ' without changing the upload pipeline', async t => {
+  const f = fixture(t), app = new f.AppBase({}); let captures = 0, dispatched;
+  app.setState = update => Object.assign(app.state, typeof update === 'function' ? update(app.state) : update);
+  app._captureDropContext = () => { captures++; return 'drop-time'; };
+  app._dispatchUploadedFiles = (files, context) => { dispatched = { files, context }; };
+  globalThis.fetch = async (url, options) => { f.requests.push({ url, options }); return { ok: true, json: async () => ({ ok: true, path: '/uploads/file.txt' }) }; };
+  const event = { ...f.event(), target: { closest: selector =>
+    (region === 'chat' && selector === '[data-drop-zone="chat"]') ||
+    (region === 'explorer' && selector === '[data-file-explorer]') ||
+    (region === 'portal' && selector.includes('.ant-modal-root')) ? {} : null },
+    dataTransfer: { types: ['Files'], files: [new File(['fixture bytes'], 'file.txt')] } };
+  app._onDragOver(event); assert.equal(app.state.dragZone, region === 'chat' ? 'chat' : null);
+  assert.equal(app.state.isDragging, false); assert.equal(event.prevented, true);
+  app._onDrop(event); await f.tick();
+  assert.equal(captures, region === 'chat' ? 1 : 0);
+  assert.equal(f.requests.length, region === 'chat' ? 1 : 0);
+  assert.equal(app.state.dragZone, null); assert.deepEqual(app.state.uploadingDrop || [], []);
+  if (region === 'chat') { assert.equal(dispatched.context, 'drop-time'); assert.equal(dispatched.files[0].path, '/uploads/file.txt'); assert.equal(await f.requests[0].options.body.get('file').text(), 'fixture bytes'); }
+});
+
+test('internal project references leave acceptance to consumers and drag cancellation clears feedback', t => {
+  const f = fixture(t), app = new f.AppBase({});
+  app.setState = update => Object.assign(app.state, update);
+  app.state.dragZone = 'chat'; app.state.isDragging = true;
+  const event = { ...f.event(), dataTransfer: { types: ['text/x-internal-move'], files: [new File(['x'], 'must-not-upload')] } };
+  app._onDragOver(event); assert.equal(event.prevented, false);
+  assert.equal(app.state.dragZone, null); assert.equal(app.state.isDragging, false);
+  app._onDrop(event); assert.deepEqual(f.requests, []);
+  app.state.dragZone = 'chat'; app._resetDragFeedback(); assert.equal(app.state.dragZone, null);
+  app.state.dragZone = 'chat'; app._layoutRef.current = { contains: () => false };
+  app._onDragLeave({ relatedTarget: null }); assert.equal(app.state.dragZone, null);
+});
+
+function referenceDrag(f, path, directory = false) {
+  return { ...f.event(), dataTransfer: { types: ['text/x-internal-move', directory ? 'text/x-ccv-folder' : 'text/x-ccv-file'],
+    getData: type => type === 'text/plain' ? path : '', dropEffect: 'none' } };
+}
+
+test('composer consumes references without upload, preserves folder chips and resets on cancellation', t => {
+  let focused = 0; const attached = [];
+  const f = fixture(t, { component: 'ChatInputBar', props: { sdkMode: true, inputRef: { current: { focus: () => focused++ } },
+    onAttachPath: (...args) => attached.push(args), onUploadPath: () => assert.fail('reference uploaded'),
+    pendingImages: [{ path: 'src/components/chat', isDir: true }] } });
+  const wrapper = () => descendants(f.tree, node => node.props?.onDrop)[0];
+  f.draw(); const folder = referenceDrag(f, 'src/components/chat', true);
+  wrapper().props.onDragOver(folder); f.draw(); assert.equal(folder.prevented, true); assert.equal(folder.dataTransfer.dropEffect, 'copy');
+  assert.deepEqual(f.requests, []); f.documentEvents.get('dragend')(); f.draw();
+  wrapper().props.onDrop(folder); f.draw(); assert.deepEqual(attached, [['src/components/chat', true]]);
+  wrapper().props.onDrop(referenceDrag(f, 'a\x1b[201~\rb')); assert.equal(attached.length, 1);
+  assert.equal(focused, 2); assert.ok(descendants(f.tree, node => node.type === 'span' && node.props?.children === 'src/…/chat').length);
+  assert.deepEqual(f.requests, []);
+});
+
+test('reference attachments retain dedup/cap and reject controls before joining the native send flow', t => {
+  const f = fixture(t), chat = new f.ChatView({ sdkMode: true });
+  chat.setState = update => { const patch = typeof update === 'function' ? update(chat.state) : update; if (patch) Object.assign(chat.state, patch); };
+  for (const bad of [null, '', 'a\nb', 'a\u0085b', 'a\x1bb']) chat._addPendingImage(bad, 'explorer', true);
+  assert.deepEqual(chat.state.pendingImages, []);
+  chat._addPendingImage('src/images.png', 'explorer', true); chat._addPendingImage('src/images.png', 'explorer', true);
+  assert.deepEqual(chat.state.pendingImages, [{ path: 'src/images.png', source: 'explorer', isDir: true }]);
+  for (let n = 0; n < 30; n++) chat._addPendingImage('file' + n, 'explorer');
+  assert.equal(chat.state.pendingImages.length, 20); assert.deepEqual(f.requests, []);
+});
+
+for (const name of ['ScratchTerminal', 'TerminalPanel']) test(name + ' reference drops respect closed sockets, alternate screens and paste framing', t => {
+  const f = fixture(t), C = require(output)[name], component = new C({}); const sent = []; let focused = 0, open = true;
+  component.setState = patch => Object.assign(component.state, patch);
+  const ws = { readyState: WebSocket.OPEN, send: frame => sent.push(JSON.parse(frame)) };
+  if (name === 'ScratchTerminal') component.ws = ws;
+  else component.context = { isOpen: () => open, send: frame => sent.push(frame) };
+  component.terminal = { buffer: { active: { type: 'alternate' } }, modes: { bracketedPasteMode: false }, focus: () => focused++ };
+  let e = referenceDrag(f, "src/你's.txt"); component._handleFileDragOver(e); assert.equal(e.prevented, false); component._handleFileDrop(e); assert.deepEqual(sent, []);
+  component.terminal.modes.bracketedPasteMode = true; e = referenceDrag(f, "src/你's.txt");
+  component._handleFileDragOver(e); assert.equal(e.prevented, true); assert.equal(component.state.fileDragOver, true);
+  component._handleFileDrop(e); assert.equal(component.state.fileDragOver, false); assert.equal(sent.length, 1);
+  assert.equal(sent[0].type, 'input'); assert.equal(sent[0].data, "\x1b[200~'src/你'\\''s.txt' \x1b[201~"); assert.equal(focused, 1);
+  component._handleFileDrop(referenceDrag(f, 'bad\rpath')); assert.equal(sent.length, 1);
+  if (name === 'ScratchTerminal') ws.readyState = WebSocket.CLOSED; else open = false;
+  e = referenceDrag(f, 'safe.txt'); component._handleFileDragOver(e); assert.equal(e.prevented, false); component._handleFileDrop(e); assert.equal(sent.length, 1);
+});
+
+test('SDK scratch-only wrapper never consults the main PTY transport for a reference drop', t => {
+  const f = fixture(t), panel = new (require(output).TerminalPanel)({ scratchOnly: true, scratchOpen: true });
+  Object.defineProperty(panel, 'ws', { get: () => assert.fail('SDK reference accessed main PTY') });
+  panel._handleFileDragOver(referenceDrag(f, 'safe.txt')); panel._handleFileDrop(referenceDrag(f, 'safe.txt'));
+  assert.deepEqual(f.requests, []);
+});
+
+test('Git drag sources preserve workspace paths, menu alternatives, rename guards and commit hashes', async t => {
+  const attached = [], inserted = [], props = { projectName: 'same', onAttachToChat: path => attached.push(path), onInsertPathToChat: path => inserted.push(path) };
+  const f = fixture(t, { component: 'GitChanges', props });
+  const commit = { hash: 'a'.repeat(40), shortHash: 'aaaaaaa', subject: 'Synthetic commit', files: [{ file: 'src/file.txt', status: 'M' }] };
+  globalThis.fetch = async url => ({ ok: true, json: async () => String(url).includes('/api/git-repos') ? { repos: [{ path: 'sub', name: 'sub' }] }
+    : String(url).includes('/api/git-status') ? { changes: [{ file: 'src/file.txt', status: 'M' }] } : { commits: [commit] } });
+  f.draw(); await f.tick(); f.draw();
+  const root = descendants(f.tree, node => node.props?.node && node.props?.repoPath === 'sub')[0];
+  const commitNode = descendants(f.tree, node => node.props?.commit?.hash === commit.hash)[0];
+  assert.equal(root.props.onAttachToChat, props.onAttachToChat); assert.equal(commitNode.props.onInsertPathToChat, props.onInsertPathToChat);
+  await t.test('directory/file payload and no-drag menu share full workspace path; rename/copy disabled', sub => {
+    const g = fixture(sub, { component: root.type, props: { ...root.props, name: 'src', node: { dirs: {}, files: [
+      { name: 'file.txt', fullPath: 'src/file.txt', status: 'M' }, { name: 'rename', fullPath: 'old -> new', status: 'RM' }, { name: 'copy', fullPath: 'copied', status: 'C' }] } } });
+    g.draw(); const events = [];
+    const drag = () => ({ ...g.event(), dataTransfer: { setData: (type, value) => events.push([type, value]) } });
+    const directory = descendants(g.tree, node => node.props?.onDragStart && node.props?.role === 'button')[0];
+    directory.props.onDragStart(drag()); assert.deepEqual(events.slice(0, 3), [['text/plain', 'sub/src'], ['text/x-internal-move', '1'], ['text/x-ccv-folder', '1']]);
+    const rows = descendants(g.tree, node => node.props?.draggable !== undefined && node.props?.onClick && node.props?.role !== 'button');
+    const enabled = rows.find(row => row.props.draggable === true); enabled.props.onDragStart(drag());
+    assert.deepEqual(events.slice(3, 6), [['text/plain', 'sub/src/file.txt'], ['text/x-internal-move', '1'], ['text/x-ccv-file', '1']]);
+    assert.equal(rows.filter(row => row.props.draggable === false).length, 2);
+    const menu = descendants(g.tree, node => node.props?.menu?.items?.some(item => item.key === 'attachToChat') && node.props.children?.props?.draggable === true)[0].props.menu;
+    menu.onClick({ key: 'attachToChat' }); menu.onClick({ key: 'insertPathToChat' });
+    assert.deepEqual(attached, ['sub/src/file.txt']); assert.deepEqual(inserted, ['sub/src/file.txt']); assert.deepEqual(g.requests, []);
+  });
+  await t.test('pseudo-directory refuses to start a drag', sub => {
+    const g = fixture(sub, { component: root.type, props: { ...root.props, name: 'old -> dir', node: { dirs: {}, files: [] } } });
+    g.draw(); const event = { ...g.event(), dataTransfer: { setData: () => assert.fail('pseudo path escaped') } };
+    descendants(g.tree, node => node.props?.onDragStart)[0].props.onDragStart(event); assert.equal(event.prevented, true);
+  });
+  await t.test('commit sends full hash without toggling or using subject', sub => {
+    const g = fixture(sub, { component: commitNode.type, props: { ...commitNode.props, onToggle: () => assert.fail('drag expanded commit') } });
+    g.draw(); const events = [], event = { ...g.event(), dataTransfer: { setData: (type, value) => events.push([type, value]) } };
+    descendants(g.tree, node => node.props?.onDragStart)[0].props.onDragStart(event);
+    assert.deepEqual(events, [['text/plain', commit.hash], ['text/x-internal-move', '1'], ['text/x-ccv-file', '1']]); assert.equal(event.dataTransfer.effectAllowed, 'copyMove');
+  });
+});
+
+for (const initial of ['?instance=a', '']) test('delayed Git repo listing pins all per-repo requests before switching: ' + (initial || 'boot'), async t => {
+  const f = fixture(t); window.location.search = initial; window.__CXV_BASE_PATH__ = '/original-base'; let release;
+  globalThis.fetch = async url => {
+    f.requests.push({ url });
+    if (String(url).includes('/api/git-repos')) return { ok: true, json: () => new Promise(resolve => { release = () => resolve({ repos: [{ path: '.' }, { path: 'sub with space' }] }); }) };
+    return { ok: true, json: async () => String(url).includes('/api/git-log-unpushed') ? { commits: [{ hash: 'a'.repeat(40) }], hasUpstream: false } : { changes: [] } };
+  };
+  const pending = require(output).fetchAllRepos(); await f.tick(); assert.equal(f.requests.length, 1);
+  window.location.search = '?instance=b'; window.__CXV_BASE_PATH__ = '/changed-base'; release(); const result = await pending;
+  assert.equal(result.length, 2); assert.equal(f.requests.length, 5);
+  for (const { url } of f.requests) { const parsed = new URL(url, window.location.href); assert.ok(parsed.pathname.startsWith('/original-base/api/')); assert.equal(parsed.searchParams.get('instance'), initial ? 'a' : null); assert.equal(parsed.searchParams.get('token'), 'synthetic'); }
+  assert.ok(f.requests.some(({ url }) => new URL(url, window.location.href).searchParams.get('repo') === 'sub with space'));
+});
+
+test('legacy Git endpoint fallback retains the starting URL after a delayed listing failure', async t => {
+  const f = fixture(t); let reject;
+  globalThis.fetch = url => { f.requests.push({ url }); return f.requests.length === 1 ? new Promise((resolve, fail) => { reject = fail; }) : Promise.resolve({ ok: true, json: async () => ({ changes: [{ file: 'A.txt' }] }) }); };
+  const pending = require(output).fetchAllRepos(); window.location.search = '?instance=b'; reject(new Error('no list endpoint'));
+  const rows = await pending; assert.equal(rows[0].changes[0].file, 'A.txt');
+  assert.equal(new URL(f.requests[1].url, window.location.href).searchParams.get('instance'), 'a');
+});
+
+for (const initial of ['?instance=a', '']) test('static Git restore retains original view after unmount and permits denied retry: ' + (initial || 'boot'), async t => {
+  const f = fixture(t, { component: 'GitChanges', props: { projectName: 'same' } });
+  const { Modal, message } = require('antd'), previous = Modal.confirm, oldError = message.error; let dialog, denied = true;
+  Modal.confirm = config => { dialog = config; }; message.error = () => {};
+  t.after(() => { Modal.confirm = previous; message.error = oldError; });
+  window.location.search = initial;
+  globalThis.fetch = async (url, options) => {
+    f.requests.push({ url, options });
+    return { ok: options?.method !== 'POST' || !denied, status: 403, json: async () => options?.method === 'POST' ? { error: 'Synthetic denied' }
+      : String(url).includes('/api/git-repos') ? { repos: [{ path: 'sub' }] } : { changes: [{ file: 'dir/file.txt', status: 'M' }], commits: [] } };
+  };
+  f.draw(); await f.tick(); f.draw();
+  const root = descendants(f.tree, node => node.props?.node && node.props?.onRestore)[0];
+  root.props.onRestore('sub', 'dir/file.txt', 'file.txt'); f.cleanup(); window.location.search = '?instance=b';
+  await assert.rejects(dialog.onOk(), /Synthetic denied/); denied = false; const before = f.requests.length; await dialog.onOk();
+  assert.equal(f.requests.length, before + 1, 'old unmounted subtree does not refresh the new view');
+  const posts = f.requests.filter(row => row.options?.method === 'POST'); assert.equal(posts.length, 2);
+  for (const row of posts) { assert.equal(new URL(row.url, window.location.href).searchParams.get('instance'), initial ? 'a' : null); assert.deepEqual(JSON.parse(row.options.body), { repo: 'sub', path: 'dir/file.txt' }); }
+});
+
+for (const initial of ['?instance=a', '']) test('Markdown path probe pins all batches to starting native scope: ' + (initial || 'boot'), async t => {
+  const f = fixture(t), m = require(output); m.resetMdProbe(); window.location.search = initial; window.__CXV_BASE_PATH__ = '/pinned'; let release;
+  globalThis.fetch = async (url, options) => {
+    f.requests.push({url, options}); const paths = JSON.parse(options.body).paths;
+    if (f.requests.length === 1) await new Promise(resolve => { release = resolve; });
+    return { ok: true, json: async () => ({ results: paths.map(path => ({path, exists: true})) }) };
+  };
+  const paths = Array.from({length: 101}, (_, i) => `dir/file-${i}.txt`);
+  const pending = m.checkPathsExist(paths, { projectKey: 'initial' }); await f.tick();
+  window.location.search = '?instance=b'; window.__CXV_BASE_PATH__ = '/other'; release(); const values = await pending;
+  assert.equal(f.requests.length,3); assert.equal(values.size,101);
+  for(const {url, options} of f.requests) {
+    const parsed = new URL(url, window.location.href); assert.equal(parsed.pathname,'/pinned/api/files-exists'); assert.equal(parsed.searchParams.get('instance'),initial ? 'a' : null);
+    assert.deepEqual(Object.keys(JSON.parse(options.body)),['paths']); assert.ok(JSON.parse(options.body).paths.length <= 50);
+  }
+});
+
+test('Markdown probe deduplicates inflight paths, expires negatives and isolates same-name instances', async t => {
+  const f = fixture(t), m = require(output); m.resetMdProbe(); let release, calls=0, exists=false, now=1000;
+  t.mock.method(Date,'now',()=>now);
+  const fetchImpl=async()=>{ calls++; if(calls===1) await new Promise(resolve=>{release=resolve;}); return {ok:true,json:async()=>({results:[{path:'same.txt',exists}]})}; };
+  const first=m.checkPathsExist(['same.txt','same.txt'],{projectKey:'a',fetchImpl}), second=m.checkPathsExist(['same.txt'],{projectKey:'a',fetchImpl});
+  release(); await Promise.all([first,second]); assert.equal(calls,1); assert.equal(m.peekPathExists('same.txt','a'),false);
+  exists=true; await m.checkPathsExist(['same.txt'],{projectKey:'b',fetchImpl}); assert.equal(calls,2); assert.equal(m.peekPathExists('same.txt','b'),true);
+  now+=30001; await m.checkPathsExist(['same.txt'],{projectKey:'a',fetchImpl}); assert.equal(calls,3); assert.equal(m.peekPathExists('same.txt','a'),true);
+  await m.checkPathsExist(['failed.txt'],{projectKey:'a',fetchImpl:async()=>({ok:false})}); assert.equal(m.peekPathExists('failed.txt','a'),undefined);
+});
+
+function mdCandidate(path) { const attrs = new Map([['data-md-path-candidate',path]]); return {attrs,getAttribute:key=>attrs.get(key),setAttribute:(key,value)=>attrs.set(key,value)}; }
+test('actual Markdown DOM upgrade drains beyond 200 negative candidates without spinning and preserves keyboard/image/link priority', async t => {
+  const f=fixture(t), m=require(output); m.resetMdProbe(); const chat=new f.ChatView({projectName:'same',sdkMode:true});
+  const nodes=Array.from({length:205},(_,i)=>mdCandidate(`file-${i}.txt`)), wrap={querySelectorAll:()=>nodes.filter(node=>!node.attrs.has('data-md-file-verified'))};
+  chat._mdProbeObservedEl=wrap; let schedules=0; chat._scheduleMdCodeVerify=()=>schedules++;
+  globalThis.fetch=async(url,options)=>({ok:true,json:async()=>({results:JSON.parse(options.body).paths.map(path=>({path,exists:path==='file-204.txt'}))})});
+  await chat._verifyMdCodePaths(); assert.equal(schedules,1); await chat._verifyMdCodePaths(); assert.equal(schedules,1);
+  assert.equal(nodes[204].attrs.get('tabindex'),'0'); assert.equal(nodes[204].attrs.get('title'),'file-204.txt'); assert.equal(nodes[0].attrs.has('data-md-file-verified'),false);
+  const opened=[]; chat.handleOpenToolFilePath=(...args)=>opened.push(args);
+  const code={getAttribute:key=>({'data-md-path-candidate':'file-204.txt','data-md-file-line':'12'}[key]),closest:()=>null};
+  const event={...f.event(),key:'Enter',target:{closest:selector=>selector.includes('code[')?code:null}};
+  chat.handleChatMdKeydown(event); assert.deepEqual(opened,[['file-204.txt',12]]); assert.equal(event.prevented,true);
+  chat.handleChatMdKeydown({...event,repeat:true}); assert.equal(opened.length,1);
+  const link={getAttribute:()=> 'target.txt'}; chat.handleChatMdClick({...f.event(),button:0,target:{closest:selector=>selector.includes('a[')?link:selector.includes('code[')?code:null}});
+  assert.deepEqual(opened.at(-1),['target.txt']);
+  chat.setState=patch=>Object.assign(chat.state,patch); chat.handleChatMdClick({...f.event(),button:0,target:{closest:selector=>selector.includes(' img')?{src:'https://fixture/image'}:link}});
+  assert.equal(chat.state.mdLightboxSrc,'https://fixture/image'); assert.equal(opened.length,2);
+});
+
+test('late Markdown existence verdicts cannot upgrade DOM after same-name instance switch', async t => {
+  const f=fixture(t), m=require(output); m.resetMdProbe(); const chat=new f.ChatView({projectName:'same',sdkMode:true});
+  const node=mdCandidate('same.txt'); chat._mdProbeObservedEl={querySelectorAll:()=>[node]}; let release;
+  globalThis.fetch=async()=>{await new Promise(resolve=>{release=resolve;});return {ok:true,json:async()=>({results:[{path:'same.txt',exists:true}]})};};
+  const pending=chat._verifyMdCodePaths(); await f.tick(); window.location.search='?instance=b'; release(); await pending;
+  assert.equal(node.attrs.has('data-md-file-verified'),false);
+});
+
+test('Git visibility restores original mutual exclusion, active intent and pending refresh while passive file opens preserve intent', async t => {
+  const f=fixture(t), props={projectName:'same',sdkMode:true};
+  let chat=new f.ChatView(props); assert.equal(chat.state.gitChangesOpen,false);
+  f.values.set('cxv_gitChangesOpen','true'); f.values.set('cxv_fileExplorerOpen','false');
+  chat=new f.ChatView(props); assert.equal(chat.state.gitChangesOpen,true); assert.equal(chat.state.fileExplorerOpen,false);
+  chat.setState=(patch,done)=>{Object.assign(chat.state,typeof patch==='function'?patch(chat.state):patch);done?.();};
+  chat._pendingGitRefresh=true; const before=chat.state.gitChangesRefresh; chat._setGitChangesOpen(true);
+  assert.equal(chat._pendingGitRefresh,false); assert.equal(chat.state.gitChangesRefresh,before+1); chat._setGitChangesOpen(true); assert.equal(chat.state.gitChangesRefresh,before+1);
+  chat._setGitChangesOpen(false); assert.equal(f.values.get('cxv_gitChangesOpen'),'false'); assert.equal(new f.ChatView(props).state.gitChangesOpen,false);
+  chat._setGitChangesOpen(true); await chat.handleOpenToolFilePath('file.txt'); assert.equal(chat.state.gitChangesOpen,false); assert.equal(f.values.get('cxv_gitChangesOpen'),'true');
+  const restored=new f.ChatView(props); assert.equal(restored.state.fileExplorerOpen,true); assert.equal(restored.state.gitChangesOpen,false,'original tree priority prevents two panels restoring together');
+});
+
+test('Git intent setter remains usable when browser storage writes fail',t=>{
+  const f=fixture(t,{blocked:true}),chat=new f.ChatView({projectName:'same'}); chat.setState=patch=>Object.assign(chat.state,typeof patch==='function'?patch(chat.state):patch);
+  chat._pendingGitRefresh=true; chat._setGitChangesOpen(true); assert.equal(chat.state.gitChangesOpen,true); assert.equal(chat.state.gitChangesRefresh,1);
+  chat._setGitChangesOpen(false); assert.equal(chat.state.gitChangesOpen,false);
+});
+
+test('static target confirmations pin native identity, instance and body-relative path across a later view switch', async t => {
+  const f = fixture(t), { Modal } = require('antd'), oldConfirm = Modal.confirm, dialogs = [];
+  Modal.confirm = config => dialogs.push(config); t.after(() => { Modal.confirm = oldConfirm; });
+  for (const target of [{ kind: 'codex-md', id: 'opaque_native' }, { kind: 'skill', source: 'user', path: '/native/skill' }]) {
+    window.location.search = '?instance=a';
+    const handler = f.fileMenu({ path: '.codex/note.txt', name: 'note.txt', renameMode: 'modal', target, instance: 'a' });
+    handler({ key: 'delete' }); window.location.search = '?instance=b'; await dialogs.at(-1).onOk();
+    const request = f.requests.at(-1), url = new URL(request.url, window.location.href);
+    assert.equal(url.pathname, '/api/target-delete-file'); assert.equal(url.searchParams.get('instance'), 'a');
+    assert.equal(url.searchParams.get('kind'), target.kind);
+    assert.equal(url.searchParams.get(target.id ? 'id' : 'targetPath'), target.id || target.path);
+    assert.deepEqual(JSON.parse(request.options.body), { path: '.codex/note.txt' });
+  }
+});
+
+test('target menus omit chat-only actions and root reveal uses the target endpoint with an explicit empty path', async t => {
+  const f = fixture(t), target = { kind: 'codex-md', id: 'opaque_native' };
+  const keys = f.menuItems({ isDir: false, isRemote: true, isTarget: true }).map(item => item.key);
+  assert.equal(keys.includes('attachToChat'), false); assert.equal(keys.includes('insertPathToChat'), false);
+  assert.equal(keys.includes('download'), true); assert.equal(keys.includes('rename'), true);
+  f.fileMenu({ path: '', isDir: true, target, instance: 'a' })({ key: 'reveal' }); await f.tick();
+  const request = f.requests.at(-1), url = new URL(request.url, window.location.href);
+  assert.equal(url.pathname, '/api/target-reveal-file'); assert.equal(url.searchParams.get('id'), target.id);
+  assert.deepEqual(JSON.parse(request.options.body), { path: '' });
 });

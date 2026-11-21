@@ -1,0 +1,267 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": [
+    "566ade13fc3bf2c3fd8d90044b1f36602c6980bf",
+    "7a75e1be81b3e90f55f8888c423e66e05c1cde64",
+    "208f1348279758d95b72798442105c3236fa1dd3"
+  ],
+  "previousLocal": "6eea43c",
+  "localSubject": "feat(files): restore original guidance and skill folder browsing",
+  "fileBrowserCssExact": true,
+  "fileBrowserCssSha256": "d42e085de0796ab003cc838405078353dc5bbc3d7715a0f32f0856de44d8973d",
+  "webTests": 434,
+  "webLog": "/tmp/cxv-b5-e38-web-final.log",
+  "targetAuthAndHtmlTests": 51,
+  "authLog": "/tmp/cxv-b5-e38-resource-auth.log",
+  "buildLog": "/tmp/cxv-b5-e38-build-final4.log",
+  "fullBeforeSandboxProof": {
+    "tests": 1764,
+    "parts": [
+      5,
+      434,
+      1113,
+      212
+    ],
+    "skip": 0,
+    "log": "/tmp/cxv-b5-e38-full.log"
+  },
+  "gui": [
+    {
+      "log": "/tmp/cxv-b5-e38-chromium-target-final16.log",
+      "engine": "chromium",
+      "mode": "target",
+      "nativeGuidanceFolder": true,
+      "keyboardFolder": true,
+      "targetEditSave": true,
+      "targetMenuRename": true,
+      "image": true,
+      "relativeHtml": true,
+      "projectSkillFolder": true,
+      "confirmationPinsAAfterB": true,
+      "actualBrowser": "159.0.8154.6"
+    },
+    {
+      "log": "/tmp/cxv-b5-e38-chromium-target-phone-final16.log",
+      "engine": "chromium",
+      "mode": "target-phone",
+      "nativeGuidanceFolder": true,
+      "keyboardFolder": true,
+      "targetEditSave": true,
+      "targetMenuRename": true,
+      "image": true,
+      "relativeHtml": true,
+      "projectSkillFolder": true,
+      "confirmationPinsAAfterB": true,
+      "actualBrowser": "159.0.8154.6"
+    },
+    {
+      "log": "/tmp/cxv-b5-e38-chromium-target-pad-final16.log",
+      "engine": "chromium",
+      "mode": "target-pad",
+      "nativeGuidanceFolder": true,
+      "keyboardFolder": true,
+      "targetEditSave": true,
+      "targetMenuRename": true,
+      "image": true,
+      "relativeHtml": true,
+      "projectSkillFolder": true,
+      "confirmationPinsAAfterB": true,
+      "actualBrowser": "159.0.8154.6"
+    },
+    {
+      "log": "/tmp/cxv-b5-e38-chromium-target-remote-final16.log",
+      "engine": "chromium",
+      "mode": "target-remote",
+      "nativeGuidanceFolder": true,
+      "keyboardFolder": true,
+      "targetEditSave": true,
+      "targetMenuRename": true,
+      "image": true,
+      "relativeHtml": true,
+      "projectSkillFolder": true,
+      "confirmationPinsAAfterB": true,
+      "actualBrowser": "159.0.8154.6"
+    },
+    {
+      "log": "/tmp/cxv-b5-e38-webkit-target-final16.log",
+      "engine": "webkit",
+      "mode": "target",
+      "nativeGuidanceFolder": true,
+      "keyboardFolder": true,
+      "targetEditSave": true,
+      "targetMenuRename": true,
+      "image": true,
+      "relativeHtml": true,
+      "projectSkillFolder": true,
+      "confirmationPinsAAfterB": true,
+      "actualBrowser": "27.2"
+    },
+    {
+      "log": "/tmp/cxv-b5-e38-webkit-target-phone-final16.log",
+      "engine": "webkit",
+      "mode": "target-phone",
+      "nativeGuidanceFolder": true,
+      "keyboardFolder": true,
+      "targetEditSave": true,
+      "targetMenuRename": true,
+      "image": true,
+      "relativeHtml": true,
+      "projectSkillFolder": true,
+      "confirmationPinsAAfterB": true,
+      "actualBrowser": "27.2"
+    },
+    {
+      "log": "/tmp/cxv-b5-e38-webkit-target-pad-final16.log",
+      "engine": "webkit",
+      "mode": "target-pad",
+      "nativeGuidanceFolder": true,
+      "keyboardFolder": true,
+      "targetEditSave": true,
+      "targetMenuRename": true,
+      "image": true,
+      "relativeHtml": true,
+      "projectSkillFolder": true,
+      "confirmationPinsAAfterB": true,
+      "actualBrowser": "27.2"
+    },
+    {
+      "log": "/tmp/cxv-b5-e38-webkit-target-remote-final16.log",
+      "engine": "webkit",
+      "mode": "target-remote",
+      "nativeGuidanceFolder": true,
+      "keyboardFolder": true,
+      "targetEditSave": true,
+      "targetMenuRename": true,
+      "image": true,
+      "relativeHtml": true,
+      "projectSkillFolder": true,
+      "confirmationPinsAAfterB": true,
+      "actualBrowser": "27.2"
+    }
+  ],
+  "screenshots": [
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-files-2026-11-21/chromium-target-guidance-dark.png",
+      "sha256": "0cdce28a6154502a4caa48d756f451694054aee7e9a494c5d5fd66ff5bc1aaad"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-files-2026-11-21/chromium-target-guidance-folder.png",
+      "sha256": "0173d5578493e1f68f8fb9976bd946eae29b7022591f053e08bb5d1626f18c83"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-files-2026-11-21/chromium-target-pad-guidance-folder.png",
+      "sha256": "dcfe962091073030e9f94bb4f14ee207f61526a5942652ca7f30b3b5ef739af1"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-files-2026-11-21/chromium-target-pad-skill-preview.png",
+      "sha256": "6a33c1ff52413200a3342d202c760656576e75773a81dac92282111f21b3e3eb"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-files-2026-11-21/chromium-target-pad-target-html.png",
+      "sha256": "fe6a9eb0699e58f8b73c73d300efd2d75f991fe5bc84d897529be1a590e2933f"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-files-2026-11-21/chromium-target-phone-guidance-folder.png",
+      "sha256": "2a8529929bd49a00a86d75b9190c874e488e93816adf968c8fbc303a92823556"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-files-2026-11-21/chromium-target-phone-skill-preview.png",
+      "sha256": "6a82fe62f03e3dc1ef0b9718a703e6225fffcfb34707e714d55bdfaa454b001f"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-files-2026-11-21/chromium-target-phone-target-html.png",
+      "sha256": "1c6d1db512191c11b0f07fb205fe05fd124d7460e5a1d844a0aef95e8243fe8a"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-files-2026-11-21/chromium-target-remote-guidance-folder.png",
+      "sha256": "d1da8c5cddabc5515c716813abd2545ef0319121820aa8531b219dd7a89abc12"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-files-2026-11-21/chromium-target-remote-skill-preview.png",
+      "sha256": "73c63772ff5d780d1f52e6c8f4a8097530102baf090d147de3c1bea6b2a742d0"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-files-2026-11-21/chromium-target-remote-target-html.png",
+      "sha256": "c016977f9ab42fce4cd400f786ea8dcaa7d75acc6f2b9b3871d4d4a5d2aa311f"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-files-2026-11-21/chromium-target-skill-preview.png",
+      "sha256": "e632c9f174add43e17f9720a635b90ebf053a01ddbe67afa4c443e7121910d74"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-files-2026-11-21/chromium-target-target-html.png",
+      "sha256": "b407a2dbca336542683192ff53f3186920e402f92b94707608bfd798f84b055c"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-files-2026-11-21/webkit-target-guidance-dark.png",
+      "sha256": "5cb1be5fdebb4940d9af4ae336bb8c6b48b84640dde1a77e309276dead3b1883"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-files-2026-11-21/webkit-target-guidance-folder.png",
+      "sha256": "f93a75e2e0a3a0c1268cac09346fcdd6eefcc7c0eaa5432ab03331688d2aaf4c"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-files-2026-11-21/webkit-target-pad-guidance-folder.png",
+      "sha256": "628991928da38321e1c9c2ac4e19ef34aebc524aae00feabeb39d658310ae882"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-files-2026-11-21/webkit-target-pad-skill-preview.png",
+      "sha256": "c0a96be5abcbc62b546901a23a8d99460e6d03e085ca0904f2760e071acb83cb"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-files-2026-11-21/webkit-target-pad-target-html.png",
+      "sha256": "4a608d3b04aba21b74dc7c83dd4992f9c337e8d725dad6115cd5d4c2f72c06ca"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-files-2026-11-21/webkit-target-phone-guidance-folder.png",
+      "sha256": "5cf27a981beb7965b8752fa57acbcee194864aec2bace2bcdd7ece1c52202b5c"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-files-2026-11-21/webkit-target-phone-skill-preview.png",
+      "sha256": "d4f8f90a6c60fd0f687e91e4b5c21d421fc7ff1de45cba1937ee13b1113c2c3b"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-files-2026-11-21/webkit-target-phone-target-html.png",
+      "sha256": "3f93c275851380dd60e3fcdbbde18f1fa50b9465776380ed3eacbb5467a9454b"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-files-2026-11-21/webkit-target-remote-guidance-folder.png",
+      "sha256": "71f3669888b8c4fc3362403ccda83c37cb14380d8f90e41f7e3c3cc39fd0ffcd"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-files-2026-11-21/webkit-target-remote-skill-preview.png",
+      "sha256": "146c1a37c1ab1e7377864ea6884801bd1f076007940f2d6f3f4b55b16fa634c3"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-files-2026-11-21/webkit-target-remote-target-html.png",
+      "sha256": "a08a23aa216d17085d4e680d01d28e719d109b5079267cc7868ca7513d492cfd"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-files-2026-11-21/webkit-target-skill-preview.png",
+      "sha256": "b683a89674db93b197a10b8f35ea1377f823e64780fac320536e3cd5c4ac5889"
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-target-files-2026-11-21/webkit-target-target-html.png",
+      "sha256": "ba03ca179bd5ee1b6b5a2d5eada503c683941be24007619ef744d8f2b202d23d"
+    }
+  ],
+  "nativeAdaptation": [
+    "Reuse native codex-md opaque identities, actual skill sources and exact native instance URL; freeze target/instance before static confirmation",
+    "Preserve restrictive native memory links and existing accessible plugin descriptions; add original folder icon and original CSS blocks",
+    "Native project read isolation needs a target identity in raw HTML resource paths; original generic allowlist raw URLs alone cannot preserve that isolation",
+    "Opaque sandbox resources use an HMAC read proof bound to target/view/auth context; GET/HEAD raw target only, original CSP retained, session-granted proof checks its active granting session and never contains its cookie"
+  ],
+  "failuresAndCorrections": [
+    "Popover hover plus click closed the trigger; use original hover interaction",
+    "Animation/border width observed 48/241; wait original motion then compare original CSS width 240",
+    "Ambiguous close buttons and icon-inclusive accessible labels corrected in probe only",
+    "Initial target HTML resources denied as cross-site in actual Chromium/WebKit although HTTP passed; implement scoped read proof, then carry it through targetInfo",
+    "Await B chat ready and API drain before old static confirmation, matching prior Git-scope GUI acceptance"
+  ],
+  "limits": [
+    "B5 incomplete: remaining file endpoint authorization audit, user/plugin additional GUI and fresh full/install verification remain",
+    "Remote GUI simulates preferences._isLocal only; exact downloaded bytes checked, no real LAN or TLS-login browser claim",
+    "Phone/pad emulation only; no physical device/other OS/minimum Node/real model network verification",
+    "Original cold-line-scroll and accepted pad replacement-scroll defects remain separate"
+  ]
+}

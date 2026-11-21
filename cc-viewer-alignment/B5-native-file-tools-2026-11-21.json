@@ -1,0 +1,60 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": [
+    "566ade13fc3bf2c3fd8d90044b1f36602c6980bf",
+    "7a75e1be81b3e90f55f8888c423e66e05c1cde64"
+  ],
+  "previousLocal": "c7ef277",
+  "localSubject": "fix(files): apply native state policy across legacy file tools",
+  "redLog": "/tmp/cxv-b5-e39-native-state-red.log",
+  "checks": {
+    "targetNativeAndVoice": 57,
+    "searchAndWorker": 99,
+    "legacyHttpAndWs": 49,
+    "full": 1772,
+    "parts": [
+      5,
+      434,
+      1121,
+      212
+    ],
+    "skip": 0,
+    "build": "passed",
+    "packFiles": 712,
+    "guardLog": "/tmp/cxv-b5-e39-guard-final4.log",
+    "searchLog": "/tmp/cxv-b5-e39-native-state-final.log",
+    "legacyLog": "/tmp/cxv-b5-e39-owners-final2.log",
+    "releaseLog": "/tmp/cxv-b5-e39-release-final.log"
+  },
+  "installed": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-34apjlzj",
+    "files": 712,
+    "source_bytes_match": true,
+    "web_asset_files": 204,
+    "runtime_tests": "478/478",
+    "b12_regression": "passed",
+    "installed_cli_relative_cd_boot": "passed",
+    "uses_fake_codex": true,
+    "uses_real_model_network": false
+  },
+  "installedLog": "/tmp/cxv-b5-e39-installed.log",
+  "nativeAdaptations": [
+    "Compose existing E26/E33 native ownership policy into legacy project file routes, without weakening exact native instance isolation",
+    "Parent nativeRoots snapshot for Worker including startup/current Viewer owners; RG exclusions and aliases filtered",
+    "Metadata read optional callback retains original credential fd checks; singly-linked native state fd substitution checked by current dev/inode without recursively scanning all transcripts",
+    "Dedicated IM server-owned skill roots preserve original service metadata semantics and credential guard; no general file API exception; existing scoped image/voice services unchanged"
+  ],
+  "failuresAndCorrections": [
+    "Three synthetic red cases reproduced listing/search and protected-directory create bypasses",
+    "First full failed 13: public fixtures were inside private Viewer owner, plus a test used a non-existent IM URL; split log/public ownership and isolate HOME/CODEX_HOME, retaining assertions",
+    "Two relative-path edit commands ran from the package cwd and did not write; corrected using absolute paths and reran",
+    "Original worker public-file-within-LOG fixture updated to public workspace plus actual hardlinks to startup/current owners, preserving meaningful parent-policy inheritance coverage"
+  ],
+  "limits": [
+    "No new frontend/GUI claim; E38 visual evidence remains separate",
+    "Native history hardlink inspection retains existing 4096 metadata inspection cap; large private inode corpora not verified",
+    "Dedicated legacy IM surfaces remain B11 scope, not declared globally migrated",
+    "Remaining original project case-only rename/delete/symlink directory differences and user/plugin GUI to finish before B5 closure",
+    "Real external model/TLS-login browser/LAN/physical devices/other OS/minimum Node remain unverified"
+  ]
+}

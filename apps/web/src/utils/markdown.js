@@ -3,8 +3,12 @@ import DOMPurify from 'dompurify';
 import { escapeHtml } from './helpers';
 import { setupMermaidAutoRender } from '../hooks/useMermaidRender';
 import { measureParse } from './markdownProfiler';
+import { renderMdLink } from './markdownLinkRenderer';
+import { renderMdCodespan } from './markdownCodeSpanRenderer';
 
 setupMermaidAutoRender();
+
+marked.use({ renderer: { link: renderMdLink, codespan: renderMdCodespan } });
 
 const _mdCache = new Map();
 const _memoryMdCache = new Map();
@@ -25,7 +29,7 @@ export function renderMarkdown(text) {
 
   let html;
   try {
-    html = measureParse(() => DOMPurify.sanitize(marked.parse(text, { breaks: true })));
+    html = measureParse(() => DOMPurify.sanitize(marked.parse(text, { breaks: true }), { ADD_ATTR: ['target'] }));
   } catch (e) {
     html = escapeHtml(text);
   }

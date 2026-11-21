@@ -1,0 +1,17 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": "7a0ba39edf6a0b54ca7a425e0f08ab410e515407",
+  "previousLocal": "38e68a1",
+  "localSubject": "test(git): restore original filesystem cleanup retries",
+  "scope": "Only native real-Git fixtures; existing stopViewer await preserved. Scheduled-task poll/cleanup remains B9.",
+  "checks": {
+    "git": 37,
+    "skip": 0,
+    "log": "/tmp/cxv-b5-e30-git.log"
+  },
+  "limits": [
+    "Test-only change; no new mirror tests, production build or GUI needed",
+    "Latest full1737/install444 E28 and Web431/build/GUIs E29 remain separately recorded",
+    "Target admin choice pending; B5 not complete"
+  ]
+}

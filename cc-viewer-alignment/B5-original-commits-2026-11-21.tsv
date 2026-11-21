@@ -1,0 +1,46 @@
+00b520441d6c4ed2ce6cae3bceaf43e1a00b3fda	docs(alignment): open B5 and verify existing stdin protection
+f14c9142d3c88ccaa97ace814fad38cff4ffbd40	perf(search): move node scanning off the server event loop
+a2a4ec0ee65c786cf1c059202e954a485b1da1bf	feat(search): restore upstream virtual results and keyboard navigation
+123f06a236b79e5f53bc4c03689c89aae50d6a44	feat(search): embed the original search panel below the file tree
+958027e892976e576ee8f8e14a89eccc53be03cd	feat(files): stream downloads from the exact viewed workspace
+0508ad31193540978d5ae073603b4f8cd79c3f3a	feat(files): share the original file menus and remote download action
+800921466855c1d7b8234ff17ea96b54d51f969d	fix(files): protect native Codex credentials from file tools
+4d18c42551e7ff23dec9ea932eab889385a357f1	fix(files): preserve binary and UTF-16 bytes in the text editor
+f7bfa97b9b7dba89778bb5565091dbec3bfed569	feat(files): restore shared type icons and theme colors
+6db909f46671ef4438bbe5d1f200a101bb089409	fix(files): bind shared imports before asynchronous scanning
+d49ff82e47aedba0cf3cf68382d72c2bd752a919	fix(files): restore shared moves into the project root
+6d9ccf107c2cbd661f4b139c06517240a6987d06	fix(files): keep HTML preview resources in the viewed workspace
+d23fac0b490d03d12ee562605654d6cda701264e	feat(files): restore the original project browser modal
+f498f6ba2e1864ceefa76de7f126f1d3c3f91884	feat(files): restore original desktop drop zones
+2747f201a93e5d95ad9f75c494204224b372737a	feat(files): restore file and folder reference drops
+7feaab8ea68f706688ff965d7c3daa397109df2d	fix(git): show local commits without an upstream
+ea25ffd249c4eb74b8657b4378fcfe585e844ab6	feat(git): restore per-commit line stats and file statuses
+30b046e4c7e2dd03665235e328c3e6a461cd57a3	style(git): restore commit rows without author names
+78cfb74d3e38e49e03abc80b5338d90f79813198	fix(git): restore red unmerged status badges
+116199863cd303383e3b49ad0d448bfd38538c89	feat(git): restore file folder and commit reference drops
+0a5c45dd39e8871917795e87d50253db98bd2c23	style(files): restore original manual refresh feedback
+8a35d54771ec9769876fcacce71db149f0b4387a	fix(git): pin async requests and restore confirmations to their workspace
+7865e00788a483b6abdc9603f58bdc2452aa790e	test(cli): wait for the browser URL before declaring resume ready
+6ba4304d9042aba911c2326141b19831a752927d	fix(git): restore original ten second command timeout
+762df84ba440b0af7b00588840f81416f3593979	docs(alignment): verify the effective tool refresh baseline
+67aa5da7221d2876fd2de9dc4cceb325d5d072a9	feat(files): add native target file access policy prerequisite
+6a75814823cff96dc27229a472411cc9494e270a	feat(files): restore scoped batch file existence probe
+258566ceaf9a47d66d33738d59332f24428b322f	feat(markdown): restore local file links and verified code paths
+38e68a1653cfefe2c59063c569dc3ed55602cc21	fix(git): restore original panel visibility persistence
+ceda946d3e60b532e72de76d242528351920f23e	test(git): restore original filesystem cleanup retries
+47ebed49a732e16ade7d57215de6b42d26f3b6c5	docs(alignment): audit B5 cross-package candidates and release evidence
+19d0f3408869af62d1a858784520cdb5fedf6b01	feat(files): add native target identity and navigation scope prerequisite
+ef3cb51919ae83728393608f6b80163799cea914	fix(files): preserve native protected owners in target write policy
+c27fd53098677478d8d54b60145fa4071265bb10	docs(alignment): trace target authorization before endpoint wiring
+d6681ef080002a6dad6ae2d4fcd75ac401572a72	feat(files): enable target listing for authenticated administrators
+481dc72a41baae2bea229bf1317c078790137929	feat(files): bind target content and downloads to authorized navigation roots
+6eea43c1f31545d35bd7391b1a6042d8dffb4233	feat(files): restore target filesystem context actions
+c7ef277ffa176b1b3233f1c2b205ce4a275c5ce8	feat(files): restore original guidance and skill folder browsing
+f66e728192b5534f6e7ad88d0a62e8d985aef56a	fix(files): apply native state policy across legacy file tools
+c912829bfd7d74b5c7c9c0d7920c1a44282b873e	fix(files): restore project case-only rename and retry
+445a90c3a18302ebc950dee3c6b98c1a99ee945f	fix(files): restore original project deletion guards
+8fb8a7c95b2fe898b0c177eea9eecf82e2196414	fix(files): restore symbolic target refusal on EXDEV
+2d2af5a8b6c178e57dce5f02a9ade725a604e5b4	fix(files): classify safe directory aliases as directories
+aeddcbe0a410a43f611ec7f579cb8f5dc8ecee70	fix(files): use platform separators for project containment
+d1faf28ec701c50630019acaa6e72b1c98a84dd2	fix(files): preserve navigation to native user skill roots
+a3617be1383d43cb605fd9a7951b73b2d3a40cba	docs(alignment): close B5 baseline alignment and acceptance

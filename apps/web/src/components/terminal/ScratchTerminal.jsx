@@ -4,6 +4,7 @@
 // CSS：scratch 用 .scratchInner + .scratchHost；主 terminal 用 .terminalContainer + .terminalHost
 // ============================================================================
 import React from 'react';
+import { isFileDrag, getDraggedFilePath, planFileDropInput } from '../../utils/fileDragDrop';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
@@ -42,6 +43,7 @@ class ScratchTerminal extends React.Component {
       }
     );
     this._closing = false;
+    this.state = { fileDragOver: false, shellBasename: '' };
   }
 
   // write-queue 积压丢弃后请求服务端重放原始 PTY 字节。
@@ -56,6 +58,8 @@ class ScratchTerminal extends React.Component {
   }
 
   componentDidMount() {
+    document.addEventListener('dragend', this._resetFileDragOver);
+    document.addEventListener('drop', this._resetFileDragOver);
     this.initTerminal();
     this.connectWebSocket();
     this.setupResizeObserver();
@@ -70,6 +74,8 @@ class ScratchTerminal extends React.Component {
   }
 
   componentWillUnmount() {
+    document.removeEventListener('dragend', this._resetFileDragOver);
+    document.removeEventListener('drop', this._resetFileDragOver);
     this._closing = true;
     if (this._wsReconnectTimer) clearTimeout(this._wsReconnectTimer);
     this._mobileLayout?.dispose();
@@ -259,6 +265,7 @@ class ScratchTerminal extends React.Component {
         } else if (msg.type === 'state') {
           // 后端首条 state 消息携带 shellBasename，给父组件渲染 tab 标签
           if (msg.shellBasename) {
+            this.setState({ shellBasename: msg.shellBasename });
             try { this.props.onShellInfo?.(msg.shellBasename); } catch {}
           }
         } else if (msg.type === 'exit') {
@@ -363,12 +370,49 @@ class ScratchTerminal extends React.Component {
     }
   };
 
+  _resetFileDragOver = () => {
+    if (this.state.fileDragOver) this.setState({ fileDragOver: false });
+  };
+
+  _handleFileDragOver = (e) => {
+    if (!isFileDrag(e) || this.ws?.readyState !== WebSocket.OPEN
+      || (this.terminal?.buffer?.active?.type === 'alternate' && !this.terminal?.modes?.bracketedPasteMode)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'copy';
+    if (!this.state.fileDragOver) this.setState({ fileDragOver: true });
+  };
+
+  _handleFileDragLeave = (e) => {
+    if (!e.currentTarget.contains(e.relatedTarget)) this._resetFileDragOver();
+  };
+
+  _handleFileDrop = (e) => {
+    if (!isFileDrag(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    this._resetFileDragOver();
+    if (this.ws?.readyState !== WebSocket.OPEN
+      || (this.terminal?.buffer?.active?.type === 'alternate' && !this.terminal?.modes?.bracketedPasteMode)) return;
+    const data = planFileDropInput(getDraggedFilePath(e), {
+      bracketedPasteMode: this.terminal?.modes?.bracketedPasteMode,
+      shell: this.state.shellBasename,
+    });
+    if (data != null) this.ws.send(JSON.stringify({ type: 'input', data }));
+    if (this.terminal && (!isMobile || isPad)) this.terminal.focus();
+  };
+
   render() {
     // === scratch (小) terminal 渲染区 ===
     // 外层 .scratchInner：focus 出血带；内层 .scratchHost：xterm 实际父容器，
     // margin-bottom 4px 让 fitAddon 拿到的高度始终 -4px，xterm-screen 接触不到下方分隔线
     return (
-      <div className={styles.scratchInner}>
+      <div
+        className={`${styles.scratchInner}${this.state.fileDragOver ? ` ${styles.scratchInnerDragOver}` : ''}`}
+        onDragOver={this._handleFileDragOver}
+        onDragLeave={this._handleFileDragLeave}
+        onDrop={this._handleFileDrop}
+      >
         <div ref={this.containerRef} className={styles.scratchHost} />
       </div>
     );

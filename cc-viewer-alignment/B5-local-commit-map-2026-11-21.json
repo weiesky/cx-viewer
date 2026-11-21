@@ -1,0 +1,415 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "baseLocal": "288faea5454f3a791c60fff31da09a1cfa6d36a3",
+  "note": "E1-E45 chronological exact local hashes, with upstream references resolved from each evidence section. References describe scoped migration/reuse, never whole mixed-commit completion. E46 is the separate final documentation commit discoverable by subject.",
+  "finalDocumentationSubject": "docs(alignment): close B5 baseline alignment and acceptance",
+  "commits": [
+    {
+      "iteration": "E1",
+      "localCommit": "00b520441d6c4ed2ce6cae3bceaf43e1a00b3fda",
+      "subject": "docs(alignment): open B5 and verify existing stdin protection",
+      "referencedUpstreamCommits": [
+        "96c477d582f45f6ba102a083de9c9f0c4a07cad2",
+        "bd50636219e086ba082ab4bb36e5c0b6a996172e"
+      ],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.1 E1 已有 stdin EPIPE 防护复核"
+    },
+    {
+      "iteration": "E2",
+      "localCommit": "f14c9142d3c88ccaa97ace814fad38cff4ffbd40",
+      "subject": "perf(search): move node scanning off the server event loop",
+      "referencedUpstreamCommits": [
+        "bd50636219e086ba082ab4bb36e5c0b6a996172e"
+      ],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.2 E2 搜索 worker 后端"
+    },
+    {
+      "iteration": "E3",
+      "localCommit": "a2a4ec0ee65c786cf1c059202e954a485b1da1bf",
+      "subject": "feat(search): restore upstream virtual results and keyboard navigation",
+      "referencedUpstreamCommits": [
+        "bd50636219e086ba082ab4bb36e5c0b6a996172e"
+      ],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.3 E3 原搜索虚拟结果与键盘导航"
+    },
+    {
+      "iteration": "E4",
+      "localCommit": "123f06a236b79e5f53bc4c03689c89aae50d6a44",
+      "subject": "feat(search): embed the original search panel below the file tree",
+      "referencedUpstreamCommits": [
+        "a6b82f16dff7991670ca8bdf3f01c6ae6f0d5d4b"
+      ],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.4 E4 固定最终搜索嵌入布局（含已选择保留的基线缺陷）"
+    },
+    {
+      "iteration": "E5",
+      "localCommit": "958027e892976e576ee8f8e14a89eccc53be03cd",
+      "subject": "feat(files): stream downloads from the exact viewed workspace",
+      "referencedUpstreamCommits": [
+        "ba3eee8fd5520b0a6ce66ebd6da749fc8cb120b5"
+      ],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.5 E5 原流式文件下载后端"
+    },
+    {
+      "iteration": "E6",
+      "localCommit": "0508ad31193540978d5ae073603b4f8cd79c3f3a",
+      "subject": "feat(files): share the original file menus and remote download action",
+      "referencedUpstreamCommits": [
+        "865604d68e05e62aaebf8de7a04afa9a9f1e999d",
+        "ba3eee8fd5520b0a6ce66ebd6da749fc8cb120b5",
+        "7830664780a5c16219edbb7e79662ad0ad27db9b"
+      ],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.6 E6 原共享项目菜单、远程下载入口与文件树行高"
+    },
+    {
+      "iteration": "E7",
+      "localCommit": "800921466855c1d7b8234ff17ea96b54d51f969d",
+      "subject": "fix(files): protect native Codex credentials from file tools",
+      "referencedUpstreamCommits": [
+        "7a75e1be81b3e90f55f8888c423e66e05c1cde64",
+        "253f7f67fe6aef1995f810c44c6bdcb99cf261f3"
+      ],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.7 E7 Codex 原生凭据/配置的文件工具拒绝前置"
+    },
+    {
+      "iteration": "E8",
+      "localCommit": "4d18c42551e7ff23dec9ea932eab889385a357f1",
+      "subject": "fix(files): preserve binary and UTF-16 bytes in the text editor",
+      "referencedUpstreamCommits": [
+        "f96811cddb3f1f5516ef7823bcc2a36d142a95e3"
+      ],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.8 E8 原二进制下载页与 UTF-16 只读保护"
+    },
+    {
+      "iteration": "E9",
+      "localCommit": "f7bfa97b9b7dba89778bb5565091dbec3bfed569",
+      "subject": "feat(files): restore shared type icons and theme colors",
+      "referencedUpstreamCommits": [
+        "a278d68954bc41150533177f8e1bbfec320d00a2",
+        "637fbb0218d0963b35308cbcd6288bdc3578c133"
+      ],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.9 E9 原文件分类、共享SVG与主题色"
+    },
+    {
+      "iteration": "E10",
+      "localCommit": "6db909f46671ef4438bbe5d1f200a101bb089409",
+      "subject": "fix(files): bind shared imports before asynchronous scanning",
+      "referencedUpstreamCommits": [
+        "365af800e58f34a57b2339cf705f56390874f20b",
+        "ab1b89ee133664c9f2c0e3e17ada8711180f4dc5"
+      ],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.10 E10 原共享导入链路与异步归属"
+    },
+    {
+      "iteration": "E11",
+      "localCommit": "d49ff82e47aedba0cf3cf68382d72c2bd752a919",
+      "subject": "fix(files): restore shared moves into the project root",
+      "referencedUpstreamCommits": [
+        "365af800e58f34a57b2339cf705f56390874f20b",
+        "ab1b89ee133664c9f2c0e3e17ada8711180f4dc5"
+      ],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.11 E11 原共享移动与拖回根契约"
+    },
+    {
+      "iteration": "E12",
+      "localCommit": "6d9ccf107c2cbd661f4b139c06517240a6987d06",
+      "subject": "fix(files): keep HTML preview resources in the viewed workspace",
+      "referencedUpstreamCommits": [],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.12 E12 原共享 HTML 预览及相对资源身份"
+    },
+    {
+      "iteration": "E13",
+      "localCommit": "d23fac0b490d03d12ee562605654d6cda701264e",
+      "subject": "feat(files): restore the original project browser modal",
+      "referencedUpstreamCommits": [],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.13 E13 原项目文件浏览弹窗"
+    },
+    {
+      "iteration": "E14",
+      "localCommit": "f498f6ba2e1864ceefa76de7f126f1d3c3f91884",
+      "subject": "feat(files): restore original desktop drop zones",
+      "referencedUpstreamCommits": [],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.14 E14 原桌面分区拖放反馈"
+    },
+    {
+      "iteration": "E15",
+      "localCommit": "2747f201a93e5d95ad9f75c494204224b372737a",
+      "subject": "feat(files): restore file and folder reference drops",
+      "referencedUpstreamCommits": [],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.15 E15 原文件/文件夹引用拖入聊天和终端"
+    },
+    {
+      "iteration": "E16",
+      "localCommit": "7feaab8ea68f706688ff965d7c3daa397109df2d",
+      "subject": "fix(git): show local commits without an upstream",
+      "referencedUpstreamCommits": [],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.16 E16 无 upstream 的原本地提交回退"
+    },
+    {
+      "iteration": "E17",
+      "localCommit": "ea25ffd249c4eb74b8657b4378fcfe585e844ab6",
+      "subject": "feat(git): restore per-commit line stats and file statuses",
+      "referencedUpstreamCommits": [],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.17 E17 原逐提交行数与真实文件状态"
+    },
+    {
+      "iteration": "E18",
+      "localCommit": "30b046e4c7e2dd03665235e328c3e6a461cd57a3",
+      "subject": "style(git): restore commit rows without author names",
+      "referencedUpstreamCommits": [],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.18 E18 原 Git 提交行移除作者"
+    },
+    {
+      "iteration": "E19",
+      "localCommit": "78cfb74d3e38e49e03abc80b5338d90f79813198",
+      "subject": "fix(git): restore red unmerged status badges",
+      "referencedUpstreamCommits": [],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.19 E19 原未合并状态红色"
+    },
+    {
+      "iteration": "E20",
+      "localCommit": "116199863cd303383e3b49ad0d448bfd38538c89",
+      "subject": "feat(git): restore file folder and commit reference drops",
+      "referencedUpstreamCommits": [],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.20 E20 原 Git 文件/目录/提交引用"
+    },
+    {
+      "iteration": "E21",
+      "localCommit": "0a5c45dd39e8871917795e87d50253db98bd2c23",
+      "subject": "style(files): restore original manual refresh feedback",
+      "referencedUpstreamCommits": [],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.21 E21 原手动刷新按钮与请求完成反馈"
+    },
+    {
+      "iteration": "E22",
+      "localCommit": "8a35d54771ec9769876fcacce71db149f0b4387a",
+      "subject": "fix(git): pin async requests and restore confirmations to their workspace",
+      "referencedUpstreamCommits": [],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.22 E22 Git异步请求和撤销确认固定原工作区"
+    },
+    {
+      "iteration": "E23",
+      "localCommit": "7865e00788a483b6abdc9603f58bdc2452aa790e",
+      "subject": "test(cli): wait for the browser URL before declaring resume ready",
+      "referencedUpstreamCommits": [],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.23 E23 CLI验收就绪竞态与发布重验"
+    },
+    {
+      "iteration": "E24",
+      "localCommit": "6ba4304d9042aba911c2326141b19831a752927d",
+      "subject": "fix(git): restore original ten second command timeout",
+      "referencedUpstreamCommits": [],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.24 E24 原Git命令10秒预算"
+    },
+    {
+      "iteration": "E25",
+      "localCommit": "762df84ba440b0af7b00588840f81416f3593979",
+      "subject": "docs(alignment): verify the effective tool refresh baseline",
+      "referencedUpstreamCommits": [],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.25 E25 既有工具刷新与有效历史核验"
+    },
+    {
+      "iteration": "E26",
+      "localCommit": "67aa5da7221d2876fd2de9dc4cceb325d5d072a9",
+      "subject": "feat(files): add native target file access policy prerequisite",
+      "referencedUpstreamCommits": [
+        "566ade13fc3bf2c3fd8d90044b1f36602c6980bf",
+        "7a75e1be81b3e90f55f8888c423e66e05c1cde64"
+      ],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.26 E26 外部目标文件策略前置（尚未接线）"
+    },
+    {
+      "iteration": "E27",
+      "localCommit": "6a75814823cff96dc27229a472411cc9494e270a",
+      "subject": "feat(files): restore scoped batch file existence probe",
+      "referencedUpstreamCommits": [],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.27 E27 原批量文件存在性探测"
+    },
+    {
+      "iteration": "E28",
+      "localCommit": "258566ceaf9a47d66d33738d59332f24428b322f",
+      "subject": "feat(markdown): restore local file links and verified code paths",
+      "referencedUpstreamCommits": [],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.28 E28 原Markdown文件链接与代码路径"
+    },
+    {
+      "iteration": "E29",
+      "localCommit": "38e68a1653cfefe2c59063c569dc3ed55602cc21",
+      "subject": "fix(git): restore original panel visibility persistence",
+      "referencedUpstreamCommits": [],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.29 E29 原Git面板开关持久化"
+    },
+    {
+      "iteration": "E30",
+      "localCommit": "ceda946d3e60b532e72de76d242528351920f23e",
+      "subject": "test(git): restore original filesystem cleanup retries",
+      "referencedUpstreamCommits": [],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.30 E30 原Git fixture清理重试"
+    },
+    {
+      "iteration": "E31",
+      "localCommit": "47ebed49a732e16ade7d57215de6b42d26f3b6c5",
+      "subject": "docs(alignment): audit B5 cross-package candidates and release evidence",
+      "referencedUpstreamCommits": [],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.31 E31 候选分流和本轮发布重验"
+    },
+    {
+      "iteration": "E32",
+      "localCommit": "19d0f3408869af62d1a858784520cdb5fedf6b01",
+      "subject": "feat(files): add native target identity and navigation scope prerequisite",
+      "referencedUpstreamCommits": [],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.32 E32 未接线的目标身份与导航根前置"
+    },
+    {
+      "iteration": "E33",
+      "localCommit": "ef3cb51919ae83728393608f6b80163799cea914",
+      "subject": "fix(files): preserve native protected owners in target write policy",
+      "referencedUpstreamCommits": [],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.33 E33 原生受保护owner/祖先写边界与本轮重验"
+    },
+    {
+      "iteration": "E34",
+      "localCommit": "c27fd53098677478d8d54b60145fa4071265bb10",
+      "subject": "docs(alignment): trace target authorization before endpoint wiring",
+      "referencedUpstreamCommits": [
+        "7a75e1be81b3e90f55f8888c423e66e05c1cde64"
+      ],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.34 E34 接线前权限与文件调用链审计"
+    },
+    {
+      "iteration": "E35",
+      "localCommit": "d6681ef080002a6dad6ae2d4fcd75ac401572a72",
+      "subject": "feat(files): enable target listing for authenticated administrators",
+      "referencedUpstreamCommits": [],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.35 E35 原目标目录读取与已选远程管理员边界"
+    },
+    {
+      "iteration": "E36",
+      "localCommit": "481dc72a41baae2bea229bf1317c078790137929",
+      "subject": "feat(files): bind target content and downloads to authorized navigation roots",
+      "referencedUpstreamCommits": [],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.36 E36 共用内容/raw/download与target保存"
+    },
+    {
+      "iteration": "E37",
+      "localCommit": "6eea43c1f31545d35bd7391b1a6042d8dffb4233",
+      "subject": "feat(files): restore target filesystem context actions",
+      "referencedUpstreamCommits": [],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.37 E37 原target菜单文件系统端点"
+    },
+    {
+      "iteration": "E38",
+      "localCommit": "c7ef277ffa176b1b3233f1c2b205ce4a275c5ce8",
+      "subject": "feat(files): restore original guidance and skill folder browsing",
+      "referencedUpstreamCommits": [],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.38 E38 原AGENTS/技能目录入口、菜单和预览链"
+    },
+    {
+      "iteration": "E39",
+      "localCommit": "f66e728192b5534f6e7ad88d0a62e8d985aef56a",
+      "subject": "fix(files): apply native state policy across legacy file tools",
+      "referencedUpstreamCommits": [],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.39 E39 旧项目文件工具的原生状态旁路收口"
+    },
+    {
+      "iteration": "E40",
+      "localCommit": "c912829bfd7d74b5c7c9c0d7920c1a44282b873e",
+      "subject": "fix(files): restore project case-only rename and retry",
+      "referencedUpstreamCommits": [
+        "ab1b89ee133664c9f2c0e3e17ada8711180f4dc5"
+      ],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.40 E40 Project case-only rename"
+    },
+    {
+      "iteration": "E41",
+      "localCommit": "445a90c3a18302ebc950dee3c6b98c1a99ee945f",
+      "subject": "fix(files): restore original project deletion guards",
+      "referencedUpstreamCommits": [
+        "a1c7ff20f532101dcb7029fc07314740632312ed",
+        "15b1f44d7026e7978276fc6f7b49e88c9aec8be4"
+      ],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.41 E41 Original project deletion guards"
+    },
+    {
+      "iteration": "E42",
+      "localCommit": "8fb8a7c95b2fe898b0c177eea9eecf82e2196414",
+      "subject": "fix(files): restore symbolic target refusal on EXDEV",
+      "referencedUpstreamCommits": [
+        "15b1f44d7026e7978276fc6f7b49e88c9aec8be4"
+      ],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.42 E42 Original EXDEV symbolic-target guard"
+    },
+    {
+      "iteration": "E43",
+      "localCommit": "2d2af5a8b6c178e57dce5f02a9ade725a604e5b4",
+      "subject": "fix(files): classify safe directory aliases as directories",
+      "referencedUpstreamCommits": [],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.43 E43 Original directory-symlink listing types"
+    },
+    {
+      "iteration": "E44",
+      "localCommit": "aeddcbe0a410a43f611ec7f579cb8f5dc8ecee70",
+      "subject": "fix(files): use platform separators for project containment",
+      "referencedUpstreamCommits": [
+        "a1c7ff20f532101dcb7029fc07314740632312ed"
+      ],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.44 E44 Platform separator containment"
+    },
+    {
+      "iteration": "E45",
+      "localCommit": "d1faf28ec701c50630019acaa6e72b1c98a84dd2",
+      "subject": "fix(files): preserve navigation to native user skill roots",
+      "referencedUpstreamCommits": [
+        "7a75e1be81b3e90f55f8888c423e66e05c1cde64"
+      ],
+      "evidenceFile": "B5-implementation.md",
+      "evidenceHeading": "B5.45 E45 Native skill navigation ancestors and user/plugin GUI"
+    }
+  ],
+  "consolidationRecord": "B5-local-commit-consolidation-2026-11-21.md",
+  "originalFullCommitList": "B5-original-commits-2026-11-21.tsv"
+}

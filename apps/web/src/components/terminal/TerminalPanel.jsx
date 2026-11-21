@@ -4,6 +4,8 @@
 // CSS：主 terminal 用 .terminalContainer + .terminalHost；scratch 用 .scratchInner + .scratchHost
 // ============================================================================
 import React from 'react';
+import { getFileIcon } from '../../utils/fileIcons';
+import { isFileDrag, getDraggedFilePath, planFileDropInput, quotePathForTerminal, formatFolderPath } from '../../utils/fileDragDrop';
 import { message, Tooltip, Popover, Popconfirm, Button, Checkbox, Modal } from 'antd';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
@@ -235,6 +237,7 @@ class TerminalPanel extends React.Component {
     this.resizeObserver = null;
     this.state = {
       terminalFocused: false,
+      fileDragOver: false,
       quickSettingsOpen: false,
       quickSettingsExpanded: null, // null | 'agentteam' | 'perm' | 'plan' —— 同时只展开一个子菜单
 
@@ -451,6 +454,8 @@ class TerminalPanel extends React.Component {
     writeScratchTabs(this.state.scratchTabs, this._scratchKeys);
     if (this.state.activeScratchTabId) writeScratchActiveTab(this.state.activeScratchTabId, this._scratchKeys);
     if (this.props.scratchOnly) return;
+    document.addEventListener('dragend', this._resetFileDragOver);
+    document.addEventListener('drop', this._resetFileDragOver);
     // 幂等：window.__cxvTermDiag 快照 + longtask 计数 + cxv_term_diag 周期日志。
     // 有意不在 unmount 配对卸载——app-lifetime 单例（计数器/定时器全局唯一，
     // 跨面板共享；_installed 守卫防重复安装）。
@@ -574,6 +579,8 @@ class TerminalPanel extends React.Component {
   }
 
   componentWillUnmount() {
+    document.removeEventListener('dragend', this._resetFileDragOver);
+    document.removeEventListener('drop', this._resetFileDragOver);
     this._qmHover.cancel();
     this._failPendingSequentialInputs(false);
     // mid-drag 卸载兜底：恢复 body 样式，标记终止
@@ -782,7 +789,8 @@ class TerminalPanel extends React.Component {
           // "用户看到路径再按 Enter 确认" 的设计。
           e.preventDefault();
           e.stopPropagation();
-          const paths = pending.map(img => `'${img.path.replace(/'/g, "'\\''")}'`).join(' ');
+          const paths = pending.map(img => quotePathForTerminal(img.path)).filter(Boolean).join(' ');
+          if (paths.length === 0) return false;
           this.ws.send(JSON.stringify({ type: 'input', data: paths + ' ' }));
           this.props.onClearPendingImages?.();
           return false;
@@ -1623,6 +1631,43 @@ class TerminalPanel extends React.Component {
     );
   }
 
+  _resetFileDragOver = () => {
+    if (this.state.fileDragOver) this.setState({ fileDragOver: false });
+  };
+
+  _handleFileDragOver = (e) => {
+    if (this.props.scratchOnly) return;
+    if (!isFileDrag(e) || this.ws?.readyState !== WebSocket.OPEN
+      || (this.terminal?.buffer?.active?.type === 'alternate' && !this.terminal?.modes?.bracketedPasteMode)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'copy';
+    if (!this.state.fileDragOver) this.setState({ fileDragOver: true });
+  };
+
+  _handleFileDragLeave = (e) => {
+    if (!e.currentTarget.contains(e.relatedTarget)) this._resetFileDragOver();
+  };
+
+  _handleFileDrop = (e) => {
+    if (this.props.scratchOnly) return;
+    if (!isFileDrag(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    this._resetFileDragOver();
+    if (this.ws?.readyState !== WebSocket.OPEN) return;
+    if (this.terminal?.buffer?.active?.type === 'alternate'
+      && !this.terminal?.modes?.bracketedPasteMode) return;
+    const data = planFileDropInput(getDraggedFilePath(e), {
+      bracketedPasteMode: this.terminal?.modes?.bracketedPasteMode,
+    });
+    if (data == null) return;
+    this.ws.send(JSON.stringify({
+      type: 'input', data,
+    }));
+    if (this.terminal && (!isMobile || isPad)) this.terminal.focus();
+  };
+
   render() {
     const { pendingImages, onRemovePendingImage } = this.props;
     if (this.props.scratchOnly) {
@@ -1644,7 +1689,10 @@ class TerminalPanel extends React.Component {
             外层 .terminalContainer：padding + focus 边线；内层 .terminalHost：xterm 实际父容器，
             margin-bottom 4px 让 fitAddon 拿到的高度始终 -4px，xterm-screen 接触不到下方 toolbar */}
         <div
-          className={`${styles.terminalContainer}${this.state.terminalFocused ? ` ${styles.terminalContainerFocused}` : ''}`}
+          className={`${styles.terminalContainer}${this.state.terminalFocused ? ` ${styles.terminalContainerFocused}` : ''}${this.state.fileDragOver ? ` ${styles.terminalContainerDragOver}` : ''}`}
+          onDragOver={this._handleFileDragOver}
+          onDragLeave={this._handleFileDragLeave}
+          onDrop={this._handleFileDrop}
         >
           <div ref={this.containerRef} className={styles.terminalHost} />
         </div>
@@ -1652,7 +1700,7 @@ class TerminalPanel extends React.Component {
           <div className={styles.pendingFileStrip}>
             {pendingImages.map((img, i) => {
               const fileName = img.path.split('/').pop() || img.path;
-              const isImage = /\.(png|jpe?g|gif|svg|bmp|webp|avif|ico|icns)$/i.test(fileName);
+              const isImage = !img.isDir && /\.(png|jpe?g|gif|svg|bmp|webp|avif|ico|icns)$/i.test(fileName);
               const src = apiUrl(`/api/file-raw?path=${encodeURIComponent(img.path)}`);
               return isImage ? (
                 <div key={img.path} className={styles.pendingImageItem}>
@@ -1673,8 +1721,9 @@ class TerminalPanel extends React.Component {
                   >&times;</ConfirmRemoveButton>
                 </div>
               ) : (
-                <span key={img.path} className={styles.pendingFileTag}>
-                  <span className={styles.pendingFileName}>{fileName}</span>
+                <span key={img.path} className={styles.pendingFileTag} title={img.path}>
+                  {img.isDir && getFileIcon(fileName, 'directory')}
+                  <span className={styles.pendingFileName}>{img.isDir ? formatFolderPath(img.path) : fileName}</span>
                   <ConfirmRemoveButton
                     title={t('ui.chatInput.confirmRemoveFile')}
                     onConfirm={() => onRemovePendingImage?.(i)}

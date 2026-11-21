@@ -13,6 +13,7 @@ import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { homedir } from 'node:os';
 import JSZip from 'jszip';
 import { readPublicFileSync } from './public-file-read.js';
+import { assertNativeFilePath } from './file-access-policy.js';
 
 const BUILTIN_NAMES = new Set([
   'update-config', 'keybindings-help', 'simplify', 'fewer-permission-prompts',
@@ -52,11 +53,11 @@ function frontmatter(text) {
   return out;
 }
 
-export function parseSkillMetadata(skillDir) {
+export function parseSkillMetadata(skillDir, assertAccess = assertNativeFilePath) {
   const mdPath = join(skillDir, 'SKILL.md');
   if (!existsSync(mdPath)) return null;
   try {
-    const text = readPublicFileSync(mdPath, 'utf8');
+    const text = readPublicFileSync(mdPath, 'utf8', assertAccess);
     const fm = frontmatter(text);
     return {
       name: fm.name || basename(skillDir),
@@ -118,7 +119,9 @@ function scanSkillDir(baseDir, source, enabled, options = {}) {
       if (!entry.isDirectory()) continue;
       if (entry.name.startsWith('.') && !options.includeDotDirs) continue;
       const skillDir = join(baseDir, entry.name);
-      const meta = parseSkillMetadata(skillDir);
+      // Explicit IM roots belong to the existing dedicated IM service, like
+      // scoped image/voice responses. HTTP clients cannot supply these roots.
+      const meta = parseSkillMetadata(skillDir, options.store?.startsWith('im:') ? null : undefined);
       if (!meta) continue;
       out.push({
         name: meta.name || entry.name,
@@ -155,7 +158,7 @@ function scanPluginSkills(homeDir = homedir()) {
     const manifestPath = join(dir, '.codex-plugin', 'plugin.json');
     if (existsSync(manifestPath)) {
       let manifest;
-      try { manifest = safeJsonParse(readPublicFileSync(manifestPath, 'utf8')) || {}; }
+      try { manifest = safeJsonParse(readPublicFileSync(manifestPath, 'utf8', assertNativeFilePath)) || {}; }
       catch { return; }
       const rel = relative(cacheDir, dir).split('/');
       const marketplace = rel[0] || 'plugin';
@@ -255,7 +258,7 @@ function findMutableSkill(params, options = {}) {
       const skillDir = params.path ? resolve(params.path) : join(dir, sanitizeName(params.name));
       if (!isContained(dir, skillDir)) continue;
       if (!existsSync(join(skillDir, 'SKILL.md'))) continue;
-      const meta = parseSkillMetadata(skillDir) || { name: basename(skillDir) };
+      const meta = parseSkillMetadata(skillDir, root.store?.startsWith('im:') ? null : undefined) || { name: basename(skillDir) };
       if (params.name && meta.name !== params.name && basename(skillDir) !== params.name) continue;
       if (params.enabled !== undefined && !!params.enabled !== enabled) continue;
       candidates.push({ root, enabled, skillDir, name: meta.name || basename(skillDir) });

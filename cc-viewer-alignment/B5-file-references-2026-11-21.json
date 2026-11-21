@@ -1,0 +1,112 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": [
+    "ea995f38833b20201b47ebd2c13ec5e54e24aa95",
+    "beaa2e86f2dfa451a2044348c6c14fa874419e6f"
+  ],
+  "previousLocal": "f498f6b",
+  "localSubject": "feat(files): restore file and folder reference drops",
+  "checks": {
+    "full": 1675,
+    "groups": [
+      5,
+      379,
+      1079,
+      212
+    ],
+    "skip": 0,
+    "build": "passed",
+    "packFiles": 705,
+    "log": "/tmp/cxv-b5-e15-release.log"
+  },
+  "artifactInstall": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-e69x__uk",
+    "files": 705,
+    "source_bytes_match": true,
+    "web_asset_files": 204,
+    "web_asset_bytes_match": true,
+    "runtime_tests": "not run (artifact-only)"
+  },
+  "feedbackCssSha256": {
+    "composer": "fa25d5a0699875f4e3c61a57efd3f181127561f3deece3a2e9be5c87e0f8e097",
+    "terminal": "6dae7fc3d46d61c53559cf3830be8e72a69d0a78ad6aaf2747af35dfb95cc46a"
+  },
+  "protocolMatchesFrozenExceptExistingImportPath": true,
+  "gui": [
+    {
+      "log": "/tmp/cxv-b5-e15-webkit-final4.log",
+      "result": {
+        "engine": "webkit",
+        "browserVersion": "27.2",
+        "mode": "references",
+        "nativeHtmlDrag": true,
+        "fileAndFolderComposer": true,
+        "dedup": true,
+        "unsafeRejected": true,
+        "noUploadsOrMoves": true,
+        "originalFolderChip": true,
+        "actualSdkSendExactlyOnce": true,
+        "scratchTwoQuotedInputsWithoutEnter": true,
+        "nativeExactInstance": true,
+        "siblingBytesPreserved": true,
+        "scratchDidNotInvokeModel": true,
+        "incidentalPosts": [
+          "/api/log-v2/objects"
+        ]
+      },
+      "pageErrors": []
+    },
+    {
+      "log": "/tmp/cxv-b5-e15-chromium-final4.log",
+      "result": {
+        "engine": "chromium",
+        "browserVersion": "159.0.8154.6",
+        "mode": "references",
+        "nativeHtmlDrag": true,
+        "fileAndFolderComposer": true,
+        "dedup": true,
+        "unsafeRejected": true,
+        "noUploadsOrMoves": true,
+        "originalFolderChip": true,
+        "actualSdkSendExactlyOnce": true,
+        "scratchTwoQuotedInputsWithoutEnter": true,
+        "nativeExactInstance": true,
+        "siblingBytesPreserved": true,
+        "scratchDidNotInvokeModel": true,
+        "incidentalPosts": [
+          "/api/log-v2/objects"
+        ]
+      },
+      "pageErrors": []
+    }
+  ],
+  "screenshots": [
+    {
+      "path": "cc-viewer-alignment/evidence/B5-references-2026-11-21/chromium-composer.png",
+      "sha256": "ca28585013143794eb85a392c31d7dbe13db3cb28c88d47c6ade2d1744a0aa2c",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-references-2026-11-21/chromium-scratch.png",
+      "sha256": "5d6211294f59acbd95762f5f075acd927c43dcccbdc475c5d085eb23d96bb0db",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-references-2026-11-21/webkit-composer.png",
+      "sha256": "bbc232ffe01604e00dfdcf72e05f26531e37105a68c50a760d7441e449211ea7",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-references-2026-11-21/webkit-scratch.png",
+      "sha256": "958cac13d651c73a0d472a71c742431907828ab57753da463f5c2138e016dceb",
+      "visuallyInspected": true
+    }
+  ],
+  "limits": [
+    "Ordinary main PTY verified via actual component callbacks; no new main PTY GUI claim",
+    "Physical devices and Windows/Linux shells unverified beyond quoting unit tests",
+    "Narrow split screenshot exposes clipped right edge send control; B7 layout remains pending, not a complete narrow visual pass",
+    "Accepted E4 pad scroll defect remains",
+    "B5 Git/target/full policy still pending"
+  ]
+}

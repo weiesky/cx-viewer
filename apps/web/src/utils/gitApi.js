@@ -1,16 +1,21 @@
 import { apiUrl } from './apiUrl';
 
 export async function fetchAllRepos() {
+  // Freeze native view/base/token before the first await. A late repository
+  // listing must never start its per-repo requests in a newly selected view.
+  const urls = Object.fromEntries(['git-repos', 'git-status', 'git-log-unpushed']
+    .map(name => [name, apiUrl('/api/' + name)]));
+  const repoUrl = (name, path) => `${urls[name]}${urls[name].includes('?') ? '&' : '?'}repo=${encodeURIComponent(path)}`;
   let repoList;
   try {
-    const repoRes = await fetch(apiUrl('/api/git-repos'));
+    const repoRes = await fetch(urls['git-repos']);
     if (!repoRes.ok) throw new Error('No git-repos endpoint');
     const data = await repoRes.json();
     repoList = data.repos || [];
   } catch {
     // 回退：旧服务器没有 /api/git-repos，用 /api/git-status 兼容单仓库
     try {
-      const statusRes = await fetch(apiUrl('/api/git-status'));
+      const statusRes = await fetch(urls['git-status']);
       if (!statusRes.ok) return [];
       const data = await statusRes.json();
       return [{
@@ -30,15 +35,16 @@ export async function fetchAllRepos() {
   }
   // GET /api/git-status?repo=<path> → { changes, insertions, deletions, insertions_capped? }
   // GET /api/git-log-unpushed?repo=<path> → { commits, hasUpstream, branch?, upstream?, truncated?, totalCount? }
-  //   commit shape: { hash, shortHash, author, date (ISO), subject, files: [{status, file}] }
-  //   详见 server/lib/git-diff.js: getUnpushedCommits / server.js: /api/git-log-unpushed handler.
+  //   commit shape: { hash, shortHash, author, date (ISO), subject, files: [{status, file}], insertions, deletions }
+  //   无 upstream 或 detached HEAD 时，HEAD --not --remotes 回退可能带 commits；显示由 commits.length 决定。
+  //   详见 lib/git-diff.js: getUnpushedCommits / server.js: /api/git-log-unpushed handler.
   const results = await Promise.all(
     repoList.map(async (repo) => {
       const [statusData, commitsData] = await Promise.all([
-        fetch(apiUrl(`/api/git-status?repo=${encodeURIComponent(repo.path)}`))
+        fetch(repoUrl('git-status', repo.path))
           .then(r => r.ok ? r.json() : { changes: [], insertions: 0, deletions: 0 })
           .catch(() => ({ changes: [], insertions: 0, deletions: 0 })),
-        fetch(apiUrl(`/api/git-log-unpushed?repo=${encodeURIComponent(repo.path)}`))
+        fetch(repoUrl('git-log-unpushed', repo.path))
           .then(r => r.ok ? r.json() : { commits: [], hasUpstream: false })
           .catch(() => ({ commits: [], hasUpstream: false })),
       ]);

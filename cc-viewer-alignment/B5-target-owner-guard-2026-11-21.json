@@ -1,0 +1,50 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": "7a75e1be81b3e90f55f8888c423e66e05c1cde64",
+  "previousLocal": "19d0f34",
+  "existingNativeAncestorGuardLocal": "41d95af54189cfaa9d0816244ec1ae7366d43939",
+  "localSubject": "fix(files): preserve native protected owners in target write policy",
+  "changes": [
+    "Compose existing assertPublicMutationPath and native-state policy ancestor guard before a write verdict",
+    "Retain startup LOG_DIR owner as well as current owner after relocation; do not expose startup V2 archives through general file tools",
+    "Safe new child files still allowed; navigation root semantics unchanged"
+  ],
+  "checks": {
+    "targetPolicyAndNativeCredential": 16,
+    "full": 1746,
+    "parts": [
+      5,
+      431,
+      1098,
+      212
+    ],
+    "skip": 0,
+    "build": "passed",
+    "packFiles": 708,
+    "policyLog": "/tmp/cxv-b5-e33-policy.log",
+    "releaseLog": "/tmp/cxv-b5-e33-release.log"
+  },
+  "installed": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-zb47fxjt",
+    "files": 708,
+    "source_bytes_match": true,
+    "web_asset_files": 204,
+    "runtime_tests": "451/451",
+    "b12_regression": "passed",
+    "installed_cli_relative_cd_boot": "passed",
+    "uses_fake_codex": true,
+    "uses_real_model_network": false
+  },
+  "installedLog": "/tmp/cxv-b5-e33-install.log",
+  "permissionsDecision": "B5-target-permission-boundary.md",
+  "remaining": [
+    "Remote target administrator question pending; no dependent route or UI activation",
+    "Target content/raw/download/write routes, AGENTS/skills UI and complete file authorization audit still required after decision",
+    "B5 not complete; other packages remain independently unfinished"
+  ],
+  "limits": [
+    "No new GUI claim for policy-only change; E28/E29 actual dual-engine screenshots/visibility evidence applies to unchanged frontend",
+    "Original cold-line-scroll defect retained and not called a scrolling pass",
+    "Real model/LAN/physical devices/other platforms/minimum Node not verified"
+  ]
+}

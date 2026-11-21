@@ -8,6 +8,9 @@ import { promisify } from 'node:util';
 const _execFileAsyncRaw = promisify(execFile);
 export const execFileAsync = (cmd, args, opts) => _execFileAsyncRaw(cmd, args, { windowsHide: true, ...opts });
 
+// Original a30d8c92 per-invocation budget; keep the existing 8s log budget.
+const GIT_TIMEOUT_MS = 10000;
+
 // Reject only `..` as a path *segment* (start, between slashes, or end),
 // including Windows backslash variants. Substring match
 // (`'node..modules'.includes('..')`) was rejecting valid paths.
@@ -73,73 +76,101 @@ function nameStatusPath(st, line, tab) {
 }
 
 /**
- * Get commits between upstream and HEAD (i.e. local commits not yet pushed).
- * Returns an empty list when:
- *   - HEAD is detached (rev-parse --abbrev-ref HEAD prints "HEAD")
- *   - Branch has no upstream (@{u} resolution fails)
- *   - Working tree is at upstream (no commits ahead)
+ * Get local commits not yet pushed, between upstream and HEAD when an upstream
+ * is configured (`<upstream>..HEAD`), otherwise every HEAD commit absent from
+ * all remote-tracking refs (`git log HEAD --not --remotes`). The fallback keeps
+ * commits on branches without an upstream visible instead of silently dropping
+ * them. Returns an empty list when HEAD cannot be resolved (unborn branch) or
+ * the log command fails.
  *
- * Each commit includes its changed files via a single `git log --name-status` call,
- * to avoid one git invocation per commit.
+ * Each commit includes its changed files (with real A/M/D/R status) plus per-commit
+ * insertions/deletions. A single `git log --numstat` would give stats but no status,
+ * and rename lines would carry a pseudo-path (`src/{a.js => b.js}`), so the file list
+ * still comes from one `git log --name-status` call and the stats from a second
+ * `git log --numstat` call, joined by commit hash. Passing `--no-renames` to both
+ * keeps rename entries as plain A + D real paths instead.
  *
  * @param {string} cwd
  * @param {object} [opts]
  * @param {number} [opts.maxCommits=100] hard cap to keep payload bounded
- * @returns {Promise<{ commits: Array, hasUpstream: boolean, branch: string|null, upstream: string|null, truncated?: boolean, totalCount?: number, logError?: boolean }>}
+ * @returns {Promise<{ commits: Array, hasUpstream: boolean, branch: string|null, upstream: string|null, truncated?: boolean, totalCount?: number }>}
  */
 export async function getUnpushedCommits(cwd, { maxCommits = 100 } = {}) {
   let branch = null;
   try {
-    const { stdout } = await execFileAsync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], { cwd, encoding: 'utf-8', timeout: 3000 });
+    const { stdout } = await execFileAsync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], { cwd, encoding: 'utf-8', timeout: GIT_TIMEOUT_MS });
     branch = stdout.trim();
   } catch {
     return { commits: [], hasUpstream: false, branch: null, upstream: null };
   }
-  if (!branch || branch === 'HEAD') {
-    return { commits: [], hasUpstream: false, branch, upstream: null };
-  }
+  // Detached HEAD prints "HEAD" — treat like a branch without upstream below.
+  const detached = !branch || branch === 'HEAD';
 
   let upstream = null;
-  try {
-    const { stdout } = await execFileAsync('git', ['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{upstream}'], { cwd, encoding: 'utf-8', timeout: 3000 });
-    upstream = stdout.trim();
-  } catch {
-    return { commits: [], hasUpstream: false, branch, upstream: null };
-  }
-  // SAFE_REF allows `..` (e.g. `origin/..`) — git fails to resolve it anyway,
-  // but reject it explicitly so no ref-shaped input reaches `git log`.
-  if (!upstream || !SAFE_REF.test(upstream) || upstream.includes('..')) {
-    return { commits: [], hasUpstream: false, branch, upstream: null };
+  if (!detached) {
+    try {
+      const { stdout } = await execFileAsync('git', ['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{upstream}'], { cwd, encoding: 'utf-8', timeout: GIT_TIMEOUT_MS });
+      const name = stdout.trim();
+      if (name && SAFE_REF.test(name) && !name.includes('..')) upstream = name;
+    } catch { /* no upstream configured — fall through to the remote-refs fallback */ }
   }
 
-  // Use NUL separators between fields and a sentinel between commits to avoid
+  // With an upstream: commits ahead of it. Otherwise (no upstream, invalid
+  // upstream name, detached HEAD): commits on HEAD not reachable from any
+  // remote-tracking ref. Argument order matters — `--not` flips every revision
+  // listed after it, including HEAD itself, so it must be
+  // ['HEAD', '--not', '--remotes'], never ['--not', '--remotes', 'HEAD'].
+  const rangeArgs = upstream ? [`${upstream}..HEAD`] : ['HEAD', '--not', '--remotes'];
+  const hasUpstream = !!upstream;
+  const resultBranch = detached ? null : branch;
+
+  // Use unit separators between fields and a sentinel between commits to avoid
   // getting fooled by tabs/newlines inside commit subjects.
   // Format: <hash>\x1f<author>\x1f<date>\x1f<subject>\n
-  // Followed by one <status>\t<path> line per file (from --name-status).
-  // Commits separated by \x1e (record separator).
+  // name-status pass: one `<status>\t<path>` line per file (R###\told\tnew for
+  // renames). numstat pass: one `<added>\t<removed>\t<path>` line per file
+  // (binary files report `-\t-\t<path>`). Commits separated by `\x1e`.
+  // `--no-renames` turns renames into plain A + D entries so every path is real.
   const COMMIT_SEP = '\x1e';
   const FIELD_SEP = '\x1f';
-  let stdout = '';
+  const prettyArg = `--pretty=format:${COMMIT_SEP}%H${FIELD_SEP}%an${FIELD_SEP}%aI${FIELD_SEP}%s`;
+  const logArgs = ['log', `--max-count=${maxCommits}`, '--no-renames'];
+  const execOpts = { cwd, encoding: 'utf-8', timeout: 8000, maxBuffer: 10 * 1024 * 1024 };
+  let nameStatusOut = '';
+  let numstatOut = '';
   try {
-    const r = await execFileAsync(
-      'git',
-      [
-        'log',
-        `--max-count=${maxCommits}`,
-        `--pretty=format:${COMMIT_SEP}%H${FIELD_SEP}%an${FIELD_SEP}%aI${FIELD_SEP}%s`,
-        '-M',
-        '--name-status',
-        `${upstream}..HEAD`,
-      ],
-      { cwd, encoding: 'utf-8', timeout: 8000, maxBuffer: 10 * 1024 * 1024 }
-    );
-    stdout = r.stdout;
+    const r = await execFileAsync('git', [...logArgs, prettyArg, '--name-status', ...rangeArgs], execOpts);
+    nameStatusOut = r.stdout;
   } catch {
-    return { commits: [], hasUpstream: true, branch, upstream, truncated: false, totalCount: 0, logError: true };
+    return { commits: [], hasUpstream, branch: resultBranch, upstream, truncated: false, totalCount: 0, logError: true };
+  }
+  try {
+    const r = await execFileAsync('git', [...logArgs, prettyArg, '--numstat', ...rangeArgs], execOpts);
+    numstatOut = r.stdout;
+  } catch {
+    numstatOut = ''; // stats are best-effort — keep the file list even if numstat fails
+  }
+
+  // Sum per-commit line stats from the numstat pass, keyed by full hash.
+  const statsByHash = new Map();
+  for (const block of numstatOut.split(COMMIT_SEP)) {
+    if (!block) continue;
+    const lines = block.split(/\r?\n/);
+    const parts = (lines[0] || '').split(FIELD_SEP);
+    if (parts.length < 4) continue;
+    let insertions = 0;
+    let deletions = 0;
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split('\t');
+      if (cols.length < 3) continue;
+      insertions += parseInt(cols[0], 10) || 0; // binary '-' → NaN → 0
+      deletions += parseInt(cols[1], 10) || 0;
+    }
+    statsByHash.set(parts[0], { insertions, deletions });
   }
 
   const commits = [];
-  const blocks = stdout.split(COMMIT_SEP).filter(Boolean);
+  const blocks = nameStatusOut.split(COMMIT_SEP).filter(Boolean);
   for (const block of blocks) {
     // git on Windows 在 piped 模式输出 CRLF；split('\n') 会让 fp 末尾带 \r，前端文件名乱码。
     const lines = block.split(/\r?\n/);
@@ -154,10 +185,13 @@ export async function getUnpushedCommits(cwd, { maxCommits = 100 } = {}) {
       const tab = line.indexOf('\t');
       if (tab < 0) continue;
       const st = line.substring(0, tab).trim();
+      // name-status rename rows carry two paths (old\tnew); with --no-renames
+      // they should not appear, but keep the new path if one ever slips through.
       const fp = nameStatusPath(st, line, tab);
       if (!fp) continue;
       files.push({ status: st[0] || 'M', file: fp });
     }
+    const stats = statsByHash.get(hash) || { insertions: 0, deletions: 0 };
     commits.push({
       hash,
       shortHash: hash.substring(0, 7),
@@ -165,17 +199,19 @@ export async function getUnpushedCommits(cwd, { maxCommits = 100 } = {}) {
       date,
       subject,
       files,
+      insertions: stats.insertions,
+      deletions: stats.deletions,
     });
   }
 
   // Detect truncation. 默认 truncated = (commits.length === maxCommits)，因为命中 cap 大概率
   // 是被截了；rev-list --count 成功才用真实数据覆盖。这样如果 rev-list 失败/超时（大 repo
-  // 可能 >3s），用户至少能看到截断标记，不会被静默隐藏 100 条未推送 commit。
+  // 可能 >3s），用户至少能看到截断标记，不会被静默隐藏 200 条未推送 commit。
   let totalCount = commits.length;
   let truncated = commits.length === maxCommits;
   if (truncated) {
     try {
-      const r = await execFileAsync('git', ['rev-list', '--count', `${upstream}..HEAD`], { cwd, encoding: 'utf-8', timeout: 3000 });
+      const r = await execFileAsync('git', ['rev-list', '--count', ...rangeArgs], { cwd, encoding: 'utf-8', timeout: GIT_TIMEOUT_MS });
       const parsed = parseInt(r.stdout.trim(), 10);
       if (Number.isFinite(parsed) && parsed > 0) {
         totalCount = parsed;
@@ -184,7 +220,7 @@ export async function getUnpushedCommits(cwd, { maxCommits = 100 } = {}) {
     } catch {}
   }
 
-  return { commits, hasUpstream: true, branch, upstream, truncated, totalCount };
+  return { commits, hasUpstream, branch: resultBranch, upstream, truncated, totalCount };
 }
 
 /**
@@ -205,7 +241,7 @@ export function isValidCommitHash(hash) {
  */
 async function gitBlobSize(cwd, ref) {
   try {
-    const { stdout } = await execFileAsync('git', ['cat-file', '-s', ref], { cwd, encoding: 'utf-8', timeout: 3000 });
+    const { stdout } = await execFileAsync('git', ['cat-file', '-s', ref], { cwd, encoding: 'utf-8', timeout: GIT_TIMEOUT_MS });
     const size = parseInt(stdout.trim(), 10);
     return Number.isFinite(size) && size >= 0 ? size : null;
   } catch {
@@ -226,7 +262,7 @@ async function readGitBlob(cwd, ref) {
     return { is_large: true, size: size || 0 };
   }
   try {
-    const { stdout } = await execFileAsync('git', ['show', ref], { cwd, encoding: 'utf-8', timeout: 5000, maxBuffer: MAX_DIFF_FILE_BYTES + 1024 * 1024 });
+    const { stdout } = await execFileAsync('git', ['show', ref], { cwd, encoding: 'utf-8', timeout: GIT_TIMEOUT_MS, maxBuffer: MAX_DIFF_FILE_BYTES + 1024 * 1024 });
     // 读后复核字节数（utf-8 解码可能膨胀，如无效 UTF-8 → U+FFFD）
     if (Buffer.byteLength(stdout, 'utf-8') > MAX_DIFF_FILE_BYTES) {
       return { is_large: true, size: Buffer.byteLength(stdout, 'utf-8') };
@@ -269,7 +305,7 @@ export async function getGitDiffs(cwd, files, commitHash, isMerge = false) {
       const { stdout } = await execFileAsync(
         'git',
         dtArgs,
-        { cwd, encoding: 'utf-8', timeout: 5000, maxBuffer: MAX_DIFF_FILE_BYTES }
+        { cwd, encoding: 'utf-8', timeout: GIT_TIMEOUT_MS, maxBuffer: MAX_DIFF_FILE_BYTES }
       );
       commitStatusMap = new Map();
       for (const line of stdout.split(/\r?\n/)) {
@@ -279,6 +315,9 @@ export async function getGitDiffs(cwd, files, commitHash, isMerge = false) {
         const st = line.substring(0, tab).trim();
         const { file: fp, oldPath } = nameStatusParts(st, line, tab);
         commitStatusMap.set(fp, { status: st[0] || 'M', oldPath });
+        // The commit list uses --no-renames (A + D). Preserve the existing
+        // new-path rename comparison while allowing its deleted source to open.
+        if (st[0] === 'R' && oldPath) commitStatusMap.set(oldPath, { status: 'D', oldPath: null });
       }
     } catch (err) {
       // commit 已被 server 层验证存在，此处失败意味着真实异常（权限/仓库损坏）
@@ -305,7 +344,7 @@ export async function getGitDiffs(cwd, files, commitHash, isMerge = false) {
         is_new = status === 'A';
         is_deleted = status === 'D';
       } else {
-        const { stdout: statusOutput } = await execFileAsync('git', ['status', '--porcelain', '--', file], { cwd, encoding: 'utf-8', timeout: 3000 });
+        const { stdout: statusOutput } = await execFileAsync('git', ['status', '--porcelain', '--', file], { cwd, encoding: 'utf-8', timeout: GIT_TIMEOUT_MS });
         if (!statusOutput.trim()) continue;
         status = statusOutput.substring(0, 2).trim();
         is_new = status === 'A' || status === '??';
@@ -318,7 +357,7 @@ export async function getGitDiffs(cwd, files, commitHash, isMerge = false) {
           if (worktreeRenameMap === null) {
             worktreeRenameMap = new Map();
             try {
-              const { stdout: renameOut } = await execFileAsync('git', ['diff', '-M', '--name-status', 'HEAD'], { cwd, encoding: 'utf-8', timeout: 5000, maxBuffer: MAX_DIFF_FILE_BYTES });
+              const { stdout: renameOut } = await execFileAsync('git', ['diff', '-M', '--name-status', 'HEAD'], { cwd, encoding: 'utf-8', timeout: GIT_TIMEOUT_MS, maxBuffer: MAX_DIFF_FILE_BYTES });
               for (const line of renameOut.split(/\r?\n/)) {
                 if (!line.trim()) continue;
                 const tab = line.indexOf('\t');
@@ -348,7 +387,7 @@ export async function getGitDiffs(cwd, files, commitHash, isMerge = false) {
                 ? ['diff-tree', '-r', '-m', '--first-parent', '--no-commit-id', '--numstat', '--root', commitHash, '--', file]
                 : ['diff-tree', '-r', '--no-commit-id', '--numstat', '--root', commitHash, '--', file])
             : ['diff', '--numstat', 'HEAD', '--', file];
-          const { stdout: diffCheck } = await execFileAsync('git', numstatArgs, { cwd, encoding: 'utf-8', timeout: 3000 });
+          const { stdout: diffCheck } = await execFileAsync('git', numstatArgs, { cwd, encoding: 'utf-8', timeout: GIT_TIMEOUT_MS });
           if (diffCheck.includes('-\t-\t')) {
             is_binary = true;
           }

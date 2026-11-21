@@ -1,0 +1,85 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": [
+    "a2f5cd4b43fa8f8003e60774b5c71160e6de509e",
+    "24c4f60b5480aefa9b26d635d68700f5de5f4ffe"
+  ],
+  "previousLocal": "78cfb74",
+  "localSubject": "feat(git): restore file folder and commit reference drops",
+  "sourceHashes": {
+    "payloadAndTreeDir": "e83ada6728ad253fa5e60453b2cb85589c436e7ac4304f906d97bb29cdd2c926",
+    "CommitRow": "73fd6a571945d4b04ac0b51c0bbe651bc9059bde4845a91ecac2361bd92b0288",
+    "dragCSS": "57be584e0412f27726d5b7a65232bd093e347a3ff7d57778def11e46d9e2b080"
+  },
+  "sourceBlocksMatchFrozen": true,
+  "checks": {
+    "web": 384,
+    "skip": 0,
+    "buildAndAssembly": "passed",
+    "webLog": "/tmp/cxv-b5-e20-web-final2.log"
+  },
+  "gui": [
+    {
+      "log": "/tmp/cxv-b5-e20-webkit.log",
+      "result": {
+        "engine": "webkit",
+        "mode": "git-drag",
+        "browserVersion": "27.2",
+        "nativeHtmlDrag": true,
+        "nestedRepoFileAndFolderPaths": true,
+        "fullCommitHash": true,
+        "renameRowDisabledAndPseudoDirCanceled": true,
+        "menuAttachAndInsert": true,
+        "scratch3InputsWithoutEnter": true,
+        "noModelOrUploadsOrMoves": true,
+        "exactInstanceAndSiblingBytes": true
+      },
+      "pageErrors": []
+    },
+    {
+      "log": "/tmp/cxv-b5-e20-chromium.log",
+      "result": {
+        "engine": "chromium",
+        "mode": "git-drag",
+        "browserVersion": "159.0.8154.6",
+        "nativeHtmlDrag": true,
+        "nestedRepoFileAndFolderPaths": true,
+        "fullCommitHash": true,
+        "renameRowDisabledAndPseudoDirCanceled": true,
+        "menuAttachAndInsert": true,
+        "scratch3InputsWithoutEnter": true,
+        "noModelOrUploadsOrMoves": true,
+        "exactInstanceAndSiblingBytes": true
+      },
+      "pageErrors": []
+    }
+  ],
+  "screenshots": [
+    {
+      "path": "cc-viewer-alignment/evidence/B5-git-references-2026-11-21/chromium-composer.png",
+      "sha256": "e235322a9998c44b4dfeaf8ccd7620460accc3594d5e5b00d56cb2893ac573a3",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-git-references-2026-11-21/chromium-scratch.png",
+      "sha256": "28784065dcb136de8bb9457314ef539433ef2e36cf9590f958837b7d0ddc4604",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-git-references-2026-11-21/webkit-composer.png",
+      "sha256": "b9c228dbb5372753b4adab308e4eef59f3e735e93fcb5c31a89f14caa43dded2",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-git-references-2026-11-21/webkit-scratch.png",
+      "sha256": "a2af2a26026695f8f3c76decf38373701785ec35e575189a2d1dd603d883549b",
+      "visuallyInspected": true
+    }
+  ],
+  "limits": [
+    "Ordinary PTY new GUI/physical devices/other platforms unverified",
+    "E15 narrow split clipping remains B7 pending",
+    "Full/installed runtime not rerun; recent E15/E13 separated",
+    "B5 target policy and final scope audit pending"
+  ]
+}

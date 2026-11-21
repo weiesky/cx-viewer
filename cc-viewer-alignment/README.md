@@ -2,7 +2,7 @@
 
 **迁移约束：优先参考 PR 的实际代码，禁止根据文档自由改版。** B2已按上游组件/CSS/交互纠偏并经用户验收收口；B4及后续工作包继续遵守该规则，运行性测试不能单独代表视觉对齐。必读[源码优先迁移规范与已确认偏差](./migration-code-first.md)。
 
-2026-11-21 B4已完成（第5/12工作包），B2/B3已收口；固定上游74cd752d99caf122e750216d2af3bb9f467c4de1。任务/Agent身份与生命周期、审批问答、失败恢复/慢请求、活性/重放、原HUD/MCP/model chip/浮动输入区/压缩提示、启动参数及SDK主通道PTY隔离已分笔核验。用户明确允许临时Playwright后，E66完成G1–G5实际Chromium159/WebKit27.2 GUI：分叉与审批预抢刷新各一份、原生滚动条11px实际可拖、多行/HUD/队列/空态错误/长回复、phone/pad仿真、压缩恢复清理、SDK说明及分类不可用/普通PTY与离线门控。12张原截图与哈希见B4-final-gui回执。最终1580/1580、0skip、构建与pack:dry-run通过；E64新安装291运行时、702文件/204Web精确字节、B1.2/CLI通过，本轮无生产变更。默认exec/显式AppServer渐进方案及既选353K用量条保持。本轮按授权以1commit/1PR交付，原72笔hash映射与可恢复备份见local-commit-consolidation-2026-11-21.md；GitHub最终合并状态以关联PR为准，完成后下一工作包B5。B7普通PTY队列/技能导航、B8角色分源/模型提示、B9自动审批/调度、B10 service总线与B11旧IM/发布等混合项继续独立未完成。保留IM并发偶发未定、原生profile/image-input/add-dir/review不支持，真实外部模型/慢网/权限/dynamic图像/OAuth/远端MCP、物理音频/设备及其他平台/最低Node未验边界。详见[B4完成矩阵](./B4-completion-matrix.md)。
+2026-11-21 B5已完成（第6/12工作包），固定上游74cd752d99caf122e750216d2af3bb9f467c4de1。E1–E45分笔完成搜索/原文件树与浏览菜单/导入移动下载编辑/引用/Git/Markdown路径，以及原AGENTS和project/user/plugin技能目录；E46汇总。E39普通入口组合native凭据/历史/owner策略，E40–44补原case-only回滚、delete/EXDEV、目录alias及平台sep；E45修复.agents祖先导航，仅目标祖先目录元数据例外，不放宽内容或写策略。用户已交互选择上游远程管理员，认证设置/内部bridge仍限本机。最终1781/1781、0skip、build/pack712；真实新安装487/487、必需源码与204Web文件精确字节、B1.2/隔离CLI通过。目标GUI为实际Chromium159/WebKit27.2的E38八场26图及E45 user/plugin两场6图，原FileBrowser整CSS相同；phone/pad仅仿真、remote仅偏好模拟及隔离HTTP。B4已由PR #4合并main（288faea），B5按用户最新授权将原46笔合为1commit，经1个面向main的PR自查后合并，原hash映射/恢复备份保留；交付预检仅清理1个末尾LF，搜索15/15、新构建/pack712及新安装产物字节通过；关联[PR #5](https://github.com/weiesky/cx-viewer/pull/5)，最终GitHub合并状态以该PR与整合回执为准。B6留待下一个会话执行，本会话不启动。见[B5交付记录](./B5-local-commit-consolidation-2026-11-21.md)。iPad替换横滚按已选保留；Markdown冷开行号原缺陷未计滚动通过；B7窄split/主PTY新GUI待核。B6–B11混合子项及IM并发偶发未定独立，真实LAN/TLS、外部模型、物理设备/音频、其他OS/最低Node未验；native profile/image-input/add-dir/review不支持边界保持。默认exec/显式AppServer渐进与353K用量条不变。见[B5完成矩阵](./B5-completion-matrix.md)。
 
 2026-11-18 GitHub 同步：已按用户请求将 main 6045b53 与 codex/pnpm-workspace 2c0edc8 原子推送到 origin 同名分支，远端完整 hash 已读回核对，上游跟踪已设置。未执行强推、分支合并或活动安装切换；未提交的 AGENTS.md 与 cc-viewer-alignment 文档仍保留本地。
 
@@ -18,8 +18,9 @@
 | B1 | 本地实现与隔离安装验收完成（b549125）；保留现场并拒绝覆盖策略已确认，真实用户/目标环境验收仍待。 |
 | B2 | 已完成：2026-11-19用户验收收口 |
 | B3 | 已完成并推送main：[7c3d849](https://github.com/weiesky/cx-viewer/commit/7c3d849b9e7acda1c974077843406c23627dbdcb)；1410项通过，见[B3完成矩阵](./B3-completion-matrix.md) |
-| B4 | 实施中（第5/12工作包）；最新源码1575项/构建通过；E56原生压缩提示已验；E55浮动输入区/scrollbar源码已验，新安装286项通过，GUI待；E53中断分叉与缓存修复的最终GUI复验待连接恢复，Context差异及剩余候选继续，见[B4实施](./B4-implementation.md)。 |
-| B5–B10 | 尚未逐包完成，按台账独立核验 |
+| B4 | 已完成并通过[PR #4](https://github.com/weiesky/cx-viewer/pull/4)合并main：288faea；见[B4完成矩阵](./B4-completion-matrix.md)。 |
+| B5 | 已完成（第6/12工作包），按最新授权1commit/1PR自行合并，原46笔备份/映射保留；见[B5完成矩阵](./B5-completion-matrix.md)及[最终回执](./B5-final-2026-11-21.json)。 |
+| B6–B10 | 尚未逐包完成，按台账独立核验 |
 | B11 / 工程前置 | A1 6287d2a 已主线；A2 3b15a6d 已提交工作树并通过本地验证，当前全局实例未切换。 |
 
 pnpm/workspace 已按用户选择前置实施，先稳定结构，再继续功能对齐；见 [提交、边界与验收](./A1-A2-engineering.md)。

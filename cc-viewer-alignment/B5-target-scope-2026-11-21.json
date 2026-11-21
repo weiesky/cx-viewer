@@ -1,0 +1,28 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": [
+    "566ade13fc3bf2c3fd8d90044b1f36602c6980bf",
+    "7a75e1be81b3e90f55f8888c423e66e05c1cde64"
+  ],
+  "previousLocal": "47ebed4",
+  "localSubject": "feat(files): add native target identity and navigation scope prerequisite",
+  "endpointWiring": false,
+  "nativeAdaptations": [
+    "AGENTS.md/codex-md with existing native opaque base64url IDs; server-owned discovery entries injected, no new client root authority",
+    "Actual listSkills({cwd}) and default ~/.codex/plugins/cache owner even under custom CODEX_HOME",
+    "Pass frozen server cwd to native read policy rather than active/global project",
+    "Keep original whole navigation write scope and per-entry allowlist backstop; identity itself grants no extra file root"
+  ],
+  "checks": {
+    "targetPolicyAndNativeCredential": 15,
+    "targetCases": 6,
+    "skip": 0,
+    "log": "/tmp/cxv-b5-e32-scope-final.log"
+  },
+  "limits": [
+    "No target endpoint or UI enabled; remote admin answer still required",
+    "Existing ancestor AGENTS detail may be listed outside roots, but its folder correctly403 without allowlist access; no blanket HOME grant",
+    "Newest full/install remains E31 1739/707/444 before this added module",
+    "Existing native mutation ancestor guard still to compose into write policy before target writes are enabled"
+  ]
+}

@@ -1,6 +1,309 @@
 // 客户端专用的i18n文件
 
 const i18nData = {
+  "ui.openFolder": {
+    "zh": "打开文件夹",
+    "en": "Open folder",
+    "zh-TW": "開啟資料夾",
+    "ko": "폴더 열기",
+    "ja": "フォルダを開く",
+    "de": "Ordner öffnen",
+    "es": "Abrir carpeta",
+    "fr": "Ouvrir le dossier",
+    "it": "Apri cartella",
+    "da": "Åbn mappe",
+    "pl": "Otwórz folder",
+    "ru": "Открыть папку",
+    "ar": "فتح المجلد",
+    "no": "Åpne mappe",
+    "pt-BR": "Abrir pasta",
+    "th": "เปิดโฟลเดอร์",
+    "tr": "Klasörü aç",
+    "uk": "Відкрити папку"
+  },
+
+  "ui.fileExplorer.loadFailed": {
+    "zh": "加载失败：{reason}",
+    "en": "Failed to load: {reason}",
+    "zh-TW": "載入失敗：{reason}",
+    "ko": "로드 실패: {reason}",
+    "ja": "読み込みに失敗しました：{reason}",
+    "de": "Laden fehlgeschlagen: {reason}",
+    "es": "Error al cargar: {reason}",
+    "fr": "Échec du chargement : {reason}",
+    "it": "Caricamento non riuscito: {reason}",
+    "da": "Indlæsning mislykkedes: {reason}",
+    "pl": "Nie udało się załadować: {reason}",
+    "ru": "Не удалось загрузить: {reason}",
+    "ar": "فشل التحميل: {reason}",
+    "no": "Kunne ikke laste: {reason}",
+    "pt-BR": "Falha ao carregar: {reason}",
+    "th": "โหลดไม่สำเร็จ: {reason}",
+    "tr": "Yükleme başarısız: {reason}",
+    "uk": "Не вдалося завантажити: {reason}"
+  },
+  "ui.gitChanges.noUpstreamTip": {
+    "zh": "未配置上游——显示不在任何远端上的提交",
+    "en": "No upstream — showing commits not on any remote",
+    "zh-TW": "未設定上游——顯示不在任何遠端上的提交",
+    "ko": "업스트림 없음 — 어떤 리모트에도 없는 커밋 표시",
+    "ja": "アップストリーム未設定 — どのリモートにも存在しないコミットを表示",
+    "de": "Kein Upstream — Commits werden angezeigt, die auf keinem Remote vorhanden sind",
+    "es": "Sin upstream — mostrando commits que no están en ningún remoto",
+    "fr": "Aucun upstream — affichage des commits absents de tout dépôt distant",
+    "it": "Nessun upstream — visualizzazione dei commit non presenti su alcun remote",
+    "da": "Ingen upstream — viser commits, der ikke findes på nogen remote",
+    "pl": "Brak upstream — wyświetlanie commitów nieobecnych na żadnym zdalnym repozytorium",
+    "ru": "Нет upstream — показаны коммиты, отсутствующие на всех удалённых репозиториях",
+    "ar": "لا يوجد upstream — عرض الالتزامات غير الموجودة على أي مستودع بعيد",
+    "no": "Ingen upstream — viser commits som ikke finnes på noen remote",
+    "pt-BR": "Sem upstream — mostrando commits que não estão em nenhum remoto",
+    "th": "ไม่มี upstream — แสดงคอมมิตที่ไม่มีอยู่บนรีโมตใดเลย",
+    "tr": "Upstream yok — hiçbir uzak depoda olmayan commit'ler gösteriliyor",
+    "uk": "Немає upstream — показано коміти, яких немає на жодному віддаленому репозиторії"
+  },
+  "ui.fileBrowserModal.upload": {
+    "zh": "上传文件",
+    "en": "Upload files",
+    "zh-TW": "上傳檔案",
+    "ko": "파일 업로드",
+    "ja": "ファイルをアップロード",
+    "de": "Dateien hochladen",
+    "es": "Subir archivos",
+    "fr": "Téléverser des fichiers",
+    "it": "Carica file",
+    "da": "Upload filer",
+    "pl": "Prześlij pliki",
+    "ru": "Загрузить файлы",
+    "ar": "تحميل الملفات",
+    "no": "Last opp filer",
+    "pt-BR": "Enviar arquivos",
+    "th": "อัปโหลดไฟล์",
+    "tr": "Dosya yükle",
+    "uk": "Завантажити файли"
+  },
+
+  "ui.fileBrowserModal.gitIgnored": {
+    "zh": "已被 git 忽略",
+    "en": "Ignored by git",
+    "zh-TW": "已被 git 忽略",
+    "ko": "git에서 무시됨",
+    "ja": "git により無視されています",
+    "de": "Von git ignoriert",
+    "es": "Ignorado por git",
+    "fr": "Ignoré par git",
+    "it": "Ignorato da git",
+    "da": "Ignoreret af git",
+    "pl": "Ignorowane przez git",
+    "ru": "Игнорируется git",
+    "ar": "متجاهَل من git",
+    "no": "Ignorert av git",
+    "pt-BR": "Ignorado pelo git",
+    "th": "ถูก git ไม่สนใจ",
+    "tr": "git tarafından yok sayıldı",
+    "uk": "Ігнорується git"
+  },
+
+  "ui.fileBrowserModal.loadFailed": {
+    "zh": "加载目录失败",
+    "en": "Failed to load directory",
+    "zh-TW": "載入目錄失敗",
+    "ko": "디렉터리 로드 실패",
+    "ja": "ディレクトリの読み込みに失敗しました",
+    "de": "Ordner konnte nicht geladen werden",
+    "es": "No se pudo cargar la carpeta",
+    "fr": "Impossible de charger le dossier",
+    "it": "Impossibile caricare la cartella",
+    "da": "Kunne ikke indlæse mappen",
+    "pl": "Nie udało się wczytać folderu",
+    "ru": "Не удалось загрузить папку",
+    "ar": "تعذر تحميل المجلد",
+    "no": "Kunne ikke laste mappen",
+    "pt-BR": "Falha ao carregar a pasta",
+    "th": "โหลดโฟลเดอร์ไม่สำเร็จ",
+    "tr": "Klasör yüklenemedi",
+    "uk": "Не вдалося завантажити папку"
+  },
+
+  "ui.fileBrowserModal.empty": {
+    "zh": "此文件夹为空",
+    "en": "This folder is empty",
+    "zh-TW": "此資料夾為空",
+    "ko": "이 폴더가 비어 있습니다",
+    "ja": "このフォルダは空です",
+    "de": "Dieser Ordner ist leer",
+    "es": "Esta carpeta está vacía",
+    "fr": "Ce dossier est vide",
+    "it": "Questa cartella è vuota",
+    "da": "Denne mappe er tom",
+    "pl": "Ten folder jest pusty",
+    "ru": "Эта папка пуста",
+    "ar": "هذا المجلد فارغ",
+    "no": "Denne mappen er tom",
+    "pt-BR": "Esta pasta está vazia",
+    "th": "โฟลเดอร์นี้ว่างเปล่า",
+    "tr": "Bu klasör boş",
+    "uk": "Ця папка порожня"
+  },
+
+  "ui.fileBrowserModal.root": {
+    "zh": "项目",
+    "en": "Project",
+    "zh-TW": "專案",
+    "ko": "프로젝트",
+    "ja": "プロジェクト",
+    "de": "Projekt",
+    "es": "Proyecto",
+    "fr": "Projet",
+    "it": "Progetto",
+    "da": "Projekt",
+    "pl": "Projekt",
+    "ru": "Проект",
+    "ar": "المشروع",
+    "no": "Prosjekt",
+    "pt-BR": "Projeto",
+    "th": "โปรเจกต์",
+    "tr": "Proje",
+    "uk": "Проєкт"
+  },
+
+  "ui.fileBrowserModal.up": {
+    "zh": "上一级",
+    "en": "Up one level",
+    "zh-TW": "上一層",
+    "ko": "한 단계 위로",
+    "ja": "1 つ上の階層",
+    "de": "Eine Ebene höher",
+    "es": "Subir un nivel",
+    "fr": "Niveau supérieur",
+    "it": "Livello superiore",
+    "da": "Et niveau op",
+    "pl": "Poziom wyżej",
+    "ru": "На уровень выше",
+    "ar": "مستوى لأعلى",
+    "no": "Ett nivå opp",
+    "pt-BR": "Nível acima",
+    "th": "ขึ้นหนึ่งระดับ",
+    "tr": "Bir üst seviye",
+    "uk": "На рівень вище"
+  },
+
+  "ui.fileBrowserModal.title": {
+    "zh": "项目文件浏览器",
+    "en": "Project Files",
+    "zh-TW": "專案檔案瀏覽器",
+    "ko": "프로젝트 파일 브라우저",
+    "ja": "プロジェクトファイルブラウザ",
+    "de": "Projektdateien",
+    "es": "Archivos del proyecto",
+    "fr": "Fichiers du projet",
+    "it": "File del progetto",
+    "da": "Projektfiler",
+    "pl": "Pliki projektu",
+    "ru": "Файлы проекта",
+    "ar": "ملفات المشروع",
+    "no": "Prosjektfiler",
+    "pt-BR": "Arquivos do projeto",
+    "th": "ไฟล์โปรเจกต์",
+    "tr": "Proje Dosyaları",
+    "uk": "Файли проєкту"
+  },
+
+  "ui.filePreview.title": {
+    "zh": "此文件暂不支持预览", "en": "Preview is not available for this file yet", "zh-TW": "此檔案暫不支援預覽", "ko": "이 파일은 아직 미리 볼 수 없습니다", "ja": "このファイルはまだプレビューできません", "de": "Für diese Datei ist noch keine Vorschau verfügbar", "es": "La vista previa de este archivo aún no está disponible", "fr": "L’aperçu de ce fichier n’est pas encore disponible", "it": "L’anteprima di questo file non è ancora disponibile", "da": "Forhåndsvisning af denne fil er ikke tilgængelig endnu", "pl": "Podgląd tego pliku nie jest jeszcze dostępny", "ru": "Предпросмотр этого файла пока недоступен", "ar": "معاينة هذا الملف غير متاحة بعد", "no": "Forhåndsvisning av denne filen er ikke tilgjengelig ennå", "pt-BR": "A visualização deste arquivo ainda não está disponível", "th": "ยังไม่รองรับการดูตัวอย่างไฟล์นี้", "tr": "Bu dosyanın önizlemesi henüz desteklenmiyor", "uk": "Попередній перегляд цього файла поки недоступний"
+  },
+  "ui.filePreview.download": {
+    "zh": "下载文件", "en": "Download file", "zh-TW": "下載檔案", "ko": "파일 다운로드", "ja": "ファイルをダウンロード", "de": "Datei herunterladen", "es": "Descargar archivo", "fr": "Télécharger le fichier", "it": "Scarica file", "da": "Download fil", "pl": "Pobierz plik", "ru": "Скачать файл", "ar": "تنزيل الملف", "no": "Last ned fil", "pt-BR": "Baixar arquivo", "th": "ดาวน์โหลดไฟล์", "tr": "Dosyayı indir", "uk": "Завантажити файл"
+  },
+  "ui.filePreview.contentBinary": {
+    "zh": "检测到二进制内容，无法作为文本编辑。请下载后使用合适的应用打开。", "en": "Binary content detected. This file cannot be edited as text; download it and open it with a suitable application.", "zh-TW": "偵測到二進位內容，無法作為文字編輯。請下載後使用合適的應用程式開啟。", "ko": "바이너리 콘텐츠가 감지되어 텍스트로 편집할 수 없습니다. 다운로드하여 적합한 애플리케이션으로 여세요.", "ja": "バイナリコンテンツを検出しました。テキストとして編集できないため、ダウンロードして適切なアプリで開いてください。", "de": "Binärer Inhalt erkannt. Diese Datei kann nicht als Text bearbeitet werden; laden Sie sie herunter und öffnen Sie sie mit einer geeigneten Anwendung.", "es": "Se detectó contenido binario. Este archivo no se puede editar como texto; descárgalo y ábrelo con una aplicación adecuada.", "fr": "Contenu binaire détecté. Ce fichier ne peut pas être modifié comme du texte ; téléchargez-le et ouvrez-le avec une application adaptée.", "it": "Contenuto binario rilevato. Questo file non può essere modificato come testo; scaricalo e aprilo con un’applicazione adatta.", "da": "Binært indhold registreret. Filen kan ikke redigeres som tekst; download den og åbn den med et passende program.", "pl": "Wykryto dane binarne. Tego pliku nie można edytować jako tekstu; pobierz go i otwórz w odpowiedniej aplikacji.", "ru": "Обнаружены двоичные данные. Этот файл нельзя редактировать как текст; скачайте его и откройте в подходящем приложении.", "ar": "تم اكتشاف محتوى ثنائي. لا يمكن تحرير هذا الملف كنص؛ نزّله وافتحه بتطبيق مناسب.", "no": "Binært innhold oppdaget. Filen kan ikke redigeres som tekst; last den ned og åpne den med et egnet program.", "pt-BR": "Conteúdo binário detectado. Este arquivo não pode ser editado como texto; baixe-o e abra com um aplicativo adequado.", "th": "ตรวจพบเนื้อหาไบนารี ไม่สามารถแก้ไขเป็นข้อความได้ โปรดดาวน์โหลดและเปิดด้วยแอปที่เหมาะสม", "tr": "İkili içerik algılandı. Bu dosya metin olarak düzenlenemez; indirin ve uygun bir uygulamayla açın.", "uk": "Виявлено двійковий вміст. Цей файл не можна редагувати як текст; завантажте його та відкрийте у відповідній програмі."
+  },
+  "ui.filePreview.kind.audio": {
+    "zh": "音频预览将在后续版本提供，请先下载文件。", "en": "Audio preview will be available in a future release. Download the file to listen to it.", "zh-TW": "音訊預覽將於後續版本提供，請先下載檔案。", "ko": "오디오 미리보기는 향후 릴리스에서 제공됩니다. 파일을 다운로드하여 재생하세요.", "ja": "音声プレビューは今後のリリースで提供予定です。ファイルをダウンロードして再生してください。", "de": "Die Audio-Vorschau wird in einer späteren Version verfügbar sein. Laden Sie die Datei zum Anhören herunter.", "es": "La vista previa de audio estará disponible en una versión futura. Descarga el archivo para escucharlo.", "fr": "L’aperçu audio sera disponible dans une prochaine version. Téléchargez le fichier pour l’écouter.", "it": "L’anteprima audio sarà disponibile in una versione futura. Scarica il file per ascoltarlo.", "da": "Lydforhåndsvisning kommer i en senere version. Download filen for at lytte.", "pl": "Podgląd audio będzie dostępny w przyszłej wersji. Pobierz plik, aby go odsłuchać.", "ru": "Предпросмотр аудио появится в будущей версии. Скачайте файл для прослушивания.", "ar": "ستتوفر معاينة الصوت في إصدار مستقبلي. نزّل الملف للاستماع إليه.", "no": "Lydforhåndsvisning kommer i en senere versjon. Last ned filen for å lytte.", "pt-BR": "A visualização de áudio estará disponível em uma versão futura. Baixe o arquivo para ouvi-lo.", "th": "การดูตัวอย่างเสียงจะมีในเวอร์ชันถัดไป โปรดดาวน์โหลดไฟล์เพื่อฟัง", "tr": "Ses önizlemesi gelecekteki bir sürümde sunulacak. Dinlemek için dosyayı indirin.", "uk": "Попередній перегляд аудіо з’явиться у наступній версії. Завантажте файл для прослуховування."
+  },
+  "ui.filePreview.kind.video": {
+    "zh": "视频预览将在后续版本提供，请先下载文件。", "en": "Video preview will be available in a future release. Download the file to play it.", "zh-TW": "影片預覽將於後續版本提供，請先下載檔案。", "ko": "비디오 미리보기는 향후 릴리스에서 제공됩니다. 파일을 다운로드하여 재생하세요.", "ja": "動画プレビューは今後のリリースで提供予定です。ファイルをダウンロードして再生してください。", "de": "Die Video-Vorschau wird in einer späteren Version verfügbar sein. Laden Sie die Datei zur Wiedergabe herunter.", "es": "La vista previa de video estará disponible en una versión futura. Descarga el archivo para reproducirlo.", "fr": "L’aperçu vidéo sera disponible dans une prochaine version. Téléchargez le fichier pour le lire.", "it": "L’anteprima video sarà disponibile in una versione futura. Scarica il file per riprodurlo.", "da": "Videoforhåndsvisning kommer i en senere version. Download filen for at afspille den.", "pl": "Podgląd wideo będzie dostępny w przyszłej wersji. Pobierz plik, aby go odtworzyć.", "ru": "Предпросмотр видео появится в будущей версии. Скачайте файл для воспроизведения.", "ar": "ستتوفر معاينة الفيديو في إصدار مستقبلي. نزّل الملف لتشغيله.", "no": "Videoforhåndsvisning kommer i en senere versjon. Last ned filen for å spille den av.", "pt-BR": "A visualização de vídeo estará disponível em uma versão futura. Baixe o arquivo para reproduzi-lo.", "th": "การดูตัวอย่างวิดีโอจะมีในเวอร์ชันถัดไป โปรดดาวน์โหลดไฟล์เพื่อเล่น", "tr": "Video önizlemesi gelecekteki bir sürümde sunulacak. Oynatmak için dosyayı indirin.", "uk": "Попередній перегляд відео з’явиться у наступній версії. Завантажте файл для відтворення."
+  },
+  "ui.filePreview.kind.font": {
+    "zh": "字体预览将在后续版本提供，请先下载文件。", "en": "Font preview will be available in a future release. Download the file to inspect it.", "zh-TW": "字型預覽將於後續版本提供，請先下載檔案。", "ko": "글꼴 미리보기는 향후 릴리스에서 제공됩니다. 파일을 다운로드하여 확인하세요.", "ja": "フォントプレビューは今後のリリースで提供予定です。ファイルをダウンロードして確認してください。", "de": "Die Schrift-Vorschau wird in einer späteren Version verfügbar sein. Laden Sie die Datei zur Prüfung herunter.", "es": "La vista previa de fuentes estará disponible en una versión futura. Descarga el archivo para examinarlo.", "fr": "L’aperçu des polices sera disponible dans une prochaine version. Téléchargez le fichier pour l’examiner.", "it": "L’anteprima dei font sarà disponibile in una versione futura. Scarica il file per esaminarlo.", "da": "Skrifttypeforhåndsvisning kommer i en senere version. Download filen for at undersøge den.", "pl": "Podgląd czcionek będzie dostępny w przyszłej wersji. Pobierz plik, aby go sprawdzić.", "ru": "Предпросмотр шрифтов появится в будущей версии. Скачайте файл для просмотра.", "ar": "ستتوفر معاينة الخطوط في إصدار مستقبلي. نزّل الملف لفحصه.", "no": "Skriftforhåndsvisning kommer i en senere versjon. Last ned filen for å undersøke den.", "pt-BR": "A visualização de fontes estará disponível em uma versão futura. Baixe o arquivo para inspecioná-lo.", "th": "การดูตัวอย่างแบบอักษรจะมีในเวอร์ชันถัดไป โปรดดาวน์โหลดไฟล์เพื่อตรวจสอบ", "tr": "Yazı tipi önizlemesi gelecekteki bir sürümde sunulacak. İncelemek için dosyayı indirin.", "uk": "Попередній перегляд шрифтів з’явиться у наступній версії. Завантажте файл для перевірки."
+  },
+  "ui.filePreview.kind.pdf": {
+    "zh": "PDF 预览将在后续版本提供，请先下载文件。", "en": "PDF preview will be available in a future release. Download the file to read it.", "zh-TW": "PDF 預覽將於後續版本提供，請先下載檔案。", "ko": "PDF 미리보기는 향후 릴리스에서 제공됩니다. 파일을 다운로드하여 읽으세요.", "ja": "PDF プレビューは今後のリリースで提供予定です。ファイルをダウンロードしてご覧ください。", "de": "Die PDF-Vorschau wird in einer späteren Version verfügbar sein. Laden Sie die Datei zum Lesen herunter.", "es": "La vista previa de PDF estará disponible en una versión futura. Descarga el archivo para leerlo.", "fr": "L’aperçu PDF sera disponible dans une prochaine version. Téléchargez le fichier pour le lire.", "it": "L’anteprima PDF sarà disponibile in una versione futura. Scarica il file per leggerlo.", "da": "PDF-forhåndsvisning kommer i en senere version. Download filen for at læse den.", "pl": "Podgląd PDF będzie dostępny w przyszłej wersji. Pobierz plik, aby go przeczytać.", "ru": "Предпросмотр PDF появится в будущей версии. Скачайте файл для чтения.", "ar": "ستتوفر معاينة PDF في إصدار مستقبلي. نزّل الملف لقراءته.", "no": "PDF-forhåndsvisning kommer i en senere versjon. Last ned filen for å lese den.", "pt-BR": "A visualização de PDF estará disponível em uma versão futura. Baixe o arquivo para lê-lo.", "th": "การดูตัวอย่าง PDF จะมีในเวอร์ชันถัดไป โปรดดาวน์โหลดไฟล์เพื่ออ่าน", "tr": "PDF önizlemesi gelecekteki bir sürümde sunulacak. Okumak için dosyayı indirin.", "uk": "Попередній перегляд PDF з’явиться у наступній версії. Завантажте файл для читання."
+  },
+  "ui.filePreview.kind.binary": {
+    "zh": "二进制文件无法作为文本编辑，请下载后使用合适的应用打开。", "en": "Binary files cannot be edited as text. Download the file and open it with a suitable application.", "zh-TW": "二進位檔案無法作為文字編輯，請下載後使用合適的應用程式開啟。", "ko": "바이너리 파일은 텍스트로 편집할 수 없습니다. 다운로드하여 적합한 애플리케이션으로 여세요.", "ja": "バイナリファイルはテキストとして編集できません。ダウンロードして適切なアプリで開いてください。", "de": "Binärdateien können nicht als Text bearbeitet werden. Laden Sie die Datei herunter und öffnen Sie sie mit einer geeigneten Anwendung.", "es": "Los archivos binarios no se pueden editar como texto. Descarga el archivo y ábrelo con una aplicación adecuada.", "fr": "Les fichiers binaires ne peuvent pas être modifiés comme du texte. Téléchargez le fichier et ouvrez-le avec une application adaptée.", "it": "I file binari non possono essere modificati come testo. Scarica il file e aprilo con un’applicazione adatta.", "da": "Binære filer kan ikke redigeres som tekst. Download filen og åbn den med et passende program.", "pl": "Plików binarnych nie można edytować jako tekstu. Pobierz plik i otwórz go w odpowiedniej aplikacji.", "ru": "Двоичные файлы нельзя редактировать как текст. Скачайте файл и откройте его в подходящем приложении.", "ar": "لا يمكن تحرير الملفات الثنائية كنص. نزّل الملف وافتحه بتطبيق مناسب.", "no": "Binære filer kan ikke redigeres som tekst. Last ned filen og åpne den med et egnet program.", "pt-BR": "Arquivos binários não podem ser editados como texto. Baixe o arquivo e abra com um aplicativo adequado.", "th": "ไม่สามารถแก้ไขไฟล์ไบนารีเป็นข้อความได้ โปรดดาวน์โหลดและเปิดด้วยแอปที่เหมาะสม", "tr": "İkili dosyalar metin olarak düzenlenemez. Dosyayı indirin ve uygun bir uygulamayla açın.", "uk": "Двійкові файли не можна редагувати як текст. Завантажте файл та відкрийте його у відповідній програмі."
+  },
+  "ui.filePreview.kind.unknown": {
+    "zh": "暂不支持此文件类型，请下载后查看。", "en": "This file type is not supported for preview yet. Download the file to inspect it.", "zh-TW": "暫不支援此檔案類型，請下載後查看。", "ko": "이 파일 형식은 아직 미리 보기를 지원하지 않습니다. 다운로드하여 확인하세요.", "ja": "このファイル形式はまだプレビューに対応していません。ダウンロードして確認してください。", "de": "Dieser Dateityp wird noch nicht für die Vorschau unterstützt. Laden Sie die Datei zur Prüfung herunter.", "es": "Este tipo de archivo aún no admite vista previa. Descárgalo para examinarlo.", "fr": "Ce type de fichier ne prend pas encore en charge l’aperçu. Téléchargez-le pour l’examiner.", "it": "Questo tipo di file non supporta ancora l’anteprima. Scaricalo per esaminarlo.", "da": "Denne filtype understøtter ikke forhåndsvisning endnu. Download filen for at undersøge den.", "pl": "Ten typ pliku nie obsługuje jeszcze podglądu. Pobierz go, aby sprawdzić zawartość.", "ru": "Этот тип файла пока не поддерживает предпросмотр. Скачайте его для просмотра.", "ar": "هذا النوع من الملفات لا يدعم المعاينة بعد. نزّله لفحصه.", "no": "Denne filtypen støtter ikke forhåndsvisning ennå. Last den ned for å undersøke den.", "pt-BR": "Este tipo de arquivo ainda não suporta visualização. Baixe-o para inspecionar.", "th": "ไฟล์ประเภทนี้ยังไม่รองรับการดูตัวอย่าง โปรดดาวน์โหลดเพื่อตรวจสอบ", "tr": "Bu dosya türü henüz önizlemeyi desteklemiyor. İncelemek için indirin.", "uk": "Цей тип файла поки не підтримує попередній перегляд. Завантажте його для перевірки."
+  },
+  "ui.filePreview.utf16ReadOnly": {
+    "zh": "UTF-16 文本以只读方式打开，保留原编码", "en": "UTF-16 text is read-only to preserve its original encoding", "zh-TW": "UTF-16 文字以唯讀方式開啟，保留原編碼", "ko": "원래 인코딩을 유지하기 위해 UTF-16 텍스트는 읽기 전용입니다", "ja": "元のエンコーディングを保持するため、UTF-16 テキストは読み取り専用です", "de": "UTF-16-Text ist schreibgeschützt, um die ursprüngliche Codierung zu erhalten", "es": "El texto UTF-16 es de solo lectura para conservar su codificación original", "fr": "Le texte UTF-16 est en lecture seule pour préserver son encodage d’origine", "it": "Il testo UTF-16 è di sola lettura per preservare la codifica originale", "da": "UTF-16-tekst er skrivebeskyttet for at bevare den oprindelige kodning", "pl": "Tekst UTF-16 jest tylko do odczytu, aby zachować oryginalne kodowanie", "ru": "Текст UTF-16 доступен только для чтения, чтобы сохранить исходную кодировку", "ar": "نص UTF-16 للقراءة فقط للحفاظ على ترميزه الأصلي", "no": "UTF-16-tekst er skrivebeskyttet for å bevare originalkodingen", "pt-BR": "O texto UTF-16 é somente leitura para preservar a codificação original", "th": "ข้อความ UTF-16 เป็นแบบอ่านอย่างเดียวเพื่อคงการเข้ารหัสเดิมไว้", "tr": "UTF-16 metni, özgün kodlamasını korumak için salt okunurdur", "uk": "Текст UTF-16 доступний лише для читання, щоб зберегти початкове кодування"
+  },
+
+  "ui.contextMenu.downloadToLocal": {
+    "zh": "下载到本地",
+    "en": "Download to local",
+    "zh-TW": "下載到本機",
+    "ko": "로컬로 다운로드",
+    "ja": "ローカルにダウンロード",
+    "de": "Lokal herunterladen",
+    "es": "Descargar al equipo local",
+    "fr": "Télécharger en local",
+    "it": "Scarica in locale",
+    "da": "Download lokalt",
+    "pl": "Pobierz lokalnie",
+    "ru": "Скачать на локальное устройство",
+    "ar": "تنزيل إلى الجهاز المحلي",
+    "no": "Last ned lokalt",
+    "pt-BR": "Baixar para o local",
+    "th": "ดาวน์โหลดไปยังเครื่อง",
+    "tr": "Yerel olarak indir",
+    "uk": "Завантажити локально"
+  },
+  "ui.search.filesGlobHint": {
+    "zh": "例如 *.ts, src/**/include", "en": "e.g. *.ts, src/**/include", "zh-TW": "例如 *.ts, src/**/include", "ko": "예: *.ts, src/**/include", "ja": "例: *.ts, src/**/include",
+    "de": "z. B. *.ts, src/**/include", "es": "p. ej. *.ts, src/**/include", "fr": "ex. *.ts, src/**/include", "it": "es. *.ts, src/**/include", "da": "f.eks. *.ts, src/**/include",
+    "pl": "np. *.ts, src/**/include", "ru": "напр. *.ts, src/**/include", "ar": "مثال: *.ts, src/**/include", "no": "f.eks. *.ts, src/**/include", "pt-BR": "ex.: *.ts, src/**/include",
+    "th": "เช่น *.ts, src/**/include", "tr": "örn. *.ts, src/**/include", "uk": "напр. *.ts, src/**/include"
+  },
+  "ui.fileExplorer.resizeSearch": {
+    "zh": "拖拽调整搜索区域高度",
+    "en": "Drag to resize the search area",
+    "zh-TW": "拖曳調整搜尋區域高度",
+    "ko": "드래그하여 검색 영역 높이 조절",
+    "ja": "ドラッグで検索エリアの高さを調整",
+    "de": "Ziehen, um die Höhe des Suchbereichs anzupassen",
+    "es": "Arrastra para ajustar la altura del área de búsqueda",
+    "fr": "Faites glisser pour redimensionner la zone de recherche",
+    "it": "Trascina per ridimensionare l'area di ricerca",
+    "da": "Træk for at justere søgeområdets højde",
+    "pl": "Przeciągnij, aby zmienić wysokość obszaru wyszukiwania",
+    "ru": "Перетащите, чтобы изменить высоту области поиска",
+    "ar": "اسحب لتغيير ارتفاع منطقة البحث",
+    "no": "Dra for å endre høyden på søkeområdet",
+    "pt-BR": "Arraste para redimensionar a área de pesquisa",
+    "th": "ลากเพื่อปรับความสูงของพื้นที่ค้นหา",
+    "tr": "Arama alanının yüksekliğini ayarlamak için sürükleyin",
+    "uk": "Перетягніть, щоб змінити висоту області пошуку"
+  },
+  "ui.search.nodeSlowHint": {
+    "zh": "正在搜索…（未检测到 ripgrep，内置引擎较慢）", "en": "Searching… (ripgrep not found, built-in engine is slower)", "zh-TW": "搜尋中…（未偵測到 ripgrep，內建引擎較慢）", "ko": "검색 중… (ripgrep을 찾을 수 없어 내장 엔진이 느립니다)", "ja": "検索中…（ripgrep が見つからないため内蔵エンジンは低速です）",
+    "de": "Suche läuft… (ripgrep nicht gefunden, integrierte Engine ist langsamer)", "es": "Buscando… (ripgrep no encontrado, el motor integrado es más lento)", "fr": "Recherche… (ripgrep introuvable, le moteur intégré est plus lent)", "it": "Ricerca… (ripgrep non trovato, il motore integrato è più lento)", "da": "Søger… (ripgrep ikke fundet, indbygget engine er langsommere)",
+    "pl": "Wyszukiwanie… (nie znaleziono ripgrep, wbudowany silnik jest wolniejszy)", "ru": "Поиск… (ripgrep не найден, встроенный движок медленнее)", "ar": "جارٍ البحث… (ripgrep غير موجود، المحرك المدمج أبطأ)", "no": "Søker… (ripgrep ikke funnet, innebygd motor er tregere)", "pt-BR": "Pesquisando… (ripgrep não encontrado, o motor integrado é mais lento)",
+    "th": "กำลังค้นหา… (ไม่พบ ripgrep เอนจินในตัวช้ากว่า)", "tr": "Aranıyor… (ripgrep bulunamadı, yerleşik motor daha yavaş)", "uk": "Пошук… (ripgrep не знайдено, вбудований рушій повільніший)"
+  },
+  "ui.search.navNext": {
+    "zh": "下一个匹配 (Enter)", "en": "Next match (Enter)", "zh-TW": "下一個匹配 (Enter)", "ko": "다음 결과 (Enter)", "ja": "次の一致 (Enter)",
+    "de": "Nächster Treffer (Eingabe)", "es": "Coincidencia siguiente (Intro)", "fr": "Correspondance suivante (Entrée)", "it": "Corrispondenza successiva (Invio)", "da": "Næste match (Enter)",
+    "pl": "Następne dopasowanie (Enter)", "ru": "Следующее совпадение (Enter)", "ar": "المطابقة التالية (Enter)", "no": "Neste treff (Enter)", "pt-BR": "Próxima correspondência (Enter)",
+    "th": "ผลลัพธ์ถัดไป (Enter)", "tr": "Sonraki eşleşme (Enter)", "uk": "Наступний збіг (Enter)"
+  },
+  "ui.search.navPrev": {
+    "zh": "上一个匹配 (Shift+Enter)", "en": "Previous match (Shift+Enter)", "zh-TW": "上一個匹配 (Shift+Enter)", "ko": "이전 결과 (Shift+Enter)", "ja": "前の一致 (Shift+Enter)",
+    "de": "Vorheriger Treffer (Umschalt+Eingabe)", "es": "Coincidencia anterior (Mayús+Intro)", "fr": "Correspondance précédente (Maj+Entrée)", "it": "Corrispondenza precedente (Maiusc+Invio)", "da": "Forrige match (Shift+Enter)",
+    "pl": "Poprzednie dopasowanie (Shift+Enter)", "ru": "Предыдущее совпадение (Shift+Enter)", "ar": "المطابقة السابقة (Shift+Enter)", "no": "Forrige treff (Shift+Enter)", "pt-BR": "Correspondência anterior (Shift+Enter)",
+    "th": "ผลลัพธ์ก่อนหน้า (Shift+Enter)", "tr": "Önceki eşleşme (Shift+Enter)", "uk": "Попередній збіг (Shift+Enter)"
+  },
   "ui.contextUsage.tab": {
     "zh": "上下文用量",
     "en": "Context Usage",
@@ -2137,24 +2440,24 @@ const i18nData = {
     "uk": "Відкрити теку логів"
   },
   "ui.openProjectDir": {
-    "zh": "在系统中打开项目文件夹",
-    "en": "Open project folder",
-    "zh-TW": "在系統中開啟專案資料夾",
-    "ko": "프로젝트 폴더 열기",
-    "ja": "プロジェクトフォルダを開く",
-    "de": "Projektordner öffnen",
-    "es": "Abrir carpeta del proyecto",
-    "fr": "Ouvrir le dossier du projet",
-    "it": "Apri cartella progetto",
-    "da": "Åbn projektmappe",
-    "pl": "Otwórz folder projektu",
-    "ru": "Открыть папку проекта",
-    "ar": "فتح مجلد المشروع",
-    "no": "Åpne prosjektmappe",
-    "pt-BR": "Abrir pasta do projeto",
-    "th": "เปิดโฟลเดอร์โปรเจกต์",
-    "tr": "Proje klasörünü aç",
-    "uk": "Відкрити теку проєкту"
+    "zh": "浏览项目文件",
+    "en": "Browse project files",
+    "zh-TW": "瀏覽專案檔案",
+    "ko": "프로젝트 파일 찾아보기",
+    "ja": "プロジェクトファイルを参照",
+    "de": "Projektdateien durchsuchen",
+    "es": "Explorar archivos del proyecto",
+    "fr": "Parcourir les fichiers du projet",
+    "it": "Sfoglia i file del progetto",
+    "da": "Gennemse projektfiler",
+    "pl": "Przeglądaj pliki projektu",
+    "ru": "Просмотреть файлы проекта",
+    "ar": "تصفح ملفات المشروع",
+    "no": "Bla gjennom prosjektfiler",
+    "pt-BR": "Explorar arquivos do projeto",
+    "th": "เรียกดูไฟล์โปรเจกต์",
+    "tr": "Proje dosyalarına göz at",
+    "uk": "Переглянути файли проєкту"
   },
   "ui.loadLocalLogArchive": {
     "zh": "上传日志 ZIP 并解析",
@@ -4554,16 +4857,16 @@ const i18nData = {
     "th": "ใช้นิพจน์ทั่วไป", "tr": "Düzenli ifade kullan", "uk": "Використовувати регулярний вираз"
   },
   "ui.search.filesToInclude": {
-    "zh": "包含的文件", "en": "files to include", "zh-TW": "包含的檔案", "ko": "포함할 파일", "ja": "含めるファイル",
-    "de": "Einzuschließende Dateien", "es": "archivos a incluir", "fr": "fichiers à inclure", "it": "file da includere", "da": "filer der skal medtages",
-    "pl": "pliki do uwzględnienia", "ru": "включаемые файлы", "ar": "الملفات المراد تضمينها", "no": "filer som skal inkluderes", "pt-BR": "arquivos a incluir",
-    "th": "ไฟล์ที่จะรวม", "tr": "dahil edilecek dosyalar", "uk": "файли для включення"
+    "zh": "包含:", "en": "include:", "zh-TW": "包含:", "ko": "포함:", "ja": "含める:",
+    "de": "einschließen:", "es": "incluir:", "fr": "inclure:", "it": "includi:", "da": "inkluder:",
+    "pl": "uwzględnij:", "ru": "включить:", "ar": "تضمين:", "no": "inkluder:", "pt-BR": "incluir:",
+    "th": "รวม:", "tr": "dahil et:", "uk": "включити:"
   },
   "ui.search.filesToExclude": {
-    "zh": "排除的文件", "en": "files to exclude", "zh-TW": "排除的檔案", "ko": "제외할 파일", "ja": "除外するファイル",
-    "de": "Auszuschließende Dateien", "es": "archivos a excluir", "fr": "fichiers à exclure", "it": "file da escludere", "da": "filer der skal udelades",
-    "pl": "pliki do wykluczenia", "ru": "исключаемые файлы", "ar": "الملفات المراد استبعادها", "no": "filer som skal utelates", "pt-BR": "arquivos a excluir",
-    "th": "ไฟล์ที่จะยกเว้น", "tr": "hariç tutulacak dosyalar", "uk": "файли для виключення"
+    "zh": "排除:", "en": "exclude:", "zh-TW": "排除:", "ko": "제외:", "ja": "除外:",
+    "de": "ausschließen:", "es": "excluir:", "fr": "exclure:", "it": "escludi:", "da": "ekskluder:",
+    "pl": "wyklucz:", "ru": "исключить:", "ar": "استبعاد:", "no": "ekskluder:", "pt-BR": "excluir:",
+    "th": "ยกเว้น:", "tr": "hariç tut:", "uk": "виключити:"
   },
   "ui.search.toggleDetails": {
     "zh": "切换搜索详情", "en": "Toggle Search Details", "zh-TW": "切換搜尋詳情", "ko": "검색 세부정보 전환", "ja": "検索の詳細を切り替え",

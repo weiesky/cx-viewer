@@ -1,0 +1,75 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": [
+    "d85820431363b750e522be204e122636d6682aea"
+  ],
+  "previousLocal": "2747f20",
+  "localSubject": "fix(git): show local commits without an upstream",
+  "checks": {
+    "api": 32,
+    "web": 379,
+    "skip": 0,
+    "buildAndAssembly": "passed",
+    "apiLog": "/tmp/cxv-b5-e16-api-package.log",
+    "webLog": "/tmp/cxv-b5-e16-web.log"
+  },
+  "fullAndInstall": "Not rerun: E15 full 1675/artifact705; E13 runtime400",
+  "gui": [
+    {
+      "log": "/tmp/cxv-b5-e16-webkit.log",
+      "result": {
+        "engine": "webkit",
+        "mode": "git-commits",
+        "browserVersion": "27.2",
+        "actualNoRemoteRepos": true,
+        "originalUnpushedSectionAndTooltip": true,
+        "commitFilesExpand": true,
+        "exactInstanceAtoB": true,
+        "noSiblingCommits": true
+      },
+      "pageErrors": []
+    },
+    {
+      "log": "/tmp/cxv-b5-e16-chromium.log",
+      "result": {
+        "engine": "chromium",
+        "mode": "git-commits",
+        "browserVersion": "159.0.8154.6",
+        "actualNoRemoteRepos": true,
+        "originalUnpushedSectionAndTooltip": true,
+        "commitFilesExpand": true,
+        "exactInstanceAtoB": true,
+        "noSiblingCommits": true
+      },
+      "pageErrors": []
+    }
+  ],
+  "screenshots": [
+    {
+      "path": "cc-viewer-alignment/evidence/B5-git-commits-2026-11-21/chromium-A.png",
+      "sha256": "baec3ce3da9ff4a1478a30617281f3934e9e934d1eefb2024984c3c77df24bcc",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-git-commits-2026-11-21/chromium-B.png",
+      "sha256": "412ea1c262abcdfdba43a94f82950ba91d4c0b3dd4f87a3d34f57e9e81cb2d20",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-git-commits-2026-11-21/webkit-A.png",
+      "sha256": "5b43e7ad3a334e07908d1bddaf922067ba35970220c2e60ffd3f25a852df9556",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-git-commits-2026-11-21/webkit-B.png",
+      "sha256": "809c36fe204b5714fa62be855df15ef004969a87aff659d73ab29c310a24d470",
+      "visuallyInspected": true
+    }
+  ],
+  "limits": [
+    "Later original line stats/author removal/conflicts/drag/refresh pending",
+    "No new final Git visual parity claim from intermediate screenshots",
+    "Other platform and minimum Node unverified",
+    "B5 target policy incomplete"
+  ]
+}

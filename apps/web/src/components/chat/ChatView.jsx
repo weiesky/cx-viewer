@@ -4,7 +4,6 @@ import ChatMessage from './ChatMessage';
 import ActiveAgentsBar from './ActiveAgentsBar';
 import TerminalPanel, { uploadFileAndGetPath } from '../terminal/TerminalPanel';
 import FileExplorer from '../files/FileExplorer';
-import SearchPanel from '../search/SearchPanel';
 import FileContentView from '../files/FileContentView';
 import ImageViewer from '../viewers/ImageViewer';
 import ImageLightbox from '../common/ImageLightbox';
@@ -45,6 +44,7 @@ import { TeamButton, TeamModal } from '../dashboard/TeamSessionPanel';
 import { WorkflowButton, WorkflowRunsModal } from '../dashboard/WorkflowRunsPanel';
 import SnapLineOverlay from '../common/SnapLineOverlay';
 import RoleFilterBar from './RoleFilterBar';
+import { isSafeAttachmentPath } from '../../utils/fileDragDrop';
 import ChatInputBar, { resizeChatTextarea } from './ChatInputBar';
 import ProxyChip from './ProxyChip';
 import ProxyModal from '../settings/ProxyModal';
@@ -76,6 +76,8 @@ import { isMobile, isIOS, isPad } from '../../env';
 import { t } from '../../i18n';
 import { apiUrl } from '../../utils/apiUrl';
 import { tryOpenWithSystem } from '../../utils/fileOpen';
+import { sdkWorkspaceScope } from '../../utils/sdkWorkspaceNavigation';
+import { checkPathsExist, dedupePaths, peekPathExists, MD_PATH_CANDIDATE_ATTR, MD_FILE_VERIFIED_ATTR } from '../../utils/mdCodePathVerify';
 import { BUILTIN_PRESETS } from '../../utils/builtinPresets';
 import defaultAvatarUrl from '../../img/default-avatar.svg';
 import loadingPetUrl from '../../img/loading-pet.gif';
@@ -213,6 +215,10 @@ class ChatView extends React.Component {
     this._inputStackRO = null;
     this._chatScrollbarRO = null;
     this._chatScrollbarROEl = null;
+    this._mdProbeWrapRef = React.createRef();
+    this._mdProbeObserver = null;
+    this._mdProbeObservedEl = null;
+    this._mdProbeRaf = 0;
 
     // 增量 tool result 状态
     this._incToolState = null;
@@ -295,9 +301,16 @@ class ChatView extends React.Component {
       currentGitDiff: null,
       scrollToLine: null,
       scrollToMatch: null,
-      searchOpen: false,
+      searchOpen: (isMobile && !isPad) ? false : localStorage.getItem('cxv_searchOpen') === 'true',
       fileExplorerExpandedPaths: loadExpandedPaths(props.projectName),
-      gitChangesOpen: false,
+      gitChangesOpen: (() => {
+        if (isMobile && !isPad) return false;
+        if (localStorage.getItem('cxv_gitChangesOpen') !== 'true') return false;
+        const feOpen = !isMobile
+          ? localStorage.getItem('cxv_fileExplorerOpen') !== 'false'
+          : localStorage.getItem('cxv_fileExplorerOpen') === 'true';
+        return !feOpen;
+      })(),
       hasGit: true,
       snapLines: [],
       activeSnapLine: null,
@@ -540,6 +553,22 @@ class ChatView extends React.Component {
     }
   }
 
+  _setGitChangesOpen(open) {
+    try { localStorage.setItem('cxv_gitChangesOpen', String(open)); } catch { /* 隐私模式容错 */ }
+    if (open && this._pendingGitRefresh) {
+      // 关闭期间累积的修改信号在打开瞬间消费一次(与 fileExplorer 对称)
+      this._pendingGitRefresh = false;
+      this.setState(prev => ({ gitChangesOpen: true, gitChangesRefresh: (prev.gitChangesRefresh || 0) + 1 }));
+    } else {
+      this.setState({ gitChangesOpen: open });
+    }
+  }
+
+  _setSearchOpen(open) {
+    try { localStorage.setItem('cxv_searchOpen', String(open)); } catch { /* private mode */ }
+    this.setState({ searchOpen: open });
+  }
+
   _createPendingInputRecord = (wireText, displayText = wireText, kind = null) => createPendingInputRecord({
     id: `pending-${this._pendingInputPrefix}-${++this._pendingInputSeq}`,
     wireText,
@@ -595,6 +624,7 @@ class ChatView extends React.Component {
 
   componentDidMount() {
     this.startRender();
+    this._attachMdCodeProbe();
     // 注册 ws 消息 handler。Provider 本身根据 cliMode/terminalVisible 决定何时建立 ws,
     // ChatView 不再自己 connect/close;handler 在 ws 重连后会自动继续收到新消息。
     if (this.context && this.context.addMessageHandler) {
@@ -604,10 +634,11 @@ class ChatView extends React.Component {
       this._unsubWsState = this.context.addStateListener(this._onTerminalWsState);
     }
     // 检测项目是否有 git（优先多仓库 API，回退旧 API）
+    const gitStatusUrl = apiUrl('/api/git-status');
     fetch(apiUrl('/api/git-repos')).then(r => r.ok ? r.json() : Promise.reject()).then(data => {
       if (!data.repos?.length) this.setState({ hasGit: false, gitChangesOpen: false });
     }).catch(() => {
-      fetch(apiUrl('/api/git-status')).then(r => {
+      fetch(gitStatusUrl).then(r => {
         if (!r.ok) this.setState({ hasGit: false, gitChangesOpen: false });
       }).catch(() => this.setState({ hasGit: false, gitChangesOpen: false }));
     });
@@ -742,6 +773,7 @@ class ChatView extends React.Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
+    this._attachMdCodeProbe();
     this._bindInputStackRO();
     this._bindChatScrollbarRO();
     // Sharding (2026-11): a "load earlier history" prepend landed — expand the
@@ -1242,6 +1274,9 @@ class ChatView extends React.Component {
     this._clearSlowUpstreamToast();
     if (this._sdkRetryResetTimer) { clearTimeout(this._sdkRetryResetTimer); this._sdkRetryResetTimer = null; }
     this._unmounted = true;
+    if (this._mdProbeObserver) { this._mdProbeObserver.disconnect(); this._mdProbeObserver = null; }
+    this._mdProbeObservedEl = null;
+    if (this._mdProbeRaf) { cancelAnimationFrame(this._mdProbeRaf); this._mdProbeRaf = 0; }
     this._failPendingSequentialInputs(false);
     this._splitDrag.dispose();
     if (this._planAutoTimer) { clearInterval(this._planAutoTimer); this._planAutoTimer = null; }
@@ -1427,12 +1462,12 @@ class ChatView extends React.Component {
     });
   };
 
-  _addPendingImage = (path, source) => {
-    if (!path) return;
+  _addPendingImage = (path, source, isDir = false) => {
+    if (!isSafeAttachmentPath(path)) return;
     this.setState(prev => {
       if (prev.pendingImages.length >= 20) return null; // cap
       if (prev.pendingImages.some(img => img.path === path)) return null; // dedup
-      return { pendingImages: [...prev.pendingImages, { path, source }] };
+      return { pendingImages: [...prev.pendingImages, { path, source, isDir }] };
     });
   };
 
@@ -3477,15 +3512,157 @@ class ChatView extends React.Component {
 
   // 点击工具调用中的文件路径，打开文件查看器
   // 绝对路径需要转为项目相对路径，以便与 FileExplorer 的 TreeNode 匹配
-  handleMdImageClick = (e) => {
+  // Reuse the exact native WorkspaceRoot identity, including instance/history.
+  _mdProbeScope = () => JSON.stringify([sdkWorkspaceScope(window.location.href), this.props.projectName || '']);
+
+  handleChatMdClick = (e) => {
     const img = e.target.closest('.chat-md img');
     if (img && img.src) {
       e.preventDefault();
       this.setState({ mdLightboxSrc: img.src });
+      return;
+    }
+    const fileLink = e.target.closest('.chat-md a[data-md-file]');
+    // 仅拦截裸左键；中键/修饰键放行默认行为（对仍有 href 的相对路径链接是导航,
+    // 对 file:// 链接 href 已被 DOMPurify 剥掉、无任何行为）
+    if (fileLink && e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
+      e.preventDefault();
+      this.handleOpenToolFilePath(fileLink.getAttribute('data-md-file'));
+      return;
+    }
+    // 验证过的 codespan 没有 href,所有点击都得在这里拦;同样只响应裸左键。
+    // 守卫: codespan 嵌在任意 <a> 里(外链/锚点/文件链接)都让位给链接语义,
+    // 否则 [见 `x.md`](https://a.com) 会开文件查看器而不是跳外链。
+    const verifiedCode = e.target.closest('.chat-md code[data-md-file-verified]');
+    if (verifiedCode && e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey
+        && !verifiedCode.closest('.chat-md a')) {
+      e.preventDefault();
+      const line = parseInt(verifiedCode.getAttribute('data-md-file-line'), 10) || null;
+      this.handleOpenToolFilePath(verifiedCode.getAttribute('data-md-path-candidate'), line);
     }
   };
 
-  handleOpenToolFilePath = async (filePath) => {
+  // 键盘可达性: 升级后的 codespan 带 tabindex=0,Enter/Space 等价于点击
+  // (Space 默认滚动页面,必须 preventDefault); 嵌在链接里的 codespan 同样让位。
+  handleChatMdKeydown = (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    if (e.repeat) return; // 长按 repeat 会反复打开同一文件
+    const fileLink = e.target.closest('.chat-md a[data-md-file]');
+    if (fileLink) {
+      e.preventDefault();
+      this.handleOpenToolFilePath(fileLink.getAttribute('data-md-file'));
+      return;
+    }
+    const verifiedCode = e.target.closest('.chat-md code[data-md-file-verified]');
+    if (verifiedCode && !verifiedCode.closest('.chat-md a')) {
+      e.preventDefault();
+      const line = parseInt(verifiedCode.getAttribute('data-md-file-line'), 10) || null;
+      this.handleOpenToolFilePath(verifiedCode.getAttribute('data-md-path-candidate'), line);
+    }
+  };
+
+  // Intercept copy events whose selection sits entirely inside one assistant bubble's
+  // .chat-md markdown body, and write both markdown source (text/plain) and the original
+  // rendered HTML (text/html) to the clipboard. Selections outside .chat-md (user bubbles,
+  // diff cards, cross-bubble selections) fall through to the native copy behavior.
+  handleMessageListCopy = (e) => {
+    const sel = typeof window !== 'undefined' ? window.getSelection() : null;
+    if (!selectionInSingleAssistantMarkdown(sel)) return;
+    const cd = e.clipboardData;
+    if (!cd) return;
+    let markdown, html;
+    try {
+      const div = document.createElement('div');
+      div.appendChild(sel.getRangeAt(0).cloneContents());
+      html = div.innerHTML;
+      markdown = htmlToMarkdown(html);
+    } catch (err) {
+      reportSwallowed('chat.copy-markdown', err);
+      return;
+    }
+    if (!markdown.trim()) return;
+    e.preventDefault();
+    cd.setData('text/plain', markdown);
+    try { cd.setData('text/html', html); } catch { /* some browsers restrict text/html */ }
+  };
+
+  // ── markdown codespan 路径探测(渲染期打标 data-md-path-candidate → 异步验证) ──
+  // 渲染管线是纯同步+按原文缓存的,存在性检查不能进去;这里挂载后扫描 DOM,
+  // 批量 POST /api/files-exists,存在则补 data-md-file-verified(点击/CSS 的锚点)。
+  // 观察 childList+subtree: dangerouslySetInnerHTML 替换是 childList 突变,
+  // 我们自己的 setAttribute 是属性突变不被观察 → 无反馈环。
+
+  _attachMdCodeProbe = () => {
+    if (typeof MutationObserver === 'undefined') return;
+    const wrap = this._mdProbeWrapRef.current;
+    if (!wrap) {
+      // 无数据/加载分支没有 ref —— 观察器必须断开,否则会一直扫描已 detach 的旧树
+      if (this._mdProbeObserver) { this._mdProbeObserver.disconnect(); this._mdProbeObserver = null; }
+      this._mdProbeObservedEl = null;
+      return;
+    }
+    if (wrap === this._mdProbeObservedEl) return;
+    if (this._mdProbeObserver) this._mdProbeObserver.disconnect();
+    this._mdProbeObserver = new MutationObserver(() => this._scheduleMdCodeVerify());
+    this._mdProbeObserver.observe(wrap, { childList: true, subtree: true });
+    this._mdProbeObservedEl = wrap;
+    // 初始扫描: observer 只对后续 mutation 触发,挂载前的历史消息要补一次
+    this._scheduleMdCodeVerify();
+  };
+
+  _scheduleMdCodeVerify = () => {
+    if (this._mdProbeRaf) return; // 本帧已排过,合并
+    this._mdProbeRaf = requestAnimationFrame(() => {
+      this._mdProbeRaf = 0;
+      this._verifyMdCodePaths();
+    });
+  };
+
+  _verifyMdCodePaths = async () => {
+    const wrap = this._mdProbeObservedEl;
+    if (!wrap || this._unmounted) return;
+    // Multi-project (2026-10)：路径存在性判定按 viewed 项目 key 缓存与校验
+    //（viewProject = viewedProject || projectName），否则绑定项目的判定会被复用到并行视图。
+    const projectKey = this._mdProbeScope();
+    const selector = 'code[data-md-path-candidate]:not([data-md-file-verified])';
+    const els = wrap.querySelectorAll(selector);
+    if (els.length === 0) return;
+    const candidates = [];
+    for (const el of els) {
+      const p = el.getAttribute(MD_PATH_CANDIDATE_ATTR);
+      if (p) candidates.push(p);
+    }
+    // 单次 flush 上限 200。批次只取【未探测过】的路径(peek 不到缓存值)——
+    // 否则 >200 候选且前 200 全部不存在时,选择器永远命中同一批已缓存元素,
+    // truncated 恒 true → 每帧自旋(drain 死循环)。剩余未探测项 >0 时才续排。
+    const unique = dedupePaths(candidates);
+    const unprobed = [];
+    for (const p of unique) {
+      if (peekPathExists(p, projectKey) === undefined) unprobed.push(p);
+    }
+    // 无未探测项:可能全是缓存的 false —— apply 一遍(覆盖重渲染丢标记的元素)后停
+    const batch = (unprobed.length > 0 ? unprobed : unique).slice(0, 200);
+    if (batch.length === 0) return;
+    const results = await checkPathsExist(batch, { projectKey });
+    // apply 双守卫: ① 项目切换后旧项目的判定不得盖到新 DOM; ② 按候选属性值
+    // 精确匹配——流式重渲染可能已在 fetch 期间换掉候选内容
+    if (this._unmounted || this._mdProbeObservedEl !== wrap || this._mdProbeScope() !== projectKey) return;
+    const fresh = wrap.querySelectorAll(selector);
+    for (const el of fresh) {
+      const p = el.getAttribute(MD_PATH_CANDIDATE_ATTR);
+      if (p && results.get(p) === true) {
+        el.setAttribute(MD_FILE_VERIFIED_ATTR, '');
+        el.setAttribute('title', p);
+        // 键盘可达: <code> 默认不可聚焦,升级后补上(tab 序列 + Enter/Space 见
+        // handleChatMdKeydown)
+        el.setAttribute('tabindex', '0');
+      }
+    }
+    if (unprobed.length > 200) this._scheduleMdCodeVerify();
+  };
+
+  handleOpenToolFilePath = async (filePath, line) => {
+    const viewScope = sdkWorkspaceScope(window.location.href);
     if (!filePath) return;
     if (tryOpenWithSystem(filePath, 'chat-message')) return;
     let resolved = filePath;
@@ -3496,6 +3673,7 @@ class ChatView extends React.Component {
           const r = await fetch(apiUrl('/api/project-dir'));
           if (r.ok) {
             const data = await r.json();
+            if (this._unmounted || sdkWorkspaceScope(window.location.href) !== viewScope) return;
             if (data && data.dir) this._projectDirCache = data.dir;
           }
         } catch { /* ignore */ }
@@ -3504,6 +3682,7 @@ class ChatView extends React.Component {
         resolved = filePath.slice(this._projectDirCache.length + 1);
       }
     }
+    if (this._unmounted || sdkWorkspaceScope(window.location.href) !== viewScope) return;
     // 计算所有祖先目录路径，加入 expandedPaths 以展开目录树
     const parts = resolved.split('/');
     const ancestors = [];
@@ -3522,7 +3701,7 @@ class ChatView extends React.Component {
       return {
         currentFile: resolved,
         currentGitDiff: null,
-        scrollToLine: null,
+        scrollToLine: line || null,
         scrollToMatch: null,
         gitChangesOpen: false,
         fileExplorerExpandedPaths: newSet,
@@ -3575,7 +3754,7 @@ class ChatView extends React.Component {
         {showFileExplorerAndGit && (
           <button
             className={this.state.fileExplorerOpen ? styles.navBtnActive : styles.navBtn}
-            onClick={() => { this._setFileExplorerOpen(!this.state.fileExplorerOpen); this.setState({ gitChangesOpen: false, searchOpen: false }); }}
+            onClick={() => { this._setFileExplorerOpen(!this.state.fileExplorerOpen); this._setGitChangesOpen(false); this._setSearchOpen(false); }}
             title={t('ui.fileExplorer')}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -3586,37 +3765,15 @@ class ChatView extends React.Component {
         {showFileExplorerAndGit && this.state.hasGit && (
           <button
             className={this.state.gitChangesOpen ? styles.navBtnActive : styles.navBtn}
-            onClick={() => this.setState(prev => {
+            onClick={() => {
               this._setFileExplorerOpen(false);
-              const opening = !prev.gitChangesOpen;
-              const next = { gitChangesOpen: opening, searchOpen: false };
-              // 关闭期间累积的修改信号在打开瞬间消费一次（与 fileExplorer 对称）
-              if (opening && this._pendingGitRefresh) {
-                this._pendingGitRefresh = false;
-                next.gitChangesRefresh = (prev.gitChangesRefresh || 0) + 1;
-              }
-              return next;
-            })}
+              this._setSearchOpen(false);
+              this._setGitChangesOpen(!this.state.gitChangesOpen);
+            }}
             title={t('ui.gitChanges')}
           >
             <svg width="24" height="24" viewBox="0 0 1024 1024" fill="currentColor">
               <path d="M759.53332137 326.35000897c0-48.26899766-39.4506231-87.33284994-87.87432908-86.6366625-46.95397689 0.69618746-85.08957923 39.14120645-85.39899588 86.09518335-0.23206249 40.68828971 27.53808201 74.87882971 65.13220519 84.47074592 10.82958281 2.78474987 18.41029078 12.37666607 18.64235327 23.51566553 0.38677082 21.11768647-3.40358317 44.40128953-17.24997834 63.81718442-22.20064476 31.17372767-62.42480948 42.46743545-97.93037026 52.44612248-22.43270724 6.26568719-38.75443563 7.89012462-53.14230994 9.28249954-20.42149901 2.01120825-39.76003975 3.94506233-63.89453858 17.79145747-5.10537475 2.93945818-10.13339535 6.18833303-14.85199928 9.74662453-4.09977063 3.09416652-9.90133285 0.15470833-9.90133286-4.95066641V302.60228095c0-9.43720788 5.26008307-18.17822829 13.69168683-22.3553531 28.69839444-14.23316598 48.42370599-43.93716454 48.19164353-78.20505872-0.38677082-48.57841433-41.15241468-87.71962076-89.730829-86.01782918C338.80402918 117.57112321 301.59667683 155.70672553 301.59667683 202.58334827c0 34.03583169 19.64795738 63.50776777 48.1916435 77.66357958 8.43160375 4.17712479 13.69168685 12.76343689 13.69168684 22.12329062v419.02750058c0 9.43720788-5.26008307 18.17822829-13.69168684 22.3553531-28.69839444 14.23316598-48.42370599 43.93716454-48.1916435 78.20505872 0.30941665 48.57841433 41.07506052 87.6422666 89.65347484 86.01782918C437.74000359 906.42887679 474.87000179 868.2159203 474.87000179 821.41665173c0-34.03583169-19.64795738-63.50776777-48.1916435-77.66357958-8.43160375-4.17712479-13.69168685-12.76343689-13.69168684-22.12329062v-14.85199926c0-32.48874844 15.39347842-63.27570528 42.00331048-81.91805854 2.39797906-1.70179159 4.95066642-3.32622901 7.50335379-4.79595812 14.92935344-8.58631209 25.91364457-9.66927037 44.09187287-11.4484161 15.62554091-1.54708326 35.04143581-3.48093734 61.65126786-10.90693699 39.06385228-10.98429114 92.51557887-25.91364457 124.84961898-71.39789238 18.56499911-26.06835292 27.38337367-58.01562219 26.37776956-95.14562041-0.15470833-5.33743724-0.54147915-10.67487447-1.08295828-16.16702004-0.85089578-8.27689543 2.70739569-16.24437421 9.12779121-21.50445729 19.57060322-15.78024923 32.02462345-39.99210223 32.02462345-67.14341343zM351.1033411 202.58334827c0-20.49885317 16.63114503-37.12999821 37.1299982-37.1299982s37.12999821 16.63114503 37.12999821 37.1299982-16.63114503 37.12999821-37.12999821 37.1299982-37.12999821-16.63114503-37.1299982-37.1299982z m74.25999641 618.83330346c0 20.49885317-16.63114503 37.12999821-37.12999821 37.1299982s-37.12999821-16.63114503-37.1299982-37.1299982 16.63114503-37.12999821 37.1299982-37.1299982 37.12999821 16.63114503 37.12999821 37.1299982z m247.53332139-457.93664456c-20.49885317 0-37.12999821-16.63114503-37.1299982-37.1299982s16.63114503-37.12999821 37.1299982-37.12999821 37.12999821 16.63114503 37.1299982 37.12999821-16.63114503 37.12999821-37.1299982 37.1299982z"/>
-            </svg>
-          </button>
-        )}
-        {showFileExplorerAndGit && (
-          <button
-            className={this.state.searchOpen ? styles.navBtnActive : styles.navBtn}
-            onClick={() => this.setState(prev => {
-              if (prev.searchOpen) return { searchOpen: false };
-              this._setFileExplorerOpen(false);
-              return { searchOpen: true, gitChangesOpen: false };
-            })}
-            title={t('ui.search')}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"/>
-              <path d="m21 21-4.3-4.3"/>
             </svg>
           </button>
         )}
@@ -4003,7 +4160,7 @@ class ChatView extends React.Component {
     ) : (
       <div className={roleFilterBar ? `${styles.messageListWrap} ${styles.withRoleFilter}`
         : (activeAgentsBar && this.state.activeAgentsBarVisible
-          ? `${styles.messageListWrap} ${styles.withActiveAgents}` : styles.messageListWrap)} onClick={this.handleMdImageClick}>
+          ? `${styles.messageListWrap} ${styles.withActiveAgents}` : styles.messageListWrap)} onClick={this.handleChatMdClick} onKeyDown={this.handleChatMdKeydown} ref={this._mdProbeWrapRef}>
         {roleFilterBar}
         {activeAgentsBar}
         {this.state.mdLightboxSrc && (
@@ -4104,7 +4261,7 @@ class ChatView extends React.Component {
               style={{ width: this.state.sidebarWidth }}
               refreshTrigger={this.state.fileExplorerRefresh}
               onManualRefresh={() => this.setState(prev => ({ fileExplorerRefresh: prev.fileExplorerRefresh + 1 }))}
-              onClose={() => this._setFileExplorerOpen(false)}
+              onClose={() => { this._setSearchOpen(false); this._setFileExplorerOpen(false); }}
               onFileClick={(path) => {
                 if (tryOpenWithSystem(path, 'file-explorer')) return;
                 this.setState({ currentFile: path, currentGitDiff: null, scrollToLine: null, scrollToMatch: null });
@@ -4120,15 +4277,68 @@ class ChatView extends React.Component {
                   fileExplorerRefresh: prev.fileExplorerRefresh + 1,
                 }));
               }}
+              searchOpen={this.state.searchOpen}
+              onToggleSearch={() => this._setSearchOpen(!this.state.searchOpen)}
+              searchGetDirtyPath={this.getOpenFileDirtyPath}
+              onSearchReplaceApplied={(files) => {
+                this.setState(prev => ({ fileExplorerRefresh: prev.fileExplorerRefresh + 1 }));
+                const cur = normalizeProjectPath(this.state.currentFile);
+                if (cur && files.some(f => normalizeProjectPath(f) === cur)) {
+                  // Reload the open (non-dirty — dirty is skipped) viewer to show replaced content.
+                  this.setState(prev => ({ fileVersion: (prev.fileVersion || 0) + 1 }));
+                }
+              }}
+              onOpenSearchResult={(path, line, range) => {
+                // Capture the viewed project up front for the persistence
+                // callback below (same race guard as handleToggleExpandPath):
+                // it runs after setState, by which time a same-tick project
+                // switch would write the old project's paths under the new
+                // project's key. The tryOpenWithSystem call keeps the inline
+                // expression per the chat-file-open-scope source contract.
+                const viewProject = this.props.projectName;
+                if (tryOpenWithSystem(path, 'search')) return;
+                // Opening a result finishes any active $EDITOR session (mirrors the viewer's
+                // onClose) so the blocked terminal editor is released, not orphaned.
+                if (this.state.editorSessionId) {
+                  fetch(apiUrl('/api/editor-done'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId: this.state.editorSessionId }),
+                  }).catch((err) => reportSwallowed('chat.editor-done', err));
+                }
+                // Reveal the hit in the adjacent tree too: expand its ancestors so the
+                // opened file is visible (same pattern as GitChanges.onOpenFile).
+                const parts = path.split('/');
+                const ancestors = [];
+                for (let i = 1; i < parts.length; i++) ancestors.push(parts.slice(0, i).join('/'));
+                this.setState(prev => {
+                  const newSet = new Set(prev.fileExplorerExpandedPaths);
+                  ancestors.forEach(p => newSet.add(p));
+                  return {
+                    currentFile: path,
+                    scrollToLine: line || 1,
+                    scrollToMatch: range || null,
+                    currentGitDiff: null,
+                    editorSessionId: null,
+                    editorFilePath: null,
+                    fileVersion: 0,
+                    fileExplorerExpandedPaths: newSet,
+                  };
+                }, () => {
+                  saveExpandedPaths(viewProject, this.state.fileExplorerExpandedPaths);
+                });
+              }}
             />
           )}
           {this.state.gitChangesOpen && (
             <GitChanges
+              onAttachToChat={(filePath) => this._addPendingImage(filePath, 'explorer')}
+              onInsertPathToChat={this._handleInsertPathToChat}
               style={{ width: this.state.sidebarWidth }}
               refreshTrigger={this.state.gitChangesRefresh}
               onManualRefresh={() => this.setState(prev => ({ gitChangesRefresh: prev.gitChangesRefresh + 1 }))}
               projectName={this.props.projectName}
-              onClose={() => this.setState({ gitChangesOpen: false })}
+              onClose={() => this._setGitChangesOpen(false)}
               onFileClick={(repoPath, filePath, commitHash) => {
                 const resolvedPath = repoPath && repoPath !== '.' ? `${repoPath}/${filePath}` : filePath;
                 if (tryOpenWithSystem(resolvedPath, 'git-changes')) return;
@@ -4152,43 +4362,11 @@ class ChatView extends React.Component {
               }}
             />
           )}
-          {this.state.searchOpen && (
-            <SearchPanel
-              style={{ width: this.state.sidebarWidth }}
-              onClose={() => this.setState({ searchOpen: false })}
-              getDirtyPath={this.getOpenFileDirtyPath}
-              onReplaceApplied={(files) => {
-                this.setState(prev => ({ fileExplorerRefresh: prev.fileExplorerRefresh + 1 }));
-                const current = normalizeProjectPath(this.state.currentFile);
-                if (current && files.some(file => normalizeProjectPath(file) === current)) {
-                  this.setState(prev => ({ fileVersion: (prev.fileVersion || 0) + 1 }));
-                }
-              }}
-              onOpenResult={(path, line, range) => {
-                if (tryOpenWithSystem(path, 'search')) return;
-                if (this.state.editorSessionId) {
-                  fetch(apiUrl('/api/editor-done'), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sessionId: this.state.editorSessionId }),
-                  }).catch(() => {});
-                }
-                this.setState({
-                  currentFile: path,
-                  scrollToLine: line || 1,
-                  scrollToMatch: range || null,
-                  currentGitDiff: null,
-                  editorSessionId: null,
-                  editorFilePath: null,
-                  fileVersion: 0,
-                });
-              }}
-            />
-          )}
-          {(this.state.fileExplorerOpen || this.state.gitChangesOpen || this.state.searchOpen) && (
+          {(this.state.fileExplorerOpen || this.state.gitChangesOpen) && (
             <div className={styles.vResizer} onMouseDown={this.handleSidebarMouseDown} />
           )}
-          <div className={styles.chatSection}>
+          <div className={styles.chatSection} data-drop-zone="chat">
+            <div className={styles.dropZoneMask} aria-hidden="true">{t('ui.dragDropHint')}</div>
             <div className={styles.chatSectionFlex}>
             {this.state.currentGitDiff && (
               <div className={styles.overlayPanel}>
@@ -4346,6 +4524,7 @@ class ChatView extends React.Component {
               onStop={this.handleInputStop}
               onSuggestionClick={this.handleSuggestionToTerminal}
               onUploadPath={this.handleUploadPath}
+              onAttachPath={(path, isDir) => this._addPendingImage(path, 'explorer', isDir)}
               presetItems={this.state.presetItems}
               onPresetSend={this.handlePresetSend}
               onOpenPresetModal={() => this.setState({ mobilePresetModalVisible: true })}
@@ -4476,7 +4655,8 @@ class ChatView extends React.Component {
           {terminalVisible && !isMobile && (
             <>
               <div className={styles.vResizer} onMouseDown={this.handleSplitMouseDown} />
-              <div className={styles.terminalPanelWrap} style={{ width: terminalWidth }}>
+              <div className={styles.terminalPanelWrap} style={{ width: terminalWidth }} data-drop-zone="chat">
+                <div className={styles.dropZoneMask} aria-hidden="true">{t('ui.dragDropHint')}</div>
                 <TerminalPanel onResumeSession={this.props.onResumeSession} resumeInstanceKey={this.props.resumeInstanceKey} projectName={this.props.projectName} key={this.props.sdkMode ? 'sdk-scratch' : 'pty'}
                   scratchOnly={this.props.sdkMode} scratchOpen={terminalVisible}
                   preferences={this.props.preferences} onUpdatePreferences={this.props.onUpdatePreferences} onEditorOpen={(sessionId, filePath) => {

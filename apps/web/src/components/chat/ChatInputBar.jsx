@@ -11,6 +11,8 @@ import chrome from '../common/sharedChrome.module.css';
 import { AgentTeamIcon, UltraplanIcon, UploadIcon, TrashIcon, SPARKLE_MASK_STYLE, ULTRAPLAN_MASK_STYLE } from '../common/quickMenuIcons';
 import ResumeSessionsRow from '../common/ResumeSessionsRow';
 import QuickAutoApproveRows from '../common/QuickAutoApproveRows';
+import { getFileIcon } from '../../utils/fileIcons';
+import { isFileDrag, getDraggedEntry, formatFolderPath } from '../../utils/fileDragDrop';
 import { createQuickMenuHoverIntent } from '../../utils/quickMenuHoverIntent';
 
 const SpeechRec = typeof window !== 'undefined' && window.isSecureContext
@@ -47,7 +49,7 @@ const SPEECH_LANG_MAP = {
   tr: 'tr-TR', uk: 'uk-UA',
 };
 
-function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, sdkMode, onKeyDown, onChange, onSend, onStop, onSuggestionClick, onUploadPath, presetItems, onPresetSend, onOpenPresetModal, onOpenUltraPlan, onClearContext, isStreaming, pendingImages, onRemovePendingImage, uploadingItems, sendDeferred, onUploadStart, onUploadEnd, setContextBarSlot, approvalsReviewer, onApprovalsReviewerChange, planAutoApproveSeconds, onPlanAutoApproveChange, onClearContextNow, ultraplanPopover, onResumeSession, resumeInstanceKey, projectName, proxyChip }) {
+function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, sdkMode, onKeyDown, onChange, onSend, onStop, onSuggestionClick, onUploadPath, onAttachPath, presetItems, onPresetSend, onOpenPresetModal, onOpenUltraPlan, onClearContext, isStreaming, pendingImages, onRemovePendingImage, uploadingItems, sendDeferred, onUploadStart, onUploadEnd, setContextBarSlot, approvalsReviewer, onApprovalsReviewerChange, planAutoApproveSeconds, onPlanAutoApproveChange, onClearContextNow, ultraplanPopover, onResumeSession, resumeInstanceKey, projectName, proxyChip }) {
   const [plusOpen, setPlusOpen] = useState(false);
   // 桌面四芒星菜单的级联展开行（与终端工具栏同款交互）：null | 'perm' | 'plan' | 'agentteam'
   const [quickExpanded, setQuickExpanded] = useState(null);
@@ -71,6 +73,23 @@ function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, 
   const rootRef = useRef(null);
   const [focusExpand, setFocusExpand] = useState(false);
   const focusExpandRef = useRef(false);
+
+  // Highlight the composer while a sidebar file is over it.
+  const [fileDragOver, setFileDragOver] = useState(false);
+  const fileDragOverRef = useRef(false);
+
+  useEffect(() => {
+    const reset = () => {
+      fileDragOverRef.current = false;
+      setFileDragOver(false);
+    };
+    document.addEventListener('dragend', reset);
+    document.addEventListener('drop', reset);
+    return () => {
+      document.removeEventListener('dragend', reset);
+      document.removeEventListener('drop', reset);
+    };
+  }, []);
 
   const resizeInput = (focused) => {
     const ta = inputRef?.current;
@@ -250,6 +269,36 @@ function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, 
     onChange?.(e);
   };
 
+  // Accept sidebar files anywhere in the composer; no upload request is made.
+  const handleFileDragOver = (e) => {
+    if (!isFileDrag(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'copy';
+    if (!fileDragOverRef.current) {
+      fileDragOverRef.current = true;
+      setFileDragOver(true);
+    }
+  };
+
+  const handleFileDragLeave = (e) => {
+    if (fileDragOverRef.current && !e.currentTarget.contains(e.relatedTarget)) {
+      fileDragOverRef.current = false;
+      setFileDragOver(false);
+    }
+  };
+
+  const handleFileDrop = (e) => {
+    if (!isFileDrag(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    fileDragOverRef.current = false;
+    setFileDragOver(false);
+    const entry = getDraggedEntry(e);
+    if (entry) onAttachPath?.(entry.path, entry.isDir);
+    inputRef?.current?.focus();
+  };
+
   // 统一上传:上传一开始就登记在途占位(onUploadStart),resolve/reject 都结束占位(onUploadEnd)。
   // 这样「上传未完成时按发送」能被 ChatView 的守卫感知并缓发,图绝不漏发。objectURL 所有权移交 ChatView。
   const runUpload = async (file) => {
@@ -315,13 +364,18 @@ function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, 
 
   return (
     <div className={styles.chatInputBar} ref={rootRef}>
-      <div className={styles.chatInputWrapper}>
+      <div
+        className={`${styles.chatInputWrapper}${fileDragOver ? ` ${styles.chatInputWrapperDragOver}` : ''}`}
+        onDragOver={handleFileDragOver}
+        onDragLeave={handleFileDragLeave}
+        onDrop={handleFileDrop}
+      >
         <div className={styles.chatTextareaWrap}>
           {((pendingImages && pendingImages.length > 0) || (uploadingItems && uploadingItems.length > 0)) && (
             <div className={styles.imagePreviewStrip}>
               {pendingImages.map((img, i) => {
                 const fileName = img.path.split('/').pop() || img.path;
-                const isImage = /\.(png|jpe?g|gif|svg|bmp|webp|avif|ico|icns)$/i.test(fileName);
+                const isImage = !img.isDir && /\.(png|jpe?g|gif|svg|bmp|webp|avif|ico|icns)$/i.test(fileName);
                 const src = apiUrl(`/api/file-raw?path=${encodeURIComponent(img.path)}`);
                 return isImage ? (
                   <div key={img.path} className={styles.imagePreviewItem}>
@@ -342,12 +396,14 @@ function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, 
                     >&times;</ConfirmRemoveButton>
                   </div>
                 ) : (
-                  <div key={img.path} className={styles.filePreviewChip}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                      <polyline points="14 2 14 8 20 8" />
-                    </svg>
-                    <span className={styles.filePreviewName}>{fileName}</span>
+                  <div key={img.path} className={styles.filePreviewChip} title={img.path}>
+                    {img.isDir ? getFileIcon(fileName, 'directory') : (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                      </svg>
+                    )}
+                    <span className={styles.filePreviewName}>{img.isDir ? formatFolderPath(img.path) : fileName}</span>
                     <ConfirmRemoveButton
                       title={t('ui.chatInput.confirmRemoveFile')}
                       onConfirm={() => onRemovePendingImage?.(i)}

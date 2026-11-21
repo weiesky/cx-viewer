@@ -1,0 +1,37 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": [
+    "6880f77320fa163442eaa64ff6385dc46a1b69f1",
+    "eb2e9703a2837550a9bf2a62a8bb5d20fac7f723"
+  ],
+  "previousLocal": "67aa5da",
+  "localSubject": "feat(files): restore scoped batch file existence probe",
+  "contract": {
+    "batch": 50,
+    "pathChars": 1024,
+    "bodyBytes": 262144,
+    "result": "Only path/exists boolean; denied/missing/non-file uniform false"
+  },
+  "adaptations": [
+    "Existing strict UTF8 JSON reader reused",
+    "Freeze existing server requestProjectDir before body await; query instance owns scope and body cannot retarget it",
+    "Existing native project-bound resolver retained; no new permission for cross-workspace absolute files",
+    "E26 policy snapshot reused for candidate batch; does not enable external target routes or widen editorSession"
+  ],
+  "checks": {
+    "httpAndFileRegression": 42,
+    "skip": 0,
+    "log": "/tmp/cxv-b5-e27-http.log",
+    "cases": [
+      "same-name A/B and body-retarget rejection",
+      "private native hardlink/symlink/denied directory/traversal uniform false",
+      "50/51 limits, bad types/JSON/NUL/path cap/body413 and hostile origin403",
+      "Existing auth/content/download/HTML scope regression"
+    ]
+  },
+  "limits": [
+    "Frontend Markdown decoration/DOM probe still next independent item",
+    "Remote target admin choice pending; independent probe keeps current native project boundary",
+    "No GUI claim for backend-only endpoint; latest full1690/install437 predates E26/27"
+  ]
+}

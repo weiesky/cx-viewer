@@ -1,0 +1,198 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": [
+    "6880f77320fa163442eaa64ff6385dc46a1b69f1",
+    "eb2e9703a2837550a9bf2a62a8bb5d20fac7f723"
+  ],
+  "previousLocal": "6a75814",
+  "localSubject": "feat(markdown): restore local file links and verified code paths",
+  "modules": {
+    "markdownHrefClassify.js": {
+      "upstreamSha256": "be7a08213ad70bf3886da8d33caa8ecb1b3e23d97e969cc99ec8b4e753ce4d35",
+      "localSha256": "be7a08213ad70bf3886da8d33caa8ecb1b3e23d97e969cc99ec8b4e753ce4d35",
+      "exact": true
+    },
+    "markdownCodePathClassify.js": {
+      "upstreamSha256": "34f7ce651ad8a82d0ee1a17711d39ef0e825657e27413827a9c6b226c2b96d4a",
+      "localSha256": "34f7ce651ad8a82d0ee1a17711d39ef0e825657e27413827a9c6b226c2b96d4a",
+      "exact": true
+    },
+    "markdownLinkRenderer.js": {
+      "upstreamSha256": "94d9e030bdec54555b132b2ebd01be65ce6935f0bc2eb3fee4cbda8a7c78b11a",
+      "localSha256": "58e17e1520490c6d4616bd99f46138bbaa7ffee7f998f7e9d3d0c5f74d73cd96",
+      "exact": false
+    },
+    "markdownCodeSpanRenderer.js": {
+      "upstreamSha256": "77ec5a42132c8cbaf46811d67d36050470fda853055b3e53cf7b363b7e07b240",
+      "localSha256": "77ec5a42132c8cbaf46811d67d36050470fda853055b3e53cf7b363b7e07b240",
+      "exact": true
+    },
+    "mdCodePathVerify.js": {
+      "upstreamSha256": "b094a4327053cd74273f00af62ed2975d408a953821e3fe5b8ae7aa4054f58c8",
+      "localSha256": "c05bbcba41b9d182fe4a3b8d57975e3f46f4500483e320b42bf062d0a02d95e3",
+      "exact": false
+    }
+  },
+  "originalCssSha256": "647353b0ad482e205e0a08ab325e2a8e336aca89d3a61763498f1b56657ee8d7",
+  "originalCssExact": true,
+  "nativeAdaptations": [
+    "Reuse sdkWorkspaceScope tuple in cache keys and late DOM guards; freeze complete probe URL before batch await; no Claude body identity",
+    "Existing native file resolver/viewer and memory renderer restrictions retained; stale project-dir response cannot update an unmounted view",
+    "file:// anchor has no href: add role/link tabindex and Enter/Space delegation for keyboard access without layout changes"
+  ],
+  "checks": {
+    "web": 429,
+    "full": 1737,
+    "parts": [
+      5,
+      429,
+      1091,
+      212
+    ],
+    "skip": 0,
+    "build": "passed",
+    "packFiles": 707,
+    "webLog": "/tmp/cxv-b5-e28-web.log",
+    "releaseLog": "/tmp/cxv-b5-e28-release.log"
+  },
+  "installed": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b3-runtime-na2_yxg3",
+    "files": 707,
+    "source_bytes_match": true,
+    "web_asset_files": 204,
+    "runtime_tests": "444/444",
+    "b12_regression": "passed",
+    "installed_cli_relative_cd_boot": "passed",
+    "uses_fake_codex": true,
+    "uses_real_model_network": false
+  },
+  "installedLog": "/tmp/cxv-b5-e28-install.log",
+  "gui": [
+    {
+      "log": "/tmp/cxv-b5-e28-chromium-final12.log",
+      "result": {
+        "engine": "chromium",
+        "mode": "markdown",
+        "browserVersion": "159.0.8154.6",
+        "actualSanitizedLinksAndCode": true,
+        "batchCap50": true,
+        "negative205CandidatesDrainWithoutSpin": true,
+        "originalDottedAndHoverCss": true,
+        "localAndFileUriOpenA": true,
+        "keyboardEnterAndSpaceOpenActualFiles": true,
+        "originalColdLineScrollDefectPreserved": true,
+        "coldLineScroll": {
+          "local": {
+            "scrollTop": 0,
+            "first": "MARKDOWN_A_LINE_1"
+          },
+          "original": {
+            "scrollTop": 0,
+            "first": "MARKDOWN_A_LINE_1"
+          }
+        },
+        "sameNameBDoesNotReuseAExistence": true,
+        "actualFileReadsStayExactInstance": true,
+        "screenshots": [
+          "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B5-markdown-files-2026-11-21/chromium-original-path-affordance.png",
+          "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B5-markdown-files-2026-11-21/chromium-original-cold-line-preview.png"
+        ]
+      },
+      "pageErrors": []
+    },
+    {
+      "log": "/tmp/cxv-b5-e28-webkit-final12.log",
+      "result": {
+        "engine": "webkit",
+        "mode": "markdown",
+        "browserVersion": "27.2",
+        "actualSanitizedLinksAndCode": true,
+        "batchCap50": true,
+        "negative205CandidatesDrainWithoutSpin": true,
+        "originalDottedAndHoverCss": true,
+        "localAndFileUriOpenA": true,
+        "keyboardEnterAndSpaceOpenActualFiles": true,
+        "originalColdLineScrollDefectPreserved": true,
+        "coldLineScroll": {
+          "local": {
+            "scrollTop": 0,
+            "first": "MARKDOWN_A_LINE_1"
+          },
+          "original": {
+            "scrollTop": 0,
+            "first": "MARKDOWN_A_LINE_1"
+          }
+        },
+        "sameNameBDoesNotReuseAExistence": true,
+        "actualFileReadsStayExactInstance": true,
+        "screenshots": [
+          "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B5-markdown-files-2026-11-21/webkit-original-path-affordance.png",
+          "/Users/sky/.npm-global/lib/node_modules/cx-viewer/cc-viewer-alignment/evidence/B5-markdown-files-2026-11-21/webkit-original-cold-line-preview.png"
+        ]
+      },
+      "pageErrors": []
+    }
+  ],
+  "screenshots": [
+    {
+      "path": "cc-viewer-alignment/evidence/B5-markdown-files-2026-11-21/chromium-original-path-affordance.png",
+      "sha256": "6b5fc15279afa17430a5048b8d6fc6cae6a78367f5b921c352da48a63084b071",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-markdown-files-2026-11-21/chromium-original-cold-line-preview.png",
+      "sha256": "bbe5f8275adbcec49dc44c765210ea2ca154478ddd02660223811594996bab70",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-markdown-files-2026-11-21/webkit-original-path-affordance.png",
+      "sha256": "aa0b94039b8b58a7a15f92b59c3a615c15f3c9fafd799108a6c32ac967adc603",
+      "visuallyInspected": true
+    },
+    {
+      "path": "cc-viewer-alignment/evidence/B5-markdown-files-2026-11-21/webkit-original-cold-line-preview.png",
+      "sha256": "31977d6969433a700b1941d80bf8f83fe1445447ffe0098e505476ec7b758343",
+      "visuallyInspected": true
+    }
+  ],
+  "coldLineScroll": {
+    "status": "Original defect preserved; actual scrolling to requested line NOT passed",
+    "fileLines": 400,
+    "requestedLine": 123,
+    "local": {
+      "scrollTop": 0,
+      "first": "MARKDOWN_A_LINE_1"
+    },
+    "fullUnchangedOriginal": {
+      "scrollTop": 0,
+      "first": "MARKDOWN_A_LINE_1"
+    },
+    "baselineEditorVersions": {
+      "@uiw/react-codemirror": "4.25.9",
+      "@uiw/codemirror-extensions-basic-setup": "4.25.9",
+      "@codemirror/view": "6.41.0",
+      "@codemirror/state": "6.6.0",
+      "@codemirror/language": "6.12.3",
+      "@codemirror/lint": "6.9.5"
+    },
+    "nativeEditorVersions": {
+      "@uiw/react-codemirror": "4.25.11",
+      "@codemirror/view": "6.43.6"
+    },
+    "dependencyProcedure": "Official npm pack into isolated temp dir only; esbuild resolves frozen upstream core exports and original editor modules, no repository dependency change",
+    "originalComponentSha256": "47c8b91efc6a088d0585e197eb2f647cb370a026259c4619d8ecf07b092a5008"
+  },
+  "probeCorrections": [
+    "Original scroll contract does not move caret; initial assertion was wrong",
+    "Wait actual closing detach before next open; 50ms raced original close animation",
+    "Wait content/viewport effect rather than immediate first rendered lines",
+    "Original monorepo exports resolved to actual frozen core; UTF8 supplied to isolated HTML/JS after encoding error",
+    "Wait initial boot/probes before reload so WebKit does not abort boot requests",
+    "Original lock editor versions packed temporarily after discovering local dependency drift; newer lint needed matching old version too"
+  ],
+  "limits": [
+    "Remote target admin choice pending; target routes/entry not enabled",
+    "Other 6880 mixed skills/import/IM/Electron parts not marked complete",
+    "Phone/physical devices/LAN/model network and other platforms not claimed"
+  ]
+}

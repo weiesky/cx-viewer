@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
 import { DownloadOutlined, CopyOutlined, CameraOutlined } from '@ant-design/icons';
 import { Modal, message } from 'antd';
-import { apiUrl } from '../../utils/apiUrl';
+import { apiUrl, withViewParams, withTargetParams } from '../../utils/apiUrl';
 import { useMarkdownExport } from '../../hooks/useMarkdownExport';
 import { detectMdExtensions } from '../../utils/mdExtensionDetect';
+import UnsupportedFilePreview from '../viewers/UnsupportedFilePreview';
+import { reportSwallowed } from '../../utils/errorReport';
 import { handleStaleChunk } from '../../utils/lazyWithReload';
 import CodeMirror from '@uiw/react-codemirror';
 import { EditorView } from '@codemirror/view';
@@ -313,6 +315,7 @@ const syntaxTheme = syntaxHighlighting(highlightStyle);
 
 export default function FileContentView({
   filePath,
+  project, instance, target, displayPath,
   onClose,
   editorSession,
   scrollToLine,
@@ -322,6 +325,7 @@ export default function FileContentView({
   onConsumeScrollSnapshot,
   onDirtyChange,
   onFileMissing,
+  readOnly: readOnlyProp = false,
 }) {
   const [content, setContent] = useState(null);
   const [currentContent, setCurrentContent] = useState(null);
@@ -331,6 +335,10 @@ export default function FileContentView({
   const [saveStatus, setSaveStatus] = useState(null);
   const [lineCount, setLineCount] = useState(0);
   const [closing, setClosing] = useState(false);
+  const [binaryFallback, setBinaryFallback] = useState(null);
+  if (binaryFallback?.path && binaryFallback.path !== filePath) setBinaryFallback(null);
+  const [readOnlyEncoding, setReadOnlyEncoding] = useState(null);
+  const readOnly = readOnlyProp || readOnlyEncoding?.path === filePath;
   const isMdFile = /\.md$/i.test(filePath);
   const [viewMode, setViewMode] = useState(isMdFile ? 'markdown' : 'text');
   const [downloadMenuOpen, setDownloadMenuOpen] = useState(false);
@@ -376,7 +384,7 @@ export default function FileContentView({
   // 「使用 MDX 编辑」= flag 开 + 非移动端 + 无扩展语法 + 未解析失败
   // 移动端直接降级到旧 marked 渲染：屏幕小 + 触屏体验差 + bundle 加载成本高，
   // GUI 编辑能力性价比不足，统一走 fallback 预览路径。
-  const useMdxEditor = isMdFile && mdxFeatureEnabled && !isMobile && !extensionDetected && !mdxParseErrored;
+  const useMdxEditor = isMdFile && mdxFeatureEnabled && !isMobile && !extensionDetected && !mdxParseErrored && !readOnly;
   // 「展示旧 marked 预览」= viewMode='markdown' && !useMdx
   const useLegacyPreview = isMdFile && viewMode === 'markdown' && !useMdxEditor;
 
@@ -512,7 +520,7 @@ export default function FileContentView({
   }, [viewMode, isDirty, content]);
 
   const doSave = useCallback(async () => {
-    if (!isDirty) return;
+    if (readOnly || binaryFallback || !isDirty) return;
     // MDX 模式下优先从 editor ref 取最新 markdown（onChange 是 debounced，currentContent 可能滞后）
     let saveContent = currentContent;
     if (useMdxEditor && mdxRef.current?.getMarkdown) {
@@ -531,7 +539,7 @@ export default function FileContentView({
     const startFilePath = filePathRef.current;
     setSaveStatus('saving');
     try {
-      const res = await fetch(apiUrl('/api/file-content'), {
+      const res = await fetch(apiUrl(withViewParams(withTargetParams('/api/file-content', target), { project, instance })), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: filePath, content: saveContent, ...(editorSession ? { editorSession: true } : {}) }),
@@ -562,7 +570,7 @@ export default function FileContentView({
         }, 3000);
       }
     }
-  }, [isDirty, filePath, currentContent, useMdxEditor, editorSession]);
+  }, [isDirty, filePath, currentContent, useMdxEditor, editorSession, readOnly, binaryFallback, project, instance, target]);
 
   saveRef.current = doSave;
 
@@ -622,47 +630,59 @@ export default function FileContentView({
   }, [reportScrollSnap]);
 
   const loadFileContent = useCallback(() => {
+    const controller = new AbortController();
     mounted.current = true;
     setContent(null);
     setCurrentContent(null);
     setError(null);
+    setBinaryFallback(null);
+    setReadOnlyEncoding(null);
     setLoading(true);
     setLineCount(0);
     // 切换文件时重置 MDX 相关 state，避免上一个文件的扩展检测/解析错误跨文件污染
     setExtensionDetected(false);
     setMdxParseErrored(false);
 
-    fetch(apiUrl(`/api/file-content?path=${encodeURIComponent(filePath)}${editorSession ? '&editorSession=true' : ''}`))
+    fetch(apiUrl(withViewParams(withTargetParams(`/api/file-content?path=${encodeURIComponent(filePath)}${editorSession ? '&editorSession=true' : ''}`, target), { project, instance })), { signal: controller.signal })
       .then((r) => {
         if (!r.ok) {
-          const status = r.status;
           return r
             .json()
+            .catch((error) => {
+              if (error.name === 'AbortError' || controller.signal.aborted) throw error;
+              reportSwallowed('fileContent.errorBody', error);
+              return {};
+            })
             .then((err) => {
+              if (controller.signal.aborted) return null;
+              if (!mounted.current) return null;
+              if (r.status === 415 && err.reason === 'binary') {
+                setContent(null);
+                setCurrentContent(null);
+                setFileSize(err.size || 0);
+                setBinaryFallback({ path: filePath, size: err.size });
+                setLoading(false);
+                return null;
+              }
               // 服务端 file-access-policy 现在统一返回 {error, reason, allowedRoots?}
-              // reason 取值见 server/lib/file-access-policy.js:isReadAllowed,前端解析后展示具体原因
               const reasonMsg = err.reason
                 ? (i18n(`ui.fileLoadError.reason.${err.reason}`) || err.error)
-                : (err.error || 'Failed to load');
+                : (err.error || `HTTP ${r.status}`);
               const e = new Error(reasonMsg);
-              e.status = status;
+              e.status = r.status;
               if (err.allowedRoots) e.allowedRoots = err.allowedRoots;
-              throw e;
-            })
-            .catch((parsedErr) => {
-              if (parsedErr && parsedErr.message) throw parsedErr;
-              const e = new Error(`HTTP ${status}`);
-              e.status = status;
               throw e;
             });
         }
         return r.json();
       })
       .then((data) => {
-        if (mounted.current) {
+        if (data && mounted.current && !controller.signal.aborted) {
+          setError(null);
           setContent(data.content);
           setCurrentContent(data.content);
           setFileSize(data.size);
+          setReadOnlyEncoding(data.encoding || data.readOnly ? { path: filePath, encoding: data.encoding } : null);
           setLineCount(data.content.split('\n').length);
           setLoading(false);
           // 仅对 .md 且 flag 开启时做扩展检测，命中则提示 + 走旧 marked 渲染（自动 fallback）
@@ -681,7 +701,7 @@ export default function FileContentView({
         }
       })
       .catch((err) => {
-        if (mounted.current) {
+        if (mounted.current && !controller.signal.aborted && err.name !== 'AbortError') {
           if (err?.status === 404 && !editorSession && onFileMissingRef.current) {
             onFileMissingRef.current(filePath);
             return;
@@ -690,11 +710,13 @@ export default function FileContentView({
           setLoading(false);
         }
       });
-  }, [filePath, editorSession, isMdFile, mdxFeatureEnabled]);
+    return () => controller.abort();
+  }, [filePath, editorSession, isMdFile, mdxFeatureEnabled, project, instance, target]);
 
   useEffect(() => {
-    loadFileContent();
+    const abort = loadFileContent();
     return () => {
+      abort();
       mounted.current = false;
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     };
@@ -840,7 +862,7 @@ export default function FileContentView({
       scrollSyncExtension,
       keymap.of([{
         key: 'Mod-s',
-        run: () => { saveRef.current?.(); return true; },
+        run: () => { if (!readOnly) saveRef.current?.(); return true; },
       }]),
     ];
 
@@ -859,13 +881,14 @@ export default function FileContentView({
     );
 
     return exts;
-  }, [filePath, scrollSyncExtension]);
+  }, [filePath, scrollSyncExtension, readOnly]);
 
   // 跟踪文档行数变化
   const handleChange = useCallback((value) => {
+    if (readOnly) return;
     setCurrentContent(value);
     setLineCount(value.split('\n').length);
-  }, []);
+  }, [readOnly]);
 
   const saveStatusText = saveStatus === 'saving'
     ? i18n('ui.saving')
@@ -885,6 +908,10 @@ export default function FileContentView({
     return lines;
   }, [lineCount]);
 
+  if (binaryFallback?.path === filePath) {
+    return <UnsupportedFilePreview {...{ filePath, onClose, project, instance, target }} kind="binary" contentDetected fileSize={binaryFallback.size} />;
+  }
+
   return (
     <div ref={containerRef} className={`${styles.fileContentView}${closing ? ` ${styles.closing}` : ''}`}>
       {editorSession && (
@@ -899,7 +926,8 @@ export default function FileContentView({
               <polyline points="15 18 9 12 15 6"/>
             </svg>
           </button>
-          <span className={styles.filePath}>{filePath}</span>
+          <span className={styles.filePath}>{displayPath || filePath}</span>
+          {readOnlyEncoding?.path === filePath && readOnlyEncoding.encoding && <span className={styles.fileSize} title={i18n('ui.filePreview.utf16ReadOnly')}>UTF-16</span>}
           {fileSize > 0 && (
             <span className={styles.fileSize}>{formatFileSize(fileSize)}</span>
           )}
@@ -970,7 +998,7 @@ export default function FileContentView({
               {viewMode === 'markdown' ? i18n('ui.viewText') : i18n('ui.viewMarkdown')}
             </button>
           )}
-          <button
+          {!readOnly && <button
             className={styles.saveBtn}
             onClick={doSave}
             disabled={!isDirty || saveStatus === 'saving'}
@@ -982,7 +1010,7 @@ export default function FileContentView({
               <polyline points="7 3 7 8 15 8"/>
             </svg>
             {i18n('ui.save')}
-          </button>
+          </button>}
           <button className={styles.closeBtn} onClick={handleClose} title={i18n('ui.backToChat')}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -1017,6 +1045,8 @@ export default function FileContentView({
             <div className={styles.editorCol}>
               <CodeMirror
                 value={content}
+                readOnly={readOnly}
+                editable={!readOnly}
                 height="100%"
                 theme={editorTheme}
                 extensions={extensions}

@@ -5,6 +5,7 @@ import { isMobile, isPad, hasNativeZoom } from './env';
 import WorkspaceList from './components/dashboard/WorkspaceList';
 import { restoreSdkResumeSession } from './utils/sdkResumeApi';
 import NewProjectModal from './components/dashboard/NewProjectModal';
+import { isOverModalPortal } from './utils/dragGuards';
 import OpenFolderIcon from './components/common/OpenFolderIcon';
 import LogTable from './components/viewers/LogTable';
 import { t, getLang, setLang } from './i18n';
@@ -124,6 +125,7 @@ class AppBase extends React.Component {
       fileLoading: false,
       fileLoadingCount: 0,
       isDragging: false,
+      dragZone: null,
       selectedLogs: new Set(),   // Set<file>
       githubStars: null,
       cliMode: false,
@@ -856,6 +858,8 @@ class AppBase extends React.Component {
     // 全局键盘缩放监听(Cmd/Ctrl +/-/0)仅 Electron 注册——驱动原生 setZoomFactor 并与下拉同步。
     // 纯浏览器**不**注册,把 Cmd/Ctrl +/- 交还浏览器原生缩放(不拦截)。unmount 时按同一 ref 卸载。
     if (hasNativeZoom) window.addEventListener('keydown', this._onScaleKeydown);
+    document.addEventListener('dragend', this._resetDragFeedback);
+    document.addEventListener('drop', this._resetDragFeedback);
     // codex-settings / preferences fetch 由 SettingsProvider 集中触发;
     // 这里仅订阅其 Promise,把字段同步到本地 state(沿用现有 13+ 个 setState 消费链路)。
     this.context._codexSettingsReady.then(data => {
@@ -1044,6 +1048,8 @@ class AppBase extends React.Component {
 
   componentWillUnmount() {
     window.removeEventListener('keydown', this._onScaleKeydown);
+    document.removeEventListener('dragend', this._resetDragFeedback);
+    document.removeEventListener('drop', this._resetDragFeedback);
     if (Array.isArray(this._tabBridgeDisposers)) {
       for (const off of this._tabBridgeDisposers) {
         try { off(); } catch {}
@@ -2943,29 +2949,69 @@ class AppBase extends React.Component {
   // _dispatchUploadedFiles() 两个 prototype 钩子定制分发（Mobile 按终端可见性分流）。
   _isInternalDrag = (e) => e.dataTransfer.types.some(type => type === 'text/x-preset-reorder' || type === 'text/x-cxv-workspace-order');
 
+  _setDragZone = (zone) => {
+    if (this.state.dragZone !== zone) this.setState({ dragZone: zone });
+  };
+
+  _resetDragFeedback = () => {
+    if (this.state.isDragging || this.state.dragZone) {
+      this.setState({ isDragging: false, dragZone: null });
+    }
+  };
+
   _onDragOver = (e) => {
-    e.preventDefault();
     if (this._isInternalDrag(e)) return;
-    // FileExplorer 区域不显示全屏 overlay，由 FileExplorer 自己处理外部拖入反馈
-    const overFileExplorer = e.target.closest && e.target.closest('[data-file-explorer]');
-    if (overFileExplorer) {
+    // Keep internal moves out of external-upload feedback. This does not accept
+    // a drop; the terminal/composer cancel their own dragover when eligible.
+    if (e.dataTransfer.types.includes('text/x-internal-move')) {
+      this._setDragZone(null);
       if (this.state.isDragging) this.setState({ isDragging: false });
       return;
     }
-    if (!this.state.isDragging) this.setState({ isDragging: true });
+    // 指针位于 antd 弹层(Modal/Drawer,React 冒泡穿透 portal)上方:全局拖拽整体静默,
+    // 由弹层自己(如 FileBrowserModal 的分区拖放)处理
+    e.preventDefault();
+    if (isOverModalPortal(e)) {
+      this._setDragZone(null);
+      if (this.state.isDragging) this.setState({ isDragging: false });
+      return;
+    }
+    const overFileExplorer = e.target.closest && e.target.closest('[data-file-explorer]');
+    if (overFileExplorer) {
+      this._setDragZone(null);
+      if (this.state.isDragging) this.setState({ isDragging: false });
+      return;
+    }
+    // Mobile 沿用旧的全屏 overlay,不参与分区反馈
+    if (isMobile) {
+      if (!this.state.isDragging) this.setState({ isDragging: true });
+      return;
+    }
+    // 桌面:只有悬停在响应区(data-drop-zone="chat" = 对话+终端)时才点亮对应遮罩;
+    // 非响应区(页眉/请求列表等)无遮罩,且 drop 时被门禁拒收
+    const overChat = e.target.closest && e.target.closest('[data-drop-zone="chat"]');
+    this._setDragZone(overChat ? 'chat' : null);
   };
 
   _onDragLeave = (e) => {
     const layout = this._layoutRef.current;
     if (layout && !layout.contains(e.relatedTarget)) {
-      this.setState({ isDragging: false });
+      this.setState({ isDragging: false, dragZone: null });
     }
   };
 
   _onDrop = (e) => {
     e.preventDefault();
     if (this._isInternalDrag(e)) return;
-    this.setState({ isDragging: false });
+    const dragZone = this.state.dragZone;
+    this.setState({ isDragging: false, dragZone: null });
+    // Internal file drops are consumed only by terminal/composer targets.
+    if (e.dataTransfer.types.includes('text/x-internal-move')) return;
+
+    // 弹层上方的 drop 由弹层自己消费(或忽略),全局不参与
+    if (isOverModalPortal(e)) return;
+    // 桌面分区门禁:只有落在响应区(对话+终端)才接受;页眉/请求列表等区域静默拒收
+    if (!isMobile && dragZone !== 'chat') return;
     const files = Array.from(e.dataTransfer.files);
     if (!files.length) return;
     // drop 时刻同步捕获分发上下文（Mobile 需要 mobileTerminalVisible 的当时值，非上传完成后的值）

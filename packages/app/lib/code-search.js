@@ -4,17 +4,20 @@
 //   - ripgrep  (`rg --json`): fast, respects .gitignore, skips hidden + binary natively.
 //   - node     (pure walker): fallback when rg is absent; deliberately mirrors rg's file
 //                selection (gitignore-aware via `git ls-files`, hidden skipped) so both
-//                engines return the SAME results.
+//                engines return the SAME results. The node scan runs in search-worker.js
+//                so synchronous file reads and regex scanning cannot pin HTTP/WS/SSE traffic.
 //
 // Security: the node engine reads project files only, so every candidate is realpath-gated
 // against the project root and symlinks are skipped — a symlinked file must not be able to
 // exfiltrate secrets (e.g. notes.txt -> ~/.ssh/id_rsa). rg does not follow symlinks.
 import { spawn } from 'node:child_process';
-import { constants, closeSync, fstatSync, openSync, readFileSync, readdirSync, lstatSync, statSync, realpathSync } from 'node:fs';
+import { Worker } from 'node:worker_threads';
+import { gitListFiles } from './search-candidates.js';
 import { join } from 'node:path';
 import { StringDecoder } from 'node:string_decoder';
 import { isPathContained } from './file-api.js';
-import { assertPublicFilePath, credentialSearchExclusions, isPublicFilePath } from './credential-file-policy.js';
+import { getPrivateFileRoots, credentialSearchExclusions, isPublicFilePath } from './credential-file-policy.js';
+import { getNativeFileRoots, nativeFileSearchExclusions, isNativeFilePathPublic } from './file-access-policy.js';
 
 // Directory/entry names never searched (superset of server IGNORED_PATTERNS + node_modules).
 export const IGNORED_NAMES = new Set(['.git', '.svn', '.hg', '.DS_Store', '.idea', '.vscode', 'node_modules']);
@@ -27,9 +30,6 @@ export const DEFAULTS = {
   maxLineLength: 5000,
   binarySniffBytes: 8192,
 };
-
-// Kill a hung `git ls-files` (index.lock contention, slow/NFS mount). Unrelated to nodeTimeBudgetMs.
-const GIT_LS_FILES_TIMEOUT_MS = 8000;
 
 // ─── Pure helpers (exported for tests) ──────────────────────────────
 
@@ -222,7 +222,7 @@ function rgArgs(opts) {
   // Positive `-g` globs override .gitignore in ripgrep. Apply include globs to parsed
   // project-relative results instead so ignored files can never be reintroduced.
   for (const g of opts.excludeGlobs || []) if (g) args.push('-g', g.startsWith('!') ? g : `!${g}`);
-  for (const path of credentialSearchExclusions(opts.root)) {
+  for (const path of [...credentialSearchExclusions(opts.root), ...nativeFileSearchExclusions(opts.root)]) {
     const literal = path.replace(/[\\*?{}[\]]/g, '\\$&');
     args.push('-g', `!${literal}`, '-g', `!${literal}/**`);
   }
@@ -255,7 +255,7 @@ function rgSearch(opts) {
       for (const rec of recs) {
         if (!passesGlob(rec.file)) continue;
         const full = join(opts.root, rec.file);
-        if (!isPathContained(full, opts.root) || !isPublicFilePath(full)) continue;
+        if (!isPathContained(full, opts.root) || !isPublicFilePath(full) || !isNativeFilePathPublic(full)) continue;
         files.add(rec.file);
         const ok = grouper.add(rec.file, { line: rec.line, text: rec.text, submatches: rec.submatches });
         if (!ok) {
@@ -297,51 +297,6 @@ function rgSearch(opts) {
   });
 }
 
-// ─── node engine ────────────────────────────────────────────────────
-
-function gitListFiles(root, signal) {
-  return new Promise((resolve) => {
-    let child;
-    try {
-      child = spawn('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'],
-        { cwd: root, windowsHide: true, signal });
-    } catch { resolve(null); return; }
-    let out = '';
-    const decoder = new StringDecoder('utf8');
-    // Bound a hung git (index.lock contention, slow/NFS mount) so nodeSearch always resolves.
-    const timer = setTimeout(() => { try { child.kill(); } catch { /* gone */ } }, GIT_LS_FILES_TIMEOUT_MS);
-    child.stdout.on('data', (d) => { out += decoder.write(d); });
-    child.stdout.on('error', () => {});
-    child.on('error', () => { clearTimeout(timer); resolve(null); });
-    child.on('close', (code) => {
-      clearTimeout(timer);
-      out += decoder.end();
-      if (code !== 0) { resolve(null); return; }
-      resolve(out.split('\0').filter(Boolean));
-    });
-  });
-}
-
-function walkDir(root) {
-  const out = [];
-  const stack = [''];
-  while (stack.length) {
-    const rel = stack.pop();
-    let entries;
-    try { entries = readdirSync(rel ? join(root, rel) : root, { withFileTypes: true }); }
-    catch { continue; }
-    for (const e of entries) {
-      if (e.name.startsWith('.') || IGNORED_NAMES.has(e.name)) continue;
-      const childRel = rel ? `${rel}/${e.name}` : e.name;
-      if (e.isSymbolicLink()) continue; // don't follow symlinks (parity + safety)
-      if (!isPublicFilePath(join(root, childRel))) continue;
-      if (e.isDirectory()) stack.push(childRel);
-      else if (e.isFile()) out.push(childRel);
-    }
-  }
-  return out;
-}
-
 export function isHidden(relPath) {
   return relPath.split('/').some((seg) => seg.startsWith('.'));
 }
@@ -356,86 +311,74 @@ export function isBinary(buf, n = DEFAULTS.binarySniffBytes) {
   return false;
 }
 
+// ─── node engine (worker thread) ────────────────────────────────────
+//
+// The scan body lives in ./search-worker.js and runs on a worker thread; here we only spawn
+// asynchronously list Git candidates with AbortSignal, spawn one worker per query, and adapt the
+// {results, truncated, filesScanned} shape. A worker failure rejects → searchCode()'s auto
+// path surfaces it as a 500 (an in-process retry would reintroduce the freeze we're fixing).
+
 async function nodeSearch(opts) {
-  // Catastrophic-backtracking guard applies ONLY to the JS-backtracking node engine (ripgrep's
-  // engine is linear and safe), so it lives here rather than gating the rg path too.
-  if (opts.regex && looksCatastrophic(opts.query)) {
-    return { results: [], truncated: false, filesScanned: 0, error: 'invalid_regex' };
-  }
-  const maxResults = opts.maxResults ?? DEFAULTS.maxResults;
-  const maxPerFile = opts.maxMatchesPerFile ?? DEFAULTS.maxMatchesPerFile;
-  const maxFileSize = opts.maxFileSize ?? DEFAULTS.maxFileSize;
-  const timeBudget = opts.nodeTimeBudgetMs ?? DEFAULTS.nodeTimeBudgetMs;
-  const started = Date.now();
-
-  let candidates = await gitListFiles(opts.root, opts.signal);
-  if (candidates == null) candidates = walkDir(opts.root);
-  candidates = candidates.map(normRel).filter((p) => !isHidden(p) && !hasIgnoredSegment(p));
-
-  const passesGlob = makeGlobFilter(opts.includeGlobs, opts.excludeGlobs);
-  const grouper = createGrouper(maxResults, maxPerFile);
-  const scanned = new Set();
-  let truncated = false;
-  let processed = 0;
-
-  for (const rel of candidates) {
-    if (opts.signal?.aborted) { truncated = true; break; }
-    if (Date.now() - started > timeBudget) { truncated = true; break; }
-    // Yield to the event loop periodically so a large scan doesn't starve other HTTP/WS
-    // requests and a client disconnect (signal) can be observed between files.
-    if ((processed++ & 63) === 0) await new Promise((r) => setImmediate(r));
-    if (!passesGlob(rel)) continue;
-
-    const full = join(opts.root, rel);
-    if (!isPublicFilePath(full)) continue;
-    let lst;
-    try { lst = lstatSync(full); } catch { continue; }
-    if (lst.isSymbolicLink()) continue; // never follow symlinks
-
-    let real;
-    try { real = realpathSync(full); } catch { continue; }
-    if (!isPathContained(real, opts.root)) continue;
-
-    let st;
-    try { st = statSync(real); } catch { continue; }
-    if (!st.isFile() || st.size > maxFileSize) continue;
-
-    let raw;
-    let fd;
+  if (opts.signal?.aborted) return { results: [], truncated: true, filesScanned: 0 };
+  const candidates = await gitListFiles(opts.root, opts.signal);
+  if (opts.signal?.aborted) return { results: [], truncated: true, filesScanned: 0 };
+  return new Promise((resolve, reject) => {
+    let worker;
     try {
-      fd = openSync(real, constants.O_RDONLY | (constants.O_NOFOLLOW || 0) | (constants.O_NONBLOCK || 0));
-      const opened = fstatSync(fd);
-      if (!opened.isFile() || opened.size > maxFileSize) continue;
-      assertPublicFilePath(real, opened);
-      raw = readFileSync(fd);
-    } catch { continue; }
-    finally { if (fd !== undefined) closeSync(fd); }
-    if (isBinary(raw)) continue;
+      worker = new Worker(new URL('./search-worker.js', import.meta.url), {
+        workerData: {
+          root: opts.root,
+          candidates,
+          privateRoots: getPrivateFileRoots(),
+          nativeRoots: getNativeFileRoots(),
+          query: opts.query,
+          caseSensitive: !!opts.caseSensitive,
+          wholeWord: !!opts.wholeWord,
+          regex: !!opts.regex,
+          includeGlobs: opts.includeGlobs || [],
+          excludeGlobs: opts.excludeGlobs || [],
+          maxResults: opts.maxResults,
+          maxMatchesPerFile: opts.maxMatchesPerFile,
+          maxFileSize: opts.maxFileSize,
+          nodeTimeBudgetMs: opts.nodeTimeBudgetMs,
+        },
+      });
+    } catch (err) { reject(err); return; }
 
-    scanned.add(rel);
-    const lines = raw.toString('utf8').split(/\r?\n/);
-    let stop = false;
-    for (let i = 0; i < lines.length && !stop; i++) {
-      const text = lines[i];
-      if (!text || text.length > DEFAULTS.maxLineLength) continue; // skip empty / pathological long lines
-      opts.queryRe.lastIndex = 0;
-      const submatches = [];
-      let m;
-      while ((m = opts.queryRe.exec(text)) !== null) {
-        const start = m.index;
-        const end = m.index + m[0].length;
-        if (end > start) submatches.push({ start, end });
-        if (m.index === opts.queryRe.lastIndex) opts.queryRe.lastIndex++; // zero-width guard
-        if (submatches.length >= 1000) break; // pathological single-line match count
-      }
-      if (submatches.length) {
-        const ok = grouper.add(rel, { line: i + 1, text: text.slice(0, DEFAULTS.maxLineLength), submatches });
-        if (!ok) { truncated = true; stop = true; }
-      }
+    let settled = false;
+    const settle = (fn, val) => {
+      if (settled) return;
+      settled = true;
+      opts.signal?.removeEventListener('abort', onAbort);
+      worker.terminate().catch(() => {});
+      fn(val);
+    };
+    const onAbort = () => settle(resolve, { results: [], truncated: true, filesScanned: 0 });
+
+    if (opts.signal) {
+      if (opts.signal.aborted) { onAbort(); return; }
+      opts.signal.addEventListener('abort', onAbort, { once: true });
     }
-    if (stop) break;
-  }
-  return { results: grouper.results(), truncated: truncated || grouper.capped, filesScanned: scanned.size };
+
+    worker.on('message', (msg) => {
+      if (!msg || typeof msg !== 'object') return;
+      if (msg.type === 'done') {
+        settle(resolve, { results: msg.results, truncated: msg.truncated, filesScanned: msg.filesScanned });
+      } else if (msg.type === 'error') {
+        const e = new Error(msg.error || 'search_failed');
+        e.code = msg.error === 'invalid_regex' ? 'INVALID_REGEX' : 'SEARCH_FAILED';
+        settle(reject, e);
+      }
+    });
+    worker.on('error', (err) => settle(reject, err));
+    worker.on('exit', (code) => {
+      // A non-zero exit before a 'done' message means the scan died mid-flight.
+      if (!settled && code !== 0) {
+        const e = new Error('search worker exited'); e.code = 'SEARCH_FAILED';
+        settle(reject, e);
+      } else settle(resolve, { results: [], truncated: true, filesScanned: 0 });
+    });
+  });
 }
 
 // ─── Public entry ───────────────────────────────────────────────────
@@ -460,7 +403,7 @@ export async function searchCode(opts) {
   const empty = (extra) => ({ results: [], truncated: false, filesScanned: 0, elapsedMs: Date.now() - started, ...extra });
 
   if (!opts.query || !opts.root) return empty({ engine: 'none' });
-  if (!isPublicFilePath(opts.root)) return empty({ engine });
+  if (!isPublicFilePath(opts.root) || !isNativeFilePathPublic(opts.root)) return empty({ engine });
 
   // Validate the JS regex up front so both engines report invalid_regex consistently.
   // (The catastrophic-backtracking guard is node-only and lives inside nodeSearch.)
@@ -488,13 +431,23 @@ export async function searchCode(opts) {
       // rather than 500-ing a query the fallback would have handled. Explicit engine:'ripgrep'
       // surfaces the error.
       if (engine === 'auto') {
-        const r = await nodeSearch(runOpts);
-        return { ...r, engine: 'node', elapsedMs: Date.now() - started };
+        try {
+          const r = await nodeSearch(runOpts);
+          return { ...r, engine: 'node', elapsedMs: Date.now() - started };
+        } catch (nodeErr) {
+          if (nodeErr.code === 'INVALID_REGEX') return empty({ engine: 'node', error: 'invalid_regex' });
+          throw nodeErr;
+        }
       }
       throw err;
     }
   }
 
-  const r = await nodeSearch(runOpts);
-  return { ...r, engine: 'node', elapsedMs: Date.now() - started };
+  try {
+    const r = await nodeSearch(runOpts);
+    return { ...r, engine: 'node', elapsedMs: Date.now() - started };
+  } catch (nodeErr) {
+    if (nodeErr.code === 'INVALID_REGEX') return empty({ engine: 'node', error: 'invalid_regex' });
+    throw nodeErr;
+  }
 }

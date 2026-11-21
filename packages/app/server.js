@@ -1,18 +1,20 @@
 import { createServer } from 'node:http';
 import { EventEmitter } from 'node:events';
+import { pipeline } from 'node:stream';
+import { reportSwallowed } from './server/lib/error-report.js';
 import { createStreamMuxServer } from './server/lib/ws-mux.js';
 import { createServer as createHttpsServer } from 'node:https';
 import { createConnection } from 'node:net';
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
-import { constants as fsConstants, promises as fsPromises, readFileSync, writeFileSync, existsSync, watchFile, unwatchFile, statSync, fstatSync, readdirSync, renameSync, unlinkSync, rmSync, openSync, readSync, closeSync, realpathSync, mkdirSync, createReadStream, cpSync, copyFileSync, appendFileSync } from 'node:fs';
+import { constants as fsConstants, promises as fsPromises, readFileSync, writeFileSync, existsSync, watchFile, unwatchFile, statSync, lstatSync, fstatSync, readdirSync, renameSync, unlinkSync, rmSync, openSync, readSync, closeSync, realpathSync, mkdirSync, createReadStream, cpSync, copyFileSync, appendFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join, extname, resolve, basename, relative, sep } from 'node:path';
+import { dirname, join, extname, resolve, basename, relative, sep, isAbsolute } from 'node:path';
 import { homedir, platform, networkInterfaces } from 'node:os';
 import { execFile, exec, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 import { Worker } from 'node:worker_threads';
-import { isPathContained, readFileContent, writeFileContent, resolveFilePath, ERROR_STATUS_MAP } from './lib/file-api.js';
-import { assertPublicFilePath, assertPublicMutationPath, isPublicFilePath } from './lib/credential-file-policy.js';
+import { isPathContained, readFileContent, writeFileContent, resolveFilePath, renameSyncWithRetry, ERROR_STATUS_MAP } from './lib/file-api.js';
+import { assertPublicFilePath, isPublicFilePath } from './lib/credential-file-policy.js';
 import { execWithStdin } from './lib/exec-with-stdin.js';
 import { readPublicFileSync } from './lib/public-file-read.js';
 import { attachTerminalWsPing } from './lib/terminal-ws-ping.js';
@@ -28,6 +30,12 @@ import { createDefaultProxyProfiles, validateProxyProfilesDocument } from './lib
 import { createProcessAdapter, decodeProcessRef, encodeProcessRef, isCxvProcess, killVerifiedTree, sameProcessIdentity } from './lib/cxv-processes.js';
 import { parseOtlpTraces } from './lib/otel-receiver.js';
 import { LOG_DIR } from './findcx.js';
+import { targetFilesFsRoutes } from './lib/target-files-fs.js';
+import { revealInOs, openTerminalAt } from './lib/os-open.js';
+import { assertNativeFilePath, isNativeFilePathPublic, isWriteAllowed } from './lib/file-access-policy.js';
+import { readTargetFiles } from './lib/target-files.js';
+import { fileBrowserAccess } from './lib/file-browser-access.js';
+import { probeFilesExist } from './lib/files-exists.js';
 import { ensureProjectIdForCwd, resolveProjectIdForCwd } from './lib/log-v2/project-id.js';
 import { t, detectLanguage } from './i18n.js';
 import { DEFAULT_START_PORT, DEFAULT_MAX_PORT, MAX_POST_BODY as _MAX_POST_BODY, MAX_UPLOAD_SIZE, SSE_HEARTBEAT_MS, HOOK_TIMEOUT_MS, EDITOR_SESSION_CLEANUP_MS, UPLOAD_DIR } from './lib/constants.js';
@@ -88,6 +96,7 @@ import {
   parseCookies,
   renderLoginPage,
   saveAuthConfig,
+  safeTokenMatches,
 } from './lib/auth.js';
 import { handleAuthRoute } from './lib/auth-routes.js';
 import { readPreferences, updatePreferences } from './lib/preferences.js';
@@ -688,6 +697,12 @@ async function handleCodeSearchReplace(req, res) {
   sendJson(res, result.error === 'invalid_regex' ? 400 : 200, result);
 }
 
+function assertFileToolMutationPath(path, cwd) {
+  const verdict = isWriteAllowed(path, { cwd });
+  if (!verdict.ok) throw Object.assign(new Error('Path not allowed'), { code: 'ACCESS_DENIED', status: 403 });
+  return verdict.real;
+}
+
 function displayTail(filePath) {
   const home = homedir();
   return filePath.startsWith(home) ? `~${filePath.slice(home.length)}` : filePath;
@@ -699,7 +714,7 @@ function discoverCodexMdEntries(req) {
   const add = (filePath, scope) => {
     try {
       const real = realpathSync(filePath);
-      if (seen.has(real) || !existsSync(real) || !statSync(real).isFile() || !isPublicFilePath(real)) return;
+      if (seen.has(real) || !existsSync(real) || !statSync(real).isFile() || !isPublicFilePath(real) || !isNativeFilePathPublic(real)) return;
       seen.add(real);
       entries.push({
         id: encodeStableId(real),
@@ -1458,10 +1473,35 @@ async function handleRequest(req, res) {
   }
 }
 
+// A sandboxed target HTML document has an opaque origin: its relative resources
+// lose ambient login cookies and appear cross-site. Give only this raw GET/HEAD
+// route a target/view-bound read proof, never the server's general access token.
+function targetPreviewToken(target, project, instance) {
+  const identity = target?.kind === 'codex-md'
+    ? [target.kind, target.id] : [target?.kind, target?.source, target?.path];
+  return createHmac('sha256', ACCESS_TOKEN).update(JSON.stringify([
+    'target-preview', identity, project, instance, target?.previewSession || '', getAuthSessionContext(),
+  ])).digest('base64url');
+}
+
 async function handleViewerRequest(req, res) {
   const parsedUrl = new URL(req.url, `${serverProtocol}://${req.headers.host}`);
   const url = parsedUrl.pathname;
   const method = req.method;
+  let isTargetPreviewResource = false;
+  if ((method === 'GET' || method === 'HEAD') && url.startsWith('/api/file-raw/target/')) {
+    try {
+      const parts = url.slice('/api/file-raw/target/'.length).split('/');
+      const target = JSON.parse(decodeURIComponent(parts[0]));
+      if (['codex-md', 'skill'].includes(target?.kind)) isTargetPreviewResource = safeTokenMatches(
+        target.previewToken, targetPreviewToken(target, decodeURIComponent(parts[1]), decodeURIComponent(parts[2])));
+      if (isTargetPreviewResource && target.previewSession) {
+        const grant = [...authSessions.keys()].find(token => safeTokenMatches(
+          createHash('sha256').update(token).digest('base64url'), target.previewSession));
+        isTargetPreviewResource = isAuthSessionValid(grant);
+      }
+    } catch { /* Malformed scopes are rejected by the normal parser below. */ }
+  }
 
   // Optional diagnostics only; never create an unbounded shared /tmp log by default.
   if (process.env.CXV_DEBUG && url.startsWith('/v1/')) {
@@ -1479,7 +1519,7 @@ async function handleViewerRequest(req, res) {
 
   // Browser API access is same-origin. Header-less CLI/native clients remain
   // compatible; a hostile Origin never gains CORS permission to localhost.
-  if (requestOrigin && originAllowed) res.setHeader('Access-Control-Allow-Origin', requestOrigin);
+  if (requestOrigin && (originAllowed || (isTargetPreviewResource && requestOrigin === 'null'))) res.setHeader('Access-Control-Allow-Origin', requestOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -1488,7 +1528,7 @@ async function handleViewerRequest(req, res) {
     res.end();
     return;
   }
-  if (requestOrigin && !originAllowed) {
+  if (requestOrigin && !originAllowed && !(isTargetPreviewResource && requestOrigin === 'null')) {
     res.writeHead(403, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Forbidden: cross-origin request' }));
     return;
@@ -1502,14 +1542,19 @@ async function handleViewerRequest(req, res) {
   const currentAuthConfig = getAuthConfig();
   const remotePasswordLogin = serverProtocol === 'https';
   const cookieToken = parseCookies(req.headers.cookie).cxv_auth;
+  const validatedSessionToken = isAuthSessionValid(cookieToken) ? cookieToken : '';
+  // Target files only: static/passwordless allow is not administrator proof.
+  const isTargetFileAdmin = req.headers['sec-fetch-site'] !== 'cross-site' && (isLocal
+    || safeTokenMatches(parsedUrl.searchParams.get('token'), ACCESS_TOKEN)
+    || safeTokenMatches(cookieToken, validatedSessionToken));
   const authDecision = decideAuth({
     isStaticAsset,
     pathname: url,
     isLocal,
-    urlToken: parsedUrl.searchParams.get('token'),
+    urlToken: isTargetPreviewResource ? ACCESS_TOKEN : parsedUrl.searchParams.get('token'),
     cookieToken,
     accessToken: ACCESS_TOKEN,
-    sessionToken: isAuthSessionValid(cookieToken) ? cookieToken : '',
+    sessionToken: validatedSessionToken,
     enabled: currentAuthConfig.enabled,
     password: currentAuthConfig.password,
     passwordUnreadable: currentAuthConfig.passwordUnreadable,
@@ -1568,6 +1613,45 @@ async function handleViewerRequest(req, res) {
     },
   })) return;
 
+  // The original HTML preview carries scope in the path so relative resources
+  // retain the same workspace. Reuse the existing exact SDK view resolver.
+  let rawPath = null;
+  let rawProject = '';
+  if ((method === 'GET' || method === 'HEAD') && url.startsWith('/api/file-raw/')) {
+    try {
+      const tail = url.slice('/api/file-raw/'.length);
+      if (tail.startsWith('target/')) {
+        const parts = tail.slice(7).split('/');
+        if (parts.length < 4) throw new Error('Invalid target view scope');
+        const target = JSON.parse(decodeURIComponent(parts[0]));
+        if (!target || !['codex-md', 'skill'].includes(target.kind)) throw new Error('Invalid target kind');
+        const targetParams = target.kind === 'codex-md'
+          ? { kind: target.kind, id: target.id } : { kind: target.kind, source: target.source, targetPath: target.path };
+        for (const [key, value] of Object.entries(targetParams)) {
+          if (typeof value !== 'string' || (parsedUrl.searchParams.has(key) && parsedUrl.searchParams.get(key) !== value)) throw new Error('Target scope mismatch');
+          parsedUrl.searchParams.set(key, value);
+        }
+        rawProject = decodeURIComponent(parts[1]);
+        const instance = decodeURIComponent(parts[2]);
+        if (isSdkMode && !instance) throw new Error('Missing view instance');
+        if (instance) {
+          if (parsedUrl.searchParams.has('instance') && parsedUrl.searchParams.get('instance') !== instance) throw new Error('View scope mismatch');
+          parsedUrl.searchParams.set('instance', instance);
+        }
+        rawPath = decodeURIComponent(parts.slice(3).join('/'));
+      } else if (tail.startsWith('view/')) {
+        const parts = tail.slice(5).split('/');
+        rawProject = decodeURIComponent(parts[0] || '');
+        const instance = decodeURIComponent(parts[1] || '');
+        if (parts.length < 3 || !instance || !isSdkMode) throw new Error('Invalid view scope');
+        if (parsedUrl.searchParams.has('instance') && parsedUrl.searchParams.get('instance') !== instance) throw new Error('View scope mismatch');
+        parsedUrl.searchParams.set('instance', instance);
+        rawPath = decodeURIComponent(parts.slice(2).join('/'));
+      } else rawPath = decodeURIComponent(tail);
+      if (!rawPath || rawPath.includes('\0')) throw new Error('Invalid path');
+    } catch (error) { sendJson(res, 400, { error: error.message }); return; }
+  }
+
   if (isSdkMode && parsedUrl.searchParams.has('instance')
       && (url.startsWith('/api/') || url === '/events') && !url.startsWith('/api/workspaces') && url !== '/api/cli-mode') {
     try { req.cxvSdkSession = sdkViewForUrl(parsedUrl); }
@@ -1578,6 +1662,7 @@ async function handleViewerRequest(req, res) {
     || sdkManager.listSdkSessions().find(session => session.cwd === sdkBootCwd)
     || { cwd: sdkBootCwd, projectName: basename(sdkBootCwd) }) : null;
   const requestProjectName = isSdkMode ? requestSdkView.projectName : _projectName;
+  if (rawProject && rawProject !== requestProjectName) { sendJson(res, 400, { error: 'Project scope mismatch' }); return; }
 
   const pluginRoute = pluginRoutes.find(route => route.method === method && route.path === url);
   if (pluginRoute) {
@@ -1796,10 +1881,11 @@ async function handleViewerRequest(req, res) {
         const cwd = requestProjectDir;
         // Check existing ancestors before mkdir, including a not-yet-created dir.
         const targetDir = resolveFilePath(cwd, dir || '.', false);
+        assertNativeFilePath(targetDir);
         mkdirSync(targetDir, { recursive: true });
         const realDir = realpathSync(targetDir);
         const realCwd = realpathSync(cwd);
-        if (realDir !== realCwd && !realDir.startsWith(realCwd + '/')) {
+        if (realDir !== realCwd && !realDir.startsWith(realCwd + sep)) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Path traversal not allowed' }));
           return;
@@ -1822,11 +1908,11 @@ async function handleViewerRequest(req, res) {
         let finalName = originalName;
         let savePath = join(realDir, finalName);
         let counter = 1;
-        assertPublicFilePath(savePath);
+        assertFileToolMutationPath(savePath, cwd);
         while (existsSync(savePath)) {
           finalName = `${stem}-${counter}${ext}`;
           savePath = join(realDir, finalName);
-          assertPublicFilePath(savePath);
+          assertFileToolMutationPath(savePath, cwd);
           counter++;
         }
         // A raced-in file/link must not be overwritten after the existence check.
@@ -2062,7 +2148,7 @@ async function handleViewerRequest(req, res) {
       return;
     }
     try {
-      sendJson(res, 200, { content: readPublicFileSync(hit.path, 'utf8') });
+      sendJson(res, 200, { content: readPublicFileSync(hit.path, 'utf8', assertNativeFilePath) });
     } catch (err) {
       sendJson(res, err.status || 500, { error: err.message || 'Failed to read AGENTS.md' });
     }
@@ -2776,10 +2862,20 @@ async function handleViewerRequest(req, res) {
     const cwd = requestProjectDir;
     try {
       const targetDir = resolveFilePath(cwd, reqPath, false);
+      assertNativeFilePath(targetDir);
       const entries = await fsPromises.readdir(targetDir, { withFileTypes: true });
       const items = entries
-        .filter(e => !IGNORED_PATTERNS.has(e.name) && isPublicFilePath(join(targetDir, e.name)))
-        .map(e => ({ name: e.name, type: e.isDirectory() ? 'directory' : 'file' }))
+        .filter(e => !IGNORED_PATTERNS.has(e.name) && isPublicFilePath(join(targetDir, e.name)) && isNativeFilePathPublic(join(targetDir, e.name)))
+        .map(e => {
+          // Dirent does not dereference directory symlinks. Match the original
+          // expandable type without changing native path/private filtering.
+          let type = e.isDirectory() ? 'directory' : 'file';
+          if (e.isSymbolicLink()) {
+            try { type = statSync(join(targetDir, e.name)).isDirectory() ? 'directory' : 'file'; }
+            catch { type = 'file'; }
+          }
+          return { name: e.name, type };
+        })
         .sort((a, b) => {
           if (a.type !== b.type) return a.type === 'directory' ? -1 : 1;
           return a.name.localeCompare(b.name);
@@ -2844,7 +2940,7 @@ async function handleViewerRequest(req, res) {
         // Validate real targets, but rename the original entry (a link stays a link).
         for (const path of [oldFullPath, newFullPath]) {
           resolveFilePath(cwd, path, false);
-          assertPublicMutationPath(path);
+          assertFileToolMutationPath(path, cwd);
         }
         // 检查源文件存在
         if (!existsSync(oldFullPath)) {
@@ -2852,13 +2948,41 @@ async function handleViewerRequest(req, res) {
           res.end(JSON.stringify({ error: 'File not found' }));
           return;
         }
+        // A differently-cased destination can be the source itself on APFS/NTFS.
+        // Preserve the upstream temporary hop and rollback for that case.
+        const oldName = basename(oldPath);
+        if (oldName !== newName && oldName.toLowerCase() === newName.toLowerCase()) {
+          try {
+            if (realpathSync.native(newFullPath) === realpathSync.native(oldFullPath)) {
+              const tempPath = join(parentDir, `.cxv-rename-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+              renameSyncWithRetry(oldFullPath, tempPath);
+              try { renameSyncWithRetry(tempPath, newFullPath); }
+              catch (err) {
+                try { renameSyncWithRetry(tempPath, oldFullPath); }
+                catch (rollbackErr) { reportSwallowed('filesFs.renameRollback', rollbackErr, { tempPath }); }
+                throw err;
+              }
+              const newRelPath = oldPath.includes('/') ? oldPath.substring(0, oldPath.lastIndexOf('/') + 1) + newName : newName;
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: true, newPath: newRelPath }));
+              return;
+            }
+          } catch (err) {
+            // A missing differently-cased destination is normal on case-sensitive filesystems.
+            if (err.code !== 'ENOENT') {
+              res.writeHead(500, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: err.message }));
+              return;
+            }
+          }
+        }
         // 检查目标是否已存在
         if (existsSync(newFullPath)) {
           res.writeHead(409, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Target already exists' }));
           return;
         }
-        renameSync(oldFullPath, newFullPath);
+        renameSyncWithRetry(oldFullPath, newFullPath);
         const newRelPath = oldPath.includes('/') ? oldPath.substring(0, oldPath.lastIndexOf('/') + 1) + newName : newName;
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true, newPath: newRelPath }));
@@ -2883,7 +3007,7 @@ async function handleViewerRequest(req, res) {
       }
       try {
         const { fromPath, toDir } = parsed;
-        if (!fromPath || !toDir) {
+        if (typeof fromPath !== 'string' || !fromPath || typeof toDir !== 'string') {
           res.writeHead(400, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Missing fromPath or toDir' }));
           return;
@@ -2899,7 +3023,7 @@ async function handleViewerRequest(req, res) {
         const toDirFull = join(cwd, toDir);
         const sourceTarget = resolveFilePath(cwd, oldFullPath, false);
         const destinationTarget = resolveFilePath(cwd, toDirFull, false);
-        assertPublicMutationPath(oldFullPath);
+        assertFileToolMutationPath(oldFullPath, cwd);
         // 检查源文件/目录存在
         if (!existsSync(oldFullPath)) {
           res.writeHead(404, { 'Content-Type': 'application/json' });
@@ -2916,7 +3040,7 @@ async function handleViewerRequest(req, res) {
         if (statSync(oldFullPath).isDirectory()) {
           const srcResolved = sourceTarget;
           const destResolved = destinationTarget;
-          if (destResolved === srcResolved || destResolved.startsWith(srcResolved + '/')) {
+          if (destResolved === srcResolved || destResolved.startsWith(srcResolved + sep)) {
             res.writeHead(400, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: 'Cannot move directory into itself' }));
             return;
@@ -2925,7 +3049,7 @@ async function handleViewerRequest(req, res) {
         const name = basename(fromPath);
         const newFullPath = join(toDirFull, name);
         resolveFilePath(cwd, newFullPath, false);
-        assertPublicMutationPath(newFullPath);
+        assertFileToolMutationPath(newFullPath, cwd);
         // 检查目标位置不存在同名文件
         if (existsSync(newFullPath)) {
           res.writeHead(409, { 'Content-Type': 'application/json' });
@@ -2936,15 +3060,21 @@ async function handleViewerRequest(req, res) {
           renameSync(oldFullPath, newFullPath);
         } catch (mvErr) {
           if (mvErr.code === 'EXDEV') {
-            // 跨文件系统：fallback to copy + delete
-            if (statSync(oldFullPath).isDirectory()) {
+            // Original EXDEV fallback refuses a symbolic mutation target.
+            const oldStat = lstatSync(oldFullPath);
+            if (oldStat.isSymbolicLink()) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Cannot move symbolic links via this endpoint' }));
+              return;
+            }
+            if (oldStat.isDirectory()) {
               cpSync(oldFullPath, newFullPath, {
-                recursive: true, force: false, errorOnExist: true,
+                recursive: true, dereference: false, force: false, errorOnExist: true,
                 filter(source, destination) {
                   resolveFilePath(cwd, source, false);
                   resolveFilePath(cwd, destination, false);
-                  assertPublicMutationPath(source);
-                  assertPublicMutationPath(destination);
+                  assertFileToolMutationPath(source, cwd);
+                  assertFileToolMutationPath(destination, cwd);
                   return true;
                 },
               });
@@ -2961,7 +3091,7 @@ async function handleViewerRequest(req, res) {
             throw mvErr;
           }
         }
-        const newRelPath = toDir.endsWith('/') ? toDir + name : toDir + '/' + name;
+        const newRelPath = join(toDir, name).replace(/\\/g, '/');
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true, newPath: newRelPath }));
       } catch (err) {
@@ -3000,7 +3130,7 @@ async function handleViewerRequest(req, res) {
         const cwd = requestProjectDir;
         const fullPath = join(cwd, filePath);
         resolveFilePath(cwd, fullPath, false);
-        assertPublicMutationPath(fullPath);
+        assertFileToolMutationPath(fullPath, cwd);
         if (!existsSync(fullPath)) {
           res.writeHead(404, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'File not found' }));
@@ -3008,17 +3138,30 @@ async function handleViewerRequest(req, res) {
         }
         const realFull = realpathSync(fullPath);
         const realCwd = realpathSync(cwd);
-        if (!realFull.startsWith(realCwd + '/')) {
+        if (!realFull.startsWith(realCwd + sep)) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Path traversal not allowed' }));
           return;
         }
-        const stat = statSync(fullPath);
+        // Match the upstream endpoint: symbolic mutation targets are refused.
+        const stat = lstatSync(fullPath);
+        if (stat.isSymbolicLink()) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Cannot delete symbolic links via this endpoint' }));
+          return;
+        }
         if (stat.isDirectory()) {
           const protectedDirs = new Set(['node_modules', '.git', '.svn', '.hg']);
-          if (filePath.split('/').some(part => protectedDirs.has(part))) {
+          const normalizedSegs = filePath.split(/[\\/]/).map(s => s.toLowerCase());
+          if (normalizedSegs.some(part => protectedDirs.has(part))) {
             res.writeHead(400, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: 'Cannot delete protected directory' }));
+            return;
+          }
+          const realFull2 = realpathSync(fullPath);
+          if (!realFull2.startsWith(realCwd + sep)) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Path escaped cwd after validation' }));
             return;
           }
           rmSync(fullPath, { recursive: true, force: true });
@@ -3069,25 +3212,20 @@ async function handleViewerRequest(req, res) {
           res.end(JSON.stringify({ error: 'File not found' }));
           return;
         }
+        resolveFilePath(cwd, filePath, false);
+        assertNativeFilePath(fullPath);
         const realFull = realpathSync(fullPath);
         const realCwd = realpathSync(cwd);
-        if (!realFull.startsWith(realCwd + '/')) {
+        if (!realFull.startsWith(realCwd + sep)) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Path traversal not allowed' }));
           return;
         }
-        const plat = process.platform;
-        if (plat === 'darwin') {
-          execFile('open', ['-R', fullPath], () => {});
-        } else if (plat === 'win32') {
-          spawn('explorer', ['/select,', fullPath], { shell: false });
-        } else {
-          execFile('xdg-open', [dirname(fullPath)], () => {});
-        }
+        revealInOs(fullPath, { isDir: statSync(realFull).isDirectory() });
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true, fullPath }));
       } catch (err) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.writeHead(err.status || ERROR_STATUS_MAP[err.code] || 500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: err.message }));
       }
     });
@@ -3124,9 +3262,11 @@ async function handleViewerRequest(req, res) {
           res.end(JSON.stringify({ error: 'File not found' }));
           return;
         }
+        resolveFilePath(cwd, filePath, false);
+        assertNativeFilePath(fullPath);
         const realFull = realpathSync(fullPath);
         const realCwd = realpathSync(cwd);
-        if (!realFull.startsWith(realCwd + '/')) {
+        if (!realFull.startsWith(realCwd + sep)) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Path traversal not allowed' }));
           return;
@@ -3142,7 +3282,7 @@ async function handleViewerRequest(req, res) {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true }));
       } catch (err) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.writeHead(err.status || ERROR_STATUS_MAP[err.code] || 500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: err.message }));
       }
     });
@@ -3217,13 +3357,14 @@ async function handleViewerRequest(req, res) {
         }
         const realDir = realpathSync(fullDirPath);
         const realCwd = realpathSync(cwd);
-        if (realDir !== realCwd && !realDir.startsWith(realCwd + '/')) {
+        if (realDir !== realCwd && !realDir.startsWith(realCwd + sep)) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Path traversal not allowed' }));
           return;
         }
         const fullPath = join(fullDirPath, name);
         resolveFilePath(cwd, fullPath, false);
+        assertFileToolMutationPath(fullPath, cwd);
         if (existsSync(fullPath)) {
           res.writeHead(409, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'File already exists' }));
@@ -3268,37 +3409,12 @@ async function handleViewerRequest(req, res) {
         }
         const realDir = realpathSync(fullDir);
         const realCwd = realpathSync(cwd);
-        if (realDir !== realCwd && !realDir.startsWith(realCwd + '/')) {
+        if (realDir !== realCwd && !realDir.startsWith(realCwd + sep)) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Path traversal not allowed' }));
           return;
         }
-        const plat = process.platform;
-        if (plat === 'darwin') {
-          spawn('open', ['-a', 'Terminal', fullDir], { stdio: 'ignore', detached: true }).unref();
-        } else if (plat === 'win32') {
-          spawn('cmd.exe', ['/c', 'start', 'cmd.exe'], { cwd: fullDir, stdio: 'ignore', detached: true }).unref();
-        } else {
-          // Linux: try common terminal emulators
-          const terminals = ['gnome-terminal', 'konsole', 'xfce4-terminal', 'xterm'];
-          let launched = false;
-          for (const term of terminals) {
-            try {
-              if (term === 'gnome-terminal') {
-                spawn(term, ['--working-directory=' + fullDir], { stdio: 'ignore', detached: true }).unref();
-              } else if (term === 'konsole') {
-                spawn(term, ['--workdir', fullDir], { stdio: 'ignore', detached: true }).unref();
-              } else {
-                spawn(term, [], { cwd: fullDir, stdio: 'ignore', detached: true }).unref();
-              }
-              launched = true;
-              break;
-            } catch { continue; }
-          }
-          if (!launched) {
-            spawn('xdg-open', [fullDir], { stdio: 'ignore', detached: true }).unref();
-          }
-        }
+        openTerminalAt(fullDir);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true }));
       } catch (err) {
@@ -3347,13 +3463,14 @@ async function handleViewerRequest(req, res) {
         }
         const realDir = realpathSync(fullDirPath);
         const realCwd = realpathSync(cwd);
-        if (realDir !== realCwd && !realDir.startsWith(realCwd + '/')) {
+        if (realDir !== realCwd && !realDir.startsWith(realCwd + sep)) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Path traversal not allowed' }));
           return;
         }
         const fullPath = join(fullDirPath, name);
         resolveFilePath(cwd, fullPath, false);
+        assertFileToolMutationPath(fullPath, cwd);
         if (existsSync(fullPath)) {
           res.writeHead(409, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Already exists' }));
@@ -3670,38 +3787,116 @@ async function handleViewerRequest(req, res) {
     return;
   }
 
+  const targetFsRoute = targetFilesFsRoutes.find(route => route.path === url && route.method === method);
+  if (targetFsRoute) {
+    await targetFsRoute.handler(req, res, parsedUrl, isLocal, {
+      authorized: isTargetFileAdmin, cwd: requestProjectDir,
+      codexMdEntries: isTargetFileAdmin ? discoverCodexMdEntries(req) : [],
+      readBody: readStrictUtf8JsonBody, MAX_POST_BODY,
+    });
+    return;
+  }
+
+  if (url === '/api/target-files' && method === 'GET') {
+    if (!isTargetFileAdmin) { sendJson(res, 403, { error: 'forbidden' }); return; }
+    try {
+      const result = readTargetFiles(parsedUrl, requestProjectDir, {
+        codexMdEntries: discoverCodexMdEntries(req), ignored: IGNORED_PATTERNS,
+      });
+      const target = { kind: parsedUrl.searchParams.get('kind'), id: parsedUrl.searchParams.get('id'),
+        source: parsedUrl.searchParams.get('source'), path: parsedUrl.searchParams.get('targetPath') };
+      target.previewSession = isLocal || safeTokenMatches(parsedUrl.searchParams.get('token'), ACCESS_TOKEN)
+        ? '' : createHash('sha256').update(cookieToken).digest('base64url');
+      result.previewSession = target.previewSession;
+      result.previewToken = targetPreviewToken(target, requestProjectName || '', parsedUrl.searchParams.get('instance') || '');
+      sendJson(res, 200, result);
+    } catch (error) { sendJson(res, error.status || 500, { error: error.status ? error.message : 'Internal error' }); }
+    return;
+  }
+
+  if (url === '/api/files-exists' && method === 'POST') {
+    try {
+      const body = await readStrictUtf8JsonBody(req, 256 * 1024);
+      sendJson(res, 200, { results: probeFilesExist(body?.paths, requestProjectDir) });
+    } catch (error) { sendJson(res, error.status || 500, { error: error.status ? error.message : 'File probe failed' }); }
+    return;
+  }
+
   // 读取文件内容 API
   if (url === '/api/file-content' && method === 'GET') {
     const reqPath = parsedUrl.searchParams.get('path');
     const isEditorSession = parsedUrl.searchParams.get('editorSession') === 'true';
     const cwd = requestProjectDir;
     try {
-      const result = readFileContent(cwd, reqPath, isEditorSession);
+      const access = fileBrowserAccess(parsedUrl, cwd, { isAdmin: isTargetFileAdmin,
+        codexMdEntries: discoverCodexMdEntries(req), editorSession: isEditorSession });
+      const result = readFileContent(access.root, reqPath, access.external, access.assertPath);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(result));
     } catch (err) {
-      const status = ERROR_STATUS_MAP[err.code] || 500;
+      const status = err.status || ERROR_STATUS_MAP[err.code] || 500;
       const message = status === 500 ? `Cannot read file: ${err.message}` : err.message;
       res.writeHead(status, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: message }));
+      res.end(JSON.stringify({ error: message, ...(err.reason ? { reason: err.reason, size: err.size } : {}) }));
+    }
+    return;
+  }
+
+  // Original attachment download contract, using the viewed Codex workspace's
+  // existing realpath/credential policy and the validated descriptor throughout.
+  if (url === '/api/download-file' && (method === 'GET' || method === 'HEAD')) {
+    const reqPath = parsedUrl.searchParams.get('path');
+    let fd = null;
+    try {
+      if (!reqPath || (!isAbsolute(reqPath) && reqPath.includes('..'))) {
+        throw Object.assign(new Error('Invalid path'), { code: 'INVALID_PATH' });
+      }
+      const access = fileBrowserAccess(parsedUrl, requestProjectDir, { isAdmin: isTargetFileAdmin,
+        codexMdEntries: discoverCodexMdEntries(req) });
+      const targetFile = resolveFilePath(access.root, reqPath, access.external);
+      access.assertPath(targetFile);
+      fd = openSync(targetFile, fsConstants.O_RDONLY | (fsConstants.O_NOFOLLOW || 0) | (fsConstants.O_NONBLOCK || 0));
+      const stat = fstatSync(fd);
+      assertPublicFilePath(targetFile, stat);
+      access.assertPath(targetFile, stat);
+      if (!stat.isFile()) throw Object.assign(new Error('Not a file'), { code: 'NOT_FILE' });
+      const canonical = realpathSync(targetFile), current = statSync(canonical);
+      if (!isPathContained(canonical, access.root) || stat.dev !== current.dev || stat.ino !== current.ino) {
+        throw Object.assign(new Error('Invalid path'), { code: 'INVALID_PATH' });
+      }
+      const name = encodeURIComponent(basename(targetFile)).replace(/['()*]/g, ch => '%' + ch.charCodeAt(0).toString(16).toUpperCase());
+      const headers = { 'Content-Type': 'application/octet-stream', 'Content-Length': stat.size,
+        'Content-Disposition': `attachment; filename*=UTF-8''${name}` };
+      if (method === 'HEAD') { res.writeHead(200, headers); res.end(); return; }
+      const stream = createReadStream(targetFile, { fd, autoClose: true });
+      fd = null; // stream/pipeline owns it, including client disconnect and read errors
+      res.writeHead(200, headers);
+      pipeline(stream, res, error => { if (error) reportSwallowed('fileDownload.stream', error); });
+    } catch (error) {
+      if (res.headersSent) res.destroy(error);
+      else sendJson(res, error.status || ERROR_STATUS_MAP[error.code] || (error.code === 'ENOENT' ? 404 : 500), { error: error.message });
+    } finally {
+      if (fd !== null) closeSync(fd);
     }
     return;
   }
 
   // 返回文件原始二进制内容（用于图片预览等）
-  if (url === '/api/file-raw' && (method === 'GET' || method === 'HEAD')) {
-    const reqPath = parsedUrl.searchParams.get('path');
-    const isEditorSession = parsedUrl.searchParams.get('editorSession') === 'true';
+  if ((url === '/api/file-raw' || url.startsWith('/api/file-raw/')) && (method === 'GET' || method === 'HEAD')) {
+    const reqPath = rawPath ?? parsedUrl.searchParams.get('path');
+    const isEditorSession = rawPath === null && parsedUrl.searchParams.get('editorSession') === 'true';
     const cwd = requestProjectDir;
     let constrainedFd = null;
     try {
+      const access = fileBrowserAccess(parsedUrl, cwd, { isAdmin: isTargetFileAdmin || isTargetPreviewResource,
+        codexMdEntries: discoverCodexMdEntries(req), editorSession: isEditorSession });
       // 上传图片路径（/tmp/cx-viewer-uploads/ 或持久化目录）直接使用，跳过项目目录安全检查
       const uploadPrefix = UPLOAD_DIR + '/';
       const pName = requestProjectName || 'default';
       const persistPrefix = join(homedir(), '.codex', 'cx-viewer', pName, 'images') + '/';
       let targetFile;
       let constrainedImageRoot = null;
-      if (reqPath && reqPath.startsWith(uploadPrefix)) {
+      if (!access.external && reqPath && reqPath.startsWith(uploadPrefix)) {
         targetFile = resolve(reqPath);
         // 路径穿越防护：resolve 后必须仍在 upload 目录内
         if (!targetFile.startsWith(uploadPrefix)) {
@@ -3719,7 +3914,7 @@ async function handleViewerRequest(req, res) {
           }
         }
         if (!constrainedImageRoot) constrainedImageRoot = uploadPrefix;
-      } else if (reqPath && reqPath.startsWith(persistPrefix)) {
+      } else if (!access.external && reqPath && reqPath.startsWith(persistPrefix)) {
         targetFile = resolve(reqPath);
         // 路径穿越防护：resolve 后必须仍在持久化目录内
         if (!targetFile.startsWith(persistPrefix)) {
@@ -3729,7 +3924,8 @@ async function handleViewerRequest(req, res) {
         }
         constrainedImageRoot = persistPrefix;
       } else {
-        targetFile = resolveFilePath(cwd, reqPath, isEditorSession);
+        targetFile = resolveFilePath(access.root, reqPath, access.external);
+        access.assertPath(targetFile);
       }
       if (!existsSync(targetFile)) {
         res.writeHead(404, { 'Content-Type': 'application/json' });
@@ -3773,6 +3969,7 @@ async function handleViewerRequest(req, res) {
       }
       const stat = fstatSync(constrainedFd);
       assertPublicFilePath(targetFile, stat);
+      if (!constrainedImageRoot) access.assertPath(targetFile, stat);
       if (!stat.isFile()) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Not a file' }));
@@ -3786,7 +3983,11 @@ async function handleViewerRequest(req, res) {
       const extMime = {
         '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
         '.gif': 'image/gif', '.svg': 'image/svg+xml', '.ico': 'image/x-icon',
-        '.webp': 'image/webp', '.html': 'text/html', '.htm': 'text/html',
+        '.webp': 'image/webp', '.bmp': 'image/bmp', '.avif': 'image/avif',
+        '.html': 'text/html', '.htm': 'text/html',
+        '.css': 'text/css', '.js': 'text/javascript', '.mjs': 'text/javascript',
+        '.json': 'application/json', '.map': 'application/json', '.txt': 'text/plain',
+        '.woff': 'font/woff', '.woff2': 'font/woff2', '.ttf': 'font/ttf',
       };
       const ext = (targetFile.match(/\.[^.]+$/) || [''])[0].toLowerCase();
       const mime = extMime[ext] || 'application/octet-stream';
@@ -3794,11 +3995,11 @@ async function handleViewerRequest(req, res) {
       const size = method === 'HEAD' ? stat.size : data.length;
       const headers = { 'Content-Type': mime, 'Content-Length': size };
       // 防止用户项目中的恶意 HTML 在同源下执行脚本（XSS 防护）
-      if (mime === 'text/html') headers['Content-Security-Policy'] = 'sandbox';
+      if (mime === 'text/html') headers['Content-Security-Policy'] = "sandbox allow-scripts; connect-src 'none'; form-action 'none'";
       res.writeHead(200, headers);
       res.end(data);
     } catch (err) {
-      const status = ERROR_STATUS_MAP[err.code] || 500;
+      const status = err.status || ERROR_STATUS_MAP[err.code] || 500;
       const message = status === 500 ? `Cannot read file: ${err.message}` : err.message;
       res.writeHead(status, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: message }));
@@ -3810,34 +4011,21 @@ async function handleViewerRequest(req, res) {
     return;
   }
 
-  // 保存文件内容 API
+  // 保存文件内容 API: freeze discovery/cwd before consuming an asynchronous body.
   if (url === '/api/file-content' && method === 'POST') {
-    const MAX_BODY = 5 * 1024 * 1024; // 5MB，与 GET 路由限制对齐
-    let body = '';
-    let overflow = false;
-    req.on('data', chunk => {
-      body += chunk;
-      if (body.length > MAX_BODY) { overflow = true; req.destroy(); }
-    });
-    req.on('end', () => {
-      if (overflow) {
-        res.writeHead(413, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Request body too large' }));
-        return;
-      }
-      try {
-        const { path: reqPath, content, editorSession } = JSON.parse(body);
-        const cwd = requestProjectDir;
-        const result = writeFileContent(cwd, reqPath, content, editorSession);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ ok: true, size: result.size }));
-      } catch (err) {
-        const status = ERROR_STATUS_MAP[err.code] || 500;
-        const message = status === 500 ? `Cannot save file: ${err.message}` : err.message;
-        res.writeHead(status, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: message }));
-      }
-    });
+    try {
+      const codexMdEntries = discoverCodexMdEntries(req);
+      if (parsedUrl.searchParams.has('kind')) fileBrowserAccess(parsedUrl, requestProjectDir,
+        { isAdmin: isTargetFileAdmin, codexMdEntries, write: true });
+      const { path: reqPath, content, editorSession } = await readStrictUtf8JsonBody(req, 5 * 1024 * 1024);
+      const access = fileBrowserAccess(parsedUrl, requestProjectDir, { isAdmin: isTargetFileAdmin,
+        codexMdEntries, editorSession: editorSession === true, write: true });
+      const result = writeFileContent(access.root, reqPath, content, access.external, access.assertPath, access.external);
+      sendJson(res, 200, { ok: true, size: result.size });
+    } catch (error) {
+      const status = error.status || ERROR_STATUS_MAP[error.code] || (error instanceof SyntaxError ? 400 : 500);
+      sendJson(res, status, { error: status === 500 ? `Cannot save file: ${error.message}` : error.message });
+    }
     return;
   }
 

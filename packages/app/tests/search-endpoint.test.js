@@ -13,7 +13,9 @@ mkdirSync(join(projectDir, 'src'), { recursive: true });
 writeFileSync(join(projectDir, 'a.js'), 'const alpha = 1;\nbeta\n');
 writeFileSync(join(projectDir, 'src', 'b.js'), 'let x = alpha + 2;\n');
 
-process.env.CXV_LOG_DIR = tmpDir;
+process.env.CXV_LOG_DIR = join(tmpDir, 'viewer-state');
+process.env.HOME = join(tmpDir, 'home');
+process.env.CODEX_HOME = join(tmpDir, 'home', 'codex');
 process.env.CXV_PROJECT_DIR = projectDir;
 process.env.CXV_START_PORT = '19780';
 process.env.CXV_MAX_PORT = '19789';
@@ -93,6 +95,29 @@ describe('POST /api/search', { concurrency: false }, () => {
     const res = await post(port, '/api/search', { query: 'alpha', engine: 'node', includeGlobs: ['src/**'] });
     const files = res.json().results.map((x) => x.file);
     assert.deepEqual(files, ['src/b.js']);
+  });
+
+  it('keeps HTTP responsive while a node regex is busy and cancels on disconnect', async () => {
+    const path = join(projectDir, 'busy.txt');
+    writeFileSync(path, 'a'.repeat(3000) + '!');
+    const req = requestImpl({ hostname: '127.0.0.1', port, path: '/api/search', method: 'POST', rejectUnauthorized: false,
+      headers: { 'Content-Type': 'application/json' } }, res => res.resume());
+    req.on('error', () => {}); // expected when this test disconnects the client
+    const deadline = setTimeout(() => req.destroy(), 3000);
+    try {
+      // Alternation is intentionally outside the conservative nested-quantifier guard.
+      req.end(JSON.stringify({ query: '(a|aa)+$', regex: true, engine: 'node', includeGlobs: ['busy.txt'] }));
+      await new Promise(resolve => setTimeout(resolve, 200));
+      const started = Date.now();
+      const health = await post(port, '/api/search', { query: 'alpha', engine: 'node', includeGlobs: ['*.js'] });
+      assert.equal(health.status, 200);
+      assert.ok(Date.now() - started < 2000, 'other HTTP searches must keep serving');
+      req.destroy();
+      await new Promise(resolve => setTimeout(resolve, 50));
+      const next = await post(port, '/api/search', { query: 'alpha', engine: 'node' });
+      assert.equal(next.status, 200);
+      assert.equal(next.json().results.length, 2);
+    } finally { clearTimeout(deadline); req.destroy(); rmSync(path, { force: true }); }
   });
 
   // ── POST /api/search-replace ──

@@ -142,7 +142,7 @@ describe('git endpoints', { concurrency: false }, () => {
 
   after(async () => {
     await stopViewer();
-    rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 50 });
+    rmSync(tmpDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   });
 
   it('GET /api/git-repos lists root and sub repos', async () => {
@@ -205,7 +205,7 @@ describe('git endpoints', { concurrency: false }, () => {
     assert.equal(res.status, 200);
     const data = res.json();
     assert.equal(data.hasUpstream, false);
-    assert.deepEqual(data.commits, []);
+    assert.equal(data.commits[0].subject, 'sub initial');
   });
 
   it('GET /api/git-log-unpushed rejects traversal repo with 400', async () => {
@@ -290,10 +290,8 @@ describe('git endpoints', { concurrency: false }, () => {
     assert.equal(data.hasUpstream, true);
     const c = data.commits[0];
     assert.equal(c.subject, 'rename-one');
-    const f = c.files.find((x) => x.status === 'R');
-    assert.ok(f, 'rename file present');
-    assert.equal(f.file, 'b.txt');
-    assert.ok(!f.file.includes('\t'), 'no tab in file path');
+    assert.deepEqual(c.files.map(({ status, file }) => ({ status, file })).sort((a, b) => a.file.localeCompare(b.file)), [{ status: 'D', file: 'a.txt' }, { status: 'A', file: 'b.txt' }]);
+    assert.equal(c.insertions, 1); assert.equal(c.deletions, 1);
   });
 
   it('POST /api/git-restore removes an untracked file via git clean', async () => {

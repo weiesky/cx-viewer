@@ -1,0 +1,15 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": "15b1f44d7026e7978276fc6f7b49e88c9aec8be4",
+  "previousLocal": "445a90c",
+  "subject": "fix(files): restore symbolic target refusal on EXDEV",
+  "redLog": "/tmp/cxv-b5-e42-exdev-red.log",
+  "finalLog": "/tmp/cxv-b5-e42-exdev-final.log",
+  "tests": 40,
+  "skip": 0,
+  "limits": [
+    "EXDEV injected; no real second volume or Windows execution",
+    "No UI/CSS changes",
+    "Latest full/install E39 1772/478"
+  ]
+}

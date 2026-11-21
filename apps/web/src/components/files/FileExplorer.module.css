@@ -49,16 +49,115 @@
   background: var(--bg-surface);
 }
 
+/* Header search toggle (the old rail 🔍 entry merged into this panel). The active
+   state reuses the rail .navBtnActive blue tokens. The two classes are mutually
+   exclusive alternatives, so the active one carries the full geometry too. */
+.searchToggle,
+.searchToggleActive {
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.searchToggle {
+  color: var(--text-muted);
+}
+
+.searchToggle:hover {
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+}
+
+.searchToggleActive {
+  color: var(--color-primary-pale);
+  background: var(--color-primary-bg-light);
+}
+
+.searchToggleActive:hover {
+  color: var(--color-info-light);
+  background: var(--color-primary-bg-medium);
+}
+
+/* Horizontal sash between the tree and the embedded search panel. Sized like
+   the vertical sidebar resizer (5px) but row-resize; hover matches vResizer. */
+.searchSash {
+  height: 5px;
+  flex-shrink: 0;
+  cursor: row-resize;
+  background: var(--bg-elevated);
+  transition: background 0.15s;
+  /* Pointer events drive the drag; without this the browser claims touch
+     gestures on the sash for scrolling before pointermove reaches us. */
+  touch-action: none;
+}
+
+.searchSash:hover {
+  background: var(--border-secondary);
+}
+
+/* Wrapper around the embedded SearchPanel: default is display:contents (the
+   panel's own .searchPanel.embedded flex rule sizes it); once the sash has
+   been dragged, an inline height % is applied instead — then the wrapper must
+   be a real flex item (column so the panel fills it) with min-height:0 so the
+   ratio can shrink below the panel's own 260px floor. */
+.embeddedSearchWrap {
+  display: contents;
+}
+
+/* Explicit "has been dragged" class (never [style] — any incidental inline
+   style would silently flip the wrapper out of display:contents mode, and
+   React keeps the attribute once written). */
+.embeddedSearchWrap.dragged {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  min-height: 0;
+}
+
+/* Dragged-height mode: the wrapper's inline height overrides the panel's own
+   50% basis/min-height (the sash clamps 35-80% instead); overflow:auto keeps
+   the fixed chrome reachable when the dragged share is shorter than it. The
+   class is passed INTO SearchPanel (it lands on its root), so we never style
+   another component's internals by tag. Scoped through `.dragged` because the
+   same element also carries `.searchPanel.embedded` (specificity 0,2,0) — a
+   bare `.embeddedSearchPanel` (0,1,0) would lose and the panel would stay at
+   its 50%/260px floor instead of filling the dragged wrapper. */
+.embeddedSearchWrap.dragged .embeddedSearchPanel {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
 .treeContainer {
   flex: 1;
   overflow: auto;
   padding: 4px 0;
+  /* The blank filler below the tree rows flexes to fill the leftover height,
+     so right-clicking anywhere under the list hits the container menu. */
+  display: flex;
+  flex-direction: column;
+}
+
+.treeBlankArea {
+  flex: 1;
+  min-height: 60px;
 }
 
 .treeItem {
   display: flex;
   align-items: center;
   height: 26px;
+  /* .treeContainer 是 column flexbox；缺省 flex-shrink:1 会在行溢出视口时
+     把每行压到 26px 以下，行高/行距随展开抖动。钉住行高，溢出交给 overflow:auto 滚动。 */
+  flex-shrink: 0;
   padding: 0 8px;
   cursor: pointer;
   color: var(--text-secondary);
@@ -170,4 +269,20 @@
   background: var(--color-success-bg-light);
   border-bottom: 1px solid var(--border-primary);
   pointer-events: none;
+}
+
+/* 头部刷新按钮：复用「上下文消耗」的 antd text 小按钮，但压缩到贴合 11px 标题栏。
+   antd small 默认 24px 高、内边距偏大，这里收窄成 16×16、图标 12px，与旧 RefreshIcon 占位一致。 */
+.refreshBtn {
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  padding: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  border-radius: 3px;
+}
+
+.refreshBtn:hover {
+  color: var(--text-secondary);
 }
