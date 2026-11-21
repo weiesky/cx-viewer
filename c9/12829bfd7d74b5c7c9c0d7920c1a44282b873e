@@ -1,0 +1,36 @@
+cc-viewer-alignment/B5-candidate-matrix.md
+  s_4122b07c8b4292::t_9a2e0cb3dd3037 29
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_4122b07c8b4292::t_9a2e0cb3dd3037 3
+  s_4122b07c8b4292::t_5efdb265d56035 111
+packages/app/tests/file-move.test.js
+  s_4122b07c8b4292::t_919ac5eff8cdab 3-4,26-84
+packages/app/server.js
+  s_4122b07c8b4292::t_953fcc5b5bc17f 16,2942-2969,2976
+AGENTS.md
+  s_4122b07c8b4292::t_9a2e0cb3dd3037 26
+cc-viewer-alignment/B5-implementation.md
+  s_4122b07c8b4292::t_5efdb265d56035 362-367
+cc-viewer-alignment/README.md
+  s_4122b07c8b4292::t_9a2e0cb3dd3037 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4122b07c8b4292::t_5efdb265d56035 16089-16092
+cc-viewer-alignment/B5-project-rename-2026-11-21.json
+  s_4122b07c8b4292::t_5efdb265d56035 1-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "c912829bfd7d74b5c7c9c0d7920c1a44282b873e",
+  "prompts": {},
+  "sessions": {
+    "s_4122b07c8b4292": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fbcc-5a47-7112-a38d-fb834f2c5f53",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": null
+    }
+  }
+}
