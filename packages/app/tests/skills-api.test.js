@@ -120,3 +120,20 @@ test('skills api imports markdown and zip uploads', async (t) => {
   assert.equal(existsSync(join(zipResult.path, 'SKILL.md')), true);
   assert.equal(readFileSync(join(zipResult.path, 'extra.txt'), 'utf8'), 'extra');
 });
+
+test('native project agents skills retain their own root through toggle and reject name ambiguity or another workspace', t => {
+  const { homeDir, cwd } = fixture(t);
+  const legacy = join(cwd, '.codex/skills/shared'), native = join(cwd, '.agents/skills/shared');
+  writeSkill(legacy); writeSkill(native);
+  const rows = listSkills({ homeDir, cwd }).filter(s => s.source === 'project');
+  assert.deepEqual(new Set(rows.map(s => s.store)), new Set(['project', 'project-agents']));
+  assert.throws(() => toggleSkill({ source: 'project', name: 'shared', enable: false }, { homeDir, cwd }), { code: 'AMBIGUOUS' });
+  const off = toggleSkill({ source: 'project', path: native, name: 'shared', enable: false }, { homeDir, cwd });
+  assert.equal(off.path, join(cwd, '.agents/skills-skip/shared')); assert.equal(existsSync(legacy), true);
+  assert.equal(listSkills({ homeDir, cwd }).find(s => s.path === off.path).enabled, false);
+  const sibling = join(cwd, 'sibling'); mkdirSync(sibling);
+  assert.throws(() => deleteSkill({ source: 'project', path: off.path }, { homeDir, cwd: sibling }), { status: 404 });
+  const on = toggleSkill({ source: 'project', path: off.path, name: 'shared', enable: true }, { homeDir, cwd });
+  assert.equal(on.path, native);
+  deleteSkill({ source: 'project', path: native }, { homeDir, cwd }); assert.equal(existsSync(native), false); assert.equal(existsSync(legacy), true);
+});

@@ -1,0 +1,22 @@
+[
+  {
+    "engine": "chromium",
+    "version": "159.0.8154.6",
+    "requestedFilePreserved": true,
+    "noBootInstanceRedirect": true,
+    "snapshotRequests": 1,
+    "mainNavigations": 1,
+    "errors": [],
+    "screenshot": "chromium-exact-readonly-file.png"
+  },
+  {
+    "engine": "webkit",
+    "version": "27.2",
+    "requestedFilePreserved": true,
+    "noBootInstanceRedirect": true,
+    "snapshotRequests": 1,
+    "mainNavigations": 1,
+    "errors": [],
+    "screenshot": "webkit-exact-readonly-file.png"
+  }
+]

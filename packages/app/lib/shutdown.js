@@ -1,3 +1,5 @@
+import { createProcessAdapter, killVerifiedTree, sameProcessIdentity } from './cxv-processes.js';
+
 export const SHUTDOWN_DEADLINE_MS = 10_000;
 export const FORCE_KILL_GRACE_MS = 12_000;
 
@@ -134,4 +136,53 @@ export function terminateWithEscalation(pid, {
     }
   }, graceMs);
   return { timer, completion };
+}
+
+// Capture identity before signalling and retain descendants if the parent exits.
+// POSIX native children own a process group, including tools forked during stop.
+const ownedProcesses = createProcessAdapter();
+// forkpty can be inspected before exec replaces its command. Group ownership is
+// tied to that child's birth, while captured descendant signalling stays exact.
+const sameGroupOwner = (expected, actual) => !!expected && !!actual
+  && expected.pid === actual.pid && expected.startId === actual.startId;
+export async function stopOwnedProcessTree(child, identity) {
+  if (!child?.pid) return;
+  if (!identity) {
+    try { child.kill('SIGKILL'); } catch (error) { if (error.code !== 'ESRCH') throw error; }
+    return;
+  }
+  const descendants = await ownedProcesses.descendants(identity);
+  const targets = [...descendants, identity];
+  const forceKill = async () => {
+    const current = await ownedProcesses.inspect(identity.pid);
+    if (process.platform !== 'win32' && (!current || sameGroupOwner(identity, current))) {
+      try { process.kill(-identity.pid, 'SIGKILL'); } catch (error) { if (error.code !== 'ESRCH') throw error; }
+    }
+    await killVerifiedTree(ownedProcesses, identity, descendants);
+  };
+  const current = await ownedProcesses.inspect(identity.pid);
+  if (current && !sameGroupOwner(identity, current)) {
+    await killVerifiedTree(ownedProcesses, identity, descendants); return;
+  }
+  const termination = terminateWithEscalation(identity.pid, {
+    graceMs: process.env.CXV_TEST === '1' ? 200 : Math.min(FORCE_KILL_GRACE_MS, SHUTDOWN_DEADLINE_MS / 2),
+    kill(pid, signal) {
+      return process.kill(process.platform !== 'win32' && signal !== 0 ? -pid : pid, signal);
+    },
+    stillTarget: async () => sameGroupOwner(identity, await ownedProcesses.inspect(identity.pid)),
+    forceKill,
+  });
+  let result = null;
+  termination.completion.then(value => { result = value; });
+  try {
+    while (!result) {
+      const active = await Promise.all(targets.map(async expected => (expected === identity ? sameGroupOwner : sameProcessIdentity)(expected,
+        await ownedProcesses.inspect(expected.pid))));
+      if (active.every(value => !value)) { await forceKill(); return; }
+      await new Promise(resolve => setTimeout(resolve, 25));
+    }
+    if (result.status === 'failed') throw result.error;
+    // Even a replaced root cannot retarget its previously captured tool children.
+    await killVerifiedTree(ownedProcesses, identity, descendants);
+  } finally { if (termination.timer) clearTimeout(termination.timer); }
 }

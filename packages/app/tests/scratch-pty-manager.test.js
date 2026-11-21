@@ -5,7 +5,7 @@ import { openScratchPty, killScratchPty, shutdownScratchPtys,
 
 function fakePty(spawns) {
   return { spawn(shell, args, options) {
-    const proc = { options: { cwd: options.cwd }, killed: false, writes: [],
+    const proc = { options: { ...options }, killed: false, writes: [],
       onData(fn) { this.data = fn; }, onExit(fn) { this.exit = fn; },
       write(value) { this.writes.push(value); }, resize() {}, kill() { this.killed = true; },
     };
@@ -73,4 +73,21 @@ test('shutdown cancels legacy pending shells too and loader failures can retry',
   _setScratchPtyLoaderForTests(async () => fakePty(spawns));
   assert.ok(await openScratchPty('one'));
   assert.equal(await openScratchPty('../bad'), null);
+});
+
+
+test('scratch inherits ordinary shell env while removing viewer bypass, instance, ports, proxy and only its private trace header', async t => {
+  const values = { CXV_BYPASS_PERMISSIONS: '1', CXV_INSTANCE_KEY: 'boot', CXV_EDITOR_PORT: '7008', CXVIEWER_PORT: '7008',
+    CXV_FUTURE_COORDINATION: 'private', OPENAI_BASE_URL: 'http://127.0.0.1:1',
+    OTEL_EXPORTER_OTLP_TRACES_HEADERS: 'tenant=keep,x%2Dcxv%2Dotel%2Dtoken=synthetic-private', B7_SCRATCH_ENV: 'ordinary' };
+  const previous = Object.fromEntries(Object.keys(values).map(key => [key, process.env[key]])); Object.assign(process.env, values);
+  t.after(() => { for (const [key, value] of Object.entries(previous)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; } });
+  const spawns = []; _setScratchPtyLoaderForTests(async () => fakePty(spawns));
+  const a = await openScratchPty('env', { cwd: '/a', instanceKey: 'a' });
+  const env = spawns[0].options.env;
+  for (const key of Object.keys(values).filter(key => key.startsWith('CXV_') || key.startsWith('CXVIEWER_'))) assert.equal(env[key], undefined);
+  assert.equal(env.OPENAI_BASE_URL, undefined); assert.equal(env.OTEL_EXPORTER_OTLP_TRACES_HEADERS, 'tenant=keep');
+  assert.equal(env.B7_SCRATCH_ENV, 'ordinary'); assert.equal(process.env.CXV_BYPASS_PERMISSIONS, '1');
+  assert.equal(process.env.OTEL_EXPORTER_OTLP_TRACES_HEADERS, values.OTEL_EXPORTER_OTLP_TRACES_HEADERS);
+  assert.ok(a);
 });

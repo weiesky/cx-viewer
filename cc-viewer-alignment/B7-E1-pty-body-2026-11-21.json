@@ -1,0 +1,11 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": "eb2e9703a2837550a9bf2a62a8bb5d20fac7f723",
+  "localBase": "8968935417f4f26a79f84f5be3daad1234eba6d9",
+  "path": "packages/app/pty-manager.js",
+  "comparison": "Remove only export keywords from original function declarations; dedent factory body and exclude returned method object. Exact remaining bytes match.",
+  "bodySha256": "856890622058cb870811d9a9e097438296b0b461dd0eb56b4cf4e7f45e66eecf",
+  "existingFunctions": 18,
+  "functionBodiesChanged": false,
+  "ordinaryWorkspaceUiFixed": false
+}

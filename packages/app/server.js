@@ -47,6 +47,8 @@ import { getUserProfile } from './lib/user-profile.js';
 import { getGitDiffs, getUnpushedCommits, isValidCommitHash, isSafeRelativePath, PATH_TRAVERSAL, execFileAsync as gitExecFileAsync } from './lib/git-diff.js';
 import { getGitWorkingTreeLineStats } from './lib/git-change-stats.js';
 import { parseCodexInvocation } from './lib/cli-args.js';
+import { createPtyChatQueue } from './server/lib/pty-chat-queue.js';
+import { createPtyWorkspaceRegistry } from './lib/pty-workspaces.js';
 import { CONTEXT_WINDOW_FILE, buildContextWindowEvent } from './lib/context-watcher.js';
 import { CODEX_CONTEXT_WINDOW_TOKENS, sumUsageContextTokens } from './server/lib/context-rules.js';
 import { isMainAgentEntry } from './lib/main-agent-entry.js';
@@ -206,6 +208,7 @@ function activeV2LookupOptions({ forceHealthyScan = false, sdkView = null } = {}
     projectId: context.projectId,
     canonicalCwd,
     forceHealthyScan,
+    ...(sdkView?.transport === 'pty' ? { exactSessionId: ptyWorkspaces.info(sdkView.instanceKey).sessionId } : {}),
   };
 }
 
@@ -218,6 +221,13 @@ function activeV2SessionFile() {
 }
 
 async function activeV2SessionFileAsync(sdkView = null) {
+  if (sdkView?.transport === 'pty') {
+    let current;
+    try { current = ptyWorkspaces.info(sdkView.instanceKey); } catch { return null; }
+    return recoveryForSdkView(sdkView).apply(await findActiveV2SessionFileAsync(LOG_DIR, {
+      ...activeV2LookupOptions({ sdkView }), exactSessionId: current.sessionId,
+    }));
+  }
   if (sdkView && !sdkManager.listSdkSessions().some(session => session.instanceKey === sdkView.instanceKey)) return null;
   if (sdkView) {
     const pin = sdkResumedFiles.get(sdkView.instanceKey);
@@ -277,7 +287,14 @@ export function setSystemPromptRuntimeCapability(capability) {
     : null;
 }
 
-export function getSystemPromptRuntimeCapability() {
+export function getSystemPromptRuntimeCapability(view = null) {
+  if (view?.transport === 'pty' && !view.active) {
+    const capability = ptyWorkspaces.runtime(view.instanceKey)?.systemPromptCapability;
+    return { status: capability?.verified ? 'supported' : 'unsupported',
+      append: capability?.verified === true && capability.append === true,
+      override: capability?.verified === true && capability.override === true,
+      transport: capability?.verified ? 'app-server-bridge' : 'direct', version: capability?.version || null };
+  }
   if (_systemPromptRuntimeCapability) return { ..._systemPromptRuntimeCapability };
   return {
     status: 'unsupported',
@@ -288,8 +305,21 @@ export function getSystemPromptRuntimeCapability() {
   };
 }
 
-function applyRuntimeApprovalsReviewer(value) {
+function reviewerStateFor(view) {
+  if (view?.transport === 'pty' && !view.active) {
+    return ptyWorkspaces.runtime(view.instanceKey)?.getApprovalsReviewerState?.()
+      || { approvalsReviewer: APPROVALS_REVIEWER_DEFAULT, nativeAvailable: false, appliedToRuntime: false };
+  }
+  return { approvalsReviewer: _runtimeApprovalsReviewer, nativeAvailable: _codexNativeReviewerAvailable,
+    appliedToRuntime: !!_codexApprovalsReviewerUpdater };
+}
+
+function applyRuntimeApprovalsReviewer(value, view = null) {
   const reviewer = normalizeApprovalsReviewer(value);
+  if (view?.transport === 'pty' && !view.active) {
+    const result = ptyWorkspaces.runtime(view.instanceKey)?.setApprovalsReviewer?.(reviewer);
+    return { approvalsReviewer: reviewer, appliedToRuntime: false, appliesOnNextTurn: false, ...result };
+  }
   const result = _codexApprovalsReviewerUpdater?.(reviewer);
   return {
     approvalsReviewer: reviewer,
@@ -299,25 +329,57 @@ function applyRuntimeApprovalsReviewer(value) {
   };
 }
 
-function broadcastApprovalsReviewer(value) {
+function broadcastApprovalsReviewer(value, scope = null) {
   if (!terminalWss) return;
   const payload = JSON.stringify({
     type: 'approval-reviewer-changed',
     approvalsReviewer: normalizeApprovalsReviewer(value),
   });
   terminalWss.clients.forEach((client) => {
-    if (client.readyState === 1) try { client.send(payload); } catch {}
+    if (client.readyState === 1 && (isSdkMode || ptyScopeMatches(client, scope))) try { client.send(payload); } catch {}
   });
 }
 
-function openTerminalClients() {
-  if (!terminalWss) return [];
-  return [...terminalWss.clients].filter(client => client.readyState === 1);
+function ptyScope(data = null) {
+  if (!ptyWorkspaces) return null;
+  try {
+    const view = ptyWorkspaces.info(data?.instanceKey || undefined);
+    return data?.cwd && data.cwd !== view.cwd ? null : view;
+  } catch { return null; }
 }
 
-function broadcastCodexAskMessage(message, exclude = null) {
+function ptyScopeMatches(client, scope = null) {
+  if (!ptyWorkspaces) return !client.cxvSdkSession;
+  const owner = scope || ptyScope();
+  return !!owner && client.cxvPtySession?.instanceKey === owner.instanceKey;
+}
+
+function ptyEventClients(data) {
+  const scope = ptyScope(data);
+  if (ptyWorkspaces && !scope) return [];
+  return clients.filter(client => ptyScopeMatches(client, scope));
+}
+
+function openTerminalClients(scope = null) {
+  if (!terminalWss) return [];
+  return [...terminalWss.clients].filter(client => client.readyState === 1 && ptyScopeMatches(client, scope));
+}
+
+function requestInputBridge(scope) {
+  if (scope && ptyWorkspaces) {
+    const runtime = ptyWorkspaces.runtime(scope.instanceKey);
+    if (runtime?.resolveRequestUserInput) return {
+      resolve: runtime.resolveRequestUserInput, cancel: runtime.cancelRequestUserInput,
+      releaseToTui: runtime.releaseRequestUserInputToTui,
+    };
+    if (scope.instanceKey !== ptyScope()?.instanceKey) return null;
+  }
+  return _codexRequestUserInputBridge;
+}
+
+function broadcastCodexAskMessage(message, exclude = null, scope = null) {
   const payload = JSON.stringify(message);
-  for (const client of openTerminalClients()) {
+  for (const client of openTerminalClients(scope)) {
     if (client === exclude) continue;
     try { client.send(payload); } catch {}
   }
@@ -335,14 +397,17 @@ function removePendingCodexAsk(id) {
 /** Claim an app-server request_user_input request only when a GUI is online. */
 export function offerCodexRequestUserInput(request) {
   if (!request?.uiId || !Array.isArray(request.questions) || request.questions.length === 0) return false;
-  if (!_codexRequestUserInputBridge || openTerminalClients().length === 0) return false;
+  const scope = ptyScope(request);
+  if (ptyWorkspaces && !scope) return false;
+  const bridge = requestInputBridge(scope);
+  if (!bridge || openTerminalClients(scope).length === 0) return false;
 
   const id = String(request.uiId);
   const timeoutMs = Number.isFinite(request.autoResolutionMs) && request.autoResolutionMs > 0
     ? request.autoResolutionMs
     : null;
   const pending = {
-    id,
+    id, scope, bridge,
     questions: request.questions,
     threadId: request.threadId || null,
     turnId: request.turnId || null,
@@ -357,7 +422,7 @@ export function offerCodexRequestUserInput(request) {
       if (!current) return;
       const codexAnswers = buildCodexAutoResolutionAnswers(current.questions);
       const answers = projectCodexAnswersForConversation(current.questions, codexAnswers);
-      const resolved = _codexRequestUserInputBridge?.resolve(id, codexAnswers);
+      const resolved = current.bridge?.resolve?.(id, codexAnswers);
       if (!resolved) return;
       removePendingCodexAsk(id);
       broadcastCodexAskMessage({
@@ -367,7 +432,7 @@ export function offerCodexRequestUserInput(request) {
         questions: current.questions,
         answers,
         codexAnswers,
-      });
+      }, null, current.scope);
     }, timeoutMs);
     pending.timer.unref?.();
   }
@@ -382,19 +447,20 @@ export function offerCodexRequestUserInput(request) {
     itemId: pending.itemId,
     startedAt: pending.createdAt,
     timeoutMs,
-  });
+  }, null, scope);
   return true;
 }
 
 /** App-server cleared a request because the turn ended/interrupted elsewhere. */
 export function clearCodexRequestUserInput(request) {
   const id = request?.uiId != null ? String(request.uiId) : '';
-  if (!id || !removePendingCodexAsk(id)) return false;
+  const pending = id && removePendingCodexAsk(id);
+  if (!pending) return false;
   broadcastCodexAskMessage({
     type: 'ask-hook-resolved',
     id,
     reason: request.reason || 'server-resolved',
-  });
+  }, null, pending.scope);
   return true;
 }
 
@@ -409,9 +475,9 @@ export function setCodexRequestUserInputBridge(bridge) {
 }
 
 function releaseCodexAsksToTuiWhenGuiDisconnects() {
-  if (openTerminalClients().length > 0 || !_codexRequestUserInputBridge?.releaseToTui) return;
-  for (const id of [...pendingCodexAsks.keys()]) {
-    if (_codexRequestUserInputBridge.releaseToTui(id)) removePendingCodexAsk(id);
+  for (const [id, pending] of pendingCodexAsks) {
+    if (openTerminalClients(pending.scope).length > 0) continue;
+    if (pending.bridge?.releaseToTui?.(id)) removePendingCodexAsk(id);
   }
 }
 
@@ -620,7 +686,7 @@ function encodeStableId(value) {
 }
 
 function currentProjectDir(req) {
-  return req?.cxvSdkSession?.cwd || (isSdkMode ? sdkBootCwd : (process.env.CXV_PROJECT_DIR || process.cwd()));
+  return req?.cxvPtySession?.cwd || req?.cxvSdkSession?.cwd || (isSdkMode ? sdkBootCwd : (process.env.CXV_PROJECT_DIR || process.cwd()));
 }
 
 const SEARCH_ENGINES = new Set(['auto', 'ripgrep', 'node']);
@@ -758,6 +824,77 @@ const isWorkspaceMode = process.env.CXV_WORKSPACE_MODE === '1';
 const sdkManager = isSdkMode ? await import('./lib/sdk-manager.js') : null;
 const sdkBootCwd = resolve(process.env.CXV_PROJECT_DIR || process.cwd());
 
+let ptyWorkspaces = null;
+const ptyQueues = new Map();
+function stopPtyQueue(key) {
+  const record = ptyQueues.get(key);
+  if (!record) return;
+  ptyQueues.delete(key); record.removeExit?.(); record.queue.stop();
+}
+function stopPtyQueues() { for (const key of [...ptyQueues.keys()]) stopPtyQueue(key); }
+function ptyQueueFor(scope) {
+  if (!scope || !ptyWorkspaces) return null;
+  const key = scope.instanceKey;
+  const pty = ptyWorkspaces.session(key);
+  const context = () => { try { return ptyWorkspaces.runtime(key)?.getContext?.() || {}; } catch { return {}; } };
+  const inputState = () => { try { return ptyWorkspaces.runtime(key)?.getInputState?.() || {}; } catch { return {}; } };
+  const currentSession = () => context().sessionId || context().threadId || null;
+  const anchor = () => ({ project: scope.projectName, sessionId: currentSession(), instanceKey: key });
+  let record = ptyQueues.get(key);
+  if (!record) {
+    const live = target => {
+      try {
+        ptyWorkspaces.info(key);
+        if (!pty.getPtyState().running || (target?.instanceKey && target.instanceKey !== key)
+          || (target?.sessionId && target.sessionId !== currentSession())) return false;
+        return true;
+      } catch { return false; }
+    };
+    const write = (data, target) => live(target) && pty.writeToPty(data);
+    const writeSequential = (chunks, done, options, target) => {
+      if (!live(target)) { done?.(false); return null; }
+      return pty.writeToPtySequential(chunks, done, options);
+    };
+    const queue = createPtyChatQueue({
+      getPtyKind: () => inputState().connected === true && currentSession() && !pty.getPtyState().recovering
+        ? pty.getPtyState().kind : null,
+      isStreaming: () => inputState().active !== false || ptyLoopActive(scope),
+      hasPendingApproval: () => inputState().pendingRequests > 0
+        || [...pendingCodexAsks.values(), ...pendingPermHooks.values()].some(pending => ptyScopeMatches({ cxvPtySession: scope }, pending.scope)),
+      hasExternalInjection: () => scope.active && !!_dingtalkImBridge?.getStatus().pending,
+      hasLivePtyFor: live,
+      writeToPty: data => write(data, anchor()), writeToPtyFor: write,
+      writeToPtySequential: (chunks, done, options) => writeSequential(chunks, done, options, anchor()),
+      writeToPtySequentialFor: writeSequential,
+      broadcastWs: (message, item) => broadcastWsMessage({ ...message, ...scope, sessionId: currentSession(),
+        ...(message.type === 'queue-rejected' && item ? { text: item.text } : {}) }),
+    });
+    record = { queue, lastSession: currentSession(), removeExit: pty.onPtyExit(() => { stopPtyQueue(key); clearEditorSessions(key); }) };
+    ptyQueues.set(key, record);
+  }
+  const sid = currentSession();
+  if (record.lastSession && sid !== record.lastSession) record.queue.clear();
+  record.lastSession = sid;
+  return { queue: record.queue, anchor: anchor(), ready: inputState().connected === true && !!sid };
+}
+
+
+// Trusted bootstrap only; executable/environment/runtime never come from HTTP.
+export function configurePtyWorkspaces({ boot, launch = null }) {
+  if (isSdkMode || ptyWorkspaces) throw new Error('PTY workspaces already configured or unavailable');
+  const registry = createPtyWorkspaceRegistry({ launch });
+  registry.adopt({ ...boot, boot: true });
+  ptyWorkspaces = registry;
+  return registry;
+}
+
+function ptyViewForUrl(parsedUrl) {
+  if (!ptyWorkspaces) throw Object.assign(new Error('PTY workspaces are not configured'),
+    { status: 404, code: 'PTY_WORKSPACE_UNAVAILABLE' });
+  return ptyWorkspaces.info(parsedUrl.searchParams.has('instance')
+    ? parsedUrl.searchParams.get('instance') : undefined);
+}
+
 function sdkViewForUrl(parsedUrl) {
   if (!sdkManager) return null;
   // Unanchored legacy pages remain bound to the boot directory, never to a
@@ -835,7 +972,11 @@ let pendingAskHook = null; // { questions, res, timer, createdAt }
 const pendingPermHooks = new Map(); // id -> { toolName, input, res, timer, createdAt }
 
 // Editor session state (for $EDITOR intercept)
-const editorSessions = new Map(); // sessionId → { filePath, done, createdAt }
+const editorSessions = new Map(); // [instanceKey, sessionId] → owned editor metadata
+function clearEditorSessions(instanceKey) {
+  for (const [key, session] of editorSessions) if (instanceKey === undefined || session.scope?.instanceKey === instanceKey) editorSessions.delete(key);
+}
+const editorFrame = session => ({ type: 'editor-open', ...session.scope, sessionId: session.sessionId, filePath: session.filePath });
 // Periodically clean up abandoned editor sessions (older than 1 hour)
 const _editorCleanupTimer = setInterval(() => {
   const now = Date.now();
@@ -888,6 +1029,12 @@ export async function initPostLaunch() {
     getConfig: loadDingTalkImConfig,
     getPtyState: ptyMod.getPtyState,
     writeToPtySequential: ptyMod.writeToPtySequential,
+    canInject: () => {
+      const state = appServerMod.getAppServerInputState();
+      const boot = ptyScope();
+      return state.connected && !state.active && state.pendingRequests === 0
+        && !(boot && ptyQueues.get(boot.instanceKey)?.queue.isDispatching());
+    },
     getActiveContext: () => ({
       ...getActiveProjectContext(),
       ...appServerMod.getAppServerRuntimeContext(),
@@ -1299,7 +1446,7 @@ setLogV2CommitListener((entry, _result, context) => {
   if (contextEvent) {
     if (isSdkMode) sendSdkEvent('context_window', { ...contextEvent, cwd: context.cwd,
       instanceKey: entry._captureContext?.instanceKey || entry._instanceKey || entry.body?.metadata?.instance_key });
-    else sendEventToClients(clients, 'context_window', contextEvent);
+    else sendEventToClients(ptyEventClients({ cwd: context?.cwd, instanceKey: context?.instanceKey || entry._instanceKey }), 'context_window', contextEvent);
   }
 });
 let server;
@@ -1644,7 +1791,7 @@ async function handleViewerRequest(req, res) {
         const parts = tail.slice(5).split('/');
         rawProject = decodeURIComponent(parts[0] || '');
         const instance = decodeURIComponent(parts[1] || '');
-        if (parts.length < 3 || !instance || !isSdkMode) throw new Error('Invalid view scope');
+        if (parts.length < 3 || !instance || (!isSdkMode && !ptyWorkspaces)) throw new Error('Invalid view scope');
         if (parsedUrl.searchParams.has('instance') && parsedUrl.searchParams.get('instance') !== instance) throw new Error('View scope mismatch');
         parsedUrl.searchParams.set('instance', instance);
         rawPath = decodeURIComponent(parts.slice(2).join('/'));
@@ -1653,16 +1800,17 @@ async function handleViewerRequest(req, res) {
     } catch (error) { sendJson(res, 400, { error: error.message }); return; }
   }
 
-  if (isSdkMode && parsedUrl.searchParams.has('instance')
-      && (url.startsWith('/api/') || url === '/events') && !url.startsWith('/api/workspaces') && url !== '/api/cli-mode') {
-    try { req.cxvSdkSession = sdkViewForUrl(parsedUrl); }
-    catch (error) { sendJson(res, error.status || 400, { error: error.message, code: error.code }); return; }
+  if ((url.startsWith('/api/') || url === '/events') && !url.startsWith('/api/workspaces') && url !== '/api/cli-mode') {
+    try {
+      if (isSdkMode && parsedUrl.searchParams.has('instance')) req.cxvSdkSession = sdkViewForUrl(parsedUrl);
+      else if (ptyWorkspaces || parsedUrl.searchParams.has('instance')) req.cxvPtySession = ptyViewForUrl(parsedUrl);
+    } catch (error) { sendJson(res, error.status || 400, { error: error.message, code: error.code }); return; }
   }
   const requestProjectDir = currentProjectDir(req);
-  const requestSdkView = isSdkMode ? (req.cxvSdkSession
+  const requestSdkView = req.cxvPtySession || (isSdkMode ? (req.cxvSdkSession
     || sdkManager.listSdkSessions().find(session => session.cwd === sdkBootCwd)
-    || { cwd: sdkBootCwd, projectName: basename(sdkBootCwd) }) : null;
-  const requestProjectName = isSdkMode ? requestSdkView.projectName : _projectName;
+    || { cwd: sdkBootCwd, projectName: basename(sdkBootCwd) }) : null);
+  const requestProjectName = requestSdkView ? requestSdkView.projectName : _projectName;
   if (rawProject && rawProject !== requestProjectName) { sendJson(res, 400, { error: 'Project scope mismatch' }); return; }
 
   const pluginRoute = pluginRoutes.find(route => route.method === method && route.path === url);
@@ -1984,15 +2132,18 @@ async function handleViewerRequest(req, res) {
           return current;
         });
         const reviewerState = Object.prototype.hasOwnProperty.call(incoming, 'approvalsReviewer')
-          ? applyRuntimeApprovalsReviewer(incoming.approvalsReviewer)
+          ? applyRuntimeApprovalsReviewer(incoming.approvalsReviewer, requestSdkView)
           : null;
-        if (reviewerState) broadcastApprovalsReviewer(reviewerState.approvalsReviewer);
+        if (reviewerState) broadcastApprovalsReviewer(reviewerState.approvalsReviewer, requestSdkView);
+        const themePty = req.cxvPtySession && ptyWorkspaces.session(req.cxvPtySession.instanceKey);
+        const themeWrite = themePty?.writeToPty || _writeToPty;
+        const themeOnData = themePty ? cb => themePty.onPtyRawData(event => cb(event.data, event)) : _onPtyData;
         // 主题切换时同步到 Codex Code CLI：发 /theme，监听输出验证结果，不对就再发一次
-        if (incoming.themeColor && _writeToPty && _onPtyData) {
+        if (incoming.themeColor && themeWrite && themeOnData) {
           const target = incoming.themeColor === 'light' ? 'light' : 'dark';
           let buf = '';
           let retried = false;
-          const removeListener = _onPtyData((data) => {
+          const removeListener = themeOnData((data) => {
             buf += data;
             if (buf.length > 4096) buf = buf.slice(-2048); // 限制 buf 大小
             // 解析 PTY 输出中的 "Theme set to light" 或 "Theme set to dark"
@@ -2003,13 +2154,13 @@ async function handleViewerRequest(req, res) {
               if (match[1] !== target && !retried) {
                 // 结果与目标不一致，再 toggle 一次
                 retried = true;
-                try { _writeToPty('/theme\r'); } catch {}
+                try { themeWrite('/theme\r'); } catch {}
               }
             }
           });
           // 5 秒超时，避免监听器泄漏
           const timeout = setTimeout(() => { removeListener(); }, 5000);
-          try { _writeToPty('/theme\r'); } catch {}
+          try { themeWrite('/theme\r'); } catch {}
         }
         prefs.logDir = LOG_DIR;
         res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -2028,10 +2179,11 @@ async function handleViewerRequest(req, res) {
 
   if (url === '/api/approval-reviewer' && method === 'GET') {
     const saved = getApprovalsReviewerPreference();
+    const runtime = reviewerStateFor(requestSdkView);
     sendJson(res, 200, {
-      approvalsReviewer: _runtimeApprovalsReviewer || saved || APPROVALS_REVIEWER_DEFAULT,
+      approvalsReviewer: runtime.approvalsReviewer || saved || APPROVALS_REVIEWER_DEFAULT,
       explicitlyConfigured: !!saved,
-      appliedToRuntime: !!_codexApprovalsReviewerUpdater,
+      appliedToRuntime: runtime.appliedToRuntime,
     });
     return;
   }
@@ -2044,8 +2196,8 @@ async function handleViewerRequest(req, res) {
       }
       const approvalsReviewer = normalizeApprovalsReviewer(incoming.approvalsReviewer);
       updatePreferences(prefs => Object.assign(prefs, { approvalsReviewer }));
-      const runtime = applyRuntimeApprovalsReviewer(approvalsReviewer);
-      broadcastApprovalsReviewer(runtime.approvalsReviewer);
+      const runtime = applyRuntimeApprovalsReviewer(approvalsReviewer, requestSdkView);
+      broadcastApprovalsReviewer(runtime.approvalsReviewer, requestSdkView);
       sendJson(res, 200, { ok: true, ...runtime });
     }).catch((err) => sendApiError(res, err, 'Invalid request body'));
     return;
@@ -2055,7 +2207,7 @@ async function handleViewerRequest(req, res) {
       && (method === 'GET' || method === 'POST')) {
     if (!authorizeCodexMemoryRequest(req, res, parsedUrl)) return;
     res.setHeader('Cache-Control', 'private, no-store');
-    const capability = getSystemPromptRuntimeCapability();
+    const capability = getSystemPromptRuntimeCapability(requestSdkView);
     const cwd = currentProjectDir(req);
     const active = !(isWorkspaceMode && !_workspaceLaunched);
     try {
@@ -2296,6 +2448,9 @@ async function handleViewerRequest(req, res) {
       const workspaces = getWorkspaces();
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ workspaces, workspaceMode: isWorkspaceMode && !_workspaceLaunched,
+        ...(ptyWorkspaces ? { ptyMode: true, sessions: ptyWorkspaces.list(),
+          currentInstanceKey: ptyWorkspaces.list().find(session => parsedUrl.searchParams.has('instance')
+            ? session.instanceKey === parsedUrl.searchParams.get('instance') : session.active)?.instanceKey || null } : {}),
         ...(isSdkMode ? { sdkMode: true, sessions: sdkManager.listSdkSessions(),
           currentInstanceKey: sdkManager.listSdkSessions().find(session => parsedUrl.searchParams.has('instance')
             ? session.instanceKey === parsedUrl.searchParams.get('instance') : session.cwd === sdkBootCwd)?.instanceKey || null } : {}) }));
@@ -2352,6 +2507,18 @@ async function handleViewerRequest(req, res) {
           return;
         }
 
+        if (ptyWorkspaces) {
+          const result = await ptyWorkspaces.ensure(wsPath, launchExtraArgs === undefined ? [] : launchExtraArgs);
+          try { registerWorkspace(result.cwd); } catch (error) {
+            if (!result.reused) await ptyWorkspaces.close(result.instanceKey);
+            throw error;
+          }
+          _workspaceLaunched = true;
+          sendJson(res, 200, { ok: true, ptyMode: true, projectName: result.projectName,
+            path: result.cwd, instanceKey: result.instanceKey, reused: result.reused });
+          return;
+        }
+
         // 非 Electron 模式（web / CLI）：完整逻辑
         registerWorkspace(wsPath);
         const result = initForWorkspace(wsPath);
@@ -2393,16 +2560,49 @@ async function handleViewerRequest(req, res) {
     return;
   }
 
+  if (ptyWorkspaces && url === '/api/workspaces/close' && method === 'POST') {
+    try {
+      const body = await readJsonBody(req, 4096);
+      const registry = ptyWorkspaces;
+      const scope = registry.info(body.instanceKey);
+      stopPtyQueue(scope.instanceKey);
+      clearEditorSessions(scope.instanceKey);
+      const result = await registry.close(body.instanceKey);
+      for (const pending of [...pendingCodexAsks.values()]) if (pending.scope?.instanceKey === scope.instanceKey) {
+        removePendingCodexAsk(pending.id);
+      }
+      for (const [id, pending] of pendingPermHooks) if (pending.scope?.instanceKey === scope.instanceKey) {
+        clearTimeout(pending.timer); pendingPermHooks.delete(id);
+        if (!pending.res.headersSent) sendJson(pending.res, 409, { error: 'PTY workspace closed' });
+      }
+      for (const [key, data] of _ptyAgentLoops) if (data.instanceKey === scope.instanceKey) _ptyAgentLoops.delete(key);
+      for (const [key, timer] of _ptyLoopEndTimers) if (key.startsWith(`${scope.instanceKey}\0`)) {
+        clearTimeout(timer); _ptyLoopEndTimers.delete(key);
+      }
+      sendEventToClients(clients.filter(client => client.cxvPtySession?.instanceKey === scope.instanceKey), 'workspace_stopped', scope);
+      for (const client of clients) if (client.cxvPtySession?.instanceKey === scope.instanceKey) client.end();
+      for (const wss of [terminalWss, scratchTerminalWss]) for (const ws of wss?.clients || []) {
+        if (ws.cxvPtySession?.instanceKey === scope.instanceKey) ws.close(1000, 'PTY workspace closed');
+      }
+      await shutdownScratchPtys(scope.instanceKey);
+      sdkV2Recovery.delete(scope.instanceKey);
+      _workspaceLaunched = registry.list().length > 0;
+      sendJson(res, 200, result);
+    } catch (error) { sendJson(res, error.status || 400, { error: error.message, code: error.code }); }
+    return;
+  }
+
   if (isSdkMode && url === '/api/workspaces/close' && method === 'POST') {
     try {
       const body = await readJsonBody(req, 4096);
       const result = sdkManager.closeSdkSession({ instanceKey: body.instanceKey });
+      clearEditorSessions(body.instanceKey);
       const data = { cwd: result.cwd, instanceKey: result.instanceKey, reattachedTo: result.reattachedTo };
       sendSdkEvent('workspace_stopped', data);
       broadcastWsMessage({ type: 'sdk-workspace-closed', ...data });
       for (const client of clients.filter(client => sdkScopeMatches(client, data))) client.end();
       for (const ws of terminalWss?.clients || []) if (sdkScopeMatches(ws, data)) ws.close(1000, 'SDK workspace closed');
-      shutdownScratchPtys(result.instanceKey);
+      await shutdownScratchPtys(result.instanceKey);
       for (const ws of scratchTerminalWss?.clients || []) if (sdkScopeMatches(ws, data)) ws.close(1000, 'SDK workspace closed');
       sdkV2Recovery.delete(result.instanceKey);
       sdkResumedFiles.delete(result.instanceKey);
@@ -2448,7 +2648,30 @@ async function handleViewerRequest(req, res) {
     return;
   }
 
+  if (ptyWorkspaces && url === '/api/workspaces/stop' && method === 'POST') {
+    try {
+      stopPtyQueues();
+      clearEditorSessions();
+      await ptyWorkspaces.closeAll();
+      for (const wss of [terminalWss, scratchTerminalWss]) for (const ws of wss?.clients || []) {
+        if (ws.cxvPtySession) ws.close(1000, 'PTY workspaces stopped');
+      }
+      for (const client of clients) if (client.cxvPtySession) client.end();
+      for (const pending of [...pendingCodexAsks.values()]) removePendingCodexAsk(pending.id);
+      for (const [id, pending] of pendingPermHooks) {
+        clearTimeout(pending.timer); pendingPermHooks.delete(id);
+        if (!pending.res.headersSent) sendJson(pending.res, 409, { error: 'PTY workspaces stopped' });
+      }
+      for (const timer of _ptyLoopEndTimers.values()) clearTimeout(timer);
+      _ptyLoopEndTimers.clear(); _ptyAgentLoops.clear(); sdkV2Recovery.clear();
+      await shutdownScratchPtys(); _workspaceLaunched = false;
+      sendJson(res, 200, { ok: true });
+    } catch (error) { sendJson(res, error.status || 500, { error: error.message, code: error.code }); }
+    return;
+  }
+
   if (url === '/api/workspaces/stop' && method === 'POST') {
+    clearEditorSessions();
     if (isSdkMode) {
       sdkManager.stopSession();
       sdkV2Recovery.clear();
@@ -2459,7 +2682,7 @@ async function handleViewerRequest(req, res) {
         client.end();
       }
       for (const ws of terminalWss?.clients || []) if (ws.cxvSdkSession) ws.close(1000, 'SDK workspaces stopped');
-      shutdownScratchPtys();
+      await shutdownScratchPtys();
       for (const ws of scratchTerminalWss?.clients || []) ws.close(1000, 'SDK workspaces stopped');
       sendJson(res, 200, { ok: true });
       return;
@@ -2519,9 +2742,17 @@ async function handleViewerRequest(req, res) {
   }
 
   if (url === '/api/sdk-mcp-server-status' && method === 'GET') {
-    const result = requestSdkView
+    const result = isSdkMode && requestSdkView
       ? await sdkManager.fetchMcpStatus({ instanceKey: requestSdkView.instanceKey })
       : { ok: false, reason: 'session-inactive' };
+    sendJson(res, 200, result);
+    return;
+  }
+
+  if (url === '/api/skill-commands' && method === 'GET') {
+    const result = isSdkMode && requestSdkView
+      ? await sdkManager.fetchSkills({ instanceKey: requestSdkView.instanceKey })
+      : { ok: false, reason: 'unsupported' };
     sendJson(res, 200, result);
     return;
   }
@@ -2627,11 +2858,12 @@ async function handleViewerRequest(req, res) {
     }, SSE_HEARTBEAT_MS);
     res.cxvControlOnly = true;
     clients.push(res);
+    res.cxvPtySession = req.cxvPtySession || null;
     if (res.cxvSdkSession) {
       sendEventToClients([res], 'sdk_workspace', res.cxvSdkSession);
       sendEventToClients([res], 'streaming_status', sdkManager.getSdkStreamingState({ instanceKey: res.cxvSdkSession.instanceKey }));
     } else {
-      sendEventToClients([res], 'turn_active', { active: _ptyAgentLoops.size > 0, project: _projectName });
+      sendEventToClients([res], 'turn_active', { active: [..._ptyAgentLoops.values()].some(data => ptyScopeMatches(res, ptyScope(data))), project: requestProjectName });
     }
     sendEventToClients([res], 'server_config', { turnEndDebounceMs: TURN_END_DEBOUNCE_MS });
     req.on("close", () => {
@@ -2646,7 +2878,7 @@ async function handleViewerRequest(req, res) {
   if (url === '/api/project-name' && method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ projectName: requestProjectName || '',
-      ...(isSdkMode && requestSdkView.instanceKey ? { instanceKey: requestSdkView.instanceKey, path: requestProjectDir } : {}) }));
+      ...(requestSdkView?.instanceKey ? { instanceKey: requestSdkView.instanceKey, path: requestProjectDir } : {}) }));
     return;
   }
 
@@ -2659,7 +2891,8 @@ async function handleViewerRequest(req, res) {
   }
 
   if (url === '/api/terminal-recovery' && method === 'GET') {
-    const { getPtyState, getTerminalSync } = await import('./pty-manager.js');
+    const { getPtyState, getTerminalSync } = req.cxvPtySession
+      ? ptyWorkspaces.session(req.cxvPtySession.instanceKey) : await import('./pty-manager.js');
     const state = getPtyState();
     const sync = getTerminalSync();
     res.writeHead(200, {
@@ -2696,7 +2929,7 @@ async function handleViewerRequest(req, res) {
         res.end(JSON.stringify({ error: 'No project name' }));
         return;
       }
-      const statsFile = join(LOG_DIR, 'v2-stats', `${encodeURIComponent((isSdkMode ? projectContextForSdkView(requestSdkView) : getActiveProjectContext()).projectId)}.json`);
+      const statsFile = join(LOG_DIR, 'v2-stats', `${encodeURIComponent((requestSdkView ? projectContextForSdkView(requestSdkView) : getActiveProjectContext()).projectId)}.json`);
       if (!existsSync(statsFile)) {
         res.writeHead(404, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Stats file not found' }));
@@ -3539,81 +3772,50 @@ async function handleViewerRequest(req, res) {
     return;
   }
 
-  if (url === '/api/editor-open' && method === 'POST') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; if (body.length > MAX_POST_BODY) req.destroy(); });
-    req.on('end', () => {
-      try {
-        const { sessionId, filePath } = JSON.parse(body);
-        if (!sessionId || !filePath) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Missing sessionId or filePath' }));
-          return;
-        }
-        editorSessions.set(sessionId, { filePath, done: false, createdAt: Date.now() });
-        // Broadcast to all terminal WebSocket clients
-        if (terminalWss) {
-          const msg = JSON.stringify({ type: 'editor-open', sessionId, filePath });
-          terminalWss.clients.forEach(client => {
-            if (client.readyState === 1) {
-              try { client.send(msg); } catch {}
-            }
-          });
-        }
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ ok: true }));
-      } catch {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Invalid request body' }));
+  if ((url === '/api/editor-status' && method === 'GET')
+    || (['/api/editor-open', '/api/editor-done'].includes(url) && method === 'POST')) {
+    if (!isTargetFileAdmin) { sendJson(res, 403, { error: 'forbidden' }); return; }
+    try {
+      const body = method === 'POST' ? await readStrictUtf8JsonBody(req, MAX_POST_BODY) : null;
+      const sessionId = method === 'POST' ? body?.sessionId : parsedUrl.searchParams.get('id');
+      if (typeof sessionId !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(sessionId)) {
+        sendJson(res, 400, { error: 'Invalid editor session id' }); return;
       }
-    });
-    return;
-  }
-
-  if (url.startsWith('/api/editor-status') && method === 'GET') {
-    const id = parsedUrl.searchParams.get('id');
-    if (!id) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Missing id' }));
-      return;
-    }
-    const session = editorSessions.get(id);
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ done: session ? session.done : true }));
-    return;
-  }
-
-  if (url === '/api/editor-done' && method === 'POST') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; if (body.length > MAX_POST_BODY) req.destroy(); });
-    req.on('end', () => {
-      try {
-        const { sessionId } = JSON.parse(body);
-        if (!sessionId) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Missing sessionId' }));
-          return;
+      const scope = requestSdkView ? { instanceKey: requestSdkView.instanceKey || null,
+        cwd: requestProjectDir, project: requestProjectName } : null;
+      const key = JSON.stringify([scope?.instanceKey || null, sessionId]);
+      if (url === '/api/editor-open') {
+        const { filePath } = body;
+        if (typeof filePath !== 'string' || filePath.includes('\0') || !isAbsolute(filePath)) {
+          sendJson(res, 400, { error: 'Invalid editor file path' }); return;
         }
-        const session = editorSessions.get(sessionId);
-        if (session) {
+        const access = fileBrowserAccess(new URL('/', parsedUrl), requestProjectDir,
+          { isAdmin: isTargetFileAdmin, editorSession: true });
+        const real = access.assertPath(filePath);
+        if (!statSync(real).isFile()) { sendJson(res, 400, { error: 'Editor path is not a file' }); return; }
+        if (editorSessions.has(key)) { sendJson(res, 409, { error: 'Editor session already exists' }); return; }
+        const session = { sessionId, scope, filePath: real, done: false, createdAt: Date.now() };
+        editorSessions.set(key, session);
+        broadcastWsMessage(editorFrame(session));
+        sendJson(res, 200, { ok: true });
+      } else {
+        const session = editorSessions.get(key);
+        if (!session) { sendJson(res, 404, { error: 'Editor session not found' }); return; }
+        if (url === '/api/editor-done') {
           session.done = true;
-        }
-        // Clean up after a short delay to allow the polling to pick it up
-        setTimeout(() => editorSessions.delete(sessionId), 5000);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ ok: true }));
-      } catch {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Invalid request body' }));
+          setTimeout(() => { if (editorSessions.get(key) === session) editorSessions.delete(key); }, 5000).unref();
+          sendJson(res, 200, { ok: true });
+        } else sendJson(res, 200, { done: session.done });
       }
-    });
+    } catch (error) { sendJson(res, error.status || 400, { error: error.status ? error.message : 'Invalid editor request' }); }
     return;
   }
 
   // Rehydrate app-server asks after a browser WebSocket reconnect.
   if (url === '/api/pending-asks' && method === 'GET') {
     sendJson(res, 200, {
-      pendingAsks: [...pendingCodexAsks.values()].map(pending => ({
+      pendingAsks: [...pendingCodexAsks.values()]
+        .filter(pending => ptyScopeMatches(req, pending.scope)).map(pending => ({
         id: pending.id,
         questions: pending.questions,
         threadId: pending.threadId,
@@ -3728,11 +3930,13 @@ async function handleViewerRequest(req, res) {
       // A hook with no decision lets Codex continue its normal approval path.
       // Publish commands remain a deliberate human-only safety boundary in
       // every mode and opt out through forceManual.
-      if (!forceManual && _codexNativeReviewerAvailable && shouldDeferPermissionHookToCodex(_runtimeApprovalsReviewer)) {
+      const reviewer = reviewerStateFor(req.cxvPtySession);
+      if (!forceManual && reviewer.nativeAvailable && shouldDeferPermissionHookToCodex(reviewer.approvalsReviewer)) {
         sendJson(res, 200, { deferToCodex: true });
         return;
       }
 
+      const scope = req.cxvPtySession || null;
       const HOOK_TIMEOUT = HOOK_TIMEOUT_MS;
       const id = `perm_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
       const timer = setTimeout(() => {
@@ -3748,19 +3952,19 @@ async function handleViewerRequest(req, res) {
           if (terminalWss) {
             const tmsg = JSON.stringify({ type: 'perm-hook-timeout', id });
             terminalWss.clients.forEach((c) => {
-              if (c.readyState === 1) try { c.send(tmsg); } catch {}
+              if (c.readyState === 1 && ptyScopeMatches(c, scope)) try { c.send(tmsg); } catch {}
             });
           }
         }
       }, HOOK_TIMEOUT);
 
-      pendingPermHooks.set(id, { id, toolName, input, res, timer, createdAt: Date.now() });
+      pendingPermHooks.set(id, { id, scope, toolName, input, res, timer, createdAt: Date.now() });
 
       // Broadcast to all terminal WS clients
       if (terminalWss) {
         const pmsg = JSON.stringify({ type: 'perm-hook-pending', id, toolName, input });
         terminalWss.clients.forEach((client) => {
-          if (client.readyState === 1) {
+          if (client.readyState === 1 && ptyScopeMatches(client, scope)) {
             try { client.send(pmsg); } catch {}
           }
         });
@@ -3775,7 +3979,7 @@ async function handleViewerRequest(req, res) {
           if (terminalWss) {
             const tmsg = JSON.stringify({ type: 'perm-hook-timeout', id });
             terminalWss.clients.forEach((c) => {
-              if (c.readyState === 1) try { c.send(tmsg); } catch {}
+              if (c.readyState === 1 && ptyScopeMatches(c, scope)) try { c.send(tmsg); } catch {}
             });
           }
         }
@@ -4084,8 +4288,10 @@ async function handleViewerRequest(req, res) {
     const selectedSdk = isSdkMode && sdkManager.listSdkSessions().find(session => parsedUrl.searchParams.has('instance')
       ? session.instanceKey === parsedUrl.searchParams.get('instance') : session.cwd === sdkBootCwd);
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ cliMode: isCliMode, sdkMode: isSdkMode,
-      workspaceMode: isSdkMode ? !selectedSdk : isWorkspaceMode && !_workspaceLaunched }));
+    const selectedPty = ptyWorkspaces && ptyWorkspaces.list().find(session => parsedUrl.searchParams.has('instance')
+      ? session.instanceKey === parsedUrl.searchParams.get('instance') : session.active);
+    res.end(JSON.stringify({ cliMode: isCliMode, sdkMode: isSdkMode, ptyMode: !!ptyWorkspaces, ptyQueueAvailable: !!ptyWorkspaces,
+      workspaceMode: isSdkMode ? !selectedSdk : ptyWorkspaces ? !selectedPty : isWorkspaceMode && !_workspaceLaunched }));
     return;
   }
 
@@ -4508,7 +4714,7 @@ async function handleViewerRequest(req, res) {
 
   if (url === '/api/local-logs' && method === 'GET') {
     try {
-      const projectId = (isSdkMode ? projectContextForSdkView(requestSdkView) : getActiveProjectContext()).projectId;
+      const projectId = (requestSdkView ? projectContextForSdkView(requestSdkView) : getActiveProjectContext()).projectId;
       const pageParam = parsedUrl.searchParams.get('page');
       let result;
       if (pageParam != null) {
@@ -5228,7 +5434,8 @@ async function setupDialogueWebSocket(httpServer) {
 async function setupTerminalWebSocket(httpServer) {
   try {
     const { WebSocketServer } = await import('ws');
-    const { writeToPty, writeToPtySequential, resizePty, onPtyData, onPtyRawData, onPtyGeometry, onPtyState, onPtyExit, getPtyState, getTerminalSync, getTerminalScreen, getCurrentWorkspace, spawnShell } = await import('./pty-manager.js');
+    const legacyPty = await import('./pty-manager.js');
+    const { writeToPty, onPtyRawData, getCurrentWorkspace } = legacyPty;
     _onPtyData = (cb) => onPtyRawData(event => cb(event.data, event));
     const wss = new WebSocketServer({ noServer: true, maxPayload: 2 * 1024 * 1024 });
     const scratchWss = new WebSocketServer({ noServer: true, maxPayload: 1024 * 1024 });
@@ -5272,20 +5479,13 @@ async function setupTerminalWebSocket(httpServer) {
     // 移动端优先——只要有移动端在线，PTY 始终使用移动端尺寸，
     // PC 端的 resize 仅存储不生效，避免宽屏尺寸导致移动端乱码。
     // PC 端显示窄输出但完全可读，移动端永远不会乱码。
-    let activeWs = null;              // 当前活跃的 WebSocket 连接
-    const clientSizes = new Map();    // ws → { cols, rows }
-    const mobileClients = new Set();  // 移动端连接集合
-
-    // 找到一个在线的移动端并返回其尺寸
-    const getMobileSize = () => {
-      for (const mws of mobileClients) {
-        if (mws.readyState === 1) {
-          const size = clientSizes.get(mws);
-          if (size) return size;
-        }
-      }
-      return null;
-    };
+    const sizeGroups = new Map();
+    function sizeGroup(key) {
+      if (!sizeGroups.has(key)) sizeGroups.set(key, {
+        activeWs: null, clientSizes: new Map(), mobileClients: new Set(),
+      });
+      return sizeGroups.get(key);
+    }
 
     httpServer.on('upgrade', (req, socket, head) => {
       const authorized = authorizeViewerWebSocket(req, socket);
@@ -5294,6 +5494,11 @@ async function setupTerminalWebSocket(httpServer) {
       if (pathname === '/ws/mux') return; // handled by the authenticated dialogue listener
       if (isSdkMode && (pathname === '/ws/terminal' || pathname === '/ws/terminal-scratch')) {
         try { req.cxvSdkSession = sdkViewForUrl(wsUrl); }
+        catch { socket.destroy(); return; }
+      }
+      if (!isSdkMode && (pathname === '/ws/terminal' || pathname === '/ws/terminal-scratch')
+          && (ptyWorkspaces || wsUrl.searchParams.has('instance'))) {
+        try { req.cxvPtySession = ptyViewForUrl(wsUrl); }
         catch { socket.destroy(); return; }
       }
       if (pathname === '/ws/terminal') {
@@ -5321,6 +5526,7 @@ async function setupTerminalWebSocket(httpServer) {
 
     scratchWss.on('connection', async (ws, req) => {
       ws.cxvSdkSession = req.cxvSdkSession || null;
+      ws.cxvPtySession = req.cxvPtySession || null;
       const connectionIp = req.socket.remoteAddress || 'unknown';
       const ipConnections = (terminalConnectionsByIp.get(connectionIp) || 0) + 1;
       terminalConnectionsByIp.set(connectionIp, ipConnections);
@@ -5355,8 +5561,8 @@ async function setupTerminalWebSocket(httpServer) {
       const scratchId = scratchUrl.searchParams.get('id') || '';
       try {
         session = await openScratchPty(scratchId, {
-          cwd: ws.cxvSdkSession?.cwd || getCurrentWorkspace().cwd || process.cwd(),
-          instanceKey: ws.cxvSdkSession?.instanceKey,
+          cwd: ws.cxvPtySession?.cwd || ws.cxvSdkSession?.cwd || getCurrentWorkspace().cwd || process.cwd(),
+          instanceKey: ws.cxvPtySession?.instanceKey || ws.cxvSdkSession?.instanceKey,
         });
       } catch (error) {
         if (process.env.CXV_DEBUG) console.warn('[CX Viewer] scratch PTY spawn failed:', error.message);
@@ -5421,6 +5627,19 @@ async function setupTerminalWebSocket(httpServer) {
 
     wss.on('connection', (ws, req) => {
       ws.cxvSdkSession = req.cxvSdkSession || null;
+      ws.cxvPtySession = req.cxvPtySession || null;
+      const ownerKey = ws.cxvPtySession?.instanceKey || 'boot';
+      const ownedPty = ws.cxvPtySession ? ptyWorkspaces.session(ownerKey) : null;
+      const { writeToPty, writeToPtySequential, resizePty, onPtyData, onPtyGeometry,
+        onPtyState, onPtyExit, getPtyState, getTerminalSync, getTerminalScreen, spawnShell } = ownedPty || legacyPty;
+      const group = sizeGroup(ownerKey);
+      const { clientSizes, mobileClients } = group;
+      const getMobileSize = () => {
+        for (const mws of mobileClients) {
+          if (mws.readyState === 1 && clientSizes.has(mws)) return clientSizes.get(mws);
+        }
+        return null;
+      };
       const connectionIp = req.socket.remoteAddress || 'unknown';
       const ipConnections = (terminalConnectionsByIp.get(connectionIp) || 0) + 1;
       terminalConnectionsByIp.set(connectionIp, ipConnections);
@@ -5587,6 +5806,12 @@ async function setupTerminalWebSocket(httpServer) {
         }
       }
 
+      const replayEditors = () => {
+        const owner = ws.cxvPtySession?.instanceKey || ws.cxvSdkSession?.instanceKey || null;
+        for (const session of editorSessions.values()) if (!session.done && (session.scope?.instanceKey || null) === owner) safeSend(editorFrame(session));
+      };
+      replayEditors();
+
       // 发送当前 PTY 状态
       attachTerminalWsPing(ws);
       const state = getPtyState();
@@ -5600,6 +5825,13 @@ async function setupTerminalWebSocket(httpServer) {
         const mcpStatus = sdkManager.getMcpStatusSnapshot({ instanceKey: ws.cxvSdkSession.instanceKey });
         if (mcpStatus) safeSend(mcpStatus);
         for (const frame of sdkManager.getSdkSlowUpstreams({ instanceKey: ws.cxvSdkSession.instanceKey })) safeSend(frame);
+      }
+
+      if (!isSdkMode && ws.cxvPtySession) {
+        const queue = ptyQueueFor(ws.cxvPtySession);
+        if (queue) safeSend({ type: 'queue-state', ...ws.cxvPtySession, items: queue.queue.getSnapshot() });
+        const tasks = ptyWorkspaces?.runtime(ws.cxvPtySession.instanceKey)?.getTaskState?.();
+        if (tasks) safeSend({ ...tasks, instanceKey: ws.cxvPtySession.instanceKey, cwd: ws.cxvPtySession.cwd, transport: 'pty' });
       }
 
       // PTY 输出 → WebSocket
@@ -5669,6 +5901,12 @@ async function setupTerminalWebSocket(httpServer) {
             || !consumeRate('wireBytes', rawBytes, 4 * 1024 * 1024)) return;
           const msg = JSON.parse(raw.toString());
           if (!msg || typeof msg !== 'object' || Array.isArray(msg) || typeof msg.type !== 'string') return;
+          if (ws.cxvPtySession) {
+            ptyWorkspaces.info(ownerKey);
+            if ((msg.instanceKey != null && msg.instanceKey !== ownerKey)
+              || (msg.viewInstance != null && msg.viewInstance !== ownerKey)
+              || (msg.cwd != null && msg.cwd !== ws.cxvPtySession.cwd)) return;
+          }
           // SDK sessions have no main PTY. Scratch terminals own a separate WS handler.
           if (isSdkMode && (msg.type === 'input' || msg.type === 'input-sequential'
             || msg.type === 'resync-request' || msg.type === 'resize')) return;
@@ -5718,6 +5956,31 @@ async function setupTerminalWebSocket(httpServer) {
             }
             return;
           }
+          if (['queue-message', 'queue-send-now', 'queue-remove', 'queue-clear', 'queue-suppress'].includes(msg.type)) {
+            const owned = !isSdkMode && ws.cxvPtySession ? ptyQueueFor(ws.cxvPtySession) : null;
+            if (!owned) { safeSend({ type: 'queue-rejected', reason: 'unavailable', requestId: msg.requestId, ...ws.cxvPtySession }); return; }
+            const { queue, anchor, ready } = owned;
+            if (msg.sessionId != null && msg.sessionId !== anchor.sessionId) {
+              safeSend({ type: 'queue-rejected', reason: 'stale-session', requestId: msg.requestId, ...ws.cxvPtySession }); return;
+            }
+            if (msg.type === 'queue-message') {
+              if (typeof msg.text !== 'string' || !msg.text.trim() || Buffer.byteLength(msg.text) > 1024 * 1024
+                || typeof msg.requestId !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(msg.requestId)
+                || !consumeRate('inputBytes', Buffer.byteLength(msg.text), 2 * 1024 * 1024)) return;
+              if (!ready || !getPtyState().running || getPtyState().kind !== 'codex') {
+                safeSend({ type: 'queue-rejected', reason: 'unavailable', requestId: msg.requestId, ...ws.cxvPtySession }); return;
+              }
+              const item = queue.enqueue(msg.text, anchor, msg.requestId);
+              safeSend({ type: item ? 'queue-message-accepted' : 'queue-rejected', requestId: msg.requestId,
+                ...(item ? { id: item.id } : { reason: 'full' }), ...ws.cxvPtySession });
+            } else if (msg.type === 'queue-clear') queue.clear();
+            else if (msg.type === 'queue-suppress') queue.suppressNextDrain();
+            else if (typeof msg.id === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(msg.id)) {
+              if (msg.type === 'queue-remove') queue.remove(msg.id, anchor);
+              else queue.sendNow(msg.id, anchor);
+            }
+            return;
+          }
           if (msg.type === 'input') {
             if (typeof msg.data !== 'string' || Buffer.byteLength(msg.data, 'utf8') > 1024 * 1024) return;
             if (!consumeRate('inputBytes', Buffer.byteLength(msg.data, 'utf8'), 2 * 1024 * 1024)) return;
@@ -5729,8 +5992,8 @@ async function setupTerminalWebSocket(httpServer) {
               } catch {}
             }
             // 发送 input 的客户端成为活跃客户端
-            if (activeWs !== ws) {
-              activeWs = ws;
+            if (group.activeWs !== ws) {
+              group.activeWs = ws;
               // 切换活跃客户端时，如果有移动端在线则保持移动端尺寸，
               // 否则切换到新活跃客户端的尺寸
               const mSize = getMobileSize();
@@ -5815,10 +6078,11 @@ async function setupTerminalWebSocket(httpServer) {
           } else if (msg.type === 'ask-cancel') {
             const askId = msg.id != null ? String(msg.id) : '';
             let cancelled = false;
-            if (askId && pendingCodexAsks.has(askId)) {
-              cancelled = _codexRequestUserInputBridge?.cancel?.(askId) === true;
+            const pending = askId && pendingCodexAsks.get(askId);
+            if (pending && ptyScopeMatches(ws, pending.scope)) {
+              cancelled = pending.bridge?.cancel?.(askId) === true;
               if (cancelled) removePendingCodexAsk(askId);
-            } else if (pendingAskHook) {
+            } else if (!askId && pendingAskHook && ptyScopeMatches(ws)) {
               const { res: hookRes, timer } = pendingAskHook;
               clearTimeout(timer);
               pendingAskHook = null;
@@ -5835,7 +6099,7 @@ async function setupTerminalWebSocket(httpServer) {
                 type: 'ask-hook-cancelled',
                 id: askId,
                 reason: msg.reason || 'User aborted',
-              });
+              }, null, pending?.scope);
             } else if (askId && ws.readyState === 1) {
               try { ws.send(JSON.stringify({ type: 'ask-hook-already-answered', id: askId })); } catch {}
             }
@@ -5844,13 +6108,13 @@ async function setupTerminalWebSocket(httpServer) {
             let askAnswered = false;
             const askId = msg.id != null ? String(msg.id) : '';
             const pendingCodexAsk = askId ? pendingCodexAsks.get(askId) : null;
-            if (askId && pendingCodexAsks.has(askId)) {
-              askAnswered = _codexRequestUserInputBridge?.resolve?.(
+            if (pendingCodexAsk && ptyScopeMatches(ws, pendingCodexAsk.scope)) {
+              askAnswered = pendingCodexAsk.bridge?.resolve?.(
                 askId,
                 msg.codexAnswers || msg.answers || {},
               ) === true;
               if (askAnswered) removePendingCodexAsk(askId);
-            } else if (pendingAskHook) {
+            } else if (!askId && pendingAskHook && ptyScopeMatches(ws)) {
               // Legacy fallback for Codex versions that once exposed the tool
               // through PreToolUse hooks.
               const { res: hookRes, timer } = pendingAskHook;
@@ -5875,7 +6139,7 @@ async function setupTerminalWebSocket(httpServer) {
                 codexAnswers: msg.codexAnswers || {},
               });
               terminalWss.clients.forEach((c) => {
-                if (c.readyState === 1) try { c.send(rmsg); } catch {}
+                if (c.readyState === 1 && ptyScopeMatches(c, pendingCodexAsk?.scope)) try { c.send(rmsg); } catch {}
               });
             } else if (!askAnswered && askId && ws.readyState === 1) {
               try { ws.send(JSON.stringify({ type: 'ask-hook-already-answered', id: askId })); } catch {}
@@ -5883,11 +6147,13 @@ async function setupTerminalWebSocket(httpServer) {
           } else if (msg.type === 'perm-hook-answer') {
             // Permission approval — SDK mode (canUseTool) or PTY mode (hook bridge)
             let permAnswered = false;
+            let permScope = null;
             if (isSdkMode && _sdkResolveApproval && msg.id) {
               _sdkResolveApproval(msg.id, msg.allowSession ? { decision: msg.decision || 'allow', allowSession: true } : (msg.decision || 'deny'));
               permAnswered = true;
-            } else if (msg.id && pendingPermHooks.has(msg.id)) {
-              const { res: hookRes, timer } = pendingPermHooks.get(msg.id);
+            } else if (msg.id && pendingPermHooks.has(msg.id) && ptyScopeMatches(ws, pendingPermHooks.get(msg.id).scope)) {
+              const { res: hookRes, timer, scope } = pendingPermHooks.get(msg.id);
+              permScope = scope;
               clearTimeout(timer);
               pendingPermHooks.delete(msg.id);
               permAnswered = true;
@@ -5902,7 +6168,7 @@ async function setupTerminalWebSocket(httpServer) {
             if (permAnswered && terminalWss) {
               const rmsg = JSON.stringify({ type: 'perm-hook-resolved', id: msg.id });
               terminalWss.clients.forEach((c) => {
-                if (c !== ws && c.readyState === 1) try { c.send(rmsg); } catch {}
+                if (c !== ws && c.readyState === 1 && (isSdkMode || ptyScopeMatches(c, permScope))) try { c.send(rmsg); } catch {}
               });
             }
           } else if (msg.type === 'sdk-ask-answer') {
@@ -5949,10 +6215,12 @@ async function setupTerminalWebSocket(httpServer) {
             )) {
               const data = { type: msg.type, path: p,
                 ...(msg.type === 'image-upload-notify' ? { source: msg.source || 'unknown' } : {}),
-                ...(anchor ? { instanceKey: anchor.instanceKey, cwd: ws.cxvSdkSession.cwd } : {}) };
+                ...(anchor ? { instanceKey: anchor.instanceKey, cwd: ws.cxvSdkSession.cwd }
+                  : ws.cxvPtySession ? { instanceKey: ownerKey, cwd: ws.cxvPtySession.cwd } : {}) };
               const rmsg = JSON.stringify(data);
               terminalWss.clients.forEach((c) => {
                 if (isSdkMode && !sdkScopeMatches(c, data)) return;
+                if (!isSdkMode && !ptyScopeMatches(c, ptyScope(data))) return;
                 if (c !== ws && c.readyState === 1) try { c.send(rmsg); } catch {}
               });
             }
@@ -5966,12 +6234,13 @@ async function setupTerminalWebSocket(httpServer) {
             // 移动端 resize 始终生效；PC 端仅在无移动端时生效
             if (msg.mobile) {
               resizePty(msg.cols, msg.rows);
-            } else if (mobileClients.size === 0 && (activeWs === ws || activeWs === null)) {
-              activeWs = ws;
+            } else if (mobileClients.size === 0 && (group.activeWs === ws || group.activeWs === null)) {
+              group.activeWs = ws;
               resizePty(msg.cols, msg.rows);
             }
           } else if (msg.type === 'resync-request') {
             if (!consumeRate('resync', 1, 12)) return;
+            replayEditors();
             void sendTerminalScreen(normalizeResyncReason(msg.reason));
           }
         } catch (error) {
@@ -6003,9 +6272,9 @@ async function setupTerminalWebSocket(httpServer) {
         removeExitListener();
         clientSizes.delete(ws);
         mobileClients.delete(ws);
-        if (activeWs === ws) {
+        if (group.activeWs === ws) {
           // 活跃客户端断开，将控制权交给剩余的某个客户端
-          activeWs = null;
+          group.activeWs = null;
           // 优先使用移动端尺寸，无移动端则用剩余客户端尺寸
           const mSize = getMobileSize();
           if (mSize) {
@@ -6013,7 +6282,7 @@ async function setupTerminalWebSocket(httpServer) {
           } else {
             for (const [remainWs, size] of clientSizes) {
               if (remainWs.readyState === 1) {
-                activeWs = remainWs;
+                group.activeWs = remainWs;
                 resizePty(size.cols, size.rows);
                 break;
               }
@@ -6057,6 +6326,15 @@ function startStreamingStatusTimer() {
   _streamingStatusTimer = setInterval(() => {
     // SDK mode uses its own streaming state (pushed directly via setSdkStreamingState)
     if (isSdkMode) return;
+    if (ptyWorkspaces) {
+      for (const view of ptyWorkspaces.list()) {
+        const loop = [..._ptyAgentLoops.values()].filter(data => data.instanceKey === view.instanceKey).at(-1);
+        sendEventToClients(ptyEventClients(view), 'streaming_status', loop
+          ? { ...loop, active: true, elapsed: Date.now() - (loop.turnStartedAt || Date.now()) }
+          : { active: false });
+      }
+      return;
+    }
     const loop = [..._ptyAgentLoops.values()].at(-1);
     const active = !!loop || streamingState.active;
     const changed = active !== _lastStreamingActive;
@@ -6097,7 +6375,20 @@ async function _doStop(deadlineAt) {
     if (pending.timer) clearTimeout(pending.timer);
   }
   pendingCodexAsks.clear();
-  shutdownScratchPtys();
+  stopPtyQueues();
+  clearEditorSessions();
+  const scratchShutdown = shutdownScratchPtys();
+  // Keep its rejection observed while main workspaces shut down in parallel.
+  scratchShutdown.catch(() => {});
+  if (ptyWorkspaces) {
+    const registry = ptyWorkspaces; ptyWorkspaces = null;
+    try { await waitWithTimeout(() => registry.closeAll(), remaining(), 'PTY workspace shutdown'); } catch (error) {
+      console.warn('[CX Viewer] PTY workspace shutdown:', error.message);
+    }
+  }
+  try { await waitWithTimeout(() => scratchShutdown, remaining(), 'scratch shutdown'); } catch (error) {
+    console.warn('[CX Viewer] scratch shutdown:', error.message);
+  }
   dialogueMux?.close();
   dialogueMux = null;
   if (terminalWss) {
@@ -6191,50 +6482,74 @@ const TURN_END_DEBOUNCE_MS = (() => {
   return 10000;
 })();
 const _ptyAgentLoops = new Map(), _ptyLoopEndTimers = new Map();
-const ptyLoopKey = data => `${data.sessionId}\0${data.turnId}`;
+const ptyLoopKey = data => `${data.instanceKey || ''}\0${data.sessionId}\0${data.turnId}`;
 function ownedPtyLoopData(data) {
-  return !isSdkMode && !_stoppingPromise && data?.cwd === currentProjectDir()
-    && typeof data.sessionId === 'string' && data.sessionId && typeof data.turnId === 'string' && data.turnId;
+  if (isSdkMode || _stoppingPromise || typeof data?.sessionId !== 'string' || !data.sessionId
+      || typeof data.turnId !== 'string' || !data.turnId) return null;
+  const scope = ptyScope(data);
+  if (ptyWorkspaces) return scope ? { ...data, instanceKey: scope.instanceKey, cwd: scope.cwd } : null;
+  return data.cwd === currentProjectDir() ? data : null;
+}
+function ptyLoopActive(data) {
+  return [..._ptyAgentLoops.values()].some(loop => loop.instanceKey === data.instanceKey);
 }
 function emitPtyAgentLoopBoundary(phase, data) {
   if (_stoppingPromise) return;
-  const payload = { ...data, mode: 'pty', project: basename(data.cwd), instance: null };
-  sendEventToClients(clients, phase === 'start' ? 'agent_loop_start' : 'agent_loop_end', payload);
+  const payload = { ...data, mode: 'pty', project: basename(data.cwd), instance: data.instanceKey || null };
+  sendEventToClients(ptyEventClients(data), phase === 'start' ? 'agent_loop_start' : 'agent_loop_end', payload);
   void runParallelHook(phase === 'start' ? 'onAgentLoopStart' : 'onAgentLoopEnd', payload).catch(() => {});
 }
-export function broadcastPtyAgentLoopStart(data) {
-  if (!ownedPtyLoopData(data) || _ptyAgentLoops.has(ptyLoopKey(data))) return;
-  for (const timer of _ptyLoopEndTimers.values()) clearTimeout(timer);
-  _ptyLoopEndTimers.clear();
+export function broadcastPtyAgentLoopStart(input) {
+  const data = ownedPtyLoopData(input);
+  if (!data || _ptyAgentLoops.has(ptyLoopKey(data))) return;
+  for (const [key, timer] of _ptyLoopEndTimers) {
+    if (!key.startsWith(`${data.instanceKey || ''}\0`)) continue;
+    clearTimeout(timer); _ptyLoopEndTimers.delete(key);
+  }
   _ptyAgentLoops.set(ptyLoopKey(data), { ...data });
-  sendEventToClients(clients, 'turn_active', { ...data, active: true, project: basename(data.cwd) });
+  ptyQueues.get(data.instanceKey)?.queue.onStreamingActivated();
+  sendEventToClients(ptyEventClients(data), 'turn_active', { ...data, active: true, project: basename(data.cwd) });
   emitPtyAgentLoopBoundary('start', data);
 }
-export function broadcastPtyAgentLoopEnd(data) {
-  if (!ownedPtyLoopData(data)) return;
+export function broadcastPtyAgentLoopEnd(input) {
+  const data = ownedPtyLoopData(input);
+  if (!data) return;
   const key = ptyLoopKey(data), rec = _ptyAgentLoops.get(key);
   if (!rec) return;
   _ptyAgentLoops.delete(key);
   const ended = { ...rec, ts: data.ts || Date.now(), reason: data.reason || 'stop-hook' };
-  sendEventToClients(clients, 'turn_active', { ...ended, active: _ptyAgentLoops.size > 0, project: basename(data.cwd) });
+  sendEventToClients(ptyEventClients(data), 'turn_active', { ...ended, active: ptyLoopActive(data), project: basename(data.cwd) });
   if (['interrupted', 'session-ended'].includes(ended.reason)) {
+    if (ended.reason === 'session-ended') ptyQueues.get(data.instanceKey)?.queue.suppressNextDrain();
+    else ptyQueues.get(data.instanceKey)?.queue.onTurnEnd();
     emitPtyAgentLoopBoundary('end', ended); return;
   }
   const timer = setTimeout(() => {
     _ptyLoopEndTimers.delete(key);
     emitPtyAgentLoopBoundary('end', ended);
-    sendEventToClients(clients, 'turn_end', { ...ended, project: basename(data.cwd), instance: null });
+    ptyQueues.get(data.instanceKey)?.queue.onTurnEnd();
+    sendEventToClients(ptyEventClients(ended), 'turn_end', { ...ended, project: basename(data.cwd), instance: data.instanceKey || null });
   }, TURN_END_DEBOUNCE_MS);
   timer.unref?.(); _ptyLoopEndTimers.set(key, timer);
+}
+
+export function broadcastPtyTaskSnapshot(input) {
+  if (isSdkMode || _stoppingPromise) return;
+  const scope = ptyScope(input);
+  if (ptyWorkspaces && !scope) return;
+  broadcastWsMessage({ ...input, ...(scope ? { instanceKey: scope.instanceKey, cwd: scope.cwd } : {}), transport: 'pty' });
 }
 
 /** Broadcast a message to all terminal WS clients (for SDK canUseTool). */
 export function broadcastWsMessage(msg) {
   if (terminalWss) {
     const str = typeof msg === 'string' ? msg : JSON.stringify(msg);
-    const data = isSdkMode ? (typeof msg === 'string' ? JSON.parse(msg) : msg) : null;
+    const data = typeof msg === 'string' ? JSON.parse(msg) : msg;
+    const scope = !isSdkMode && ptyScope(data);
+    if (!isSdkMode && ptyWorkspaces && !scope) return;
     terminalWss.clients.forEach((c) => {
       if (isSdkMode && !sdkScopeMatches(c, data)) return;
+      if (!isSdkMode && !ptyScopeMatches(c, scope)) return;
       if (c.readyState === 1) try { c.send(str); } catch {}
     });
   }

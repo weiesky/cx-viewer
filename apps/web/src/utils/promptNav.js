@@ -1,12 +1,78 @@
 import { getSlashCommandLabel } from './slashCommandLabels.js';
+import { CODEX_PLAN_TOOL_NAME, CODEX_ASK_TOOL_NAME } from './toolNameAliases.js';
 import { isSessionDividerBoundary } from './sessionManager.js';
 
-// buildPromptNavItems：从「当前可见项」与权威的 mainAgentSessions 计算用户 Prompt / compaction 导航项。
+// Whether the "User Prompt Nav" entry should live inside the chat composer (as a button +
+// click Popover) instead of the left sidebar avatar. Single source of truth shared by
+// ChatView (sidebar gate + composer prop wiring) and ChatInputBar (button render).
+//
+// True only on desktop-class clients (isMobile=false) in --sdk mode (composer always
+// mounted; terminalVisible is the scratch toggle) or in --terminal mode while the PTY
+// terminal is hidden (chat-only layout aligned with --sdk). False on mobile/pad
+// (Mobile shell has its own prompt-list entry) and false in --terminal with the PTY
+// shown (composer yields to the terminal, sidebar keeps the avatar entry).
+//
+// Note: similar to but NOT identical to ProxyChip's showProxyChip — that predicate also
+// excludes isPad and isElectronTab. Do not unify them blindly.
+//
+// @param {{ isMobile: boolean, sdkMode: boolean, terminalVisible: boolean, cliMode: boolean }} p
+// @returns {boolean}
+export function shouldUseComposerPromptNav({ isMobile, sdkMode, terminalVisible, cliMode }) {
+  // cliMode=false is the read-only log viewer: ChatView early-returns the non-cli branch
+  // and never mounts ChatInputBar, so the composer entry cannot render there.
+  if (!cliMode) return false;
+  if (isMobile) return false;
+  return sdkMode || !terminalVisible;
+}
+
+// buildPromptNavItems：从当前可见项与权威会话计算 Prompt、Plan/Ask/UltraPlan 与原 compaction 导航项。
 // 纯函数（无 React/DOM），渲染留在 ChatView——便于单测覆盖会话边界标记、去重与无 ts 容错。
 //
 // @param {Array<{props?:{role?:string,text?:string,timestamp?:string|null}}>} visible 当前渲染项
 // @param {Array<{messages?:Array<{_timestamp?:string}>}>} mainAgentSessions 权威会话数组
-// @returns {Array<{kind:'prompt'|'compaction', display:string|null, visibleIdx:number, timestamp:string|null, sessionIdx:number|null, newSession?:boolean}>}
+// @returns {Array<{kind:'prompt'|'compaction'|'plan'|'ask'|'ultraplan', display:string|null, visibleIdx:number, timestamp:string|null, sessionIdx:number|null, newSession?:boolean}>}
+// Interactive card tools the nav locates (mode entry is only a mode-entry marker with no
+// content, so it is not collected).
+const NAV_TOOL_KIND = { [CODEX_PLAN_TOOL_NAME]: 'plan', [CODEX_ASK_TOOL_NAME]: 'ask' };
+
+// Truncate display text: same 80-char + ellipsis rule as plain prompts.
+function truncateDisplay(text) {
+  return text.length > 80 ? text.substring(0, 80) + '...' : text;
+}
+
+// Resolve the session index for an item. An assistant bubble's carrier `props.timestamp` is the
+// NEXT request's ts, so a Plan/Ask card sitting at the end of session A would otherwise be filed
+// under session B; `props.displayTs` (= _generatedTs, the producer request's ts) is the right key
+// (sessionManager.js:56-58). Other roles use the carrier `props.timestamp` (= their own request ts).
+function sessionIdxOf(props, tsToSession) {
+  const ts = props.role === 'assistant' ? (props.displayTs || props.timestamp) : props.timestamp;
+  return (ts != null && tsToSession.has(ts)) ? tsToSession.get(ts) : null;
+}
+
+// Extract the nav title for an update_plan card: the first markdown heading / first non-empty
+// line of input.plan. Returns '' when absent — the renderer falls back to a localized label.
+function planDisplayOf(input) {
+  if (!input || typeof input.plan !== 'string') return '';
+  const lines = input.plan.split('\n');
+  for (const line of lines) {
+    const t = line.replace(/^#+\s*/, '').trim();
+    if (t) return truncateDisplay(t);
+  }
+  return '';
+}
+
+// Extract the nav title for an request_user_input card: the first non-empty question text (during
+// streaming questions can still be a hollow shell, in which case '' is returned and the
+// renderer falls back to a localized label).
+function askDisplayOf(input) {
+  const qs = input && Array.isArray(input.questions) ? input.questions : [];
+  for (const q of qs) {
+    const t = q && typeof q.question === 'string' ? q.question.trim() : '';
+    if (t) return truncateDisplay(t);
+  }
+  return '';
+}
+
 export function buildPromptNavItems(visible, mainAgentSessions) {
   if (!Array.isArray(visible) || visible.length === 0) return [];
 
@@ -30,8 +96,7 @@ export function buildPromptNavItems(visible, mainAgentSessions) {
   for (let i = 0; i < visible.length; i++) {
     const props = visible[i] && visible[i].props;
     if (!props) continue;
-    const sessionIdx = (props.timestamp != null && tsToSession.has(props.timestamp))
-      ? tsToSession.get(props.timestamp) : null;
+    const sessionIdx = sessionIdxOf(props, tsToSession);
     if (props.role === 'context-compaction') {
       // Compaction is a structural navigation target. Never inspect or expose
       // its descriptor/record prompts in the navigation popover.
@@ -44,6 +109,24 @@ export function buildPromptNavItems(visible, mainAgentSessions) {
       });
       continue;
     }
+    if (props.role === 'assistant') {
+      const content = Array.isArray(props.content) ? props.content : null;
+      if (!content) continue;
+      const sessionIdx = sessionIdxOf(props, tsToSession);
+      // displayTs (producer request ts) is the accurate time for the card; carrier timestamp is
+      // the next request's ts and can read minutes late (or tip into the next session).
+      const cardTs = props.displayTs || props.timestamp || null;
+      for (const block of content) {
+        if (!block || block.type !== 'tool_use') continue;
+        // Object.hasOwn guards against prototype members (block.name = 'constructor'/'toString').
+        const kind = Object.hasOwn(NAV_TOOL_KIND, block.name) ? NAV_TOOL_KIND[block.name] : undefined;
+        if (!kind) continue;
+        const display = kind === 'plan' ? planDisplayOf(block.input) : askDisplayOf(block.input);
+        prompts.push({ display, visibleIdx: i, timestamp: cardTs, sessionIdx, kind });
+      }
+      continue;
+    }
+
     if (props.role !== 'user') continue;
     const raw = props.text || '';
     if (!raw) continue;
@@ -59,9 +142,9 @@ export function buildPromptNavItems(visible, mainAgentSessions) {
     const key = text.substring(0, 100);
     if (seen.has(key)) continue;
     seen.add(key);
-    const display = text.length > 80 ? text.substring(0, 80) + '...' : text;
+    const display = truncateDisplay(text);
     // 使用 visible 索引作为定位标识（兼容无 timestamp 的遗留消息）
-    prompts.push({ kind: 'prompt', display, visibleIdx: i, timestamp: props.timestamp || null, sessionIdx });
+    prompts.push({ kind: props.isUltraplan === true ? 'ultraplan' : 'prompt', display, visibleIdx: i, timestamp: props.timestamp || null, sessionIdx });
   }
 
   // 标记跨 session 的 prompt（其前插入会话分隔线）。session 未知（无 ts）的 prompt 不打断链路。

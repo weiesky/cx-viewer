@@ -16,8 +16,11 @@ import {
   _writeAppServerEntryForTests,
   resetRawCaptureBoundary,
   getAppServerAgentLoopSnapshot,
+  getAppServerRuntimeContext,
 } from '../packages/app/lib/appserver-bridge.js';
 import { getDefaultSystemPrompt, saveDefaultSystemPrompt, saveModelSystemPrompt } from '../packages/app/lib/model-system-prompts.js';
+import { isMainAgent } from '../packages/app/src/utils/contentFilter.js';
+import { normalizeConversationEntry, shouldExcludeFromConversation } from '../apps/web/src/utils/conversationEntryNormalize.js';
 import { buildSingleToolResultCore } from '../apps/web/src/utils/toolResultCore.js';
 
 let capturedEntries = [];
@@ -777,6 +780,11 @@ test('app-server bridge marks root and spawned subagent turns correctly', () => 
     assert.equal(mainEntries.length, 2);
 
     const root = mainEntries.find(entry => entry.body?.metadata?.thread_id === 'root-thread');
+    assert.equal(root?.url, 'codex://app-server/turn');
+    assert.equal(isMainAgent(root), true);
+    assert.equal(shouldExcludeFromConversation(root), false);
+    assert.equal(normalizeConversationEntry(root).body.input.at(-1).content[0].text, 'root answer');
+    assert.equal(shouldExcludeFromConversation({ ...root, url: 'https://api.openai.com/v1/responses' }), true);
     assert.equal(root?.mainAgent, true);
     assert.equal(root?.subAgent, false);
     assert.equal(root?.response?.body?.content?.[0]?.text, 'root answer');
@@ -2280,4 +2288,54 @@ test('app-server bridge records v2 process, model, safety, and warning events', 
     _resetAppServerBridgeForTests();
     rmSync(tmp, { recursive: true, force: true });
   }
+});
+
+
+test('passive global history reads cannot claim a workspace root or emit another workspace transcript', () => {
+  _resetAppServerBridgeForTests({ cwd: '/fixture/B', project: 'B', model: 'fixture' });
+  try {
+    _parseAppServerClientMessageForTests({ id: 'preview-A', method: 'thread/read', params: { threadId: 'thread-A', includeTurns: true } });
+    _parseAppServerClientMessageForTests({ id: 'own-start', method: 'thread/start', params: { cwd: '/fixture/B' } });
+    _parseAppServerServerMessageForTests({ id: 'preview-A', result: { thread: { id: 'thread-A', sessionId: 'session-A', cwd: '/fixture/A', turns: [{ id: 'old-A', status: 'completed', items: [{ type: 'userMessage', content: [{ type: 'text', text: 'PRIVATE A' }] }, { type: 'agentMessage', text: 'PRIVATE A ANSWER' }] }] } } });
+    assert.equal(getAppServerRuntimeContext().sessionId, null); assert.equal(capturedEntries.length, 0);
+    _parseAppServerServerMessageForTests({ id: 'own-start', result: { thread: { id: 'thread-B', sessionId: 'session-B', cwd: '/fixture/B' } } });
+    assert.equal(getAppServerRuntimeContext().sessionId, 'session-B');
+    _parseAppServerClientMessageForTests({ id: 'later-A', method: 'thread/read', params: { threadId: 'thread-A' } });
+    _parseAppServerServerMessageForTests({ id: 'later-A', result: { thread: { id: 'thread-A', sessionId: 'session-A', cwd: '/fixture/A', turns: [] } } });
+    assert.equal(getAppServerRuntimeContext().sessionId, 'session-B'); assert.equal(capturedEntries.length, 0);
+    _parseAppServerClientMessageForTests({ id: 'own-read', method: 'thread/read', params: { threadId: 'thread-B', includeTurns: true } });
+    _parseAppServerServerMessageForTests({ id: 'own-read', result: { thread: { id: 'thread-B', sessionId: 'session-B', cwd: '/fixture/B', turns: [{ id: 'own-turn', status: 'completed', items: [{ id: 'own-user', type: 'userMessage', content: [{ type: 'text', text: 'Own B prompt' }] }, { id: 'own-answer', type: 'agentMessage', text: 'Own B answer' }] }] } } });
+    assert.equal(getAppServerRuntimeContext().sessionId, 'session-B');
+    assert.ok(capturedEntries.some(entry => entry.response?.body?.content.some(part => part.text === 'Own B answer')));
+    assert.ok(!JSON.stringify(capturedEntries).includes('PRIVATE A'));
+  } finally { _resetAppServerBridgeForTests(); }
+});
+
+test('ordinary task snapshots follow only the exact root turn, replace native plans and isolate factories', async () => {
+  const { createAppServerBridge } = await import('../packages/app/lib/appserver-bridge.js');
+  const owners = [createAppServerBridge(), createAppServerBridge()];
+  const send = (owner, method, params) => owner._parseAppServerServerMessageForTests({ method, params });
+  for (const [index, owner] of owners.entries()) {
+    owner._resetAppServerBridgeForTests({ cwd: '/fixture/' + index, writeLogEntry: () => ({ written: true }) });
+    send(owner, 'thread/started', { thread: { id: 'root-' + index } });
+    send(owner, 'turn/started', { threadId: 'root-' + index, turn: { id: 'turn-' + index, status: 'inProgress' } });
+    send(owner, 'turn/plan/updated', { threadId: 'root-' + index, turnId: 'turn-' + index, plan: [
+      { step: 'done-' + index, status: 'completed' }, { step: 'running-' + index, status: 'inProgress' }, { step: 'pending-' + index, status: 'pending' }, { step: 'unknown', status: 'invented' }, null,
+    ] });
+  }
+  assert.deepEqual(owners[0].getAppServerTaskState().tasks.map(task => task.status), ['completed', 'in_progress', 'pending']);
+  assert.ok(owners[1].getAppServerTaskState().tasks.every(task => task.subject.endsWith('-1')));
+  const snapshot = owners[0].getAppServerTaskState(); snapshot.tasks[0].subject = 'mutated'; snapshot.tasks.pop();
+  assert.equal(owners[0].getAppServerTaskState().tasks.length, 3); assert.equal(owners[0].getAppServerTaskState().tasks[0].subject, 'done-0');
+  send(owners[0], 'thread/started', { thread: { id: 'child', parentThreadId: 'root-0' } });
+  send(owners[0], 'turn/started', { threadId: 'child', turn: { id: 'child-turn' } });
+  send(owners[0], 'turn/plan/updated', { threadId: 'child', turnId: 'child-turn', plan: [{ step: 'PRIVATE CHILD', status: 'pending' }] });
+  assert.equal(owners[0].getAppServerTaskState().tasks.length, 3);
+  send(owners[0], 'turn/plan/updated', { threadId: 'root-0', turnId: 'obsolete', plan: [{ step: 'OLD TURN', status: 'pending' }] });
+  assert.equal(owners[0].getAppServerTaskState().tasks.length, 3);
+  send(owners[0], 'turn/completed', { threadId: 'root-0', turn: { id: 'turn-0', status: 'interrupted' } });
+  assert.deepEqual(owners[0].getAppServerTaskState().tasks.map(task => task.status), ['completed', 'failed', 'failed']);
+  send(owners[0], 'turn/started', { threadId: 'root-0', turn: { id: 'next' } }); assert.deepEqual(owners[0].getAppServerTaskState().tasks, []);
+  assert.equal(owners[1].getAppServerTaskState().tasks.length, 3);
+  for (const owner of owners) owner._resetAppServerBridgeForTests();
 });

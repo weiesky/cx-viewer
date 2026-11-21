@@ -1,0 +1,22 @@
+{
+  "date": "2026-11-22",
+  "fixture": "task-owned actual CLI yzs0BV, retired",
+  "observation": "B registry incorrectly reported A sessionId before fix",
+  "aSessionId": "01a1fed6-395c-7ef2-adaa-29ab9ae44904",
+  "bOwnNativeThread": "01a1fed8-2fb1-7be2-9174-e1c4a91ad000",
+  "nativeFrames": [
+    {
+      "seq": 36,
+      "replyTo": "thread/read",
+      "threadId": "01a1fed6-395c-7ef2-adaa-29ab9ae44904",
+      "cwdOwner": "A"
+    },
+    {
+      "seq": 41,
+      "replyTo": "thread/start",
+      "threadId": "01a1fed8-2fb1-7be2-9174-e1c4a91ad000",
+      "cwdOwner": "B"
+    }
+  ],
+  "source": "captured native raw JSON-RPC, request/response ID correlated; no transcript payload copied"
+}

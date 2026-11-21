@@ -1,0 +1,40 @@
+[
+  {
+    "engine": "chromium",
+    "version": "159.0.8154.6",
+    "nativeProtocolFixture": true,
+    "planAskUltraBadges": true,
+    "askScrollProducer": {
+      "index": 7,
+      "timestamp": "2026-11-21T13:54:05.056Z",
+      "producer": "2026-11-21T13:54:05.056Z",
+      "containsAsk": true
+    },
+    "languageCacheRefresh": true,
+    "screenshots": [
+      "chromium-english.png",
+      "chromium-ask-target.png",
+      "chromium-chinese.png"
+    ],
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "version": "27.2",
+    "nativeProtocolFixture": true,
+    "planAskUltraBadges": true,
+    "askScrollProducer": {
+      "index": 7,
+      "timestamp": "2026-11-21T13:58:46.210Z",
+      "producer": "2026-11-21T13:58:46.210Z",
+      "containsAsk": true
+    },
+    "languageCacheRefresh": true,
+    "screenshots": [
+      "webkit-english.png",
+      "webkit-ask-target.png",
+      "webkit-chinese.png"
+    ],
+    "errors": []
+  }
+]

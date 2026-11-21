@@ -176,8 +176,8 @@ test('SDK queue receipts replace only the matching optimistic row, preserve iden
   chat._onTerminalWsMessage({ type: 'queue-state', instanceKey: 'a', items: [q2, { ...q2, id: 'other-client' }] });
   assert.equal(chat.state.pendingInputs.length, 1);
   assert.equal(chat.state.pendingInputs[0].id, sent[0].requestId);
-  assert.equal(chat._renderSdkQueueBubbles().length, 2);
-  assert.equal(chat._renderSdkQueueBubbles()[0].props['aria-busy'], false);
+  assert.equal(chat._renderQueueBubbles().length, 2);
+  assert.equal(chat._renderQueueBubbles()[0].props['aria-busy'], false);
   chat._onTerminalWsMessage({ type: 'queue-state', instanceKey: 'b', items: [] });
   assert.equal(chat.state.sdkQueuedInputs.length, 2);
   textarea.value = 'a newer draft';
@@ -185,9 +185,9 @@ test('SDK queue receipts replace only the matching optimistic row, preserve iden
   assert.equal(textarea.value, 'same text\n\na newer draft');
   assert.equal(chat.state.pendingInputs.length, 0);
   chat._onTerminalWsMessage({ type: 'queue-state', instanceKey: 'a', items: [{ ...q2, status: 'dispatching' }] });
-  assert.equal(chat._renderSdkQueueBubbles().length, 1);
+  assert.equal(chat._renderQueueBubbles().length, 1);
   chat._onTerminalWsMessage({ type: 'queue-state', instanceKey: 'a', items: [] });
-  assert.deepEqual(chat._renderSdkQueueBubbles(), []);
+  assert.deepEqual(chat._renderQueueBubbles(), []);
   assert.equal(sent.length, 2, 'receipt, rejection and queue updates never replay a prompt');
 });
 
@@ -202,7 +202,7 @@ test('a reconnect snapshot acknowledges a queued send even when its original rec
   ] };
   chat._onTerminalWsMessage(snapshot);
   assert.deepEqual(chat.state.pendingInputs, []);
-  assert.equal(chat._renderSdkQueueBubbles().length, 1);
+  assert.equal(chat._renderQueueBubbles().length, 1);
   const other = new f.Chat({ sdkMode: true, requests: [] });
   assert.notEqual(chat._createPendingInputRecord('x').id, other._createPendingInputRecord('x').id);
   assert.equal(sent.length, 1);
@@ -245,7 +245,7 @@ test('queue removal uses the exact id and waits for authoritative state without 
   chat.context = { isOpen: () => true, send: value => { sent.push(value); return true; } };
   chat.state.sdkQueuedInputs = [{ id: 'one-id', text: 'same', ts: 1, status: 'queued' },
     { id: 'two-id', text: 'same', ts: 1, status: 'dispatching' }];
-  const rows = chat._renderSdkQueueBubbles();
+  const rows = chat._renderQueueBubbles();
   const remove = rows[0].props.children[1];
   assert.equal(typeof remove.props.onClick, 'function'); remove.props.onClick();
   assert.deepEqual(sent, [{ type: 'sdk-queue-remove', id: 'one-id' }]);
@@ -257,7 +257,7 @@ test('queued text always uses the baseline queue row and keeps actions outside c
   const f = fixture(t), chat = new f.Chat({ sdkMode: true, lang: 'en' });
   const text = 'This session is being continued from a previous conversation that ran out of context';
   chat.state.sdkQueuedInputs = [{ id: 'compact-queue', text, ts: 1, status: 'queued' }];
-  const row = chat._renderSdkQueueBubbles()[0];
+  const row = chat._renderQueueBubbles()[0];
   assert.equal(row.type, 'div'); assert.equal(row.props.title, text);
   assert.equal(row.props.children[0].props.children, text);
   assert.equal(row.props.children[1].type, 'button');
@@ -266,20 +266,22 @@ test('queued text always uses the baseline queue row and keeps actions outside c
 
 test('paused queues expose send-now and keep every action disabled during an accepted dispatch', t => {
   const f = fixture(t), sent = [], chat = new f.Chat({ sdkMode: true, lang: 'en' });
+  chat.setState = (patch, callback) => { Object.assign(chat.state, typeof patch === 'function' ? patch(chat.state) : patch); callback?.(); };
+  chat.scrollToBottom = () => {};
   chat.context = { isOpen: () => true, send: value => { sent.push(value); return true; } };
   chat.state.sdkQueuePaused = true;
   chat.state.sdkQueuedInputs = [{ id: 'parked', text: 'queued prompt', ts: 1, status: 'queued' }];
-  let action = chat._renderSdkQueueBubbles()[0].props.children[2];
+  let action = chat._renderQueueBubbles()[0].props.children[2];
   assert.equal(action.props.disabled, false); assert.equal(typeof action.props.title, 'string');
   action.props.onClick();
   assert.deepEqual(sent, [{ type: 'sdk-queue-send-now', id: 'parked' }]);
   assert.equal(chat.state.sdkQueuedInputs.length, 1);
   chat.state.sdkQueuedInputs.push({ id: 'dispatch', text: 'in flight', ts: 1, status: 'dispatching' });
-  action = chat._renderSdkQueueBubbles()[0].props.children[2];
+  action = chat._renderQueueBubbles()[0].props.children[2];
   assert.equal(action.props.disabled, true);
 });
 
-test('active SDK prompts replay after refresh and persist until their exact transcript echo or a new incarnation', t => {
+test('active SDK prompts replay after refresh and retire on the authoritative turn end or a new incarnation', t => {
   const f = fixture(t), socket = f.open(), chat = new f.Chat({ sdkMode: true, requests: [] });
   chat.setState = (patch, callback) => { Object.assign(chat.state, typeof patch === 'function' ? patch(chat.state) : patch); callback?.(); };
   const active = { id: 'turn-A', text: 'same prompt', timestamp: '2026-11-19T00:00:00.123Z', requestId: 'local-send' };
@@ -291,7 +293,7 @@ test('active SDK prompts replay after refresh and persist until their exact tran
   const record = chat.state.pendingInputs[0];
   assert.equal(record.sdkActiveId, active.id); assert.equal(record.wireText, active.text);
   f.frame(socket, { ...snapshot, activeInput: null });
-  assert.equal(chat.state.pendingInputs.length, 1, 'cross-channel persistence delay cannot make the prompt vanish');
+  assert.equal(chat.state.pendingInputs.length, 0, 'an ended authoritative active input cannot remain as an orphan placeholder');
   const React = require('react');
   const echo = React.createElement('chat-message', { role: 'user', text: active.text, timestamp: active.timestamp, requestIndex: 7 });
   assert.deepEqual(reconcilePendingInputs(chat.state.pendingInputs, [echo]), []);
@@ -310,10 +312,10 @@ test('a queue arriving before SDK mode discovery survives cold loading', t => {
     items: [{ id: 'parked', text: 'must survive refresh', ts: 1, status: 'queued' }], activeInput: null });
   assert.equal(chat.state.sdkQueuedInputs.length, 1);
   assert.equal(chat.state.sdkQueuePaused, true);
-  assert.deepEqual(chat._renderSdkQueueBubbles(), []);
+  assert.deepEqual(chat._renderQueueBubbles(), []);
   assert.equal(chat.shouldComponentUpdate({ ...chat.props, sdkMode: true }, chat.state), true);
   chat.props = { ...chat.props, sdkMode: true };
-  assert.equal(chat._renderSdkQueueBubbles().length, 1);
+  assert.equal(chat._renderQueueBubbles().length, 1);
 });
 
 test('conversation role filtering cannot hide the live queue controls above the composer', t => {
@@ -396,7 +398,8 @@ test('live task HUD is independent of role filtering and hidden in pinned or loc
   const contains = node => !!node?.props && (node.type === f.TaskHud
     || React.Children.toArray(node.props.children).some(contains));
   assert.equal(contains(chat.render()), true);
-  for (const change of [{ isLocalLog: true }, { sessionUpperBoundTs: 'old' }, { sdkMode: false }]) {
+  chat.props = { ...chat.props, sdkMode: false }; assert.equal(contains(chat.render()), true, 'ordinary live PTY shares the original HUD');
+  for (const change of [{ isLocalLog: true }, { sessionUpperBoundTs: 'old' }, { sdkMode: false, cliMode: false }]) {
     const before = chat.props; chat.props = { ...before, ...change };
     assert.equal(contains(chat.render()), false); chat.props = before;
   }
@@ -716,4 +719,27 @@ test('quote drafts survive same-thread live rebuilds and clear on explicit nativ
   chat.componentDidUpdate(prior,state);assert.equal(chat.state.pendingQuotes[0].text,'keep me');
   const next=chat.props; chat.props={...next,sdkResumeId:'b'};chat.componentDidUpdate(next,{...chat.state});
   assert.deepEqual(chat.state.pendingQuotes,[]);
+});
+
+
+for (const text of ['short native text', 'long '.repeat(200), '中文单行', 'skill $native text']) test('ordinary native text uses one settled paste transaction: ' + text.slice(0, 20), t => {
+  const f = fixture(t), socket = f.open(), chat = new f.Chat({ sdkMode: false, mainAgentSessions: [], requests: [] });
+  chat.setState = (patch, callback) => { Object.assign(chat.state, typeof patch === 'function' ? patch(chat.state) : patch); callback?.(); };
+  chat.context = f.provider;
+  const textarea = { value: text, style: {}, scrollHeight: 40 }; chat._inputRef.current = textarea;
+  chat._sendUserMessageImmediate(text, textarea);
+  assert.equal(socket.sent.length, 1); const frame = socket.sent[0];
+  assert.equal(frame.type, 'input-sequential'); assert.deepEqual(frame.chunks, ['\x1b[200~' + text + '\x1b[201~', '\r']); assert.equal(frame.settleMs, 250);
+  assert.equal(textarea.value, '');
+  const { message } = require('antd'), oldError = message.error; message.error = () => {}; t.after(() => { message.error = oldError; });
+  chat._settleBracketPasteSequential(frame.seq, false);
+  assert.equal(textarea.value, text); assert.deepEqual(chat.state.pendingInputs, []);
+});
+
+test('native slash commands retain their existing interactive raw input path', t => {
+  const f = fixture(t), socket = f.open(), chat = new f.Chat({ sdkMode: false, mainAgentSessions: [], requests: [] });
+  chat.setState = (patch, callback) => { Object.assign(chat.state, typeof patch === 'function' ? patch(chat.state) : patch); callback?.(); };
+  chat.context = f.provider; chat._sendUserMessageImmediate('/status');
+  assert.deepEqual(socket.sent, [{ type: 'input', data: '/status' }]); f.timeout(50);
+  assert.deepEqual(socket.sent.at(-1), { type: 'input', data: '\r' });
 });

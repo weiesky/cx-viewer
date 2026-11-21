@@ -1,4 +1,4 @@
-import { resolve } from 'node:path';
+import { isAbsolute, resolve } from 'node:path';
 import { createCodexAppServerClient } from './codex-appserver-client.js';
 
 const COLLAB_TOOLS = { spawnAgent: 'spawn_agent', sendInput: 'send_input', resumeAgent: 'resume_agent',
@@ -7,6 +7,23 @@ const COLLAB_TOOLS = { spawnAgent: 'spawn_agent', sendInput: 'send_input', resum
 const ACTIVITY_PROBE_IDLE_MS = 10 * 60 * 1000;
 const ACTIVITY_PROBE_INTERVAL_MS = 3 * 60 * 1000;
 const ACTIVITY_PROBE_MAX_FAILURES = 2;
+
+export function normalizeAppServerSkills(result, cwd) {
+  if (!Array.isArray(result?.data) || result.data.length > 128
+      || Buffer.byteLength(JSON.stringify(result)) > 2 * 1024 * 1024) throw new Error('Invalid native skills catalog');
+  const entries = result.data.filter(entry => typeof entry?.cwd === 'string' && resolve(entry.cwd) === resolve(cwd));
+  if (entries.length !== 1 || !Array.isArray(entries[0].skills) || entries[0].skills.length > 2048) {
+    throw new Error('Native skills catalog belongs to a different workspace');
+  }
+  return entries[0].skills.filter(skill => skill?.enabled === true
+    && typeof skill.name === 'string' && /^[A-Za-z0-9._:-]+$/.test(skill.name)
+    && typeof skill.path === 'string' && isAbsolute(skill.path)
+    && ['user', 'repo', 'system', 'admin'].includes(skill.scope)).map(skill => ({
+      name: skill.name, description: typeof skill.description === 'string' ? skill.description : '',
+      path: skill.path, scope: skill.scope,
+      ...(typeof skill.pluginId === 'string' && skill.pluginId ? { pluginId: skill.pluginId } : {}),
+    }));
+}
 
 export function normalizeAppServerMcpStatus(server) {
   if (!server || typeof server.name !== 'string' || !server.name || !server.tools
@@ -391,6 +408,14 @@ export function createSdkAppServerTransport({ cwd, instanceKey, codexPath, codex
         } while (cursor != null);
         return servers;
       } finally { clearTimeout(timer); }
+    },
+    async getSkills() {
+      // A menu read cannot initialize a process/thread or submit a turn.
+      const owned = client;
+      if (!owned || !nativeThreadId || initializing || stopped || suspectClient === owned) return null;
+      const result = await owned.request('skills/list', { cwds: [cwd], forceReload: true }, { timeoutMs: 10000 });
+      if (client !== owned || stopped) throw new Error('App Server changed during skills read');
+      return normalizeAppServerSkills(result, cwd);
     },
     async runStreamed(text, { signal, threadId } = {}) {
       if (active) throw new Error('App Server turn already running');

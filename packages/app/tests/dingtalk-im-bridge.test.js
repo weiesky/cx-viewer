@@ -289,3 +289,44 @@ test('stop disconnects and invalidates callbacks from the old client generation'
   assert.equal(harness.calls.writes.length, 0);
   assert.equal(harness.bridge.getStatus().running, false);
 });
+
+test('shared PTY ownership parks IM input without dropping it, retries after release and cancels retries on stop', async () => {
+  let allowed = false, probes = 0;
+  const harness = makeHarness({ canInject: () => { probes++; return allowed; } });
+  try {
+    await harness.bridge.start(); harness.receive({ text: 'waiting for shared PTY' });
+    assert.equal(harness.bridge.getStatus().queued, 1); assert.equal(harness.bridge.getStatus().pending, false); assert.equal(harness.calls.writes.length, 0);
+    allowed = true; await new Promise(resolve => setTimeout(resolve, 130));
+    assert.equal(harness.calls.writes.length, 1); assert.equal(harness.bridge.getStatus().pending, true);
+    assert.match(injectedText(harness.calls.writes[0]), /waiting for shared PTY$/);
+    await harness.bridge.stop(); allowed = false; await harness.bridge.start(); harness.receive({ text: 'must not wake after stop' });
+    await harness.bridge.stop(); const before = probes; await new Promise(resolve => setTimeout(resolve, 130));
+    assert.equal(probes, before); assert.equal(harness.calls.writes.length, 1);
+  } finally { await harness.bridge.stop(); }
+});
+
+test('native web queue and IM own mutually exclusive writes across web dispatch and an entire IM turn', async () => {
+  const { createPtyChatQueue } = await import('../server/lib/pty-chat-queue.js');
+  let nativeBusy = true, finishWeb; const webWrites = [];
+  let web;
+  const harness = makeHarness({ canInject: () => !nativeBusy && !web.isDispatching() });
+  web = createPtyChatQueue({ getPtyKind: () => 'codex', isStreaming: () => nativeBusy,
+    hasPendingApproval: () => false, hasExternalInjection: () => harness.bridge.getStatus().pending,
+    broadcastWs() {}, writeToPtySequential(chunks, done) { webWrites.push(chunks); finishWeb = done; } });
+  try {
+    await harness.bridge.start(); harness.receive({ text: 'IM parked' });
+    web.enqueue('web first'); nativeBusy = false; web.onTurnEnd();
+    assert.equal(web.isDispatching(), true); await new Promise(resolve => setTimeout(resolve, 130));
+    assert.equal(harness.calls.writes.length, 0, 'IM cannot enter a web paste dispatch');
+    nativeBusy = true; finishWeb(true); await new Promise(resolve => setTimeout(resolve, 130));
+    assert.equal(harness.calls.writes.length, 0, 'IM waits for the native web turn too');
+    nativeBusy = false; await new Promise(resolve => setTimeout(resolve, 130));
+    assert.equal(harness.calls.writes.length, 1); assert.equal(harness.bridge.getStatus().pending, true);
+    web.enqueue('web second'); web.onTurnEnd(); assert.equal(webWrites.length, 1, 'web cannot enter an owned IM turn');
+    const prompt = injectedText(harness.calls.writes[0]);
+    await harness.bridge.notifyLogV2Commit(completedEntry(prompt), null, { projectId: 'project-1' });
+    assert.equal(harness.bridge.getStatus().pending, false);
+    web.onTurnEnd(); await new Promise(resolve => setTimeout(resolve, 130));
+    assert.equal(webWrites.length, 2); assert.equal(web.isDispatching(), true); finishWeb(true);
+  } finally { web.stop(); await harness.bridge.stop(); }
+});

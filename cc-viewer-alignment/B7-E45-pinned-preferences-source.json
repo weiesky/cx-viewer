@@ -1,0 +1,23 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": "2dbe5cd695a965f51e4cee28d9c911e404675d46",
+  "methodsAndHelpersAstExact": [
+    "readLegacyPinnedRaw",
+    "clearLegacyPinnedRaw",
+    "sameKeys",
+    "initialPinnedKeys",
+    "togglePin",
+    "_queuePersistPinnedKeys",
+    "_hydratePinnedKeys"
+  ],
+  "entirePureHelperExactExceptExistingBrandKey": true,
+  "existingSettingsProviderAndPreferenceRoutesReused": true,
+  "validation": {
+    "tests": 138,
+    "fail": 0,
+    "skipped": 0,
+    "build": true,
+    "gui": "B7-pinned-preferences/result.json"
+  },
+  "boundary": "No new UI/CSS, no actual remote/LAN or Electron GUI claim."
+}

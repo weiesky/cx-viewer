@@ -1,0 +1,18 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstream": "d90ac9587dcd9caadee721cbbf26c43ecb5711ea",
+  "guards": [
+    {
+      "path": "tb.text",
+      "zeroSegmentGuardExact": true,
+      "sha256": "dec9680a6dbb0373712f320b3c6fc4d1ff9fde288ba737d8d84f29ec611e665a"
+    },
+    {
+      "path": "block.text",
+      "zeroSegmentGuardExact": true,
+      "sha256": "cbd5b2512c6a8223f3fa4d520b3fd49187acc63dfccc029eafe0ef99b422177b"
+    }
+  ],
+  "regressionBefore": "Actual JSX component produced visible chat-boxer with empty children for whitespace.",
+  "verification": "142/142 behavioral component and minimal-run tests, 0 skipped; build passed. Normal text and legal empty system-tag remain rendered. No CSS change; no new GUI claim."
+}

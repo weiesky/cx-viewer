@@ -130,6 +130,7 @@ class AppBase extends React.Component {
       githubStars: null,
       cliMode: false,
       sdkMode: false,
+      ptyMode: false, ptyQueueAvailable: false,
       sdkModel: null,
       sdkResumeId: null,
       workspaceMode: false,
@@ -328,7 +329,7 @@ class AppBase extends React.Component {
     };
   }
 
-  // 这 5 个偏好的唯一真相源是 SettingsContext(preferences/codexSettings);
+  // 这 6 个偏好的唯一真相源是 SettingsContext(preferences/codexSettings);
   // App/Mobile render 时直接派生往下传 prop,不再镜像进本地 state。
   // context 未就绪(fetch 前)时用与原初始 state 一致的默认值兜底。
   _prefValues() {
@@ -339,6 +340,7 @@ class AppBase extends React.Component {
       expandThinking: !!prefs.expandThinking,
       expandDiff: !!prefs.expandDiff,
       showFullToolContent: !!prefs.showFullToolContent,
+      minimalChat: prefs.minimalChat ?? true,
       onlyCurrentSession: prefs.onlyCurrentSession !== undefined ? !!prefs.onlyCurrentSession : /Windows/i.test(navigator.userAgent),
       showThinkingSummaries: !!cs.showThinkingSummaries,
     };
@@ -967,7 +969,7 @@ class AppBase extends React.Component {
       .then(res => res.json())
       .then(data => {
         if (this._unmounted) return;
-        if (data.instanceKey && !params.has('instance') && params.get('workspaces') !== '1') {
+        if (data.instanceKey && !logfile && !params.has('instance') && params.get('workspaces') !== '1') {
           window.location.replace(sdkWorkspacePageUrl(window.location.href, data.instanceKey, { preserveLogfile: true }));
           return;
         }
@@ -1030,10 +1032,10 @@ class AppBase extends React.Component {
       .then(res => res.json())
       .then(data => {
         if (this._unmounted) return;
-        if (data.workspaceMode || (data.sdkMode && params.get('workspaces') === '1')) {
-          this.setState({ cliMode: true, sdkMode: !!data.sdkMode, workspaceMode: true, isWorkspaceServer: true });
+        if (data.workspaceMode || ((data.sdkMode || data.ptyMode) && params.get('workspaces') === '1')) {
+          this.setState({ cliMode: true, sdkMode: !!data.sdkMode, ptyMode: !!data.ptyMode, ptyQueueAvailable: !!data.ptyQueueAvailable, workspaceMode: true, isWorkspaceServer: true });
         } else if (data.cliMode) {
-          this.setState({ cliMode: true, sdkMode: !!data.sdkMode, viewMode: 'chat' });
+          this.setState({ cliMode: true, sdkMode: !!data.sdkMode, ptyMode: !!data.ptyMode, ptyQueueAvailable: !!data.ptyQueueAvailable, viewMode: 'chat' });
         }
       })
       .catch(() => { });
@@ -2394,8 +2396,8 @@ class AppBase extends React.Component {
       sdkModel: null, workspaceMode: false, cliMode: true, sdkMode: true, sdkResumeId: data.resumeId, viewMode: 'chat' }, () => this._resetV2Communication());
   };
 
-  handleWorkspaceLaunch = ({ projectName, sdkMode, instanceKey }) => {
-    if (sdkMode && instanceKey) {
+  handleWorkspaceLaunch = ({ projectName, sdkMode, ptyMode, instanceKey }) => {
+    if ((sdkMode || ptyMode) && instanceKey) {
       navigateSdkWorkspace(instanceKey);
       return;
     }
@@ -2423,7 +2425,7 @@ class AppBase extends React.Component {
   };
 
   handleReturnToWorkspaces = () => {
-    if (this.state.sdkMode) {
+    if (this.state.sdkMode || this.state.ptyMode) {
       navigateSdkWorkspace(null);
       return;
     }
@@ -2753,6 +2755,10 @@ class AppBase extends React.Component {
 
   handleOnlyCurrentSessionChange = (checked) => {
     this.context.updatePreferences({ onlyCurrentSession: checked });
+  };
+
+  handleMinimalChatChange = (checked) => {
+    this.context.updatePreferences({ minimalChat: checked });
   };
 
   handleFilterIrrelevantChange = (checked) => {
@@ -3096,7 +3102,7 @@ class AppBase extends React.Component {
     return (
       <ConfigProvider theme={this.themeConfig}>
         <div className={styles.workspacePicker}>
-          {this.state.sdkMode && <header className={styles.header}>{this.renderSdkWorkspaces()}</header>}
+          {(this.state.sdkMode || this.state.ptyMode) && <header className={styles.header}>{this.renderWorkspaces()}</header>}
           <WorkspaceList onLaunch={this.handleWorkspaceLaunch} />
           {this.renderNewProjectModal()}
         </div>
@@ -3110,8 +3116,8 @@ class AppBase extends React.Component {
       onLaunch={this.handleWorkspaceLaunch} themeConfig={this.themeConfig} />;
   }
 
-  renderSdkWorkspaces() {
-    return this.state.sdkMode ? <SdkWorkspaceTabs onResumeSession={this.handleResumeSession} onNewProject={() => this.setState({ newProjectOpen: true })} onResumed={data => this.handleSdkSessionResumed(data, true)} /> : null;
+  renderWorkspaces() {
+    return (this.state.sdkMode || this.state.ptyMode) ? <SdkWorkspaceTabs sdkMode={this.state.sdkMode} onResumeSession={this.handleResumeSession} onNewProject={() => this.setState({ newProjectOpen: true })} onResumed={data => this.handleSdkSessionResumed(data, true)} /> : null;
   }
 
   /** Ant Design 主题配置 (dark/light)

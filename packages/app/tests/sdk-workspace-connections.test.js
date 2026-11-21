@@ -688,6 +688,10 @@ for await (const line of createInterface({ input: process.stdin })) {
  if (f.method === 'initialized') continue;
  if (f.method === 'initialize') { send({ id: f.id, result: {} }); continue; }
  if (f.method === 'thread/start') { send({ id: f.id, result: { thread: { id: threadId } } }); continue; }
+ if (f.method === 'skills/list') {
+  send({ id: f.id, result: { data: [{ cwd: p.cwds[0], errors: [], skills: [{ name: 'owned-native-skill', description: 'native catalog',
+   path: p.cwds[0] + '/.agents/skills/owned/SKILL.md', scope: 'repo', enabled: true }] }] } }); continue;
+ }
  if (f.method === 'mcpServerStatus/list') {
   send({ id: f.id, result: { data: [{ name: 'fixture-mcp', runtimeStatus: 'connected', authStatus: 'unsupported',
    tools: { read: { name: 'read' } }, resources: [], resourceTemplates: [], serverInfo: { name: 'fixture', version: '1' } }], nextCursor: null } }); continue;
@@ -717,6 +721,8 @@ for await (const line of createInterface({ input: process.stdin })) {
   let client = await openWs(view.instanceKey);
   assert.equal((await http(`/api/sdk-mcp-server-status?instance=${view.instanceKey}`)).json().reason, 'session-inactive');
   assert.equal((await http(`/api/sdk-mcp-server-status?instance=${infoB.instanceKey}`)).json().reason, 'unsupported');
+  assert.equal((await http(`/api/skill-commands?instance=${view.instanceKey}`)).json().reason, 'session-inactive');
+  assert.equal((await http(`/api/skill-commands?instance=${infoB.instanceKey}`)).json().reason, 'unsupported');
   let previousId;
   for (const [kind, value, expected] of [
     ['commandExecution', { decision: 'allow' }, { decision: 'accept' }],
@@ -728,6 +734,9 @@ for await (const line of createInterface({ input: process.stdin })) {
     const running = sdk.sendUserMessage(kind, view);
     const type = kind === 'ask' ? 'sdk-ask' : 'perm-hook';
     const pending = await client.receive(type + '-pending');
+    const skills = (await http(`/api/skill-commands?instance=${view.instanceKey}`)).json();
+    assert.equal(skills.ok, true); assert.equal(skills.instanceKey, view.instanceKey);
+    assert.deepEqual(skills.skills.map(skill => [skill.name, skill.path]), [['owned-native-skill', cwd + '/.agents/skills/owned/SKILL.md']]);
     const mcp = (await http(`/api/sdk-mcp-server-status?instance=${view.instanceKey}`)).json();
     assert.equal(mcp.ok, true);
     assert.equal(mcp.snapshot.instanceKey, view.instanceKey);
@@ -774,6 +783,7 @@ for await (const line of createInterface({ input: process.stdin })) {
   assert.equal((await resumed.receive('sdk-mcp-status')).servers, null);
   assert.throws(() => sdk.getMcpStatusSnapshot(view), { code: 'SDK_SESSION_NOT_FOUND' });
   assert.equal((await http(`/api/sdk-mcp-server-status?instance=${view.instanceKey}`)).status, 404);
+  assert.equal((await http(`/api/skill-commands?instance=${view.instanceKey}`)).status, 404);
 });
 
 test('owned slow model requests replay on reconnect and settle by request id without reaching a same-name sibling', { timeout: 45000 }, async () => {

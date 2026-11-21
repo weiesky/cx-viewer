@@ -2,11 +2,11 @@
 
 **迁移约束：优先参考 PR 的实际代码，禁止根据文档自由改版。** B2已按上游组件/CSS/交互纠偏并经用户验收收口；B4及后续工作包继续遵守该规则，运行性测试不能单独代表视觉对齐。必读[源码优先迁移规范与已确认偏差](./migration-code-first.md)。
 
-2026-11-21 B6已完成（第7/12工作包），固定上游74cd752d99caf122e750216d2af3bb9f467c4de1；原16笔已备份并整合为e885d8b，经[PR #6](https://github.com/weiesky/cx-viewer/pull/6)合并main（9f3e2ce）。E1–E13迁入归档/音频/字幕/图像分发、助手/diff/KV/Ask选区与Markdown复制，E12修复共享CAS body覆盖旧回合，E14收口。原最终1986/1986、0skip及新安装525/525/B1.2/CLI通过；交付重新build/pack720、artifact-only安装源码/许可及211Web字节通过，26图hash复核，原双引擎6场/10轮GUI保持。实际PR无CI检查，不冒称CI通过。普通CLI/PTY增加工作区入口仍待纠偏；活动7008旧后端未重启，npm链接正确。46候选混合子项、stdin/IM偶发、物理设备/音频/系统剪贴板/真实LAN-TLS/外部模型/其他OS/最低Node未验及原缺陷保持。默认exec/显式AppServer渐进与353K不变。本会话不启动B7，下一会话先纠偏普通模式入口，再按固定源码推进B7，见[B7交接](./B7-handoff.md)。
+2026-11-22 B7实施中（第8/12工作包），固定上游74cd752d99caf122e750216d2af3bb9f467c4de1，分支codex/b7-input-navigation-skills，起点main8968935，74索引候选及追加源码子项逐项核验。E1–E41及E19a/E31a/E31b/E40a独立完成；原普通PTY任务HUD接精确root计划快照，整CSS同基线，226/226、build与受控native协议双引擎6场12图通过；实际0.169未见plan工具事件，不记模型执行已验，继续审计。 普通“＋”、输入12行/ghost/导航/汇总/Skills菜单、窄split、主PTY与scratch进程树均已有分项证据；74候选完整闭合及最终全量/新安装仍待完成，B7未完成。新工作区权限遵循已选弹窗；/选技能填原生$name；合成AppServer会话使用codex://app-server/turn（均经用户选定）。活动7008不重启；IM偶发、物理设备/音频/外部模型/真实LAN/TLS/其他OS/最低Node未验保持，exec/显式AppServer渐进与353K不变。见[B7实施](./B7-implementation.md)。
 
 2026-11-21 用户截图发现普通CLI/PTY增加工作区入口缺失：本地sdkMode门槛隐藏“＋”，与旧进程问题独立；B2普通模式Header恢复待纠偏，不能沿用SDK GUI通过结论。见[实际调用链与修复边界](./B2-pty-workspace-entry-gap-2026-11-21.md)。
 
-2026-11-21 活动入口核对：cxv已指向本仓库packages/app/cli.js；7008旧进程未重启，前端新而B6后端未加载，两个新API仍回首页HTML。当前会话由该进程托管，本次未停止它；见[核对回执和重启步骤](./B6-runtime-entry-2026-11-21.md)。B6已通过PR #6交付；用户已明确B7留待下一会话，本会话不重启活动进程。
+2026-11-21 活动入口核对：cxv已指向本仓库packages/app/cli.js；7008旧进程未重启，前端新而B6后端未加载，两个新API仍回首页HTML。当前会话由该进程托管，本次未停止它；见[核对回执和重启步骤](./B6-runtime-entry-2026-11-21.md)。B6已通过PR #6交付；用户本次已明确启动B7，活动进程仍不由本会话停止。
 
 2026-11-18 GitHub 同步：已按用户请求将 main 6045b53 与 codex/pnpm-workspace 2c0edc8 原子推送到 origin 同名分支，远端完整 hash 已读回核对，上游跟踪已设置。未执行强推、分支合并或活动安装切换；未提交的 AGENTS.md 与 cc-viewer-alignment 文档仍保留本地。
 
@@ -28,7 +28,7 @@
 | B7–B10 | 尚未逐包完成，下一B7；按台账独立核验 |
 | B11 / 工程前置 | A1 6287d2a 已主线；A2 3b15a6d 已提交工作树并通过本地验证，当前全局实例未切换。 |
 
-下一会话直接从[B7交接](./B7-handoff.md)进入；本会话不启动B7。
+本次已按最新请求启动B7，当前实施以[B7实施](./B7-implementation.md)为准；[上轮交接](./B7-handoff.md)保留历史检查点。
 
 pnpm/workspace 已按用户选择前置实施，先稳定结构，再继续功能对齐；见 [提交、边界与验收](./A1-A2-engineering.md)。
 

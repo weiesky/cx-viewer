@@ -1,0 +1,38 @@
+[
+  {
+    "engine": "chromium",
+    "version": "159.0.8154.6",
+    "a": {
+      "instanceKey": "cxv-e3abd12f133254bce3d187d348ed890946f8",
+      "sessionId": "01a1fee4-4cd1-7aa2-9706-9c42e4f168d3"
+    },
+    "b": {
+      "instanceKey": "cxv-252cb373501c722d2cb4e902f4a99e2a4e8e",
+      "sessionId": "01a1fee4-971b-70f3-afe6-1038a18644cc"
+    },
+    "realCodex": "0.169.0",
+    "bPassiveReadCannotClaimA": true,
+    "bArchiveEmpty": true,
+    "noBorrowedTranscript": true,
+    "screenshot": "chromium-independent-native-root.png",
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "version": "27.2",
+    "a": {
+      "instanceKey": "cxv-e3abd12f133254bce3d187d348ed890946f8",
+      "sessionId": "01a1fee4-4cd1-7aa2-9706-9c42e4f168d3"
+    },
+    "b": {
+      "instanceKey": "cxv-252cb373501c722d2cb4e902f4a99e2a4e8e",
+      "sessionId": "01a1fee4-971b-70f3-afe6-1038a18644cc"
+    },
+    "realCodex": "0.169.0",
+    "bPassiveReadCannotClaimA": true,
+    "bArchiveEmpty": true,
+    "noBorrowedTranscript": true,
+    "screenshot": "webkit-independent-native-root.png",
+    "errors": []
+  }
+]

@@ -10,7 +10,7 @@ import { homedir } from 'node:os';
 import { spawn } from 'node:child_process';
 import { t } from './i18n.js';
 import { INJECT_IMPORT, LOG_DIR, resolveCliPath, resolveNativePath, resolveNpmCodexPath } from './findcx.js';
-import { appendCxvFinalConfigArgs, getDefaultModeRequestUserInputConfigArgs, normalizeCodexArgs, hasBypassPermissions, getReasoningSummaryConfigArgs, parseCodexInvocation, extractSdkTransportOptions } from './lib/cli-args.js';
+import { appendCxvFinalConfigArgs, buildPtyWorkspaceLaunchArgs, getDefaultModeRequestUserInputConfigArgs, normalizeCodexArgs, hasBypassPermissions, getReasoningSummaryConfigArgs, parseCodexInvocation, extractSdkTransportOptions } from './lib/cli-args.js';
 import { ensureHooks } from './lib/ensure-hooks.js';
 import { APPROVALS_REVIEWER_DEFAULT } from './lib/approval-reviewer.js';
 import { inspectCodexSystemPromptSupport } from './lib/codex-appserver-capabilities.js';
@@ -298,7 +298,8 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
 
   const workingDir = cwd || process.cwd();
   let serverMod = null;
-  let bridge = null;
+  let bridge = null, bridgeStartup = null;
+  const startupController = new AbortController();
   let stopProxyFn = () => {};
   let killPtyFn = () => {};
   let shutdownHookCalled = false;
@@ -308,14 +309,17 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
     await options.onShutdown?.();
   };
   setActiveShutdownCleanup(async ({ deadlineAt } = {}) => {
-    killPtyFn();
+    startupController.abort();
+    const ptyStop = killPtyFn();
     serverMod?.setCodexApprovalsReviewerUpdater(null);
     serverMod?.setCodexRequestUserInputBridge(null);
     serverMod?.setActiveCodexApprovalsReviewer(null, false);
     serverMod?.setSystemPromptRuntimeCapability(null);
-    bridge?.stop();
+    const nativeStop = bridge?.stop();
     try { stopProxyFn(); } catch {}
     if (serverMod) await serverMod.stopViewer({ deadlineAt });
+    await Promise.all([ptyStop, nativeStop]);
+    await bridgeStartup?.catch(() => {});
     await runShutdownHook();
   });
 
@@ -437,8 +441,9 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
   try {
     const { startAppServerBridge } = await import('./lib/appserver-bridge.js');
     const systemPromptCapability = inspectCodexSystemPromptSupport(codexPath);
-    bridge = await startAppServerBridge({
+    bridgeStartup = startAppServerBridge({
       cwd: workingDir,
+      signal: startupController.signal,
       codexPath,
       rawDir: join(LOG_DIR, 'v2-raw', rawProjectDirectoryToken(interceptorMod.getActiveProjectContext().projectId)),
       env: process.env,
@@ -448,11 +453,13 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
       onRequestUserInputCleared: serverMod.clearCodexRequestUserInput,
       onAgentLoopStart: serverMod.broadcastPtyAgentLoopStart,
       onAgentLoopEnd: serverMod.broadcastPtyAgentLoopEnd,
+      onTaskSnapshot: serverMod.broadcastPtyTaskSnapshot,
       writeLogEntry: interceptorMod.appendLogEntry,
       systemPromptCapability,
       systemPromptLogDir: LOG_DIR,
     });
-    if (shutdownStarted) { bridge.stop(); return; }
+    bridge = await bridgeStartup;
+    if (shutdownStarted) { await bridge.stop(); return; }
     serverMod.setCodexApprovalsReviewerUpdater(bridge.setApprovalsReviewer);
     serverMod.setCodexRequestUserInputBridge({
       resolve: bridge.resolveRequestUserInput,
@@ -474,6 +481,8 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
     }
     console.warn('[CX Viewer] App-Server bridge failed, falling back to direct mode:', err.message);
   }
+
+  if (shutdownStarted) return;
 
   // 启动 PTY 中的 codex TUI
   const { spawnCodexRequest, killPty } = await import('./pty-manager.js');
@@ -506,14 +515,45 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
         subcommandIndex: parseCodexInvocation(tuiArgs).subcommandIndex,
       },
     });
-    if (shutdownStarted) { killPtyFn(); return; }
+    if (shutdownStarted) { await killPtyFn(); return; }
+    const ptyModule = await import('./pty-manager.js');
+    const nativeModule = await import('./lib/appserver-bridge.js');
+    const { startPtyWorkspaceRuntime } = await import('./lib/pty-workspace-runtime.js');
+    const { ensureProjectIdForCwd } = await import('./lib/log-v2/project-id.js');
+    serverMod.configurePtyWorkspaces({
+      boot: { cwd: workingDir, pty: ptyModule, runtime: {
+        getContext: nativeModule.getAppServerRuntimeContext,
+        getInputState: nativeModule.getAppServerInputState,
+        getAgentLoopSnapshot: nativeModule.getAppServerAgentLoopSnapshot,
+        getTaskState: nativeModule.getAppServerTaskState,
+        stop() { const nativeStop = bridge?.stop(); stopProxyFn(); return nativeStop; },
+      } },
+      launch: request => {
+        const projectId = ensureProjectIdForCwd(LOG_DIR, request.cwd, basename(request.cwd));
+        return startPtyWorkspaceRuntime({ ...request, projectId,
+          args: buildPtyWorkspaceLaunchArgs(extraCodexArgs, request.args), codexPath, isNpmVersion,
+          rawDir: join(LOG_DIR, 'v2-raw', rawProjectDirectoryToken(projectId), request.instanceKey),
+          logDir: LOG_DIR, serverPort: port, serverProtocol: protocol,
+          otelToken: serverMod.getOtelAccessToken(), approvalsReviewer: serverMod.getApprovalsReviewerPreference() || APPROVALS_REVIEWER_DEFAULT,
+          requireAppServerBridge: options.requireAppServerBridge === true,
+          callbacks: { onEntry: interceptorMod.appendLogEntry,
+            onRequestUserInput: serverMod.offerCodexRequestUserInput,
+            onRequestUserInputCleared: serverMod.clearCodexRequestUserInput,
+            onAgentLoopStart: serverMod.broadcastPtyAgentLoopStart,
+            onAgentLoopEnd: serverMod.broadcastPtyAgentLoopEnd,
+            onTaskSnapshot: serverMod.broadcastPtyTaskSnapshot,
+            onWarning: error => console.warn('[CX Viewer] Workspace bridge fallback:', error.message),
+          },
+        });
+      },
+    });
     // The Codex TUI is the critical path. Log watching/statistics can attach
     // after the PTY exists; the V2 writer is ready before traffic starts and the
     // regular history endpoints own older conversation loading.
     await serverMod.initPostLaunch();
   } catch (err) {
     console.error('[CX Viewer] Failed to spawn Codex:', err.message);
-    if (bridge) bridge.stop();
+    if (bridge) await bridge.stop();
     await serverMod.stopViewer();
     await runShutdownHook();
     process.exit(1);

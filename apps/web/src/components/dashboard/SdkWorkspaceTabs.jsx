@@ -30,11 +30,12 @@ function ProjectName({ session }) {
   return <>{session?.projectName}{alias ? ` (${alias})` : ''}</>;
 }
 
-export default function SdkWorkspaceTabs({ onResumed, onNewProject, onResumeSession }) {
+// Shared original Header presentation; PTY and SDK keep their own transports.
+export default function SdkWorkspaceTabs({ onResumed, onNewProject, onResumeSession, sdkMode = true }) {
   const [sessions, setSessions] = useState([]);
   const [current, setCurrent] = useState(null);
   const [error, setError] = useState(null);
-  const [historyOpen, setHistoryOpen] = useState(() => new URLSearchParams(window.location.search).get('resume') === '1');
+  const [historyOpen, setHistoryOpen] = useState(() => sdkMode && new URLSearchParams(window.location.search).get('resume') === '1');
   const [order, setOrder] = useState(readSdkWorkspaceOrder);
   const [announcement, setAnnouncement] = useState('');
   const [switching, setSwitching] = useState(null);
@@ -192,7 +193,7 @@ export default function SdkWorkspaceTabs({ onResumed, onNewProject, onResumeSess
       {newProject}
     </>}
     <span className={styles.announcement} role="status" aria-live="polite">{announcement}</span>
-    <SdkResumeModal key={current || 'picker'} open={historyOpen} session={selected}
-      onClose={closeHistory} onResumed={onResumed} onResumeSession={onResumeSession} />
+    {sdkMode && <SdkResumeModal key={current || 'picker'} open={historyOpen} session={selected}
+      onClose={closeHistory} onResumed={onResumed} onResumeSession={onResumeSession} />}
   </nav>;
 }

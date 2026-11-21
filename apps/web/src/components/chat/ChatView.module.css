@@ -40,15 +40,23 @@
   display: flex;
   flex-direction: row;
   height: 100%;
-  overflow: hidden;
+  /* When the window shrinks below (chatSection min-width + the fixed terminal
+     panel), the terminal no longer squeezes the conversation to zero width —
+     the row scrolls horizontally instead. Only takes effect in that overflow
+     case; at normal widths nothing scrolls. */
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .chatSection {
   flex: 1;
+  /* Floor under the conversation so a wide open terminal panel can never crush
+     it to 0px on a narrow window — the row overflows + scrolls instead. */
+  min-width: 280px;
   display: flex;
   flex-direction: column;
-  min-width: 0;
   overflow: hidden;
+  /* dropZoneMask 的绝对定位参照物(zone marker 也挂在本元素上) */
   position: relative;
 }
 
@@ -288,6 +296,10 @@
 }
 
 .userPromptNavTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
@@ -772,4 +784,58 @@
    rect instead (inline `top` is already the selection's bottom edge), so don't flip up. */
 .selectionQuoteBtnBelow {
   transform: translate(-50%, 0);
+}
+
+.userPromptNavBadgePlan {
+  flex: 0 0 auto;
+  font-size: 10px;
+  line-height: 1;
+  padding: 2px 5px;
+  border-radius: 3px;
+  align-self: center;
+  white-space: nowrap;
+  color: var(--color-primary-light);
+  background: var(--color-primary-bg-light);
+  border: 1px solid var(--color-primary);
+}
+
+.userPromptNavBadgeAsk {
+  flex: 0 0 auto;
+  font-size: 10px;
+  line-height: 1;
+  padding: 2px 5px;
+  border-radius: 3px;
+  align-self: center;
+  white-space: nowrap;
+  color: var(--color-success-light);
+  background: var(--color-success-bg-light);
+  border: 1px solid var(--color-success);
+}
+
+.userPromptNavBadgeUltraplan {
+  flex: 0 0 auto;
+  font-size: 10px;
+  line-height: 1;
+  padding: 2px 5px;
+  border-radius: 3px;
+  align-self: center;
+  white-space: nowrap;
+  color: #fff;
+  background: var(--color-primary);
+  border: 1px solid var(--color-primary);
+}
+
+.userPromptNavMore {
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.userPromptNavMore:hover {
+  color: var(--primary-color, #1677ff);
 }

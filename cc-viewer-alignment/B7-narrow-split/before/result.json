@@ -1,0 +1,108 @@
+[
+  {
+    "engine": "chromium",
+    "version": "159.0.8154.6",
+    "before": true,
+    "wide": {
+      "split": {
+        "left": 0,
+        "right": 1440,
+        "width": 1440
+      },
+      "clientWidth": 1440,
+      "scrollWidth": 1440,
+      "scrollLeft": 0,
+      "overflowX": "hidden",
+      "chat": {
+        "left": 285,
+        "right": 811,
+        "width": 526
+      },
+      "chatMinWidth": "0px",
+      "terminal": {
+        "left": 816,
+        "right": 1440,
+        "width": 624
+      }
+    },
+    "narrow": {
+      "split": {
+        "left": 0,
+        "right": 900,
+        "width": 900
+      },
+      "clientWidth": 900,
+      "scrollWidth": 914,
+      "scrollLeft": 0,
+      "overflowX": "hidden",
+      "chat": {
+        "left": 285,
+        "right": 285,
+        "width": 0
+      },
+      "chatMinWidth": "0px",
+      "terminal": {
+        "left": 290,
+        "right": 914,
+        "width": 624
+      }
+    },
+    "screenshots": [
+      "chromium-wide.png",
+      "chromium-narrow-chat.png"
+    ]
+  },
+  {
+    "engine": "webkit",
+    "version": "27.2",
+    "before": true,
+    "wide": {
+      "split": {
+        "left": 0,
+        "right": 1440,
+        "width": 1440
+      },
+      "clientWidth": 1440,
+      "scrollWidth": 1440,
+      "scrollLeft": 0,
+      "overflowX": "hidden",
+      "chat": {
+        "left": 285,
+        "right": 811,
+        "width": 526
+      },
+      "chatMinWidth": "0px",
+      "terminal": {
+        "left": 816,
+        "right": 1440,
+        "width": 624
+      }
+    },
+    "narrow": {
+      "split": {
+        "left": 0,
+        "right": 900,
+        "width": 900
+      },
+      "clientWidth": 900,
+      "scrollWidth": 914,
+      "scrollLeft": 0,
+      "overflowX": "hidden",
+      "chat": {
+        "left": 285,
+        "right": 285,
+        "width": 0
+      },
+      "chatMinWidth": "0px",
+      "terminal": {
+        "left": 290,
+        "right": 914,
+        "width": 624
+      }
+    },
+    "screenshots": [
+      "webkit-wide.png",
+      "webkit-narrow-chat.png"
+    ]
+  }
+]

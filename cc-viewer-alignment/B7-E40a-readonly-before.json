@@ -1,0 +1,35 @@
+{
+  "scenario": "unanchored ?logfile= during boot owner canonicalization",
+  "engine": "WebKit 27.2",
+  "cause": "AppBase project-name callback called location.replace with the boot instance while a readonly snapshot was loading",
+  "evidence": [
+    {
+      "console": "WebSocket connection to 'ws://127.0.0.1:20580/ws/terminal' failed: WebSocket is closed before the connection is established."
+    },
+    {
+      "failed": "https://api.github.com/repos/weiesky/cx-viewer",
+      "error": {
+        "errorText": "cancelled"
+      }
+    },
+    {
+      "failed": "http://127.0.0.1:20580/api/workspaces",
+      "error": {
+        "errorText": "cancelled"
+      }
+    },
+    {
+      "message": "/127.0.0.1:20580/api/log-v2/snapshot?limit=400&file=b7-readonly%2F20261121_269b58bf-65a6-4e16-ae06-f5697db895ef.cxvsession%2Ftimeline.jsonl&mode=readonly due to access control checks.",
+      "stack": "Fetch API cannot load http://127.0.0.1:20580/api/log-v2/snapshot?limit=400&file=b7-readonly%2F20261121_269b58bf-65a6-4e16-ae06-f5697db895ef.cxvsession%2Ftimeline.jsonl&mode=readonly due to access control checks.\n    at fetchLogV2Snapshot (http://127.0.0.1:20580/assets/seqResourceLoaders-a6CMbXv9.js:2:529012)\n    at _loadLocalV2LogFile (http://127.0.0.1:20580/assets/seqResourceLoaders-a6CMbXv9.js:2:655620)"
+    },
+    {
+      "console": "WebSocket connection to 'ws://127.0.0.1:20580/ws/terminal?instance=cxv-547244f6b0a900a50cbc1bfffc9c280ac87a' failed: WebSocket is closed before the connection is established."
+    },
+    {
+      "url": "http://127.0.0.1:20580/api/log-v2/snapshot?limit=400&file=b7-readonly%2F20261121_269b58bf-65a6-4e16-ae06-f5697db895ef.cxvsession%2Ftimeline.jsonl&mode=readonly&instance=cxv-547244f6b0a900a50cbc1bfffc9c280ac87a",
+      "status": 200
+    }
+  ],
+  "renderedUsers": 525,
+  "note": "Generated isolated archive; older behavior did eventually render, but reloaded and canceled the first snapshot."
+}

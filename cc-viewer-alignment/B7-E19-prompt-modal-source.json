@@ -1,0 +1,10 @@
+{
+  "components/chat/UserPromptsModal.module.css": {
+    "exactBytes": true,
+    "sha256": "53cc60fa88e889557dff0057bb1f4373328f8d2f4f3cb4621ff50e279d24151a"
+  },
+  "utils/promptSegments.js": {
+    "exactBytes": true,
+    "sha256": "03b5c0b89cb384880eccfc8a09f723b1c6f61d8ee4e15b0879a876aee799088f"
+  }
+}

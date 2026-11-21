@@ -9,6 +9,7 @@ import ConfirmRemoveButton from '../common/ConfirmRemoveButton';
 import styles from './ChatInputBar.module.css';
 import chrome from '../common/sharedChrome.module.css';
 import { AgentTeamIcon, UltraplanIcon, UploadIcon, TrashIcon, SPARKLE_MASK_STYLE, ULTRAPLAN_MASK_STYLE } from '../common/quickMenuIcons';
+import SlashCommandMenu from './SlashCommandMenu';
 import ResumeSessionsRow from '../common/ResumeSessionsRow';
 import QuickAutoApproveRows from '../common/QuickAutoApproveRows';
 import { getFileIcon } from '../../utils/fileIcons';
@@ -24,21 +25,33 @@ const SpeechRec = typeof window !== 'undefined' && window.isSecureContext
 const FOCUS_VPAD = 16;
 const LINE_H = 21;
 const MIN_LINES = 1;
-const MAX_LINES = 6;
+const MAX_LINES = 12;
 const FOCUS_LINES = 2;
 
 // Shared autosize helper: measures the content box (scrollHeight minus vertical padding)
 // so an empty textarea snaps to exactly one line; `focused` pads short content up to two lines.
 // Mobile (isMobile && !isPad) keeps the legacy total-box behavior (different padding/font metrics).
+// Callers typically run right before the state commit that removes a min-height class
+// (.chatTextareaTwoLines/.chatTextareaFocused), so neutralize any min-height while
+// reading scrollHeight — otherwise the floor inflates scrollHeight and the inline
+// height stays stuck at the old floor until the next keystroke.
 export function resizeChatTextarea(ta, { focused = false } = {}) {
   if (!ta) return;
+  const prevMin = ta.style.minHeight;
+  ta.style.minHeight = '0px';
   ta.style.height = 'auto';
+  const measured = ta.scrollHeight;
   if (isMobile && !isPad) {
-    ta.style.height = Math.min(ta.scrollHeight, 160) + 'px';
+    ta.style.height = Math.min(measured, 160) + 'px';
+    ta.style.minHeight = prevMin;
     return;
   }
-  const content = Math.min(Math.max(ta.scrollHeight - FOCUS_VPAD, LINE_H * MIN_LINES), LINE_H * MAX_LINES);
-  ta.style.height = (focused ? Math.max(content, LINE_H * FOCUS_LINES) : content) + 'px';
+  // border-box: style.height includes padding, so do NOT subtract FOCUS_VPAD from
+  // the cap — measured already is the full box height. Subtracting it made the
+  // 12-line cap render as ~11 lines and left the CSS max-height (268px) dead.
+  const content = Math.min(Math.max(measured, LINE_H * MIN_LINES + FOCUS_VPAD), LINE_H * MAX_LINES + FOCUS_VPAD);
+  ta.style.height = (focused ? Math.max(content, LINE_H * FOCUS_LINES + FOCUS_VPAD) : content) + 'px';
+  ta.style.minHeight = prevMin;
 }
 
 const SPEECH_LANG_MAP = {
@@ -49,7 +62,8 @@ const SPEECH_LANG_MAP = {
   tr: 'tr-TR', uk: 'uk-UA',
 };
 
-function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, sdkMode, onKeyDown, onChange, onSend, onStop, onSuggestionClick, onUploadPath, onAttachPath, presetItems, onPresetSend, onOpenPresetModal, onOpenUltraPlan, onClearContext, isStreaming, pendingImages, onRemovePendingImage, pendingQuotes, onRemovePendingQuote, uploadingItems, sendDeferred, onUploadStart, onUploadEnd, setContextBarSlot, approvalsReviewer, onApprovalsReviewerChange, planAutoApproveSeconds, onPlanAutoApproveChange, onClearContextNow, ultraplanPopover, onResumeSession, resumeInstanceKey, projectName, proxyChip }) {
+function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, sdkMode, onKeyDown, onChange, onSend, onStop, onSuggestionClick, onUploadPath, onAttachPath, presetItems, onPresetSend, onOpenPresetModal, onOpenUltraPlan, onClearContext, isStreaming, pendingImages, onRemovePendingImage, pendingQuotes, onRemovePendingQuote, uploadingItems, sendDeferred, onUploadStart, onUploadEnd, setContextBarSlot, approvalsReviewer, onApprovalsReviewerChange, planAutoApproveSeconds, onPlanAutoApproveChange, onClearContextNow, ultraplanPopover, onResumeSession, resumeInstanceKey, projectName, proxyChip, promptNavPopover, slashMenuOpen, slashMenuGroups, slashMenuActiveIndex, slashMenuLoading, onSlashMenuHover, onSlashMenuSelect, onSlashMenuClose }) {
+  const micOnRight = !isMobile && (sdkMode || !terminalVisible);
   const [plusOpen, setPlusOpen] = useState(false);
   // 桌面四芒星菜单的级联展开行（与终端工具栏同款交互）：null | 'perm' | 'plan' | 'agentteam'
   const [quickExpanded, setQuickExpanded] = useState(null);
@@ -80,6 +94,28 @@ function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, 
   const rootRef = useRef(null);
   const [focusExpand, setFocusExpand] = useState(false);
   const focusExpandRef = useRef(false);
+  const hiddenDraftRef = useRef(null);
+  // The main PTY branch unmounts the uncontrolled textarea. Keep its draft
+  // locally until that same composer returns; SDK scratch keeps it mounted.
+  useLayoutEffect(() => {
+    const ta = inputRef?.current;
+    if (!ta) return;
+    const draft = hiddenDraftRef.current;
+    if (draft) {
+      ta.value = draft.value;
+      ta.setSelectionRange(draft.start, draft.end, draft.direction);
+      resizeChatTextarea(ta);
+      hiddenDraftRef.current = null;
+    }
+    return () => {
+      hiddenDraftRef.current = { value: ta.value, start: ta.selectionStart, end: ta.selectionEnd, direction: ta.selectionDirection };
+    };
+  }, [inputRef, terminalVisible, sdkMode]);
+  // The ghost suggestion is clamped to two lines. When it needs more than the resting
+  // one line, raise the composer to a two-line floor (.chatTextareaTwoLines) so the
+  // toolbar row keeps its space instead of being painted over.
+  const ghostRef = useRef(null);
+  const [ghostTwoLines, setGhostTwoLines] = useState(false);
 
   // Highlight the composer while a sidebar file is over it.
   const [fileDragOver, setFileDragOver] = useState(false);
@@ -108,6 +144,30 @@ function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, 
     setFocusExpand(on);
     resizeInput(on);
   };
+
+  useLayoutEffect(() => {
+    const ghost = ghostRef.current;
+    if (!ghost) {
+      setGhostTwoLines(false);
+      return;
+    }
+    // .ghostText is line-clamped to two lines, so a clamped height above one line's
+    // line-height + vertical padding means the composer needs the two-line floor.
+    const measure = () => {
+      const cs = getComputedStyle(ghost);
+      const lineH = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.5 || 0;
+      const padV = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+      const twoLines = ghost.clientHeight > lineH + padV + 1;
+      setGhostTwoLines(prev => (prev === twoLines ? prev : twoLines));
+    };
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(ghost);
+    return () => ro.disconnect();
+    // terminalVisible/sdkMode: the ghost unmounts while the PTY branch early-returns;
+    // closing the terminal must re-run the measurement on the remounted ghost.
+  }, [inputSuggestion, inputEmpty, terminalVisible, sdkMode]);
 
   useEffect(() => () => {
     const rec = recRef.current;
@@ -268,6 +328,29 @@ function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, 
   const toggleRecording = () => {
     if (recRef.current) stopRecording(); else startRecording();
   };
+
+  // Shared mic button element. Rendered from one of two mutually exclusive slots below:
+  // legacy layout places it in the left cluster (after UltraPlan / clear-context), SDK
+  // layout (micOnRight) places it in the right cluster (between proxyChip and send).
+  // Hoisting it here keeps the recording state, i18n keys, and aria attributes single-
+  // sourced — only one of the two sites renders at a time.
+  const micButton = SpeechRec ? (
+    <button
+      type="button"
+      className={`${styles.micBtn}${recording ? ` ${styles.micBtnRecording}` : ''}`}
+      onClick={toggleRecording}
+      title={t(recording ? 'ui.chatInput.voiceStop' : 'ui.chatInput.voiceStart')}
+      aria-label={t(recording ? 'ui.chatInput.voiceStop' : 'ui.chatInput.voiceStart')}
+      aria-pressed={recording}
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="23"/>
+        <line x1="8" y1="23" x2="16" y2="23"/>
+      </svg>
+    </button>
+  ) : null;
 
   const handleTextareaInput = (e) => {
     if (recRef.current && e.nativeEvent?.inputType && !e.nativeEvent?.isComposing) {
@@ -482,7 +565,7 @@ function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, 
           <div className={styles.textareaWithGhost}>
             <textarea
               ref={inputRef}
-              className={`${styles.chatTextarea}${focusExpand ? ` ${styles.chatTextareaFocused}` : ''}`}
+              className={`${styles.chatTextarea}${focusExpand ? ` ${styles.chatTextareaFocused}` : ''}${ghostTwoLines ? ` ${styles.chatTextareaTwoLines}` : ''}`}
               placeholder={inputSuggestion ? '' : t('ui.chatInput.placeholder')}
               rows={1}
               onKeyDown={onKeyDown}
@@ -492,12 +575,21 @@ function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, 
               onBlur={() => applyFocusExpand(false)}
             />
             {inputSuggestion && inputEmpty && (
-              <div className={styles.ghostText}>{inputSuggestion}</div>
+              <div ref={ghostRef} className={styles.ghostText}>{inputSuggestion}</div>
             )}
             {recording && interimText && (
               <div className={styles.interimPreview}>{interimText}</div>
             )}
           </div>
+          <SlashCommandMenu
+            open={slashMenuOpen}
+            groups={slashMenuGroups}
+            activeIndex={slashMenuActiveIndex}
+            loading={slashMenuLoading}
+            onHover={onSlashMenuHover}
+            onSelect={onSlashMenuSelect}
+            onClose={onSlashMenuClose}
+          />
         </div>
         <div className={styles.chatInputBottom}>
           <div className={styles.chatInputBottomLeft}>
@@ -516,6 +608,18 @@ function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, 
               <div className={`${styles.plusMenu}${!isMobile ? ` ${styles.plusMenuQuick}` : ''}`}>
                 {!isMobile ? (
                   <>
+                    {/* Upload lives as a top-level row of the (+) menu (same cascade-row look as the
+                        settings rows below); pick/paste/drag all share the runUpload chain.
+                        onMouseEnter 收起任何展开的级联行：顶层行不参与 hover-intent，从「历史会话」
+                        等组斜向移入时若不显式收起，子菜单会残留展开。 */}
+                    <button
+                      className={chrome.quickMenuRow}
+                      onClick={handleUploadPick}
+                      onMouseEnter={() => { qmHover.cancel(); if (quickExpanded) setQuickExpanded(null); }}
+                    >
+                      <span className={chrome.quickMenuRowIcon}><UploadIcon /></span>
+                      <span className={chrome.quickMenuLabel}>{t('ui.terminal.upload')}</span>
+                    </button>
                     {/* 桌面：与终端工具栏四芒星菜单同款级联结构（共享 QuickAutoApproveRows）。
                         reviewer 与 Plan 档位都必须走 AppBase handler。 */}
                     <QuickAutoApproveRows
@@ -603,8 +707,9 @@ function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, 
               </>
             )}
           </div>
-          {/* UltraPlan / 上传 / 清空上下文平铺为输入栏独立圆钮（顺序与终端工具栏一致）；
-              移动端按需求只外置 UltraPlan，上传/清空仍留在 [+] 平铺菜单内。
+          {/* UltraPlan / clear-context stay as standalone round buttons in the input bar (same order as
+              the terminal toolbar); upload moved into the (+) menu.
+              Mobile per requirement only lifts UltraPlan out; upload/clear stay in the (+) flat menu.
               桌面 ultraplanPopover 由 ChatView 组装（终端同款 UltraplanPanel + 守卫），
               按钮点击走 onOpenUltraPlan 开、onOpenChange 只关——镜像终端单向模式 */}
           {onOpenUltraPlan && (ultraplanPopover ? (
@@ -626,11 +731,6 @@ function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, 
               <UltraplanIcon />
             </button>
           ))}
-          {!isMobile && (
-            <button className={styles.plusBtn} title={t('ui.terminal.upload')} onClick={handleUploadPick}>
-              <UploadIcon />
-            </button>
-          )}
           {!isMobile && onClearContextNow && (() => {
             // 与终端工具栏清空按钮同款 Popconfirm 气泡确认（非居中 Modal）：
             // i18n 是单句 "X？Y。" 结构，按 ? / ？ 拆成 title + description 以换行呈现
@@ -654,23 +754,39 @@ function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, 
               </Popconfirm>
             );
           })()}
-          {SpeechRec && (
-            <button
-              type="button"
-              className={`${styles.micBtn}${recording ? ` ${styles.micBtnRecording}` : ''}`}
-              onClick={toggleRecording}
-              title={t(recording ? 'ui.chatInput.voiceStop' : 'ui.chatInput.voiceStart')}
-              aria-label={t(recording ? 'ui.chatInput.voiceStop' : 'ui.chatInput.voiceStart')}
-              aria-pressed={recording}
+          {/* Left-cluster prompt-nav entry: rendered only in the SDK layout (micOnRight).
+              Click opens a Popover driven by ChatView's promptNavPopover bundle. The legacy
+              layout (--terminal with the PTY shown, mobile) keeps the mic in this slot
+              instead — the two layouts are mutually exclusive via micOnRight. */}
+          {micOnRight && promptNavPopover && (
+            <Popover
+              trigger="click"
+              placement="topLeft"
+              arrow={{ pointAtCenter: true }}
+              autoAdjustOverflow={false}
+              align={{ overflow: { adjustX: true, shiftY: true } }}
+              overlayStyle={{ maxWidth: 400 }}
+              overlayInnerStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-light)', padding: 0 }}
+              open={promptNavPopover.open}
+              onOpenChange={promptNavPopover.onOpenChange}
+              content={promptNavPopover.content}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                <line x1="12" y1="19" x2="12" y2="23"/>
-                <line x1="8" y1="23" x2="16" y2="23"/>
-              </svg>
-            </button>
+              <button
+                type="button"
+                className={styles.plusBtn}
+                title={t('ui.userPromptNav')}
+                aria-label={t('ui.userPromptNav')}
+              >
+                <img
+                  src={promptNavPopover.avatarSrc}
+                  className={styles.plusBtnAvatar}
+                  alt=""
+                  aria-hidden="true"
+                />
+              </button>
+            </Popover>
           )}
+          {!micOnRight && micButton}
           </div>
           {/* Middle: blood-bar portal slot. Mounted with the composer (hidden only on pure phones);
               in SDK mode terminalVisible is the scratch toggle, so the slot survives scratch open/close
@@ -688,6 +804,7 @@ function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, 
           {proxyChip && (
             <div className={styles.proxyChipSlot}>{proxyChip}</div>
           )}
+          {micOnRight && micButton}
           <div className={styles.sendBtnWrap}>
             {isStreaming && onStop ? (
               <button

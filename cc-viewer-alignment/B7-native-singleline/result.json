@@ -1,0 +1,608 @@
+{
+  "nativeCodex": "0.169.0",
+  "localCannedModel": true,
+  "nativeSidsUnchanged": true,
+  "oneAtomicTransactionPerInput": true,
+  "cases": [
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "ownerIndex": 0,
+      "nativeSid": "01a1ff02-c057-7791-8507-a062b6dbe4b0",
+      "iteration": 0,
+      "marker": "B7 SINGLE chromium 0 0 1795280249933",
+      "length": 36,
+      "submitted": true,
+      "echoed": true,
+      "wire": [
+        {
+          "at": 1795280249967,
+          "msg": {
+            "type": "input-sequential",
+            "seq": "chat-mwqniagc-1",
+            "chunks": [
+              "\u001b[200~B7 SINGLE chromium 0 0 1795280249933\u001b[201~",
+              "\r"
+            ],
+            "settleMs": 250
+          }
+        }
+      ]
+    },
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "ownerIndex": 0,
+      "nativeSid": "01a1ff02-c057-7791-8507-a062b6dbe4b0",
+      "iteration": 1,
+      "marker": "B7 SINGLE chromium 0 1 1795280250539",
+      "length": 846,
+      "submitted": true,
+      "echoed": true,
+      "wire": [
+        {
+          "at": 1795280250547,
+          "msg": {
+            "type": "input-sequential",
+            "seq": "chat-mwqniawh-2",
+            "chunks": [
+              "\u001b[200~B7 SINGLE chromium 0 1 1795280250539 abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz\u001b[201~",
+              "\r"
+            ],
+            "settleMs": 250
+          }
+        }
+      ]
+    },
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "ownerIndex": 0,
+      "nativeSid": "01a1ff02-c057-7791-8507-a062b6dbe4b0",
+      "iteration": 2,
+      "marker": "B7 SINGLE chromium 0 2 1795280251285",
+      "length": 43,
+      "submitted": true,
+      "echoed": true,
+      "wire": [
+        {
+          "at": 1795280251295,
+          "msg": {
+            "type": "input-sequential",
+            "seq": "chat-mwqnibh8-3",
+            "chunks": [
+              "\u001b[200~B7 SINGLE chromium 0 2 1795280251285 中文单行输入\u001b[201~",
+              "\r"
+            ],
+            "settleMs": 250
+          }
+        }
+      ]
+    },
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "ownerIndex": 0,
+      "nativeSid": "01a1ff02-c057-7791-8507-a062b6dbe4b0",
+      "iteration": 3,
+      "marker": "B7 SINGLE chromium 0 3 1795280251873",
+      "length": 36,
+      "submitted": true,
+      "echoed": true,
+      "wire": [
+        {
+          "at": 1795280251881,
+          "msg": {
+            "type": "input-sequential",
+            "seq": "chat-mwqnibxj-4",
+            "chunks": [
+              "\u001b[200~B7 SINGLE chromium 0 3 1795280251873\u001b[201~",
+              "\r"
+            ],
+            "settleMs": 250
+          }
+        }
+      ]
+    },
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "ownerIndex": 0,
+      "nativeSid": "01a1ff02-c057-7791-8507-a062b6dbe4b0",
+      "iteration": 4,
+      "marker": "B7 SINGLE chromium 0 4 1795280252434",
+      "length": 846,
+      "submitted": true,
+      "echoed": true,
+      "wire": [
+        {
+          "at": 1795280252443,
+          "msg": {
+            "type": "input-sequential",
+            "seq": "chat-mwqnicd5-5",
+            "chunks": [
+              "\u001b[200~B7 SINGLE chromium 0 4 1795280252434 abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz\u001b[201~",
+              "\r"
+            ],
+            "settleMs": 250
+          }
+        }
+      ]
+    },
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "ownerIndex": 0,
+      "nativeSid": "01a1ff02-c057-7791-8507-a062b6dbe4b0",
+      "iteration": 5,
+      "marker": "B7 SINGLE chromium 0 5 1795280253230",
+      "length": 43,
+      "submitted": true,
+      "echoed": true,
+      "wire": [
+        {
+          "at": 1795280253239,
+          "msg": {
+            "type": "input-sequential",
+            "seq": "chat-mwqnicz9-6",
+            "chunks": [
+              "\u001b[200~B7 SINGLE chromium 0 5 1795280253230 中文单行输入\u001b[201~",
+              "\r"
+            ],
+            "settleMs": 250
+          }
+        }
+      ]
+    },
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "ownerIndex": 1,
+      "nativeSid": "01a1ff05-4d42-7583-9e1f-0ff3e3f9e32d",
+      "iteration": 0,
+      "marker": "B7 SINGLE chromium 1 0 1795280254322",
+      "length": 36,
+      "submitted": true,
+      "echoed": true,
+      "wire": [
+        {
+          "at": 1795280254335,
+          "msg": {
+            "type": "input-sequential",
+            "seq": "chat-mwqnidtm-1",
+            "chunks": [
+              "\u001b[200~B7 SINGLE chromium 1 0 1795280254322\u001b[201~",
+              "\r"
+            ],
+            "settleMs": 250
+          }
+        }
+      ]
+    },
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "ownerIndex": 1,
+      "nativeSid": "01a1ff05-4d42-7583-9e1f-0ff3e3f9e32d",
+      "iteration": 1,
+      "marker": "B7 SINGLE chromium 1 1 1795280256754",
+      "length": 846,
+      "submitted": true,
+      "echoed": true,
+      "wire": [
+        {
+          "at": 1795280256766,
+          "msg": {
+            "type": "input-sequential",
+            "seq": "chat-mwqnifp6-2",
+            "chunks": [
+              "\u001b[200~B7 SINGLE chromium 1 1 1795280256754 abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz\u001b[201~",
+              "\r"
+            ],
+            "settleMs": 250
+          }
+        }
+      ]
+    },
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "ownerIndex": 1,
+      "nativeSid": "01a1ff05-4d42-7583-9e1f-0ff3e3f9e32d",
+      "iteration": 2,
+      "marker": "B7 SINGLE chromium 1 2 1795280257426",
+      "length": 43,
+      "submitted": true,
+      "echoed": true,
+      "wire": [
+        {
+          "at": 1795280257436,
+          "msg": {
+            "type": "input-sequential",
+            "seq": "chat-mwqnig7t-3",
+            "chunks": [
+              "\u001b[200~B7 SINGLE chromium 1 2 1795280257426 中文单行输入\u001b[201~",
+              "\r"
+            ],
+            "settleMs": 250
+          }
+        }
+      ]
+    },
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "ownerIndex": 1,
+      "nativeSid": "01a1ff05-4d42-7583-9e1f-0ff3e3f9e32d",
+      "iteration": 3,
+      "marker": "B7 SINGLE chromium 1 3 1795280257993",
+      "length": 36,
+      "submitted": true,
+      "echoed": true,
+      "wire": [
+        {
+          "at": 1795280258000,
+          "msg": {
+            "type": "input-sequential",
+            "seq": "chat-mwqnignj-4",
+            "chunks": [
+              "\u001b[200~B7 SINGLE chromium 1 3 1795280257993\u001b[201~",
+              "\r"
+            ],
+            "settleMs": 250
+          }
+        }
+      ]
+    },
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "ownerIndex": 1,
+      "nativeSid": "01a1ff05-4d42-7583-9e1f-0ff3e3f9e32d",
+      "iteration": 4,
+      "marker": "B7 SINGLE chromium 1 4 1795280258909",
+      "length": 846,
+      "submitted": true,
+      "echoed": true,
+      "wire": [
+        {
+          "at": 1795280258918,
+          "msg": {
+            "type": "input-sequential",
+            "seq": "chat-mwqnihd0-5",
+            "chunks": [
+              "\u001b[200~B7 SINGLE chromium 1 4 1795280258909 abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz\u001b[201~",
+              "\r"
+            ],
+            "settleMs": 250
+          }
+        }
+      ]
+    },
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "ownerIndex": 1,
+      "nativeSid": "01a1ff05-4d42-7583-9e1f-0ff3e3f9e32d",
+      "iteration": 5,
+      "marker": "B7 SINGLE chromium 1 5 1795280259648",
+      "length": 43,
+      "submitted": true,
+      "echoed": true,
+      "wire": [
+        {
+          "at": 1795280259657,
+          "msg": {
+            "type": "input-sequential",
+            "seq": "chat-mwqnihxj-6",
+            "chunks": [
+              "\u001b[200~B7 SINGLE chromium 1 5 1795280259648 中文单行输入\u001b[201~",
+              "\r"
+            ],
+            "settleMs": 250
+          }
+        }
+      ]
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "ownerIndex": 0,
+      "nativeSid": "01a1ff02-c057-7791-8507-a062b6dbe4b0",
+      "iteration": 0,
+      "marker": "B7 SINGLE webkit 0 0 1795280261253",
+      "length": 34,
+      "submitted": true,
+      "echoed": true,
+      "wire": [
+        {
+          "at": 1795280261277,
+          "msg": {
+            "type": "input-sequential",
+            "seq": "chat-mwqnij6l-1",
+            "chunks": [
+              "\u001b[200~B7 SINGLE webkit 0 0 1795280261253\u001b[201~",
+              "\r"
+            ],
+            "settleMs": 250
+          }
+        }
+      ]
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "ownerIndex": 0,
+      "nativeSid": "01a1ff02-c057-7791-8507-a062b6dbe4b0",
+      "iteration": 1,
+      "marker": "B7 SINGLE webkit 0 1 1795280261826",
+      "length": 844,
+      "submitted": true,
+      "echoed": true,
+      "wire": [
+        {
+          "at": 1795280261841,
+          "msg": {
+            "type": "input-sequential",
+            "seq": "chat-mwqnijm9-2",
+            "chunks": [
+              "\u001b[200~B7 SINGLE webkit 0 1 1795280261826 abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz\u001b[201~",
+              "\r"
+            ],
+            "settleMs": 250
+          }
+        }
+      ]
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "ownerIndex": 0,
+      "nativeSid": "01a1ff02-c057-7791-8507-a062b6dbe4b0",
+      "iteration": 2,
+      "marker": "B7 SINGLE webkit 0 2 1795280262500",
+      "length": 41,
+      "submitted": true,
+      "echoed": true,
+      "wire": [
+        {
+          "at": 1795280262514,
+          "msg": {
+            "type": "input-sequential",
+            "seq": "chat-mwqnik4y-3",
+            "chunks": [
+              "\u001b[200~B7 SINGLE webkit 0 2 1795280262500 中文单行输入\u001b[201~",
+              "\r"
+            ],
+            "settleMs": 250
+          }
+        }
+      ]
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "ownerIndex": 0,
+      "nativeSid": "01a1ff02-c057-7791-8507-a062b6dbe4b0",
+      "iteration": 3,
+      "marker": "B7 SINGLE webkit 0 3 1795280263113",
+      "length": 34,
+      "submitted": true,
+      "echoed": true,
+      "wire": [
+        {
+          "at": 1795280263125,
+          "msg": {
+            "type": "input-sequential",
+            "seq": "chat-mwqniklx-4",
+            "chunks": [
+              "\u001b[200~B7 SINGLE webkit 0 3 1795280263113\u001b[201~",
+              "\r"
+            ],
+            "settleMs": 250
+          }
+        }
+      ]
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "ownerIndex": 0,
+      "nativeSid": "01a1ff02-c057-7791-8507-a062b6dbe4b0",
+      "iteration": 4,
+      "marker": "B7 SINGLE webkit 0 4 1795280263779",
+      "length": 844,
+      "submitted": true,
+      "echoed": true,
+      "wire": [
+        {
+          "at": 1795280263795,
+          "msg": {
+            "type": "input-sequential",
+            "seq": "chat-mwqnil4j-5",
+            "chunks": [
+              "\u001b[200~B7 SINGLE webkit 0 4 1795280263779 abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz\u001b[201~",
+              "\r"
+            ],
+            "settleMs": 250
+          }
+        }
+      ]
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "ownerIndex": 0,
+      "nativeSid": "01a1ff02-c057-7791-8507-a062b6dbe4b0",
+      "iteration": 5,
+      "marker": "B7 SINGLE webkit 0 5 1795280264481",
+      "length": 41,
+      "submitted": true,
+      "echoed": true,
+      "wire": [
+        {
+          "at": 1795280264491,
+          "msg": {
+            "type": "input-sequential",
+            "seq": "chat-mwqnilnv-6",
+            "chunks": [
+              "\u001b[200~B7 SINGLE webkit 0 5 1795280264481 中文单行输入\u001b[201~",
+              "\r"
+            ],
+            "settleMs": 250
+          }
+        }
+      ]
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "ownerIndex": 1,
+      "nativeSid": "01a1ff05-4d42-7583-9e1f-0ff3e3f9e32d",
+      "iteration": 0,
+      "marker": "B7 SINGLE webkit 1 0 1795280265732",
+      "length": 34,
+      "submitted": true,
+      "echoed": true,
+      "wire": [
+        {
+          "at": 1795280265746,
+          "msg": {
+            "type": "input-sequential",
+            "seq": "chat-mwqnimmp-1",
+            "chunks": [
+              "\u001b[200~B7 SINGLE webkit 1 0 1795280265732\u001b[201~",
+              "\r"
+            ],
+            "settleMs": 250
+          }
+        }
+      ]
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "ownerIndex": 1,
+      "nativeSid": "01a1ff05-4d42-7583-9e1f-0ff3e3f9e32d",
+      "iteration": 1,
+      "marker": "B7 SINGLE webkit 1 1 1795280268131",
+      "length": 844,
+      "submitted": true,
+      "echoed": true,
+      "wire": [
+        {
+          "at": 1795280268139,
+          "msg": {
+            "type": "input-sequential",
+            "seq": "chat-mwqnioh7-2",
+            "chunks": [
+              "\u001b[200~B7 SINGLE webkit 1 1 1795280268131 abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz\u001b[201~",
+              "\r"
+            ],
+            "settleMs": 250
+          }
+        }
+      ]
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "ownerIndex": 1,
+      "nativeSid": "01a1ff05-4d42-7583-9e1f-0ff3e3f9e32d",
+      "iteration": 2,
+      "marker": "B7 SINGLE webkit 1 2 1795280268796",
+      "length": 41,
+      "submitted": true,
+      "echoed": true,
+      "wire": [
+        {
+          "at": 1795280268807,
+          "msg": {
+            "type": "input-sequential",
+            "seq": "chat-mwqniozq-3",
+            "chunks": [
+              "\u001b[200~B7 SINGLE webkit 1 2 1795280268796 中文单行输入\u001b[201~",
+              "\r"
+            ],
+            "settleMs": 250
+          }
+        }
+      ]
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "ownerIndex": 1,
+      "nativeSid": "01a1ff05-4d42-7583-9e1f-0ff3e3f9e32d",
+      "iteration": 3,
+      "marker": "B7 SINGLE webkit 1 3 1795280269443",
+      "length": 34,
+      "submitted": true,
+      "echoed": true,
+      "wire": [
+        {
+          "at": 1795280269454,
+          "msg": {
+            "type": "input-sequential",
+            "seq": "chat-mwqniphp-4",
+            "chunks": [
+              "\u001b[200~B7 SINGLE webkit 1 3 1795280269443\u001b[201~",
+              "\r"
+            ],
+            "settleMs": 250
+          }
+        }
+      ]
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "ownerIndex": 1,
+      "nativeSid": "01a1ff05-4d42-7583-9e1f-0ff3e3f9e32d",
+      "iteration": 4,
+      "marker": "B7 SINGLE webkit 1 4 1795280270062",
+      "length": 844,
+      "submitted": true,
+      "echoed": true,
+      "wire": [
+        {
+          "at": 1795280270080,
+          "msg": {
+            "type": "input-sequential",
+            "seq": "chat-mwqnipz4-5",
+            "chunks": [
+              "\u001b[200~B7 SINGLE webkit 1 4 1795280270062 abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz\u001b[201~",
+              "\r"
+            ],
+            "settleMs": 250
+          }
+        }
+      ]
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "ownerIndex": 1,
+      "nativeSid": "01a1ff05-4d42-7583-9e1f-0ff3e3f9e32d",
+      "iteration": 5,
+      "marker": "B7 SINGLE webkit 1 5 1795280270939",
+      "length": 41,
+      "submitted": true,
+      "echoed": true,
+      "wire": [
+        {
+          "at": 1795280270949,
+          "msg": {
+            "type": "input-sequential",
+            "seq": "chat-mwqniqn9-6",
+            "chunks": [
+              "\u001b[200~B7 SINGLE webkit 1 5 1795280270939 中文单行输入\u001b[201~",
+              "\r"
+            ],
+            "settleMs": 250
+          }
+        }
+      ]
+    }
+  ]
+}

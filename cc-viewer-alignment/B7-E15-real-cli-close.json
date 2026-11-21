@@ -1,0 +1,9 @@
+{
+  "cli": 20852,
+  "transport": "pty",
+  "bootSurvivedCloseB": true,
+  "closedWorkspaceProcesses": 3,
+  "totalOwnedProcesses": 10,
+  "remaining": [],
+  "nativeAndPty": true
+}

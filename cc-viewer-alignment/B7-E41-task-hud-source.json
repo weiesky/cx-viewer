@@ -1,0 +1,32 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "sourceCommits": [
+    "1c5fadafbf730e1e4a0639d238809dfefd710347",
+    "bf2d6f2ad8fba572239cc8ee9ccc7d22f4b6d6ab",
+    "01ff6d85e8aa565c81b6b3c3c92f7e24c06c53a7",
+    "d906edb3de840208944bbca9d33ec037bdeb6bc5",
+    "0cde7d1df8f15fdbac23be941e367e5d577159de"
+  ],
+  "entireHudCssExact": true,
+  "cssSha256": "0123f963458f1bec09d8518bda4d4d66b1e47d0284efebad1bec046fc3115554",
+  "existingNativeSDKStyleComponentReused": true,
+  "ordinarySource": "exact-owned root turn/plan/updated; native inProgress to existing in_progress snapshot; no hook names invented",
+  "validation": "226 tests; actual PTY/runtime/bridge/server with controlled native JSON-RPC; Chromium/WebKit 6 cases / 12 shots",
+  "installedNativeFixture": {
+    "version": "0.169.0",
+    "observedAdvertisedTools": [
+      "exec_command",
+      "write_stdin",
+      "request_user_input",
+      "view_image",
+      "multi_agent_v1",
+      "get_goal",
+      "create_goal",
+      "update_goal",
+      "web_search"
+    ],
+    "updatePlanAdvertised": false,
+    "actualModelProducingPlanEventVerified": false
+  },
+  "boundary": "No forced native feature or goals-to-plan invention; controlled protocol GUI is not an external model or installed native plan-tool execution claim."
+}

@@ -1,0 +1,19 @@
+{
+  "components/chat/SlashCommandMenu.jsx": {
+    "exactBytes": true,
+    "sha256": "8387735214e80f801b34c0bf41a6537cf5478c9a99f27d1e61288ea3bee14974"
+  },
+  "components/chat/SlashCommandMenu.module.css": {
+    "exactBytes": true,
+    "sha256": "0ee95e2f0032ccb7b2e2ec50fdf099f3405a800be054def61d2b865259c13a83"
+  },
+  "triggerFunctionExact": true,
+  "nativeAdaptations": [
+    "actual skills/list instead of supportedCommands",
+    "actual file fallback excludes path-null builtin placeholders",
+    "successful native empty catalog stays empty",
+    "selection fills native $name by user choice",
+    "no invented plugin alias or Claude descriptions",
+    "SDK scratch visible composer supports menu"
+  ]
+}

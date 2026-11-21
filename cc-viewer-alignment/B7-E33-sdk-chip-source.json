@@ -1,0 +1,26 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "commits": [
+    "1aca9b5f8f207903a7516a8036a7fa590808ca16",
+    "1e0edc00f3992edbeb47208e7326977101344f1b"
+  ],
+  "exactSharedHelperFunctions": {
+    "sameScope": "4258157904bb5461bb61cf8f5107e7918df5842e0b4e6e12bbf1371903a757ba",
+    "userTexts": "5a7be62e9f39af45779fce54404cc9ab6eedfbb058d2ad6739762e9ff7a1e392",
+    "reconcileOptimisticQueueMessages": "1c8e1bbef9213152a2a4819c7fdd03c664c22516be9ca61c15eab7fd846733d5",
+    "captureOptimisticQueueTextCounts": "cf92d6e6f275b68f9c7aa173b4f1d54231e48bf864b6827c5e209e4f902fe23a"
+  },
+  "exactTimerBodies": {
+    "_scheduleOptimisticQueueSweep": "631e5fa5d6c6949890e82b40fcce54445d85776e306203f6ba3743424538870c",
+    "_sweepExpiredOptimisticQueueMessages": "fbffb96c9ae9665082d59b6f5fc2dd0e3ba73f176e18c09b20978fe113eb4f5a",
+    "_clearOptimisticQueueSweepTimer": "ee9bb52dceb3b9361c1a2084cb951c51460a530ad21fe0f4108beb6f5b107969"
+  },
+  "exactSdkPlaceholderJsxBody": true,
+  "nativeAdaptations": [
+    "only actual native user messages counted; no Claude system steering or _ccvQueuedPrompts inference",
+    "SDK queue epoch and exact URL instance/native resume scope",
+    "existing authoritative activeInput suppresses duplicates and clears retired input IDs",
+    "native history/user-role visibility gate; ordinary queue mirror retained"
+  ],
+  "css": "existing optimisticQueueStatus source block reused; no new stylesheet"
+}

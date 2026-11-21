@@ -1,0 +1,19 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "commits": [
+    "dafe2bce374df1daf3e81526a4b42c9189e620f0",
+    "1aca9b5f8f207903a7516a8036a7fa590808ca16"
+  ],
+  "queueCssBlockExact": true,
+  "sha256": "b5bc230cafea7a3aa9f8e8b1372ef6e364bb0e8808e7667fb3a589cb23bf474f",
+  "ui": "original queue stack/row/text/remove/send-now; existing B4 CSS reused unchanged",
+  "nativeAdaptations": [
+    "capability gate from actual PTY registry",
+    "exact owning handshake scope",
+    "requestId ack/rejection recovery and reconnect correlation",
+    "no PTY optimistic conversation bubble: baseline final optimistic placeholder is SDK-only"
+  ],
+  "freshCheckoutHead": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "freshCheckout": "/tmp/cxv-cc-viewer-research-20261122",
+  "fixedFinalOptimisticScope": "SDK-only: actual final JSX gate sdkMode; ordinary PTY uses authoritative queue + actual native user echo"
+}

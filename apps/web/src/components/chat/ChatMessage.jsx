@@ -7,6 +7,7 @@ import { formatHms, formatMonthDayTime } from '../../utils/formatters';
 import { compactResultPreview, hasInlineToolResultImage } from '../../utils/toolResultCore.js';
 import { extractWebResultGroups } from '../../utils/webResultGrouping';
 import { mergeThinkingBlocks } from '../../utils/thinkingMerge';
+import { isFullDisplayTool } from '../../utils/toolDisplayPolicy.js';
 import WebResultsView from '../viewers/WebResultsView';
 import MarkdownBlock from '../viewers/MarkdownBlock';
 import { IM_SOURCE_ICONS } from '../settings/imPlatforms';
@@ -182,7 +183,7 @@ class ChatMessage extends React.Component {
       p.onDangerousApprovalClick !== n.onDangerousApprovalClick || p.onAskQuestionSubmit !== n.onAskQuestionSubmit ||
       p.onAskQuestionCancel !== n.onAskQuestionCancel ||
       p.askMetaMap !== n.askMetaMap ||
-      p.lang !== n.lang ||
+      p.lang !== n.lang || p.runMembers !== n.runMembers || p.runMember !== n.runMember || p.minimalChat !== n.minimalChat || p.runIdentity !== n.runIdentity ||
       p.taskNotification?.taskId !== n.taskNotification?.taskId;
   }
 
@@ -1032,8 +1033,10 @@ class ChatMessage extends React.Component {
       // 避免同一大图被再次挂载、解码。远程图片仍维持原有按需预览行为。
       const previewImages = hasInlineToolResultImage(tr) ? [] : (preview?.images || []);
       const hasPreview = !!preview && (!!preview.text || previewImages.length > 0);
+      const runTime = this.props.runMember ? this.formatTime(this.props.timestamp) : null;
       return (
         <div className={styles.simplifiedToolPopoverContent}>
+          {runTime && <div className={styles.toolRunPopoverTime}>{runTime}</div>}
           {this.renderToolCall(tu)}
           {hasPreview && (
             <div className={styles.simplifiedToolResultPreview}>
@@ -1205,6 +1208,13 @@ class ChatMessage extends React.Component {
     textBlocks.forEach((tb, i) => {
       if (tb.text) {
         const { segments } = renderAssistantText(tb.text);
+        // Blank-whitespace text ('   ', '\n\n') is truthy but parses to zero
+        // segments — pushing chat-boxer here would render a visible empty
+        // bubble (chat-boxer has background/border/padding even with no
+        // children). Gate on the real render condition (segments), not on
+        // re-trimming, so a whitespace-only block yields no wrapper while a
+        // legal empty system-tag (a system-tag segment) still renders.
+        if (segments.length === 0) return;
         const isCursorTarget = i === lastTextIdxWithContent;
         innerContent.push(
           <div key={`text-${i}`} className="chat-boxer">{this.renderSegments(segments, isCursorTarget)}</div>
@@ -1213,11 +1223,11 @@ class ChatMessage extends React.Component {
     });
 
     const simplify = !this.props.showFullToolContent;
-    let simplifiedLabelAdded = false;
+    let simplifiedLabelAdded = !!this.props.runMember;
     toolUseBlocks.forEach((tu, tuIdx) => {
       const tr = toolResultMap[tu.id];
-      const isFullDisplayTool = tu.name === 'apply_patch' || this._getToolPatchOperations(tu).length > 0 || isPlanToolName(tu.name) || isAskToolName(tu.name) || tu.name === 'Workflow';
-      if (simplify && !isFullDisplayTool) {
+      const fullDisplay = isFullDisplayTool(tu.name) || this._getToolPatchOperations(tu).length > 0;
+      if (simplify && !fullDisplay) {
         // 简化模式：首个标签前加 "使用工具: " 标签
         if (!simplifiedLabelAdded) {
           simplifiedLabelAdded = true;
@@ -1279,7 +1289,7 @@ class ChatMessage extends React.Component {
       }
     }
     const simplify = !this.props.showFullToolContent;
-    let simplifiedLabelAdded = false;
+    let simplifiedLabelAdded = !!this.props.runMember;
 
     // 3. groups 索引：globalIndex → group object（按 serverToolUseIndex 或 webSearchResultIndex）
     const groupStartMap = new Map();
@@ -1305,6 +1315,10 @@ class ChatMessage extends React.Component {
       if (block.type === 'text') {
         if (!block.text) continue;
         const { segments } = renderAssistantText(block.text);
+        // Same zero-segment guard as the legacy path: a whitespace-only text
+        // block parses to [] yet is truthy, and the chat-boxer wrapper is
+        // visible even with no children. Skip before creating the wrapper.
+        if (segments.length === 0) continue;
         const isCursorTarget = i === lastTextGlobalIdx;
         innerContent.push(
           <div key={`text-${i}`} className="chat-boxer">{this.renderSegments(segments, isCursorTarget)}</div>
@@ -1316,8 +1330,8 @@ class ChatMessage extends React.Component {
         const tu = block;
         const tuIdxInList = toolUseGlobalIndices.indexOf(i);
         const tr = toolResultMap[tu.id];
-        const isFullDisplayTool = tu.name === 'apply_patch' || this._getToolPatchOperations(tu).length > 0 || isPlanToolName(tu.name) || isAskToolName(tu.name) || tu.name === 'Workflow';
-        if (simplify && !isFullDisplayTool) {
+        const fullDisplay = isFullDisplayTool(tu.name) || this._getToolPatchOperations(tu).length > 0;
+        if (simplify && !fullDisplay) {
           if (!simplifiedLabelAdded) {
             simplifiedLabelAdded = true;
             innerContent.push(
@@ -1415,11 +1429,14 @@ class ChatMessage extends React.Component {
   }
 
   renderAssistantMessage() {
-    const { content, toolResultMap = {}, modelInfo, timestamp, requestIndex, onViewRequest, showTrailingCursor, showFullToolContent, imAgent, isTeammate, label } = this.props;
+    const { content, toolResultMap = {} } = this.props;
     const innerContent = this.renderAssistantContent(content, toolResultMap);
-
     if (innerContent.length === 0) return null;
+    return this._renderAssistantShell(innerContent);
+  }
 
+  _renderAssistantShell(innerContent) {
+    const { modelInfo, timestamp, requestIndex, onViewRequest, showTrailingCursor, showFullToolContent, imAgent, isTeammate, label } = this.props;
     // Teammate session logs render the transcript's assistant turns with the
     // TEAMMATE's identity (portrait + name label) — model identity here would
     // read as the MainAgent speaking in the teammate's own log. Main-view
@@ -1457,10 +1474,14 @@ class ChatMessage extends React.Component {
   }
 
   renderSubAgentChatMessage() {
-    const { content, toolResultMap = {}, label } = this.props;
+    const { content, toolResultMap = {} } = this.props;
     const innerContent = this.renderAssistantContent(content, toolResultMap);
-
     if (innerContent.length === 0) return null;
+    return this._renderSubAgentShell(innerContent);
+  }
+
+  _renderSubAgentShell(innerContent) {
+    const { label } = this.props;
     return (
       <div className={styles.messageRowEnd}>
         <div className={styles.contentColLimited}>
@@ -1633,8 +1654,64 @@ class ChatMessage extends React.Component {
     );
   }
 
+  // ===== Minimal-chat merged tool runs (see utils/toolRunMerge.js) =====
+
+  // The merged bubble: identity/header props are inherited from the run's last
+  // assistant member (cloneElement), children are the member elements, each
+  // rendering in runMember mode (content only, no shell of its own).
+  renderToolRun() {
+    const { role, runMembers } = this.props;
+    if (role === 'sub-agent-chat') return this._renderSubAgentShell(runMembers);
+    return this._renderAssistantShell(runMembers);
+  }
+
+  renderRunMember() {
+    const { role, content, toolResultMap = {} } = this.props;
+    if (role === 'system') return this.renderSystemNoteIcon();
+    if (role === 'assistant' || role === 'sub-agent-chat') {
+      return <>{this.renderAssistantContent(content, toolResultMap)}</>;
+    }
+    return null;
+  }
+
+  // Appended system prompt folded into a merged run: a grey Claude starburst
+  // whose popover carries the timestamp + full text (hover on desktop, tap on
+  // mobile — same trigger policy as the tool pills).
+  renderSystemNoteIcon() {
+    const { text, timestamp } = this.props;
+    if (!text || !String(text).trim()) return null;
+    const timeStr = this.formatTime(timestamp);
+    const renderContent = () => (
+      <div className={styles.simplifiedToolPopoverContent}>
+        <div className={styles.toolRunPopoverTime}>{t('ui.systemMessage')}{timeStr ? ` · ${timeStr}` : ''}</div>
+        <div className={styles.toolRunSystemBody}><MarkdownBlock text={String(text)} /></div>
+      </div>
+    );
+    return (
+      <Popover
+        placement="top"
+        overlayClassName="simplifiedToolPopover"
+        overlayInnerStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-hover)', borderRadius: 8, padding: 0 }}
+        content={renderContent}
+        destroyTooltipOnHide
+        mouseEnterDelay={0.3}
+        {...((isMobile && !isPad) ? { trigger: 'click', ...(!isIOS && { getPopupContainer: (node) => node.parentElement }) } : {})}
+      >
+        <span
+          className={styles.toolRunSystemLogo}
+          role="img"
+          tabIndex={0}
+          aria-label={t('ui.systemMessage')}
+          dangerouslySetInnerHTML={{ __html: getSvgAvatar('system') }}
+        />
+      </Popover>
+    );
+  }
+
   render() {
     const { role } = this.props;
+    if (this.props.runMembers) return this.renderToolRun();
+    if (this.props.runMember) return this.renderRunMember();
     if (role === 'user') return this.renderUserMessage();
     if (role === 'skill-loaded') return this.renderSkillLoadedMessage();
     if (role === 'plan-prompt') return this.renderPlanPromptMessage();

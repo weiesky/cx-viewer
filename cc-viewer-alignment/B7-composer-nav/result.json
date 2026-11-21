@@ -1,0 +1,104 @@
+[
+  {
+    "engine": "chromium",
+    "version": "159.0.8154.6",
+    "mode": "sdk",
+    "emulated": false,
+    "micSide": "_chatInputBottomRight_136tf_82",
+    "syntheticSpeechOnly": true,
+    "screenshots": [
+      "chromium-sdk-popover.png",
+      "chromium-sdk-more.png",
+      "chromium-sdk-scratch.png"
+    ],
+    "errors": []
+  },
+  {
+    "engine": "chromium",
+    "version": "159.0.8154.6",
+    "mode": "pty",
+    "emulated": false,
+    "micSide": "_chatInputBottomRight_136tf_82",
+    "syntheticSpeechOnly": true,
+    "screenshots": [
+      "chromium-pty-terminal-shown.png",
+      "chromium-pty-terminal-hidden.png"
+    ],
+    "errors": []
+  },
+  {
+    "engine": "chromium",
+    "version": "159.0.8154.6",
+    "mode": "pad",
+    "emulated": true,
+    "micSide": "_chatInputBottomLeft_136tf_80",
+    "syntheticSpeechOnly": true,
+    "screenshots": [
+      "chromium-pad-legacy.png"
+    ],
+    "errors": []
+  },
+  {
+    "engine": "chromium",
+    "version": "159.0.8154.6",
+    "mode": "phone",
+    "emulated": true,
+    "micSide": "_chatInputBottomLeft_136tf_80",
+    "syntheticSpeechOnly": true,
+    "screenshots": [
+      "chromium-phone-legacy.png"
+    ],
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "version": "27.2",
+    "mode": "sdk",
+    "emulated": false,
+    "micSide": "_chatInputBottomRight_136tf_82",
+    "syntheticSpeechOnly": true,
+    "screenshots": [
+      "webkit-sdk-popover.png",
+      "webkit-sdk-more.png",
+      "webkit-sdk-scratch.png"
+    ],
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "version": "27.2",
+    "mode": "pty",
+    "emulated": false,
+    "micSide": "_chatInputBottomRight_136tf_82",
+    "syntheticSpeechOnly": true,
+    "screenshots": [
+      "webkit-pty-terminal-shown.png",
+      "webkit-pty-terminal-hidden.png"
+    ],
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "version": "27.2",
+    "mode": "pad",
+    "emulated": true,
+    "micSide": "_chatInputBottomLeft_136tf_80",
+    "syntheticSpeechOnly": true,
+    "screenshots": [
+      "webkit-pad-legacy.png"
+    ],
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "version": "27.2",
+    "mode": "phone",
+    "emulated": true,
+    "micSide": "_chatInputBottomLeft_136tf_80",
+    "syntheticSpeechOnly": true,
+    "screenshots": [
+      "webkit-phone-legacy.png"
+    ],
+    "errors": []
+  }
+]

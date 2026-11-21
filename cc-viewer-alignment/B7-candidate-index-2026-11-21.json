@@ -1,0 +1,619 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "indexCounts": {
+    "cc-viewer-alignment/cc-viewer-alignment-commit-index.md": 21,
+    "cc-viewer-alignment/B0-cross-index.md": 72
+  },
+  "unionCount": 74,
+  "candidates": [
+    {
+      "upstream": "fc68e850f23ad28a453eb5219c8113c7165086f9",
+      "indices": [
+        "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "e4fc788b9e324c8b1604a20eac541d88bade78ec",
+      "indices": [
+        "cc-viewer-alignment/cc-viewer-alignment-commit-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "e12dcaded939f2d9bee67c226e03fc0aaed8d253",
+      "indices": [
+        "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "fcfef597ddaa3c754b641a13b6f989e1b83af775",
+      "indices": [
+        "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "20e6573b7c351fa710933ea58a36359fc01f4fb4",
+      "indices": [
+        "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "B7 render-window constants reviewed and migrated; other release/package scopes not claimed",
+      "b7Scopes": [
+        {
+          "scope": "desktop 800 / Android 400 / iOS 300 / load earlier +300",
+          "evidence": "B7-implementation.md#e36",
+          "sourceProof": "B7-E36-render-window-source.json",
+          "validation": "109/109 component regressions; real slicing/load-earlier/navigation-offset callback; build; no bulk mobile GUI claim"
+        }
+      ]
+    },
+    {
+      "upstream": "1c5fadafbf730e1e4a0639d238809dfefd710347",
+      "indices": [
+        "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "B7 original HUD/dots reused; ordinary native root-plan snapshot path implemented; installed native model producing plan events remains unverified",
+      "b7Scopes": [
+        {
+          "scope": "ordinary PTY task HUD / progress dots / accepted root-turn reset / exact-owner replay",
+          "evidence": "B7-implementation.md#e41",
+          "sourceProof": "B7-E41-task-hud-source.json",
+          "validation": "226/226, build, controlled native protocol through actual PTY+bridge+server, dual engine desktop/pad/phone 6 cases/12 images; installed native plan tool not claimed"
+        }
+      ]
+    },
+    {
+      "upstream": "a70440ee62bf74decd27cbde976f72f94aaecc3a",
+      "indices": [
+        "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "aa584229562d8a511023e10a79119424b0e56d52",
+      "indices": [
+        "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "caaab3d12fd8ea8849d4264a1b9f1ed5d15e1ec0",
+      "indices": [
+        "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "6880f77320fa163442eaa64ff6385dc46a1b69f1",
+      "indices": [
+        "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "d906edb3de840208944bbca9d33ec037bdeb6bc5",
+      "indices": [
+        "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "3bd2aa96961379537a8ccfb50667cab4b2335aa9",
+      "indices": [
+        "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "117ee25de22e82dd4891e98c88117a7d5c704ffe",
+      "indices": [
+        "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "1e0edc00f3992edbeb47208e7326977101344f1b",
+      "indices": [
+        "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "ebfcbaec0d5dac5621dcf5f4c38ecd8481b96c64",
+      "indices": [
+        "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "0cbb5452887476d3838c772e9fcd04cf3d01ce63",
+      "indices": [
+        "cc-viewer-alignment/cc-viewer-alignment-commit-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "791a5e18f8b9d6445fde737dab42e0d47d74a07e",
+      "indices": [
+        "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "d90ac9587dcd9caadee721cbbf26c43ecb5711ea",
+      "indices": [
+        "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "ff0fe1ba93defb633823eea8e9afa3d5ad065232",
+      "indices": [
+        "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "2e09d30192774017db5cb06d1783686c63b16031",
+      "indices": [
+        "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "478268a4db5aadb50be1396207b2c54093824c58",
+      "indices": [
+        "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "f3a8413db9f99691ef94f54279cedc2913e0c1f0",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "73e4b44ccdf0506117ddc96b7f83352fc6755501",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "efc7f8eab199a04f3b8dcb660a5bfde593138f66",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "7a2dd6162e1465071a755606d77de22d7c0caa90",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "dafe2bce374df1daf3e81526a4b42c9189e620f0",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "c185a7484e2a3f069977d522741efc02c885420d",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "f28d9cae37c40ddb456bd23a819b93105b224217",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "1af3d646c92433bf72e7c37230a557636550bbaa",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "57798b7ccc4d38c0cfa7535ba6c299ce8cfa45e8",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "bf2d6f2ad8fba572239cc8ee9ccc7d22f4b6d6ab",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "B7 original HUD/dots reused; ordinary native root-plan snapshot path implemented; installed native model producing plan events remains unverified",
+      "b7Scopes": [
+        {
+          "scope": "ordinary PTY task HUD / progress dots / accepted root-turn reset / exact-owner replay",
+          "evidence": "B7-implementation.md#e41",
+          "sourceProof": "B7-E41-task-hud-source.json",
+          "validation": "226/226, build, controlled native protocol through actual PTY+bridge+server, dual engine desktop/pad/phone 6 cases/12 images; installed native plan tool not claimed"
+        }
+      ]
+    },
+    {
+      "upstream": "d7f355ba895e24bb5e46c820a7d3105a76018ea3",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "0670581b3dd0bcecebc1a88d8a032f295b6ada66",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "8923322f88def98fc3ccaa66d921aa2e3a1c0133",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "eb2e9703a2837550a9bf2a62a8bb5d20fac7f723",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "649f853e5e910b3fd1a964f441682d4f08499d2b",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "7f7f78e2d8c04ae578c892981acde12999ed1d05",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "c4529a6ed7a81c7ddd4564915735a06e123890ab",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "a07464187c0b4e3a7a0c3d02f0f4b4c8d69069fd",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "2dbe5cd695a965f51e4cee28d9c911e404675d46",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "4991ba762db4fdaf68450880dfd4d399d290eee0",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "67ceb5b7f0dcb7027843ef8d5e1cd2b5b4d1a506",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "a2be00c45b71be0faf6b8bf1e1e93916b9cc1eb7",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "B7 composer upload entry and effective hover repair reviewed/migrated",
+      "b7Scopes": [
+        {
+          "scope": "desktop (+) top-level upload row / remove old round button / collapse stale cascade",
+          "evidence": "B7-implementation.md#e37",
+          "sourceProof": "B7-E37-upload-menu-source.json",
+          "validation": "110/110, build, Chromium/WebKit ordinary+SDK desktop and SDK phone/pad 8 cases/8 screenshots; real file picker dispatch without uploading"
+        }
+      ]
+    },
+    {
+      "upstream": "9dbf4e295a08e472c0b15cfb66de1cc80c77cfa3",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "3cf3e9585f9f93cb59b021a81d789c8f4ef5e528",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "B7 composer upload entry and effective hover repair reviewed/migrated",
+      "b7Scopes": [
+        {
+          "scope": "desktop (+) top-level upload row / remove old round button / collapse stale cascade",
+          "evidence": "B7-implementation.md#e37",
+          "sourceProof": "B7-E37-upload-menu-source.json",
+          "validation": "110/110, build, Chromium/WebKit ordinary+SDK desktop and SDK phone/pad 8 cases/8 screenshots; real file picker dispatch without uploading"
+        }
+      ]
+    },
+    {
+      "upstream": "3c77d9a8ed200dc8a2dfa4976ad22e20714e57f1",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "a336d3919f585712a1dcc608515e29589c0621f5",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "B7 main terminal upload entry reviewed/migrated",
+      "b7Scopes": [
+        {
+          "scope": "upload first row / remove standalone round button / hover cancel and popover close",
+          "evidence": "B7-implementation.md#e38",
+          "sourceProof": "B7-E38-terminal-upload-source.json",
+          "validation": "111/111, build, Chromium/WebKit desktop+emulated pad 4 cases/4 screenshots, actual persistent file input picker"
+        }
+      ]
+    },
+    {
+      "upstream": "9967ebdbc2ea8e3ffded222ab2d2b7f708348697",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "B7 shared menu label reviewed/migrated exactly for all 18 locales",
+      "b7Scopes": [
+        {
+          "scope": "ui.terminal.agentTeam localized quick-prompt wording",
+          "evidence": "B7-implementation.md#e39",
+          "sourceProof": "B7-E39-quick-prompts-source.json",
+          "validation": "Exact final-source block and call-site verification, build; no new GUI claim for this text-only change"
+        }
+      ]
+    },
+    {
+      "upstream": "c66b5fe2ed6e855f0610127eba3de96ac821adea",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "9c36b5b5a74eff61c88d27bdea1537666e771a73",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "1aca9b5f8f207903a7516a8036a7fa590808ca16",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "134a0de7ac166db5f9375d9f2c60bcd97248852b",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "566ade13fc3bf2c3fd8d90044b1f36602c6980bf",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "3d65bedcd1b47a8de7f0ff1bdfec3a11efbc9fa0",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "7a75e1be81b3e90f55f8888c423e66e05c1cde64",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "cdf05bf8ee09645d9396935fe88efe84ccb57da8",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "08809f6e69315476690c62bbe238bd5c199b338d",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "082673509ec6407bb835fa8992440eb13a6cf1c2",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "88995a10461973689656841a8476ee4e6c60281b",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "ee3545344eff8c9969f6de63631d2181844cbfb0",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "469a995ad8d6222f2fb092a7c1c3d5bb8fe7b349",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "2ea5181df8c2d4e8385b76ca4507b74b8e409231",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "439179221296fcc2ca1beb0ffce69c13a336b56f",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "d6ec38be824f67a1528ff1ffeaa91349255dd58e",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "96f3a7a44e014192000378b974ea757f194d08e9",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "a6b82f16dff7991670ca8bdf3f01c6ae6f0d5d4b",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "ea995f38833b20201b47ebd2c13ec5e54e24aa95",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "beaa2e86f2dfa451a2044348c6c14fa874419e6f",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "ec14cd02346074fa3e81032cbf304564dc7e334b",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "a2f5cd4b43fa8f8003e60774b5c71160e6de509e",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "bde0244333a14245e5889deafca622cdb97bbff9",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "1b3c2268e3bd0e73ffef043bf450662d01a28371",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "8f1d345309b10c289ee14825fea8d24f07eb534f",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    },
+    {
+      "upstream": "ac56c9c6d56ca7e9fd5d3bf7f55c273d3e0f6a5d",
+      "indices": [
+        "cc-viewer-alignment/B0-cross-index.md"
+      ],
+      "status": "pending per-scope source review; index membership is not implementation evidence"
+    }
+  ],
+  "additionalSourceScopes": [
+    {
+      "upstream": "2914d6479d2845e0b193ba1c09aa6667c66850a6",
+      "scope": "ChatView narrow split: chat min-width 280px and horizontal overflow",
+      "discovered": "2026-11-22 actual fixed-baseline CSS/GUI audit; original B0 classification only B4/B9/B11",
+      "status": "E32 source-exact CSS restored; actual Chromium/WebKit narrow before 0px -> after 280px, horizontal terminal recovery and draft/root retention passed; other mixed subitems separate",
+      "evidence": "B7-implementation.md#e32"
+    },
+    {
+      "upstream": "80ced6a99694f2f861ebecacea68b95f6387c106",
+      "scope": "ChatView readonly progressive render-window expansion / virtualized full row input / original loading feedback",
+      "discovered": "2026-11-22 fixed-final ChatView audit after E36 constants; older mixed release is outside the original 74 candidate union",
+      "status": "E40 original effective frontend scope restored; other release/workflow scopes not claimed",
+      "evidence": "B7-implementation.md#e40"
+    }
+  ]
+}

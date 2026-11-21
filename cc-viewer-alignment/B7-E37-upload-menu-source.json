@@ -1,0 +1,10 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "commits": [
+    "a2be00c45b71be0faf6b8bf1e1e93916b9cc1eb7",
+    "3cf3e9585f9f93cb59b021a81d789c8f4ef5e528"
+  ],
+  "effectiveUploadBlockExact": true,
+  "blockSha256": "d39088757b17dfdd2996c4dd057604081532389479a190b33bddd63447dae4c0",
+  "layout": "First top-level row of the desktop quick menu; mobile/pad original flat branch preserved; original shared CSS and upload flow reused."
+}

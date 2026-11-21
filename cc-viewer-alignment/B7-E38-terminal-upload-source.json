@@ -1,0 +1,7 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "sourceCommit": "a336d3919f585712a1dcc608515e29589c0621f5",
+  "effectiveUploadBlockExact": true,
+  "blockSha256": "5acf8b5ba28b0d6ec5d13bf67277fed9df318d424df2aa63bc41bbb598339c67",
+  "scope": "Only main terminal desktop/pad quick-menu entry; original hidden input and upload flow reused."
+}

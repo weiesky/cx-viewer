@@ -620,7 +620,7 @@ class Mobile extends AppBase {
                 {/* [+] new parallel project (mirrors the PC header [+] button).
                     Hidden in the Electron chat tab (window.tabBridge) where the
                     picker is a dead control. */}
-                {!mobileIsLocalLog && this.state.sdkMode && (typeof window === 'undefined' || !window.tabBridge) && (
+                {!mobileIsLocalLog && (this.state.sdkMode || this.state.ptyMode) && (typeof window === 'undefined' || !window.tabBridge) && (
                 <button
                   className={styles.mobileMenuItem}
                   onClick={() => { this.setState({ ...this._closeAllMobileOverlays(), newProjectOpen: true }); }}
@@ -723,7 +723,7 @@ class Mobile extends AppBase {
                     userProfile={this.state.userProfile}
                     collapseToolResults={prefs.collapseToolResults}
                     expandThinking={prefs.expandThinking}
-                    showFullToolContent={prefs.showFullToolContent}
+                    showFullToolContent={prefs.showFullToolContent} minimalChat={prefs.minimalChat}
                     onlyCurrentSession={mobileIsLocalLog ? false : prefs.onlyCurrentSession}
                     isLocalLog={mobileIsLocalLog}
                     showThinkingSummaries={prefs.showThinkingSummaries}
@@ -732,6 +732,7 @@ class Mobile extends AppBase {
                     onScrollTsDone={() => {}}
                     cliMode={this.state.cliMode}
                     sdkMode={this.state.sdkMode}
+                    ptyQueueAvailable={!mobileIsLocalLog && this.state.ptyQueueAvailable}
                     sdkResumeId={this.state.sdkResumeId}
                     sdkModel={this.state.sdkModel}
                     proxyProfiles={this.state.proxyProfiles}
@@ -1058,6 +1059,15 @@ class Mobile extends AppBase {
                     <Switch
                       checked={prefs.collapseToolResults}
                       onChange={this.handleCollapseToolResultsChange}
+                    />
+                  </div>
+                )}
+                {!prefs.showFullToolContent && (
+                  <div className={styles.mobileSettingsRow}>
+                    <span className={styles.mobileSettingsLabel}>{t('ui.minimalChat')}</span>
+                    <Switch
+                      checked={prefs.minimalChat !== false}
+                      onChange={this.handleMinimalChatChange}
                     />
                   </div>
                 )}
