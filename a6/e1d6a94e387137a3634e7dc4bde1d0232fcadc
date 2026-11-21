@@ -1,0 +1,34 @@
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_76602f25d7665d::t_53740409be1127 1755
+cc-viewer-alignment/probes/b7-user-prompts-gui.mjs
+  s_76602f25d7665d::t_14936ced3d1336 29
+  s_76602f25d7665d::t_53740409be1127 30,34,38
+apps/web/src/components/chat/UserPromptsModal.jsx
+  s_76602f25d7665d::t_14bf6b8debdf66 144-146,174
+AGENTS.md
+  s_76602f25d7665d::t_7aaba85f5e4f50 26
+cc-viewer-alignment/B7-implementation.md
+  s_76602f25d7665d::t_b082ea72367011 169-174
+cc-viewer-alignment/README.md
+  s_76602f25d7665d::t_a31fcf592306e3 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_76602f25d7665d::t_ef0833c221f612 3,1359-1360
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_76602f25d7665d::t_1b623c4c3d9685 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a6e1d6a94e387137a3634e7dc4bde1d0232fcadc",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
