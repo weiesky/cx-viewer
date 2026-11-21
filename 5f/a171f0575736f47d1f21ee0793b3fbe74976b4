@@ -1,0 +1,47 @@
+apps/web/src/i18n.js
+  s_76602f25d7665d::t_88f3a0370436d6 12475-12534
+cc-viewer-alignment/B7-E22-skills-source.json
+  s_76602f25d7665d::t_1a8ca3dd5248b5 1-10
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_76602f25d7665d::t_88f3a0370436d6 25,1795-1797,1799-1809
+  s_76602f25d7665d::t_eebce24dc79361 1798,1810
+cc-viewer-alignment/probes/b7-skills-scope-gui.mjs
+  s_76602f25d7665d::t_3adce5e2f58eed 1-25,28,30-37
+  s_76602f25d7665d::t_367b8c66b5634a 26-27,29
+apps/web/src/utils/skillsParser.js
+  s_76602f25d7665d::t_88f3a0370436d6 61,66-79
+  s_76602f25d7665d::t_04f081c30558da 80-81
+apps/web/src/components/dashboard/CachePopoverContent.module.css
+  s_76602f25d7665d::t_88f3a0370436d6 475-496
+apps/web/tests/skills-parser.test.js
+  s_76602f25d7665d::t_88f3a0370436d6 4,41-58
+  s_76602f25d7665d::t_e6d7cb227962f5 59
+apps/web/src/components/dashboard/CachePopoverContent.jsx
+  s_76602f25d7665d::t_88f3a0370436d6 7,274-298
+AGENTS.md
+  s_76602f25d7665d::t_019635213ced74 26
+cc-viewer-alignment/B7-implementation.md
+  s_76602f25d7665d::t_b9002daa55f177 190-198
+cc-viewer-alignment/README.md
+  s_76602f25d7665d::t_25af2869513115 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_76602f25d7665d::t_40fb615ec473b1 3,4707-4708
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_76602f25d7665d::t_805017b42e2f32 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "5fa171f0575736f47d1f21ee0793b3fbe74976b4",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
