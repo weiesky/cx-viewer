@@ -1,0 +1,48 @@
+apps/web/src/Mobile.jsx
+  s_76602f25d7665d::t_a034f35000a037 623
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_76602f25d7665d::t_bdd87c2716b09a 1700
+  s_76602f25d7665d::t_a034f35000a037 1697-1698,1702-1710
+  s_76602f25d7665d::t_15c35725078a9f 1699,1701
+cc-viewer-alignment/B7-E13-workspace-css.json
+  s_76602f25d7665d::t_0a68933fd0f56f 1-26
+cc-viewer-alignment/probes/b7-pty-gui.mjs
+  s_76602f25d7665d::t_467c9974ef12d0 39
+  s_76602f25d7665d::t_be6d61d5b6c9b9 1-38,40-58
+AGENTS.md
+  s_76602f25d7665d::t_38cb3ca3287695 26
+apps/web/src/App.jsx
+  s_76602f25d7665d::t_f03f8ca8d4d2bf 349
+apps/web/src/AppBase.jsx
+  s_76602f25d7665d::t_080fdf0a52037e 133,1034-1035,1037,2398-2399,2427,3100,3114-3115
+apps/web/src/components/dashboard/SdkWorkspaceTabs.jsx
+  s_76602f25d7665d::t_de6c0c36957890 33-34,38,196-197
+cc-viewer-alignment/B7-implementation.md
+  s_76602f25d7665d::t_e9293964494c48 107-115
+cc-viewer-alignment/B7-pty-gui/result.json
+  s_76602f25d7665d::t_d18949ea84cf88 1-44
+cc-viewer-alignment/README.md
+  s_76602f25d7665d::t_2ae06297340fd1 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_76602f25d7665d::t_ded7067362e0ff 3,5818-5819
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_76602f25d7665d::t_c5556b8eccd40e 3
+cc-viewer-alignment/probes/b7-pty-fixture.mjs
+  s_76602f25d7665d::t_3e7ec05177bc29 1-60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a0de5a230fffc9de612abf8a7ceb3e1aa1015ee5",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
