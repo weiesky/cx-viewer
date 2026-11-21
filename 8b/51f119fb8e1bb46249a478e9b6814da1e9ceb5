@@ -1,0 +1,32 @@
+cc-viewer-alignment/B7-implementation.md
+  s_76602f25d7665d::t_e2ec66d2f79596 66-72
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_76602f25d7665d::t_8d4c7eb337ac7a 5809
+  s_76602f25d7665d::t_a6ebe4b767b164 3,5808
+packages/app/tests/log-v2-materializer.test.js
+  s_76602f25d7665d::t_b7e050c677ec9b 373-397
+packages/app/lib/log-v2/materializer.js
+  s_76602f25d7665d::t_3dd0251169ebd9 1002,1004-1012,1077-1078
+cc-viewer-alignment/README.md
+  s_76602f25d7665d::t_a6ebe4b767b164 5
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_76602f25d7665d::t_a6ebe4b767b164 3
+AGENTS.md
+  s_76602f25d7665d::t_a6ebe4b767b164 26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "8b51f119fb8e1bb46249a478e9b6814da1e9ceb5",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": null
+    }
+  }
+}
