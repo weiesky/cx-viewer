@@ -1,0 +1,36 @@
+packages/app/tests/native-credential-file-policy.test.js
+  s_4122b07c8b4292::t_426d3712d5e145 1-54
+  s_4122b07c8b4292::t_bab83972df6c22 55-88
+packages/app/lib/credential-file-policy.js
+  s_4122b07c8b4292::t_4fda841c18d813 4-5,86-103,106
+AGENTS.md
+  s_4122b07c8b4292::t_c1dcdd7c2e1ae0 26
+cc-viewer-alignment/B5-candidate-matrix.md
+  s_4122b07c8b4292::t_5ff70645dd3694 34
+cc-viewer-alignment/B5-implementation.md
+  s_4122b07c8b4292::t_242c5c85e734f0 75-85
+cc-viewer-alignment/B5-native-file-policy-2026-11-21.json
+  s_4122b07c8b4292::t_b369a72444dff5 1-43
+cc-viewer-alignment/README.md
+  s_4122b07c8b4292::t_0bdf47faf96fbc 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4122b07c8b4292::t_cc735d1e5284b6 15930-15934
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_4122b07c8b4292::t_2716dc2c613760 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "800921466855c1d7b8234ff17ea96b54d51f969d",
+  "prompts": {},
+  "sessions": {
+    "s_4122b07c8b4292": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fbcc-5a47-7112-a38d-fb834f2c5f53",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
