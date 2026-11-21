@@ -1,0 +1,30 @@
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_76602f25d7665d::t_3280db3eb7b149 43,136
+  s_76602f25d7665d::t_40f696aa6352a6 137
+AGENTS.md
+  s_76602f25d7665d::t_3280db3eb7b149 27
+cc-viewer-alignment/B2-completion-matrix.md
+  s_76602f25d7665d::t_3280db3eb7b149 7-8
+cc-viewer-alignment/README.md
+  s_76602f25d7665d::t_3280db3eb7b149 7-8
+cc-viewer-alignment/B2-pty-workspace-entry-gap-2026-11-21.md
+  s_76602f25d7665d::t_3280db3eb7b149 1-19
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_76602f25d7665d::t_3280db3eb7b149 5790-5791
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "b3ff4c6eec6cc46d00dae24dc1ecac093cdd5fe9",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
