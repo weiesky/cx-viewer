@@ -1,0 +1,43 @@
+packages/app/pty-manager.js
+  s_76602f25d7665d::t_04f61bb697f6ac 141,147,563,691
+packages/app/server.js
+  s_76602f25d7665d::t_04f61bb697f6ac 50,828-868,871-880,2558,2641,5842-5846,5969-5979,5981-5993,6387,6518,6531-6532,6538
+  s_76602f25d7665d::t_6b37ec06ffcc24 869-870,4311,5980
+packages/app/lib/appserver-bridge.js
+  s_76602f25d7665d::t_04f61bb697f6ac 2473-2477,2479-2481,2801,2821
+  s_76602f25d7665d::t_da1977c1dcac42 2478
+packages/app/lib/pty-workspace-runtime.js
+  s_76602f25d7665d::t_04f61bb697f6ac 95
+packages/app/cli.js
+  s_76602f25d7665d::t_04f61bb697f6ac 525-526
+AGENTS.md
+  s_76602f25d7665d::t_a5f69f6d190e38 26
+cc-viewer-alignment/B7-implementation.md
+  s_76602f25d7665d::t_d72cc4cdea4bd2 252-261
+cc-viewer-alignment/README.md
+  s_76602f25d7665d::t_89bfb9755116fa 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_76602f25d7665d::t_fc3f01697d84b9 3,3613-3614,8064-8065
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_76602f25d7665d::t_58018ecb2dede8 3
+packages/app/tests/appserver-bridge-isolation.test.js
+  s_76602f25d7665d::t_e26c53c22d8b46 93,98-99,103-104,108,175-185
+packages/app/tests/pty-workspace-routing.test.js
+  s_76602f25d7665d::t_e680370523fccb 214-255
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1d889f103e88ad37635edff44719fd469fa9eb74",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
