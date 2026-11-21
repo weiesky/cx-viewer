@@ -1,0 +1,45 @@
+AGENTS.md
+  s_76602f25d7665d::t_ae942bd986d427 26
+apps/web/src/components/chat/ChatInputBar.jsx
+  s_76602f25d7665d::t_aed3b80cb70001 52,71-77,381,383-426,717,719
+apps/web/src/components/chat/ChatInputBar.module.css
+  s_76602f25d7665d::t_eaeb9214aa1e6f 697-737
+apps/web/src/components/chat/ChatMessage.jsx
+  s_76602f25d7665d::t_3798ad7f4b2f41 854
+apps/web/src/components/chat/ChatView.jsx
+  s_76602f25d7665d::t_c5d6c10c1aa11d 2-3,226-232,352-353,665,823-824,876-886,1299,1513-1670,2638,3449,3453-3459,3463,3469,3482,3561-3563,3580,3605,4098-4121,4381,4469,4796-4797,4921
+apps/web/src/components/chat/ChatView.module.css
+  s_76602f25d7665d::t_ce5c4e5d3fd2b8 744-775
+apps/web/src/components/chat/selectionQuote.js
+  s_76602f25d7665d::t_dcafee69932582 1-85
+apps/web/src/i18n.js
+  s_76602f25d7665d::t_b94360fcc21fd9 4-36
+apps/web/tests/chat-quote-i18n.test.js
+  s_76602f25d7665d::t_5b42cef5003fe5 1-221
+apps/web/tests/terminal-ws-liveness.test.js
+  s_76602f25d7665d::t_7a96b34790e148 675-719
+cc-viewer-alignment/B6-implementation.md
+  s_76602f25d7665d::t_bb4e16ea4d029b 43-51
+cc-viewer-alignment/README.md
+  s_76602f25d7665d::t_6102e8adf780a0 5
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_76602f25d7665d::t_16e8c78579ba83 3,192-193
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_76602f25d7665d::t_1c63a6303fb993 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f8aa8959940ed4679b450be80f627cca37f1df9f",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
