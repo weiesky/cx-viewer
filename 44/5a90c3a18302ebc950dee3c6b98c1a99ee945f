@@ -1,0 +1,38 @@
+cc-viewer-alignment/B5-project-delete-2026-11-21.json
+  s_4122b07c8b4292::t_f6b3d7ff725365 1-19
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_4122b07c8b4292::t_40ec2060454537 3,111
+cc-viewer-alignment/README.md
+  s_4122b07c8b4292::t_40ec2060454537 5
+packages/app/tests/auth-server.test.js
+  s_4122b07c8b4292::t_d0f71d3c04beef 470-471
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4122b07c8b4292::t_f6b3d7ff725365 16093-16096
+packages/app/tests/file-move.test.js
+  s_4122b07c8b4292::t_9ff845d6f51d7e 31-77
+AGENTS.md
+  s_4122b07c8b4292::t_40ec2060454537 26
+cc-viewer-alignment/B5-implementation.md
+  s_4122b07c8b4292::t_f6b3d7ff725365 368-373
+cc-viewer-alignment/B5-candidate-matrix.md
+  s_4122b07c8b4292::t_40ec2060454537 29
+packages/app/server.js
+  s_4122b07c8b4292::t_d0f71d3c04beef 9,3126,3131-3137,3140-3141,3146-3149
+  s_4122b07c8b4292::t_204f9be3d41aa2 3150-3151
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "445a90c3a18302ebc950dee3c6b98c1a99ee945f",
+  "prompts": {},
+  "sessions": {
+    "s_4122b07c8b4292": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fbcc-5a47-7112-a38d-fb834f2c5f53",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
