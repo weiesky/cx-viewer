@@ -1,0 +1,41 @@
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_4122b07c8b4292::t_20edb6f504ef2e 3
+  s_4122b07c8b4292::t_6a095106bf764c 111
+packages/app/tests/target-files.test.js
+  s_4122b07c8b4292::t_2d9fc132808450 4-5,105-169
+  s_4122b07c8b4292::t_5d9ed36436ad6b 170-191
+AGENTS.md
+  s_4122b07c8b4292::t_20edb6f504ef2e 26
+packages/app/lib/file-browser-access.js
+  s_4122b07c8b4292::t_3cb3340d5f5d8e 1-28
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4122b07c8b4292::t_7655094edbab74 16073-16076
+cc-viewer-alignment/README.md
+  s_4122b07c8b4292::t_20edb6f504ef2e 5
+packages/app/lib/file-api.js
+  s_4122b07c8b4292::t_e03e3f83c4ed46 5-6,118,130
+  s_4122b07c8b4292::t_3cb3340d5f5d8e 67,69,73,88,97,129,137
+cc-viewer-alignment/probes/b3-installed-check.py
+  s_4122b07c8b4292::t_c7060e6bcafb8a 29
+packages/app/server.js
+  s_4122b07c8b4292::t_e03e3f83c4ed46 3912,3914-3926
+  s_4122b07c8b4292::t_3cb3340d5f5d8e 34,3729-3731,3735,3752-3755,3759,3762,3775,3789-3790,3797,3815,3825-3826,3870,3900
+cc-viewer-alignment/B5-implementation.md
+  s_4122b07c8b4292::t_7655094edbab74 328-335
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "481dc72a41baae2bea229bf1317c078790137929",
+  "prompts": {},
+  "sessions": {
+    "s_4122b07c8b4292": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fbcc-5a47-7112-a38d-fb834f2c5f53",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": null
+    }
+  }
+}
