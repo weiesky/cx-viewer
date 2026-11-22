@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import ReactDOM from 'react-dom';
 import { Modal, Button, Input, Radio, Select, Tag, message } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
@@ -28,22 +28,17 @@ const EMPTY_FORM = {
 const EFFORT_OPTIONS = ['low', 'medium', 'high', 'xhigh', 'max'];
 
 // profile 行/标签展示的代表模型；兼容早期从 cc-viewer 迁移来的 ANTHROPIC_* 字段。
-export function profileDisplayModel(p) {
-  if (!p) return '';
-  return p.activeModel
-    || p.OPENAI_MODEL
-    || p.ANTHROPIC_MODEL
-    || p.ANTHROPIC_DEFAULT_OPUS_MODEL
-    || p.ANTHROPIC_DEFAULT_SONNET_MODEL
-    || p.ANTHROPIC_DEFAULT_HAIKU_MODEL
-    || '';
-}
+export { profileDisplayModel } from '../../utils/proxyProfileDisplay';
+import { profileDisplayModel } from '../../utils/proxyProfileDisplay';
 
 export default function ProxyModal({
   open,
   onClose,
   proxyProfiles,
   activeProxyId,
+  proxyRoles,
+  proxyOfficialDefault,
+  proxyRoleRouting,
   proxyProfilesLoadError,
   defaultConfig,
   onProxyProfileChange,
@@ -52,6 +47,7 @@ export default function ProxyModal({
   const [editForm, setEditForm] = useState(EMPTY_FORM);
   const [deleteConfirmTarget, setDeleteConfirmTarget] = useState(null);
   const [pending, setPending] = useState(false);
+  const roleId = useId();
 
   // open 变化时 reset 表单状态 + 删除确认。等价于原 AppHeader.jsx:1935 onCancel 里 setState({editingProxy:null})
   useEffect(() => {
@@ -64,6 +60,13 @@ export default function ProxyModal({
 
   const profiles = proxyProfiles || [];
   const activeId = activeProxyId || 'max';
+  const roles = proxyRoles || { subagent: 'follow' };
+  const hideRoles = activeId === 'max' && proxyOfficialDefault !== false;
+  const canAssign = proxyRoleRouting?.supported === true;
+  const mainProfile = profiles.find(p => p.id === activeId);
+  const followLabel = t('ui.proxy.followMainResolved', { name: mainProfile?.name || 'Default' });
+  const subagentValue = roles.subagent === 'max' || profiles.some(p => p.id === roles.subagent)
+    ? roles.subagent : 'follow';
 
   // setEditForm 必须用 prev callback,否则多字段会被单字段更新覆盖丢字段
   const updateField = (field, value) => {
@@ -103,7 +106,8 @@ export default function ProxyModal({
     const newActive = activeId === deleteConfirmTarget.id ? 'max' : activeId;
     setPending(true);
     try {
-      if (await onProxyProfileChange({ active: newActive, profiles: newProfiles })) setDeleteConfirmTarget(null);
+      if (await onProxyProfileChange({ active: newActive, profiles: newProfiles,
+        ...(canAssign && roles.subagent === deleteConfirmTarget.id ? { roles: { subagent: 'follow' } } : {}) })) setDeleteConfirmTarget(null);
     } finally { setPending(false); }
   };
 
@@ -116,6 +120,13 @@ export default function ProxyModal({
     if ((p.id === activeId && !proxyProfilesLoadError) || pending) return;
     setPending(true);
     try { await onProxyProfileChange({ active: p.id, profiles }); }
+    finally { setPending(false); }
+  };
+
+  const handleRoleChange = async (role, value) => {
+    if (pending || !canAssign) return;
+    setPending(true);
+    try { await onProxyProfileChange({ active: activeId, profiles, roles: { [role]: value } }); }
     finally { setPending(false); }
   };
 
@@ -159,6 +170,43 @@ export default function ProxyModal({
   const bodyNode = (
     <div>
       {showThirdPartyWarning && <div className={styles.proxyWarning}>⚠️ {t('ui.proxy.thirdPartyWarning')}</div>}
+      {!hideRoles && (
+        <div className={styles.roleAssignSection}>
+          <div className={styles.roleAssignTitle}>{t('ui.proxy.assignmentTitle')}</div>
+          {!canAssign && <div className={styles.proxyEditHint} role="status">{t('ui.proxy.roleUnavailable')}</div>}
+          <div className={styles.roleAssignRow}>
+            <label htmlFor={`${roleId}-main`}>{t('ui.proxy.roleMain')}</label>
+            <Select
+              size="small"
+              className={styles.fullWidthSelect}
+              id={`${roleId}-main`}
+              aria-label={t('ui.proxy.roleMain')}
+              disabled={pending || !!proxyProfilesLoadError}
+              value={activeId}
+              onChange={id => handleActivate({ id })}
+            >
+              {profiles.map(p => <Select.Option key={p.id} value={p.id}>{p.name}</Select.Option>)}
+            </Select>
+          </div>
+          {['subagent'].map(role => (
+            <div className={styles.roleAssignRow} key={role}>
+              <label htmlFor={`${roleId}-subagent`}>{t('ui.proxy.roleSubagent')}</label>
+              <Select
+                size="small"
+                className={styles.fullWidthSelect}
+                id={`${roleId}-subagent`}
+                aria-label={t('ui.proxy.roleSubagent')}
+                disabled={pending || !canAssign || !!proxyProfilesLoadError}
+                value={subagentValue}
+                onChange={v => handleRoleChange(role, v)}
+              >
+                <Select.Option value="follow">{followLabel}</Select.Option>
+                {profiles.map(p => <Select.Option key={p.id} value={p.id}>{p.name}</Select.Option>)}
+              </Select>
+            </div>
+          ))}
+        </div>
+      )}
       <div className={styles.proxyList}>
           {profiles.map(p => (
             <div key={p.id} className={`${styles.proxyItem} ${p.id === activeId ? styles.proxyItemActive : ''}`}>
@@ -168,6 +216,8 @@ export default function ProxyModal({
                   <div className={styles.proxyItemNameRow}>
                     <span className={styles.proxyItemName}>{p.name}</span>
                     {p.id === 'max' && <Tag className={styles.proxyBuiltinTag}>{t('ui.proxy.builtin')}</Tag>}
+                    {!hideRoles && p.id === activeId && <Tag className={styles.proxyRoleBadge}>{t('ui.proxy.badgeMain')}</Tag>}
+                    {!hideRoles && canAssign && roles.subagent === p.id && <Tag className={styles.proxyRoleBadge}>{t('ui.proxy.badgeSubagent')}</Tag>}
                   </div>
                   {p.id === 'max' && defaultConfig && (
                     <div className={styles.proxyItemDetail}>

@@ -38,7 +38,7 @@ Default 保持原生 OAuth/API Key 路由。啟用非 Default profile 後，支�
   "version": 3,
   "active": "my-proxy",
   "profiles": [
-    { "id": "max", "name": "Max" },
+    { "id": "max", "name": "Default" },
     {
       "id": "my-proxy",
       "name": "My Proxy",
@@ -52,6 +52,16 @@ Default 保持原生 OAuth/API Key 路由。啟用非 Default profile 後，支�
 }
 ```
 
-- `active` — 当前使用的 profile ID，设为 `"max"` 表示直连（不走代理）
+- `active` — 旧式全局回退；界面的主 Agent 选择按工作区保存，`"max"` 保留原生来源。
 - `profiles` — profile 列表，`id: "max"` 为内置直连模式，不可删除
 - UI 保存会立即影响当前进程；其他 CX Viewer 进程通过 `fs.watchFile` 在约 1.5 秒内更新
+
+## Role Assignment
+
+The Main Agent selection and Sub-Agent assignment belong to the current workspace. Sub-Agent can follow Main Agent, use Default, or use another saved profile. The selector is available when the native AppServer can verify the child thread belongs to this workspace. SDK exec keeps a single source and disables Sub-Agent assignment. Codex has no equivalent Teammate role.
+
+When Main Agent uses Default on an official endpoint, role assignments are dormant and remain saved. Switching back to a profile restores them. A custom default endpoint can use explicit Sub-Agent assignments.
+
+An accepted native turn keeps its selected source. Source changes apply to later turns. Managed system prompts apply only to new sessions; resume and fork keep the native persisted instructions.
+
+`profile.json` remains the shared catalogue and legacy global fallback. The UI stores `{ activeId, roles: { subagent } }` in the allocated workspace log directory's `active-profile.json`, with no API keys in that file. Other CX Viewer processes refresh within about 1.5 seconds.

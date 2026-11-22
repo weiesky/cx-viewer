@@ -1,10 +1,28 @@
 // CLIENT-SAFE: no node deps. Imported by src/ — do not add fs/process/node: imports.
 //
-// 上下文相关规则唯一事实源(前后端同源):
-//   - 血条总量固定为 CODEX_CONTEXT_WINDOW_TOKENS
-//   - 模型窗口 helper 仅供 workflow 等非血条视图展示模型能力标签
-//
-export const CODEX_CONTEXT_WINDOW_TOKENS = 353000;
+// Model-name estimates below describe capabilities only. The live bar uses
+// the owned native thread/turn window; an absent window remains unknown.
+export function nativeContextWindow(entry) {
+  const native = entry?._appServerSource === true || (entry?._sdkSource === true
+    && entry.body?.metadata?.transport === 'appserver');
+  const window = native ? entry.response?.body?.context_window : null;
+  return Number.isSafeInteger(window) && window > 0 ? window : null;
+}
+
+// Codex protocol TokenUsage::percent_of_context_window_remaining: the native
+// window is already the usable window (usually 95% of the raw model window).
+export function nativeContextPercent(total, window) {
+  if (!Number.isSafeInteger(window) || window <= 0
+      || !Number.isSafeInteger(total) || total < 0) return null;
+  if (window <= 12000) return 100;
+  const remaining = Math.max(window - 12000 - Math.max(total - 12000, 0), 0);
+  return 100 - Math.min(100, Math.round(remaining / (window - 12000) * 100));
+}
+
+export function formatContextUsage(tokens, percent) {
+  const value = percent == null ? '—' : `${percent}%`;
+  return tokens > 0 ? `${(tokens / 1000).toFixed(1)}K (${value})` : value;
+}
 
 // [Nk]/[Nm] 显式窗口后缀,如 gpt-5[1m]、codex-large[200k]、[500k]。
 // 显式 opt-in 优先级最高,胜过一切家族规则。
@@ -59,12 +77,22 @@ export function sumUsageInputTokens(usage) {
 }
 
 /**
- * 血条分子统一口径:输入侧 + 末轮 output_tokens,对齐 Codex /context 的
+ * 血条分子使用原生末轮 total_tokens（缺失时输入+输出），对齐 Codex 的
  * "当前上下文占用"语义(末轮回复已进入下一轮上下文)。
  * @param {object|null|undefined} usage
  * @returns {number}
  */
 export function sumUsageContextTokens(usage) {
   if (!usage) return 0;
-  return sumUsageInputTokens(usage) + (usage.output_tokens || 0);
+  return Number.isSafeInteger(usage.total_tokens) && usage.total_tokens >= 0
+    ? usage.total_tokens : sumUsageInputTokens(usage) + (usage.output_tokens || 0);
+}
+
+// A latest entry with no native window invalidates an older SSE snapshot.
+// In particular, never borrow another model/turn's window or cumulative usage.
+export function computeContextPercent({ contextWindow, lastMainAgent = null }) {
+  if (lastMainAgent) return nativeContextPercent(
+    sumUsageContextTokens(lastMainAgent.response?.body?.usage), nativeContextWindow(lastMainAgent));
+  return contextWindow ? nativeContextPercent(sumUsageContextTokens(contextWindow.current_usage),
+    contextWindow.context_window_size) : null;
 }

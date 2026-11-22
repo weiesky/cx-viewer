@@ -99,7 +99,7 @@ export function validateProxyProfilesDocument(input, { migrateLegacy = false, re
   return { version: PROXY_PROFILE_VERSION, active, profiles };
 }
 
-function joinUrlPaths(basePathname, requestPathname) {
+export function joinUrlPaths(basePathname, requestPathname) {
   const base = basePathname.split('/').filter(Boolean);
   const request = requestPathname.split('/').filter(Boolean);
   let overlap = Math.min(base.length, request.length);

@@ -1,3 +1,4 @@
+import { proxyAssignmentState } from './utils/proxyProfileDisplay';
 import React from 'react';
 import { ConfigProvider, theme, Modal, Spin, Button, message } from 'antd';
 import { uploadFileAndGetPath } from './components/terminal/TerminalPanel';
@@ -152,6 +153,7 @@ class AppBase extends React.Component {
       proxyProfiles: [],
       activeProxyId: 'max',
       proxyProfilesRevision: null,
+      ...proxyAssignmentState({}),
       proxyProfilesLoadError: null,
       defaultConfig: null,
       // ─── Approval modal global state ───
@@ -915,52 +917,7 @@ class AppBase extends React.Component {
       .then(data => { if (!this._unmounted) this.setState({ userProfile: data }); })
       .catch(() => { });
 
-    // 获取 proxy profile 配置
-    fetch(apiUrl('/api/proxy-profiles'))
-      .then(res => res.json())
-      .then(data => {
-        if (this._unmounted) return;
-        if (!data.profiles) return;
-        let activeId = data.active || 'max';
-        const dc = data.defaultConfig;
-        // 如果当前是 Default 且启动配置匹配了某个 proxy profile（origin + apiKey + model），自动指定到那一项
-        if (activeId === 'max' && dc?.origin) {
-          const match = data.profiles.find(p => {
-            if (p.id === 'max' || !p.baseURL) return false;
-            try {
-              if (new URL(p.baseURL).origin !== dc.origin) return false;
-            } catch { return false; }
-            // apiKey 匹配（mask 格式比较：都取后 4 位）
-            if (dc.apiKey && p.apiKey) {
-              const dcTail = dc.apiKey.slice(-4);
-              const pTail = p.apiKey.slice(-4);
-              if (dcTail !== pTail) return false;
-            }
-            // model 匹配；新配置使用 activeModel，旧 ANTHROPIC_* 字段只作迁移兼容。
-            const pModel = p.activeModel
-              || p.OPENAI_MODEL
-              || p.ANTHROPIC_MODEL
-              || p.ANTHROPIC_DEFAULT_OPUS_MODEL
-              || p.ANTHROPIC_DEFAULT_SONNET_MODEL
-              || p.ANTHROPIC_DEFAULT_HAIKU_MODEL;
-            if (dc.model && pModel && dc.model !== pModel) return false;
-            return true;
-          });
-          if (match) {
-            activeId = match.id;
-            this.handleProxyProfileChange({ active: match.id, profiles: data.profiles, revision: data.revision });
-          }
-        }
-        this.setState({
-          proxyProfiles: data.profiles,
-          activeProxyId: activeId,
-          proxyProfilesRevision: data.revision || null,
-          proxyProfilesLoadError: data.loadError || null,
-          defaultConfig: dc || null,
-        });
-        if (data.loadError) message.warning(t('ui.proxy.loadFailed', { error: data.loadError }));
-      })
-      .catch(() => { });
+    this.refreshProxyProfiles({ autoMatch: true });
 
     // 获取当前监控的项目名称
     const params = new URLSearchParams(window.location.search);
@@ -1086,13 +1043,22 @@ class AppBase extends React.Component {
   // ─── SSE 通信 ───────────────────────────────────────────
 
   // SSE 心跳超时检测：45s 内无任何事件则判定连接断开
-  _resetSSETimeout = () => {
+  _armSSETimeout = () => {
     if (this._sseTimeoutTimer) clearTimeout(this._sseTimeoutTimer);
-    this._sseReconnectCount = 0; // 收到事件说明连接正常，重置重连计数
+    this._sseTimeoutTimer = null;
+    if (this._unmounted || this._isLocalLog) return;
     this._sseTimeoutTimer = setTimeout(() => {
+      this._sseTimeoutTimer = null;
       console.warn('SSE heartbeat timeout, reconnecting...');
       this._reconnectSSE();
     }, 45000);
+  };
+
+  _resetSSETimeout = () => {
+    this._sseReconnectCount = 0;
+    this._sseExhaustedNotified = false;
+    if (this._sseReconnectTimer) { clearTimeout(this._sseReconnectTimer); this._sseReconnectTimer = null; }
+    this._armSSETimeout();
   };
 
   // 不关闭 EventSource —— 连接是会话级单例，workspace 切换复用同一条连接。
@@ -1124,14 +1090,16 @@ class AppBase extends React.Component {
   };
 
   _reconnectSSE() {
-    if (this._isLocalLog) return;
+    if (this._isLocalLog || this._unmounted || this._sseReconnectTimer) return;
+    if (this._sseTimeoutTimer) { clearTimeout(this._sseTimeoutTimer); this._sseTimeoutTimer = null; }
     // SSE 连接真死（心跳超时 / 重试上限），清除流式 overlay 避免卡死
     if (this.state.streamingLatest) this.setState({ streamingLatest: null });
-    if (this._sseReconnectCount >= 10) {
-      console.error('SSE reconnect limit reached');
-      return;
+    const exhausted = this._sseReconnectCount >= 10;
+    if (exhausted && !this._sseExhaustedNotified) {
+      this._sseExhaustedNotified = true;
+      message.warning(t('ui.sseReconnectExhausted'));
     }
-    this._sseReconnectCount = (this._sseReconnectCount || 0) + 1;
+    if (!exhausted) this._sseReconnectCount = (this._sseReconnectCount || 0) + 1;
     if (this.eventSource) { this.eventSource.close(); this.eventSource = null; }
 
     // 必须在部分保存之前废弃在途分帧管线（review P1）：下方部分保存会同步跑
@@ -1167,8 +1135,11 @@ class AppBase extends React.Component {
     this._teardownTransientLiveState();
     this.setState({ isStreaming: false, contextBarLocked: false });
     if (this._sseReconnectTimer) clearTimeout(this._sseReconnectTimer);
-    const delay = Math.min(2000 * Math.pow(2, (this._sseReconnectCount || 1) - 1), 32000);
-    this._sseReconnectTimer = setTimeout(() => { this.initSSE(); }, delay);
+    const delay = exhausted ? 30000 : Math.min(2000 * Math.pow(2, (this._sseReconnectCount || 1) - 1), 32000);
+    this._sseReconnectTimer = setTimeout(() => {
+      this._sseReconnectTimer = null;
+      if (!this._unmounted && !this._isLocalLog) this.initSSE();
+    }, delay);
   }
 
   animateLoadingCount(target, onDone) {
@@ -1583,6 +1554,7 @@ class AppBase extends React.Component {
   }
 
   initSSE() {
+    if (this._unmounted || this._isLocalLog) return;
     if (!this._v2InitAttempted) {
       this._v2InitAttempted = true;
       const pending = this._initV2Snapshot();
@@ -1648,6 +1620,11 @@ class AppBase extends React.Component {
   }
 
   _initControlSSE() {
+    if (this._unmounted || this._isLocalLog) return;
+    if (this._sseReconnectTimer) { clearTimeout(this._sseReconnectTimer); this._sseReconnectTimer = null; }
+    if (this.eventSource) { this.eventSource.close(); this.eventSource = null; }
+    // Arm even before open: a blackholed first connection must consume the same budget.
+    this._armSSETimeout();
     try {
       this.eventSource = this._streamTransport.open(apiUrl('/events?controlOnly=1'));
       // 每次收到任何 SSE 事件（包括心跳注释帧触发的隐式活动）都重置超时
@@ -1805,24 +1782,7 @@ class AppBase extends React.Component {
         this._resetSSETimeout();
         try {
           const data = JSON.parse(event.data);
-          if (data.loadError) {
-            this.setState({ proxyProfilesLoadError: data.loadError });
-            message.warning(t('ui.proxy.loadFailed', { error: data.loadError }));
-            return;
-          }
-          this.setState({ proxyProfilesLoadError: null });
-          if (data.active) this.setState({ activeProxyId: data.active });
-          if (data.profile) {
-            // 刷新完整列表
-            fetch(apiUrl('/api/proxy-profiles')).then(r => r.json()).then(d => {
-              if (d.profiles) this.setState({
-                proxyProfiles: d.profiles,
-                activeProxyId: d.active || 'max',
-                proxyProfilesRevision: d.revision || null,
-                proxyProfilesLoadError: d.loadError || null,
-              });
-            }).catch(() => { });
-          }
+          if (data.profile || data.loadError || data.active) this.refreshProxyProfiles();
         } catch (e) { reportSwallowed('sse.proxy_profile', e); }
       });
       this.eventSource.addEventListener('ping', () => { this._resetSSETimeout(); });
@@ -2451,27 +2411,72 @@ class AppBase extends React.Component {
 
   // ─── Proxy Profile ─────────────────────────────────────
 
+  refreshProxyProfiles = ({ autoMatch = false } = {}) => {
+    const generation = this._proxyProfileGeneration || 0;
+    const sequence = this._proxyProfileReadSequence = (this._proxyProfileReadSequence || 0) + 1;
+    return fetch(apiUrl('/api/proxy-profiles'))
+      .then(res => res.json())
+      .then(data => {
+        if (this._unmounted || generation !== (this._proxyProfileGeneration || 0)
+            || sequence !== this._proxyProfileReadSequence) return;
+        if (!data.profiles) return;
+        let activeId = data.active || 'max';
+        const dc = data.defaultConfig;
+        // 如果当前是 Default 且启动配置匹配了某个 proxy profile（origin + apiKey + model），自动指定到那一项
+        if (autoMatch && !data.loadError && activeId === 'max' && !data.workspaceAssigned && dc?.origin) {
+          const match = data.profiles.find(p => {
+            if (p.id === 'max' || !p.baseURL) return false;
+            try {
+              if (new URL(p.baseURL).origin !== dc.origin) return false;
+            } catch { return false; }
+            // apiKey 匹配（mask 格式比较：都取后 4 位）
+            if (dc.apiKey && p.apiKey) {
+              const dcTail = dc.apiKey.slice(-4);
+              const pTail = p.apiKey.slice(-4);
+              if (dcTail !== pTail) return false;
+            }
+            // model 匹配；新配置使用 activeModel，旧 ANTHROPIC_* 字段只作迁移兼容。
+            const pModel = p.activeModel
+              || p.OPENAI_MODEL
+              || p.ANTHROPIC_MODEL
+              || p.ANTHROPIC_DEFAULT_OPUS_MODEL
+              || p.ANTHROPIC_DEFAULT_SONNET_MODEL
+              || p.ANTHROPIC_DEFAULT_HAIKU_MODEL;
+            if (dc.model && pModel && dc.model !== pModel) return false;
+            return true;
+          });
+          if (match) {
+            activeId = match.id;
+            this.handleProxyProfileChange({ active: match.id, profiles: data.profiles, revision: data.revision, workspaceRevision: data.workspaceRevision });
+          }
+        }
+        this.setState({
+          proxyProfiles: data.profiles,
+          activeProxyId: activeId,
+          proxyProfilesRevision: data.revision || null,
+          proxyProfilesLoadError: data.loadError || null,
+          ...proxyAssignmentState(data),
+          defaultConfig: dc || null,
+        });
+        if (data.loadError) message.warning(t('ui.proxy.loadFailed', { error: data.loadError }));
+      })
+      .catch(() => { });
+
+  };
+
   handleProxyProfileChange = async (data) => {
     if (this._proxyProfileSavePending) return false;
     this._proxyProfileSavePending = true;
+    this._proxyProfileGeneration = (this._proxyProfileGeneration || 0) + 1;
     try {
       const response = await fetch(apiUrl('/api/proxy-profiles'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, version: 3, revision: data.revision || this.state.proxyProfilesRevision }),
+        body: JSON.stringify({ ...data, version: 3, revision: data.revision || this.state.proxyProfilesRevision,
+          workspaceRevision: data.workspaceRevision ?? this.state.proxyWorkspaceRevision }),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok || result.ok !== true) {
-        if (response.status === 409) {
-          const latestResponse = await fetch(apiUrl('/api/proxy-profiles'));
-          const latest = await latestResponse.json();
-          if (latest.profiles) this.setState({
-            proxyProfiles: latest.profiles,
-            activeProxyId: latest.active || 'max',
-            proxyProfilesRevision: latest.revision || null,
-            proxyProfilesLoadError: latest.loadError || null,
-          });
-        }
         throw new Error(result.error || `HTTP ${response.status}`);
       }
       this.setState({
@@ -2479,13 +2484,16 @@ class AppBase extends React.Component {
         activeProxyId: result.active || data.active,
         proxyProfilesRevision: result.revision || null,
         proxyProfilesLoadError: null,
+        ...proxyAssignmentState(result),
       });
       return true;
     } catch (error) {
+      await this.refreshProxyProfiles();
       reportSwallowed('proxy-profile.save', error);
       message.error(t('ui.proxy.saveFailed', { error: error.message }));
       return false;
     } finally {
+      this._proxyProfileGeneration = (this._proxyProfileGeneration || 0) + 1;
       this._proxyProfileSavePending = false;
     }
   };

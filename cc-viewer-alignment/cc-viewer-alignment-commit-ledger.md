@@ -1,6 +1,6 @@
 # cc-viewer 逐提交对齐台账
 
-2026-11-22 B7实施中（第8/12工作包），固定上游74cd752d99caf122e750216d2af3bb9f467c4de1，分支codex/b7-input-navigation-skills，起点main8968935，74索引候选及追加源码子项逐项核验。E1–E41及E19a/E31a/E31b/E40a独立完成；原普通PTY任务HUD接精确root计划快照，整CSS同基线，226/226、build与受控native协议双引擎6场12图通过；实际0.169未见plan工具事件，不记模型执行已验，继续审计。 普通“＋”、输入12行/ghost/导航/汇总/Skills菜单、窄split、主PTY与scratch进程树均已有分项证据；74候选完整闭合及最终全量/新安装仍待完成，B7未完成。新工作区权限遵循已选弹窗；/选技能填原生$name；合成AppServer会话使用codex://app-server/turn（均经用户选定）。活动7008不重启；IM偶发、物理设备/音频/外部模型/真实LAN/TLS/其他OS/最低Node未验保持，exec/显式AppServer渐进与353K不变。见[B7实施](./B7-implementation.md)。
+2026-11-22 B7已完成（第8/12工作包），固定上游74cd752d99caf122e750216d2af3bb9f467c4de1。E1–E47及E19a/E31a/E31b/E40a共51笔已备份并整为5b1c397，经[PR #8](https://github.com/weiesky/cx-viewer/pull/8)合并main（89a8d9d）；合并tree与原51笔精确相同，实际无PR CI。74去重候选按B7子项核销，另补窄split/只读扩窗源码scope；混合提示资产/平台等仍按B8–B11独立推进。最终2181/2181、0skip、build/pack723；真实生产新安装634/634、全部723包文件与211Web精确字节、B1.2及隔离CLI通过。普通“＋”、原输入/导航/Skills、队列/editor/minimal/HUD及精确owner/进程树均有分项证据；0.169实际模型计划producer未验，受控协议通过不冒充模型执行。新PTY权限遵循已选弹窗，技能使用$name，合成会话codex://app-server/turn；exec/显式AppServer渐进及353K不变。活动7008旧后端未重启；IM偶发、物理设备/音频/IME、外部模型、真实LAN/TLS、其他OS/最低Node未验保持。合并后才更新本地进度；下一会话执行B8，本轮不启动。见[B7完成矩阵](./B7-completion-matrix.md)和[B8交接](./B8-handoff.md)。
 
 2026-11-21 B6交付：原16笔完整备份并整为e885d8b，PR #6已合并main（9f3e2ce），精确head guard及合并tree已核；实际无PR CI检查。交付复建/pack720/新artifact-only字节通过，生产实现不变；原上游映射继续有效。普通PTY入口待纠偏及旧后端未重启保持，B7下一会话执行，见[整合记录](./B6-local-commit-consolidation-2026-11-21.md)及[B7交接](./B7-handoff.md)。
 
@@ -87,6 +87,8 @@
 
 - 2026-11-21 B7 E20：E1–E20及E19a独立完成；原desktop composer PromptNav/click popover/mic迁位、布局失效/选项/more关闭，109/109与build、双引擎8场14图通过；发现原主PTY切换会卸载未发草稿，下一笔修复该实际数据丢失。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e20)。
 
+- 2026-11-22 B7最终子项核销：导航PR合并无新增resolution，8f源功能按scope验证。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-8f1d345309"></a>
 ## [8f1d345309](https://github.com/weiesky/cc-viewer/commit/8f1d345309b10c289ee14825fea8d24f07eb534f) — feat(web): move prompt-nav into composer and relocate mic in --sdk layout
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-8f1d345309)
@@ -115,6 +117,8 @@
 - 2026-11-21 B7 E20：E1–E20及E19a独立完成；原desktop composer PromptNav/click popover/mic迁位、布局失效/选项/more关闭，109/109与build、双引擎8场14图通过；发现原主PTY切换会卸载未发草稿，下一笔修复该实际数据丢失。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e20)。
 
 - 2026-11-21 B7 E21：E1–E21及E19a独立完成；修复实际GUI发现的主PTY切换未发草稿丢失，在同一composer局部保留文本/选区并复用原autosize，109/109与build、双引擎八场重验通过。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e21)。
+
+- 2026-11-22 B7最终子项核销：composer导航/mic迁位及active native身份计数。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-13ad396d5e"></a>
 ## [13ad396d5e](https://github.com/weiesky/cc-viewer/commit/13ad396d5ec0a26ab69583f494f6ff56c23ea97f) — chore(star-history): refresh chart [skip ci]
@@ -163,6 +167,8 @@
 
 - 2026-11-21 B6 E14收口：该提交B6子项按E1–E13核销；最终1986/1986、0skip/build/pack720，新安装525/525与211Web字节通过，双引擎6场26图及10轮问答通过。整条混合范围不扩大完成。完整本地hash见[映射](./B6-local-commit-map-2026-11-21.json)，边界见[B6完成矩阵](./B6-completion-matrix.md)。
 
+- 2026-11-22 B7最终子项核销：Markdown源复制与原选区copy复用B6。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-1b3c2268e3"></a>
 ## [1b3c2268e3](https://github.com/weiesky/cc-viewer/commit/1b3c2268e3bd0e73ffef043bf450662d01a28371) — feat(web): 「添加到对话」覆盖代码 diff、工具参数区与 AskUserQuestion 卡片
 - B0 本地关键代码对照：上游扩展选区引用至 diff、工具参数和问答卡片，并避免选字触发选择；本地 ChatMessage.jsx、DiffView.jsx、AskQuestionForm.jsx 已有各自组件，需实现跨区域规则、键盘和多选区测试，归 B6/B7。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-1b3c2268e3)。
@@ -196,6 +202,8 @@
 
 - 2026-11-21 B6 E14收口：该提交B6子项按E1–E13核销；最终1986/1986、0skip/build/pack720，新安装525/525与211Web字节通过，双引擎6场26图及10轮问答通过。整条混合范围不扩大完成。完整本地hash见[映射](./B6-local-commit-map-2026-11-21.json)，边界见[B6完成矩阵](./B6-completion-matrix.md)。
 
+- 2026-11-22 B7最终子项核销：diff/工具参数/Ask原选区添加到对话复用B6。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-2e09d30192"></a>
 ## [2e09d30192](https://github.com/weiesky/cc-viewer/commit/2e09d30192774017db5cb06d1783686c63b16031) — feat(web): 选中助手回复文字弹出「添加到对话」，作为引用 chip 随消息发送
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-2e09d30192)
@@ -228,6 +236,8 @@
 - 2026-11-21 B6 E14收口：该提交B6子项按E1–E13核销；最终1986/1986、0skip/build/pack720，新安装525/525与211Web字节通过，双引擎6场26图及10轮问答通过。整条混合范围不扩大完成。完整本地hash见[映射](./B6-local-commit-map-2026-11-21.json)，边界见[B6完成矩阵](./B6-completion-matrix.md)。
 
 - 2026-11-22 B7 E35：E1–E35及E19a/E31a/E31b独立完成；真实Codex长单行50ms Enter丢提交已复现，普通文本复用250ms原子粘贴；197/197、build及双引擎双工作区24提交/满队列2场通过，剩余源码审计与全量继续。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e35)。
+
+- 2026-11-22 B7最终子项核销：原选区引用chip/发送与滚动，native即时单行paste最小适配。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-efe935cd43"></a>
 ## [efe935cd43](https://github.com/weiesky/cc-viewer/commit/efe935cd43146052eada870a78bc8fb774e19cdd) — chore(release): 1.9.28
@@ -389,6 +399,8 @@
   - `packages/app/test/wire-compress.test.js` → 无直接路径匹配
   - `packages/app/test/ws-mux-backpressure.test.js` → 无直接路径匹配
 
+- 2026-11-22 B7最终子项核销：有界背压/附着缓存/逐stream复用B3，canonical native V2。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-00fdfade79"></a>
 ## [00fdfade79](https://github.com/weiesky/cc-viewer/commit/00fdfade7948cd895e2f714f71626f2f9e3678bd) — chore: release 1.9.27
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-00fdfade79)
@@ -453,6 +465,8 @@
   - `apps/web/src/utils/gitWorkspacePath.js` → 无直接路径匹配
   - `apps/web/test/file-drag-drop.test.js` → 无直接路径匹配
   - `history.md` → 无直接路径匹配
+
+- 2026-11-22 B7最终子项核销：Git路径drag/quote原链复用B5，native cwd/owner范围保持。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-dd8709356b"></a>
 ## [dd8709356b](https://github.com/weiesky/cc-viewer/commit/dd8709356b27c7ce3321269fc68466f051c613bf) — fix(web+server): close approval modal after server-side auto-advance
@@ -700,6 +714,8 @@
   - `packages/app/server/server.js` → 本地候选：`server.js`
   - `packages/app/test/server-terminal-ws-ping.test.js` → 无直接路径匹配
   - `scripts/tarball-baseline.json` → 无直接路径匹配
+
+- 2026-11-22 B7最终子项核销：现有用量条保持、mainWS心跳/重连复用B3/B4；native无分类RPC不伪造。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-18bd742bc5"></a>
 ## [18bd742bc5](https://github.com/weiesky/cc-viewer/commit/18bd742bc50d38ce52abf9f8df89930c49b50807) — feat: add subtitle preview and extend image preview formats
@@ -1281,6 +1297,8 @@
 
 - 2026-11-21 B6范围核定：复用B5文件/搜索/菜单/路径/引用已验子项，B6新增预览统一dispatcher和实例链保持；混合其余包仍独立。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
+- 2026-11-22 B7最终子项核销：目录drag原MIME/路径编码和策略复用B5；helper全函数AST相同。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-ea995f3883"></a>
 ## [ea995f3883](https://github.com/weiesky/cc-viewer/commit/ea995f38833b20201b47ebd2c13ec5e54e24aa95) — feat(web): drag files into terminal or chat
 - B0 本地关键代码对照：本地 FileExplorer.jsx 的内部拖拽用于移动文件，AppBase.jsx 有外部上传；上游从文件树拖入聊天/终端插入路径。须区分 move、上传和路径引用并处理空格及换行，归 B5/B7。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-ea995f3883)。
@@ -1309,6 +1327,8 @@
 
 - 2026-11-21 B6范围核定：复用B5文件/搜索/菜单/路径/引用已验子项，B6新增预览统一dispatcher和实例链保持；混合其余包仍独立。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
+- 2026-11-22 B7最终子项核销：原文件drag→composer/PTY引用、native路径转义复用B5/B6。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-a6b82f16df"></a>
 ## [a6b82f16df](https://github.com/weiesky/cc-viewer/commit/a6b82f16dff7991670ca8bdf3f01c6ae6f0d5d4b) — feat(web): 文件搜索并入文件浏览器面板并重排搜索控件
 - B0 本地关键代码对照：上游将搜索嵌入文件浏览器、重排筛选、持久化及拖拽比例；本地 FileExplorer.jsx 与 SearchPanel.jsx 独立。须保留替换授权、搜索输入、状态及拖拽焦点，归 B5/B7。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-a6b82f16df)。
@@ -1334,6 +1354,8 @@
   - `history.md` → 无直接路径匹配
 
 - 2026-11-21 B6范围核定：复用B5文件/搜索/菜单/路径/引用已验子项，B6新增预览统一dispatcher和实例链保持；混合其余包仍独立。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
+- 2026-11-22 B7最终子项核销：树内原搜索与持久化/跳转复用B5。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-96f3a7a44e"></a>
 ## [96f3a7a44e](https://github.com/weiesky/cc-viewer/commit/96f3a7a44e014192000378b974ea757f194d08e9) — feat(chat): move user-prompts entry from hamburger menu to prompt-nav "more"
@@ -1366,6 +1388,8 @@
 
 - 2026-11-21 B7 E19a：E1–E19及E19a独立完成；UserPrompt原三视图/导出经107/107、build、双引擎验证，截图发现上游空英文计数单位会回退键名，已作仅标题局部兜底并重验两场6图。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e19a)。
 
+- 2026-11-22 B7最终子项核销：原更多Modal/三视图/txt导出/空计数修正。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-d6ec38be82"></a>
 ## [d6ec38be82](https://github.com/weiesky/cc-viewer/commit/d6ec38be824f67a1528ff1ffeaa91349255dd58e) — feat(header): stop auto-pinning system-prompt entry to top navbar
 - B0 本地关键代码对照：上游移除系统提示入口自动置顶，保留菜单及手动置顶；本地 AppHeader.jsx 有 SystemTextModal 与菜单，需核对实际 pin/status 逻辑和用户偏好迁移，归 B7/B8。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-d6ec38be82)。
@@ -1381,6 +1405,8 @@
   - `.changeset/system-prompt-no-autopin.md` → 无直接路径匹配
   - `apps/web/src/components/dashboard/AppHeader.jsx` → 本地候选：`src/components/dashboard/AppHeader.jsx`
   - `history.md` → 无直接路径匹配
+
+- 2026-11-22 B7最终子项核销：当前Header已无系统提示自动pin/轮询，原手动pins保留；不重引删除机制。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-6081b5d01a"></a>
 ## [6081b5d01a](https://github.com/weiesky/cc-viewer/commit/6081b5d01a1ae5a12063cfdc15959c392c5f37ba) — feat(ask): AskUserQuestion auto-answer (问答题自动托管) — server-side hosting
@@ -1633,6 +1659,8 @@
   - `packages/app/test/v2-shard-routes-http.test.js` → 无直接路径匹配
   - `packages/app/test/v2-shard-routes.test.js` → 无直接路径匹配
 
+- 2026-11-22 B7最终子项核销：规范V2分片URL、目录owner及分页复用B3；原scratch URL身份本轮E31a补正。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-ff0fe1ba93"></a>
 ## [ff0fe1ba93](https://github.com/weiesky/cc-viewer/commit/ff0fe1ba93defb633823eea8e9afa3d5ad065232) — fix(web): keep pasted composer images across incoming chat updates
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-ff0fe1ba93)
@@ -1651,6 +1679,8 @@
   - `history.md` → 无直接路径匹配
 
 - 2026-11-21 B6范围核定：B7输入/导航/对话布局或缓存候选，非B6格式预览/引用；保留B7逐笔核验，不搬整条。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
+- 2026-11-22 B7最终子项核销：粘贴图片/异步上传和defer原链复用B5/B6；图像native输入不支持边界保持。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-57c732d037"></a>
 ## [57c732d037](https://github.com/weiesky/cc-viewer/commit/57c732d0371bc34417e75a6bd106e1a3fde90f99) — feat(server): add CCV_BASE_URL for cloud reverse-proxy deployment
@@ -2170,6 +2200,8 @@
 
 - 2026-11-21 B7 E16：E1–E15已提交；E16原composer12行+border-box/Pad后修，95/95/build，双引擎desktop/pad/phone6场6图通过；继续ghost/Nav/Skills。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e16)。
 
+- 2026-11-22 B7最终子项核销：原border-box/pad高度后修、CR/paste和任务适配；其他平台分支独立。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-d90ac9587d"></a>
 ## [d90ac9587d](https://github.com/weiesky/cc-viewer/commit/d90ac9587dcd9caadee721cbbf26c43ecb5711ea) — fix(web): render blank-whitespace text as no bubble instead of empty chat-boxer
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-d90ac9587d)
@@ -2188,6 +2220,8 @@
   - `history.md` → 无直接路径匹配
 
 - 2026-11-21 B6范围核定：B7输入/导航/对话布局或缓存候选，非B6格式预览/引用；保留B7逐笔核验，不搬整条。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
+- 2026-11-22 B7最终子项核销：两个共享渲染分支按实际segments跳过空白，合法system-tag保留。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-92ed9bc751"></a>
 ## [92ed9bc751](https://github.com/weiesky/cc-viewer/commit/92ed9bc751c4ba3677487453d387e4565cc9fdb3) — fix(content): unify UltraReview prompt to the TeamCreate-free version
@@ -2300,6 +2334,8 @@
 - 2026-11-21 B6范围核定：B7输入/导航/对话布局或缓存候选，非B6格式预览/引用；保留B7逐笔核验，不搬整条。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
 - 2026-11-21 B7 E16：E1–E15已提交；E16原composer12行+border-box/Pad后修，95/95/build，双引擎desktop/pad/phone6场6图通过；继续ghost/Nav/Skills。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e16)。
+
+- 2026-11-22 B7最终子项核销：原12行helper和CSS完整迁入。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-0cde7d1df8"></a>
 ## [0cde7d1df8](https://github.com/weiesky/cc-viewer/commit/0cde7d1df8f15fdbac23be941e367e5d577159de) — feat(web): SDK mode task checklist HUD via sdk-task WS relay
@@ -2481,6 +2517,8 @@
 
 - 2026-11-21 B6范围核定：复用B5文件/搜索/菜单/路径/引用已验子项，B6新增预览统一dispatcher和实例链保持；混合其余包仍独立。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
+- 2026-11-22 B7最终子项核销：工具增量两阶段游标/尾条重扫/真实切换reset复用B3。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-bd32d02884"></a>
 ## [bd32d02884](https://github.com/weiesky/cc-viewer/commit/bd32d02884082a6d15f2b213855537e667cdefd0) — fix(server): live-refresh new message in a resumed history project (SDK mode)
 - 2026-11-18 **已具备（附证据）**：现有快照byte/seq游标+立即pump覆盖同等恢复水位语义，无需移植_seenSizes/suppressExisting。`dc5989a`新增冷/回收后重挂×seed/重建检查点四项独立进程回归，挂接前的新主/子线程精确还原且只转发一次，后续追加无重复。定向19/19、全量1221/1221、682文件实际安装47/47+B1.2+CLI启动通过；运行时代码未变，非GUI/模型验收。完整diff已读，见[B2记录](./B2-session-isolation.md)。下方较早“仍待专项”的记录为历史状态，以上为最新结论。
@@ -2604,6 +2642,8 @@
   - `apps/web/test/sdk-error-dialogue.test.js` → 无直接路径匹配
   - `history.md` → 无直接路径匹配
 
+- 2026-11-22 B7最终子项核销：原错误条800px CSS复用B4，样式声明有效。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-ee3545344e"></a>
 ## [ee3545344e](https://github.com/weiesky/cc-viewer/commit/ee3545344eff8c9969f6de63631d2181844cbfb0) — fix(web): hide SDK error row while its retry is recovering
 - 2026-11-19 B2相关适配：`b03a24f`从真实Codex流解决恢复期间错误终态抑制成功问题；busy保留至终态，成功不留假失败。仅该子项，完整上游手动retry/inline恢复交互仍待B4；全量1269/1269、新安装61/61，不标整条完成。
@@ -2622,6 +2662,8 @@
   - `apps/web/test/sdk-retry-inline.test.js` → 无直接路径匹配
   - `history.md` → 无直接路径匹配
 
+- 2026-11-22 B7最终子项核销：retry恢复中隐藏原错误行复用B4。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-469a995ad8"></a>
 ## [469a995ad8](https://github.com/weiesky/cc-viewer/commit/469a995ad8d6222f2fb092a7c1c3d5bb8fe7b349) — fix(web): keep minimised SDK ask modal minimised across view-switch
 - B0 本地关键代码对照：上游区分 view-switch 合成清除与真实 Ask 清除以保留最小化；本地 ChatView.jsx 管理 pendingAsk 和队列，需测试切视图、重放、真实完成及同 ID，归 B7/B11。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-469a995ad8)。
@@ -2639,6 +2681,8 @@
   - `apps/web/src/utils/approvalDismissal.js` → 无直接路径匹配
   - `apps/web/test/approval-dismissal.test.js` → 无直接路径匹配
   - `history.md` → 无直接路径匹配
+
+- 2026-11-22 B7最终子项核销：SDK ask最小化跨视图、精确实例dismiss守卫复用B4。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-7641f5181a"></a>
 ## [7641f5181a](https://github.com/weiesky/cc-viewer/commit/7641f5181af91a3ca06912d687a8dee678bfb85d) — fix(server): close two first-turn SDK rendering failures
@@ -2743,6 +2787,8 @@
   - `test/v2-live-feed.test.js` → 无直接路径匹配
   - `test/voice-pack-sanguo-integration.test.js` → 无直接路径匹配
 
+- 2026-11-22 B7最终子项核销：回退088血缘保留，B7无新增有效功能。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-08809f6e69"></a>
 ## [08809f6e69](https://github.com/weiesky/cc-viewer/commit/08809f6e69315476690c62bbe238bd5c199b338d) — perf(web): incremental scan in ToolFileChangeController.check (#164)
 - B0 本地关键代码对照：大型 squash 含首轮 SDK 丢结果、Ask 最小化、错误恢复、文件树、Git 样式、agent-loop、历史恢复和增量扫描；随后被 082673509e 全量回退，部分由 7641f518/ef5fc8b1/bd32d028/0cbb5452/c29af25e 重引。以最终树逐功能核验，归 B2/B3/B4/B5/B7/B10/B11，不直接移植回退补丁。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-08809f6e69)。
@@ -2820,6 +2866,8 @@
   - `test/v2-live-feed.test.js` → 无直接路径匹配
   - `test/voice-pack-sanguo-integration.test.js` → 无直接路径匹配
 
+- 2026-11-22 B7最终子项核销：混合squash被082回退，不搬回；最终工具增量由0cbb复用B3。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-7039adeec3"></a>
 ## [7039adeec3](https://github.com/weiesky/cc-viewer/commit/7039adeec33cc99648cb4c4bf714a7fea35eba80) — chore(release): 1.9.18
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-7039adeec3)
@@ -2888,6 +2936,8 @@
   - `apps/web/test/sdk-error-dialogue.test.js` → 无直接路径匹配
   - `apps/web/test/sdk-retry-inline.test.js` → 无直接路径匹配
   - `packages/app/test/sdk-retry-inline.test.js` → 无直接路径匹配
+
+- 2026-11-22 B7最终子项核销：SDK原恢复状态/retry UI复用B4，不新增native重试策略。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-84e65cddc6"></a>
 ## [84e65cddc6](https://github.com/weiesky/cc-viewer/commit/84e65cddc629e8b442e866c303883444901d5c19) — fix(server+web): judge stuck SDK turns by activity probe, restore approvals on attach, keep Stop visible on long turns
@@ -2985,6 +3035,8 @@
 
 - 2026-11-21 B6范围核定：B7输入/导航/对话布局或缓存候选，非B6格式预览/引用；保留B7逐笔核验，不搬整条。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
+- 2026-11-22 B7最终子项核销：native响应已折入唯一messages；没有独立LR渲染分支，不新建副本再隐藏。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-282306a950"></a>
 ## [282306a950](https://github.com/weiesky/cc-viewer/commit/282306a9507f1794fd3a9f35f4aef696e542b68b) — fix(web): SDK-mode plan approval uses the plan card modal
 - B0 本地关键代码对照：上游 SDK Plan 使用全局卡片 modal；本地 ChatView.jsx 注释明确 SDK Plan 在 inline 卡片而非全局 modal。视觉与交互是否合并应按 Codex 审批协议验证，不改写 PTY，归 B11。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-282306a950)。
@@ -3051,6 +3103,8 @@
 
 - 2026-11-21 B6范围核定：AGENTS/skill目录、target身份/编辑/管理复用B5；输入/skills展示等B7及其他混合范围保持。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
+- 2026-11-22 B7最终子项核销：精确target浏览/上下文菜单复用B5，不放宽文件策略。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-3d65bedcd1"></a>
 ## [3d65bedcd1](https://github.com/weiesky/cc-viewer/commit/3d65bedcd1b47a8de7f0ff1bdfec3a11efbc9fa0) — fix(web): keep the composer blood bar visible when the SDK scratch terminal opens
 - 2026-11-20 B4 E12：真实terminalVisible与sdkMode分传、原输入区/portal门控；持久化复用B2。Web267/267、构建、隔离Safari展开/编辑/开关刷新通过；录音未实例化。见[B4.15](./B4-implementation.md#b415-e12-scratch-输入区原始状态与可见性)。
@@ -3068,6 +3122,8 @@
   - `apps/web/src/components/chat/ChatInputBar.jsx` → 本地候选：`src/components/chat/ChatInputBar.jsx`
   - `apps/web/test/sdk-context-blood-bar.test.js` → 无直接路径匹配
   - `history.md` → 无直接路径匹配
+
+- 2026-11-22 B7最终子项核销：SDK scratch保血条portal，与composer相同原guard。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-3e4f1064c2"></a>
 ## [3e4f1064c2](https://github.com/weiesky/cc-viewer/commit/3e4f1064c232960c452758c86157c406dc7ed9dd) — chore(release): 1.9.16
@@ -3269,6 +3325,8 @@
   - `packages/content/concepts/zh/UltraPlan.md` → 无直接路径匹配
   - `packages/content/ultraAgents/code-expert.json` → 本地候选：`ultraAgents/code-expert.json`
 
+- 2026-11-22 B7最终子项核销：UltraReview模板/专家内容，native命名agent适配留B8/B11；不伪造Teammate。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-5e50112388"></a>
 ## [5e50112388](https://github.com/weiesky/cc-viewer/commit/5e5011238822bcd7efe4e8558b81545cc97e40ef) — fix(server+web): server-side auto-approve countdown for plan/perm approvals
 - B0 本地关键代码对照：上游将 plan/perm 自动审批转到服务端，断网无客户端仍执行，并保留取消、重连截止时间及 npm publish/无人值守例外；本地 ChatView.jsx 有客户端计时，权限与用户期望不同。必须独立决策授权范围并验证竞态和强制人工审批，归 B11。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-5e50112388)。
@@ -3354,6 +3412,8 @@
 
 - 2026-11-22 B7 E33：E1–E33及E19a/E31a/E31b独立完成；原SDK Send now行内状态与30s有界占位迁入，结合既有native activeInput/epoch精确核销/防重复/结束清孤儿，130/130、build与双引擎desktop/phone4场8图通过；剩余审计继续。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e33)。
 
+- 2026-11-22 B7最终子项核销：原SDK发送占位/Sending及有界30s核销。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-566ade13fc"></a>
 ## [566ade13fc](https://github.com/weiesky/cc-viewer/commit/566ade13fc3bf2c3fd8d90044b1f36602c6980bf) — feat(web): open CLAUDE.md and skill folders
 - B0 本地关键代码对照：上游支持打开 CLAUDE.md 和 skill 文件夹；本地 CachePopoverContent.jsx 已展示 AGENTS.md，skills 导入也存在。需按 Codex AGENTS/skill 作用域核对入口及安全策略，归 B5/B7。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-566ade13fc)。
@@ -3393,6 +3453,8 @@
 - 2026-11-21 B6范围核定：AGENTS/skill目录、target身份/编辑/管理复用B5；输入/skills展示等B7及其他混合范围保持。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
 - 2026-11-21 B7 E24：E1–E24及E19a独立完成；真实Codex确认项目.agents与旧.codex技能均可发现，现有技能API补项目.agents根，28/28实际目录/读写边界回归通过；/入口选后$方案保持，前端菜单继续。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e24)。
+
+- 2026-11-22 B7最终子项核销：技能管理/原目录/文档编辑复用B5，原生技能枚举和slash本轮接入。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-2cd4488ce9"></a>
 ## [2cd4488ce9](https://github.com/weiesky/cc-viewer/commit/2cd4488ce984abf10f9338ec5f1ad6e88c359281) — Merge pull request #162 from weiesky/fix/file-browser-view-scope
@@ -3624,6 +3686,8 @@
 
 - 2026-11-22 B7 E33：E1–E33及E19a/E31a/E31b独立完成；原SDK Send now行内状态与30s有界占位迁入，结合既有native activeInput/epoch精确核销/防重复/结束清孤儿，130/130、build与双引擎desktop/phone4场8图通过；剩余审计继续。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e33)。
 
+- 2026-11-22 B7最终子项核销：普通队列原条/状态、SDK权威接收及取消/同文ID。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-b9d592fc13"></a>
 ## [b9d592fc13](https://github.com/weiesky/cc-viewer/commit/b9d592fc13fa01acab96432a28c764864fb4729a) — chore(star-history): refresh chart [skip ci]
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-b9d592fc13)
@@ -3771,6 +3835,8 @@
   - `apps/web/test/context-usage-view.test.js` → 无直接路径匹配
   - `apps/web/test/sdk-context-usage-tab.test.js` → 无直接路径匹配
   - `history.md` → 无直接路径匹配
+
+- 2026-11-22 B7最终子项核销：用户已选原Context分类不可用态/353K条不改，原颜色与空态复用B4。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-d89aa3b9af"></a>
 ## [d89aa3b9af](https://github.com/weiesky/cc-viewer/commit/d89aa3b9af9703c2c350dcfa14eefbcd3215ecc5) — fix(web): restore SDK thinking per assistant turn
@@ -4116,6 +4182,8 @@
 
 - 2026-11-21 B6范围核定：B7输入/导航/对话布局或缓存候选，非B6格式预览/引用；保留B7逐笔核验，不搬整条。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
+- 2026-11-22 B7最终子项核销：原浮动composer scrollbar bleed/ResizeObserver复用；shared方法AST相同。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-5d39fa11f3"></a>
 ## [5d39fa11f3](https://github.com/weiesky/cc-viewer/commit/5d39fa11f3d14e480ca46c9adad669048b19756f) — chore(release): 1.9.11
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-5d39fa11f3)
@@ -4158,6 +4226,8 @@
 
 - 2026-11-21 B7 E17：E1–E16已提交；E17原ghost两行/输入floor与voice裁切，95/95/build，10组CSS全同，双引擎6场12图通过受控建议与合成voice preview。继续Nav/Skills。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e17)。
 
+- 2026-11-22 B7最终子项核销：ghost两行/textarea下限和observer清理；CI下载重试归B11。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-c66b5fe2ed"></a>
 ## [c66b5fe2ed](https://github.com/weiesky/cc-viewer/commit/c66b5fe2ed6e855f0610127eba3de96ac821adea) — feat(web): move proxy hot-switch chip into the chat input bar (#158)
 - B0 本地关键代码对照：上游将 proxy chip 移入输入栏、终端展示回退及 iPad drawer 无障碍；本地 AppHeader.jsx 当前展示 profile，需验证 SDK/PTTY、Electron、移动端及 aria/inert，归 B7/B8。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-c66b5fe2ed)。
@@ -4187,6 +4257,8 @@
   - `apps/web/test/proxy-chip-label.test.js` → 无直接路径匹配
   - `apps/web/test/sdk-model-wiring.test.js` → 无直接路径匹配
   - `history.md` → 无直接路径匹配
+
+- 2026-11-22 B7最终子项核销：原ProxyChip输入条slot/phone/pad/desktop门控复用B4；模型策略B8独立。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-c6f887c385"></a>
 - 2026-11-20 B4 E49：133原模型状态/chip与c66固定最终输入slot迁位、原CSS/helper、iPad portal/closed inert已核并适配Codex既有模型快照；完整1564/1564、构建、安装285、Safari空闲刷新/同名隔离/代理优先/强制pad-phone通过，总模型turn0。角色代理B8及Context/文档等混合项仍待，不整条完成；见[B4.52](./B4-implementation.md#b452-e49-模型chip按固定最终位置接入)。
@@ -4321,6 +4393,8 @@
 
 - 2026-11-22 B7 E39：E1–E39及E19a/E31a/E31b独立完成；共享AgentTeam菜单标签按原恢复18语言快捷指令文案，精确源码及build通过；继续剩余候选、local-log扩窗与最终验收。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e39)。
 
+- 2026-11-22 B7最终子项核销：原18语言Quick Prompts标签。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-a336d3919f"></a>
 ## [a336d3919f](https://github.com/weiesky/cc-viewer/commit/a336d3919f585712a1dcc608515e29589c0621f5) — feat(web): fold terminal toolbar upload into the sparkle quick-settings menu
 - B0 本地关键代码对照：本地 TerminalPanel.jsx 有独立上传和 quickSettingsExpanded；上游将上传放入快捷设置且保持隐藏 input/通知链。需验证终端焦点、hover 与上传失败，归 B7。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-a336d3919f)。
@@ -4338,6 +4412,8 @@
   - `history.md` → 无直接路径匹配
 
 - 2026-11-22 B7 E38：E1–E38及E19a/E31a/E31b独立完成；主终端上传按原收进四芒星首行，111/111、build与双引擎desktop/pad4场4图通过；继续原快捷指令文案及逐候选审计。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e38)。
+
+- 2026-11-22 B7最终子项核销：主终端原上传菜单首行；persistent picker原链。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-9b1bb4e729"></a>
 ## [9b1bb4e729](https://github.com/weiesky/cc-viewer/commit/9b1bb4e729473360cbe60e508f0558a702370a08) — fix(sdk): render turn/query failures as persistent rows in the dialogue tail
@@ -4479,6 +4555,8 @@
 
 - 2026-11-21 B7 E25：E1–E25及E19a独立完成；原slash菜单/CSS照迁，用户已选保留/入口选后填原生$；实际skills/list与真实文件fallback、权威空/禁用/旧代次/5s失败重试，110/110、build及双引擎六场六图通过。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e25)。
 
+- 2026-11-22 B7最终子项核销：slash合并无新resolution，原67ceb功能迁入E25。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-3cf3e9585f"></a>
 - 2026-11-20 B4 E52：实际SDK manager/server/AppBase/projectKey/CLI差异核定技能拉取与scope/replay边界，固定最终与84e65缓存/活性区别已读；67祖先/merge combined无新增resolution。B4复用B2/E5/E29/E40/E46既有实例/重连/真实探测，技能metadata与菜单留B7/B8，Codex真实skills/list存在但未迁。不以审计等于整条实现；无运行时或重跑声明，见[B4.55](./B4-implementation.md#b455-e52-斜杠菜单混合提交的sdk生命周期归属源码审计无运行时变动)。
 
@@ -4500,6 +4578,8 @@
 
 - 2026-11-22 B7 E37：E1–E37及E19a/E31a/E31b独立完成；桌面composer上传按原收进四芒星首行并迁入hover后修，110/110、build与双引擎ordinary/SDK/phone/pad8场8图通过；继续终端上传入口及逐候选审计。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e37)。
 
+- 2026-11-22 B7最终子项核销：原Upload hover取消级联、点击关闭菜单。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-9dbf4e295a"></a>
 ## [9dbf4e295a](https://github.com/weiesky/cc-viewer/commit/9dbf4e295a08e472c0b15cfb66de1cc80c77cfa3) — fix(web): SDK 模式打开终端不再隐藏对话输入框
 - 2026-11-20 B4 E12：真实terminalVisible与sdkMode分传、原输入区/portal门控；持久化复用B2。Web267/267、构建、隔离Safari展开/编辑/开关刷新通过；录音未实例化。见[B4.15](./B4-implementation.md#b415-e12-scratch-输入区原始状态与可见性)。
@@ -4514,6 +4594,8 @@
 - 处理建议：对照 Codex SDK 和 app-server 事件；Claude 专属字段不能直接复用。
 - 上游改动路径（1 个）：
   - `apps/web/src/components/chat/ChatInputBar.jsx` → 本地候选：`src/components/chat/ChatInputBar.jsx`
+
+- 2026-11-22 B7最终子项核销：SDK scratch开合始终保composer，B4原guard复用。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-a2be00c45b"></a>
 ## [a2be00c45b](https://github.com/weiesky/cc-viewer/commit/a2be00c45b71be0faf6b8bf1e1e93916b9cc1eb7) — feat(web): 桌面文件上传收纳进 (+) 菜单
@@ -4536,6 +4618,8 @@
 - 2026-11-21 B6范围核定：B5文件上传/共享导入已验，composer (+)及级联输入菜单留B7，B6不重排入口。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
 - 2026-11-22 B7 E37：E1–E37及E19a/E31a/E31b独立完成；桌面composer上传按原收进四芒星首行并迁入hover后修，110/110、build与双引擎ordinary/SDK/phone/pad8场8图通过；继续终端上传入口及逐候选审计。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e37)。
+
+- 2026-11-22 B7最终子项核销：原桌面上传收纳到首行，保phone/pad分支。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-51c23e9090"></a>
 ## [51c23e9090](https://github.com/weiesky/cc-viewer/commit/51c23e9090f349b983a2dba52c738c559da5bf1b) — fix(web): 修复 SDK 模式 plan 审批卡死
@@ -4589,6 +4673,8 @@
 - 2026-11-21 B7 E24：E1–E24及E19a独立完成；真实Codex确认项目.agents与旧.codex技能均可发现，现有技能API补项目.agents根，28/28实际目录/读写边界回归通过；/入口选后$方案保持，前端菜单继续。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e24)。
 
 - 2026-11-21 B7 E25：E1–E25及E19a独立完成；原slash菜单/CSS照迁，用户已选保留/入口选后填原生$；实际skills/list与真实文件fallback、权威空/禁用/旧代次/5s失败重试，110/110、build及双引擎六场六图通过。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e25)。
+
+- 2026-11-22 B7最终子项核销：原slash菜单，权威native skills/list、精确owner/项目，使用$name。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-3d4f098f08"></a>
 - 2026-11-20 B4 E52：实际SDK manager/server/AppBase/projectKey/CLI差异核定技能拉取与scope/replay边界，固定最终与84e65缓存/活性区别已读；67祖先/merge combined无新增resolution。B4复用B2/E5/E29/E40/E46既有实例/重连/真实探测，技能metadata与菜单留B7/B8，Codex真实skills/list存在但未迁。不以审计等于整条实现；无运行时或重跑声明，见[B4.55](./B4-implementation.md#b455-e52-斜杠菜单混合提交的sdk生命周期归属源码审计无运行时变动)。
@@ -4739,6 +4825,8 @@
 - 2026-11-21 B6范围核定：AGENTS/skill目录、target身份/编辑/管理复用B5；输入/skills展示等B7及其他混合范围保持。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
 - 2026-11-21 B7 E22：E1–E22及E19a独立完成；Active Skills原Global/Project/Plugin分行复用native权威source，104/104与build、真实隔离文件API双引擎两图通过，禁用/builtin过滤和既有告警保持。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e22)。
+
+- 2026-11-22 B7最终子项核销：skills分作用域行、导航/HUD/role glass样式。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-ec440163c0"></a>
 ## [ec440163c0](https://github.com/weiesky/cc-viewer/commit/ec440163c0702f493609216e1ff0d7af801fa47e) — Merge pull request #153 from weiesky/fix/file-tree-row-shrink
@@ -4923,6 +5011,8 @@
   - `history.md` → 无直接路径匹配
   - `packages/app/server/lib/ws-mux.js` → 无直接路径匹配
   - `packages/app/test/ws-mux.test.js` → 无直接路径匹配
+
+- 2026-11-22 B7最终子项核销：WS mux逐stream冷载/重连与token隔离复用B3。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-f20efc1371"></a>
 ## [f20efc1371](https://github.com/weiesky/cc-viewer/commit/f20efc13710a4f855a659e03903d6122d03b7122) — fix: use temporary keychain password for macOS signing (#151)
@@ -5219,6 +5309,8 @@
   - `apps/web/test/pinned-menu.test.js` → 无直接路径匹配
   - `history.md` → 无直接路径匹配
 
+- 2026-11-22 B7最终子项核销：原server偏好hydrate/legacy迁移/串行pin写入/外部scope同步。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-5a7349a23b"></a>
 ## [5a7349a23b](https://github.com/weiesky/cc-viewer/commit/5a7349a23b1dc0ebed85ef72d21b9dab09d3654c) — chore(release): 1.9.4
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-5a7349a23b)
@@ -5360,6 +5452,8 @@
   - `packages/app/test/cli-sdk-session-state-env.test.js` → 无直接路径匹配
   - `packages/app/test/turn-active.test.js` → 无直接路径匹配
 
+- 2026-11-22 B7最终子项核销：整轮loading含工具静默和原生turn终态复用B4。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-133bc219df"></a>
 ## [133bc219df](https://github.com/weiesky/cc-viewer/commit/133bc219df78920cdc3a5cb56f48cbe067e467e5) — feat(sdk): SDK 模式 MCP 状态面板 + sdkModel chip + 修双面板无限拉取环
 - 2026-11-21 B4 E60：已选原Context分类入口/居中不可用态，Codex无真实分类producer、现有用量条保持；相关Provider/fetch/timer/palette不新增空实现。55组件+7用量/1579完整/构建，新安装702文件/204Web精确字节/290运行时、B1.2/CLI通过；GUI待、其他混合范围不整体勾选。具体源码阅读/适配边界见[B4.63](./B4-implementation.md)及[B4分类回执](./B4-context-unavailable-2026-11-21.json)。
@@ -5454,6 +5548,8 @@
   - `apps/web/src/components/dashboard/WorkspaceList.module.css` → 本地候选：`src/components/dashboard/WorkspaceList.module.css`
   - `history.md` → 无直接路径匹配
 
+- 2026-11-22 B7最终子项核销：原embedded modal底部20px留白，B2共享CSS/GUI复用。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-04d05a5824"></a>
 ## [04d05a5824](https://github.com/weiesky/cc-viewer/commit/04d05a58240132f057eeef6e830794190b10bc04) — feat(sdk): SDK 模式健壮性修正 + 新增「Context 用量」面板
 - 2026-11-21 B4 E66：用户明确指定临时Playwright后，G1–G5实际Chromium/WebKit/phone-pad仿真GUI已通过，12原截图/哈希；最终1580全量、0skip、构建与pack:dry-run通过。仅B4范围收口，其他混合工作包未迁项仍独立。见[B4完成矩阵](./B4-completion-matrix.md)及[最终GUI回执](./B4-final-gui-2026-11-21.json)。
@@ -5519,6 +5615,8 @@
   - `.changeset/dirbrowser-direct-launch.md` → 无直接路径匹配
   - `apps/web/src/components/dashboard/WorkspaceList.jsx` → 本地候选：`src/components/dashboard/WorkspaceList.jsx`
   - `history.md` → 无直接路径匹配
+
+- 2026-11-22 B7最终子项核销：DirBrowser一步launch复用原回调，普通backend现已接齐。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-956af1723f"></a>
 ## [956af1723f](https://github.com/weiesky/cc-viewer/commit/956af1723f07312dd4580418d6d097bacbb1c448) — chore(release): 1.9.3
@@ -5672,6 +5770,8 @@
   - `packages/app/test/live-processes-close.test.js` → 无直接路径匹配
   - `packages/app/test/workspace-registry-limit.test.js` → 无直接路径匹配
   - `packages/app/test/workspace-registry.test.js` → 无直接路径匹配
+
+- 2026-11-22 B7最终子项核销：原共享resume/目录selector和权限picker；普通PTY逐实例；Git持久复用B5。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-eb2e9703a2"></a>
 
@@ -5849,7 +5949,7 @@
 
 - 2026-11-21用户截图复核：普通CLI/PTY增加工作区入口被本地sdkMode门槛隐藏，上游HeaderProjectSwitcher普通项目标签旁应渲染NewProjectButton。该B2子项恢复待纠偏，既有SDK GUI不覆盖；本轮仅核对/更正状态，无运行时实现提交，见[缺口记录](./B2-pty-workspace-entry-gap-2026-11-21.md)。
 
-- 2026-11-21 B7 E1：本地复用PTY生命周期封装独立实例，18函数体保持；32/32、0skip/build及两实际shell隔离通过。“＋”及完整普通PTY多工作区仍未修，后续继续精确身份/启动/bridge/路由，见[B7实施](./B7-implementation.md#e1)。
+- 2026-11-21 B7 E1：本地复用PTY生命周期封装独立实例，18函数体保持；31/31、0skip/build及两实际shell隔离通过。“＋”及完整普通PTY多工作区仍未修，后续继续精确身份/启动/bridge/路由，见[B7实施](./B7-implementation.md#e1)。
 
 - 2026-11-21 B7 E2：Codex普通TUI bridge单例字段封装为独立实例，15函数逻辑保持，55/55及build通过；双真实本机proxy/fake native进程隔离，停A后B响应通过。原上游多PTY语义的native必要适配，入口/完整注册路由尚待，见[B7实施](./B7-implementation.md#e2)。
 
@@ -5886,6 +5986,8 @@
 - 2026-11-22 B7 E34：E1–E34及E19a/E31a/E31b独立完成；editor按精确owner打开/轮询/结束/重放，保dirty且复用原文件策略，124/124、build与真实Codex双引擎双工作区4场8图通过，无模型调用；继续单行输入和剩余审计。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e34)。
 
 - 2026-11-22 B7 E40a：E1–E39及E19a/E31a/E31b/E40a独立完成；只读归档被boot补锚重载的前置缺陷已修，111/111、build与双引擎2场2图证实仅1次snapshot/无重定向；随后继续原自动扩窗与剩余审计。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e40a)。
+
+- 2026-11-22 B7最终子项核销：普通PTY registry/runtime/精确owner、原＋与共享弹窗；SDK/Electron原分支复用。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-2ae12ca122"></a>
 ## [2ae12ca122](https://github.com/weiesky/cc-viewer/commit/2ae12ca122c9d3210e8f7464970fc8c8df91b067) — chore(star-history): refresh chart [skip ci]
@@ -6511,6 +6613,8 @@
   - `packages/content/concepts/zh/UltraPlan.md` → 无直接路径匹配
   - `packages/content/ultraAgents/code-expert.json` → 本地候选：`ultraAgents/code-expert.json`
 
+- 2026-11-22 B7最终子项核销：UltraReview内容资产及18语言模板，无输入导航代码；B8/B11保留。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-0670581b3d"></a>
 ## [0670581b3d](https://github.com/weiesky/cc-viewer/commit/0670581b3dd0bcecebc1a88d8a032f295b6ada66) — fix(chat): release cold-ingest gate on pipeline failure to unfreeze conversation panel
 - 2026-11-20 B3当前结论：冷载B3子能力完成：a55eb66/5047b36/2b765b1/fb20fd5，gate/索引恢复、成功入队后确认cursor、写失败关闭/释放及外围诊断；自然磁盘损坏HTTP拒绝后重试、reset/刷新缓存已观察，异步历史prepend复用同一闸门。 最终验证及边界见[B3完成矩阵](./B3-completion-matrix.md)与[分片实施](./B3-sharding.md)。
@@ -6534,6 +6638,8 @@
   - `history.md` → 无直接路径匹配
   - `packages/app/server/lib/log-watcher.js` → 无直接路径匹配
   - `packages/app/test/events-backpressure.test.js` → 无直接路径匹配
+
+- 2026-11-22 B7最终子项核销：冷摄取失败reset/gate泄洪复用B3；不添加Claude transport。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-2e17699fd7"></a>
 ## [2e17699fd7](https://github.com/weiesky/cc-viewer/commit/2e17699fd752faedd74a354956cd0c175a8181bc) — feat(git): show +n/-n line stats on unpushed-commit rows, restore real file statuses
@@ -6829,6 +6935,8 @@
   - `test/session-boundary-parity.test.js` → 无直接路径匹配
   - `test/v3-assembler.test.js` → 无直接路径匹配
 
+- 2026-11-22 B7最终子项核销：会话resume刷新与规范snapshot/cursor回放复用B3/B4。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-0cfc040c0a"></a>
 ## [0cfc040c0a](https://github.com/weiesky/cc-viewer/commit/0cfc040c0a659f27ef27306b655f314e55e6c43c) — fix(tests): close SSE subscription gracefully in UserPromptSubmit integration test
 - B0 本地关键代码对照：上游 SSE 测试以正常关闭替代 req.destroy 防止服务端后续写 EPIPE；本地无该 UserPromptSubmit 夹具，需检查现有 SSE 订阅与 stopViewer 的 teardown 时序，归 B3/B11。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-0cfc040c0a)。
@@ -6939,6 +7047,8 @@
   - `packages/app/test/task-state.test.js` → 无直接路径匹配
 
 - 2026-11-22 B7 E41：E1–E41及E19a/E31a/E31b/E40a独立完成；原普通PTY任务HUD接精确root计划快照，整CSS同基线，226/226、build与受控native协议双引擎6场12图通过；实际0.169未见plan工具事件，不记模型执行已验，继续审计。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e41)。
+
+- 2026-11-22 B7最终子项核销：原进度点/新prompt清理；精确当前root事件。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-48d6e0f3c3"></a>
 ## [48d6e0f3c3](https://github.com/weiesky/cc-viewer/commit/48d6e0f3c355a7f9182a2c2f4277cfa353a6c774) — fix(tests): await stopViewer in server.test.js to fix EPIPE flake
@@ -7116,6 +7226,8 @@
 
 - 2026-11-21 B6范围核定：复用B5文件/搜索/菜单/路径/引用已验子项，B6新增预览统一dispatcher和实例链保持；混合其余包仍独立。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
+- 2026-11-22 B7最终子项核销：Markdown路径、技能导入及缓存Popover内容复用B5；角色/协议分支独立。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-71cee60794"></a>
 ## [71cee60794](https://github.com/weiesky/cc-viewer/commit/71cee60794ccdab9eb5eaeef5e84a9e52a54019e) — fix(ci): close the release-pipeline gaps that made releases fail repeatedly
 - B0 本地关键代码对照：混合修复发布依赖顺序、轻量产物漂移门禁及版本步骤。本地 .github/workflows 只有 npm-publish.yml 和 npm pack 预览，需分别核验实际工作流、产物清单与版本策略，归 B11。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-71cee60794)。
@@ -7234,6 +7346,8 @@
 
 - 2026-11-21 B7 E18：E1–E17已提交；E18 Prompt Nav原Plan/Ask/Ultra徽标+语言缓存/producer归属，103/103/build，双引擎6图及3组CSS/18语种通过；继续更多/Prompt汇总。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e18)。
 
+- 2026-11-22 B7最终子项核销：导航语言/稳定fingerprint缓存。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-85b9aabce4"></a>
 ## [85b9aabce4](https://github.com/weiesky/cc-viewer/commit/85b9aabce418b7087319167c3866b2fb562c1e7d) — fix(ci): widen bump-homebrew npm-registry wait window to 10min
 - B0 本地关键代码对照：上游 Homebrew 等待 npm 注册表传播改为最多 10 分钟；本地 .github/workflows 仅见 npm-publish.yml，不能直接套用缺失的上游 job；发布链是否需要 Homebrew 归 B11。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-85b9aabce4)。
@@ -7288,6 +7402,8 @@
 
 - 2026-11-21 B7 E18：E1–E17已提交；E18 Prompt Nav原Plan/Ask/Ultra徽标+语言缓存/producer归属，103/103/build，双引擎6图及3组CSS/18语种通过；继续更多/Prompt汇总。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e18)。
 
+- 2026-11-22 B7最终子项核销：Prompt/Plan/Ask/UltraPlan徽标及生产请求归属。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-9b1a2c913a"></a>
 ## [9b1a2c913a](https://github.com/weiesky/cc-viewer/commit/9b1a2c913a4897acd128265d7c08ed968a2328e2) — docs(claude): document release tag ordering — changeset version bump must land before tagging
 - B0 本地关键代码对照：上游 CLAUDE.md 约束 Changesets 版本变更先于 tag；本地未采用 Changesets，不能把其发布制度当作现行规则；若采纳 A3 则验证版本/tag 顺序，归 B11。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-9b1a2c913a)。
@@ -7337,6 +7453,8 @@
   - `apps/web/src/AppBase.jsx` → 本地候选：`src/AppBase.jsx`
   - `apps/web/test/logs-modal.test.js` → 无直接路径匹配
   - `history.md` → 无直接路径匹配
+
+- 2026-11-22 B7最终子项核销：归档页切项目回调/单页pager/间距复用B3。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-ba3eee8fd5"></a>
 ## [ba3eee8fd5](https://github.com/weiesky/cc-viewer/commit/ba3eee8fd5520b0a6ce66ebd6da749fc8cb120b5) — feat(files): add "Download to local" context-menu item for remote sessions, streamed via GET /api/download-file
@@ -7483,6 +7601,8 @@
 
 - 2026-11-21 B6范围核定：B7输入/导航/对话布局或缓存候选，非B6格式预览/引用；保留B7逐笔核验，不搬整条。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
+- 2026-11-22 B7最终子项核销：原minimalChat合并及三个设置入口；native工具/线程身份适配。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-52adf8968a"></a>
 ## [52adf8968a](https://github.com/weiesky/cc-viewer/commit/52adf8968a258fce495cfcd8d98b0edbc526cde4) — chore(release): 1.8.5
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-52adf8968a)
@@ -7538,6 +7658,8 @@
 - 2026-11-21 B6范围核定：原Task HUD及native任务协议已在B4完成，B6无新增。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
 
 - 2026-11-22 B7 E41：E1–E41及E19a/E31a/E31b/E40a独立完成；原普通PTY任务HUD接精确root计划快照，整CSS同基线，226/226、build与受控native协议双引擎6场12图通过；实际0.169未见plan工具事件，不记模型执行已验，继续审计。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e41)。
+
+- 2026-11-22 B7最终子项核销：原HUD及普通精确root计划；实际0.169模型producer未验。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-fa77ecd681"></a>
 ## [fa77ecd681](https://github.com/weiesky/cc-viewer/commit/fa77ecd6818e2a4874d2020dd09e0d6f6dcde672) — fix(v2): exclude proxy retry-stat shards from legacy v1 log sniffing
@@ -7629,6 +7751,8 @@
 - 2026-11-22 B7 E36：E1–E36及E19a/E31a/E31b独立完成；逐项审计发现窗口仍为旧值，按原恢复桌面800/Android400/iOS300与展开300，109/109及build通过；剩余候选与后续local-log独立scope继续。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e36)。
 
 - 2026-11-22 B7 E40：E1–E40及E19a/E31a/E31b/E40a独立完成；原只读逐帧扩窗恢复，112/112、build与实际1050行V2归档双引擎desktop/phone/pad6场6图通过；继续普通PTY任务HUD缺口、候选审计及最终验收。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e40)。
+
+- 2026-11-22 B7最终子项核销：800/400/300、每次展开300。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-d858204313"></a>
 ## [d858204313](https://github.com/weiesky/cc-viewer/commit/d85820431363b750e522be204e122636d6682aea) — fix(git): show local commits on branches without an upstream in the changes panel
@@ -7793,6 +7917,8 @@
   - `history.md` → 无直接路径匹配
   - `packages/content/ultraAgents/test-analysis-expert.json` → 无直接路径匹配
 
+- 2026-11-22 B7最终子项核销：纯expert提示资产迭代，无B7代码；按既定B8模型提示范围继续。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-936e4637c8"></a>
 ## [936e4637c8](https://github.com/weiesky/cc-viewer/commit/936e4637c833e852f1db756ec21da833a2e952e9) — release: cc-viewer 1.8.1 (changeset version)
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-936e4637c8)
@@ -7884,6 +8010,8 @@
   - `scripts/tarball-baseline.json` → 无直接路径匹配
   - `test/ultra-agents-api.test.js` → 本地候选：`tests/ultra-agents-api.test.js`
 
+- 2026-11-22 B7最终子项核销：纯test-analysis expert资产/发布说明，无输入导航实现；B8/B11保持待核。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-dc1aeb2840"></a>
 ## [dc1aeb2840](https://github.com/weiesky/cc-viewer/commit/dc1aeb28402abcaf4bc0479d343d5fccafc2e68c) — docs(research): add automated test-case generation survey
 - B0 本地关键代码对照：上游 44 个测试生成项目调研支撑 Test Analysis Expert；本地 ultraAgents 含 research-expert，不能等同该测试专家或调研，作为 B7 设计资料评估并验证引用是否仍有效。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-dc1aeb2840)。
@@ -7959,6 +8087,8 @@
   - `packages/content/concepts/uk/ToolsFirst.md` → 无直接路径匹配
   - `packages/content/concepts/zh-TW/ToolsFirst.md` → 无直接路径匹配
   - `packages/content/concepts/zh/ToolsFirst.md` → 无直接路径匹配
+
+- 2026-11-22 B7最终子项核销：native Context呈现body.input逐项Input，非Claude exchange；真实Turn协议不重命名。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-bacfe559fe"></a>
 ## [bacfe559fe](https://github.com/weiesky/cc-viewer/commit/bacfe559fe773a39b8a26c81687baeecb749c147) — fix(release): support npm 12 pack output
@@ -8103,6 +8233,8 @@
 
 - 2026-11-22 B7 E31：E1–E31及E19a/E31a/E31b独立完成；普通PTY原队列条/Stop停放/Send now/删除/相关重放与拒绝原文恢复已接，169/169、build及真实Codex双引擎8场20图通过，A/B原生SID不同；单行50ms即时输入一次未提交待独立复现，B7不宣告完成。 只核本节子项，不把基础接线当整包或入口完成，见[B7实施](./B7-implementation.md#e31)。
 
+- 2026-11-22 B7最终子项核销：普通原队列/立即发送/Stop/IM互斥和SDK已验核心。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-7a2dd6162e"></a>
 ## [7a2dd6162e](https://github.com/weiesky/cc-viewer/commit/7a2dd6162e1465071a755606d77de22d7c0caa90) — fix(sdk): expand all system segments in request JSON view on first-turn MainAgent requests
 - 2026-11-21 B4 E66：用户明确指定临时Playwright后，G1–G5实际Chromium/WebKit/phone-pad仿真GUI已通过，12原截图/哈希；最终1580全量、0skip、构建与pack:dry-run通过。仅B4范围收口，其他混合工作包未迁项仍独立。见[B4完成矩阵](./B4-completion-matrix.md)及[最终GUI回执](./B4-final-gui-2026-11-21.json)。
@@ -8124,6 +8256,8 @@
   - `apps/web/src/utils/requestExpand.js` → 无直接路径匹配
   - `apps/web/test/request-expand.test.js` → 无直接路径匹配
   - `history.md` → 无直接路径匹配
+
+- 2026-11-22 B7最终子项核销：系统段JSON展开/严格SDK说明复用B4；raw指令不改。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-93a17ea623"></a>
 ## [93a17ea623](https://github.com/weiesky/cc-viewer/commit/93a17ea62361d6e90b7c89e9d317496353cd95d3) — chore(tarball): add approval-policy.js + launch-config.js to the tarball baseline
@@ -8259,6 +8393,8 @@
 - 2026-11-21 B4 E55：迁固定最终浮动composer及117ee滚动条bleed，三分支spacer/helper/CSS原样；50定向/1573完整/构建通过，新安装702文件/204Web/286运行时、B1.2/CLI通过，GUI再次native pipe失败待。仅该子项；SDK compact/launch/protocol继续。见[B4.58](./B4-implementation.md#b458-e55-固定最终浮动输入区与滚动条留白实现已验gui待)。
 
 - 2026-11-21 B4 E56：原生contextCompaction完成后发scoped生命周期提示，原banner/CSS/18语言逐字复用、无虚构token；双实例/去重/异thread-turn、UI限10/切会话通过，63定向/1575完整/构建及新安装702文件/204Web字节/287运行时、B1.2/CLI通过，GUI待；其他混合不整条完成，见B4.59/B4-compact-notice-2026-11-21.json。
+
+- 2026-11-22 B7最终子项核销：浮动输入结构/overlay测量复用B4；普通PTY、草稿/队列完成本轮；其余分支独立。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-72551f625b"></a>
 ## [72551f625b](https://github.com/weiesky/cc-viewer/commit/72551f625b26eccd2db74f2aefd93e1d2b0e67b4) — fix(system-prompt): drop 7 loop-volatile dynamic prompt variables
@@ -15108,6 +15244,8 @@
   - `src/components/chat/ChatView.module.css` → 本地候选：`src/components/chat/ChatView.module.css`
   - `src/global.css` → 本地候选：`src/global.css`
 
+- 2026-11-22 B7最终子项核销：合并无新增resolution；继承e12/fcf，非重复功能。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-fcfef597dd"></a>
 ## [fcfef597dd](https://github.com/weiesky/cc-viewer/commit/fcfef597ddaa3c754b641a13b6f989e1b83af775) — ui(chat): scope the 1400px chat cap to message items via .container > *
 - B0 本地关键代码对照：本地 ChatView.module.css 的 .container > * 已限制 1400px 并居中，与上游同类选择器一致；仍需检查虚拟列表等结构的显示效果，归 B7。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-fcfef597dd)。
@@ -15123,6 +15261,8 @@
   - `src/components/chat/ChatView.module.css` → 本地候选：`src/components/chat/ChatView.module.css`
 
 - 2026-11-21 B6范围核定：B7输入/导航/对话布局或缓存候选，非B6格式预览/引用；保留B7逐笔核验，不搬整条。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
+- 2026-11-22 B7最终子项核销：消息子项1400px，composer独立1000px、viewport scrollbar保持。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-e12dcaded9"></a>
 ## [e12dcaded9](https://github.com/weiesky/cc-viewer/commit/e12dcaded939f2d9bee67c226e03fc0aaed8d253) — ui(chat): PC composer polish — 1000px cap, themed strip, white card + shadow, focus-expand animation
@@ -15144,6 +15284,8 @@
   - `src/global.css` → 本地候选：`src/global.css`
 
 - 2026-11-21 B6范围核定：B7输入/导航/对话布局或缓存候选，非B6格式预览/引用；保留B7逐笔核验，不搬整条。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
+- 2026-11-22 B7最终子项核销：composer限宽/主题/焦点两行与autosize；有效12行及后修优先。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-f3a8413db9"></a>
 ## [f3a8413db9](https://github.com/weiesky/cc-viewer/commit/f3a8413db9f99691ef94f54279cedc2913e0c1f0) — fix(chat): wire-agent identity for teammate/subagent classification (1.7.17)
@@ -15176,6 +15318,8 @@
   - `test/request-type-unit.test.js` → 无直接路径匹配
   - `test/v2-meta-rows.test.js` → 无直接路径匹配
 
+- 2026-11-22 B7最终子项核销：canonical native thread/agent身份及持久标签，不复制Claude header。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
+
 <a id="commit-e4fc788b9e"></a>
 ## [e4fc788b9e](https://github.com/weiesky/cc-viewer/commit/e4fc788b9e324c8b1604a20eac541d88bade78ec) — fix(v2-read): finalize crash orphans as completed deltas on cold reads (1.7.16)
 - 2026-11-20 B3当前结论：本地格式等效已验证：32f6d94实际canonical writer预提交故障/重开，输入slice保留，未提交不可见，投影/normalizer/sessionMerge无虚构answer；不将Codex进行中记录强制改completed。Claude缺done转换规则不照搬。 最终验证及边界见[B3完成矩阵](./B3-completion-matrix.md)与[分片实施](./B3-sharding.md)。
@@ -15202,6 +15346,8 @@
   - `test/v2-adapter-incremental.test.js` → 无直接路径匹配
 
 - 2026-11-21 B6范围核定：复用B3已验冷读终态/渲染窗口；没有独立B6预览改动，其他子项不扩大完成。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
+- 2026-11-22 B7最终子项核销：孤立已提交输入与进行中状态复用B3真实writer闭合；无伪造degraded数据。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-4c2765d308"></a>
 ## [4c2765d308](https://github.com/weiesky/cc-viewer/commit/4c2765d308d530f61b47d814519816a9e21f2bd6) — chore(star-history): refresh chart [skip ci]
@@ -15253,6 +15399,8 @@
   - `test/v2-transcript-normalizer.test.js` → 无直接路径匹配
 
 - 2026-11-21 B6范围核定：B6图像显示复用B4已核Codex图像管线；Claude JSONL normalizer不移植，其他协议/元数据仍按B3/B11。见[B6候选矩阵](./B6-candidate-matrix.md)，仅B6范围，非整条混合提交完成。
+
+- 2026-11-22 B7最终子项核销：工具结果图片、原时间戳及请求跳转复用原生管线；Claude JSONL格式不移植。本地51笔整合`5b1c397`，PR #8已合并`89a8d9d`；验证与原始逐笔映射见[B7完成矩阵](./B7-completion-matrix.md)及[候选范围](./B7-candidate-matrix.md)。不把混合其他包或未验环境标为完成。
 
 <a id="commit-8c8b96eafe"></a>
 ## [8c8b96eafe](https://github.com/weiesky/cc-viewer/commit/8c8b96eafe3c6229c3c4dedbd462632dfda51a87) — fix(release): bump version to 1.7.14 for re-publish
@@ -16402,3 +16550,125 @@ Upstream566ade13fc3bf2c3fd8d90044b1f36602c6980bf +7a75e1be81b3e90f55f8888c423e66
 ### 追加源码范围：80ced6a99694f2f861ebecacea68b95f6387c106 / 只读渲染窗口
 
 固定74cd752d实际源码核出的旧混合release前端子项，原74 B7候选之外；E40迁入原只读逐帧扩窗/虚拟化输入免裁剪/原loading反馈，112/112、build及实际V2 HTTP投影双引擎6场6图通过。只展开已加载row，native分页策略不改；其他workflow/release子项未计本包完成。本地独立commit即本记录所在提交，详见[B7 E40](./B7-implementation.md#e40)与源码/GUI回执。
+
+
+### B8 E1 — embedded UltraReview final remediation
+
+Upstream8923322f88def98fc3ccaa66d921aa2e3a1c0133 superseded by134a0de7ac166db5f9375d9f2c60bcd97248852b and92ed9bc751c4ba3677487453d387e4565cc9fdb3 at frozen74cd752d → this independent commit `fix(prompts): align embedded UltraReview remediation rules`. Port final all-P0/P1 and evaluated-P2 rule, per-repository review and dimension framework; retain native wrapper/tool discovery/concurrency/ownership. Single execution source regenerates JSON and18 locale raw templates.42/42,0skip/build pass, actual isolatedHTTP2 included. No new DOM/CSS/GUI/model-execution claim. Standalone interactive review policy and other mixed scopes remain pending. See[B8 E1](./B8-implementation.md#e1--code-expert-内嵌-ultrareview-最终规则).
+
+### B8 E2 — standalone Test Analysis Expert v2
+
+Upstreamf28d9cae37c40ddb456bd23a819b93105b224217 superseded by1af3d646c92433bf72e7c37230a557636550bbaa → this independent commit `feat(prompts): restore standalone test analysis expert preset`; E1local d8a0080. Restore finalv2 standaloneJSON/18locale metadata, preserve locked offlineMidscene rules/two review rounds/anti-oracle/no execution. Reuse existing Codex wrapper/update_plan/explicit request_user_input and capacity discovery; no extra built-in tab.42/42,0skip/pack724 and actual Chromium+WebKit2scenes6images,0pageerror; preview/load/cancel overwrite/save/refresh exact. No actual model/flow execution claim. Source adaptation and CSS evidence in[B8 E2](./B8-implementation.md#e2--独立测分专家-v2).
+
+### B8 E3 — managed model alias matching
+
+Upstreamb78a51eb1dc46c8c115b9b6248a197e612f5a838 +fe0c52ff60a2ef9eb13faa72aedbe97029ee0011 +085c21516f446ce690f0a77c4f1b02c5025f4dc1 +17df4e2fbf4a5d0ec1a96431dc10df851c2afd77 +6363a51ec02f7b0518df69095dc382b26406ece4 alias subitems → this independent commit `fix(prompts): resolve upstream model aliases in managed entries`. Reuse existing managedJSON/API/native thread-start chain; port K3/window/version andDeepSeek expansion, own-property lookup and longest-in-scope selection. Real store regression red first;48/48,0skip including actualHTTP and bridge pass. No automatic third-party presets, new UI/CSS or real provider execution claim; other mixed scopes remain pending. See[B8 E3](./B8-implementation.md#e3--用户模型提示词的别名匹配).
+
+### B8 E4 — actual native prompt binding across restart
+
+Upstream16267dc04c544de3143856ceaac1a6f408fc2765 pinning functional subitem, informed by17df4e2fbf4a5d0ec1a96431dc10df851c2afd77 successful-bind correction → this independent validation commit `test(prompts): verify native prompt binding across resume and fork`. Reuse existing managedJSON/new-thread native instructions, never inject current store on resume/fork. ActualCodex0.169 + isolatedHOME + loopback syntheticResponses:8requests, append/override original→store edit→owned process restart→resume→fork→fresh, multilineUnicode/literal-variable bytes exact and hostdeveloper retained.4owned clients exited, no external model/tools. Full cleared-env2182/2182,0skip/build/pack724 and extracted artifact724exactfiles + standalone/alias smoke pass; first inheritedBYPASS failure and stale-build pack guard retained.54candidate index is footprint-only except explicit E1–4 scopes, not whole-B8 completion. See[B8 E4](./B8-implementation.md#e4--实际原生-freshresumefork-指令绑定验证).
+
+
+### B8 范围调整 — 排除代理重试配置与统计
+
+用户2026-11-22明确整项忽略；本笔撤回E5 26f8b56/E6 206a59a/E7 7249d35及尚未提交的E8 UI，生产tree恢复E4；原commit只作历史，现行无新增重试/统计功能，不计“迁移完成”。3eb16102e5/51b3443e57/935a33cc0a/25e118170c等该scope按用户选择核销；混合commit其他scope仍独立。SDK发送无回复为当前优先问题。UltraReview自动修复/内置preset默认启用已收到明确选项答复。
+
+### B8 E8 — 用户报告SDK无回复：官方SDK显式endpoint
+
+本笔fix(sdk): pass the owned proxy endpoint through official SDK options，非上游迁移项。实际CLI+SDK0.142.5+Codex0.169默认provider旧30s无请求；补baseUrl后本机Responses回复/turn成功，6/6。GUI另发现双producer重复/加载残留，继续修，不记整项通过。见[B8 SDK排查](./B8-sdk-send-investigation.md)。代理重试/统计已按用户排除，不重新加入。
+
+### B8 E9 — SDK原始抓包不再占聊天/原生恢复身份
+
+用户报告实际SDK无回复的后续修复，非原上游迁移：可信sdkTransport来源贯穿controller/proxy/capture；聊天排除raw，V2 auxiliary archive保留Network及按实例隔离，主SDK archive source/native thread/latest不被raw抢占。前笔bdf4f60显式官方SDK baseUrl。54定向/2184完整、0skip/build/pack724；实际CLI+官方SDK+Codex0.169本机合成端点收发，双引擎连续/刷新/单份回复和恢复回执见[B8 SDK排查](./B8-sdk-send-investigation.md)。外部模型/用户现用地址未验，未杀活动进程。
+
+### B8 E10 — 独立UltraReview按用户选择自动修复
+
+134a0de7ac166db5f9375d9f2c60bcd97248852b/92ed9bc751c4ba3677487453d387e4565cc9fdb3 → 本笔独立fix(prompts): apply the selected standalone UltraReview remediation policy。18语言只迁流程4，原生工具/容量/关闭边界保持；移除内嵌/独立旧区别句并同步生成资产。31/31、0skip/build通过，无DOM/CSS、未执行实际模型审查。见[B8 E10](./B8-implementation.md#e10--用户已选独立ultrareview自动修复)。前笔c6195b6为SDK收发/身份修复。
+
+### B8 E11 — 最终7组模型preset资产/catalogue
+
+72c059f6b9/9c0463bb8c/8fb468ddc8/085c21516f/17df4e2fbf/6363a51ec0/15751cf49c/839f0f85ac/b604b1e4f1资产子项 → 本笔独立feat(prompts): ship native-adapted upstream model presets。完整源/逐行必要Codex工具/信任/记忆适配有hash回执，原元数据/defaultMode与模型策略保持；只读catalogue/别名纯模块/包资产登记，未提前自动启用。13/13、0skip/build/pack734；无真实模型或新GUI声称，其他混合scope未整笔完成。见[B8 E11](./B8-implementation.md#e11--7组上游模型preset资产与只读catalogue)。E10本地1861858。
+
+### B8 E12 — builtin双scope墓碑/API
+
+fe0c52ff60a2ef9eb13faa72aedbe97029ee0011/085c21516f/17df4e2fbf状态子项 → 本笔feat(prompts): persist protected builtin prompt opt-outs。原双scope禁用、family rename与raw builtin API复用；Native沿用私有文件/锁/revision、严格认证/body，损坏或链接fail-closed。16/16、0skip/build，真实HTTP和落盘边界通过。原UI及默认生效尚未接，不计整条完成；E11本地dfb562c。见[B8 E12](./B8-implementation.md#e12--内置模型prompt禁用恢复状态与原api)。
+
+### B8 SDK补验 — 默认API namespace
+
+本笔fix(sdk): normalize default and custom API endpoint paths，用户SDK无回复修复的独立补项。复用已有joinUrlPaths，默认API-key base补/v1、请求前缀去重与query保留，未加入重试/统计。36/36、0skip，本地HTTP+禁网MockAgent验证默认与custom各两种实际SDK前缀，原OAuth/redirect/profile/SDK回归通过。见[B8 SDK排查](./B8-sdk-send-investigation.md#e13s--默认api-key与自定义网关的api路径)。模型UI/自动启用E13仍独立在工作区验证。
+
+### B8 E13 — builtin默认启用/原管理UI与native绑定
+
+fe0c52ff60/69b104cbf3/02ce99f202/d6ec38be82功能子项 → 本笔feat(prompts): enable upstream builtin model prompts with native controls。四布局/控件/图标文件逐字匹配；Native能力/精确instance/CAS、部分墓碑成功可重试、六变量纯渲染、当前profile模型默认页签与候选、无自动钉住。56定向/2202完整、0skip，后键盘叶子补丁Web712+两引擎Enter/Space确认通过；实际Codex15请求7模型默认+两模式跨进程resume/fork/fresh逐字，最终build/pack735。SDK默认路径f11e058另36定向。480px源flex截标签保留，不记全窄屏视觉；外部模型未验。见[B8 E13](./B8-implementation.md#e13--原模型prompt管理界面与默认原生注入)与源码/GUI/native回执。
+
+### B8 E14 — 显式native指令优先
+
+固定最终launch-config/system-prompt-files（085c21516f/17df4e2fbf后续链）手动优先子项 → 本笔fix(prompts): preserve explicit native instructions before automatic presets。显式baseInstructions及已知config model_instructions_file抑制自动preset；12定向/0skip与实际native两请求验证，宿主层保留、自有进程退出，无外部模型。其他配置层仍未整项核销。E13 aa86dbf；见[B8 E14](./B8-implementation.md#e14--显式native指令优先)。
+
+### B8 E15 — Kimi头像/别名显示
+
+e932bbef2e/6363a51ec0/f2ebb0fe6b头像子项 → 本笔fix(models): align Kimi logo and final model alias display。最终SVG及provider块逐字，12正/4反别名、双引擎两主题/4尺寸资产预览与build通过；353K/Context不改。不是全产品GUI；其他scope继续。E14 498d771；见[B8 E15](./B8-implementation.md#e15--kimi最终头像与模型别名显示)。
+
+### B8 E16 — 范围审计/产物检查点
+
+617da66c96/82db2b907c/fa77ecd681按用户排除；1db2a38eab最终仅Claude导入链不新造；72551f625b易变占位本轮执行保留；7c/c66 compact/slot复查及B4证据复用，3cc角色仍待；目录/插件/公开URL sibling scope归B10/B11不冒称整笔完成。[范围表](./B8-scope-audit.md)。最终2205完整/0skip/build/pack735、新安装656/656、735包文件/211Web全部字节/B1.2/隔离CLI通过；初轮bypass环境失败保留、clean env重跑，无权限代码改动。[回执](./B8-E16-checkpoint.json)。E13 aa86dbf/E14 498d771/E15 a91a008；本笔chore(alignment): record B8 scope exclusions and verified checkpoint，B8仍进行中，未推送/PR/重启。
+
+### B8 E17 — 仅新会话生效的最新选择
+
+085c21516f/17df4e2fbf live system子项按用户最新明确更正不迁；仅thread/start，native现有/resume/fork钉扎保持。未写或启用代理热切代码，无新测试通过声明；原E4/E13真实native证据保留。前E16 da4b998；本笔docs(alignment): honor new-session-only system prompt scope。
+
+### B8 E18 — --参数边界
+
+d5e66ec1d8 argv顺序子项 → 本笔fix(cli): keep owned config options before literal prompt arguments。共享前插helper；CXV/OTel内部config不进prompt，OTel去重不吞literal内容。21定向/0skip及实际native exec旧路径拒绝/新路径一次收发、逐字prompt/进程退出通过；headless受管指令仍待，无新GUI/外部模型声明。见[B8 E18](./B8-implementation.md#e18--内部参数保持在字面----之前)。E17 515dc6c。
+
+### B8 E19 — 最新原生容量/压缩水位调研
+
+用户新要求覆盖旧名称猜测讨论，0.171最新稳定与本机0.169/当前main源码分版核验；实际native5请求证明模型跟随窗口与覆写裁剪、last/累计区别。普通90%W、可用缺省95%W、后台实验65%W及12K百分比基线详见[报告](./B8-codex-context-research.md)。仅调研，无生产显示改动/用户配置改动/实际压缩触发声明。无GUI完整注入已选，profile支持仍适配中。E18 7852d65；本笔docs(alignment): research native Codex model windows and compaction thresholds。
+
+### B8 E20 — 无GUI指令准备（尚未接CLI）
+
+d5e66ec1d8 headless提示词子项 → 本笔feat(prompts): prepare managed instructions for fresh native exec launches。native只读config/profile origins+原selector、手动优先、私有override文件与原生developer追加；18定向和实际native7请求/fresh-resume-fork/profile通过。复杂发现/trust profile拒绝推断，CLI接线仍下一笔，不计整条完成。源码/native差异与库选择见[B8 E20](./B8-implementation.md#e20--无gui受管提示词准备模块)。E19 2bb9798。
+
+### B8 E21 — 无GUI完整CLI
+
+d5e66ec1d8 headless子项 → 本笔feat(cli): apply managed prompts to fresh headless Codex sessions。复用E20/native配置/selector/logger；仅新会话，原生支持的后置旗标和手动优先保留，受管损坏fail-closed/自有探测中断清理。25定向/0skip，实际完整CLI7请求、6原生抓包归档、私有临时文件回收通过；全量首轮旧hoisted fixture stub缺E18导出，改真实模块并重跑中，未算通过。复杂profile仍明确跳过，包内其他混合scope继续。见[B8 E21](./B8-implementation.md#e21--无gui真实cli接线与中断清理)。E20 83ba649。
+
+### B8 E22 — 原生容量与未知态
+
+用户明确替代旧353K方案，3a2159219b窗口语义/相关显示子项按Codex原生producer适配；不迁未知模型猜1M。普通/SDK AppServer窗口与last用量贯穿，12K百分比口径同native，未知不借旧值。50定向/Web712/build、实际native7请求及两浏览器原UI/刷新/同名隔离/桌面mobile抽屉通过，真机与外部模型未验；SDK exec无窗口字段显示未知。E21 b03a08f完整2215/2215已过，非E22新全量。见[B8 E22](./B8-implementation.md#e22--用户已选原生窗口本轮用量)。
+
+### B8 E23 — 角色分源状态
+
+3cc05b496d workspace状态/resolve子项 → 本笔feat(proxy): store native role assignments per workspace。用户已选原生能力渐进；沿用activeId/roles与follow/Default/official休眠，复用V2同名隔离，CAS/私有原子写/坏库fail-closed。3定向/0skip；尚未接生产路由/UI、不算整项完成。E22 e630ea2；见[B8 E23](./B8-implementation.md#e23--原生角色分源的工作区状态与纯解析)。
+
+### B8 E24 — 原生线程证明与实际分源
+
+3cc05b496d route子项 → 本笔feat(proxy): route requests by owned native thread roles。自有bridge/SDK祖先证明，不以文本/HTTP role认身份；实际native child的session头共享root，已以原生嵌套thread_id lookup纠正，逐owner/turn钉扎与坏库阻断。58定向及实际Codex3请求（main2/child1/Default0）、双协议证明/自有进程退出通过，API/UI仍待。E23 ade08fd；见[B8 E24](./B8-implementation.md#e24--自有原生线程身份与分源路由)。
+
+### B8 E25 — 工作区API/能力门
+
+3cc05b496d preferences/watch子项 → 本笔feat(proxy): expose scoped native role settings with capability gates。modern双CAS/全局catalogue fallback、旧API/备份兼容、原值可回传但unsupported不可改role，跨进程watch/原SSE清理；新session主源模型按所属cwd选择，恢复不选新指令。35定向/0skip及实际完整CLI8请求/7原生archive通过，API检查不启动模型进程；UI下一笔，跨文件原子事务不作承诺。E24 f8ff34b；见[B8 E25](./B8-implementation.md#e25--原生能力门工作区apicas与新会话模型选择)。
+
+### B8 E26 — 原角色UI/标签
+
+3cc/7c/c66/add350角色UI子项 → 本笔feat(proxy): align native role controls and compact source labels。原CSS块逐字、只隐藏不存在的Teammate并native能力门控Sub；原slot/compact/Default语义保留，双CAS/迟到读取防覆盖/18词条与概念说明齐全。Web715/完整2228、0skip/build及两浏览器8最终图/跨窗口/冲突/删除/SDK exec禁用/桌面mobile抽屉通过；自有fixture退出，无真实模型或真机声称。E25 1e10d01；见[B8 E26](./B8-implementation.md#e26--原角色管理区与紧凑主源标签)。
+
+### B8 E27 — root模型归属
+
+本轮原生角色集成发现的本地缺口，非重试/统计功能：proxy内部模型回调携线程身份，AppServer只收已证明root、exec排除已知其他thread。两模式先红wire-child覆盖，修后33定向/0skip，entry/idle状态wire-main。E26 3c51eea；本笔fix(sdk): keep child response models out of the root identity。显式SDK AppServer default provider/env重定向缺口另笔处理，未声称修完。
+
+### B8 E28 — SDK AppServer endpoint
+
+原生适配集成缺口，非代理重试统计：显式native openai_base_url代替仅env，真实default provider红30秒0请求→绿main2/child1/Default0，双归属与自有进程清理通过；AppServer/root模型定向通过。E27 0348c98；本笔fix(sdk): redirect the native AppServer default provider explicitly。
+
+### B8 E29 — SSE慢恢复
+
+77b61控制流子项 → 本笔fix(web): keep the control stream reconnecting after long outages。复用本地固定scope/mux，十次耗尽后30秒持续恢复/18原提示/成功复位/首次未open watchdog/卸载清理；Web716/716、0skip，真实类确定性时钟验证保留草稿且不重放。retryConfig off-mode watchdog随用户排除，插件timeout留B10；不整条勾选。E28 02d820e。
+
+### B8 E30 — 候选最终审计
+
+54候选按B8子项收口，非整条上游提交完成；实际diff/本地完整链复核、已验复用、用户排除和B9–B11剩余责任见[B8范围核对](./B8-scope-audit.md)。E29 81ab51f；本笔docs(alignment): reconcile the final B8 candidate scopes。最终验收/合并仍待，不因文档宣称测试通过。
+
+### B8 E31 — 最终验收
+
+最终2232/2232、0skip/build/pack737，全新安装685/685及全部737包/211Web精确字节、B1.2/隔离CLI通过；最终真实SDK默认exec两浏览器4请求/4最终图、idle与发送恢复/刷新/归档恢复通过。E28显式AppServer default provider实际3请求证明另保留。无外部模型/真机声明。E30 0f41f85；见[B8最终回执](./B8-final-2026-11-22.json)。整合/PR合并后再更新全局完成标记。

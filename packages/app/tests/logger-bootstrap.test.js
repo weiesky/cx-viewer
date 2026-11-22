@@ -124,6 +124,15 @@ test('native logger fallback starts capture proxy before launching Codex', { tim
 
   const fakeCodex = join(bin, 'codex');
   writeFileSync(fakeCodex, `#!/usr/bin/env node
+if (process.argv.includes('app-server')) {
+  const { createInterface } = await import('node:readline');
+  for await (const line of createInterface({ input: process.stdin })) {
+    const message = JSON.parse(line);
+    if (message.id !== undefined) console.log(JSON.stringify({ id: message.id,
+      result: message.method === 'config/read' ? { config: {}, origins: {} } : {} }));
+  }
+  process.exit(0);
+}
 const config = process.argv.find(arg => arg.startsWith('openai_base_url='));
 if (!config) process.exit(2);
 const base = JSON.parse(config.slice(config.indexOf('=') + 1));
@@ -172,4 +181,35 @@ await response.text();
   assert.equal(exitCode, 0, stderr);
   assert.equal(upstreamRequests, 1);
   assert.match(collectTextFiles(logs), /native-fallback-marker/);
+});
+
+test('headless shutdown stops its owned configuration probe before native exec can start', { timeout: 20_000 }, async t => {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-headless-stop-'));
+  const home = join(root, 'home'), bin = join(root, 'bin'), pidFile = join(root, 'probe.pid');
+  mkdirSync(join(home, '.codex'), { recursive: true }); mkdirSync(bin);
+  const fakeCodex = join(bin, 'codex');
+  writeFileSync(fakeCodex, `#!/usr/bin/env node
+const { writeFileSync } = await import('node:fs');
+if (!process.argv.includes('app-server')) { writeFileSync(${JSON.stringify(join(root, 'unexpected-exec'))}, 'started'); process.exit(99); }
+writeFileSync(${JSON.stringify(pidFile)}, String(process.pid));
+process.stdin.resume();
+setInterval(() => {}, 1000);
+`);
+  chmodSync(fakeCodex, 0o755);
+  const child = spawn(process.execPath, [resolve('cli.js'), 'run', '--', 'codex', 'exec', '--', 'private prompt'], {
+    env: { ...process.env, HOME: home, CODEX_HOME: join(home, '.codex'), PATH: `${bin}:${process.env.PATH}`,
+      SHELL: '/bin/bash', CXV_LOG_DIR: join(root, 'logs'), CXV_PROXY_PROFILE_PATH: join(root, 'profile.json'),
+      CXV_TEST: '', CXV_CLI_MODE: '', CXV_WORKSPACE_MODE: '', CXV_LOGGER_BOOTSTRAP_DISABLED: '', CXV_DISABLE_AUTO_SYSTEM_PROMPT: '' },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  t.after(() => { if (child.exitCode === null) child.kill('SIGKILL'); });
+  let stderr = ''; child.stderr.on('data', chunk => { stderr += chunk; });
+  const closed = new Promise((done, fail) => { child.once('error', fail); child.once('close', done); });
+  for (let n = 0; n < 100 && !readdirSync(root).includes('probe.pid'); n++) await new Promise(r => setTimeout(r, 25));
+  const pid = Number(readFileSync(pidFile, 'utf8'));
+  child.kill('SIGTERM');
+  assert.equal(await closed, 143, stderr);
+  assert.throws(() => process.kill(pid, 0), { code: 'ESRCH' });
+  assert.equal(readdirSync(root).includes('unexpected-exec'), false);
+  assert.doesNotMatch(stderr, /private prompt|Viewer started/);
 });

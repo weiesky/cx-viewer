@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { appServerThreadParams, createSdkAppServerTransport, normalizeAppServerItem, normalizeAppServerMcpStatus, normalizeAppServerSkills, serializeAppServerConfig } from '../lib/sdk-appserver-transport.js';
 
 function fixture(mode = 'success', options = {}) {
-  const calls = [], raw = [];
+  const calls = [], raw = [], launches = [];
   let notify, close, replyTurn, stopped = 0;
   const closed = new Promise(resolve => { close = resolve; });
   const frame = (method, params) => notify({ method, params });
@@ -37,7 +37,7 @@ function fixture(mode = 'success', options = {}) {
       frame('item/started', { threadId: 'root', turnId: 'turn', item: { id: 'message', type: 'agentMessage', text: '' } });
       frame('item/agentMessage/delta', { threadId: 'root', turnId: 'turn', itemId: 'message', delta: 'hello' });
       frame('item/completed', { threadId: 'root', turnId: 'turn', item: { id: 'message', type: 'agentMessage' } });
-      frame('thread/tokenUsage/updated', { threadId: 'root', turnId: 'turn', tokenUsage: { last: { inputTokens: 3, outputTokens: 2 } } });
+      frame('thread/tokenUsage/updated', { threadId: 'root', turnId: 'turn', tokenUsage: { modelContextWindow: 258400, total: { inputTokens: 900000, outputTokens: 1000, totalTokens: 901000 }, last: { inputTokens: 3, outputTokens: 2, totalTokens: 5 } } });
       frame('error', { threadId: 'root', turnId: 'old', error: { message: 'late old error' } });
       frame('error', { threadId: 'root', turnId: 'turn', error: { message: 'retrying',
         codexErrorInfo: { responseStreamDisconnected: { httpStatusCode: 503 } }, additionalDetails: 'fixture detail' }, willRetry: true });
@@ -47,9 +47,9 @@ function fixture(mode = 'success', options = {}) {
     },
   };
   const transport = createSdkAppServerTransport({ cwd: '/fixture', instanceKey: 'a', codexPath: '/fake',
-    ...(options.timers || {}), onServerRequest: options.onServerRequest,
-    clientFactory: () => client, onNotification: f => raw.push(f) });
-  return { transport, calls, raw, frame, client, close, replyTurn: () => replyTurn(), get stopped() { return stopped; } };
+    ...options.transportOptions, ...(options.timers || {}), onServerRequest: options.onServerRequest,
+    clientFactory: config => { launches.push(config); return client; }, onNotification: f => raw.push(f) });
+  return { transport, calls, raw, launches, frame, client, close, replyTurn: () => replyTurn(), get stopped() { return stopped; } };
 }
 
 function lostResultFixture(options = {}) {
@@ -355,6 +355,8 @@ test('App Server events arriving before turn acceptance retain deltas and exclud
     assert.ok(events.some(e => e.type === 'item.completed' && e.item._appServerPlan), 'last plan is durable at turn end');
     assert.equal(events.at(-1).type, 'turn.completed');
     assert.equal(events.at(-1).usage.inputTokens, 3);
+    assert.equal(events.at(-1).context_window, 258400);
+    assert.equal(events.at(-1).usage.totalTokens, 5);
     assert.deepEqual(events.find(e => e.type === 'turn.started'), { type: 'turn.started', thread_id: 'root', turn_id: 'turn' });
     const retry = events.find(e => e.type === 'error');
     assert.equal(retry.willRetry, true); assert.equal(retry.turn_id, 'turn'); assert.equal(retry.thread_id, 'root');
@@ -463,4 +465,27 @@ test('native skills discard reads from a retired client', async () => {
   const stream = await f.transport.runStreamed('hold'); const it = stream.events[Symbol.asyncIterator](); await it.next(); await it.next();
   const pending = f.transport.getSkills(); await f.transport.stop(); finish({ data: [{ cwd: '/fixture', skills: [] }] });
   await assert.rejects(pending, /changed/); await assert.rejects(it.next(), /stopped/);
+});
+
+
+test('owned AppServer capture explicitly redirects the native default provider, preserving other config', async () => {
+  for (const proxyPort of [45678, undefined]) {
+    const f = fixture('success', { transportOptions: { proxyPort, codexOptions: {
+      config: { openai_base_url: 'https://unowned.invalid', developer_instructions: 'literal $x \"value\"' },
+      env: { SDK_FIXTURE: 'retained' },
+    } } });
+    try {
+      const stream = await f.transport.runStreamed('accepted');
+      for await (const event of stream.events) { /* drain the real transport flow */ }
+      const launch = f.launches[0];
+      assert.equal(launch.env.SDK_FIXTURE, 'retained');
+      const baseArgs = launch.args.filter(value => value.startsWith('openai_base_url='));
+      assert.equal(baseArgs[0], 'openai_base_url="https://unowned.invalid"');
+      assert.equal(launch.args.includes('developer_instructions="literal $x \\"value\\""'), true);
+      if (proxyPort) {
+        assert.equal(baseArgs.at(-1), 'openai_base_url="http://127.0.0.1:45678"');
+        assert.equal(launch.env.OPENAI_BASE_URL, 'http://127.0.0.1:45678');
+      } else assert.equal(baseArgs.length, 1);
+    } finally { await f.transport.stop(); }
+  }
 });

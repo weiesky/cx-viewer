@@ -1,3 +1,4 @@
+import { formatContextUsage } from '../../utils/helpers';
 import React, { memo, useMemo } from 'react';
 import { Popover, Tag } from 'antd';
 import { t } from '../../i18n';
@@ -41,7 +42,7 @@ function LiveTagPopover({
   // 用 CSS 变量替代 inline style 字面量,稳定 ctxColor / contextPercent 时 triggerStyle 引用不变。
   const triggerStyle = useMemo(() => ({
     '--ctx-color': ctxColor,
-    '--ctx-percent': `${contextPercent}%`,
+    '--ctx-percent': `${contextPercent ?? 0}%`,
   }), [ctxColor, contextPercent]);
 
   if (isLocalLog) {
@@ -93,9 +94,7 @@ function LiveTagPopover({
         <span className={styles.liveTagFill} />
         <span className={styles.liveTagContent}>
           <span className={styles.liveTagText}>
-            {contextTokens > 0
-              ? `${(contextTokens / 1000).toFixed(1)}K (${contextPercent}%)`
-              : `${contextPercent}%`}
+            {formatContextUsage(contextTokens, contextPercent)}
           </span>
         </span>
       </button>

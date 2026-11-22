@@ -250,7 +250,10 @@ export function createSdkAppServerTransport({ cwd, instanceKey, codexPath, codex
         _appServerPlan: true, explanation: p.explanation, items: (p.plan || []).map(step => ({ text: step.step,
           completed: step.status === 'completed', status: step.status === 'inProgress' ? 'in_progress' : step.status })) };
       push(run, { type: 'item.updated', item: run.plan });
-    } else if (frame.method === 'thread/tokenUsage/updated') run.usage = p.tokenUsage?.last;
+    } else if (frame.method === 'thread/tokenUsage/updated') {
+      run.usage = p.tokenUsage?.last;
+      run.contextWindow = p.tokenUsage?.modelContextWindow;
+    }
     else if (frame.method === 'error') {
       push(run, { type: 'error', message: p.error?.message || 'App Server error', error: p.error,
         willRetry: p.willRetry, thread_id: nativeThreadId, turn_id: run.turnId });
@@ -260,7 +263,7 @@ export function createSdkAppServerTransport({ cwd, instanceKey, codexPath, codex
           if (item) push(run, { type: 'item.completed', item }); }
       }
       if (run.plan) push(run, { type: 'item.completed', item: run.plan });
-      if (p.turn.status === 'completed') push(run, { type: 'turn.completed', usage: run.usage,
+      if (p.turn.status === 'completed') push(run, { type: 'turn.completed', usage: run.usage, context_window: run.contextWindow,
         thread_id: nativeThreadId, turn_id: run.turnId });
       else push(run, { type: 'turn.failed', thread_id: nativeThreadId, turn_id: run.turnId,
         status: p.turn.status, error: { ...p.turn.error, message: p.turn.status === 'interrupted'
@@ -321,7 +324,8 @@ export function createSdkAppServerTransport({ cwd, instanceKey, codexPath, codex
     if (initializing) return initializing;
     const owned = clientFactory({ codexPath, cwd,
       args: [...serializeAppServerConfig(codexOptions.config || {}), ...configOverrides.flatMap(value => ['-c', value]),
-        ...serializeAppServerConfig(explicitConfig)], env: { ...process.env, ...codexOptions.env,
+        ...serializeAppServerConfig(explicitConfig),
+        ...(proxyPort ? ['-c', `openai_base_url=${JSON.stringify(`http://127.0.0.1:${proxyPort}`)}`] : [])], env: { ...process.env, ...codexOptions.env,
       CXV_PROJECT_DIR: cwd, CXV_INSTANCE_KEY: instanceKey, CXV_SDK_MODE: '1',
       ...(proxyPort ? { OPENAI_BASE_URL: `http://127.0.0.1:${proxyPort}` } : {}),
     } });

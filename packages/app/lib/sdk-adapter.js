@@ -275,6 +275,7 @@ export function sdkToJSONLEntry(assistantMsg, messages, model, projectName, opts
         model: model || respBody.model || null,
         stop_reason: opts.stopReason || 'end_turn',
         ...(usage ? { usage } : {}),
+        ...(Number.isSafeInteger(respBody.context_window) && respBody.context_window > 0 ? { context_window: respBody.context_window } : {}),
         ...(respBody.turn ? { turn: respBody.turn } : {}),
         ...(respBody.error ? { error: respBody.error } : {}),
       },

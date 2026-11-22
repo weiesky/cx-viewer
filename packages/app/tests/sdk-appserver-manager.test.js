@@ -65,7 +65,7 @@ for await (const line of createInterface({ input: process.stdin })) {
  send({ method: 'item/completed', params: { threadId: 'unrelated-child', turnId: 'child-turn', item: { id: 'child', type: 'agentMessage', text: 'must not leak' } } });
  send({ method: 'item/completed', params: { threadId, turnId, item: { id: 'collab', type: 'collabAgentToolCall', tool: 'spawnAgent', status: 'completed', receiverThreadIds: ['child'], agentsStates: { child: { status: 'running' } } } } });
  send({ method: 'item/completed', params: { threadId, turnId, item: { id: 'answer', type: 'agentMessage', text: 'reply: ' + text } } });
- send({ method: 'thread/tokenUsage/updated', params: { threadId, turnId, tokenUsage: { last: { inputTokens: 3, outputTokens: 2 } } } });
+ send({ method: 'thread/tokenUsage/updated', params: { threadId, turnId, tokenUsage: { modelContextWindow: 258400, total: { inputTokens: 900000, outputTokens: 1000, totalTokens: 901000 }, last: { inputTokens: 3, outputTokens: 2, totalTokens: 5 } } } });
  send({ method: 'turn/completed', params: { threadId, turn: { id: turnId, status: 'completed', items: [] } } });
 }
 `);
@@ -92,6 +92,8 @@ test('explicit native manager preserves the SDK archive contract and authentic t
     assert.equal(main.body.metadata.transport, 'appserver');
     assert.equal(main.body.metadata.cwd, a);
     assert.equal(main.response.body.usage.input_tokens, 3);
+    assert.equal(main.response.body.usage.total_tokens, 5);
+    assert.equal(main.response.body.context_window, 258400);
     assert.equal(JSON.stringify(main).includes('must not leak'), false);
     const tool = entries.find(entry => entry.method === 'TOOL');
     assert.equal(tool.body.tool_name, 'spawn_agent');

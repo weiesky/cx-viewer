@@ -53,7 +53,8 @@ export { default as ChatMessage } from './src/components/chat/ChatMessage.jsx';
 export { default as PreferencesForm } from './src/components/settings/PreferencesForm.jsx';
 export { default as DetailPanel } from './src/components/dashboard/DetailPanel.jsx';
 export { default as ContextTab } from './src/components/dashboard/ContextTab.jsx';
-export { default as ProxyChip } from './src/components/chat/ProxyChip.jsx';`, resolveDir: web },
+export { default as ProxyChip } from './src/components/chat/ProxyChip.jsx';
+export { default as ProxyModal } from './src/components/settings/ProxyModal.jsx';`, resolveDir: web },
   bundle: true, platform: 'node', format: 'cjs', packages: 'external', outfile: output,
   loader: { '.css': 'empty', '.svg': 'text', '.png': 'dataurl', '.gif': 'dataurl' }, logLevel: 'error' });
 test.after(() => rmSync(directory, { recursive: true, force: true }));
@@ -274,6 +275,7 @@ function fixture(t, { blocked = false, component = 'Component', props = {} } = {
         return [hooks[index].value, value => { hooks[index].value = typeof value === 'function' ? value(hooks[index].value) : value; }];
       },
       useMemo(fn) { cursor++; return fn(); },
+      useId() { return `fixture-id-${cursor++}`; },
       useCallback(fn) { cursor++; return fn; },
       useRef(initial) { const index = cursor++; return (hooks[index] ||= { current: initial }); },
       useLayoutEffect(fn, deps) { return this.useEffect(fn, deps); },
@@ -318,9 +320,9 @@ function voiceFixture(t) {
   t.after(() => { exports.resetVoice(); if (original) Object.defineProperty(globalThis, 'Audio', original); else delete globalThis.Audio; });
   const app = new f.AppBase({});
   app.state.projectName = 'same'; app.state.sdkMode = true;
-  app._resetSSETimeout = () => {};
+  app._armSSETimeout = app._resetSSETimeout = () => {};
   app._streamTransport = { open() {
-    const handlers = new Map(), source = { addEventListener(name, fn) { handlers.set(name, fn); },
+    const handlers = new Map(), source = { close() {}, addEventListener(name, fn) { handlers.set(name, fn); },
       fire(name, data) { handlers.get(name)?.({ data: typeof data === 'string' ? data : JSON.stringify(data) }); } };
     sources.push(source); return source;
   } };
@@ -788,8 +790,8 @@ function coldIngestFixture(t) {
 
 test('a queued stream paint cannot revive an overlay after its canonical final entry commits', t => {
   const { app, row, raf } = coldIngestFixture(t), handlers = new Map();
-  app._streamTransport = { open: () => ({ addEventListener: (name, fn) => handlers.set(name, fn) }) };
-  app._resetSSETimeout = () => {};
+  app._streamTransport = { open: () => ({ close() {}, addEventListener: (name, fn) => handlers.set(name, fn) }) };
+  app._armSSETimeout = app._resetSSETimeout = () => {};
   app._initControlSSE();
   handlers.get('stream-progress')({ data: JSON.stringify({ timestamp: 'settled', content: [{ type: 'text', text: 'reply' }] }) });
   const paint = raf.get(app._streamingRaf);
@@ -2094,4 +2096,92 @@ test('menu pins hydrate and migrate from a server-confirmed base, persist serial
   c.componentDidUpdate({ ...c.props, preferences: {} }); assert.deepEqual(c.state.pinnedKeys, ['proxy-switch']);
   const d = make(); let refreshed = 0; d.context.updatePreferences = async () => null; d.context.refreshPreferences = () => refreshed++;
   d.togglePin('project-stats'); await d._persistQueue; await f.tick(); assert.equal(refreshed, 1);
+});
+
+test('native role controls keep source rows, change one role key and disable unsupported transports', async t => {
+  const React = require('react'), Select = require('antd').Select;
+  const props = { open: true, proxyProfiles: [{ id: 'max', name: 'Default' }, { id: 'main', name: 'Main source' }, { id: 'child', name: 'Child source' }],
+    activeProxyId: 'main', proxyRoles: { subagent: 'follow' }, proxyOfficialDefault: true, proxyRoleRouting: { supported: true } };
+  const changes = []; props.onProxyProfileChange = async patch => { changes.push(patch); return false; };
+  const f = fixture(t, { component: 'ProxyModal', props }); require(output).setLang('en');
+  const all = (node, predicate, found = []) => { if (!node || typeof node !== 'object') return found;
+    if (predicate(node)) found.push(node); for (const child of React.Children.toArray(node.props?.children)) all(child, predicate, found); return found; };
+  const selects = () => all(f.tree, node => node.type === Select && node.props['aria-label']);
+  f.draw(); let rows = selects(); assert.equal(rows.length, 2);
+  assert.equal(rows[0].props['aria-label'], 'Main Agent'); assert.equal(rows[1].props['aria-label'], 'Sub-Agent');
+  await rows[1].props.onChange('child'); f.draw();
+  assert.deepEqual(changes[0].roles, { subagent: 'child' }); assert.equal(changes[0].active, 'main');
+  assert.equal(selects()[1].props.value, 'follow', 'a failed save never changes the controlled selection');
+  props.proxyRoleRouting = { supported: false }; f.draw(); assert.equal(selects()[1].props.disabled, true);
+  assert.match(all(f.tree, node => node.props?.role === 'status')[0].props.children, /cannot verify/);
+  await selects()[1].props.onChange('max'); assert.equal(changes.length, 1);
+  assert.equal(selects()[0].props.disabled, false, 'main source stays available');
+  props.activeProxyId = 'max'; f.draw(); assert.equal(selects().length, 0, 'official Default keeps the original dormant layout');
+});
+
+test('role-aware compact chips show only the main label and never claim unsupported or deleted child sources', t => {
+  const f = fixture(t); require(output).setLang('en');
+  const props = { activeProxyId: 'main', proxyProfiles: [{ id: 'max', name: 'Default' }, { id: 'main', name: 'Main source' }, { id: 'child', name: 'Child source' }],
+    proxyRoles: { subagent: 'child' }, proxyRoleRouting: { supported: true } };
+  let chip = f.ProxyChip(props); assert.match(chip.props.title, /Sub: Child source/);
+  assert.doesNotMatch(chip.props.title, /Team/); assert.equal(require('react').Children.toArray(chip.props.children).at(-1), 'Main source');
+  assert.doesNotMatch(f.ProxyChip({ ...props, proxyRoles: { subagent: 'deleted' } }).props.title, /deleted/);
+  chip = f.ProxyChip({ ...props, proxyRoleRouting: { supported: false } }); assert.doesNotMatch(chip.props.title, /Sub: Child source/);
+  assert.equal(f.ProxyChip({ ...props, activeProxyId: 'max', proxyOfficialDefault: true }), null);
+  assert.ok(f.ProxyChip({ ...props, activeProxyId: 'max', proxyOfficialDefault: false }));
+  assert.equal(f.ProxyChip({ ...props, activeProxyId: 'max', proxyOfficialDefault: false, proxyRoleRouting: { supported: false } }), null);
+});
+
+test('profile refreshes reject late reads, preserve explicit Default and send both CAS revisions on role writes', async t => {
+  const f = fixture(t), app = new f.AppBase({}); app.setState = patch => Object.assign(app.state, typeof patch === 'function' ? patch(app.state) : patch);
+  const original = globalThis.fetch, pending = [], posted = [];
+  globalThis.fetch = async (url, options) => {
+    if (options?.method === 'POST') { posted.push(JSON.parse(options.body)); return { ok: true, json: async () => ({ ok: true, ...snapshot('saved') }) }; }
+    return new Promise(resolve => pending.push(data => resolve({ ok: true, json: async () => data })));
+  };
+  const snapshot = revision => ({ profiles: [{ id: 'max', name: 'Default' }, { id: 'main', name: 'Matching', baseURL: 'https://fixture.invalid', activeModel: 'model' }],
+    active: 'max', workspaceAssigned: true, defaultConfig: { origin: 'https://fixture.invalid', model: 'model' }, roles: { subagent: revision }, revision: 'catalog-' + revision,
+    workspaceRevision: 'workspace-' + revision, officialDefault: true, roleRouting: { supported: true } });
+  try {
+    const first = app.refreshProxyProfiles({ autoMatch: true }), second = app.refreshProxyProfiles();
+    pending[1](snapshot('new')); await second; pending[0](snapshot('old')); await first;
+    assert.equal(app.state.proxyRoles.subagent, 'new'); assert.equal(app.state.activeProxyId, 'max'); assert.equal(posted.length, 0);
+    const explicit = app.refreshProxyProfiles({ autoMatch: true }); pending[2](snapshot('explicit')); await explicit;
+    assert.equal(app.state.activeProxyId, 'max'); assert.equal(posted.length, 0, 'explicit Default never auto-matches the source');
+    const late = app.refreshProxyProfiles();
+    assert.equal(await app.handleProxyProfileChange({ active: 'max', profiles: app.state.proxyProfiles, roles: { subagent: 'follow' } }), true);
+    assert.equal(posted[0].revision, 'catalog-explicit'); assert.equal(posted[0].workspaceRevision, 'workspace-explicit');
+    pending[3](snapshot('late')); await late; assert.equal(app.state.proxyWorkspaceRevision, 'workspace-saved'); assert.equal(app.state.proxyRoles.subagent, 'saved');
+  } finally { globalThis.fetch = original; }
+});
+
+test('control stream keeps healing after ten failed reconnects, restores its budget and never replays a draft', async t => {
+  const f = fixture(t), app = new f.AppBase({}), timers = new Map(), sources = [], notices = [];
+  const oldSet = globalThis.setTimeout, oldClear = globalThis.clearTimeout, { message } = require('antd'), oldWarning = message.warning;
+  let seq = 0;
+  globalThis.setTimeout = (fn, ms) => { const id = ++seq; timers.set(id, { fn, ms }); return id; };
+  globalThis.clearTimeout = id => timers.delete(id); message.warning = value => notices.push(value);
+  t.after(() => { globalThis.setTimeout = oldSet; globalThis.clearTimeout = oldClear; message.warning = oldWarning; });
+  app.setState = patch => Object.assign(app.state, typeof patch === 'function' ? patch(app.state) : patch);
+  app._v2InitAttempted = true;
+  app._streamTransport = { open(url) { const source = { url, closed: false, close() { this.closed = true; }, addEventListener() {} }; sources.push(source); return source; }, closeAll() { sources.forEach(source => source.close()); } };
+  app.state.inputText = 'keep my unsent draft';
+  const fire = ms => { const next = [...timers].find(([, timer]) => timer.ms === ms); assert.ok(next, `pending ${ms}ms`); timers.delete(next[0]); next[1].fn(); };
+  app.initSSE();
+  for (let i = 0; i < 10; i++) { fire(45000); fire(Math.min(2000 * 2 ** i, 32000)); }
+  fire(45000);
+  assert.equal(notices.length, 1);
+  assert.equal([...timers.values()].filter(timer => timer.ms === 30000).length, 1);
+  app._reconnectSSE();
+  assert.equal(notices.length, 1); assert.equal(timers.size, 1);
+  fire(30000); assert.equal(sources.length, 12); assert.ok(sources.slice(0, -1).every(source => source.closed));
+  assert.ok(sources.every(source => source.url.includes('/events?controlOnly=1') && source.url.includes('instance=a')));
+  fire(45000); assert.equal(notices.length, 1);
+  sources.at(-1).onopen();
+  assert.equal([...timers.values()].some(timer => timer.ms === 30000), false);
+  assert.equal(app._sseReconnectCount, 0);
+  fire(45000); fire(2000);
+  assert.equal(app.state.inputText, 'keep my unsent draft'); assert.equal(f.requests.length, 0);
+  app.componentWillUnmount(); assert.equal(timers.size, 0); assert.ok(sources.every(source => source.closed));
+  app._reconnectSSE(); app.initSSE(); assert.equal(timers.size, 0); assert.equal(sources.length, 13);
 });

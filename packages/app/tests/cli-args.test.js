@@ -118,6 +118,18 @@ test('failed proxy startup does not append a stale redirect', () => {
   assert.equal(args.some(arg => arg.includes('openai_base_url')), false);
 });
 
+test('owned native options stay before a literal prompt terminator', () => {
+  const prompt = ['--', '-c', 'openai_base_url="literal prompt"', '中文'];
+  const original = ['exec', '-c', 'features.default_mode_request_user_input=false', ...prompt];
+  const result = appendCxvFinalConfigArgs(original, { proxyPort: 4321 });
+  assert.deepEqual(result.slice(result.indexOf('--')), prompt);
+  assert.deepEqual(result.slice(0, result.indexOf('--')).slice(-4), [
+    '-c', 'features.default_mode_request_user_input=true',
+    '-c', 'openai_base_url="http://127.0.0.1:4321/v1"',
+  ]);
+  assert.deepEqual(original.slice(-prompt.length), prompt);
+});
+
 test('normalizeCodexArgs keeps allow-bypass toggle as cxv-only', () => {
   const { codexArgs, allowBypassToggle } = normalizeCodexArgs(['--ad', 'hello']);
   assert.equal(allowBypassToggle, true);

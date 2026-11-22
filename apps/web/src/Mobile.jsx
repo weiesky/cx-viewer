@@ -427,24 +427,25 @@ class Mobile extends AppBase {
     // 反向找最后一条带 usage 的 MainAgent 一次，contextPercent 与 mobileContextTokens 共用
     // （以前 mobileContextTokens 单独扫 + fallback 分支再扫，是 2*O(N)）
     let mobileContextPercent = 0;
-    let mobileContextTokens = 0;
+    let mobileContextTokens = 0, lastMainAgent = null;
     if (!mobileIsLocalLog) {
       const contextWindow = this.state.contextWindow;
       if (filteredRequests.length > 0) {
         for (let i = filteredRequests.length - 1; i >= 0; i--) {
           if (isMainAgent(filteredRequests[i]) && filteredRequests[i].response?.body?.usage) {
-            const u = filteredRequests[i].response.body.usage;
+            lastMainAgent = filteredRequests[i];
+            const u = lastMainAgent.response.body.usage;
             // 原始占用比口径(对齐 /context):分子含末轮 output,与桌面端 AppHeader 同源
             mobileContextTokens = sumUsageContextTokens(u);
             break;
           }
         }
       }
-      // Fixed 353K percent math shared with the desktop header via
+      // Native per-turn window math shared with the desktop header via
       // utils/helpers.computeContextPercent.
       mobileContextPercent = computeContextPercent({
         contextWindow,
-        lastTotalTokens: mobileContextTokens,
+        lastMainAgent,
       });
       // /clear 后 contextBarLocked 强制血条 0K (0%)，直到用户发出非 /clear 消息（详见 AppBase）。
       if (this.state.contextBarLocked) {
@@ -452,8 +453,6 @@ class Mobile extends AppBase {
         mobileContextPercent = 0;
         mobileContextTokens = 0;
       } else {
-        if (mobileContextPercent === 0 && this._lastContextPercent > 0) mobileContextPercent = this._lastContextPercent;
-        else this._lastContextPercent = mobileContextPercent;
         if (this.state.contextBarOptimistic) mobileContextPercent = OPTIMISTIC_CLEAR_PERCENT;
       }
     }
@@ -531,7 +530,7 @@ class Mobile extends AppBase {
                     }
                   }}
                 >
-                  <span className={styles.mobileCtxTagFill} style={{ width: `${contextPercent}%`, backgroundColor: ctxColor }} />
+                  <span className={styles.mobileCtxTagFill} style={{ width: `${contextPercent ?? 0}%`, backgroundColor: ctxColor }} />
                   <span className={styles.mobileCtxTagContent}>
                     <MobileCtxLabelText projectName={this.state.projectName} />
                   </span>
@@ -736,7 +735,7 @@ class Mobile extends AppBase {
                     sdkResumeId={this.state.sdkResumeId}
                     sdkModel={this.state.sdkModel}
                     proxyProfiles={this.state.proxyProfiles}
-                    activeProxyId={this.state.activeProxyId}
+                    activeProxyId={this.state.activeProxyId} proxyRoles={this.state.proxyRoles} proxyOfficialDefault={this.state.proxyOfficialDefault} proxyRoleRouting={this.state.proxyRoleRouting}
                     defaultConfig={this.state.defaultConfig}
                     proxyProfilesLoadError={this.state.proxyProfilesLoadError}
                     onProxyProfileChange={this.handleProxyProfileChange}
@@ -886,7 +885,7 @@ class Mobile extends AppBase {
             open={this.state.proxyModalVisible}
             onClose={() => this.setState({ proxyModalVisible: false })}
             proxyProfiles={this.state.proxyProfiles}
-            activeProxyId={this.state.activeProxyId}
+            activeProxyId={this.state.activeProxyId} proxyRoles={this.state.proxyRoles} proxyOfficialDefault={this.state.proxyOfficialDefault} proxyRoleRouting={this.state.proxyRoleRouting}
             proxyProfilesLoadError={this.state.proxyProfilesLoadError}
             defaultConfig={this.state.defaultConfig}
             onProxyProfileChange={this.handleProxyProfileChange}

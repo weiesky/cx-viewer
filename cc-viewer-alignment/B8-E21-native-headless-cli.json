@@ -1,0 +1,68 @@
+{
+  "fullCli": true,
+  "archiveCapture": "6 owned native sessions, request and response markers verified",
+  "version": "codex-cli 0.169.0",
+  "root": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b8-native-headless-N6Hwx7",
+  "checks": [
+    {
+      "label": "fresh-override",
+      "mode": "override",
+      "fullCli": true,
+      "exactText": true,
+      "hostPreserved": true,
+      "ownedFileRemoved": true
+    },
+    {
+      "label": "resume-pinned",
+      "mode": "override",
+      "fullCli": true,
+      "exactText": true,
+      "hostPreserved": true,
+      "ownedFileRemoved": false
+    },
+    {
+      "label": "fork-pinned",
+      "mode": "override",
+      "fullCli": true,
+      "exactText": true,
+      "hostPreserved": true,
+      "ownedFileRemoved": false
+    },
+    {
+      "label": "fresh-updated",
+      "mode": "override",
+      "fullCli": true,
+      "exactText": true,
+      "hostPreserved": true,
+      "ownedFileRemoved": true
+    },
+    {
+      "label": "fresh-append",
+      "mode": "append",
+      "fullCli": true,
+      "exactText": true,
+      "hostPreserved": true,
+      "ownedFileRemoved": false
+    },
+    {
+      "label": "profile-append",
+      "mode": "append",
+      "fullCli": true,
+      "exactText": true,
+      "hostPreserved": true,
+      "ownedFileRemoved": false
+    },
+    {
+      "label": "manual-file",
+      "mode": "override",
+      "fullCli": true,
+      "exactText": true,
+      "hostPreserved": true,
+      "ownedFileRemoved": false
+    }
+  ],
+  "requests": 7,
+  "actualNativeCodex": true,
+  "externalModel": false,
+  "toolsExecuted": false
+}

@@ -1,3 +1,6 @@
+import { createSystemPromptVariables, renderSystemPromptText } from './system-prompt-render.js';
+import { listBuiltinModelPrompts } from './builtin-model-prompts.js';
+import { expandModelIdVariants } from './model-id-variants.js';
 import { createHash } from 'node:crypto';
 import {
   existsSync,
@@ -19,6 +22,7 @@ export const MODEL_PROMPT_NAME_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 
 const EMPTY_REVISION = '0';
 const OWNER_FILE = '.cxv-system-prompts-v1';
+const BUILTIN_DISABLED_FILE = '.builtin-disabled.json';
 
 export class SystemPromptStoreError extends Error {
   constructor(code, status = 400) {
@@ -95,8 +99,8 @@ export function normalizeModelPromptName(name) {
 }
 
 function assertManagedFile(path) {
-  if (!existsSync(path)) return false;
-  const stat = lstatSync(path);
+  const stat = lstatSync(path, { throwIfNoEntry: false });
+  if (!stat) return false;
   if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1) {
     throw new SystemPromptStoreError('unsafe_prompt_file', 409);
   }
@@ -184,7 +188,7 @@ function listModelEntries(options) {
   const { models } = scopePaths(options);
   const entries = [];
   for (const file of readdirSync(models).sort()) {
-    if (!file.endsWith('.json')) continue;
+    if (!file.endsWith('.json') || file === BUILTIN_DISABLED_FILE) continue;
     const name = file.slice(0, -5);
     let normalizedName;
     try {
@@ -214,10 +218,53 @@ function listModelEntries(options) {
   return { dir: models, entries };
 }
 
+function readBuiltinDisabled(models) {
+  const path = join(models, BUILTIN_DISABLED_FILE);
+  if (!assertManagedFile(path)) return { names: [], revision: EMPTY_REVISION };
+  const raw = readFileSync(path, 'utf8');
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed?.version !== SYSTEM_PROMPT_STORE_VERSION || !Array.isArray(parsed.names)) throw new Error();
+    const names = parsed.names.map(name => {
+      const canonical = normalizeModelPromptName(name);
+      return canonical === 'QWEN-3.7-MAX' ? 'QWEN-3' : canonical;
+    });
+    return { names: [...new Set(names)].sort(), revision: revision(raw) };
+  } catch { throw new SystemPromptStoreError('invalid_builtin_state', 409); }
+}
+
+export function setBuiltinModelPromptDisabled(options) {
+  if (!['global', 'workspace'].includes(options.scope)) throw new SystemPromptStoreError('invalid_scope', 400);
+  const name = normalizeModelPromptName(options.name);
+  if (!listBuiltinModelPrompts().some(entry => entry.name === name)) throw new SystemPromptStoreError('unknown_builtin', 400);
+  if (typeof options.disabled !== 'boolean') throw new SystemPromptStoreError('invalid_builtin_state', 400);
+  const { models } = scopePaths(options);
+  const path = join(models, BUILTIN_DISABLED_FILE);
+  try {
+    return withFileLockSync(`${path}.lock`, () => {
+      const current = readBuiltinDisabled(models);
+      if (options.expectedRevision !== undefined && options.expectedRevision !== current.revision) {
+        throw new SystemPromptStoreError('prompt_conflict', 409);
+      }
+      const names = options.disabled ? [...new Set([...current.names, name])].sort() : current.names.filter(value => value !== name);
+      const raw = `${JSON.stringify({ version: SYSTEM_PROMPT_STORE_VERSION, names }, null, 2)}\n`;
+      atomicWriteFile(path, raw, { mode: 0o600 });
+      return { name, scope: options.scope, disabled: options.disabled, revision: revision(raw) };
+    }, { timeoutMs: 0, staleMs: 60_000 });
+  } catch (error) {
+    if (error?.code === 'CXV_LOG_V2_LOCK_TIMEOUT') throw new SystemPromptStoreError('prompt_conflict', 409);
+    throw error;
+  }
+}
+
 export function getModelSystemPrompts({ logDir, cwd }) {
   const global = listModelEntries({ logDir, cwd, scope: 'global' });
   const workspace = listModelEntries({ logDir, cwd, scope: 'workspace' });
+  const disabledGlobal = readBuiltinDisabled(global.dir);
+  const disabledWorkspace = readBuiltinDisabled(workspace.dir);
   return {
+    builtinRevisions: { global: disabledGlobal.revision, workspace: disabledWorkspace.revision },
+    builtin: listBuiltinModelPrompts().map(entry => ({ ...entry, disabled: { global: disabledGlobal.names.includes(entry.name), workspace: disabledWorkspace.names.includes(entry.name) } })),
     globalDir: global.dir,
     workspaceDir: workspace.dir,
     global: global.entries,
@@ -233,26 +280,28 @@ export function saveModelSystemPrompt(options) {
   return writeEntry(join(models, `${name}.json`), options);
 }
 
+export { expandModelIdVariants } from './model-id-variants.js';
+
 function bestMatch(entries, model) {
-  if (!model) return null;
-  const needle = String(model).toLowerCase();
+  const variants = expandModelIdVariants(model);
   return entries
-    .filter(entry => needle.includes(entry.name.toLowerCase()))
-    .sort((a, b) => {
-      const exactA = needle === a.name.toLowerCase() ? 1 : 0;
-      const exactB = needle === b.name.toLowerCase() ? 1 : 0;
-      return exactB - exactA || b.name.length - a.name.length || a.name.localeCompare(b.name);
-    })[0] || null;
+    .filter(entry => variants.some(value => value.includes(entry.name.toLowerCase())))
+    .sort((a, b) => b.name.length - a.name.length || a.name.localeCompare(b.name))[0] || null;
 }
 
 export function selectSystemPrompt({ logDir, cwd, model }) {
+  if (process.env.CXV_DISABLE_AUTO_SYSTEM_PROMPT === '1') return null;
   const models = getModelSystemPrompts({ logDir, cwd });
-  return bestMatch(models.workspace, model)
-    || bestMatch(models.global, model)
-    || (() => {
-      const fallback = getDefaultSystemPrompt({ logDir, cwd });
-      return fallback.text.trim() ? { ...fallback, scope: 'workspace', name: 'DEFAULT' } : null;
-    })();
+  let selected = bestMatch(models.workspace, model) || bestMatch(models.global, model);
+  if (!selected) {
+    const builtin = bestMatch(models.builtin, model);
+    if (builtin && !builtin.disabled.global && !builtin.disabled.workspace) selected = builtin;
+  }
+  if (!selected) {
+    const fallback = getDefaultSystemPrompt({ logDir, cwd });
+    if (fallback.text.trim()) selected = { ...fallback, scope:'workspace', name:'DEFAULT' };
+  }
+  return selected ? { ...selected, text:renderSystemPromptText(selected.text, createSystemPromptVariables(model)) } : null;
 }
 
 export function injectSystemPromptIntoThreadStart(message, selected) {

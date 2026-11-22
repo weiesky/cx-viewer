@@ -779,6 +779,9 @@ class ChatView extends React.Component {
       nextProps.sdkModel !== this.props.sdkModel ||
       nextProps.proxyProfiles !== this.props.proxyProfiles ||
       nextProps.activeProxyId !== this.props.activeProxyId ||
+      nextProps.proxyRoles !== this.props.proxyRoles ||
+      nextProps.proxyOfficialDefault !== this.props.proxyOfficialDefault ||
+      nextProps.proxyRoleRouting !== this.props.proxyRoleRouting ||
       nextProps.defaultConfig !== this.props.defaultConfig ||
       nextProps.proxyProfilesLoadError !== this.props.proxyProfilesLoadError ||
       nextProps.onProxyProfileChange !== this.props.onProxyProfileChange ||
@@ -4529,7 +4532,7 @@ class ChatView extends React.Component {
     const proxyChipNode = showProxyChip ? (
       <ProxyChip
         proxyProfiles={this.props.proxyProfiles}
-        activeProxyId={this.props.activeProxyId}
+        activeProxyId={this.props.activeProxyId} proxyRoles={this.props.proxyRoles} proxyOfficialDefault={this.props.proxyOfficialDefault} proxyRoleRouting={this.props.proxyRoleRouting}
         sdkMode={this.props.sdkMode}
         sdkModel={this.props.sdkModel}
         onOpenProxyModal={() => this.setState({ proxyModalVisible: true })}
@@ -5265,7 +5268,7 @@ class ChatView extends React.Component {
                 open={this.state.proxyModalVisible}
                 onClose={() => this.setState({ proxyModalVisible: false })}
                 proxyProfiles={this.props.proxyProfiles}
-                activeProxyId={this.props.activeProxyId}
+                activeProxyId={this.props.activeProxyId} proxyRoles={this.props.proxyRoles} proxyOfficialDefault={this.props.proxyOfficialDefault} proxyRoleRouting={this.props.proxyRoleRouting}
                 proxyProfilesLoadError={this.props.proxyProfilesLoadError}
                 defaultConfig={this.props.defaultConfig}
                 onProxyProfileChange={this.props.onProxyProfileChange}

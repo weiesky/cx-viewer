@@ -1,0 +1,21 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "commits": [
+    "3cc05b496dd2c0535df492455001b2524d091ef4",
+    "7c1963aca1cbdbcaa80024b3ab8b0671acc82930",
+    "c66b5fe2ed6e855f0610127eba3de96ac821adea",
+    "add350bc52"
+  ],
+  "source": "apps/web/src/components/settings/ProxyModal.module.css .roleAssignSection through .proxyRoleBadge",
+  "exactCss": true,
+  "sha256": "8b396f3804aa9554156e2d7a855a26ab56e8a8a2614c947512f651a4edf6df2f",
+  "nativeAdaptations": [
+    "Main/Sub-Agent only; no Teammate",
+    "authoritative native capability disables Sub-Agent controls",
+    "existing scoped dual CAS and pending/error handling",
+    "useId labels and keyboard access",
+    "two-role tooltip, compact Main-only label; original slots retained",
+    "Default dormancy retains assignments",
+    "stale reads cannot replace successful saves; explicit workspace Default suppresses auto-match"
+  ]
+}

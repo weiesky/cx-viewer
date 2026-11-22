@@ -434,7 +434,14 @@ function createSdkSession(instanceKey) {
       const proxy = _sdkProxy;
       const generation = _sessionGeneration;
       const proxyPromise = proxy.start({
-        captureContext: { cwd: _cwd, instanceKey },
+        // Raw transport remains inspectable in Network; SDK events own chat.
+        captureContext: { cwd: _cwd, instanceKey, sdkTransport: true },
+        resolveNativeRole: async threadId => {
+          const native = _transport;
+          if (_transportKind !== 'appserver' || !native || !await native.ownsThread(threadId)
+              || native !== _transport || generation !== _sessionGeneration) return null;
+          return threadId === native.threadId ? 'main' : 'subagent';
+        },
         onSlowUpstream: info => {
           if (generation !== _sessionGeneration) return;
           const resolved = info.type === 'resolved';
@@ -447,8 +454,12 @@ function createSdkSession(instanceKey) {
           else _slowUpstreams.set(frame.requestId, frame);
           try { _broadcastWs?.(frame); } catch {}
         },
-        onResponseModel: model => {
-          if (generation === _sessionGeneration) observeSdkModel(model);
+        onResponseModel: (model, source) => {
+          if (generation !== _sessionGeneration) return;
+          if (_transportKind === 'appserver' && source?.proxyRole !== 'main') return;
+          const root = _sessionId || _transport?.threadId;
+          if (root && source?.threadId && source.threadId !== root) return;
+          observeSdkModel(model);
         },
       }).then(port => {
         if (_sdkProxyPromise !== proxyPromise) {
@@ -777,7 +788,7 @@ function createSdkSession(instanceKey) {
         break;
 
       case 'turn.completed':
-        try { _emitCompletedEntry(event.usage); } finally { _finishAgentLoop('success'); }
+        try { _emitCompletedEntry(event.usage, _transportKind === 'appserver' ? event.context_window : null); } finally { _finishAgentLoop('success'); }
         break;
 
       case 'turn.failed':
@@ -890,7 +901,7 @@ function createSdkSession(instanceKey) {
     _pendingAssistantContent = [];
   }
 
-  function _emitCompletedEntry(usage) {
+  function _emitCompletedEntry(usage, contextWindow) {
     if (_finalEntryEmittedThisTurn) return;
     const finalContent = _stripInternalFields(_pendingAssistantContent);
     const messagesSnapshot = cloneJson(_accumulatedMessages);
@@ -903,6 +914,7 @@ function createSdkSession(instanceKey) {
         model: _model,
         content: finalContent,
         usage,
+        ...(Number.isSafeInteger(contextWindow) && contextWindow > 0 ? { context_window: contextWindow } : {}),
       },
     };
 

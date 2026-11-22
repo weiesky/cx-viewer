@@ -73,6 +73,15 @@ export class LogV2WriteCoordinator {
 
   sourceIdentity(entry, context, projectKey) {
     const source = context.source || 'proxy';
+    if (source === 'proxy' && entry?._captureContext?.sdkTransport === true) {
+      // Native transport headers also contain the SDK thread ID. Keep raw
+      // Network rows in an auxiliary archive so they cannot claim its manifest
+      // or replace the SDK conversation/resume pointer before SDK events land.
+      const owner = crypto.createHash('sha256').update(`${projectKey}\0${entry._captureContext.instanceKey || ''}`).digest('hex').slice(0, 24);
+      const id = `synthetic:sdk-wire:${this.runtimeId}:${owner}`;
+      const identity = resolveIngestionSourceIdentity(entry, { ...context, sessionId: id, threadId: id }, { source });
+      return Object.freeze({ ...identity, agentRole: 'auxiliary', synthetic: true });
+    }
     if (source === 'app-server') {
       const nativeThreadId = context.thread?.id
         || context.thread?.threadId

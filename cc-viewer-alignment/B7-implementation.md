@@ -1,8 +1,10 @@
 # B7 输入体验、导航和 Skills 实施
 
-固定上游`74cd752d99caf122e750216d2af3bb9f467c4de1`，本地起点main `8968935417f4f26a79f84f5be3daad1234eba6d9`，分支`codex/b7-input-navigation-skills`。用户本次明确“开始执行B7”，取代上一轮暂不启动的边界。本轮按独立改动逐笔验证/提交，未授权以B6交付流程自动推送B7或合并main。
+2026-11-22最终状态：B7已完成范围内验证，原51笔整合为5b1c397并由[PR #8](https://github.com/weiesky/cx-viewer/pull/8)合并main（89a8d9d）。E42–E48按用户要求在合并后才补进度文档；以[完成矩阵](./B7-completion-matrix.md)及[B8交接](./B8-handoff.md)为当前状态，以下逐笔“仍待/未完成”为当时历史检查点。
 
-21条主索引与72条交叉索引去重为74候选，见[初始索引](./B7-candidate-index-2026-11-21.json)。这是定位清单，不是已实现清单；逐笔核真实diff/完整相关调用链/CSS、后续修复/回退，复用已完成范围，混合提交不整体勾选。B7正在实施，尚未完成。
+固定上游`74cd752d99caf122e750216d2af3bb9f467c4de1`，本地起点main `8968935417f4f26a79f84f5be3daad1234eba6d9`，分支`codex/b7-input-navigation-skills`。用户本次明确“开始执行B7”，取代上一轮暂不启动的边界。启动时仅授权逐笔验证/提交；用户2026-11-22后续明确授权验证后整合全部commit、创建面向main的PR并自行合并，合并后才更新本地进度，现已完成。
+
+21条主索引与72条交叉索引去重为74候选，见[初始索引](./B7-candidate-index-2026-11-21.json)。这是候选入口，不把整条混合提交当完成；最终按B7有效scope核销，见[候选矩阵](./B7-candidate-matrix.md)，混合B8–B11及未验环境继续单列。以下保留各笔当时检查点。
 
 <a id="e1"></a>
 ## E1 普通PTY的独立生命周期
@@ -407,3 +409,59 @@
 - 独立fake-native JSON-RPC子进程+实际node-pty/startPtyWorkspaceRuntime/bridge/server（不冒充真实Codex执行）：Chromium159/WebKit27.2 × desktop/pad/phone仿真6场12图。原1/3进度/三个圆点/展开原清单、A刷新回放、child不替换root、B独立计划、A完成/中断只隐藏A、新turn清理B均通过，零pageerror。见[GUI回执](./B7-pty-task-hud/result.json)，`/tmp/cxv-b7-e41-gui3.log`，已实看desktop/phone图。早期探针误用无三角符号的Expand文本、pad误开终端后等隐藏composer，均为夹具失败不计通过。
 - 实例化限制：已读当前实际Codex0.169本机canned模型请求tools，未列update_plan；本轮未强制启用native feature，未取得实际模型发turn/plan/updated的证据。受控native协议验证不能记为实际模型/计划工具执行通过。复验条件：native自身对root当前turn发出该事件后应按上述原HUD显示/更新；native没有事件时保持不显示。该限制不阻断其余候选审计，现有外部模型/真机边界保持。
 - GUI后按捕获身份回收自有fixture97177及4后代，残留0（/tmp/cxv-b7-e41-retired-fixture.json）；初次清理脚本误给adapter.signal传PID被类型检查拒绝，修正传identity后正常完成，未触碰别的进程。普通真实93478/93479、SDK70738和生产7008保持。剩余候选完整闭合/全量/新安装继续，B7未完成。本节所在独立commit为本地映射。
+
+
+<a id="e42"></a>
+## E42 原简洁聊天合并与原生身份边界
+
+- E41本地`e00d2b3`；本笔`0996ef4`。实读`a70440ee62bf74decd27cbde976f72f94aaecc3a`实际diff、固定最终toolRunMerge/toolDisplayPolicy、完整ChatMessage/ChatView缓存/时间戳/导航及三设置宿主和CSS，核后续历史。恢复原默认开启minimalChat、同agent连续纯工具/thinking合并及原设置位置；全工具内容开启时不合并且隐藏该设置，用户/正文/完整卡片/分隔线保持边界，时间与查看请求归末成员、导航索引重映射。
+- 复用本地原生assistant/sub-agent shell、已存在full-card政策与Code Mode patch parser；native patch、Ask/Plan/Workflow不误合并，同名子代理按canonical thread分开。没有新造Claude命令/系统文本来源。共享helper除两处必要native判断外AST相同，三个render方法AST相同，新增CSS区块整字节相同，见[源码回执](./B7-E42-minimal-chat-source.json)。
+- Web678/678、0skip及build通过，`/tmp/cxv-b7-e42-web-tests.log`、`/tmp/cxv-b7-e42-final-build.log`。实际class/hook验证开关默认/持久化、合并→raw→full-mode、时间戳与导航；原行为套件覆盖跨stream/边界/缓存增长，额外校验native同名线程及Code Mode patch。
+- 自有LogV2Writer生成native格式归档，经真实HTTP/object/投影，Chromium159/WebKit27.2各desktop/phone仿真4场12图：8个assistant bubble启用后6个，patch卡独立，实际设置关闭/刷新持久/full-content禁用均通过，零pageerror，无实际工具或模型执行。见[GUI回执](./B7-minimal-chat/result.json)，最终`/tmp/cxv-b7-e42-final-gui2.log`；已实看desktop与phone图。早期探针误期望9个raw气泡，原生normalizer实际把正文与下一个工具并入同一消息，修正fixture为8；Drawer/switch动画中截图重新等待稳定后替换，不计早期图通过。
+- 用户在本笔后明确：B7验证后整合全部本地commit、PR到main并由代理自行合并；**合并成功后再更新本地进度文档**。因此E42–E47当时仅代码/测试/回执单独提交，本节及后续进度均在PR #8实际MERGED后补记，不倒置授权顺序。
+
+
+<a id="e43"></a>
+## E43 原两个共享渲染分支的空白气泡修复
+
+- 本地`3c3ac0c`，上游`d90ac9587dcd9caadee721cbbf26c43ecb5711ea`。实读实际diff、最终两共享renderer及后续记录，追renderAssistantText→segments→chat-boxer与原CSS。真实JSX组件红测复现纯空白生成有背景的空wrapper；逐字迁入segments为零时return/continue的原判断，保留正常文本与合法空system-tag，未新增过滤器或CSS。
+- 142/142、0skip及build通过，`/tmp/cxv-b7-e43-before.log`、`/tmp/cxv-b7-e43-tests.log`、`/tmp/cxv-b7-e43-build.log`；[源码回执](./B7-E43-blank-bubble-source.json)。该笔无新GUI声明。
+
+
+<a id="e44"></a>
+## E44 全量测试中的安装夹具与异步断言修正
+
+- 本地`99ffd12`。首次全量1260项中1257通过：两hoisted node-pty夹具没有复制E15/E27新依赖cxv-processes/shutdown/otel-config；双runtime夹具又在native transcript异步callback前就断言已写入。分别追真实import和callback链后，仅补夹具依赖、用已有有界until等待权威callback，保留实际chmod/import和精确owner断言，不降低生产边界。
+- 4/4定向正常退出，`/tmp/cxv-b7-e44-tests.log`；首次失败见`/tmp/cxv-b7-final-all-tests.log`。无生产变化，不把测试夹具修正冒充native功能修复。
+
+
+<a id="e45"></a>
+## E45 原菜单钉选迁移到服务端偏好
+
+- 本地`bbbe1ec`，上游`2dbe5cd695a965f51e4cee28d9c911e404675d46`。读实际diff/固定最终pinnedMenu、完整Header菜单与SettingsProvider/偏好HTTP链；本地仍只存localStorage，确为缺口。恢复原authoritative hydrate、legacy一次迁移、成功才清旧值、串行POST、晚GET不覆盖用户动作、外部偏好同步与失败refresh；保留已有cxv品牌key和原DOM/CSS，直接复用已有偏好路由，未改权限/作用域模型。
+- 七个方法/helper AST相同，纯helper全文件除已有品牌key外相同，见[源码回执](./B7-E45-pinned-preferences-source.json)。138/138、0skip及build通过，`/tmp/cxv-b7-e45-final-tests.log`、`/tmp/cxv-b7-e45-build.log`；真实组件测试覆盖权威空数组、失败GET、迁移成功才清、串行连续点击、hydrate晚到和外部scope跟随。初始测试localStorage shim未实现removeItem，补真实API后通过，不改生产逻辑凑断言。
+- Chromium159/WebKit27.2实际两个独立browser context各一组、共4图：legacy迁移后清理，另一context从server恢复，真实菜单unpin后刷新获权威空数组；零pageerror，见[GUI回执](./B7-pinned-preferences/result.json)，`/tmp/cxv-b7-e45-gui3.log`。仅验原pin入口，非整页冷载性能/真实remote/Electron声明；已实看WebKit图。早期夹具用未锚定URL被boot补锚导航、错认Project Statistics文案，后改精确instance和实际aria-label，失败轮不计通过。
+
+
+<a id="e46"></a>
+## E46 真实进程树夹具的原子身份发布
+
+- 本地`af52809`。第二轮完整发布检查Web702/702，app1259/1260；唯一失败为PTY进程树夹具JSON.parse读到空文件，尚未执行进程回收断言，不是进程树泄漏证据。真实child先创建PID文件、再写内容，父端仅等exists存在竞态。
+- 两个夹具改为写临时文件再rename发布完整PID，保留忽略HUP/TERM、真实工具树、自然退出及强身份回收断言，生产代码不变。16/16、0skip，`/tmp/cxv-b7-e46-tests.log`；失败轮`/tmp/cxv-b7-release-final.log`不计全量通过。
+
+
+<a id="e47"></a>
+## E47 全量发布检查与全新生产安装
+
+- 本地`61a36ae`。既有安装探针增加本轮PTY registry/runtime/queue/process/editor必需源码及12套runtime测试，不另造安装器。最终`env -u CXV_BYPASS_PERMISSIONS pnpm release:check`退出0：**2181=5+702+1260+214，2181通过、0skip，build/assemble及pack723**，`/tmp/cxv-b7-release-final2.log`。
+- 全新实际npm生产安装，**634/634、0skip、B1.2及隔离相对目录CLI启动通过**。原native/editor/HTTP/WS/runtime测试在安装包内运行；全部723打包文件（含211Web文件）与最终构建精确字节一致，见[安装回执](./B7-installed-2026-11-22.json)，`/tmp/cxv-b7-installed-final2.log`。真实安装目录记录在回执，无外部模型/真实用户凭据迁移。首个安装尝试发生在源码注释更新后、重新构建前，被既有mtime guard拒绝；重建后新目录重跑通过，不把失败尝试记通过。
+
+
+<a id="e48"></a>
+## E48 源码范围核销、51笔整合及PR后进度收口
+
+- 21主索引与72交叉索引去重为74候选，按[候选矩阵](./B7-candidate-matrix.md)逐B7 scope核销；追加2914d6479d窄split及80ced6a996只读扩窗。原helper/有效布局/CSS进一步对照见[最终源码回执](./B7-E48-effective-source.json)。ChatInputBar118共同CSS规则声明相同；ChatView98共同规则相同，缺的6项为native无独立LR/旧partial banner/dead scratch容器；native compaction和模型monochrome原适配保留。HUD/ActiveAgents整CSS字节相同；该比较不冒称所有CSS文件整字节或全部cascade相同。
+- c185a748的展示Turn→Step不能用于伪造Codex exchange分组：当前Context实际逐native body.input项、原文和input__N，18语言可见文案已为Current Input/Input N；不存在待重命名的可见Turn标签，原生协议turn不改。ebfcbaec的独立Last Response在native早已折入唯一messages，现有exact response/工具id/权威pending边界复用，不新建重复DOM再隐藏。四笔expert/UltraReview纯资产继续按既定B8/B11提示/内容范围，非B7实现完成声明；其余混合平台/插件/定时等范围同理独立。
+- 用户明确授权后，51笔均保留到`backup/b7-raw-20261122`及外部已验证bundle，再整为`5b1c39710978d8069facfeda5542b8f384731cca`，整合前后tree完全相同。创建面向main的[PR #8](https://github.com/weiesky/cx-viewer/pull/8)，实际CLEAN/MERGEABLE、statusCheckRollup为空；仓库workflow只跑release/tag，并无PR CI，不冒称远端测试通过。在线diff超过300文件，改分页API核对全部322文件及GitHub远端tree，均与本地精确相同；以精确head guard自行squash合并，实际MERGED，main为`89a8d9dc508b1a9d79ac218bc870e20c4750187c`且tree相同。
+- 此后才更新本地AGENTS/入口/规划/台账、E42–E48进度和B8交接，详见[整合记录](./B7-local-commit-consolidation-2026-11-22.md)、[原始51笔映射](./B7-original-commits-2026-11-22.json)、[最终回执](./B7-final-2026-11-22.json)。仅文档变化无需重跑2181项；不声称另一次全测。
+- 按捕获进程身份退役自有普通fixture93478及5后代、SDK70738及1后代，均残留0；[回执](./B7-fixtures-retired-2026-11-22.json)。生产7008/PID72817未动、npm未发布。native实际plan producer/物理设备/音频/IME/外部模型/真实LAN/TLS/其他OS/最低Node未验，IM偶发及原Markdown冷开行号限制保持。B7在上述明示范围完成，下一会话B8，本轮不启动。

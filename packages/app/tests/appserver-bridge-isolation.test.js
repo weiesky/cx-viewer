@@ -183,3 +183,27 @@ test('native input safety state counts unresolved TUI-only questions without exp
   a._parseAppServerClientMessageForTests({ id: 77, result: { answers: {} } });
   assert.equal(a.getAppServerInputState().pendingRequests, 0);
 });
+
+test('proxy roles require an owned native root ancestry and reject unknown, foreign and title threads', () => {
+  const a = createAppServerBridge(), b = createAppServerBridge();
+  try {
+    for (const [bridge, root] of [[a, 'a'], [b, 'b']]) {
+      bridge._resetAppServerBridgeForTests({ cwd: '/fixture/' + root });
+      server(bridge, 'thread/started', { thread: { id: root } });
+      server(bridge, 'thread/started', { thread: { id: root + '-child', source: { subAgent: { thread_spawn: { parent_thread_id: root } } } } });
+      server(bridge, 'thread/started', { thread: { id: root + '-nested', source: { subAgent: { thread_spawn: { parent_thread_id: root + '-child' } } } } });
+      assert.equal(bridge.getNativeProxyRole(root), 'main');
+      assert.equal(bridge.getNativeProxyRole(root + '-child'), 'subagent');
+      assert.equal(bridge.getNativeProxyRole(root + '-nested'), 'subagent');
+    }
+    assert.equal(a.getNativeProxyRole('b-child'), null);
+    assert.equal(a.getNativeProxyRole('made-up-subagent'), null);
+    server(a, 'thread/started', { thread: { id: 'title', ephemeral: true, threadSource: 'thread_title' } });
+    assert.equal(a.getNativeProxyRole('title'), null);
+    server(a, 'thread/started', { thread: { id: 'foreign-parent', source: { subAgent: { thread_spawn: { parent_thread_id: 'other-owner' } } } } });
+    assert.equal(a.getNativeProxyRole('foreign-parent'), null);
+    a._resetAppServerBridgeForTests();
+    assert.equal(a.getNativeProxyRole('a-child'), null);
+    assert.equal(b.getNativeProxyRole('b-child'), 'subagent');
+  } finally { a._resetAppServerBridgeForTests(); b._resetAppServerBridgeForTests(); }
+});

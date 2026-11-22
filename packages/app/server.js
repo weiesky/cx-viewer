@@ -19,6 +19,9 @@ import { execWithStdin } from './lib/exec-with-stdin.js';
 import { readPublicFileSync } from './lib/public-file-read.js';
 import { attachTerminalWsPing } from './lib/terminal-ws-ping.js';
 import { createProxyProfileCredentials, PROXY_CREDENTIAL_VERSION_FIELD, withProxyProfilesLock } from './lib/proxy-profile-credentials.js';
+import { readWorkspaceProxy, withWorkspaceProxyUpdate, workspaceProxyFile, watchWorkspaceProxy } from './lib/workspace-proxy.js';
+import { getWorkspaceProxyProfile } from './interceptor.js';
+import { readOriginalOpenAiBaseUrl } from './lib/codex-config.js';
 
 const execFileAsync = promisify(execFile);
 const execAsync = promisify(exec);
@@ -50,7 +53,7 @@ import { parseCodexInvocation } from './lib/cli-args.js';
 import { createPtyChatQueue } from './server/lib/pty-chat-queue.js';
 import { createPtyWorkspaceRegistry } from './lib/pty-workspaces.js';
 import { CONTEXT_WINDOW_FILE, buildContextWindowEvent } from './lib/context-watcher.js';
-import { CODEX_CONTEXT_WINDOW_TOKENS, sumUsageContextTokens } from './server/lib/context-rules.js';
+import { nativeContextWindow, sumUsageContextTokens } from './server/lib/context-rules.js';
 import { isMainAgentEntry } from './lib/main-agent-entry.js';
 import { handleDingTalkImRoute } from './lib/dingtalk-im-routes.js';
 import {
@@ -114,7 +117,11 @@ import {
   saveModelSystemPrompt,
   SYSTEM_PROMPT_MAX_BYTES,
   SystemPromptStoreError,
+  setBuiltinModelPromptDisabled,
+  selectSystemPrompt,
 } from './lib/model-system-prompts.js';
+import { listSystemPromptPresets } from './lib/builtin-model-prompts.js';
+import { SYSTEM_PROMPT_VARIABLES_DOC } from './lib/system-prompt-render.js';
 import {
   buildCodexAutoResolutionAnswers,
   projectCodexAnswersForConversation,
@@ -947,6 +954,39 @@ const _maskProfiles = (data) => {
   return { ...data, profiles: data.profiles.map(p => p.apiKey ? { ...p, apiKey: _maskApiKey(p.apiKey) } : p) };
 };
 const _isMasked = (k) => typeof k === 'string' && /^\*{4}.{0,4}$/.test(k);
+const _workspaceProxyWatchers = new Map();
+function nativeRoleRouting(view) {
+  const supported = view?.transport === 'appserver'
+    || (view?.transport === 'pty' && ptyWorkspaces?.runtime(view.instanceKey)?.nativeProxyRoles === true);
+  return { supported, roles: ['subagent'], reason: supported ? null : 'native-thread-identity-unavailable' };
+}
+function scopedProxyPayload(data, cwd, view) {
+  const workspace = readWorkspaceProxy(LOG_DIR, cwd);
+  const active = workspace.activeId || data.active;
+  if (!data.profiles.some(p => p.id === active)) throw Object.assign(new Error('Assigned main proxy profile no longer exists'), { status: 409 });
+  let officialDefault = true;
+  try {
+    const origin = new URL(process.env.CXV_ORIGINAL_BASE_URL || readOriginalOpenAiBaseUrl() || 'https://api.openai.com/v1').origin;
+    officialDefault = origin === 'https://api.openai.com' || origin === 'https://chatgpt.com';
+  } catch {}
+  return { ...data, active, roles: workspace.roles, workspaceRevision: workspace.revision,
+    workspaceAssigned: workspace.activeId !== undefined, officialDefault, roleRouting: nativeRoleRouting(view) };
+}
+function ensureWorkspaceProxyWatch(cwd) {
+  const file = workspaceProxyFile(LOG_DIR, cwd);
+  if (_workspaceProxyWatchers.get(cwd)?.file === file) return;
+  _workspaceProxyWatchers.get(cwd)?.stop();
+  if (_workspaceProxyWatchers.size >= 256) {
+    const key = _workspaceProxyWatchers.keys().next().value;
+    _workspaceProxyWatchers.get(key).stop(); _workspaceProxyWatchers.delete(key);
+  }
+  const stop = watchWorkspaceProxy(file, () => {
+    if (_stoppingPromise) return;
+    if (isSdkMode) sendSdkEvent('proxy_profile', { cwd, profile: 'refresh' });
+    else sendEventToClients(ptyEventClients({ cwd }), 'proxy_profile', { profile: 'refresh' });
+  });
+  _workspaceProxyWatchers.set(cwd, { file, stop });
+}
 
 // 统一的文件/目录忽略规则（仅隐藏系统和版本控制目录）
 const IGNORED_PATTERNS = new Set([
@@ -1442,7 +1482,7 @@ setLogV2CommitListener((entry, _result, context) => {
   void _dingtalkImBridge?.notifyLogV2Commit(entry, _result, context);
   if (!isMainAgentEntry(entry)) return;
   const usage = entry.response?.body?.usage;
-  const contextEvent = usage ? buildContextWindowEvent(usage) : null;
+  const contextEvent = usage ? buildContextWindowEvent(usage, nativeContextWindow(entry)) : null;
   if (contextEvent) {
     if (isSdkMode) sendSdkEvent('context_window', { ...contextEvent, cwd: context.cwd,
       instanceKey: entry._captureContext?.instanceKey || entry._instanceKey || entry.body?.metadata?.instance_key });
@@ -2203,6 +2243,13 @@ async function handleViewerRequest(req, res) {
     return;
   }
 
+  if (url === '/api/expert/system-prompt-presets' && method === 'GET') {
+    if (!authorizeCodexMemoryRequest(req, res, parsedUrl)) return;
+    res.setHeader('Cache-Control', 'private, no-store');
+    sendJson(res, 200, { presets: listSystemPromptPresets(), variablesDoc:SYSTEM_PROMPT_VARIABLES_DOC });
+    return;
+  }
+
   if ((url === '/api/expert/system-text' || url === '/api/expert/model-prompts')
       && (method === 'GET' || method === 'POST')) {
     if (!authorizeCodexMemoryRequest(req, res, parsedUrl)) return;
@@ -2217,8 +2264,12 @@ async function handleViewerRequest(req, res) {
         return;
       }
       if (url === '/api/expert/model-prompts' && method === 'GET') {
+        const modelId = getWorkspaceProxyProfile(cwd)?.activeModel || _defaultConfig?.model || readCodexGlobalConfig().model || null;
+        const selected = selectSystemPrompt({logDir:LOG_DIR,cwd,model:modelId});
+        const matched = selected && selected.name !== 'DEFAULT' ? {name:selected.name,scope:selected.scope,mode:selected.mode} : null;
         sendJson(res, 200, {
           ...getModelSystemPrompts({ logDir: LOG_DIR, cwd }),
+          modelId,matched,
           active,
           capability,
         });
@@ -2243,6 +2294,13 @@ async function handleViewerRequest(req, res) {
           error: 'invalid_revision',
           code: 'invalid_revision',
         });
+        return;
+      }
+      if (url === '/api/expert/model-prompts' && body.action !== undefined) {
+        if (body.action !== 'disable-builtin' && body.action !== 'enable-builtin') throw new SystemPromptStoreError('bad_action', 400);
+        const result = setBuiltinModelPromptDisabled({ logDir: LOG_DIR, cwd, scope: body.scope, name: body.name,
+          disabled: body.action === 'disable-builtin', expectedRevision: body.revision });
+        sendJson(res, 200, { ok: true, ...result, capability });
         return;
       }
       const mode = body.mode === 'override' ? 'override' : body.mode === 'append' ? 'append' : null;
@@ -3008,8 +3066,10 @@ async function handleViewerRequest(req, res) {
   // Proxy profile 热切换
   if (url === '/api/proxy-profiles' && method === 'GET') {
     try {
+      const cwd = currentProjectDir(req);
+      ensureWorkspaceProxyWatch(cwd);
       const { raw, data } = _readProxyProfileState();
-      const masked = _maskProfiles(data);
+      const masked = _maskProfiles(scopedProxyPayload(data, cwd, requestSdkView));
       masked.revision = _proxyProfilesRevision(raw);
       // 文件被删除/损坏且运行时已 fail-closed 时，GET 也要如实呈现，避免 UI 显示正常
       if (masked.loadError == null && _proxyProfileLoadError) masked.loadError = _proxyProfileLoadError;
@@ -3053,20 +3113,38 @@ async function handleViewerRequest(req, res) {
             p.apiKey = existingMap.get(p.id);
           }
         }
-        const validated = validateProxyProfilesDocument(incoming, { migrateLegacy: false });
+        const modern = Object.hasOwn(incoming, 'workspaceRevision');
+        let roles = incoming.roles;
+        if (roles && typeof roles === 'object' && !Array.isArray(roles)) {
+          const stored = readWorkspaceProxy(LOG_DIR, currentProjectDir(req)).roles;
+          if (Object.entries(roles).every(([key, value]) => key === 'subagent' && value === stored.subagent)) roles = undefined;
+        }
+        if (roles !== undefined && (!modern || !nativeRoleRouting(requestSdkView).supported)) {
+          throw Object.assign(new Error('Native thread identity is required for role assignments'), { status: 409 });
+        }
+        const globalActive = incoming.profiles.some(p => p.id === existing.active) ? existing.active : 'max';
+        const validated = validateProxyProfilesDocument({ ...incoming, active: modern ? globalActive : incoming.active }, { migrateLegacy: false });
         let backup = null;
         if (state.document[PROXY_CREDENTIAL_VERSION_FIELD] === 1) {
           try { backup = _proxyCredentials.readBackup().document; }
           catch (error) { if (error.code !== 'ENOENT') throw error; }
         }
-        let nextRaw;
+        let nextRaw = existingRaw;
+        const saveCatalogue = () => {
+        if (modern && JSON.stringify(validated) === JSON.stringify(existing) && !state.missing) return;
         _proxyCredentials.save(validated, state.document, backup, stored => {
           if (!state.missing) atomicWriteFile(`${PROFILE_PATH}.bak`, existingRaw, { mode: 0o600 });
           nextRaw = `${JSON.stringify(stored, null, 2)}\n`;
           atomicWriteFile(PROFILE_PATH, nextRaw, { mode: 0o600 });
         });
+        };
+        if (modern) {
+          withWorkspaceProxyUpdate({ logDir: LOG_DIR, cwd: currentProjectDir(req), expectedRevision: incoming.workspaceRevision,
+            activeId: incoming.active, roles, profiles: validated.profiles }, saveCatalogue);
+          ensureWorkspaceProxyWatch(currentProjectDir(req));
+        } else saveCatalogue(); // Existing API clients retain the global fallback contract.
         _loadProxyProfile();
-        sendJson(res, 200, { ok: true, ..._maskProfiles(validated), revision: _proxyProfilesRevision(nextRaw) });
+        sendJson(res, 200, { ok: true, ..._maskProfiles(scopedProxyPayload(validated, currentProjectDir(req), requestSdkView)), revision: _proxyProfilesRevision(nextRaw) });
         });
       } catch (error) {
         const invalid = error instanceof SyntaxError || error instanceof TypeError;
@@ -6404,6 +6482,8 @@ async function _doStop(deadlineAt) {
   }
   _codexRequestUserInputBridge = null;
   _systemPromptRuntimeCapability = null;
+  for (const watcher of _workspaceProxyWatchers.values()) watcher.stop();
+  _workspaceProxyWatchers.clear();
   unwatchFile(CONTEXT_WINDOW_FILE);
   clients.forEach(client => client.end());
   clients = [];

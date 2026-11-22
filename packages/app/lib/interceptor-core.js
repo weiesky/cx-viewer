@@ -53,6 +53,14 @@ function safeJsonParse(value) {
   }
 }
 
+export function getCodexTurnMetadata(body) {
+  const object = value => value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  const metadata = { ...object(body?.metadata), ...object(body?.client_metadata) };
+  const raw = metadata['x-codex-turn-metadata'];
+  const nested = typeof raw === 'string' && raw.length <= 16384 ? object(safeJsonParse(raw)) : {};
+  return { ...metadata, ...nested };
+}
+
 export function inferCodexWorkspaceCwd(body) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
   const metadata = body.client_metadata || body.metadata || {};

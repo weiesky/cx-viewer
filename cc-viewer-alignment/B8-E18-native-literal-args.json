@@ -1,0 +1,12 @@
+{
+  "version": "codex-cli 0.169.0",
+  "root": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b8-native-literal-2JS2g7",
+  "baselineRejected": true,
+  "baselineUpstreamRequests": 0,
+  "fixedExit": 0,
+  "fixedRequests": 1,
+  "promptBytesPreserved": true,
+  "ownedChildrenExited": true,
+  "externalModel": false,
+  "toolsExecuted": false
+}

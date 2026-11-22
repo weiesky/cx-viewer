@@ -1,0 +1,35 @@
+{
+  "fixture": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b8-role-ui-6m7Xs0",
+  "results": [
+    {
+      "name": "chromium",
+      "version": "159.0.8154.6",
+      "twoNativeRoleRows": true,
+      "noTeammate": true,
+      "casConflictRetained": true,
+      "crossWindowRefresh": true,
+      "defaultDormantRetainsAssignment": true,
+      "deleteScrubsChildRole": true,
+      "unsupportedSdkExecDisabled": true,
+      "mobileDrawer": true,
+      "pageErrors": [],
+      "navigationAborts": []
+    },
+    {
+      "name": "webkit",
+      "version": "27.2",
+      "twoNativeRoleRows": true,
+      "noTeammate": true,
+      "casConflictRetained": true,
+      "crossWindowRefresh": true,
+      "defaultDormantRetainsAssignment": true,
+      "deleteScrubsChildRole": true,
+      "unsupportedSdkExecDisabled": true,
+      "mobileDrawer": true,
+      "pageErrors": [],
+      "navigationAborts": []
+    }
+  ],
+  "modelOrNativeProcessStarted": false,
+  "nativeProtocolFixtureOnly": true
+}

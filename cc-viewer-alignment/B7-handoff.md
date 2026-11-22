@@ -1,4 +1,6 @@
-# 下一会话：B7 输入体验、导航和 Skills
+# B7 历史启动交接（已完成）
+
+2026-11-22更新：B7已由PR #8合并main，以下为2026-11-21历史起点，不再代表当前待办。当前结果见[B7完成矩阵](./B7-completion-matrix.md)，下一会话见[B8交接](./B8-handoff.md)。
 
 2026-11-21交接。**用户明确要求本会话只交付B6，B7留待下一会话；B7尚未实施。** B6原16笔合为实现提交`e885d8bf5376767fc6f211a9e0a7209de3983656`，已由[PR #6](https://github.com/weiesky/cx-viewer/pull/6)于2026-11-21 19:00:48（Asia/Shanghai）合并main，合并提交`9f3e2ce9b891f4d2e31f9a4b8fb4607b5f4bf996`。原始提交、上游映射和恢复备份见[B6整合记录](./B6-local-commit-consolidation-2026-11-21.md)。本交接文件随合并后的仅文档PR同步，不包含B7实现。
 

@@ -70,6 +70,14 @@ test('legacy cleanup preserves the user-owned otel table', () => {
   assert.equal(result.content.includes('trace_exporter'), false);
 });
 
+test('OTel deduplication never consumes literal prompt flags after --', () => {
+  const literal = ['--', '-c', 'otel.trace_exporter="literal"', '-c', 'shell_environment_policy.set.OTEL_EXPORTER_OTLP_TRACES_HEADERS="literal"'];
+  const fresh = getOtelTraceExporterConfigArgs('http://127.0.0.1:7012');
+  const result = appendOtelTraceExporterConfigArgsOnce(['exec', '-c', 'otel.trace_exporter="none"', ...literal], fresh);
+  assert.deepEqual(result.slice(result.indexOf('--')), literal);
+  assert.deepEqual(result.slice(0, result.indexOf('--')), ['exec', ...fresh]);
+});
+
 test('legacy cleanup does not alter unmarked or incomplete config blocks', () => {
   const userConfig = '[otel]\ntrace_exporter = "none"\n';
   assert.deepEqual(stripLegacyOtelConfigBlock(userConfig), {

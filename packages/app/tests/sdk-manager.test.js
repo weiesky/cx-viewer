@@ -25,6 +25,10 @@ if (!process.argv.includes('features.default_mode_request_user_input=false')) {
   console.error('SDK must disable unserviceable Default-mode request_user_input');
   process.exit(3);
 }
+if (process.env.OPENAI_BASE_URL && !process.argv.includes('openai_base_url=' + JSON.stringify(process.env.OPENAI_BASE_URL))) {
+  console.error('SDK must explicitly route native exec through the owned capture endpoint');
+  process.exit(3);
+}
 const input = await new Promise((resolve) => {
   let data = '';
   process.stdin.setEncoding('utf8');

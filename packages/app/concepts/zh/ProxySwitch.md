@@ -2,7 +2,7 @@
 
 ## 功能说明
 
-代理热切换让 Codex 始终连接 CX Viewer 的本地捕获代理，并从下一次模型请求开始切换上游。API Key 与 ChatGPT OAuth 会话都可使用：官方登录态保持不变，激活的第三方 profile 接管模型路由和凭据。
+代理热切换让 Codex 始终连接 CX Viewer 的本地捕获代理，并为后续模型回合切换上游。API Key 与 ChatGPT OAuth 会话都可使用：官方登录态保持不变，激活的第三方 profile 接管模型路由和凭据。
 
 > 仅在你有权使用的 endpoint 和 API Key 上开启该功能。启用 profile 后，请求认证会被替换，prompt、文件片段和工具上下文可能会经过配置的服务。
 
@@ -38,7 +38,7 @@ Default 保持原生 OAuth/API Key 路由。激活非 Default profile 后，支�
   "version": 3,
   "active": "my-proxy",
   "profiles": [
-    { "id": "max", "name": "Max" },
+    { "id": "max", "name": "Default" },
     {
       "id": "my-proxy",
       "name": "My Proxy",
@@ -52,6 +52,16 @@ Default 保持原生 OAuth/API Key 路由。激活非 Default profile 后，支�
 }
 ```
 
-- `active` — 当前使用的 profile ID，设为 `"max"` 表示直连（不走代理）
+- `active` — 旧式全局回退；界面的主 Agent 选择按工作区保存，`"max"` 保留原生来源。
 - `profiles` — profile 列表，`id: "max"` 为内置直连模式，不可删除
 - UI 保存会立即影响当前进程；其他 CX Viewer 进程通过 `fs.watchFile` 在约 1.5 秒内更新
+
+## 角色分工
+
+主 Agent 和子 Agent 的来源按当前工作区保存。子 Agent 可以跟随主 Agent、使用 Default，或选择另一条已保存的代理。只有原生 AppServer 能核验该子线程属于当前工作区时，子代理选择器才可用；SDK exec 保持统一来源并禁用该选项。Codex 没有同等的 Teammate 角色。
+
+主 Agent 使用官方端点的 Default 时，角色分配会休眠并保留；切回代理后恢复。自定义默认端点可以使用显式子代理分配。
+
+已经接受的原生回合继续使用其选定来源，来源更改用于后续回合。受管系统提示词只在新会话生效，恢复和分叉保留原生持久化指令。
+
+`profile.json` 保留共享目录与旧式全局回退。界面把 `{ activeId, roles: { subagent } }` 写入已分配工作区日志目录下的 `active-profile.json`，该文件不含 API Key；其他 CX Viewer 进程约1.5秒刷新。

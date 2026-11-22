@@ -1,3 +1,4 @@
+import { readCodexGlobalConfig } from './codex-config.js';
 /**
  * appserver-bridge.js — Codex App-Server WebSocket 中间代理
  *
@@ -173,15 +174,21 @@ export function createAppServerBridge() {
   function injectManagedSystemPrompt(msg, {
     capability = null,
     logDir = null,
-    cwd = null,
+    cwd = null, model = null,
   } = {}) {
     if (msg?.method !== 'thread/start' || !capability?.verified || !logDir) return msg;
     try {
       const params = msg.params || {};
+      // A caller-supplied native base or instruction file takes precedence over
+      // automatic presets, just as explicit prompt flags do in the upstream CLI.
+      const config = readCodexGlobalConfig();
+      if (typeof params.baseInstructions === 'string'
+          || [params.config, config].some(values => typeof values?.model_instructions_file === 'string'
+            && values.model_instructions_file.trim())) return msg;
       const selected = selectSystemPrompt({
         logDir,
         cwd: params.cwd || cwd,
-        model: params.model || null,
+        model: model || params.model || config.model || null,
       });
       if (!selected) return msg;
       if (selected.mode === 'append' && !capability.append) return msg;
@@ -520,6 +527,23 @@ export function createAppServerBridge() {
       subAgent: false,
       _agentThreadId: threadId,
     };
+  }
+
+  // Positive proof from this bridge's protocol state only. Arbitrary HTTP
+  // metadata, model names and prompt text never establish a role.
+  function getNativeProxyRole(threadId) {
+    if (typeof threadId !== 'string' || !threadId || !_mainThreadId) return null;
+    const seen = new Set();
+    let id = threadId;
+    while (id && seen.size < 32 && !seen.has(id)) {
+      seen.add(id);
+      const thread = _threadMetaById.get(id);
+      if (thread && isTemporaryTitleThread(thread)) return null;
+      if (id === _mainThreadId && thread && !isSubAgentThreadMeta(thread)) return id === threadId ? 'main' : 'subagent';
+      const source = getSubAgentSourceInfo(thread?.source);
+      id = _subAgentThreads.get(id)?.parentThreadId || thread?.parentThreadId || source?.parentThreadId;
+    }
+    return null;
   }
 
   function getThreadWriteContext(threadId, state) {
@@ -2545,6 +2569,7 @@ export function createAppServerBridge() {
       writeLogEntry = null,
       systemPromptCapability = null,
       systemPromptLogDir = null,
+      resolveSystemPromptModel = null,
       signal = null,
     } = options;
     signal?.throwIfAborted();
@@ -2703,6 +2728,7 @@ export function createAppServerBridge() {
               {
                 capability: systemPromptCapability,
                 logDir: systemPromptLogDir,
+                model: parsed.method === 'thread/start' ? resolveSystemPromptModel?.(parsed.params?.model) : null,
                 cwd,
               },
             );
@@ -2819,6 +2845,7 @@ export function createAppServerBridge() {
   }
 
   return {
+    getNativeProxyRole,
     setAppServerTurnTerminalListener,
     setAppServerAgentMessageDeltaListener,
     getAppServerAgentLoopSnapshot,
@@ -2840,6 +2867,7 @@ export function createAppServerBridge() {
 }
 
 export const {
+  getNativeProxyRole,
   setAppServerTurnTerminalListener,
   setAppServerAgentMessageDeltaListener,
   getAppServerAgentLoopSnapshot,

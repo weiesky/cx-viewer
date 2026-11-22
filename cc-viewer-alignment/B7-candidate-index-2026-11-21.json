@@ -12,14 +12,28 @@
         "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "工具结果图片、原时间戳及请求跳转复用原生管线；Claude JSONL格式不移植",
+          "evidence": "B4-implementation.md#b47",
+          "sourceProof": "B4-completion-matrix.md"
+        }
+      ]
     },
     {
       "upstream": "e4fc788b9e324c8b1604a20eac541d88bade78ec",
       "indices": [
         "cc-viewer-alignment/cc-viewer-alignment-commit-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "孤立已提交输入与进行中状态复用B3真实writer闭合；无伪造degraded数据",
+          "evidence": "B3-sharding.md",
+          "sourceProof": "B3-completion-matrix.md"
+        }
+      ]
     },
     {
       "upstream": "e12dcaded939f2d9bee67c226e03fc0aaed8d253",
@@ -27,7 +41,14 @@
         "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "composer限宽/主题/焦点两行与autosize；有效12行及后修优先",
+          "evidence": "B7-implementation.md#e16",
+          "sourceProof": "B7-E17-ghost-css.json"
+        }
+      ]
     },
     {
       "upstream": "fcfef597ddaa3c754b641a13b6f989e1b83af775",
@@ -35,7 +56,14 @@
         "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "消息子项1400px，composer独立1000px、viewport scrollbar保持",
+          "evidence": "B4-implementation.md",
+          "sourceProof": "B7-E48-effective-source.json"
+        }
+      ]
     },
     {
       "upstream": "20e6573b7c351fa710933ea58a36359fc01f4fb4",
@@ -43,13 +71,12 @@
         "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "B7 render-window constants reviewed and migrated; other release/package scopes not claimed",
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
       "b7Scopes": [
         {
-          "scope": "desktop 800 / Android 400 / iOS 300 / load earlier +300",
+          "scope": "800/400/300、每次展开300",
           "evidence": "B7-implementation.md#e36",
-          "sourceProof": "B7-E36-render-window-source.json",
-          "validation": "109/109 component regressions; real slicing/load-earlier/navigation-offset callback; build; no bulk mobile GUI claim"
+          "sourceProof": "B7-E36-render-window-source.json"
         }
       ]
     },
@@ -59,13 +86,12 @@
         "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "B7 original HUD/dots reused; ordinary native root-plan snapshot path implemented; installed native model producing plan events remains unverified",
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
       "b7Scopes": [
         {
-          "scope": "ordinary PTY task HUD / progress dots / accepted root-turn reset / exact-owner replay",
+          "scope": "原HUD及普通精确root计划；实际0.169模型producer未验",
           "evidence": "B7-implementation.md#e41",
-          "sourceProof": "B7-E41-task-hud-source.json",
-          "validation": "226/226, build, controlled native protocol through actual PTY+bridge+server, dual engine desktop/pad/phone 6 cases/12 images; installed native plan tool not claimed"
+          "sourceProof": "B7-E41-task-hud-source.json"
         }
       ]
     },
@@ -75,7 +101,14 @@
         "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "原minimalChat合并及三个设置入口；native工具/线程身份适配",
+          "evidence": "B7-implementation.md#e42",
+          "sourceProof": "B7-E42-minimal-chat-source.json"
+        }
+      ]
     },
     {
       "upstream": "aa584229562d8a511023e10a79119424b0e56d52",
@@ -83,7 +116,14 @@
         "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "Prompt/Plan/Ask/UltraPlan徽标及生产请求归属",
+          "evidence": "B7-implementation.md#e18",
+          "sourceProof": "B7-prompt-nav/result.json"
+        }
+      ]
     },
     {
       "upstream": "caaab3d12fd8ea8849d4264a1b9f1ed5d15e1ec0",
@@ -91,7 +131,14 @@
         "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "导航语言/稳定fingerprint缓存",
+          "evidence": "B7-implementation.md#e18",
+          "sourceProof": "B7-prompt-nav/result.json"
+        }
+      ]
     },
     {
       "upstream": "6880f77320fa163442eaa64ff6385dc46a1b69f1",
@@ -99,7 +146,14 @@
         "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "Markdown路径、技能导入及缓存Popover内容复用B5；角色/协议分支独立",
+          "evidence": "B5-completion-matrix.md",
+          "sourceProof": "B5-candidate-matrix.md"
+        }
+      ]
     },
     {
       "upstream": "d906edb3de840208944bbca9d33ec037bdeb6bc5",
@@ -107,7 +161,14 @@
         "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "skills分作用域行、导航/HUD/role glass样式",
+          "evidence": "B7-implementation.md#e22",
+          "sourceProof": "B7-E22-skills-source.json"
+        }
+      ]
     },
     {
       "upstream": "3bd2aa96961379537a8ccfb50667cab4b2335aa9",
@@ -115,7 +176,14 @@
         "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "ghost两行/textarea下限和observer清理；CI下载重试归B11",
+          "evidence": "B7-implementation.md#e17",
+          "sourceProof": "B7-E17-ghost-css.json"
+        }
+      ]
     },
     {
       "upstream": "117ee25de22e82dd4891e98c88117a7d5c704ffe",
@@ -123,7 +191,14 @@
         "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "原浮动composer scrollbar bleed/ResizeObserver复用；shared方法AST相同",
+          "evidence": "B4-completion-matrix.md",
+          "sourceProof": "B7-E48-effective-source.json"
+        }
+      ]
     },
     {
       "upstream": "1e0edc00f3992edbeb47208e7326977101344f1b",
@@ -131,7 +206,14 @@
         "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "原SDK发送占位/Sending及有界30s核销",
+          "evidence": "B7-implementation.md#e33",
+          "sourceProof": "B7-E33-sdk-chip-source.json"
+        }
+      ]
     },
     {
       "upstream": "ebfcbaec0d5dac5621dcf5f4c38ecd8481b96c64",
@@ -139,14 +221,28 @@
         "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "native响应已折入唯一messages；没有独立LR渲染分支，不新建副本再隐藏",
+          "evidence": "B7-E48-effective-source.json",
+          "sourceProof": "B4-completion-matrix.md"
+        }
+      ]
     },
     {
       "upstream": "0cbb5452887476d3838c772e9fcd04cf3d01ce63",
       "indices": [
         "cc-viewer-alignment/cc-viewer-alignment-commit-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "工具增量两阶段游标/尾条重扫/真实切换reset复用B3",
+          "evidence": "B3-transport-and-pagination.md",
+          "sourceProof": "B5-implementation.md"
+        }
+      ]
     },
     {
       "upstream": "791a5e18f8b9d6445fde737dab42e0d47d74a07e",
@@ -154,7 +250,14 @@
         "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "原12行helper和CSS完整迁入",
+          "evidence": "B7-implementation.md#e16",
+          "sourceProof": "B7-E48-effective-source.json"
+        }
+      ]
     },
     {
       "upstream": "d90ac9587dcd9caadee721cbbf26c43ecb5711ea",
@@ -162,7 +265,14 @@
         "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "两个共享渲染分支按实际segments跳过空白，合法system-tag保留",
+          "evidence": "B7-implementation.md#e43",
+          "sourceProof": "B7-E43-blank-bubble-source.json"
+        }
+      ]
     },
     {
       "upstream": "ff0fe1ba93defb633823eea8e9afa3d5ad065232",
@@ -170,7 +280,14 @@
         "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "粘贴图片/异步上传和defer原链复用B5/B6；图像native输入不支持边界保持",
+          "evidence": "B5-completion-matrix.md",
+          "sourceProof": "B6-completion-matrix.md"
+        }
+      ]
     },
     {
       "upstream": "2e09d30192774017db5cb06d1783686c63b16031",
@@ -178,7 +295,14 @@
         "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "原选区引用chip/发送与滚动，native即时单行paste最小适配",
+          "evidence": "B6-implementation.md",
+          "sourceProof": "B7-implementation.md#e35"
+        }
+      ]
     },
     {
       "upstream": "478268a4db5aadb50be1396207b2c54093824c58",
@@ -186,83 +310,152 @@
         "cc-viewer-alignment/cc-viewer-alignment-commit-index.md",
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "Markdown源复制与原选区copy复用B6",
+          "evidence": "B6-implementation.md",
+          "sourceProof": "B6-candidate-matrix.md"
+        }
+      ]
     },
     {
       "upstream": "f3a8413db9f99691ef94f54279cedc2913e0c1f0",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "canonical native thread/agent身份及持久标签，不复制Claude header",
+          "evidence": "B4-implementation.md",
+          "sourceProof": "B4-candidate-matrix.md"
+        }
+      ]
     },
     {
       "upstream": "73e4b44ccdf0506117ddc96b7f83352fc6755501",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "合并无新增resolution；继承e12/fcf，非重复功能",
+          "evidence": "B7-E48-effective-source.json",
+          "sourceProof": "B7-implementation.md#e16"
+        }
+      ]
     },
     {
       "upstream": "efc7f8eab199a04f3b8dcb660a5bfde593138f66",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "浮动输入结构/overlay测量复用B4；普通PTY、草稿/队列完成本轮；其余分支独立",
+          "evidence": "B4-completion-matrix.md",
+          "sourceProof": "B7-implementation.md#e21"
+        }
+      ]
     },
     {
       "upstream": "7a2dd6162e1465071a755606d77de22d7c0caa90",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "系统段JSON展开/严格SDK说明复用B4；raw指令不改",
+          "evidence": "B4-implementation.md",
+          "sourceProof": "B4-candidate-matrix.md"
+        }
+      ]
     },
     {
       "upstream": "dafe2bce374df1daf3e81526a4b42c9189e620f0",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "普通原队列/立即发送/Stop/IM互斥和SDK已验核心",
+          "evidence": "B7-implementation.md#e28",
+          "sourceProof": "B7-implementation.md#e31"
+        }
+      ]
     },
     {
       "upstream": "c185a7484e2a3f069977d522741efc02c885420d",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "native Context呈现body.input逐项Input，非Claude exchange；真实Turn协议不重命名",
+          "evidence": "B7-E48-effective-source.json",
+          "sourceProof": "B0-commit-file-evidence.md#evidence-c185a7484e"
+        }
+      ]
     },
     {
       "upstream": "f28d9cae37c40ddb456bd23a819b93105b224217",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "纯test-analysis expert资产/发布说明，无输入导航实现；B8/B11保持待核",
+          "evidence": "cc-viewer-alignment-plan.md",
+          "sourceProof": "B7-E48-effective-source.json"
+        }
+      ]
     },
     {
       "upstream": "1af3d646c92433bf72e7c37230a557636550bbaa",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "纯expert提示资产迭代，无B7代码；按既定B8模型提示范围继续",
+          "evidence": "cc-viewer-alignment-plan.md",
+          "sourceProof": "B7-E48-effective-source.json"
+        }
+      ]
     },
     {
       "upstream": "57798b7ccc4d38c0cfa7535ba6c299ce8cfa45e8",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "归档页切项目回调/单页pager/间距复用B3",
+          "evidence": "B3-transport-and-pagination.md",
+          "sourceProof": "B3-completion-matrix.md"
+        }
+      ]
     },
     {
       "upstream": "bf2d6f2ad8fba572239cc8ee9ccc7d22f4b6d6ab",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "B7 original HUD/dots reused; ordinary native root-plan snapshot path implemented; installed native model producing plan events remains unverified",
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
       "b7Scopes": [
         {
-          "scope": "ordinary PTY task HUD / progress dots / accepted root-turn reset / exact-owner replay",
+          "scope": "原进度点/新prompt清理；精确当前root事件",
           "evidence": "B7-implementation.md#e41",
-          "sourceProof": "B7-E41-task-hud-source.json",
-          "validation": "226/226, build, controlled native protocol through actual PTY+bridge+server, dual engine desktop/pad/phone 6 cases/12 images; installed native plan tool not claimed"
+          "sourceProof": "B7-E41-task-hud-source.json"
         }
       ]
     },
@@ -271,90 +464,166 @@
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "会话resume刷新与规范snapshot/cursor回放复用B3/B4",
+          "evidence": "B3-browser-recovery.md",
+          "sourceProof": "B4-completion-matrix.md"
+        }
+      ]
     },
     {
       "upstream": "0670581b3dd0bcecebc1a88d8a032f295b6ada66",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "冷摄取失败reset/gate泄洪复用B3；不添加Claude transport",
+          "evidence": "B3-implementation.md",
+          "sourceProof": "B3-completion-matrix.md"
+        }
+      ]
     },
     {
       "upstream": "8923322f88def98fc3ccaa66d921aa2e3a1c0133",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "UltraReview内容资产及18语言模板，无输入导航代码；B8/B11保留",
+          "evidence": "B4-candidate-matrix.md",
+          "sourceProof": "cc-viewer-alignment-plan.md"
+        }
+      ]
     },
     {
       "upstream": "eb2e9703a2837550a9bf2a62a8bb5d20fac7f723",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "普通PTY registry/runtime/精确owner、原＋与共享弹窗；SDK/Electron原分支复用",
+          "evidence": "B7-implementation.md#e1",
+          "sourceProof": "B7-implementation.md#e34"
+        }
+      ]
     },
     {
       "upstream": "649f853e5e910b3fd1a964f441682d4f08499d2b",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "原共享resume/目录selector和权限picker；普通PTY逐实例；Git持久复用B5",
+          "evidence": "B2-completion-matrix.md",
+          "sourceProof": "B7-implementation.md#e13"
+        }
+      ]
     },
     {
       "upstream": "7f7f78e2d8c04ae578c892981acde12999ed1d05",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "DirBrowser一步launch复用原回调，普通backend现已接齐",
+          "evidence": "B2-completion-matrix.md",
+          "sourceProof": "B7-implementation.md#e13"
+        }
+      ]
     },
     {
       "upstream": "c4529a6ed7a81c7ddd4564915735a06e123890ab",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "整轮loading含工具静默和原生turn终态复用B4",
+          "evidence": "B4-completion-matrix.md",
+          "sourceProof": "B7-implementation.md#e29"
+        }
+      ]
     },
     {
       "upstream": "a07464187c0b4e3a7a0c3d02f0f4b4c8d69069fd",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "原embedded modal底部20px留白，B2共享CSS/GUI复用",
+          "evidence": "B2-completion-matrix.md",
+          "sourceProof": "B7-implementation.md#e13"
+        }
+      ]
     },
     {
       "upstream": "2dbe5cd695a965f51e4cee28d9c911e404675d46",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "原server偏好hydrate/legacy迁移/串行pin写入/外部scope同步",
+          "evidence": "B7-implementation.md#e45",
+          "sourceProof": "B7-E45-pinned-preferences-source.json"
+        }
+      ]
     },
     {
       "upstream": "4991ba762db4fdaf68450880dfd4d399d290eee0",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "WS mux逐stream冷载/重连与token隔离复用B3",
+          "evidence": "B3-transport-and-pagination.md",
+          "sourceProof": "B3-completion-matrix.md"
+        }
+      ]
     },
     {
       "upstream": "67ceb5b7f0dcb7027843ef8d5e1cd2b5b4d1a506",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "原slash菜单，权威native skills/list、精确owner/项目，使用$name",
+          "evidence": "B7-implementation.md#e25",
+          "sourceProof": "B7-E25-slash-source.json"
+        }
+      ]
     },
     {
       "upstream": "a2be00c45b71be0faf6b8bf1e1e93916b9cc1eb7",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "B7 composer upload entry and effective hover repair reviewed/migrated",
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
       "b7Scopes": [
         {
-          "scope": "desktop (+) top-level upload row / remove old round button / collapse stale cascade",
+          "scope": "原桌面上传收纳到首行，保phone/pad分支",
           "evidence": "B7-implementation.md#e37",
-          "sourceProof": "B7-E37-upload-menu-source.json",
-          "validation": "110/110, build, Chromium/WebKit ordinary+SDK desktop and SDK phone/pad 8 cases/8 screenshots; real file picker dispatch without uploading"
+          "sourceProof": "B7-E37-upload-menu-source.json"
         }
       ]
     },
@@ -363,20 +632,26 @@
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "SDK scratch开合始终保composer，B4原guard复用",
+          "evidence": "B4-implementation.md",
+          "sourceProof": "B7-E48-effective-source.json"
+        }
+      ]
     },
     {
       "upstream": "3cf3e9585f9f93cb59b021a81d789c8f4ef5e528",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "B7 composer upload entry and effective hover repair reviewed/migrated",
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
       "b7Scopes": [
         {
-          "scope": "desktop (+) top-level upload row / remove old round button / collapse stale cascade",
+          "scope": "原Upload hover取消级联、点击关闭菜单",
           "evidence": "B7-implementation.md#e37",
-          "sourceProof": "B7-E37-upload-menu-source.json",
-          "validation": "110/110, build, Chromium/WebKit ordinary+SDK desktop and SDK phone/pad 8 cases/8 screenshots; real file picker dispatch without uploading"
+          "sourceProof": "B7-E37-upload-menu-source.json"
         }
       ]
     },
@@ -385,20 +660,26 @@
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "slash合并无新resolution，原67ceb功能迁入E25",
+          "evidence": "B7-implementation.md#e25",
+          "sourceProof": "B7-E25-slash-source.json"
+        }
+      ]
     },
     {
       "upstream": "a336d3919f585712a1dcc608515e29589c0621f5",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "B7 main terminal upload entry reviewed/migrated",
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
       "b7Scopes": [
         {
-          "scope": "upload first row / remove standalone round button / hover cancel and popover close",
+          "scope": "主终端原上传菜单首行；persistent picker原链",
           "evidence": "B7-implementation.md#e38",
-          "sourceProof": "B7-E38-terminal-upload-source.json",
-          "validation": "111/111, build, Chromium/WebKit desktop+emulated pad 4 cases/4 screenshots, actual persistent file input picker"
+          "sourceProof": "B7-E38-terminal-upload-source.json"
         }
       ]
     },
@@ -407,13 +688,12 @@
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "B7 shared menu label reviewed/migrated exactly for all 18 locales",
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
       "b7Scopes": [
         {
-          "scope": "ui.terminal.agentTeam localized quick-prompt wording",
+          "scope": "原18语言Quick Prompts标签",
           "evidence": "B7-implementation.md#e39",
-          "sourceProof": "B7-E39-quick-prompts-source.json",
-          "validation": "Exact final-source block and call-site verification, build; no new GUI claim for this text-only change"
+          "sourceProof": "B7-E39-quick-prompts-source.json"
         }
       ]
     },
@@ -422,182 +702,364 @@
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "原ProxyChip输入条slot/phone/pad/desktop门控复用B4；模型策略B8独立",
+          "evidence": "B4-candidate-matrix.md",
+          "sourceProof": "B4-completion-matrix.md"
+        }
+      ]
     },
     {
       "upstream": "9c36b5b5a74eff61c88d27bdea1537666e771a73",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "用户已选原Context分类不可用态/353K条不改，原颜色与空态复用B4",
+          "evidence": "B4-candidate-matrix.md",
+          "sourceProof": "B4-completion-matrix.md"
+        }
+      ]
     },
     {
       "upstream": "1aca9b5f8f207903a7516a8036a7fa590808ca16",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "普通队列原条/状态、SDK权威接收及取消/同文ID",
+          "evidence": "B7-implementation.md#e28",
+          "sourceProof": "B7-implementation.md#e33"
+        }
+      ]
     },
     {
       "upstream": "134a0de7ac166db5f9375d9f2c60bcd97248852b",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "UltraReview模板/专家内容，native命名agent适配留B8/B11；不伪造Teammate",
+          "evidence": "B4-candidate-matrix.md",
+          "sourceProof": "cc-viewer-alignment-plan.md"
+        }
+      ]
     },
     {
       "upstream": "566ade13fc3bf2c3fd8d90044b1f36602c6980bf",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "技能管理/原目录/文档编辑复用B5，原生技能枚举和slash本轮接入",
+          "evidence": "B5-completion-matrix.md",
+          "sourceProof": "B7-implementation.md#e23"
+        }
+      ]
     },
     {
       "upstream": "3d65bedcd1b47a8de7f0ff1bdfec3a11efbc9fa0",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "SDK scratch保血条portal，与composer相同原guard",
+          "evidence": "B4-candidate-matrix.md",
+          "sourceProof": "B7-E48-effective-source.json"
+        }
+      ]
     },
     {
       "upstream": "7a75e1be81b3e90f55f8888c423e66e05c1cde64",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "精确target浏览/上下文菜单复用B5，不放宽文件策略",
+          "evidence": "B5-completion-matrix.md",
+          "sourceProof": "B5-candidate-matrix.md"
+        }
+      ]
     },
     {
       "upstream": "cdf05bf8ee09645d9396935fe88efe84ccb57da8",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "SDK原恢复状态/retry UI复用B4，不新增native重试策略",
+          "evidence": "B4-completion-matrix.md",
+          "sourceProof": "B4-candidate-matrix.md"
+        }
+      ]
     },
     {
       "upstream": "08809f6e69315476690c62bbe238bd5c199b338d",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "混合squash被082回退，不搬回；最终工具增量由0cbb复用B3",
+          "evidence": "B3-transport-and-pagination.md",
+          "sourceProof": "B5-cross-package-audit.md"
+        }
+      ]
     },
     {
       "upstream": "082673509ec6407bb835fa8992440eb13a6cf1c2",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "回退088血缘保留，B7无新增有效功能",
+          "evidence": "B3-transport-and-pagination.md",
+          "sourceProof": "B5-cross-package-audit.md"
+        }
+      ]
     },
     {
       "upstream": "88995a10461973689656841a8476ee4e6c60281b",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "原错误条800px CSS复用B4，样式声明有效",
+          "evidence": "B4-candidate-matrix.md",
+          "sourceProof": "B7-E48-effective-source.json"
+        }
+      ]
     },
     {
       "upstream": "ee3545344eff8c9969f6de63631d2181844cbfb0",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "retry恢复中隐藏原错误行复用B4",
+          "evidence": "B4-candidate-matrix.md",
+          "sourceProof": "B4-completion-matrix.md"
+        }
+      ]
     },
     {
       "upstream": "469a995ad8d6222f2fb092a7c1c3d5bb8fe7b349",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "SDK ask最小化跨视图、精确实例dismiss守卫复用B4",
+          "evidence": "B4-candidate-matrix.md",
+          "sourceProof": "B4-completion-matrix.md"
+        }
+      ]
     },
     {
       "upstream": "2ea5181df8c2d4e8385b76ca4507b74b8e409231",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "原border-box/pad高度后修、CR/paste和任务适配；其他平台分支独立",
+          "evidence": "B7-implementation.md#e16",
+          "sourceProof": "B7-implementation.md#e35"
+        }
+      ]
     },
     {
       "upstream": "439179221296fcc2ca1beb0ffce69c13a336b56f",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "规范V2分片URL、目录owner及分页复用B3；原scratch URL身份本轮E31a补正",
+          "evidence": "B3-sharding.md",
+          "sourceProof": "B7-implementation.md#e31a"
+        }
+      ]
     },
     {
       "upstream": "d6ec38be824f67a1528ff1ffeaa91349255dd58e",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "当前Header已无系统提示自动pin/轮询，原手动pins保留；不重引删除机制",
+          "evidence": "B7-E48-effective-source.json",
+          "sourceProof": "B7-E45-pinned-preferences-source.json"
+        }
+      ]
     },
     {
       "upstream": "96f3a7a44e014192000378b974ea757f194d08e9",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "原更多Modal/三视图/txt导出/空计数修正",
+          "evidence": "B7-implementation.md#e19",
+          "sourceProof": "B7-E19-prompt-modal-source.json"
+        }
+      ]
     },
     {
       "upstream": "a6b82f16dff7991670ca8bdf3f01c6ae6f0d5d4b",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "树内原搜索与持久化/跳转复用B5",
+          "evidence": "B5-completion-matrix.md",
+          "sourceProof": "B5-candidate-matrix.md"
+        }
+      ]
     },
     {
       "upstream": "ea995f38833b20201b47ebd2c13ec5e54e24aa95",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "原文件drag→composer/PTY引用、native路径转义复用B5/B6",
+          "evidence": "B5-completion-matrix.md",
+          "sourceProof": "B7-E48-effective-source.json"
+        }
+      ]
     },
     {
       "upstream": "beaa2e86f2dfa451a2044348c6c14fa874419e6f",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "目录drag原MIME/路径编码和策略复用B5；helper全函数AST相同",
+          "evidence": "B5-completion-matrix.md",
+          "sourceProof": "B7-E48-effective-source.json"
+        }
+      ]
     },
     {
       "upstream": "ec14cd02346074fa3e81032cbf304564dc7e334b",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "现有用量条保持、mainWS心跳/重连复用B3/B4；native无分类RPC不伪造",
+          "evidence": "B3-completion-matrix.md",
+          "sourceProof": "B4-candidate-matrix.md"
+        }
+      ]
     },
     {
       "upstream": "a2f5cd4b43fa8f8003e60774b5c71160e6de509e",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "Git路径drag/quote原链复用B5，native cwd/owner范围保持",
+          "evidence": "B5-completion-matrix.md",
+          "sourceProof": "B7-E48-effective-source.json"
+        }
+      ]
     },
     {
       "upstream": "bde0244333a14245e5889deafca622cdb97bbff9",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "有界背压/附着缓存/逐stream复用B3，canonical native V2",
+          "evidence": "B3-transport-and-pagination.md",
+          "sourceProof": "B3-completion-matrix.md"
+        }
+      ]
     },
     {
       "upstream": "1b3c2268e3bd0e73ffef043bf450662d01a28371",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "diff/工具参数/Ask原选区添加到对话复用B6",
+          "evidence": "B6-completion-matrix.md",
+          "sourceProof": "B6-candidate-matrix.md"
+        }
+      ]
     },
     {
       "upstream": "8f1d345309b10c289ee14825fea8d24f07eb534f",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "composer导航/mic迁位及active native身份计数",
+          "evidence": "B7-implementation.md#e20",
+          "sourceProof": "B7-E20-composer-nav-source.json"
+        }
+      ]
     },
     {
       "upstream": "ac56c9c6d56ca7e9fd5d3bf7f55c273d3e0f6a5d",
       "indices": [
         "cc-viewer-alignment/B0-cross-index.md"
       ],
-      "status": "pending per-scope source review; index membership is not implementation evidence"
+      "status": "B7 scope disposition closed; mixed non-B7 scopes remain independent",
+      "b7Scopes": [
+        {
+          "scope": "导航PR合并无新增resolution，8f源功能按scope验证",
+          "evidence": "B7-implementation.md#e20",
+          "sourceProof": "B7-E20-composer-nav-source.json"
+        }
+      ]
     }
   ],
   "additionalSourceScopes": [

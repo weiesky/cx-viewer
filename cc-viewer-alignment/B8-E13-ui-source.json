@@ -1,0 +1,41 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "hashes": [
+    {
+      "path": "apps/web/src/components/settings/SystemTextModal.module.css",
+      "equal": true,
+      "sha256": "4d52f09d6ca06d4d720bc04c761b7c0886d5dd1a092007faab2bc4e0782af434"
+    },
+    {
+      "path": "apps/web/src/components/settings/ModelPromptTabs.jsx",
+      "equal": true,
+      "sha256": "80f6ca0832f9ff7b888cfa1c7678d6cf4845c4213adcbe1b8e6d5e1614416411"
+    },
+    {
+      "path": "apps/web/src/components/common/ChipIcon.jsx",
+      "equal": true,
+      "sha256": "d6d3d0f67c7d489c47b5bfcea79daf54fc13d93ee5b23e1c7412bb637330790f"
+    },
+    {
+      "path": "apps/web/src/utils/builtinPromptTabs.js",
+      "equal": true,
+      "sha256": "4c60d40259a862ab58e7f4db24e4dd35710c11bde3385cd15d5e022aa1c40501"
+    }
+  ],
+  "nativeAdaptations": [
+    "managed JSON revisions and capability guard",
+    "exact instance pinned for modal lifetime",
+    "native model fields/config endpoint",
+    "per-scope opt-out partial success is retained for retry",
+    "native storage paths and existing privacy notice",
+    "existing non-button ConfirmRemoveButton gains Tab/Enter/Space with the same confirmation guard",
+    "six referenced native host variables; unrecognized user placeholders stay literal to preserve native resume/fork byte contract"
+  ],
+  "sourceRepairs": [
+    "fe0c52ff60",
+    "69b104cbf3",
+    "02ce99f202",
+    "d6ec38be82"
+  ],
+  "knownNarrowIssue": "At 480px desktop width the unchanged upstream flex row clips the Override label; footer is reachable through modal scrolling. Not a full narrow/mobile visual pass."
+}

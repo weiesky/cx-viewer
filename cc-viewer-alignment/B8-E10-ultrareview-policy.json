@@ -1,0 +1,102 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "sourceCommits": [
+    "8923322f88def98fc3ccaa66d921aa2e3a1c0133",
+    "134a0de7ac166db5f9375d9f2c60bcd97248852b",
+    "92ed9bc751c4ba3677487453d387e4565cc9fdb3"
+  ],
+  "userChoice": "automatic P0/P1 remediation, evaluate P2",
+  "adaptation": "AskUserQuestion → request_user_input; retain existing native capacity discovery/lifecycle",
+  "changes": [
+    {
+      "lang": "zh",
+      "sourcePolicy": "4. 完成后设定修复P0、P1，以及辩证修复P2（如果其中有特殊需要确认的，可以用`request_user_input`咨询用户意见）；",
+      "oldPolicy": "4. 完成后不要自动执行，先将修改建议呈现给我，等待我的确认，这里最好调用 `request_user_input` 工具跟我沟通；"
+    },
+    {
+      "lang": "en",
+      "sourcePolicy": "4. When done, fix all P0 and P1 items, and evaluate P2 items dialectically (use `request_user_input` to consult the user when an item needs a special decision);",
+      "oldPolicy": "4. Do not execute changes automatically. Present the recommendations and wait for my confirmation, preferably using `request_user_input` to communicate with me;"
+    },
+    {
+      "lang": "zh-TW",
+      "sourcePolicy": "4. 完成後設定修復P0、P1，以及辯證修復P2（如果其中有特殊需要確認的，可以用`request_user_input`諮詢用戶意見）；",
+      "oldPolicy": "4. 完成後不要自動執行，先向我呈現修改建議並等待確認，最好使用 `request_user_input` 工具與我溝通；"
+    },
+    {
+      "lang": "ko",
+      "sourcePolicy": "4. 완료 후 P0, P1은 반드시 수정하고, P2는 상황에 맞게 판단하여 수정(특별한 확인이 필요한 항목은 `request_user_input`으로 사용자에게 문의);",
+      "oldPolicy": "4. 완료 후 자동 실행하지 말고 제안을 먼저 제시한 뒤 확인을 기다리며, 가능하면 `request_user_input` 도구로 소통합니다."
+    },
+    {
+      "lang": "ja",
+      "sourcePolicy": "4. 完了後、P0・P1 は必ず修正し、P2 は状況に応じて弁証的に修正 (特別な確認が必要な項目は `request_user_input` でユーザーに相談);",
+      "oldPolicy": "4. 完了後に自動実行せず、提案を提示して確認を待つ。できれば `request_user_input` ツールで確認する。"
+    },
+    {
+      "lang": "de",
+      "sourcePolicy": "4. Wenn fertig, alle P0- und P1-Punkte beheben und P2-Punkte abwägend behandeln (bei punkten, die eine besondere Entscheidung brauchen, den Nutzer per `request_user_input` fragen);",
+      "oldPolicy": "4. Führe Änderungen nicht automatisch aus. Lege mir zuerst die Empfehlungen vor und warte auf meine Bestätigung; verwende dafür möglichst `request_user_input`."
+    },
+    {
+      "lang": "es",
+      "sourcePolicy": "4. Cuando termines, corrige todos los P0 y P1, y evalúa los P2 con criterio (usa `request_user_input` para consultar al usuario cuando algún punto requiera una decisión especial);",
+      "oldPolicy": "4. No ejecutes los cambios automáticamente. Preséntame primero las recomendaciones y espera mi confirmación, preferiblemente mediante `request_user_input`."
+    },
+    {
+      "lang": "fr",
+      "sourcePolicy": "4. Une fois terminé, corrigez tous les P0 et P1, et traitez les P2 avec discernement (utilisez `request_user_input` pour consulter l'utilisateur quand un point requiert une décision particulière);",
+      "oldPolicy": "4. N’exécutez pas automatiquement les changements. Présentez-moi d’abord les recommandations et attendez ma confirmation, de préférence via `request_user_input`."
+    },
+    {
+      "lang": "it",
+      "sourcePolicy": "4. Al termine, correggi tutti i P0 e P1, e valuta i P2 con discernimento (usa `request_user_input` per consultare l'utente quando un punto richiede una decisione speciale);",
+      "oldPolicy": "4. Non eseguire automaticamente le modifiche. Presentami prima i suggerimenti e attendi la mia conferma, preferibilmente tramite `request_user_input`."
+    },
+    {
+      "lang": "da",
+      "sourcePolicy": "4. Når du er færdig, udbedres alle P0- og P1-punkter, og P2-punkter vurderes afvejende (brug `request_user_input` til at rådføre brugeren, når et punkt kræver en særlig beslutning);",
+      "oldPolicy": "4. Udfør ikke ændringer automatisk. Vis mig først forslagene og afvent min bekræftelse, helst via `request_user_input`."
+    },
+    {
+      "lang": "pl",
+      "sourcePolicy": "4. Po zakończeniu napraw wszystkie P0 i P1, a P2 oceń rozważnie (użyj `request_user_input`, aby skonsultować się z użytkownikiem, gdy punkt wymaga specjalnej decyzji);",
+      "oldPolicy": "4. Nie wykonuj zmian automatycznie. Najpierw przedstaw mi zalecenia i poczekaj na potwierdzenie, najlepiej za pomocą `request_user_input`."
+    },
+    {
+      "lang": "ru",
+      "sourcePolicy": "4. По завершении исправьте все P0 и P1, а P2 оцените взвешенно (используйте `request_user_input`, чтобы проконсультироваться с пользователем, когда пункт требует особого решения);",
+      "oldPolicy": "4. Не применяй изменения автоматически. Сначала представь рекомендации и дождись моего подтверждения, предпочтительно через `request_user_input`."
+    },
+    {
+      "lang": "ar",
+      "sourcePolicy": "4. عند الانتهاء، أصلح جميع عناصر P0 وP1، وقيّم عناصر P2 بروية (استخدم `request_user_input` لاستشارة المستخدم عندما يحتاج أي بند إلى قرار خاص)؛",
+      "oldPolicy": "4. لا تنفذ التغييرات تلقائيًا. اعرض التوصيات أولًا وانتظر تأكيدي، ويفضل استخدام `request_user_input` للتواصل معي."
+    },
+    {
+      "lang": "no",
+      "sourcePolicy": "4. Når du er ferdig, rett alle P0- og P1-punkter, og vurder P2-punkter med skjønn (bruk `request_user_input` for å rådføre brukeren når et punkt trenger en spesiell avgjørelse);",
+      "oldPolicy": "4. Ikke utfør endringene automatisk. Presenter anbefalingene først og vent på min bekreftelse, helst via `request_user_input`."
+    },
+    {
+      "lang": "pt-BR",
+      "sourcePolicy": "4. Ao terminar, corrija todos os P0 e P1, e avalie os P2 com critério (use `request_user_input` para consultar o usuário quando algum ponto exigir uma decisão especial);",
+      "oldPolicy": "4. Não execute as alterações automaticamente. Apresente primeiro as recomendações e aguarde minha confirmação, de preferência usando `request_user_input`."
+    },
+    {
+      "lang": "th",
+      "sourcePolicy": "4. เมื่อเสร็จแล้ว ให้แก้ไข P0 และ P1 ทั้งหมด และพิจารณา P2 อย่างรอบคอบ (ใช้ `request_user_input` เพื่อปรึกษาผู้ใช้เมื่อมีประเด็นที่ต้องตัดสินใจเป็นพิเศษ);",
+      "oldPolicy": "4. อย่าดำเนินการเปลี่ยนแปลงโดยอัตโนมัติ ให้นำเสนอคำแนะนำและรอการยืนยันจากฉัน โดยควรใช้ `request_user_input`"
+    },
+    {
+      "lang": "tr",
+      "sourcePolicy": "4. Bittiğinde tüm P0 ve P1 maddelerini düzeltin, P2 maddelerini ise duruma göre değerlendirin (özel bir karar gerektiren maddeler için `request_user_input` ile kullanıcıya danışın);",
+      "oldPolicy": "4. Değişiklikleri otomatik olarak uygulamayın. Önce önerileri sunup onayımı bekleyin; tercihen `request_user_input` kullanın."
+    },
+    {
+      "lang": "uk",
+      "sourcePolicy": "4. Після завершення виправте всі P0 і P1, а P2 оцініть виважено (використовуйте `request_user_input`, щоб проконсультуватися з користувачем, коли пункт потребує особливого рішення);",
+      "oldPolicy": "4. Не застосовуй зміни автоматично. Спочатку представ рекомендації та дочекайся мого підтвердження, бажано через `request_user_input`."
+    }
+  ]
+}

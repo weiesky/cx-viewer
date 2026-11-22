@@ -47,6 +47,16 @@ test('normalizes older app-server messages shape for conversation rendering', ()
   assert.equal(sessions[0].messages.length, 2);
 });
 
+test('SDK wire capture is inspectable without becoming a second chat transcript', () => {
+  for (const url of ['https://chatgpt.com/backend-api/codex/responses', 'https://gateway.example/v1/responses']) {
+    const entry = { url, _captureContext: { cwd: '/work', instanceKey: 'sdk-a', sdkTransport: true }, body: { input: 'original bytes' } };
+    assert.equal(shouldExcludeFromConversation(entry), true);
+    assert.equal(entry.body.input, 'original bytes');
+    assert.equal(shouldExcludeFromConversation({ ...entry, _captureContext: { sdkTransport: false } }), false);
+    assert.equal(shouldExcludeFromConversation({ url: 'codex://sdk/thread-a', _sdkSource: true }), false);
+  }
+});
+
 test('excludes api.openai.com Responses entries from conversation projection only', () => {
   assert.equal(shouldExcludeFromConversation({
     url: 'https://api.openai.com/v1/responses',

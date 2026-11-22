@@ -35,7 +35,7 @@ Configuration is stored at `~/.codex/cx-viewer/profile.json`:
   "version": 3,
   "active": "my-proxy",
   "profiles": [
-    { "id": "max", "name": "Max" },
+    { "id": "max", "name": "Default" },
     {
       "id": "my-proxy",
       "name": "My Proxy",
@@ -49,6 +49,16 @@ Configuration is stored at `~/.codex/cx-viewer/profile.json`:
 }
 ```
 
-- `active` — ID of the current profile. Set to `"max"` for direct connection (no proxy)
+- `active` — Legacy global fallback profile. The UI saves Main Agent selection per workspace; `"max"` preserves native routing.
 - `profiles` — Profile list. `id: "max"` is built-in and cannot be deleted
 - A UI save affects the current process immediately; other CX Viewer processes update within ~1.5 seconds through `fs.watchFile`
+
+## Role Assignment
+
+The Main Agent selection and Sub-Agent assignment belong to the current workspace. Sub-Agent can follow Main Agent, use Default, or use another saved profile. The selector is available when the native AppServer can verify the child thread belongs to this workspace. SDK exec keeps a single source and disables Sub-Agent assignment. Codex has no equivalent Teammate role.
+
+When Main Agent uses Default on an official endpoint, role assignments are dormant and remain saved. Switching back to a profile restores them. A custom default endpoint can use explicit Sub-Agent assignments.
+
+An accepted native turn keeps its selected source. Source changes apply to later turns. Managed system prompts apply only to new sessions; resume and fork keep the native persisted instructions.
+
+`profile.json` remains the shared catalogue and legacy global fallback. The UI stores `{ activeId, roles: { subagent } }` in the allocated workspace log directory's `active-profile.json`, with no API keys in that file. Other CX Viewer processes refresh within about 1.5 seconds.

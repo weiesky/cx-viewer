@@ -1,0 +1,125 @@
+{
+  "version": "codex-cli 0.169.0",
+  "isolatedRoot": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b8-native-builtin-FkFolY",
+  "requests": 15,
+  "checks": [
+    {
+      "mode": "builtin",
+      "model": "k3",
+      "exactInstructionText": true,
+      "hostDeveloperPreserved": true
+    },
+    {
+      "mode": "builtin",
+      "model": "kimi-k2.7-code",
+      "exactInstructionText": true,
+      "hostDeveloperPreserved": true
+    },
+    {
+      "mode": "builtin",
+      "model": "deepseek-v4-flash",
+      "exactInstructionText": true,
+      "hostDeveloperPreserved": true
+    },
+    {
+      "mode": "builtin",
+      "model": "deepseek-v4-pro",
+      "exactInstructionText": true,
+      "hostDeveloperPreserved": true
+    },
+    {
+      "mode": "builtin",
+      "model": "glm-5.2",
+      "exactInstructionText": true,
+      "hostDeveloperPreserved": true
+    },
+    {
+      "mode": "builtin",
+      "model": "glm-5.3",
+      "exactInstructionText": true,
+      "hostDeveloperPreserved": true
+    },
+    {
+      "mode": "builtin",
+      "model": "qwen-3.8-max",
+      "exactInstructionText": true,
+      "hostDeveloperPreserved": true
+    },
+    {
+      "mode": "override",
+      "kind": "original",
+      "expected": "B8 override ORIGINAL\n中文 fixture\n${verbatim}",
+      "preserved": true,
+      "exactInstructionText": true
+    },
+    {
+      "mode": "override",
+      "kind": "resume",
+      "expected": "B8 override ORIGINAL\n中文 fixture\n${verbatim}",
+      "preserved": true,
+      "exactInstructionText": true
+    },
+    {
+      "mode": "override",
+      "kind": "fork",
+      "expected": "B8 override ORIGINAL\n中文 fixture\n${verbatim}",
+      "preserved": true,
+      "exactInstructionText": true
+    },
+    {
+      "mode": "override",
+      "kind": "fresh",
+      "expected": "B8 override CHANGED\n新 fixture\n${verbatim}",
+      "preserved": true,
+      "exactInstructionText": true
+    },
+    {
+      "mode": "append",
+      "kind": "original",
+      "expected": "B8 append ORIGINAL\n中文 fixture\n${verbatim}",
+      "preserved": true,
+      "exactInstructionText": true
+    },
+    {
+      "mode": "append",
+      "kind": "resume",
+      "expected": "B8 append ORIGINAL\n中文 fixture\n${verbatim}",
+      "preserved": true,
+      "exactInstructionText": true
+    },
+    {
+      "mode": "append",
+      "kind": "fork",
+      "expected": "B8 append ORIGINAL\n中文 fixture\n${verbatim}",
+      "preserved": true,
+      "exactInstructionText": true
+    },
+    {
+      "mode": "append",
+      "kind": "fresh",
+      "expected": "B8 append CHANGED\n新 fixture\n${verbatim}",
+      "preserved": true,
+      "exactInstructionText": true
+    }
+  ],
+  "schemas": {
+    "Start": {
+      "baseInstructions": true,
+      "developerInstructions": true
+    },
+    "Resume": {
+      "baseInstructions": true,
+      "developerInstructions": true
+    },
+    "Fork": {
+      "baseInstructions": true,
+      "developerInstructions": true
+    }
+  },
+  "actualNativeCodex": true,
+  "resumedAcrossOwnedProcessRestart": true,
+  "loopbackSyntheticResponses": true,
+  "externalModel": false,
+  "toolsExecuted": false,
+  "ownedChildrenExited": true
+}

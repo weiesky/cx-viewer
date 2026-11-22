@@ -718,3 +718,30 @@ test('queued commit listeners receive the immutable committed entry', () => {
     assert.deepEqual(JSON.parse(child.stdout.trim().split('\n').at(-1)), { usage: 7 });
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
+
+test('owned SDK wire capture cannot claim the native SDK archive or resume pointer', () => {
+  const root = mkdtempSync(join(tmpdir(), 'cxv-v2-sdk-wire-'));
+  try {
+    const coordinator = new LogV2WriteCoordinator({ rootDir: root, runtimeId: 'sdk-wire-test', minFreeBytes: 0, minFreePercent: 0 });
+    const scope = { cwd: '/workspace/project', projectId: 'project' };
+    const wire = { ...entry(), mainAgent: true, headers: { 'session-id': 'native-sdk-thread', 'thread-id': 'native-sdk-thread' },
+      _captureContext: { cwd: scope.cwd, instanceKey: 'sdk-one', sdkTransport: true } };
+    coordinator.writeEntry(wire, { ...scope, source: 'proxy' });
+    assert.equal(coordinator.snapshot().lastConversationLocator, null);
+    coordinator.writeEntry({ ...entry('2026-07-14T08:01:00.000Z'), url: 'codex://sdk/native-sdk-thread', mainAgent: true }, {
+      ...scope, source: 'sdk', threadId: 'native-sdk-thread', sessionId: 'native-sdk-thread',
+    });
+    coordinator.writeEntry({ ...wire, timestamp: '2026-07-14T08:02:00.000Z' }, { ...scope, source: 'proxy' });
+    assert.equal(coordinator.snapshot().lastConversationLocator.sessionId, 'native-sdk-thread');
+    const archives = listV2LocalLogs(root).project.map(log => materializeSessionArchive(resolveV2SessionFile(root, log.file).sessionDir));
+    assert.equal(archives.length, 2);
+    const sdk = archives.find(archive => archive.manifest.source === 'sdk');
+    assert.equal(sdk.manifest.sessionId, 'native-sdk-thread');
+    assert.equal(sdk.committedEvents, 1);
+    const raw = archives.find(archive => archive.manifest.source === 'proxy');
+    assert.equal(raw.committedEvents, 2);
+    assert.match(raw.manifest.sessionId, /^synthetic:sdk-wire:/);
+    assert.ok(raw.records.every(record => record.agentRole === 'auxiliary'));
+    assert.equal(coordinator.sourceIdentity({ ...wire, _captureContext: { ...wire._captureContext, instanceKey: 'sdk-two' } }, { source: 'proxy' }, 'project').sessionId === raw.manifest.sessionId, false);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});

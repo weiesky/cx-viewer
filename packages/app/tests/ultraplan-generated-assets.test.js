@@ -46,7 +46,7 @@ describe('generated UltraPlan assets', () => {
       assert.ok(combined.includes(required), `missing ${required}`);
     }
     assert.ok(ULTRAPLAN_VARIANTS.codeExpert.includes('tool_search'));
-    assert.ok(ULTRAPLAN_VARIANTS.codeExpert.includes('automated post-implementation gate'));
+    assert.ok(ULTRAPLAN_VARIANTS.codeExpert.includes('fix all P0 and P1 items'));
     assert.equal(ULTRAPLAN_VARIANTS.codeExpert.includes('parellel'), false);
     assert.equal(ULTRAPLAN_VARIANTS.codeExpert.includes('${verson}'), false);
     assert.ok(ULTRAPLAN_VARIANTS.researchExpert.includes('You must use \`request_user_input\`'));

@@ -1,3 +1,4 @@
+import { formatContextUsage } from '../../utils/helpers';
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Popover, Button, Alert, Modal, Tooltip, Dropdown, Space, message } from 'antd';
 import { ReloadOutlined, PlusOutlined, FolderOpenOutlined, FileZipOutlined, FileMarkdownOutlined, SettingOutlined } from '@ant-design/icons';
@@ -413,9 +414,7 @@ export default function CachePopoverContent({
   // Shared thresholds (75/55) — this chip previously used 80/60 and could
   // disagree in color with the header bar feeding it the same percentage.
   const ctxColor = contextSeverityColor(contextPercent);
-  const cacheUsageText = contextTokens > 0
-    ? `${(contextTokens / 1000).toFixed(1)}K (${contextPercent}%)`
-    : `${contextPercent}%`;
+  const cacheUsageText = formatContextUsage(contextTokens, contextPercent);
   return (
     <div className={styles.cachePopover}>
       <div className={styles.cachePopoverHeader}>

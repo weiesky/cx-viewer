@@ -12,7 +12,7 @@ import { EventEmitter } from 'node:events';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, basename, resolve } from 'node:path';
 import { LOG_DIR } from './findcx.js';
-import { assembleOpenAiResponseMessage, assembleStreamMessage, classifyAgentRequest, inferCodexWorkspaceCwd, isOpenAiApiPath, parseRequestBodyForLog } from './lib/interceptor-core.js';
+import { assembleOpenAiResponseMessage, assembleStreamMessage, classifyAgentRequest, getCodexTurnMetadata, inferCodexWorkspaceCwd, isOpenAiApiPath, parseRequestBodyForLog } from './lib/interceptor-core.js';
 import { resolveLogV2Config } from './lib/log-v2/config.js';
 import { LogV2WriteCoordinator } from './lib/log-v2/coordinator.js';
 import { loadLogV2RuntimeConfig } from './lib/log-v2/runtime-config.js';
@@ -22,6 +22,7 @@ import { classifyProxyOperation, createDefaultProxyProfiles, isOAuthProxyRequest
 import { adaptChatCompletionsResponse, prepareChatCompletionsRequest } from './lib/codex-chat-adapter.js';
 import { PROFILE_PATH } from './lib/proxy-profile-path.js';
 import { createProxyProfileCredentials } from './lib/proxy-profile-credentials.js';
+import { readWorkspaceProxy, resolveWorkspaceProxy } from './lib/workspace-proxy.js';
 
 
 
@@ -72,29 +73,23 @@ const _proxyRouteByTurn = new Map();
 
 function proxyTurnKey(body) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
-  const legacyMetadata = body.metadata && typeof body.metadata === 'object' && !Array.isArray(body.metadata)
-    ? body.metadata
-    : null;
-  const nativeMetadata = body.client_metadata && typeof body.client_metadata === 'object' && !Array.isArray(body.client_metadata)
-    ? body.client_metadata
-    : null;
-  const metadata = legacyMetadata || nativeMetadata
-    ? { ...(legacyMetadata || {}), ...(nativeMetadata || {}) }
-    : null;
+  const metadata = getCodexTurnMetadata(body);
   const turnId = metadata?.turn_id;
-  if (typeof turnId !== 'string' || !turnId) return null;
-  const sessionId = typeof metadata.session_id === 'string' ? metadata.session_id : '';
-  const threadId = typeof metadata.thread_id === 'string' ? metadata.thread_id : '';
+  if (typeof turnId !== 'string' || !turnId || turnId.length > 256) return null;
+  const sessionId = typeof metadata.session_id === 'string' && metadata.session_id.length <= 256 ? metadata.session_id : '';
+  const threadId = typeof metadata.thread_id === 'string' && metadata.thread_id.length <= 256 ? metadata.thread_id : '';
   return `${sessionId}\0${threadId}\0${turnId}`;
 }
 
-function bindProxyRouteForTurn(body, profile, loadError) {
+function bindProxyRouteForTurn(body, profile, loadError, blocked = false) {
   const key = proxyTurnKey(body);
-  if (!key) return { profile, loadError };
-  const existing = _proxyRouteByTurn.get(key);
+  if (!key) return { profile, loadError, blocked };
+  const owner = captureRequestContext.getStore();
+  const scopedKey = `${owner?.cwd || ''}\0${owner?.instanceKey || ''}\0${owner?.proxyThreadId || ''}\0${key}`;
+  const existing = _proxyRouteByTurn.get(scopedKey);
   if (existing) return existing;
-  const route = { profile, loadError };
-  _proxyRouteByTurn.set(key, route);
+  const route = { profile, loadError, blocked };
+  _proxyRouteByTurn.set(scopedKey, route);
   if (_proxyRouteByTurn.size > MAX_BOUND_PROXY_TURNS) {
     _proxyRouteByTurn.delete(_proxyRouteByTurn.keys().next().value);
   }
@@ -180,6 +175,13 @@ export function _stopProxyProfileWatchForTests() {
 }
 
 export { _activeProfile, _defaultConfig, _loadProxyProfile, _proxyProfileLoadError, PROFILE_PATH };
+
+export function getWorkspaceProxyProfile(cwd, role = 'main', officialDefault = false) {
+  const workspace = readWorkspaceProxy(LOG_DIR, cwd);
+  if (workspace.revision === '0') return _activeProfile;
+  if (_proxyProfileLoadError) throw new Error('Proxy catalogue is unreadable');
+  return resolveWorkspaceProxy(_lastValidProxyProfiles, workspace, role, { officialDefault });
+}
 
 async function readRequestBodyLimited(request) {
   if (!request.body) return null;
@@ -474,6 +476,7 @@ export function setupInterceptor() {
   globalThis.fetch = async function (url, options) {
     let profileSnapshot = _activeProfile;
     let profileLoadErrorSnapshot = _proxyProfileLoadError;
+    let workspaceRouteBlocked = false;
     if (options?.headers) {
       options = {
         ...options,
@@ -595,10 +598,25 @@ export function setupInterceptor() {
       if (process.env.CXV_DEBUG) console.warn('[CX-Viewer] Request interception error:', err.message);
     }
 
-    ({ profile: profileSnapshot, loadError: profileLoadErrorSnapshot } = bindProxyRouteForTurn(
+    if (requestEntry) {
+      const owner = captureRequestContext.getStore();
+      const cwd = owner?.cwd || process.env.CXV_PROJECT_DIR || process.cwd();
+      const role = owner?.proxyRole === 'subagent' ? 'subagent' : 'main';
+      try {
+        const origin = new URL(typeof url === 'string' ? url : url.url || String(url)).origin;
+        profileSnapshot = getWorkspaceProxyProfile(cwd, role,
+          origin === 'https://api.openai.com' || origin === 'https://chatgpt.com');
+      } catch {
+        workspaceRouteBlocked = true;
+        profileLoadErrorSnapshot = 'Workspace proxy assignment could not be loaded';
+      }
+      if (owner?.proxyRole === 'main' || owner?.proxyRole === 'subagent') requestEntry.proxyRole = role;
+    }
+    ({ profile: profileSnapshot, loadError: profileLoadErrorSnapshot, blocked: workspaceRouteBlocked } = bindProxyRouteForTurn(
       requestEntry?.body,
       profileSnapshot,
       profileLoadErrorSnapshot,
+      workspaceRouteBlocked,
     ));
 
     // 生成唯一请求 ID，用于关联在途请求和完成请求
@@ -617,7 +635,7 @@ export function setupInterceptor() {
     const requestMethod = options?.method || (url instanceof Request ? url.method : 'GET');
     const proxyOperation = classifyProxyOperation(url, requestMethod);
     const isProfileModelRequest = Boolean(requestEntry && proxyOperation);
-    if (profileLoadErrorSnapshot && _lastValidProfileWasThirdParty && isProfileModelRequest) {
+    if (profileLoadErrorSnapshot && (_lastValidProfileWasThirdParty || workspaceRouteBlocked) && isProfileModelRequest) {
       const error = new Error(`Proxy profile is invalid: ${profileLoadErrorSnapshot}`);
       requestEntry.response = { status: 0, error: error.message };
       delete requestEntry.inProgress;

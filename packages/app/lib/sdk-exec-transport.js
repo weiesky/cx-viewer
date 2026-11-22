@@ -8,6 +8,9 @@ const SDK_EXEC_RUNNER = fileURLToPath(new URL('./sdk-exec-runner.mjs', import.me
 export function createSdkExecTransport({ Codex, cwd, instanceKey, codexPath, codexOptions, threadOptions, proxyPort }) {
   const options = {
     ...codexOptions,
+    // The official SDK serializes baseUrl as openai_base_url. Environment
+    // alone can leave native exec using a different provider endpoint.
+    ...(proxyPort ? { baseUrl: `http://127.0.0.1:${proxyPort}` } : {}),
     ...(codexPath ? { codexPathOverride: codexPath } : {}),
     env: {
       ...process.env,
