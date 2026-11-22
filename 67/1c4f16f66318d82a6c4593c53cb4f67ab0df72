@@ -1,0 +1,27 @@
+apps/web/src/components/chat/AskQuestionForm.jsx
+  s_b808e5a13726e4::t_5738b8cf0e520f 233-236
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_b808e5a13726e4::t_5738b8cf0e520f 443-454
+cc-viewer-alignment/B9-implementation.md
+  s_b808e5a13726e4::t_ceb5b3df44c306 134-137
+AGENTS.md
+  s_b808e5a13726e4::t_757e58f1c8ed92 26
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_b808e5a13726e4::t_fbba499b4c1353 16721-16722
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "671c4f16f66318d82a6c4593c53cb4f67ab0df72",
+  "prompts": {},
+  "sessions": {
+    "s_b808e5a13726e4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a203fe-9d11-73a0-a439-ec8c7212a4f4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
