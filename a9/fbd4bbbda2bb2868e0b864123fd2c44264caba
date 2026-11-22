@@ -1,0 +1,24 @@
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_4ca8f338668363::t_bbe7179968cb12 323,325,793-794
+  s_4ca8f338668363::t_3a451e493d1642 2157-2187
+apps/web/src/i18n.js
+  s_4ca8f338668363::t_452d078d6b5d5f 3624-3643
+apps/web/src/AppBase.jsx
+  s_4ca8f338668363::t_452d078d6b5d5f 1046,1048-1049,1051,1057-1063,1093-1094,1097-1100,1102,1138-1142,1557,1623-1627
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a9fbd4bbbda2bb2868e0b864123fd2c44264caba",
+  "prompts": {},
+  "sessions": {
+    "s_4ca8f338668363": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a200e6-7324-7162-956b-e799486390a7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
