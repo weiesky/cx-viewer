@@ -2,7 +2,7 @@
 
 **迁移约束：优先参考 PR 的实际代码，禁止根据文档自由改版。** B2已按上游组件/CSS/交互纠偏并经用户验收收口；B4及后续工作包继续遵守该规则，运行性测试不能单独代表视觉对齐。必读[源码优先迁移规范与已确认偏差](./migration-code-first.md)。
 
-当前进度：2026-11-22 B8进行中，分支 `alignment/b8-proxy-model-prompts`，固定上游 `74cd752d99caf122e750216d2af3bb9f467c4de1`。E1–E4专家资产/模型别名与实际native fresh/resume/fork钉扎完成；E10已按用户选择对齐独立UltraReview自动修复P0/P1、评估P2；E11–E13（aa86dbf）完成7组默认启用的原生适配preset、原管理UI/CPU菜单、私有CAS禁用/物化与新thread注入。E13全量2202/2202、0skip，键盘后Web712/双引擎、实际Codex0.169共15请求逐字验证、build/pack735；480px上游模式标签截短保留，不算完整窄屏视觉通过。E14（498d771）补显式native基础指令/指令文件优先，12定向及实际Codex两请求通过；E15（a91a008）逐字迁最终Kimi头像/K3/K4边界，build和双引擎主题资产预览通过。E16最终检查点2205/2205、0skip/build/pack735，全新生产安装656/656、735包文件与211Web全部精确字节、B1.2/隔离CLI通过；首轮继承bypass变量的单项失败已记录并按既定clean env重跑，未改权限逻辑。用户明确排除代理重试配置与统计，E5–E7已撤回，不再迁入。SDK无回应已补官方SDK baseUrl、独立wire归档/聊天去重与默认/custom API路径（bdf4f60/c6195b6/f11e058）；实际CLI双引擎收发/刷新及恢复通过，路径另36定向，用户实际地址/外部模型仍待。54候选继续按子项核销；用户最新选择只在新会话生效：保留native resume/fork指令钉扎，不迁代理层提示词热切换；角色/无GUI共享指令链及剩余候选继续，尚未整包收口。未停止活动7008（外部已重启为PID38260）；exec/显式AppServer渐进、353K与既有权限选择保持。真实模型遵循、物理设备/音频/IME、真实LAN/TLS、其他OS/最低Node未验保持。见[B8实施](./B8-implementation.md)、[候选矩阵](./B8-candidate-matrix.md)；B7/PR #8/原51笔见[B7完成矩阵](./B7-completion-matrix.md)。
+当前进度：2026-11-22 B8已完成并由[PR #9](https://github.com/weiesky/cx-viewer/pull/9)合并main（`6106d41`），37原始本地commit备份/映射保留，整合与merge tree精确一致，实际无PR checks。最终2232/2232、0skip/build/pack737，新生产安装685/685、全部737包/211Web字节、B1.2/隔离CLI通过；真实默认SDK双浏览器与native主/子分源分项验证通过。代理重试配置与统计明确排除，提示仅新会话、原生窗口/未知态及能力门保持。54候选按B8子项核销，混合B9–B11和未验环境单列。见[B8完成矩阵](./B8-completion-matrix.md)；[B9交接](./B9-handoff.md)与14候选已准备，本轮未开始B9。
 
 2026-11-22 普通CLI/PTY“＋”已由B7 E1–E13接齐并经真实双工作区GUI验证；历史缺口记录保留。B8 E16只读确认7008已具ptyMode/队列能力，普通PTY模式；本轮SDK修复是否加载仍须其对应进程正常重启核对，未停止用户实例。见[B7完成矩阵](./B7-completion-matrix.md)。
 
@@ -26,10 +26,11 @@
 | B5 | 已完成（第6/12工作包），按最新授权1commit/1PR自行合并，原46笔备份/映射保留；见[B5完成矩阵](./B5-completion-matrix.md)及[最终回执](./B5-final-2026-11-21.json)。 |
 | B6 | 已完成（第7/12工作包），1986完整/525安装/6场26图与10轮问答；见[B6完成矩阵](./B6-completion-matrix.md)，已由[PR #6](https://github.com/weiesky/cx-viewer/pull/6)合并main（9f3e2ce）。 |
 | B7 | 已完成并由PR #8合并main（89a8d9d），见[B7完成矩阵](./B7-completion-matrix.md)。 |
-| B8–B10 | B8进行中；按台账独立核验，见[B8交接](./B8-handoff.md)。 |
+| B8 | 已完成并由[PR #9](https://github.com/weiesky/cx-viewer/pull/9)合并main，见[B8完成矩阵](./B8-completion-matrix.md)。 |
+| B9–B10 | B9已准备未执行，见[B9交接](./B9-handoff.md)。 |
 | B11 / 工程前置 | A1 6287d2a 已主线；A2 3b15a6d 已提交工作树并通过本地验证，当前全局实例未切换。 |
 
-B7已交付，当前以[B7完成矩阵](./B7-completion-matrix.md)及[B8交接](./B8-handoff.md)为准；[B7历史交接](./B7-handoff.md)保留起点，不代表当前待办。
+B8已交付，当前以[B8完成矩阵](./B8-completion-matrix.md)及[B9交接](./B9-handoff.md)为准；B7/B8历史交接保留起点，不代表当前待办。
 
 pnpm/workspace 已按用户选择前置实施，先稳定结构，再继续功能对齐；见 [提交、边界与验收](./A1-A2-engineering.md)。
 
