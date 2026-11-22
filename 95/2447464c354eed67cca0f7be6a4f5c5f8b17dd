@@ -1,0 +1,54 @@
+apps/web/src/utils/scheduleDescription.js
+  s_b808e5a13726e4::t_4a24360a7670cc 95-96
+  s_b808e5a13726e4::t_5af56fc46e35fc 1-94,97-129
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_b808e5a13726e4::t_5af56fc46e35fc 28,278,2190-2214
+  s_b808e5a13726e4::t_27995c57e588ba 2215
+cc-viewer-alignment/B9-E11-source.json
+  s_b808e5a13726e4::t_4248ccefbb2ade 1-15
+apps/web/tests/schedule-i18n.test.js
+  s_b808e5a13726e4::t_5af56fc46e35fc 1-55
+apps/web/tests/schedule-description.test.js
+  s_b808e5a13726e4::t_5af56fc46e35fc 1-80
+apps/web/package.json
+  s_b808e5a13726e4::t_dd2ba7dd204703 43
+apps/web/src/components/terminal/UltraplanPanel.module.css
+  s_b808e5a13726e4::t_5af56fc46e35fc 384-394,552-578,580
+  s_b808e5a13726e4::t_0862b7dfd954f3 579,581
+apps/web/src/utils/scheduledTaskEvents.js
+  s_b808e5a13726e4::t_5af56fc46e35fc 1-17,21-24,26-35
+  s_b808e5a13726e4::t_4a24360a7670cc 18-20,25
+apps/web/src/i18n.js
+  s_b808e5a13726e4::t_4a24360a7670cc 4-25
+  s_b808e5a13726e4::t_5af56fc46e35fc 26-2205
+apps/web/src/utils/ultraplanController.js
+  s_b808e5a13726e4::t_5af56fc46e35fc 92
+apps/web/src/components/terminal/UltraplanPanel.jsx
+  s_b808e5a13726e4::t_5af56fc46e35fc 6-14,81,87-94,171-187,189,214,216,218-227,233,242,274-275,278-281,283,328-330,336
+AGENTS.md
+  s_b808e5a13726e4::t_cb3792c202a83f 26
+apps/web/tests/scheduled-task-events.test.js
+  s_b808e5a13726e4::t_d9297bfd3d980b 1-16
+cc-viewer-alignment/B9-implementation.md
+  s_b808e5a13726e4::t_101695171a3e83 67-73
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_b808e5a13726e4::t_8822a290b6fd97 1502-1503
+pnpm-lock.yaml
+  s_b808e5a13726e4::t_78fafeb034fdc1 167-169
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "952447464c354eed67cca0f7be6a4f5c5f8b17dd",
+  "prompts": {},
+  "sessions": {
+    "s_b808e5a13726e4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a203fe-9d11-73a0-a439-ec8c7212a4f4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
