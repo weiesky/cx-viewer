@@ -1,0 +1,44 @@
+packages/app/server.js
+  s_d7280c55e1029f::t_ed16a2b272397e 5576-5580
+  s_d7280c55e1029f::t_0ae5dda4dbd735 48-52,1601-1612,1836,1881-1894,4764,4798-4809,4823,4826-4827,4839-4840,4857-4858,4862-4863,4884-4885,4888-4889,4902-4917,5434-5435,5437-5443,5445-5446,5574-5575,5643-5657,5759,6632-6634
+  s_d7280c55e1029f::t_59c4e3b0440c85 53,1757-1777,1779-1780,1782-1784,5604-5605
+  s_d7280c55e1029f::t_1f7fda10d2ea51 5581
+packages/app/lib/same-origin.js
+  s_d7280c55e1029f::t_0ae5dda4dbd735 1-32
+packages/app/tests/plugin-service-integration.test.js
+  s_d7280c55e1029f::t_5c5611d44c2f85 1-362
+packages/app/tests/voice-pack-api.test.js
+  s_d7280c55e1029f::t_341679660ce449 44-46
+packages/app/lib/credential-file-policy.js
+  s_d7280c55e1029f::t_0ae5dda4dbd735 112
+packages/app/tests/sdk-workspace-auth.test.js
+  s_d7280c55e1029f::t_59a863e14085ba 53
+packages/app/lib/plugin-service-routes.js
+  s_d7280c55e1029f::t_0ae5dda4dbd735 1-104
+packages/app/tests/auth-server.test.js
+  s_d7280c55e1029f::t_ed16a2b272397e 55
+packages/app/tests/target-files.test.js
+  s_d7280c55e1029f::t_341679660ce449 36
+AGENTS.md
+  s_d7280c55e1029f::t_f01f9fdc4f636d 26
+cc-viewer-alignment/B10-implementation.md
+  s_d7280c55e1029f::t_566f4a5e78747b 49-56
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_d7280c55e1029f::t_80bf46800c3aa9 16786-16790
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "df7893c9c149a6a76b3d527c13acf5cff998db55",
+  "prompts": {},
+  "sessions": {
+    "s_d7280c55e1029f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a204a6-35f5-7a91-8f49-0742da1c75f9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
