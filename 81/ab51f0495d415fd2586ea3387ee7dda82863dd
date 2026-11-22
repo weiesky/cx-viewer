@@ -1,0 +1,30 @@
+AGENTS.md
+  s_4ca8f338668363::t_fb9dee78045740 26
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4ca8f338668363::t_fb9dee78045740 16663-16666
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_4ca8f338668363::t_bbe7179968cb12 323,325,793-794
+  s_4ca8f338668363::t_3a451e493d1642 2157-2187
+cc-viewer-alignment/B8-implementation.md
+  s_4ca8f338668363::t_fb9dee78045740 201-206
+apps/web/src/i18n.js
+  s_4ca8f338668363::t_452d078d6b5d5f 3624-3643
+apps/web/src/AppBase.jsx
+  s_4ca8f338668363::t_452d078d6b5d5f 1046,1048-1049,1051,1057-1063,1093-1094,1097-1100,1102,1138-1142,1557,1623-1627
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "81ab51f0495d415fd2586ea3387ee7dda82863dd",
+  "prompts": {},
+  "sessions": {
+    "s_4ca8f338668363": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a200e6-7324-7162-956b-e799486390a7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": null
+    }
+  }
+}
