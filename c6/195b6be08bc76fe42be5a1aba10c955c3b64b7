@@ -1,0 +1,47 @@
+cc-viewer-alignment/B8-sdk-send-investigation.md
+  s_4ca8f338668363::t_452b27fdaa5575 12-21
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4ca8f338668363::t_452b27fdaa5575 16579-16582
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_4ca8f338668363::t_452b27fdaa5575 3,152,156
+packages/app/lib/sdk-manager.js
+  s_4ca8f338668363::t_72f6e071525789 437-438
+apps/web/src/utils/conversationEntryNormalize.js
+  s_4ca8f338668363::t_72f6e071525789 32-33
+tests/conversation-entry-normalize.test.js
+  s_4ca8f338668363::t_72f6e071525789 50-59
+packages/app/lib/log-v2/coordinator.js
+  s_4ca8f338668363::t_781f8e540432f4 76-84
+cc-viewer-alignment/B8-sdk-gui/result.json
+  s_4ca8f338668363::t_06eb0263027b3a 1-55
+cc-viewer-alignment/README.md
+  s_4ca8f338668363::t_452b27fdaa5575 5
+AGENTS.md
+  s_4ca8f338668363::t_452b27fdaa5575 26
+cc-viewer-alignment/probes/b8-sdk-send-gui.mjs
+  s_4ca8f338668363::t_d0049781237494 13
+  s_4ca8f338668363::t_87eeccdb2b3eb7 5
+  s_4ca8f338668363::t_5c20a18e8086e4 8
+  s_4ca8f338668363::t_3b4e638f15b3fd 7,10
+  s_4ca8f338668363::t_9a685e12c678e0 1-4,6,9,11-12,14-16
+packages/app/proxy.js
+  s_4ca8f338668363::t_781f8e540432f4 200-201
+packages/app/tests/log-v2-coordinator.test.js
+  s_4ca8f338668363::t_ffd29599dc89c2 721-747
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "c6195b6be08bc76fe42be5a1aba10c955c3b64b7",
+  "prompts": {},
+  "sessions": {
+    "s_4ca8f338668363": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a200e6-7324-7162-956b-e799486390a7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
