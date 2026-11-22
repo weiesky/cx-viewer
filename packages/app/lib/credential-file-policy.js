@@ -3,7 +3,7 @@
 import { lstatSync, readdirSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { getCodexConfigDir } from './codex-config.js';
-import { isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { canonicalPath } from './canonical-path.js';
 import { PRIVATE_CREDENTIAL_ROOTS } from './credential-paths.js';
 import { getPreferencesPath, getDingTalkImConfigPath } from './config-paths.js';
@@ -102,8 +102,20 @@ function nativePrivatePaths() {
 }
 
 const initialConfigPaths = [getPreferencesPath(), getDingTalkImConfigPath(), PROFILE_PATH, `${PROFILE_PATH}.bak`];
+function scheduledPrivatePaths() {
+  const paths = [];
+  for (const dir of new Set([dirname(initialConfigPaths[0]), dirname(getPreferencesPath())])) {
+    let entries = [];
+    try { entries = readdirSync(dir); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+    const names = new Set(['preferences.json', 'scheduled-tasks.json', 'scheduled-task-runs.json',
+      ...entries.filter(name => /^(?:preferences|scheduled-tasks|scheduled-task-runs)\.json(?:$|[._-])/i.test(name))]);
+    paths.push(...[...names].map(name => join(dir, name)));
+  }
+  return paths;
+}
+
 export const getPrivateFileRoots = () => [
-  ...PRIVATE_CREDENTIAL_ROOTS, ...initialConfigPaths, ...nativePrivatePaths(),
+  ...PRIVATE_CREDENTIAL_ROOTS, ...initialConfigPaths, ...nativePrivatePaths(), ...scheduledPrivatePaths(),
   getPreferencesPath(), getDingTalkImConfigPath(),
 ];
 const policy = createCredentialFilePolicy(getPrivateFileRoots);

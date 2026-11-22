@@ -163,6 +163,14 @@ Once configured, use the `codex` command as normal. Visit `http://localhost:7008
 
 ## Features
 
+### Scheduled tasks
+
+Open **Scheduled tasks** from the (+) menu in the chat input bar or terminal toolbar. Choose hourly, daily, weekdays, weekly, a custom five-field cron, or a one-time date. A task either **injects its prompt into its exact live workspace session** (queued while busy) or **starts an isolated headless session** in SDK mode. The prompt uses the UltraPlan panel, with an empty template by default; expert templates and uploaded attachments are assembled when the task runs. Isolated runs use Codex's `on-request` approval policy and `workspace-write` sandbox by default.
+
+Definitions and scheduling state are stored in the `scheduledTasks` key of `preferences.json`; the last 20 runs per task are stored separately in `scheduled-task-runs.json`. Scheduling uses the server's local timezone and per-task jitter. A ten-second timer claims runs under a cross-process file lock. After a restart or sleep, it catches up the most recent missed run within seven days, without replaying every missed occurrence.
+
+You can **Run now**, pause, resume, delete, and open an isolated run's session from its history. Dispatch is silent; completion and failure appear as notifications. Tasks require a running, launched `cxv` workspace. An unlaunched workspace manager and IM workers do not execute tasks. A missing or replaced target session is recorded as a failure rather than redirected to another workspace.
+
 
 ### Programming Mode
 

@@ -21,3 +21,29 @@ export function autoApproveValueLabel(v, t) {
 export function autoApproveSelectOptions(values, t) {
   return values.map(v => ({ value: v, label: autoApproveValueLabel(v, t) }));
 }
+
+export const ASK_AUTO_ANSWER_OFF = -1;
+export const ASK_AUTO_ANSWER_OPTIONS = [0, 10, 20, 30, ASK_AUTO_ANSWER_OFF];
+
+// 单个档位值 -> 显示文案;t 由调用方注入。
+export function askAutoAnswerValueLabel(v, t) {
+  if (v == null || v === ASK_AUTO_ANSWER_OFF) return t('ui.askAutoAnswer.off');
+  if (v === 0) return t('ui.askAutoAnswer.instant');
+  return t('ui.askAutoAnswer.minutes', { n: v });
+}
+
+export function askAutoAnswerSelectOptions(t) {
+  return ASK_AUTO_ANSWER_OPTIONS.map(v => ({ value: v, label: askAutoAnswerValueLabel(v, t) }));
+}
+
+// 持久化值(number|null|undefined) -> UI sentinel。历史脏数据(字符串/NaN/Infinity等)一律归 off。
+export function askAutoAnswerUiValue(prefMinutes) {
+  return (typeof prefMinutes === 'number' && Number.isFinite(prefMinutes)) ? prefMinutes : ASK_AUTO_ANSWER_OFF;
+}
+
+// UI sentinel -> 持久化值。OFF 落 null;有限数字原样透传;其余(含 undefined/NaN)一律 null,
+// 防 JSON.stringify 丢键让服务端保留旧值、UI 显示「不托管」却仍在托管。
+export function askAutoAnswerPrefValue(uiValue) {
+  if (uiValue === ASK_AUTO_ANSWER_OFF) return null;
+  return (typeof uiValue === 'number' && Number.isFinite(uiValue)) ? uiValue : null;
+}

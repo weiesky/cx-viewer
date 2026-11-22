@@ -52,6 +52,7 @@ export function getSdkWorkingDirectory(cwd, codexArgs = [], transport = 'exec') 
 // Resolve paths without realpath: symlink spellings follow the existing workspace
 // convention. One resident session per normalized cwd, independently owned.
 const sessions = new Map();
+const ephemeralSessions = new Set();
 let activeKey = null;
 let launchConfig = null;
 const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504, 529]);
@@ -152,8 +153,15 @@ export function getSdkTaskState(anchor) {
   return sessionForAnchor(anchor)?.getTaskState() || null;
 }
 
+function ephemeralForAnchor(anchor) {
+  return [...ephemeralSessions].filter(record => anchor && anchor.instanceKey === record.ownerKey
+    && (!anchor.cwd || resolve(anchor.cwd) === record.session.cwd));
+}
+
 export function getSdkPendingApprovals(anchor) {
-  return sessionForAnchor(anchor)?.getPendingApprovals() || [];
+  const resident = sessionForAnchor(anchor)?.getPendingApprovals() || [];
+  const children = anchor ? ephemeralForAnchor(anchor) : [...ephemeralSessions];
+  return [...resident, ...children.flatMap(record => record.session.getPendingApprovals().map(record.projectFrame))];
 }
 
 export function getSdkSlowUpstreams(anchor) {
@@ -229,7 +237,15 @@ export function interruptTurn(anchor) {
 }
 
 export function resolveApproval(id, value, anchor) {
-  return sessionForAnchor(anchor)?.resolveApproval(id, value) || false;
+  const resident = sessionForAnchor(anchor);
+  if (resident?.resolveApproval(id, value)) return true;
+  return ephemeralForAnchor(anchor).some(record => record.session.resolveApproval(id, value));
+}
+
+export function cancelAskHosting(id, anchor) {
+  const resident = sessionForAnchor(anchor);
+  if (resident?.cancelAskHosting(id)) return true;
+  return ephemeralForAnchor(anchor).some(record => record.session.cancelAskHosting(id));
 }
 
 export function getSessionId(anchor) {
@@ -269,11 +285,86 @@ export async function resumeSdkSession(anchor, loadHistory) {
   return sessionInfo(session);
 }
 
+export async function stopEphemeralSessions() {
+  const records = [...ephemeralSessions];
+  for (const record of records) record.abort();
+  await Promise.allSettled(records.map(record => record.done));
+}
+
 export function stopSession() {
   const previous = [...sessions.values()];
   sessions.clear();
   activeKey = null;
-  for (const session of previous) session.stopSession();
+  const cleanup = previous.map(session => session.stopSession());
+  for (const record of ephemeralSessions) { record.abort(); cleanup.push(record.done); }
+  return Promise.allSettled(cleanup);
+}
+
+export function getSdkSpawnConfig() {
+  return { available: isSdkAvailable() && !!launchConfig, transport: launchConfig?.options.transport || 'exec' };
+}
+
+// A scheduled run reuses the normal native transport, proxy, prompts and archive
+// path in an UNREGISTERED session. It cannot replace the resident thread or queue.
+export async function spawnEphemeralSession(prompt, { cwd, project, instanceKey: ownerKey,
+  transport, timeoutMs = 30 * 60 * 1000, signal, permissionMode = 'default' } = {}) {
+  if (!isSdkAvailable()) return { ok: false, reason: 'sdk_unavailable' };
+  if (!launchConfig || !cwd || !ownerKey) return { ok: false, reason: 'not_initialized' };
+  if (signal?.aborted) return { ok: false, reason: 'aborted' };
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 || timeoutMs > 30 * 60 * 1000) return { ok: false, reason: 'invalid_timeout' };
+  const cfg = { options: { ...launchConfig.options }, defaults: cloneJson(launchConfig.defaults) };
+  transport ||= cfg.options.transport || 'exec';
+  if (!['exec', 'appserver'].includes(transport)) return { ok: false, reason: 'not_initialized' };
+  // Native codex exec forces approval_policy=never. Independent tasks use
+  // App Server so on-request approvals remain real; the resident is untouched.
+  transport = 'appserver';
+  const key = `cxv-${randomUUID().replaceAll('-', '')}`;
+  const session = createSdkSession(key);
+  const projectFrame = frame => ({ ...frame, executionInstanceKey: key, instanceKey: ownerKey, origin: 'scheduled-task' });
+  // Only approvals share the host's UI route; child queue/stream/lifecycle state
+  // never paints over the resident conversation. The child keeps its own SID.
+  const broadcast = frame => {
+    if (/^(?:sdk-ask-|perm-hook-)/.test(frame.type) || frame.type === 'ask-auto-cancel') cfg.options.broadcastWs?.(projectFrame(frame));
+  };
+  const parsed = parseSdkCodexArgs([], cfg.defaults, transport);
+  if (permissionMode !== 'inherit') {
+    parsed.threadOptions = { ...parsed.threadOptions, approvalPolicy: 'on-request', sandboxMode: 'workspace-write',
+      networkAccessEnabled: false, additionalDirectories: [] };
+    parsed.codexOptions.config = { ...parsed.codexOptions.config,
+      approval_policy: 'on-request', sandbox_mode: 'workspace-write',
+      sandbox_workspace_write: { writable_roots: [], network_access: false } };
+  }
+  let aborted = false, timedOut = false;
+  const abort = () => { aborted = true; session.interruptTurn(); };
+  const record = { session, ownerKey, projectFrame, abort, done: null };
+  let complete;
+  record.done = new Promise(resolve => { complete = resolve; });
+  ephemeralSessions.add(record);
+  const startedAt = Date.now();
+  let timer;
+  try {
+    session.initSdkSession(resolve(cwd), project, { ...cfg.options, transport,
+      permissionMode: permissionMode === 'inherit' ? cfg.options.permissionMode : 'default',
+      broadcastWs: broadcast, onStreamingStatus: null, onStreamProgress: null,
+      onAgentLoopStart: null, onAgentLoopEnd: null }, parsed);
+    signal?.addEventListener('abort', abort, { once: true });
+    if (signal?.aborted) return { ok: false, reason: 'aborted' };
+    timer = setTimeout(() => { timedOut = true; abort(); }, timeoutMs);
+    timer.unref?.();
+    await session.sendUserMessage(String(prompt || ''));
+    const sessionId = session.getSessionId();
+    const result = session.getTurnResult();
+    return { ok: !aborted && result.completed && !!sessionId,
+      ...((aborted || !result.completed || !sessionId) ? { reason: timedOut ? 'timeout' : aborted ? 'aborted' : 'turn-error' } : {}),
+      sessionId, durationMs: Date.now() - startedAt };
+  } catch (error) {
+    return { ok: false, reason: timedOut ? 'timeout' : aborted ? 'aborted' : 'internal',
+      sessionId: session.getSessionId(), error: String(error?.message || error) };
+  } finally {
+    clearTimeout(timer); signal?.removeEventListener('abort', abort);
+    await session.stopSession();
+    ephemeralSessions.delete(record); complete();
+  }
 }
 
 function createSdkSession(instanceKey) {
@@ -1169,7 +1260,7 @@ function createSdkSession(instanceKey) {
     _sdkProxy.stop();
     _sdkProxyPromise = null;
     _sdkProxyPort = null;
-    _resetFullState({ keepConfig: false });
+    return _resetFullState({ keepConfig: false });
   }
 
   function getSessionId() {
@@ -1231,7 +1322,7 @@ function createSdkSession(instanceKey) {
     _activeInput = null;
     interruptTurn({ discardQueue: true });
     const retiringTransport = _transport; _transport = null;
-    void Promise.resolve(retiringTransport?.stop?.()).catch(error => console.warn('[SDK] Transport cleanup failed:', error.message));
+    const cleanup = Promise.resolve(retiringTransport?.stop?.()).catch(error => console.warn('[SDK] Transport cleanup failed:', error.message));
     _sessionId = null;
     _model = keepConfig ? (_threadOptions.model || null) : null;
     _queryBusy = false;
@@ -1244,6 +1335,7 @@ function createSdkSession(instanceKey) {
       pending.resolve(null);
     }
     _pendingApprovals.clear();
+    return cleanup;
   }
 
   return {
@@ -1254,12 +1346,14 @@ function createSdkSession(instanceKey) {
     getSlowUpstreams: () => [..._slowUpstreams.values()].map(frame => ({ ...frame,
       waitingMs: Math.max(0, Date.now() - frame.startedAt), ts: Date.now() })),
     getPendingApprovals: () => _nativeApprovals?.replay() || [],
+    cancelAskHosting: id => _nativeApprovals?.cancelAskHosting(id) || false,
     getMcpStatusSnapshot: () => cloneJson(_lastMcpStatus),
     getAgentState: () => _nativeAgents?.snapshot() || { type: 'sdk-agent-snapshot', sessionId: _sessionId,
       cwd: _cwd, instanceKey, available: true, agents: [] },
     get revision() { return `${_sessionGeneration}:${_activityRevision}`; },
     resume,
     initSdkSession, sendUserMessage, retryInterruptedTurn, interruptTurn, resolveApproval, stopSession,
+    getTurnResult: () => ({ completed: _finalEntryEmittedThisTurn && !_taskTurnFailed, failed: _taskTurnFailed }),
     getSessionId, getInitialPrompt, getStreamingState, getQueueState, getTaskState, removeQueuedMessage, sendQueuedNow, fetchMcpStatus, fetchSkills,
   };
 }

@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 import { EventEmitter } from 'node:events';
 import { pipeline } from 'node:stream';
 import { reportSwallowed } from './server/lib/error-report.js';
+import { computeAskAutoAnswer, createAskAutoAnswerState, cancelAskAutoAnswerState, replayAskAutoAnswerFields } from './lib/ask-auto-answer.js';
 import { createStreamMuxServer } from './server/lib/ws-mux.js';
 import { createServer as createHttpsServer } from 'node:https';
 import { createConnection } from 'node:net';
@@ -106,6 +107,10 @@ import {
 } from './lib/auth.js';
 import { handleAuthRoute } from './lib/auth-routes.js';
 import { readPreferences, updatePreferences } from './lib/preferences.js';
+import { initScheduledTaskScheduler, startScheduledTaskScheduler, stopScheduledTaskScheduler, waitScheduledTaskRuns } from './lib/scheduled-task-scheduler.js';
+import { executeScheduledTask } from './lib/scheduled-task-executor.js';
+import { workspaceUploadPaths } from './lib/workspace-upload-paths.js';
+import { handleScheduledTaskRoute } from './lib/scheduled-task-routes.js';
 import { handleVoicePackRoute } from './lib/voice-pack-routes.js';
 import { getAppServerAgentLoopSnapshot } from './lib/appserver-bridge.js';
 import { reconcileVoicePackPrefs } from './server/lib/voice-pack-manager.js';
@@ -124,6 +129,7 @@ import { listSystemPromptPresets } from './lib/builtin-model-prompts.js';
 import { SYSTEM_PROMPT_VARIABLES_DOC } from './lib/system-prompt-render.js';
 import {
   buildCodexAutoResolutionAnswers,
+  pickCodexAutoAnswers,
   projectCodexAnswersForConversation,
 } from './lib/codex-request-user-input.js';
 import {
@@ -398,21 +404,25 @@ function removePendingCodexAsk(id) {
   if (!pending) return null;
   pendingCodexAsks.delete(key);
   if (pending.timer) clearTimeout(pending.timer);
+  if (pending.auto?.timer) clearTimeout(pending.auto.timer);
   return pending;
 }
 
-/** Claim an app-server request_user_input request only when a GUI is online. */
+/** Claim native questions for an online GUI or explicitly enabled server hosting. */
 export function offerCodexRequestUserInput(request) {
   if (!request?.uiId || !Array.isArray(request.questions) || request.questions.length === 0) return false;
   const scope = ptyScope(request);
   if (ptyWorkspaces && !scope) return false;
   const bridge = requestInputBridge(scope);
-  if (!bridge || openTerminalClients(scope).length === 0) return false;
+  const computed = computeAskAutoAnswer(scope?.cwd);
+  const autoAnswers = computed.enabled ? pickCodexAutoAnswers(request.questions) : null;
+  const hosting = computed.enabled && !!autoAnswers;
+  if (!bridge || (!hosting && openTerminalClients(scope).length === 0)) return false;
 
   const id = String(request.uiId);
   const timeoutMs = Number.isFinite(request.autoResolutionMs) && request.autoResolutionMs > 0
     ? request.autoResolutionMs
-    : null;
+    : hosting ? 24 * 60 * 60_000 : null;
   const pending = {
     id, scope, bridge,
     questions: request.questions,
@@ -422,11 +432,12 @@ export function offerCodexRequestUserInput(request) {
     createdAt: request.createdAt || Date.now(),
     timeoutMs,
     timer: null,
+    auto: null, autoCancelled: false,
   };
   if (timeoutMs) {
     pending.timer = setTimeout(() => {
       const current = pendingCodexAsks.get(id);
-      if (!current) return;
+      if (current !== pending) return;
       const codexAnswers = buildCodexAutoResolutionAnswers(current.questions);
       const answers = projectCodexAnswersForConversation(current.questions, codexAnswers);
       const resolved = current.bridge?.resolve?.(id, codexAnswers);
@@ -454,7 +465,16 @@ export function offerCodexRequestUserInput(request) {
     itemId: pending.itemId,
     startedAt: pending.createdAt,
     timeoutMs,
+    ...replayAskAutoAnswerFields(hosting ? computed : null, false),
   }, null, scope);
+  if (hosting) pending.auto = createAskAutoAnswerState(computed, () => {
+    if (pendingCodexAsks.get(id) !== pending || pending.autoCancelled) return;
+    if (pending.bridge?.resolve?.(id, autoAnswers) !== true) return;
+    removePendingCodexAsk(id);
+    broadcastCodexAskMessage({ type: 'ask-hook-resolved', id, reason: 'auto-answered',
+      itemId: pending.itemId, questions: pending.questions, codexAnswers: autoAnswers,
+      answers: projectCodexAnswersForConversation(pending.questions, autoAnswers), ...(scope || {}) }, null, scope);
+  });
   return true;
 }
 
@@ -484,6 +504,7 @@ export function setCodexRequestUserInputBridge(bridge) {
 function releaseCodexAsksToTuiWhenGuiDisconnects() {
   for (const [id, pending] of pendingCodexAsks) {
     if (openTerminalClients(pending.scope).length > 0) continue;
+    if (pending.auto && !pending.autoCancelled) continue;
     if (pending.bridge?.releaseToTui?.(id)) removePendingCodexAsk(id);
   }
 }
@@ -900,6 +921,51 @@ function ptyViewForUrl(parsedUrl) {
     { status: 404, code: 'PTY_WORKSPACE_UNAVAILABLE' });
   return ptyWorkspaces.info(parsedUrl.searchParams.has('instance')
     ? parsedUrl.searchParams.get('instance') : undefined);
+}
+
+function scheduledTaskScope(task) {
+  if (isWorkspaceMode && !_workspaceLaunched) return null;
+  try {
+    if (isSdkMode) {
+      if (task.engine !== 'sdk') return null;
+      if (task.mode === 'spawn' && task.cwd === sdkBootCwd && sdkManager.getSdkSpawnConfig().available) return { cwd: task.cwd };
+      const scope = sdkManager.getSdkSessionInfo({ instanceKey: task.instanceKey });
+      return scope?.cwd === task.cwd ? scope : null;
+    }
+    if (task.engine !== 'pty' || task.mode !== 'inject') return null;
+    const scope = ptyWorkspaces?.info(task.instanceKey);
+    return scope?.running && scope.cwd === task.cwd ? scope : null;
+  } catch { return null; }
+}
+
+function initScheduledTasks() {
+  if (!isCliMode || process.env.CXV_IM_WORKER === '1' || process.env.CXV_IM_PLATFORM) return;
+  initScheduledTaskScheduler({
+    getRoot: () => LOG_DIR, getMode: () => ({ sdk: isSdkMode }),
+    getSpawnConfig: () => sdkManager?.getSdkSpawnConfig() || { available: false },
+    canExecute: task => !!scheduledTaskScope(task),
+    isReady: () => isSdkMode ? sdkManager.listSdkSessions().length > 0 : !!ptyWorkspaces?.list().some(scope => scope.running),
+    execute: (task, claim) => executeScheduledTask(task, claim, {
+      isSdkMode, samePath: (a, b) => a === b,
+      sdk: sdkManager && { ...sdkManager, getQueueSnapshot: sdkManager.getSdkQueueState },
+      pty: {
+        listLivePtys: () => (ptyWorkspaces?.list() || []).map(scope => ({ ...scope,
+          ptyKind: ptyWorkspaces.session(scope.instanceKey).getPtyState().kind })),
+        getPtyKindFor: anchor => { try { return ptyWorkspaces.session(anchor.instanceKey).getPtyState().kind; } catch { return null; } },
+      },
+      chatQueue: { enqueue: (text, anchor) => {
+        try {
+          const scope = ptyWorkspaces.info(anchor.instanceKey);
+          const owned = ptyQueueFor(scope);
+          return owned?.ready ? owned.queue.enqueue(text, { ...anchor, ...owned.anchor, strictAnchor: true }) : null;
+        } catch { return null; }
+      } },
+    }),
+    broadcast: (_project, data) => isSdkMode ? sendSdkEvent('scheduled_tasks', data)
+      : sendEventToClients(clients.filter(client => ptyScopeMatches(client, data)), 'scheduled_tasks', data),
+    report: reportSwallowed,
+  });
+  startScheduledTaskScheduler();
 }
 
 function sdkViewForUrl(parsedUrl) {
@@ -1868,6 +1934,15 @@ async function handleViewerRequest(req, res) {
     return;
   }
 
+  if (await handleScheduledTaskRoute(req, res, parsedUrl, {
+    root: LOG_DIR, scope: requestSdkView,
+    resolveInstance: instanceKey => isSdkMode ? sdkManager.getSdkSessionInfo({ instanceKey }) : ptyWorkspaces?.info(instanceKey),
+    admin: isTargetFileAdmin, readBody: readStrictUtf8JsonBody, sendJson,
+    engine: isSdkMode ? 'sdk' : 'pty',
+    broadcast: data => isSdkMode ? sendSdkEvent('scheduled_tasks', data)
+      : sendEventToClients(clients.filter(client => ptyScopeMatches(client, data)), 'scheduled_tasks', data),
+  })) return;
+
   if (handleUltraAgentsRoute(req, res, parsedUrl)) return;
   if (await handleVoicePackRoute(req, res, parsedUrl, { isLocal, readUpload: readMultipartUpload })) return;
 
@@ -1995,24 +2070,24 @@ async function handleViewerRequest(req, res) {
         const closingBoundary = Buffer.from('\r\n--' + boundary);
         const bodyEnd = buf.indexOf(closingBoundary, bodyStart);
         const fileData = bodyEnd !== -1 ? buf.slice(bodyStart, bodyEnd) : buf.slice(bodyStart);
-        const uploadDir = UPLOAD_DIR;
+        const uploadPaths = workspaceUploadPaths(requestProjectDir, requestProjectName);
+        const uploadDir = uploadPaths.temporary;
         await fsPromises.mkdir(uploadDir, { recursive: true });
         // Unique filename: prepend timestamp to avoid silent overwrite
         const ts = Date.now();
         const dotIdx = originalName.lastIndexOf('.');
         const uniqueName = dotIdx > 0
-          ? `${originalName.slice(0, dotIdx)}-${ts}${originalName.slice(dotIdx)}`
-          : `${originalName}-${ts}`;
+          ? `${originalName.slice(0, dotIdx)}-${ts}-${randomBytes(8).toString('hex')}${originalName.slice(dotIdx)}`
+          : `${originalName}-${ts}-${randomBytes(8).toString('hex')}`;
         const savePath = join(uploadDir, uniqueName);
-        await fsPromises.writeFile(savePath, fileData);
+        await fsPromises.writeFile(savePath, fileData, { mode: 0o600, flag: 'wx' });
         // 持久化副本到 ~/.codex/cx-viewer/${project}/images/，避免 /tmp 清理后丢失
         let persistPath = null;
         try {
-          const pName = requestProjectName || 'default';
-          const persistDir = join(homedir(), '.codex', 'cx-viewer', pName, 'images');
+          const persistDir = uploadPaths.persistent;
           await fsPromises.mkdir(persistDir, { recursive: true });
           persistPath = join(persistDir, uniqueName);
-          await fsPromises.copyFile(savePath, persistPath);
+          await fsPromises.copyFile(savePath, persistPath, fsConstants.COPYFILE_EXCL);
         } catch { }
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true, path: savePath, persistPath }));
@@ -2121,6 +2196,7 @@ async function handleViewerRequest(req, res) {
 
   if (url === '/api/preferences' && method === 'GET') {
     let prefs = readPreferences();
+    delete prefs.scheduledTasks;
     if (!isLocal) {
       prefs = { ...prefs };
       delete prefs.auth;
@@ -2144,6 +2220,7 @@ async function handleViewerRequest(req, res) {
         // 认证配置只能通过本机专用的 /api/auth/config 修改。
         delete incoming.auth;
         delete incoming.authByProject;
+        delete incoming.scheduledTasks;
         if (Object.prototype.hasOwnProperty.call(incoming, 'approvalsReviewer')) {
           if (!isSupportedApprovalsReviewer(incoming.approvalsReviewer)) {
             sendJson(res, 400, { error: 'Unsupported approvalsReviewer' });
@@ -2202,6 +2279,7 @@ async function handleViewerRequest(req, res) {
           const timeout = setTimeout(() => { removeListener(); }, 5000);
           try { themeWrite('/theme\r'); } catch {}
         }
+        delete prefs.scheduledTasks;
         prefs.logDir = LOG_DIR;
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(reviewerState ? { ...prefs, ...reviewerState } : prefs));
@@ -2777,7 +2855,8 @@ async function handleViewerRequest(req, res) {
         const requested = Number(parsedUrl.searchParams.get('limit'));
         const limit = Number.isSafeInteger(requested) && requested > 0 ? Math.min(requested, 50) : 10;
         await flushLogV2Writes();
-        sendJson(res, 200, { items: listSdkResumeSessions(LOG_DIR, { ...projectContextForSdkView(view), cwd: view.cwd }, limit),
+        sendJson(res, 200, { items: listSdkResumeSessions(LOG_DIR, { ...projectContextForSdkView(view), cwd: view.cwd }, limit,
+          { sessionId: parsedUrl.searchParams.get('sessionId') }),
           instanceKey: view.instanceKey, currentSessionId: view.sessionId, busy: view.busy });
       } else {
         const body = await readJsonBody(req, 4096);
@@ -3901,6 +3980,7 @@ async function handleViewerRequest(req, res) {
         itemId: pending.itemId,
         createdAt: pending.createdAt,
         timeoutMs: pending.timeoutMs,
+        ...replayAskAutoAnswerFields(pending.auto, pending.autoCancelled),
         source: 'codex-app-server',
       })),
     });
@@ -4206,39 +4286,35 @@ async function handleViewerRequest(req, res) {
     try {
       const access = fileBrowserAccess(parsedUrl, cwd, { isAdmin: isTargetFileAdmin || isTargetPreviewResource,
         codexMdEntries: discoverCodexMdEntries(req), editorSession: isEditorSession });
-      // 上传图片路径（/tmp/cx-viewer-uploads/ 或持久化目录）直接使用，跳过项目目录安全检查
-      const uploadPrefix = UPLOAD_DIR + '/';
-      const pName = requestProjectName || 'default';
-      const persistPrefix = join(homedir(), '.codex', 'cx-viewer', pName, 'images') + '/';
+      const uploadPaths = workspaceUploadPaths(cwd, requestProjectName);
+      const resolvedUpload = reqPath ? resolve(reqPath) : null;
+      const uploadParent = resolvedUpload ? dirname(resolvedUpload) : null;
+      if (!archive && !access.external && resolvedUpload && (
+        resolvedUpload.startsWith(uploadPaths.legacyTemporary + sep)
+          && ![uploadPaths.temporary, uploadPaths.legacyTemporary].includes(uploadParent)
+        || resolvedUpload.startsWith(uploadPaths.legacyPersistent + sep)
+          && ![uploadPaths.persistent, uploadPaths.legacyPersistent].includes(uploadParent))) {
+        sendJson(res, 403, { error: 'Attachment belongs to a different workspace' });
+        return;
+      }
       let targetFile;
       let constrainedImageRoot = null;
-      if (!archive && !access.external && reqPath && reqPath.startsWith(uploadPrefix)) {
-        targetFile = resolve(reqPath);
-        // 路径穿越防护：resolve 后必须仍在 upload 目录内
-        if (!targetFile.startsWith(uploadPrefix)) {
-          res.writeHead(403, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Path traversal denied' }));
-          return;
-        }
-        // /tmp 原文件不存在时，回退到持久化副本
+      // Only direct legacy leaves retain read compatibility. New scoped trees
+      // must match THIS exact cwd; no basename or sibling-hash search fallback.
+      if (!archive && !access.external && resolvedUpload
+          && [uploadPaths.temporary, uploadPaths.legacyTemporary].includes(uploadParent)) {
+        targetFile = resolvedUpload;
+        constrainedImageRoot = uploadParent;
         if (!existsSync(targetFile)) {
-          const fileName = targetFile.split('/').pop();
-          const persistFile = join(persistPrefix, fileName);
-          if (existsSync(persistFile)) {
-            targetFile = persistFile;
-            constrainedImageRoot = persistPrefix;
-          }
+          const candidates = [join(uploadPaths.persistent, basename(targetFile))];
+          if (uploadParent === uploadPaths.legacyTemporary) candidates.push(join(uploadPaths.legacyPersistent, basename(targetFile)));
+          const fallback = candidates.find(path => existsSync(path));
+          if (fallback) { targetFile = fallback; constrainedImageRoot = dirname(fallback); }
         }
-        if (!constrainedImageRoot) constrainedImageRoot = uploadPrefix;
-      } else if (!archive && !access.external && reqPath && reqPath.startsWith(persistPrefix)) {
-        targetFile = resolve(reqPath);
-        // 路径穿越防护：resolve 后必须仍在持久化目录内
-        if (!targetFile.startsWith(persistPrefix)) {
-          res.writeHead(403, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Path traversal denied' }));
-          return;
-        }
-        constrainedImageRoot = persistPrefix;
+      } else if (!archive && !access.external && resolvedUpload
+          && [uploadPaths.persistent, uploadPaths.legacyPersistent].includes(uploadParent)) {
+        targetFile = resolvedUpload;
+        constrainedImageRoot = uploadParent;
       } else {
         targetFile = resolveFilePath(access.root, reqPath, access.external);
         access.assertPath(targetFile);
@@ -5407,6 +5483,7 @@ export async function startViewer() {
           if (isCliMode && process.env.CXV_IM_WORKER !== '1') {
             await setupTerminalWebSocket(currentServer);
           }
+          initScheduledTasks();
           // 通知插件服务器已启动
           refreshPluginRuntime()
             .catch(err => console.error('[CX Viewer] Plugin serverStarted hook error:', err.message));
@@ -5994,9 +6071,11 @@ async function setupTerminalWebSocket(httpServer) {
             }
             requestId = msg.requestId;
           }
-          if (isSdkMode && (msg.type.startsWith('sdk-') || msg.type === 'perm-hook-answer')) {
+          if (isSdkMode && (msg.type.startsWith('sdk-') || msg.type === 'perm-hook-answer' || msg.type === 'ask-auto-cancel')) {
             const anchor = sdkActionAnchor(ws, msg);
-            if (msg.type === 'sdk-user-message') {
+            if (msg.type === 'ask-auto-cancel') {
+              sdkManager.cancelAskHosting(msg.id, anchor);
+            } else if (msg.type === 'sdk-user-message') {
               if (typeof msg.text !== 'string' || !msg.text.trim()) throw new Error('SDK message text is required');
               await (_sdkSendUserMessage || sdkManager.sendUserMessage)(msg.text, anchor, {
                 requestId,
@@ -6152,6 +6231,12 @@ async function setupTerminalWebSocket(httpServer) {
               if (cancelSequence) sequentialCancels.add(cancelSequence);
             } catch {
               finishSequence(false);
+            }
+          } else if (msg.type === 'ask-auto-cancel') {
+            const id = typeof msg.id === 'string' ? msg.id : '';
+            const pending = pendingCodexAsks.get(id);
+            if (pending?.auto && ptyScopeMatches(ws, pending.scope) && cancelAskAutoAnswerState(pending)) {
+              broadcastCodexAskMessage({ type: 'ask-auto-cancel', id, ...(pending.scope || {}) }, null, pending.scope);
             }
           } else if (msg.type === 'ask-cancel') {
             const askId = msg.id != null ? String(msg.id) : '';
@@ -6434,9 +6519,16 @@ export function stopViewer({ deadlineAt = Date.now() + SHUTDOWN_DEADLINE_MS } = 
   return _stoppingPromise;
 }
 async function _doStop(deadlineAt) {
+  stopScheduledTaskScheduler();
+  if (sdkManager) {
+    try { await waitWithTimeout(() => sdkManager.stopEphemeralSessions(), Math.max(0, deadlineAt - Date.now()), 'scheduled task shutdown'); }
+    catch (error) { reportSwallowed('scheduled-tasks.shutdown', error); }
+  }
   for (const timer of _ptyLoopEndTimers.values()) clearTimeout(timer);
   _ptyLoopEndTimers.clear(); _ptyAgentLoops.clear();
   const remaining = () => Math.max(0, deadlineAt - Date.now());
+  try { await waitWithTimeout(() => waitScheduledTaskRuns(), remaining(), 'scheduled task results'); }
+  catch (error) { reportSwallowed('scheduled-tasks.results-shutdown', error); }
   if (_dingtalkImBridge) {
     try { await _dingtalkImBridge.stop(); } catch {}
     _dingtalkImBridge = null;
@@ -6449,10 +6541,7 @@ async function _doStop(deadlineAt) {
   } catch {}
   try { await waitWithTimeout(() => runParallelHook('serverStopping'), Math.min(3000, remaining()), 'serverStopping hooks'); } catch { }
   pluginRoutes = [];
-  for (const pending of pendingCodexAsks.values()) {
-    if (pending.timer) clearTimeout(pending.timer);
-  }
-  pendingCodexAsks.clear();
+  for (const id of pendingCodexAsks.keys()) removePendingCodexAsk(id);
   stopPtyQueues();
   clearEditorSessions();
   const scratchShutdown = shutdownScratchPtys();

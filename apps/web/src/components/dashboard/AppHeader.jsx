@@ -9,7 +9,7 @@ import { MessageOutlined, FileTextOutlined, CommentOutlined, DashboardOutlined, 
 import { QRCodeCanvas } from 'qrcode.react';
 import { formatTokenCount, computeTokenStats, computeToolUsageStats, computeSkillUsageStats, computeContextPercent, sumUsageContextTokens } from '../../utils/helpers';
 import { contextSeverityColor } from '../../utils/formatters';
-import { PLAN_AUTO_APPROVE_OPTIONS, autoApproveSelectOptions } from '../../utils/autoApproveOptions';
+import { PLAN_AUTO_APPROVE_OPTIONS, autoApproveSelectOptions, askAutoAnswerSelectOptions, askAutoAnswerUiValue, askAutoAnswerPrefValue } from '../../utils/autoApproveOptions';
 import { APPROVALS_REVIEWER_DEFAULT, approvalReviewerSelectOptions } from '../../utils/approvalReviewerOptions';
 import { isMainAgent } from '../../../../../packages/app/src/utils/contentFilter';
 import { sortSkillsDefault } from '../../utils/skillsParser';
@@ -1606,6 +1606,21 @@ class AppHeader extends React.Component {
                     value={this.props.approvalPrefs.planAutoApproveSeconds || 0}
                     onChange={(value) => this.props.onApprovalPrefsChange({ planAutoApproveSeconds: value })}
                     options={autoApproveSelectOptions(PLAN_AUTO_APPROVE_OPTIONS, t)}
+                    style={{ width: 100 }}
+                  />
+                </div>
+                <div className={styles.settingsItem}>
+                  <span className={styles.settingsLabel}>
+                    {t('ui.askAutoAnswer.setting')}
+                    <Tooltip title={t('ui.askAutoAnswer.help')} overlayInnerStyle={{ whiteSpace: 'pre-line' }}>
+                      <QuestionCircleOutlined className={styles.settingsHelpIcon} />
+                    </Tooltip>
+                  </span>
+                  <Select
+                    size="small"
+                    value={askAutoAnswerUiValue(this.props.approvalPrefs.askAutoAnswerMinutes)}
+                    onChange={(value) => this.props.onApprovalPrefsChange({ askAutoAnswerMinutes: askAutoAnswerPrefValue(value) })}
+                    options={askAutoAnswerSelectOptions(t)}
                     style={{ width: 100 }}
                   />
                 </div>

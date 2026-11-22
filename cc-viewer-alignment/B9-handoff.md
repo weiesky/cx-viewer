@@ -1,5 +1,7 @@
 # B9 交接：定时任务与授权
 
+> 历史交接：本文保留B9开始前的状态。2026-11-23本地完成与未验边界见[B9完成矩阵](./B9-completion-matrix.md)，尚未PR/合并。
+
 B8 已完成验收并合并 main；最终 PR、合并 hash 与检查点见 [B8 完成矩阵](./B8-completion-matrix.md)。本轮只准备 B9，未迁入定时任务或改变权限默认值。
 
 固定上游为 `74cd752d99caf122e750216d2af3bb9f467c4de1`，当前只读源码 `/tmp/cxv-cc-viewer-research-20261122`。先遵守[源码优先规范](./migration-code-first.md)：逐笔读第一父 diff、完整调用链、原组件与 CSS，以及后续修复/回退，再做最小必要 native 适配。临时目录消失时按同一 hash 获取，不追随 HEAD。

@@ -207,6 +207,7 @@ ${body}
  * @returns {string} Assembled prompt ready to send to Codex
  */
 export function buildLocalUltraplan(userPrompt, variant = 'codeExpert', seedPlan, customContent) {
+  if (variant === 'none') return userPrompt || '';
   let template;
   if (variant === 'custom') {
     template = buildCustomTemplate(customContent);
@@ -223,4 +224,42 @@ export function buildLocalUltraplan(userPrompt, variant = 'codeExpert', seedPlan
     parts.push('', userPrompt);
   }
   return parts.join('\n');
+}
+
+/**
+ * Assemble the text a scheduled task actually dispatches (executor-side).
+ * The task stores the RAW user input (task.prompt) plus the template selection
+ * and attachment paths; the wrapper and the quoted-path prefix are injected here
+ * at fire time so the stored prompt stays editable and summaries stay human-readable.
+ *
+ * @param {object} task
+ * @param {string} task.prompt          raw user text (never pre-wrapped)
+ * @param {string} [task.template]      'none' | builtin key | 'custom:<id>'; absent → 'none'
+ * @param {string} [task.templateContent] snapshot of the custom expert body (custom:* only)
+ * @param {Array<{name:string, path:string}>} [task.attachments]
+ * @returns {string} the prompt to dispatch (empty string when there is nothing to send)
+ */
+export function assembleScheduledPrompt(task) {
+  const raw = (task && task.prompt != null) ? String(task.prompt).trim() : '';
+  const attachments = Array.isArray(task?.attachments) ? task.attachments : [];
+  const filePaths = attachments
+    .map(f => (f && typeof f.path === 'string') ? `"${f.path.replace(/"/g, '')}"` : '')
+    .filter(Boolean)
+    .join(' ');
+  const userInput = filePaths ? (raw ? `${filePaths} ${raw}` : filePaths) : raw;
+
+  const template = typeof task?.template === 'string' ? task.template : 'none';
+  if (template.startsWith('custom:')) {
+    // The snapshot rides with the task so later edits/deletions of the custom
+    // expert do not change what fires. A missing/empty snapshot degrades to the
+    // raw input rather than silently dropping the task.
+    const wrapped = buildCustomTemplate(task.templateContent);
+    if (!wrapped) return userInput;
+    return `${wrapped}\n\n${userInput}`.trim();
+  }
+  if (template === 'codeExpert' || template === 'researchExpert') {
+    return buildLocalUltraplan(userInput, template);
+  }
+  // 'none' or anything unknown: verbatim.
+  return userInput;
 }

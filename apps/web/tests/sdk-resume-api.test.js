@@ -45,3 +45,15 @@ test('an absent workspace never becomes an implicit request to whichever session
     await assert.rejects(api.restoreSdkResumeSession('', 'history'));
   } finally { globalThis.fetch = previous; }
 });
+
+test('scheduled session lookup encodes an exact SID independently of the recent-list limit', async () => {
+  const previous = globalThis.fetch; let requested;
+  globalThis.fetch = async url => { requested = url; return { ok: true, json: async () => ({ instanceKey: 'owned', items: [] }) }; };
+  try {
+    const api = await import('../src/utils/sdkResumeApi.js');
+    await api.loadSdkResumeSessions('owned', undefined, 1, 'native:old.thread');
+    const url = new URL(requested, 'http://fixture');
+    assert.equal(url.searchParams.get('sessionId'), 'native:old.thread');
+    assert.equal(url.searchParams.get('limit'), '1'); assert.equal(url.searchParams.get('instance'), 'owned');
+  } finally { globalThis.fetch = previous; }
+});

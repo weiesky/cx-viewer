@@ -164,6 +164,32 @@ test('native asks claim, replay, answers, cancellation and disconnect handoff st
   assert.equal(server.offerCodexRequestUserInput({ ...views[1], uiId: ids[1], questions: [{ id: 'q' }] }), false);
 });
 
+test('hosting cancellation and replay never cross same-name PTY owners', async () => {
+  const { writePreferences } = await import('../lib/preferences.js');
+  writePreferences({ approvalModal: { askAutoAnswerMinutes: 10 } });
+  let a, b;
+  try {
+    a = await open(views[0].instanceKey); b = await open(views[1].instanceKey);
+    const id = `${views[0].instanceKey}:hosting`;
+    assert.equal(server.offerCodexRequestUserInput({ ...views[0], uiId: id,
+      questions: [{ id: 'q', question: 'Pick', options: [{ label: 'A' }] }] }), true);
+    b.send({ type: 'ask-auto-cancel', id }); await delay(20);
+    let replay = (await json('/api/pending-asks', views[0].instanceKey)).body.pendingAsks[0];
+    assert.ok(replay.autoAnswerAt > Date.now()); assert.equal(replay.autoCancelled, false);
+    const deadline = replay.autoAnswerAt;
+    assert.equal((await json('/api/pending-asks', views[1].instanceKey)).body.pendingAsks.length, 0);
+    a.send({ type: 'ask-auto-cancel', id }); await delay(20);
+    replay = (await json('/api/pending-asks', views[0].instanceKey)).body.pendingAsks[0];
+    assert.equal(replay.autoAnswerAt, null); assert.equal(replay.autoCancelled, true);
+    assert.ok(a.frames.some(f => f.type === 'ask-auto-cancel' && f.id === id));
+    assert.ok(!b.frames.some(f => f.type === 'ask-auto-cancel' && f.id === id));
+    assert.ok(deadline > Date.now()); server.clearCodexRequestUserInput({ uiId: id });
+  } finally {
+    writePreferences({});
+    await Promise.all([a, b].filter(Boolean).map(({ ws }) => new Promise(resolve => { ws.once('close', resolve); ws.close(); })));
+  }
+});
+
 test('loop events, debounce and terminal notifications do not cross native owners with equal turn ids', async () => {
   async function sse(key) {
     const controller = new AbortController();

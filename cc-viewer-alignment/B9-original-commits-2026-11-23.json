@@ -1,0 +1,228 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "base": "cb40a553061970abd878a87f1e1c38c07a4fe0a3",
+  "branch": "alignment/b9-scheduling-authorization",
+  "count": 28,
+  "note": "All implementation/verification commits through E27; final audit/progress metadata commit is intentionally outside this self-referential map. No squash, PR or merge.",
+  "commits": [
+    {
+      "local": "01c36c5d8e70b9b5020966b69c6dcfd59526541c",
+      "subject": "feat(schedule): migrate upstream cron and schedule model",
+      "upstream": [
+        "177b85df2cab3358dfec08cfc5591da29e27a8d1",
+        "451ef48d6a7dc73347d49e3d2d13cf8fafccad8f"
+      ]
+    },
+    {
+      "local": "52be9a01ebffafbdb8a76839dc0419b7d8247577",
+      "subject": "fix(schedule): protect task state from general preferences and file tools",
+      "upstream": [
+        "177b85df2cab3358dfec08cfc5591da29e27a8d1",
+        "451ef48d6a7dc73347d49e3d2d13cf8fafccad8f"
+      ]
+    },
+    {
+      "local": "fd58be8dbb76912a666b1baccef42cc5413398d9",
+      "subject": "feat(schedule): split and deduplicate private run history",
+      "upstream": [
+        "451ef48d6a7dc73347d49e3d2d13cf8fafccad8f"
+      ]
+    },
+    {
+      "local": "74e099743093e66b6e8e6f432573d33163250008",
+      "subject": "feat(schedule): assemble raw tasks with existing native expert templates",
+      "upstream": [
+        "2914d6479d2845e0b193ba1c09aa6667c66850a6"
+      ]
+    },
+    {
+      "local": "afca0b611e21297d5ede19f9324e354069ba7225",
+      "subject": "feat(schedule): persist and atomically claim native scheduled tasks",
+      "upstream": [
+        "177b85df2cab3358dfec08cfc5591da29e27a8d1",
+        "451ef48d6a7dc73347d49e3d2d13cf8fafccad8f"
+      ]
+    },
+    {
+      "local": "a6a6d4f04bf245c7d705364d3b8c2fd6f56aebcb",
+      "subject": "feat(schedule): migrate guarded scheduler lifecycle and dispatch loop",
+      "upstream": [
+        "177b85df2cab3358dfec08cfc5591da29e27a8d1",
+        "451ef48d6a7dc73347d49e3d2d13cf8fafccad8f",
+        "7a0ba39edf6a0b54ca7a425e0f08ab410e515407"
+      ]
+    },
+    {
+      "local": "0aa73e2dcc6e845a7ce91f7aa1dd8a4bc0296c92",
+      "subject": "feat(schedule): dispatch only to exact native instances and validate files",
+      "upstream": [
+        "177b85df2cab3358dfec08cfc5591da29e27a8d1",
+        "5ee6739cbaba22a6a6d341c020bb7d54c493e5d0",
+        "2914d6479d2845e0b193ba1c09aa6667c66850a6"
+      ]
+    },
+    {
+      "local": "150d3935ff4b299ce8dd6b22676071929fb8cd81",
+      "subject": "feat(schedule): run isolated native SDK sessions with owned approvals",
+      "upstream": [
+        "177b85df2cab3358dfec08cfc5591da29e27a8d1"
+      ]
+    },
+    {
+      "local": "423b381aec617017e9167804b8e3be7aaeceed1f",
+      "subject": "feat(schedule): add exact-workspace task APIs with admin guards",
+      "upstream": [
+        "177b85df2cab3358dfec08cfc5591da29e27a8d1",
+        "451ef48d6a7dc73347d49e3d2d13cf8fafccad8f",
+        "2914d6479d2845e0b193ba1c09aa6667c66850a6"
+      ]
+    },
+    {
+      "local": "6f8aab45653b1e8f7ec111c436620660fdd9deb7",
+      "subject": "feat(schedule): wire server lifecycle to native queues and isolated runs",
+      "upstream": [
+        "177b85df2cab3358dfec08cfc5591da29e27a8d1"
+      ]
+    },
+    {
+      "local": "952447464c354eed67cca0f7be6a4f5c5f8b17dd",
+      "subject": "feat(schedule): reuse upstream embedded expert panel and localized times",
+      "upstream": [
+        "177b85df2cab3358dfec08cfc5591da29e27a8d1",
+        "2914d6479d2845e0b193ba1c09aa6667c66850a6"
+      ]
+    },
+    {
+      "local": "da87a450bc62069dceb90b7217c5140c32186478",
+      "subject": "fix(schedule): await run finalization in the actual server shutdown path",
+      "upstream": [
+        "177b85df2cab3358dfec08cfc5591da29e27a8d1"
+      ]
+    },
+    {
+      "local": "50055ddc37b82e4c35fd7a19b664c0fbbc66f743",
+      "subject": "feat(schedule): migrate the upstream task modal with exact native scope",
+      "upstream": [
+        "177b85df2cab3358dfec08cfc5591da29e27a8d1",
+        "451ef48d6a7dc73347d49e3d2d13cf8fafccad8f",
+        "2914d6479d2845e0b193ba1c09aa6667c66850a6"
+      ]
+    },
+    {
+      "local": "a8f1a31f866bbd365c9152a5ab10c8b490bb63ce",
+      "subject": "fix(schedule): keep durable attachments scoped to exact workspaces",
+      "upstream": [
+        "2914d6479d2845e0b193ba1c09aa6667c66850a6"
+      ]
+    },
+    {
+      "local": "2035c7e16f82afc46a418a69f779ec0d33037ef6",
+      "subject": "fix(schedule): open native run archives by exact session identity",
+      "upstream": [
+        "177b85df2cab3358dfec08cfc5591da29e27a8d1"
+      ]
+    },
+    {
+      "local": "83c6e73cb0f9ae797a90f04ad425685b815e3afc",
+      "subject": "feat(schedule): connect original menus and scoped run notifications",
+      "upstream": [
+        "177b85df2cab3358dfec08cfc5591da29e27a8d1",
+        "451ef48d6a7dc73347d49e3d2d13cf8fafccad8f"
+      ]
+    },
+    {
+      "local": "9da6264710ea362b13e49a71c0e8e09a85dfe5b1",
+      "subject": "feat(ask): migrate opt-in hosting model and native answer selection",
+      "upstream": [
+        "6081b5d01a1ae5a12063cfdc15959c392c5f37ba"
+      ]
+    },
+    {
+      "local": "a79f24b9c6815df373547d8513074eceb7947cd2",
+      "subject": "feat(ask): host native SDK questions with scoped cancellation",
+      "upstream": [
+        "6081b5d01a1ae5a12063cfdc15959c392c5f37ba"
+      ]
+    },
+    {
+      "local": "7b1b96fec905f0ec40ef60d665e38649293107de",
+      "subject": "feat(ask): host native PTY questions without changing protocol deadlines",
+      "upstream": [
+        "6081b5d01a1ae5a12063cfdc15959c392c5f37ba"
+      ]
+    },
+    {
+      "local": "9904c9204d15efa86350e1a9c1c079ed6fdb69f2",
+      "subject": "feat(ask): add original opt-in hosting controls",
+      "upstream": [
+        "6081b5d01a1ae5a12063cfdc15959c392c5f37ba"
+      ]
+    },
+    {
+      "local": "68465c18851c84c36a489d14363011203d67664d",
+      "subject": "feat(ask): render original hosting countdown and native cancel flow",
+      "upstream": [
+        "6081b5d01a1ae5a12063cfdc15959c392c5f37ba"
+      ]
+    },
+    {
+      "local": "671c4f16f66318d82a6c4593c53cb4f67ab0df72",
+      "subject": "fix(ask): preserve upstream Other input autofill hints",
+      "upstream": [
+        "3d4f098f08211b53f5d5f58d4c17b603027f3899"
+      ]
+    },
+    {
+      "local": "cb5b5f2d3b1f33fe06b02043c9b4787b14e1294a",
+      "subject": "test(schedule): verify actual native execution and archive restoration",
+      "upstream": [
+        "177b85df2cab3358dfec08cfc5591da29e27a8d1",
+        "451ef48d6a7dc73347d49e3d2d13cf8fafccad8f",
+        "6081b5d01a1ae5a12063cfdc15959c392c5f37ba"
+      ]
+    },
+    {
+      "local": "bf35be4042ef3c00ad34631fa50be87b3c4e838e",
+      "subject": "test(schedule): verify fresh production install and packaged runtime",
+      "upstream": [
+        "93a17ea62361d6e90b7c89e9d317496353cd95d3",
+        "177b85df2cab3358dfec08cfc5591da29e27a8d1",
+        "6081b5d01a1ae5a12063cfdc15959c392c5f37ba"
+      ]
+    },
+    {
+      "local": "4292dcb05e6c65d05321aa53a7ea1623eefff137",
+      "subject": "docs(schedule): describe aligned native scheduling behavior",
+      "upstream": [
+        "177b85df2cab3358dfec08cfc5591da29e27a8d1",
+        "451ef48d6a7dc73347d49e3d2d13cf8fafccad8f",
+        "2914d6479d2845e0b193ba1c09aa6667c66850a6"
+      ]
+    },
+    {
+      "local": "96fe83ad3f23fbba462dc5d7c92b22884e6038e9",
+      "subject": "fix(schedule): preserve native approvals through isolated AppServer runs",
+      "upstream": [
+        "177b85df2cab3358dfec08cfc5591da29e27a8d1",
+        "6081b5d01a1ae5a12063cfdc15959c392c5f37ba"
+      ]
+    },
+    {
+      "local": "f3ad7be9d6ff1f73d9ce78d3cc46541c96f9ca5d",
+      "subject": "test(schedule): verify original menus and hosting in both browsers",
+      "upstream": [
+        "177b85df2cab3358dfec08cfc5591da29e27a8d1",
+        "2914d6479d2845e0b193ba1c09aa6667c66850a6",
+        "451ef48d6a7dc73347d49e3d2d13cf8fafccad8f",
+        "6081b5d01a1ae5a12063cfdc15959c392c5f37ba"
+      ]
+    },
+    {
+      "local": "232350bd411f18e006c5da1f535c640a1dd54613",
+      "subject": "test(schedule): verify actual native PTY task delivery",
+      "upstream": [
+        "177b85df2cab3358dfec08cfc5591da29e27a8d1"
+      ]
+    }
+  ]
+}

@@ -182,6 +182,7 @@ class ChatMessage extends React.Component {
       p.onPlanApprovalClick !== n.onPlanApprovalClick || p.onPlanFeedbackSubmit !== n.onPlanFeedbackSubmit ||
       p.onDangerousApprovalClick !== n.onDangerousApprovalClick || p.onAskQuestionSubmit !== n.onAskQuestionSubmit ||
       p.onAskQuestionCancel !== n.onAskQuestionCancel ||
+      p.onAskQuestionAutoCancel !== n.onAskQuestionAutoCancel ||
       p.askMetaMap !== n.askMetaMap ||
       p.lang !== n.lang || p.runMembers !== n.runMembers || p.runMember !== n.runMember || p.minimalChat !== n.minimalChat || p.runIdentity !== n.runIdentity ||
       p.taskNotification?.taskId !== n.taskNotification?.taskId;
@@ -820,6 +821,11 @@ class ChatMessage extends React.Component {
         questions={questions}
         startedAt={meta?.startedAt}
         timeoutMs={meta?.timeoutMs}
+        autoAnswerAt={meta?.autoAnswerAt ?? null}
+        autoCancelled={meta?.autoCancelled === true}
+        onCancelAutoHosting={this.props.onAskQuestionAutoCancel
+          ? () => this.props.onAskQuestionAutoCancel(toolId, sdkRequestId || meta?.requestId)
+          : undefined}
         onSubmit={(answers) => {
           if (this.props.onAskQuestionSubmit) {
             this.props.onAskQuestionSubmit(answers, toolId, questions, sdkRequestId);

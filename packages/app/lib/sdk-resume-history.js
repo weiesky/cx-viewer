@@ -44,11 +44,15 @@ export async function resolveSdkCliResume(logDir, args, view) {
   return { selector: invocation.selector, file };
 }
 
-export function listSdkResumeSessions(logDir, { cwd, projectId }, limit = 10) {
+export function listSdkResumeSessions(logDir, { cwd, projectId }, limit = 10, { sessionId = null } = {}) {
+  if (sessionId !== null && !isSdkResumeThreadId(sessionId)) {
+    throw failure('Invalid SDK history session', 'SDK_RESUME_UNAVAILABLE', 422);
+  }
   const candidates = discoverV2SessionArchives(logDir, { projectId }).archives
     .filter(archive => archive.project.canonicalCwd === cwd && archive.manifest.source === 'sdk'
       && archive.manifest.rootThreadId === archive.manifest.sessionId
-      && isSdkResumeThreadId(archive.manifest.rootThreadId))
+      && isSdkResumeThreadId(archive.manifest.rootThreadId)
+      && (sessionId === null || archive.manifest.rootThreadId === sessionId))
     .reverse();
   const items = [];
   for (const archive of candidates) {

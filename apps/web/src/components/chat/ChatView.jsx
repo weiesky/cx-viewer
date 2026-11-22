@@ -57,6 +57,7 @@ import UserPromptsModal from './UserPromptsModal';
 import WorkflowLiveHud from '../viewers/WorkflowLiveHud';
 import TaskProgressHud from './TaskProgressHud';
 import PresetModal from '../terminal/PresetModal';
+import ScheduleTaskModal from '../common/ScheduleTaskModal';
 import UltraPlanModal from '../terminal/UltraPlanModal';
 import UltraplanPanel, { readUltraplanPopoverSize, ultraplanOverlayInnerStyle } from '../terminal/UltraplanPanel';
 import UltraplanExpertManagerModal from '../terminal/UltraplanExpertManagerModal';
@@ -353,6 +354,7 @@ class ChatView extends React.Component {
       stopOptimistic: false, // 点「停止」后乐观置 true：按钮/指示器立即切非运行态，真实 isStreaming 翻 false 或兜底超时后清除
       presetItems: [],
       mobilePresetModalVisible: false,
+      scheduleModalVisible: false,
       localAskAnswers: {}, // 提交后的本地答案映射，用于 request_user_input 立即切换到已回答状态
       pendingPermission: null, // { id, toolName, input } — active permission approval request
       permissionQueue: [], // queued permission requests when one is already active
@@ -801,6 +803,7 @@ class ChatView extends React.Component {
       // 审批代理要直达终端工具栏快捷菜单
       nextProps.approvalsReviewer !== this.props.approvalsReviewer ||
       nextProps.planAutoApproveSeconds !== this.props.planAutoApproveSeconds ||
+      nextProps.askAutoAnswerMinutes !== this.props.askAutoAnswerMinutes ||
       nextState !== this.state
     );
   }
@@ -1032,12 +1035,15 @@ class ChatView extends React.Component {
         this.props.onPendingPlanApproval(null);
       }
     }
-    if (prevState.pendingAsk !== this.state.pendingAsk) {
+    if (prevState.pendingAsk !== this.state.pendingAsk
+      || (prevState.askMetaMap !== this.state.askMetaMap && this.state.pendingAsk)) {
       if (this.props.onPendingAsk) {
         if (this.state.pendingAsk) {
           this.props.onPendingAsk({
             ask: this.state.pendingAsk,
-            handlers: { submit: this.handleAskQuestionSubmit, cancel: this.handleAskCancel },
+            askAutoAnswerAt: this.state.askMetaMap?.[this.state.pendingAsk.id]?.autoAnswerAt ?? null,
+            askAutoCancelled: this.state.askMetaMap?.[this.state.pendingAsk.id]?.autoCancelled === true,
+            handlers: { submit: this.handleAskQuestionSubmit, cancel: this.handleAskCancel, cancelAutoHosting: this.handleAskAutoCancel },
           });
         } else {
           this.props.onPendingAsk(null);
@@ -2081,7 +2087,7 @@ class ChatView extends React.Component {
         }
         if (asstContent) {
           renderedMessages.push(
-            <ChatMessage key={`${keyPrefix}-asst-${mi}`} role="assistant" isTeammate={teammateIdentity ? true : undefined} label={teammateIdentity?.label} animateAvatar={teammateIdentity ? false : undefined} content={asstContent} toolResultMap={toolResultMap} readContentMap={readContentMap} editSnapshotMap={editSnapshotMap} askAnswerMap={mergedAskAnswerMap} planApprovalMap={planApprovalMap} latestPlanContent={latestPlanContent} planFileContents={this.state.planFileContents} timestamp={ts} displayTs={msg._generatedTs} modelInfo={modelInfo} collapseToolResults={collapseToolResults} expandThinking={expandThinking} showFullToolContent={showFullToolContent} minimalChat={this.props.minimalChat} showThinkingSummaries={showThinkingSummaries} ptyPrompt={this.state.ptyPrompt} activePlanPrompt={activePlanPrompt} activePtyPlanId={this.state.pendingPtyPlan?.id ?? null} planAutoApproveCountdown={this.state.planAutoApproveCountdown} onCancelPlanAutoApprove={this.cancelPlanAutoApprove} activeDangerousPrompt={activeDangerousPrompt} lastPendingPlanId={msgLastPlanId} lastPendingAskId={msgLastAskId} onPlanApprovalClick={this.handlePromptOptionClick} onPlanFeedbackSubmit={this.handlePlanFeedbackSubmit} onDangerousApprovalClick={this.handlePromptOptionClick} onAskQuestionSubmit={this.handleAskQuestionSubmit} onAskQuestionCancel={this.handleAskCancel} pendingAsk={this.state.pendingAsk} askMetaMap={this.state.askMetaMap} cliMode={this.props.cliMode} onOpenFile={this.handleOpenToolFilePath} requestIndex={hasViewRequest ? reqIdx : undefined} onViewRequest={hasViewRequest ? onViewRequest : undefined} isHistoryLog={isHistoryLog} />
+            <ChatMessage key={`${keyPrefix}-asst-${mi}`} role="assistant" isTeammate={teammateIdentity ? true : undefined} label={teammateIdentity?.label} animateAvatar={teammateIdentity ? false : undefined} content={asstContent} toolResultMap={toolResultMap} readContentMap={readContentMap} editSnapshotMap={editSnapshotMap} askAnswerMap={mergedAskAnswerMap} planApprovalMap={planApprovalMap} latestPlanContent={latestPlanContent} planFileContents={this.state.planFileContents} timestamp={ts} displayTs={msg._generatedTs} modelInfo={modelInfo} collapseToolResults={collapseToolResults} expandThinking={expandThinking} showFullToolContent={showFullToolContent} minimalChat={this.props.minimalChat} showThinkingSummaries={showThinkingSummaries} ptyPrompt={this.state.ptyPrompt} activePlanPrompt={activePlanPrompt} activePtyPlanId={this.state.pendingPtyPlan?.id ?? null} planAutoApproveCountdown={this.state.planAutoApproveCountdown} onCancelPlanAutoApprove={this.cancelPlanAutoApprove} activeDangerousPrompt={activeDangerousPrompt} lastPendingPlanId={msgLastPlanId} lastPendingAskId={msgLastAskId} onPlanApprovalClick={this.handlePromptOptionClick} onPlanFeedbackSubmit={this.handlePlanFeedbackSubmit} onDangerousApprovalClick={this.handlePromptOptionClick} onAskQuestionSubmit={this.handleAskQuestionSubmit} onAskQuestionCancel={this.handleAskCancel} onAskQuestionAutoCancel={this.handleAskAutoCancel} pendingAsk={this.state.pendingAsk} askMetaMap={this.state.askMetaMap} cliMode={this.props.cliMode} onOpenFile={this.handleOpenToolFilePath} requestIndex={hasViewRequest ? reqIdx : undefined} onViewRequest={hasViewRequest ? onViewRequest : undefined} isHistoryLog={isHistoryLog} />
           );
         }
       }
@@ -2295,7 +2301,7 @@ class ChatView extends React.Component {
     // === session item 缓存：toggle 签名检查 ===
     const { showThinkingSummaries } = this.props;
     const activePromptIds = (this.state.ptyPromptHistory || []).filter(p => p.status === 'active').map(p => p.id).join(',');
-    const toggleSig = `${collapseToolResults}|${expandThinking}|${showFullToolContent}|${this.props.minimalChat}|${showThinkingSummaries}|${this.props.cliMode}|${this.state.ptyPrompt?.id || ''}|${activePromptIds}|${this.props.userProfile?.name || ''}|${this.props.lang || ''}|${Object.keys(this.state.localAskAnswers || {}).join(',')}`;
+    const toggleSig = `${collapseToolResults}|${expandThinking}|${showFullToolContent}|${this.props.minimalChat}|${showThinkingSummaries}|${this.props.cliMode}|${this.state.ptyPrompt?.id || ''}|${activePromptIds}|${this.props.userProfile?.name || ''}|${this.props.lang || ''}|${Object.keys(this.state.localAskAnswers || {}).join(',')}|${this.state.pendingAsk?.id || ''}`;
     if (toggleSig !== this._itemCacheToggleSig) {
       this._sessionItemCache = [];
       this._itemCacheToggleSig = toggleSig;
@@ -2438,6 +2444,8 @@ class ChatView extends React.Component {
         // 刷新持有相应 tool_use 的旧 element 的 prop，避免 React 因 element 引用未变跳过 SCU 让卡片永远停在 pending 视图。
         msgs = refreshCachedItemProp(sc.items, sc.planApprovalMap, mergedPlanApprovalMap, PLAN_TOOL_NAMES, 'planApprovalMap');
         msgs = refreshCachedItemProp(msgs, sc.askAnswerMap, mergedAskAnswerMap, ASK_TOOL_NAMES, 'askAnswerMap');
+        msgs = refreshCachedItemProp(msgs, sc.askMetaMap, this.state.askMetaMap, ASK_TOOL_NAMES, 'askMetaMap');
+        msgs = refreshCachedItemProp(msgs, sc.pendingAsk, this.state.pendingAsk, ASK_TOOL_NAMES, 'pendingAsk');
         // Heal rows whose modelInfo was baked null before the request scan
         // could resolve the producer (post-refresh race). The resolver closes
         // over caches rebuilt earlier in THIS call; the write-back below
@@ -2454,6 +2462,8 @@ class ChatView extends React.Component {
         // 旧段同样要刷新 planApprovalMap / askAnswerMap prop（同 FULL HIT 理由）
         msgs = refreshCachedItemProp(sc.items, sc.planApprovalMap, mergedPlanApprovalMap, PLAN_TOOL_NAMES, 'planApprovalMap').slice();
         msgs = refreshCachedItemProp(msgs, sc.askAnswerMap, mergedAskAnswerMap, ASK_TOOL_NAMES, 'askAnswerMap');
+        msgs = refreshCachedItemProp(msgs, sc.askMetaMap, this.state.askMetaMap, ASK_TOOL_NAMES, 'askMetaMap');
+        msgs = refreshCachedItemProp(msgs, sc.pendingAsk, this.state.pendingAsk, ASK_TOOL_NAMES, 'pendingAsk');
         // Same modelInfo healing for the reused old segment (see FULL HIT above).
         if (sc.modelRevision !== sessionModelRevision || sc.sessionModelName !== session.modelName) {
           msgs = refreshResolvedModelInfo(msgs, resolveModelInfo);
@@ -2521,6 +2531,8 @@ class ChatView extends React.Component {
         // 记下本轮 planApprovalMap / askAnswerMap 引用，下轮 FULL HIT / INCREMENTAL 据此判断是否要刷新旧 element 的 prop。
         planApprovalMap: mergedPlanApprovalMap,
         askAnswerMap: mergedAskAnswerMap,
+        askMetaMap: this.state.askMetaMap,
+        pendingAsk: this.state.pendingAsk,
         modelRevision: sessionModelRevision,
         sessionModelName: session.modelName || null,
       };
@@ -3409,6 +3421,7 @@ class ChatView extends React.Component {
 
   // 委托 → AskFlowController（handleAskCancel 是 public 入口：bubble handlers + ChatMessage props 引用）
   handleAskCancel = (askId, reason, sdkRequestId) => this._askFlow.handleAskCancel(askId, reason, sdkRequestId);
+  handleAskAutoCancel = (askId, sdkRequestId) => this._askFlow.handleAskAutoCancel(askId, sdkRequestId);
 
   /**
    * Send queued user message after ack received (or 500ms timeout best effort).
@@ -4907,7 +4920,16 @@ class ChatView extends React.Component {
         <TeamModal session={this.state.teamModalSession} requests={this.props.requests} mainAgentSessions={this.props.mainAgentSessions} collapseToolResults={this.props.collapseToolResults} expandThinking={this.props.expandThinking} showFullToolContent={this.props.showFullToolContent} userProfile={this.props.userProfile} onViewRequest={this.props.onViewRequest} isHistoryLog={this._getIsHistoryLog()} lang={this.props.lang} onClose={() => this.setState({ teamModalSession: null })} />
         <WorkflowRunsModal run={this.state.workflowModalRun} onClose={() => this.setState({ workflowModalRun: null })} />
       <UserPromptsModal open={this.state.userPromptsModalOpen} requests={this.props.requests} onClose={() => this.setState({ userPromptsModalOpen: false })} />
-        {this._renderSelectionQuotePopup()}
+        <ScheduleTaskModal
+        key={this.props.viewInstance || this.props.resumeInstanceKey || 'bound'}
+        open={this.state.scheduleModalVisible}
+        onClose={() => this.setState({ scheduleModalVisible: false })}
+        project={this.props.viewProject || this.props.projectName || null}
+        instance={this.props.viewInstance || this.props.resumeInstanceKey || null}
+        serverTimezone={this.props.serverTimezone || null}
+        onResumeSession={this.props.isLocalLog ? null : this.props.onResumeSession}
+      />
+      {this._renderSelectionQuotePopup()}
       </>);
     }
 
@@ -5199,6 +5221,8 @@ class ChatView extends React.Component {
               presetItems={this.state.presetItems}
               onPresetSend={this.handlePresetSend}
               onOpenPresetModal={() => this.setState({ mobilePresetModalVisible: true })}
+              onOpenScheduleModal={(this.props.cliMode && !this.props.isLocalLog && (this.props.viewProject || this.props.projectName))
+                ? () => this.setState({ scheduleModalVisible: true }) : null}
               onOpenUltraPlan={this.props.cliMode
                 ? (isMobile ? () => this.setState({ ultraplanModalOpen: true }) : () => this.setState({ ultraplanPopoverOpen: true }))
                 : null}
@@ -5260,7 +5284,7 @@ class ChatView extends React.Component {
               approvalsReviewer={this.props.approvalsReviewer}
               onApprovalsReviewerChange={this.props.onApprovalsReviewerChange}
               planAutoApproveSeconds={this.props.planAutoApproveSeconds}
-              onPlanAutoApproveChange={this.props.onPlanAutoApproveChange}
+              onPlanAutoApproveChange={this.props.onPlanAutoApproveChange} askAutoAnswerMinutes={this.props.askAutoAnswerMinutes} onAskAutoAnswerChange={this.props.onAskAutoAnswerChange}
             />
             </div>
             {!(isMobile && !isPad) && (
@@ -5354,7 +5378,7 @@ class ChatView extends React.Component {
                 approvalsReviewer={this.props.approvalsReviewer}
                 onApprovalsReviewerChange={this.props.onApprovalsReviewerChange}
                 planAutoApproveSeconds={this.props.planAutoApproveSeconds}
-                onPlanAutoApproveChange={this.props.onPlanAutoApproveChange}
+                onPlanAutoApproveChange={this.props.onPlanAutoApproveChange} askAutoAnswerMinutes={this.props.askAutoAnswerMinutes} onAskAutoAnswerChange={this.props.onAskAutoAnswerChange}
                 />
               </div>
             </>
@@ -5365,6 +5389,15 @@ class ChatView extends React.Component {
       <WorkflowRunsModal run={this.state.workflowModalRun} onClose={() => this.setState({ workflowModalRun: null })} />
       <UserPromptsModal open={this.state.userPromptsModalOpen} requests={this.props.requests} onClose={() => this.setState({ userPromptsModalOpen: false })} />
       <PresetModal open={this.state.mobilePresetModalVisible} onClose={() => this.setState({ mobilePresetModalVisible: false })} items={this.state.presetItems} onItemsChange={(items) => this.setState({ presetItems: items })} onSavePresets={(payload) => { if (this.props.onUpdatePreferences) this.props.onUpdatePreferences(payload); }} />
+      <ScheduleTaskModal
+        key={this.props.viewInstance || this.props.resumeInstanceKey || 'bound'}
+        open={this.state.scheduleModalVisible}
+        onClose={() => this.setState({ scheduleModalVisible: false })}
+        project={this.props.viewProject || this.props.projectName || null}
+        instance={this.props.viewInstance || this.props.resumeInstanceKey || null}
+        serverTimezone={this.props.serverTimezone || null}
+        onResumeSession={this.props.isLocalLog ? null : this.props.onResumeSession}
+      />
       {this._renderSelectionQuotePopup()}
     </>);
   }

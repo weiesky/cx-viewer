@@ -1,0 +1,32 @@
+{
+  "controlledNativeProtocol": true,
+  "actualPtyRuntime": true,
+  "results": [
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "toolbarAndComposer": true,
+      "spawnHidden": true,
+      "actualPtyQueueAccepted": true,
+      "sameNameSiblingEmpty": true,
+      "screenshots": [
+        "chromium-pty-toolbar.png",
+        "chromium-pty-history.png"
+      ],
+      "pageErrors": []
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "toolbarAndComposer": true,
+      "spawnHidden": true,
+      "actualPtyQueueAccepted": true,
+      "sameNameSiblingEmpty": true,
+      "screenshots": [
+        "webkit-pty-toolbar.png",
+        "webkit-pty-history.png"
+      ],
+      "pageErrors": []
+    }
+  ]
+}

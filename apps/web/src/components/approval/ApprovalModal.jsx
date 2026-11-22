@@ -292,6 +292,10 @@ export default function ApprovalModal({
                   <AskQuestionForm
                     key={askId}
                     questions={approvalGlobal.ask.ask.questions}
+                    autoAnswerAt={approvalGlobal.ask.askAutoAnswerAt ?? null}
+                    autoCancelled={approvalGlobal.ask.askAutoCancelled === true}
+                    onCancelAutoHosting={approvalGlobal.ask.handlers.cancelAutoHosting
+                      ? () => approvalGlobal.ask.handlers.cancelAutoHosting(askId) : undefined}
                     onSubmit={(answers) => approvalGlobal.ask.handlers.submit(answers, askId, approvalGlobal.ask.ask.questions)}
                     onCancel={approvalGlobal.ask.handlers.cancel
                       ? () => approvalGlobal.ask.handlers.cancel(askId, 'User aborted')

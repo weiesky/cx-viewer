@@ -1,0 +1,56 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "branch": "alignment/b9-scheduling-authorization",
+  "base": "cb40a553061970abd878a87f1e1c38c07a4fe0a3",
+  "verifiedImplementationHead": "232350bd411f18e006c5da1f535c640a1dd54613",
+  "lastProductionCodeCommit": "96fe83ad3f23fbba462dc5d7c92b22884e6038e9",
+  "implementationAndVerificationCommits": 28,
+  "candidatesAuditedWithinB9": 14,
+  "tests": {
+    "passed": 2443,
+    "total": 2443,
+    "skipped": 0
+  },
+  "build": "passed",
+  "packFiles": 747,
+  "installedTests": "859/859",
+  "allPackBytesMatch": true,
+  "webFilesBytesMatch": 211,
+  "gui": {
+    "engines": [
+      "Chromium159",
+      "WebKit27.2"
+    ],
+    "configurations": 6,
+    "screenshots": 16,
+    "pageErrors": 0
+  },
+  "nativeSdk": {
+    "version": "0.169.0",
+    "loopbackResponses": 12,
+    "independentTransport": "appserver",
+    "nativeApprovalPolicy": "on-request",
+    "residentTransportUnchanged": true
+  },
+  "nativePty": {
+    "mainPromptRequests": 2,
+    "scheduledMainPromptRequests": 1,
+    "nativeTitleRequests": 2,
+    "sessionPreserved": true
+  },
+  "normalFixtureShutdown": true,
+  "userInstancesRestarted": false,
+  "npmPublished": false,
+  "prCreated": false,
+  "merged": false,
+  "B10Started": false,
+  "limitations": [
+    "physical sleep/timezone changes",
+    "real devices/touch/IME/audio/password managers",
+    "external models and long waits",
+    "LAN/TLS",
+    "other OS and minimum Node",
+    "historical intermittent IM concurrency",
+    "30-minute independent-run limit retained"
+  ]
+}

@@ -10,6 +10,7 @@ import { isOverModalPortal } from './utils/dragGuards';
 import OpenFolderIcon from './components/common/OpenFolderIcon';
 import LogTable from './components/viewers/LogTable';
 import { t, getLang, setLang } from './i18n';
+import { askAutoAnswerPrefValue } from './utils/autoApproveOptions';
 import { SettingsContext } from './contexts/SettingsContext';
 import { filterRelevantRequests, isRelevantRequest, visibleRequests } from './utils/helpers';
 import { snapToPreset, stepPreset } from './utils/displayScaleHelper';
@@ -17,6 +18,8 @@ import { getProjectAlias, subscribeToAlias } from './utils/projectAlias';
 import { isMainAgent, classifySessionTransition, getEntryUserId, getMainAgentConversationId, getMainAgentSessionKey, isPostClearCheckpoint } from '../../../packages/app/src/utils/contentFilter';
 import { apiUrl, getBasePath } from './utils/apiUrl';
 import { publish as publishWorkflowUpdate } from './utils/workflowStore';
+import { publishScheduledTaskEvent } from './utils/scheduledTaskEvents';
+import { reasonLabel } from './utils/scheduleDescription';
 import { reportSwallowed } from './utils/errorReport';
 import { shouldWipeApprovalDismissal } from './utils/approvalDismissal';
 import { createMuxTransport } from './utils/wsMuxTransport';
@@ -184,6 +187,7 @@ class AppBase extends React.Component {
         modalEnabled: true,
         soundEnabled: true,
         notifyOnlyWhenHidden: true,
+        askAutoAnswerMinutes: null,
         planAutoApproveSeconds: 0, // 「Plan 自动审批」：0=关 / N=N 秒后自动批准 / -1=立即；仅 CLI(PTY) 路径
         voicePack: {
           enabled: true,
@@ -367,6 +371,8 @@ class AppBase extends React.Component {
         soundEnabled: data.approvalModal.soundEnabled !== undefined ? !!data.approvalModal.soundEnabled : prevPrefs.soundEnabled,
         notifyOnlyWhenHidden: data.approvalModal.notifyOnlyWhenHidden !== undefined ? !!data.approvalModal.notifyOnlyWhenHidden : prevPrefs.notifyOnlyWhenHidden,
         planAutoApproveSeconds: typeof data.approvalModal.planAutoApproveSeconds === 'number' ? data.approvalModal.planAutoApproveSeconds : prevPrefs.planAutoApproveSeconds,
+        askAutoAnswerMinutes: data.approvalModal.askAutoAnswerMinutes !== undefined
+          ? data.approvalModal.askAutoAnswerMinutes : prevPrefs.askAutoAnswerMinutes,
         voicePack: mergedVP,
       };
       // 合并开关迁移：server 端 soundEnabled !== voicePack.enabled 时以 soundEnabled 为准强制对齐（幂等回写）。
@@ -1619,6 +1625,27 @@ class AppBase extends React.Component {
     } catch { /* voice must never affect the turn */ }
   }
 
+  _onScheduledTasks(data) {
+    publishScheduledTaskEvent(data);
+    if (data.type !== 'task_run') return;
+    if (data.status === 'running') return; // in-progress marker, no toast
+    // Dedup across channels: a bound + parallel channel both receive their frames.
+    if (!this._schedRunToastSeen) this._schedRunToastSeen = new Set();
+    if (data.runId) {
+      if (this._schedRunToastSeen.has(data.runId)) return;
+      this._schedRunToastSeen.add(data.runId);
+      if (this._schedRunToastSeen.size > 200) { this._schedRunToastSeen.clear(); }
+    }
+    const summary = (data.summary || '').slice(0, 40);
+    try {
+      if (data.status === 'completed') message.success(t('ui.schedule.toast.completed', { summary }));
+      else if (data.status === 'error') message.error(t('ui.schedule.toast.error', { summary, reason: reasonLabel(data.reason) }));
+      else if (data.status === 'failed') message.error(t('ui.schedule.toast.dispatchFailed', { summary, reason: reasonLabel(data.reason) }));
+      else if (data.status === 'missed') message.warning(t('ui.schedule.toast.missed', { summary }));
+      // dispatched / skipped stay silent by design (the message appears in the session).
+    } catch (err) { reportSwallowed('sse.scheduled_tasks.toast', err); }
+  }
+
   _initControlSSE() {
     if (this._unmounted || this._isLocalLog) return;
     if (this._sseReconnectTimer) { clearTimeout(this._sseReconnectTimer); this._sseReconnectTimer = null; }
@@ -1811,6 +1838,7 @@ class AppBase extends React.Component {
         if (data.project && this.state.projectName && data.project !== this.state.projectName) return;
         handler(data);
       };
+      this.eventSource.addEventListener('scheduled_tasks', voiceListener(data => this._onScheduledTasks(data)));
       this.eventSource.addEventListener('turn_end', voiceListener(data => this._onTurnEndVoice(data)));
       this.eventSource.addEventListener('agent_loop_start', voiceListener(data => this._onAgentLoopVoice('start', data)));
       this.eventSource.addEventListener('agent_loop_end', voiceListener(data => this._onAgentLoopVoice('end', data)));
@@ -2562,6 +2590,10 @@ class AppBase extends React.Component {
 
   // 终端工具栏快捷设置菜单的 Plan 档位回调。稳定引用（类属性而非调用处内联箭头），
   // 避免 App/Mobile 每次 render 生成新闭包穿透 ChatView.shouldComponentUpdate。
+  handleAskAutoAnswerChange = (uiValue) => {
+    this.handleApprovalPrefsChange({ askAutoAnswerMinutes: askAutoAnswerPrefValue(uiValue) });
+  };
+
   handlePlanAutoApproveChange = (seconds) => {
     this.handleApprovalPrefsChange({ planAutoApproveSeconds: seconds });
   };

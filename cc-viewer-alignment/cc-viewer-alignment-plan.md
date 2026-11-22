@@ -159,7 +159,7 @@ B5安全复核：E7/E26/E33/E36/E39组合native凭据/历史/descriptor/alias/�
 
 ### B9 — 定时任务与授权
 
-**当前状态：已准备，尚未执行。** 14候选只作索引，先实读源码再分笔实施，见[B9交接](./B9-handoff.md)。
+**当前状态：2026-11-23本地实施/验收完成，尚未PR或合并。** 14候选按B9子项核销，2443/2443、0skip/build/pack747、新生产安装859/859及747包/211Web精确字节通过；实际native SDK/PTY、双浏览器6配置16图通过。保留native权限/reviewer，用户明确选择独立任务用AppServer、常驻transport不变；问答托管可选默认关闭。见[B9完成矩阵](./B9-completion-matrix.md)、[候选核销](./B9-candidate-matrix.md)与[B9实施](./B9-implementation.md)。未验环境继续单列，B10未启动。
 
 **完整上游提交索引**：[B9 时间顺序索引](./cc-viewer-alignment-commit-index.md#b9)；[B0 交叉候选](./B0-cross-index.md#cross-b9)。逐项核对索引及交叉工作包中的修复、合并和后续替代记录。
 

@@ -1,77 +1,77 @@
 {
   "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
   "count": 14,
-  "note": "11主索引+交叉并集13，再加B8实读发现的134权限倒计时混合子项，共14；本文件只准备索引，未开始B9实施。",
+  "note": "2026-11-23 B9本地实施/验收完成，14候选按B9子项核销，详B9-candidate-matrix.md；不整条认混合提交完成。保留native权限、Ask可选默认off；独立任务按用户明确选择用AppServer，常驻不变。B9未PR/合并，B10未启动。",
   "candidates": [
     {
       "hash": "93a17ea62361d6e90b7c89e9d317496353cd95d3",
       "subject": "chore(tarball): add approval-policy.js + launch-config.js to the tarball baseline",
-      "status": "B9待实际diff/完整调用链/CSS审阅；既有包只按子项复用，不整条认完成"
+      "status": "B9产物子项完成：E23/E26 native package.files与747包/211Web精确字节；非Claude模块复制"
     },
     {
       "hash": "51c974e4415828296a8f91b469f54379b055c073",
       "subject": "feat(permission): default auto-approve to a 3s countdown",
-      "status": "B9待实际diff/完整调用链/CSS审阅；既有包只按子项复用，不整条认完成"
+      "status": "按用户保留原生权限/reviewer选择排除三秒默认/权限倒计时放行，非实现完成"
     },
     {
       "hash": "3d4f098f08211b53f5d5f58d4c17b603027f3899",
       "subject": "fix(web): stop askUserQuestion 'Other' input from triggering browser password save (#155)",
-      "status": "B9待实际diff/完整调用链/CSS审阅；既有包只按子项复用，不整条认完成"
+      "status": "B9完成：E21原Other四个autofill标记；真实密码管理器行为未验"
     },
     {
       "hash": "177b85df2cab3358dfec08cfc5591da29e27a8d1",
       "subject": "feat(server+web): add scheduled tasks (\"设置定时任务\")",
-      "status": "B9待实际diff/完整调用链/CSS审阅；既有包只按子项复用，不整条认完成"
+      "status": "B9独立范围完成：E1–E27定时全链/原UI/native验证，E25独立AppServer为用户明确适配；其他语言README源不存在不新造"
     },
     {
       "hash": "5ee6739cbaba22a6a6d341c020bb7d54c493e5d0",
       "subject": "feat: merge SDK context usage into blood bars",
-      "status": "B9待实际diff/完整调用链/CSS审阅；既有包只按子项复用，不整条认完成"
+      "status": "B9 executor子项完成：E7精确instance/E10接线/E22实际native；其他混合项沿B8/B11单独核销"
     },
     {
       "hash": "aaa3a59444884254cf8d5cf93ce032b35ef8aa24",
       "subject": "docs: changelog for server-side approval countdown and UltraReview template",
-      "status": "B9待实际diff/完整调用链/CSS审阅；既有包只按子项复用，不整条认完成"
+      "status": "B9文档候选核销：权限自动放行按用户选择排除，Ask另E16–E20完成，UltraReview沿B8；不照抄不实changelog"
     },
     {
       "hash": "208f1348279758d95b72798442105c3236fa1dd3",
       "subject": "fix(server+web): fork review fixes for 1.9.17 — new-file save 403, plan modal reopen, fallback countdown",
-      "status": "B9待实际diff/完整调用链/CSS审阅；既有包只按子项复用，不整条认完成"
+      "status": "B9子项核销：B4 minimization已在288faea；B5 missing-leaf已完成并回归；无native SDK Plan审批producer，不合成countdown"
     },
     {
       "hash": "7a0ba39edf6a0b54ca7a425e0f08ab410e515407",
       "subject": "test(app): deflake git + scheduled-task tests — poll async launch, retry rmSync cleanup",
-      "status": "B9待实际diff/完整调用链/CSS审阅；既有包只按子项复用，不整条认完成"
+      "status": "B9测试子项完成：E3/E5/E6原最终task条件轮询/rm重试；git外包不重复搬"
     },
     {
       "hash": "2914d6479d2845e0b193ba1c09aa6667c66850a6",
       "subject": "feat(web): quick-fill time buttons for one-time scheduled tasks (#169)",
-      "status": "B9待实际diff/完整调用链/CSS审阅；既有包只按子项复用，不整条认完成"
+      "status": "B9子项完成：E4/E11–E13原none/嵌入模板附件/once五快捷，E26实际GUI；其他混合项沿B4/B6/B8"
     },
     {
       "hash": "00fdfade7948cd895e2f714f71626f2f9e3678bd",
       "subject": "chore: release 1.9.27",
-      "status": "B9待实际diff/完整调用链/CSS审阅；既有包只按子项复用，不整条认完成"
+      "status": "B9发布候选核销：不迁上游版本号；native同tick终态E20/E22，精确owner路由；Git拖拽沿B7"
     },
     {
       "hash": "1b3c2268e3bd0e73ffef043bf450662d01a28371",
       "subject": "feat(web): 「添加到对话」覆盖代码 diff、工具参数区与 AskUserQuestion 卡片",
-      "status": "B9待实际diff/完整调用链/CSS审阅；既有包只按子项复用，不整条认完成"
+      "status": "B9 Ask引用边界沿B7保持，E20倒计时在quotable外、E21不覆盖守卫；其他引用子项仍沿B7"
     },
     {
       "hash": "451ef48d6a7dc73347d49e3d2d13cf8fafccad8f",
       "subject": "feat(server+web): scheduled tasks — storage in preferences.json + run history split + modal UX polish",
-      "status": "B9待实际diff/完整调用链/CSS审阅；既有包只按子项复用，不整条认完成"
+      "status": "B9完成：E2/E3/E5 preferences/runs私有拆分、E12原modal布局、E14/E22精确历史实际恢复"
     },
     {
       "hash": "6081b5d01a1ae5a12063cfdc15959c392c5f37ba",
       "subject": "feat(ask): AskUserQuestion auto-answer (问答题自动托管) — server-side hosting",
-      "status": "B9待实际diff/完整调用链/CSS审阅；既有包只按子项复用，不整条认完成"
+      "status": "B9 native范围完成：E16–E20/E25/E26 default-off Ask托管/取消/replay/原UI；无producer的exec常驻/Claude legacy不伪造"
     },
     {
       "hash": "134a0de7ac166db5f9375d9f2c60bcd97248852b",
       "subject": "docs(ultraplan): rewrite UltraReview team workflow to named Agent teammates",
-      "status": "B9待实际diff/完整调用链/CSS审阅；既有包只按子项复用，不整条认完成"
+      "status": "B9混入权限countdown字符串按native选择排除；UltraReview实际模板/18语言已由B8 E1/E10完成"
     }
   ]
 }
