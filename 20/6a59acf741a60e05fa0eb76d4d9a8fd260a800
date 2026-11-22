@@ -1,0 +1,34 @@
+packages/app/lib/proxy-retry.js
+  s_4ca8f338668363::t_a4de8097571244 74-75,83-85,88-90,93-95
+packages/app/proxy.js
+  s_4ca8f338668363::t_a4de8097571244 12-13,336
+packages/app/server.js
+  s_4ca8f338668363::t_a4de8097571244 130-131,3010-3025,6377
+packages/app/lib/proxy-retry-config.js
+  s_4ca8f338668363::t_a4de8097571244 1-14,16-46
+  s_4ca8f338668363::t_fc966283f3ac19 15
+AGENTS.md
+  s_4ca8f338668363::t_04f404ecba5126 26
+cc-viewer-alignment/B8-implementation.md
+  s_4ca8f338668363::t_c585d1d08e54e2 61-69
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4ca8f338668363::t_8d37b8ac249220 16574-16577
+packages/app/tests/proxy-retry-config-api.test.js
+  s_4ca8f338668363::t_9e621b59c092ca 1-38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "206a59acf741a60e05fa0eb76d4d9a8fd260a800",
+  "prompts": {},
+  "sessions": {
+    "s_4ca8f338668363": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a200e6-7324-7162-956b-e799486390a7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
