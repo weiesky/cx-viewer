@@ -1,0 +1,45 @@
+cc-viewer-alignment/B9-candidate-index.json
+  s_b808e5a13726e4::t_46394154ca2c3d 4,9,14,19,24,29,34,39,44,49,54,59,64,69,74
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_b808e5a13726e4::t_32e37bc30ee6a6 174,407,1415,1513,1832,2992,3278,3293,3764,4062,4118,4724,7879,8307
+  s_b808e5a13726e4::t_46394154ca2c3d 16724,16726,16728,16730,16732,16734,16736,16738,16740,16742,16744,16746,16748
+cc-viewer-alignment/B9-handoff.md
+  s_b808e5a13726e4::t_387a9f02f4dc4b 3-4
+cc-viewer-alignment/B9-final-2026-11-23.json
+  s_b808e5a13726e4::t_46394154ca2c3d 1-56
+cc-viewer-alignment/B9-original-commits-2026-11-23.json
+  s_b808e5a13726e4::t_46394154ca2c3d 1-228
+cc-viewer-alignment/B9-candidate-matrix.md
+  s_b808e5a13726e4::t_20f9b98e717592 1-22
+cc-viewer-alignment/B9-cleanup.json
+  s_b808e5a13726e4::t_e56e96483ed22c 1-10
+cc-viewer-alignment/B9-implementation.md
+  s_b808e5a13726e4::t_f76dac53a75523 176-181
+  s_b808e5a13726e4::t_46394154ca2c3d 103,115,121,127,133,137,143,149,153,161,169,175
+cc-viewer-alignment/B9-source-audit.json
+  s_b808e5a13726e4::t_e265de53ac7cb1 1-441
+cc-viewer-alignment/B9-completion-matrix.md
+  s_b808e5a13726e4::t_20f9b98e717592 1-27
+AGENTS.md
+  s_b808e5a13726e4::t_387a9f02f4dc4b 26
+cc-viewer-alignment/README.md
+  s_b808e5a13726e4::t_387a9f02f4dc4b 5,30-31,34
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_b808e5a13726e4::t_387a9f02f4dc4b 162
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "8dd6ebe2f399e74b735b185f3f6c146fbbf41281",
+  "prompts": {},
+  "sessions": {
+    "s_b808e5a13726e4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a203fe-9d11-73a0-a439-ec8c7212a4f4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
