@@ -1,0 +1,38 @@
+cc-viewer-alignment/B9-installed.json
+  s_b808e5a13726e4::t_d95c75a23deb0f 2,17-24
+cc-viewer-alignment/probes/b9-pty-schedule-gui.mjs
+  s_b808e5a13726e4::t_984ef414b4d75f 1-43
+cc-viewer-alignment/B9-implementation.md
+  s_b808e5a13726e4::t_7421a0cdbe0a52 162-169
+cc-viewer-alignment/probes/b9-schedule-gui.mjs
+  s_b808e5a13726e4::t_8486ffaf64a70d 14
+  s_b808e5a13726e4::t_c03ffbe9ed0893 1-13,15-99
+AGENTS.md
+  s_b808e5a13726e4::t_028fefa2f98334 26
+cc-viewer-alignment/B9-gui.json
+  s_b808e5a13726e4::t_a83096b307f648 1-56
+cc-viewer-alignment/B9-pty-gui.json
+  s_b808e5a13726e4::t_a0fe14c12d4040 1-32
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_b808e5a13726e4::t_c0941dd37b27c5 16731-16732
+cc-viewer-alignment/probes/b9-pty-ui-fixture.mjs
+  s_b808e5a13726e4::t_cee1d33fb1311c 1-15
+cc-viewer-alignment/probes/b9-ui-fixture.mjs
+  s_b808e5a13726e4::t_d4b66c61a83ac0 1-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f3ad7be9d6ff1f73d9ce78d3cc46541c96f9ca5d",
+  "prompts": {},
+  "sessions": {
+    "s_b808e5a13726e4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a203fe-9d11-73a0-a439-ec8c7212a4f4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
