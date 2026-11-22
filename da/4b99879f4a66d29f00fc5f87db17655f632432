@@ -1,0 +1,42 @@
+cc-viewer-alignment/B8-candidate-index.json
+  s_4ca8f338668363::t_fa37deaced436d 54,76,90,411,463,547,616,938,963,1424
+AGENTS.md
+  s_4ca8f338668363::t_9bb9a49afffb07 26-28
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_4ca8f338668363::t_9bb9a49afffb07 152
+cc-viewer-alignment/B8-implementation.md
+  s_4ca8f338668363::t_9bb9a49afffb07 111-118
+cc-viewer-alignment/probes/b3-installed-check.py
+  s_4ca8f338668363::t_3d73e197a8f07d 29-30,43,104
+cc-viewer-alignment/B8-candidate-matrix.md
+  s_4ca8f338668363::t_fa37deaced436d 11,13-14,22,24,28,33,40-41,54
+cc-viewer-alignment/B8-scope-audit.md
+  s_4ca8f338668363::t_e5e0b77e5ef44b 1-17
+cc-viewer-alignment/B8-E16-checkpoint.json
+  s_4ca8f338668363::t_9bb9a49afffb07 1-69
+cc-viewer-alignment/B8-handoff.md
+  s_4ca8f338668363::t_9bb9a49afffb07 3
+cc-viewer-alignment/B8-sdk-send-investigation.md
+  s_4ca8f338668363::t_9bb9a49afffb07 28-31
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4ca8f338668363::t_9bb9a49afffb07 16611-16614
+cc-viewer-alignment/README.md
+  s_4ca8f338668363::t_9bb9a49afffb07 7
+  s_4ca8f338668363::t_8b5050b893de83 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "da4b99879f4a66d29f00fc5f87db17655f632432",
+  "prompts": {},
+  "sessions": {
+    "s_4ca8f338668363": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a200e6-7324-7162-956b-e799486390a7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
