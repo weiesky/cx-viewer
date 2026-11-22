@@ -1,0 +1,59 @@
+cc-viewer-alignment/B8-implementation.md
+  s_4ca8f338668363::t_1e1db26f081118 163-170
+packages/app/tests/workspace-proxy.test.js
+  s_4ca8f338668363::t_1e1db26f081118 8
+packages/app/lib/sdk-manager.js
+  s_4ca8f338668363::t_2ae37f0d09bbbb 439-444
+packages/app/lib/pty-workspace-runtime.js
+  s_4ca8f338668363::t_2ae37f0d09bbbb 60
+packages/app/interceptor.js
+  s_4ca8f338668363::t_e91e9254e326ed 606
+  s_4ca8f338668363::t_574ea1f33a79e5 25,84,86-89,91-92,179-185,479,601-605,607-615,619,638
+  s_4ca8f338668363::t_07df3d0787bba4 15,76
+  s_4ca8f338668363::t_a652ad647cd35d 78-80
+packages/app/proxy.js
+  s_4ca8f338668363::t_2ae37f0d09bbbb 336,478-479,485,488-492
+  s_4ca8f338668363::t_07df3d0787bba4 13,480-484,486-487
+packages/app/tests/native-role-proxy.test.js
+  s_4ca8f338668363::t_d5e3a3364dd7f5 18,23
+  s_4ca8f338668363::t_527364e4724fe9 1-17,19-22,24-28
+packages/app/tests/appserver-bridge-isolation.test.js
+  s_4ca8f338668363::t_e91e9254e326ed 201-202
+  s_4ca8f338668363::t_527364e4724fe9 186-200,203-209
+cc-viewer-alignment/probes/b8-native-role-routing.mjs
+  s_4ca8f338668363::t_69de948805c574 1-7,10-15,17,19,21,23
+  s_4ca8f338668363::t_d5e3a3364dd7f5 16,18,22
+  s_4ca8f338668363::t_46a7de91ec9aa3 8-9
+  s_4ca8f338668363::t_c967bb7a282d6c 20
+AGENTS.md
+  s_4ca8f338668363::t_1e1db26f081118 26
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4ca8f338668363::t_1e1db26f081118 16643-16646
+packages/app/lib/appserver-bridge.js
+  s_4ca8f338668363::t_2ae37f0d09bbbb 532-548,2848,2870
+packages/app/lib/interceptor-core.js
+  s_4ca8f338668363::t_07df3d0787bba4 56-63
+packages/app/lib/workspace-proxy.js
+  s_4ca8f338668363::t_a652ad647cd35d 10,26-30,37,66
+packages/app/cli.js
+  s_4ca8f338668363::t_2ae37f0d09bbbb 450-451
+cc-viewer-alignment/B8-E24-native-role-routing.json
+  s_4ca8f338668363::t_4696b566d10e01 1-2,4-19,21-24,26-29,31-38,41
+  s_4ca8f338668363::t_dc13d1839dc961 3,20,25,30,39-40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f8ff34bc6e8be97f86977f3112c81a5da44c9917",
+  "prompts": {},
+  "sessions": {
+    "s_4ca8f338668363": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a200e6-7324-7162-956b-e799486390a7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
