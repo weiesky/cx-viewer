@@ -1,0 +1,40 @@
+packages/app/tests/fixtures/scheduled-native.txt
+  s_b808e5a13726e4::t_a0a5059001122a 1-16
+packages/app/server.js
+  s_b808e5a13726e4::t_bf52fa33767533 109,2783-2785
+  s_b808e5a13726e4::t_c98adfa33c1671 110,908-952,5472,6500-6504
+packages/app/lib/sdk-manager.js
+  s_b808e5a13726e4::t_c98adfa33c1671 282-286
+  s_b808e5a13726e4::t_f532ec27122783 281
+packages/app/tests/scheduled-task-runtime.test.js
+  s_b808e5a13726e4::t_a0a5059001122a 1-91
+packages/app/lib/scheduled-task-scheduler.js
+  s_b808e5a13726e4::t_bf52fa33767533 33,146,153-160,246
+packages/app/tests/scheduled-task-pty-runtime.test.js
+  s_b808e5a13726e4::t_f7350caf473bef 1-42,44-53
+  s_b808e5a13726e4::t_75a2e69bf9a8f1 43
+packages/app/tests/sdk-scheduled-session.test.js
+  s_b808e5a13726e4::t_a0a5059001122a 12
+AGENTS.md
+  s_b808e5a13726e4::t_9841129a67c405 26
+cc-viewer-alignment/B9-implementation.md
+  s_b808e5a13726e4::t_27a3d24a02a071 59-67
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_b808e5a13726e4::t_a474290e544564 4094-4095
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "6f8aab45653b1e8f7ec111c436620660fdd9deb7",
+  "prompts": {},
+  "sessions": {
+    "s_b808e5a13726e4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a203fe-9d11-73a0-a439-ec8c7212a4f4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
