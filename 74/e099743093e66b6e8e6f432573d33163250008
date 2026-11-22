@@ -1,0 +1,28 @@
+packages/app/tests/scheduled-prompt.test.js
+  s_b808e5a13726e4::t_e38c836ffe0d90 1-27
+packages/app/src/utils/ultraplanTemplates.js
+  s_b808e5a13726e4::t_e38c836ffe0d90 210,228-264
+  s_b808e5a13726e4::t_a987dd60198e19 265
+AGENTS.md
+  s_b808e5a13726e4::t_2a0be28f95d404 26
+cc-viewer-alignment/B9-implementation.md
+  s_b808e5a13726e4::t_888eb4c3e40c8f 23-29
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_b808e5a13726e4::t_2a8c419103afbd 1500-1501
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "74e099743093e66b6e8e6f432573d33163250008",
+  "prompts": {},
+  "sessions": {
+    "s_b808e5a13726e4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a203fe-9d11-73a0-a439-ec8c7212a4f4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
