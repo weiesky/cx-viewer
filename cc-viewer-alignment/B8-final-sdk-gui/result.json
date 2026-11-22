@@ -1,0 +1,55 @@
+{
+  "fixture": {
+    "root": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b8-sdk-cli-AOOIbN",
+    "url": "http://127.0.0.1:20820"
+  },
+  "engines": [
+    {
+      "name": "chromium",
+      "version": "159.0.8154.6",
+      "twoTurns": true,
+      "sendRestored": true,
+      "oneBubblePerTurn": true,
+      "reloadNoDuplicates": true,
+      "pageErrors": [],
+      "navigationAborts": []
+    },
+    {
+      "name": "webkit",
+      "version": "27.2",
+      "twoTurns": true,
+      "sendRestored": true,
+      "oneBubblePerTurn": true,
+      "reloadNoDuplicates": true,
+      "pageErrors": [],
+      "navigationAborts": [
+        "/ipwho.is/ due to access control checks.",
+        "/ipapi.co/json/ due to access control checks."
+      ]
+    }
+  ],
+  "externalModelNetwork": false,
+  "actualCLI": true,
+  "actualCodex": "0.169.0",
+  "officialSDK": "0.142.5",
+  "rawNetworkRetained": 4,
+  "nativeSdkArchiveAndResumeValid": true,
+  "requests": [
+    {
+      "path": "/v1/responses",
+      "model": "gpt-5"
+    },
+    {
+      "path": "/v1/responses",
+      "model": "gpt-5"
+    },
+    {
+      "path": "/v1/responses",
+      "model": "gpt-5"
+    },
+    {
+      "path": "/v1/responses",
+      "model": "gpt-5"
+    }
+  ]
+}

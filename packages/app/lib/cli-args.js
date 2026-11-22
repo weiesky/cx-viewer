@@ -238,16 +238,25 @@ export function getDefaultModeRequestUserInputConfigArgs() {
   return ['-c', DEFAULT_MODE_REQUEST_USER_INPUT_CONFIG];
 }
 
+// Tokens after `--` belong to the native prompt. Internal options must stay in
+// the option region, after user overrides, without inspecting prompt contents.
+export function insertBeforeDashDash(args, injections) {
+  const out = [...args];
+  const at = out.indexOf('--');
+  out.splice(at < 0 ? out.length : at, 0, ...injections);
+  return out;
+}
+
 /**
  * Append CX Viewer-owned overrides after user arguments so they have final
  * precedence. The proxy redirect is present only after proxy startup succeeds.
  */
 export function appendCxvFinalConfigArgs(args = [], { proxyPort = null } = {}) {
-  const finalArgs = [...args, ...getDefaultModeRequestUserInputConfigArgs()];
+  const finalArgs = [...getDefaultModeRequestUserInputConfigArgs()];
   if (Number.isInteger(proxyPort) && proxyPort > 0) {
     finalArgs.push('-c', `openai_base_url="http://127.0.0.1:${proxyPort}/v1"`);
   }
-  return finalArgs;
+  return insertBeforeDashDash(args, finalArgs);
 }
 
 // Parallel PTY workspaces share model defaults, not the boot turn's directory,

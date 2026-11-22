@@ -1,0 +1,40 @@
+{
+  "fixture": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b8-model-ui-MJLWp8",
+  "scope": "UI and managed-store controls; native protocol fixture, no external model",
+  "engines": [
+    {
+      "name": "chromium",
+      "version": "159.0.8154.6",
+      "rawPreview": true,
+      "disableEnable": true,
+      "dualScopePartialRetry": true,
+      "materializeAndSecondSave": true,
+      "shadowRefusal": true,
+      "addPreset": true,
+      "enterNoImplicitSelect": true,
+      "keyboardConfirmation": true,
+      "narrowFooterReachable": true,
+      "narrowModeLabelClips": true,
+      "pageErrors": [],
+      "currentProfileModelDefaultTab": true,
+      "nativeConfiguredTypeahead": true
+    },
+    {
+      "name": "webkit",
+      "version": "27.2",
+      "rawPreview": true,
+      "disableEnable": true,
+      "dualScopePartialRetry": true,
+      "materializeAndSecondSave": true,
+      "shadowRefusal": true,
+      "addPreset": true,
+      "enterNoImplicitSelect": true,
+      "keyboardConfirmation": true,
+      "narrowFooterReachable": true,
+      "narrowModeLabelClips": true,
+      "pageErrors": [],
+      "currentProfileModelDefaultTab": true,
+      "nativeConfiguredTypeahead": true
+    }
+  ]
+}

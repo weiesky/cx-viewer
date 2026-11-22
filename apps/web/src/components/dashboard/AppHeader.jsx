@@ -1,3 +1,5 @@
+import { getProxyChipView } from '../../utils/proxyProfileDisplay';
+import ChipIcon from '../common/ChipIcon';
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { Space, Tag, Button, Dropdown, Popover, Drawer, Switch, Radio, Spin, Input, Select, Segmented, Tooltip, message } from 'antd';
@@ -30,7 +32,7 @@ import SkillsManagerModal from '../settings/SkillsManagerModal';
 import ProjectPrefsManagerModal from '../settings/ProjectPrefsManagerModal';
 import PluginModal from '../settings/PluginModal';
 import ProcessModal from '../settings/ProcessModal';
-import ProxyModal, { profileDisplayModel } from '../settings/ProxyModal';
+import ProxyModal from '../settings/ProxyModal';
 import SystemTextModal from '../settings/SystemTextModal';
 import VoicePackSettings from '../settings/VoicePackSettings';
 import ProjectAliasEditor from '../settings/ProjectAliasEditor';
@@ -175,7 +177,8 @@ class AppHeader extends React.Component {
       { key: 'process-management', icon: <DashboardOutlined />, label: t('ui.processManagement'), onClick: this.handleShowProcesses },
       // 日志模式下 IM 无法正常配置/使用，隐藏 IM 配置入口
       ...(isLocalLog ? [] : [{ key: 'messaging', icon: <CommentOutlined aria-hidden="true" />, label: t('ui.messaging.menu'), onClick: () => this.setState({ messagingModalVisible: true, messagingInitialTool: null }) }]),
-      { key: 'proxy-switch', icon: <SwapOutlined />, label: t('ui.proxySwitch'), onClick: () => this.setState({ proxyModalVisible: true }), dividerAfter: true },
+      { key: 'proxy-switch', icon: <SwapOutlined />, label: t('ui.proxySwitch'), onClick: () => this.setState({ proxyModalVisible: true }) },
+      { key:'edit-system-prompt',icon:<ChipIcon />,label:t('ui.expert.systemText'),onClick:()=>this.setState({systemTextModalVisible:true}),dividerAfter:true },
       { key: 'project-stats', icon: <BarChartOutlined />, label: t('ui.projectStats'), onClick: this.handleShowProjectStats },
       ...(viewMode === 'raw' ? [{ key: 'global-settings', icon: <SettingOutlined />, label: t('ui.globalSettings'), onClick: () => this.setState({ globalSettingsVisible: true }) }] : []),
       ...(viewMode === 'chat' ? [{ key: 'display-settings', icon: <SettingOutlined />, label: t('ui.settings'), onClick: () => this.setState({ settingsDrawerVisible: true }) }] : []),
@@ -291,11 +294,8 @@ class AppHeader extends React.Component {
 
   _buildHeaderModel() {
     const { viewMode, themeColor, terminalVisible, cliMode, isLocalLog, activeProxyId, proxyProfiles } = this.props;
-    let proxy = null;
-    if (activeProxyId && activeProxyId !== 'max') {
-      const p = (proxyProfiles || []).find(x => x.id === activeProxyId);
-      if (p) proxy = { label: `${p.name}${profileDisplayModel(p) ? ` · ${profileDisplayModel(p)}` : ''}` };
-    }
+    const chip = getProxyChipView(this.props);
+    const proxy = chip.visible ? { label: chip.mainLabel } : null;
     const showThemeBlock = viewMode === 'chat' && cliMode && !isLocalLog && !!this.state.localUrl;
     const im = AVAILABLE_IM_PLATFORMS
       .filter(p => this._imStatus[p.id] && this._imStatus[p.id].enabled)
@@ -814,6 +814,9 @@ class AppHeader extends React.Component {
       nextProps.approvalsReviewer !== this.props.approvalsReviewer ||
       nextProps.proxyProfiles !== this.props.proxyProfiles ||
       nextProps.activeProxyId !== this.props.activeProxyId ||
+      nextProps.proxyRoles !== this.props.proxyRoles ||
+      nextProps.proxyOfficialDefault !== this.props.proxyOfficialDefault ||
+      nextProps.proxyRoleRouting !== this.props.proxyRoleRouting ||
       nextProps.defaultConfig !== this.props.defaultConfig ||
       nextProps.preferences !== this.props.preferences ||
       nextProps.approvalPrefs !== this.props.approvalPrefs ||
@@ -1195,6 +1198,17 @@ class AppHeader extends React.Component {
   // 提供的 slot DOM 节点。slot 由 App.jsx 集中持有；缺席时返回 null（raw 模式等）。
   // 状态/数据所有权仍在 AppHeader（_cachePopoverOpen / _fsSkills / _memory /
   // _lastContextPercent），portal 仅迁移 DOM 位置，不影响 React 子树重建。
+  _renderProxyChip() {
+    const chip = getProxyChipView(this.props);
+    if (!chip.visible) return null;
+    const open = () => this.setState({ proxyModalVisible: true });
+    return <Tag className={styles.proxyProfileTag} title={chip.title} onClick={open}
+      role="button" tabIndex={0} aria-label={`${t('ui.proxySwitch')}: ${chip.mainLabel}`}
+      onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); open(); } }}>
+      <SwapOutlined className={styles.proxySwapIcon} />{chip.mainLabel}
+    </Tag>;
+  }
+
   renderContextBarPortal() {
     const slot = this.props.contextBarSlot;
     if (!slot) return null;
@@ -1205,21 +1219,22 @@ class AppHeader extends React.Component {
     // 分子 sumUsageContextTokens = input + output；含末轮 output 是因为它已进入下一轮上下文。
     // 百分比与 popover 显示的 token 数同源。
     // 反向找最后一条带 usage 的 MainAgent 一次，contextPercent 与 contextTokens 共用。
-    let lastTotalTokens = 0;
+    let lastTotalTokens = 0, lastMainAgent = null;
     if (!isLocalLog && requests.length > 0) {
       for (let i = requests.length - 1; i >= 0; i--) {
         if (isMainAgent(requests[i]) && requests[i].response?.body?.usage) {
-          const u = requests[i].response.body.usage;
+          lastMainAgent = requests[i];
+          const u = lastMainAgent.response.body.usage;
           lastTotalTokens = sumUsageContextTokens(u);
           break;
         }
       }
     }
-    // Fixed 353K percent math lives in utils/helpers.computeContextPercent,
+    // Native per-turn window math lives in utils/helpers.computeContextPercent,
     // shared with Mobile so the two shells can never drift again.
     let contextPercent = isLocalLog ? 0 : computeContextPercent({
       contextWindow,
-      lastTotalTokens,
+      lastMainAgent,
     });
     // contextBarLocked：/clear 触发后强制血条 0K (0%)，忽略 SSE 与 requests[] 残留的 pre-clear 数据，
     // 直到用户发出一条非 /clear 消息（AppBase.handleUserMessageSent 解锁）。
@@ -1228,10 +1243,6 @@ class AppHeader extends React.Component {
       this._lastContextPercent = 0;
       contextPercent = 0;
     } else {
-      if (contextPercent > 0) this._lastContextPercent = contextPercent;
-      if (contextPercent === 0 && this._lastContextPercent > 0) {
-        contextPercent = this._lastContextPercent;
-      }
       // /clear 后立即把血条压到乐观水位；下一次 SSE context_window 推送会取消这个覆盖
       if (contextBarOptimistic) contextPercent = OPTIMISTIC_CLEAR_PERCENT;
     }
@@ -1405,15 +1416,7 @@ class AppHeader extends React.Component {
             </Popover>
             );
           })()}
-          {!isElectronTab && terminalVisible && !this.props.sdkMode && this.props.activeProxyId && this.props.activeProxyId !== 'max' && (() => {
-            const p = (this.props.proxyProfiles || []).find(x => x.id === this.props.activeProxyId);
-            return p ? (
-              <Tag className={styles.proxyProfileTag} onClick={() => this.setState({ proxyModalVisible: true })}>
-                <SwapOutlined className={styles.proxySwapIcon} />
-                {p.name}{profileDisplayModel(p) ? ` · ${profileDisplayModel(p)}` : ''}
-              </Tag>
-            ) : null;
-          })()}
+          {!isElectronTab && terminalVisible && !this.props.sdkMode && this._renderProxyChip()}
           {this.props.workspaceControls || <HeaderProjectLabel projectName={projectName} isLocalLog={isLocalLog} />}
           {this.renderContextBarPortal()}
         </Space>
@@ -1888,7 +1891,7 @@ class AppHeader extends React.Component {
           open={this.state.proxyModalVisible}
           onClose={() => this.setState({ proxyModalVisible: false })}
           proxyProfiles={this.props.proxyProfiles}
-          activeProxyId={this.props.activeProxyId}
+          activeProxyId={this.props.activeProxyId} proxyRoles={this.props.proxyRoles} proxyOfficialDefault={this.props.proxyOfficialDefault} proxyRoleRouting={this.props.proxyRoleRouting}
           proxyProfilesLoadError={this.props.proxyProfilesLoadError}
           defaultConfig={this.props.defaultConfig}
           onProxyProfileChange={this.props.onProxyProfileChange}

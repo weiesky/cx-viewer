@@ -54,6 +54,27 @@ test('selects workspace before global and exact before longest substring', () =>
   assert.equal(getModelSystemPrompts(ctx).workspace.length, 2);
 });
 
+test('resolves model aliases with upstream family boundaries and workspace precedence', () => {
+  const ctx = fixture();
+  saveDefaultSystemPrompt({ ...ctx, text: 'default', mode: 'append' });
+  saveModelSystemPrompt({ ...ctx, scope: 'global', name: 'KIMI-K3', text: 'global-k3', mode: 'override' });
+  saveModelSystemPrompt({ ...ctx, scope: 'workspace', name: 'KIMI', text: 'workspace-kimi', mode: 'append' });
+  for (const model of ['k3', 'K3[1m]', 'k3-preview', 'k3.1', 'kimi-k3']) {
+    assert.equal(selectSystemPrompt({ ...ctx, model }).text, 'workspace-kimi', model);
+  }
+  saveModelSystemPrompt({ ...ctx, scope: 'workspace', name: 'KIMI-K3', text: 'specific-k3', mode: 'override' });
+  saveModelSystemPrompt({ ...ctx, scope: 'workspace', name: 'K3', text: 'short-k3', mode: 'append' });
+  assert.equal(selectSystemPrompt({ ...ctx, model: 'k3' }).text, 'specific-k3');
+  saveModelSystemPrompt({ ...ctx, scope: 'workspace', name: 'K3', text: '', mode: 'append' });
+  saveModelSystemPrompt({ ...ctx, scope: 'workspace', name: 'DEEPSEEK-V4-FLASH', text: 'flash', mode: 'override' });
+  for (const model of ['deepseek-flash', 'DEEPSEEK-FLASH[1m]', 'deepseek-v4-flash']) {
+    assert.equal(selectSystemPrompt({ ...ctx, model }).text, 'flash', model);
+  }
+  for (const model of ['k30', 'k3pro', 'my-k3', 'deepseek-flash-extra', 'constructor', '__proto__', null, {}]) {
+    assert.equal(selectSystemPrompt({ ...ctx, model }).text, 'default', String(model));
+  }
+});
+
 test('rejects unsafe model names and oversized or NUL text', () => {
   const ctx = fixture();
   for (const name of ['../x', 'default', 'X_APPEND']) {

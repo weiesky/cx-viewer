@@ -29,7 +29,8 @@ const CODEX_RESPONSE_ITEM_TYPES = new Set([
 
 /** Keep OpenAI Responses transport entries inspectable, but out of chat projection. */
 export function shouldExcludeFromConversation(entry) {
-  return isNativeTitleEntry(entry) || hasOpenAiResponsesConversationTransport(entry);
+  return entry?._captureContext?.sdkTransport === true
+    || isNativeTitleEntry(entry) || hasOpenAiResponsesConversationTransport(entry);
 }
 
 function cloneJson(value) {

@@ -1,0 +1,61 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "status": "B7 defined input/navigation/skills scope complete; mixed sibling scopes remain independent",
+  "releaseCheck": {
+    "command": "env -u CXV_BYPASS_PERMISSIONS pnpm release:check",
+    "exit": 0,
+    "tests": 2181,
+    "pass": 2181,
+    "skip": 0,
+    "suitesByWorkspace": [
+      5,
+      702,
+      1260,
+      214
+    ],
+    "build": true,
+    "packFiles": 723,
+    "log": "/tmp/cxv-b7-release-final2.log"
+  },
+  "installed": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-installed-runtime-_07clqyf",
+    "files": 723,
+    "source_bytes_match": true,
+    "web_asset_files": 211,
+    "runtime_tests": "634/634",
+    "b12_regression": "passed",
+    "installed_cli_relative_cd_boot": "passed",
+    "uses_fake_codex": true,
+    "uses_real_model_network": false,
+    "all_pack_files_compared": 723,
+    "all_pack_file_bytes_match_after_final_build": true,
+    "source": "npm production install; no npm publish; no production restart"
+  },
+  "pr": {
+    "baseRefName": "main",
+    "headRefOid": "5b1c39710978d8069facfeda5542b8f384731cca",
+    "mergeCommit": {
+      "oid": "89a8d9dc508b1a9d79ac218bc870e20c4750187c"
+    },
+    "mergedAt": "2026-11-21T17:58:58Z",
+    "number": 8,
+    "state": "MERGED",
+    "statusCheckRollup": [],
+    "url": "https://github.com/weiesky/cx-viewer/pull/8"
+  },
+  "originalCommitCount": 51,
+  "consolidatedCommit": "5b1c39710978d8069facfeda5542b8f384731cca",
+  "tree": "335a5be70f5fb7a86dd12648a72223fcfa6141d8",
+  "rawBackupRef": "backup/b7-raw-20261122",
+  "backupDirectory": "/Users/sky/.codex/backups/cx-viewer/B7-20261122-015726",
+  "progressDocumentsUpdatedAfterMerge": true,
+  "unverified": [
+    "Installed Codex 0.169 model producing root turn/plan/updated (controlled protocol GUI passed)",
+    "Physical devices/audio/IME",
+    "Real LAN/TLS and external model network",
+    "Other OS and minimum Node version",
+    "Existing intermittent IM concurrency and original Markdown cold-open line-number defect"
+  ],
+  "production7008Restarted": false,
+  "npmPublished": false
+}

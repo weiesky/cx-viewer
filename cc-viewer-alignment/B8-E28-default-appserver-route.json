@@ -1,0 +1,42 @@
+{
+  "defaultProvider": true,
+  "version": "codex-cli 0.169.0",
+  "root": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b8-native-role-c6YnAG",
+  "records": [
+    {
+      "role": "main",
+      "model": "gateway-main"
+    },
+    {
+      "role": "main",
+      "model": "gateway-main"
+    },
+    {
+      "role": "child",
+      "model": "gateway-child"
+    }
+  ],
+  "proof": [
+    {
+      "id": "01a202b7-27a1-7e12-9168-ed3465d80234",
+      "sdkRole": "main",
+      "bridgeRole": "main"
+    },
+    {
+      "id": "01a202b7-27a1-7e12-9168-ed3465d80234",
+      "sdkRole": "main",
+      "bridgeRole": "main"
+    },
+    {
+      "id": "01a202b7-2a37-7841-b953-e912c931e191",
+      "sdkRole": "subagent",
+      "bridgeRole": "subagent"
+    }
+  ],
+  "actualNativeCodex": true,
+  "actualNativeChildThread": true,
+  "loopbackSyntheticResponses": true,
+  "externalModel": false,
+  "shellToolsExecuted": false,
+  "ownedNativeChildrenExited": true
+}

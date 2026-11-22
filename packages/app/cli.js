@@ -10,7 +10,7 @@ import { homedir } from 'node:os';
 import { spawn } from 'node:child_process';
 import { t } from './i18n.js';
 import { INJECT_IMPORT, LOG_DIR, resolveCliPath, resolveNativePath, resolveNpmCodexPath } from './findcx.js';
-import { appendCxvFinalConfigArgs, buildPtyWorkspaceLaunchArgs, getDefaultModeRequestUserInputConfigArgs, normalizeCodexArgs, hasBypassPermissions, getReasoningSummaryConfigArgs, parseCodexInvocation, extractSdkTransportOptions } from './lib/cli-args.js';
+import { appendCxvFinalConfigArgs, buildPtyWorkspaceLaunchArgs, getDefaultModeRequestUserInputConfigArgs, normalizeCodexArgs, hasBypassPermissions, getReasoningSummaryConfigArgs, parseCodexInvocation, extractSdkTransportOptions, insertBeforeDashDash } from './lib/cli-args.js';
 import { ensureHooks } from './lib/ensure-hooks.js';
 import { APPROVALS_REVIEWER_DEFAULT } from './lib/approval-reviewer.js';
 import { inspectCodexSystemPromptSupport } from './lib/codex-appserver-capabilities.js';
@@ -241,7 +241,11 @@ async function runProxyCommand(args) {
       cmdArgs.shift();
     }
 
-    let loggerRuntime = null;
+    let loggerRuntime = null, managedPrompt = null;
+    const closeManagedPrompt = () => {
+      try { managedPrompt?.close(); }
+      catch { console.warn('[CX Viewer] A private native prompt file could not be removed'); }
+    };
     // Determine the path to the native 'codex' executable
     if (cmd === 'codex') {
       const nativePath = resolveNativePath();
@@ -252,6 +256,34 @@ async function runProxyCommand(args) {
       loggerRuntime = await startLoggerCapture();
       const loggerArgs = loggerRuntime.active ? loggerRuntime.codexArgs : [];
       cmdArgs = [...loggerArgs, ...getReasoningSummaryConfigArgs(), ...cmdArgs];
+      process.env.CXV_CLI_MODE = '1';
+      const { prepareHeadlessSystemPrompt } = await import('./lib/headless-system-prompts.js');
+      const prepareAbort = new AbortController();
+      let preparing;
+      setActiveShutdownCleanup(async () => {
+        prepareAbort.abort();
+        await preparing?.catch(() => {});
+        closeManagedPrompt();
+        loggerRuntime?.close();
+      });
+      try {
+        const interceptor = await import('./interceptor.js');
+        if (prepareAbort.signal.aborted) return;
+        preparing = prepareHeadlessSystemPrompt({ codexPath: cmd, args: cmdArgs, signal: prepareAbort.signal,
+          cwd: process.cwd(), logDir: LOG_DIR, resolveModel: cwd => interceptor.getWorkspaceProxyProfile(cwd)?.activeModel || null });
+        managedPrompt = await preparing;
+        cmdArgs = insertBeforeDashDash(cmdArgs, managedPrompt.args);
+        process.once('exit', closeManagedPrompt);
+      } catch (error) {
+        if (prepareAbort.signal.aborted) return;
+        if (error.code === 'CXV_MANAGED_PROMPT_LOAD_FAILED') {
+          loggerRuntime?.close();
+          throw new Error('Managed system prompt preparation failed; Codex was not started');
+        }
+        // New/unsupported native options still reach Codex unchanged. Never
+        // echo configuration, template text or parser error excerpts here.
+        console.warn('[CX Viewer] Automatic system prompt skipped: native launch configuration could not be inspected');
+      }
     }
     const env = { ...process.env };
     env.CXV_DIRECT_MODE = '1';
@@ -259,15 +291,18 @@ async function runProxyCommand(args) {
     const child = spawn(cmd, cmdArgs, { stdio: 'inherit', env });
     setActiveShutdownCleanup(() => {
       try { child.kill('SIGTERM'); } catch {}
+      closeManagedPrompt();
       loggerRuntime?.close();
     });
 
     child.on('exit', (code) => {
+      closeManagedPrompt();
       loggerRuntime?.close();
       process.exit(code);
     });
 
     child.on('error', (err) => {
+      closeManagedPrompt();
       loggerRuntime?.close();
       console.error('Failed to start command:', err);
       process.exit(1);
@@ -412,7 +447,8 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
       process.env.no_proxy = merged;
     }
     try {
-      _proxyPort = await startProxy();
+      const { getNativeProxyRole } = await import('./lib/appserver-bridge.js');
+      _proxyPort = await startProxy({ captureContext: { cwd: workingDir }, resolveNativeRole: getNativeProxyRole });
       if (shutdownStarted) { stopProxyFn(); return; }
       if (authMode === 'chatgpt') {
         process.env.CXV_ORIGINAL_BASE_URL = 'https://chatgpt.com/backend-api/codex';
@@ -457,6 +493,7 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
       writeLogEntry: interceptorMod.appendLogEntry,
       systemPromptCapability,
       systemPromptLogDir: LOG_DIR,
+      resolveSystemPromptModel: () => interceptorMod.getWorkspaceProxyProfile(workingDir)?.activeModel || null,
     });
     bridge = await bridgeStartup;
     if (shutdownStarted) { await bridge.stop(); return; }
@@ -522,6 +559,7 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
     const { ensureProjectIdForCwd } = await import('./lib/log-v2/project-id.js');
     serverMod.configurePtyWorkspaces({
       boot: { cwd: workingDir, pty: ptyModule, runtime: {
+        nativeProxyRoles: !!bridge,
         getContext: nativeModule.getAppServerRuntimeContext,
         getInputState: nativeModule.getAppServerInputState,
         getAgentLoopSnapshot: nativeModule.getAppServerAgentLoopSnapshot,
@@ -537,6 +575,7 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
           otelToken: serverMod.getOtelAccessToken(), approvalsReviewer: serverMod.getApprovalsReviewerPreference() || APPROVALS_REVIEWER_DEFAULT,
           requireAppServerBridge: options.requireAppServerBridge === true,
           callbacks: { onEntry: interceptorMod.appendLogEntry,
+            resolveSystemPromptModel: () => interceptorMod.getWorkspaceProxyProfile(request.cwd)?.activeModel || null,
             onRequestUserInput: serverMod.offerCodexRequestUserInput,
             onRequestUserInputCleared: serverMod.clearCodexRequestUserInput,
             onAgentLoopStart: serverMod.broadcastPtyAgentLoopStart,

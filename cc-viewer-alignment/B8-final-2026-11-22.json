@@ -1,0 +1,117 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "productionHead": "7983660",
+  "scopeAudit": "0f41f85",
+  "b8ScopeValidated": true,
+  "mergePending": true,
+  "tests": {
+    "command": "env -u CXV_BYPASS_PERMISSIONS pnpm test",
+    "counts": [
+      5,
+      716,
+      1296,
+      215
+    ],
+    "total": 2232,
+    "pass": 2232,
+    "skip": 0,
+    "log": "/tmp/cxv-b8-final-full.log"
+  },
+  "build": {
+    "passed": true,
+    "log": "/tmp/cxv-b8-final-build.log"
+  },
+  "pack": {
+    "passed": true,
+    "files": 737,
+    "log": "/tmp/cxv-b8-final-pack.log"
+  },
+  "installed": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-installed-runtime-8c924_0t",
+    "files": 737,
+    "source_bytes_match": true,
+    "all_pack_files_compared": 737,
+    "all_pack_file_bytes_match": true,
+    "web_asset_files": 211,
+    "runtime_tests": "685/685",
+    "b12_regression": "passed",
+    "installed_cli_relative_cd_boot": "passed",
+    "uses_fake_codex": true,
+    "uses_real_model_network": false
+  },
+  "finalSdkGui": {
+    "fixture": {
+      "root": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b8-sdk-cli-AOOIbN",
+      "url": "http://127.0.0.1:20820"
+    },
+    "engines": [
+      {
+        "name": "chromium",
+        "version": "159.0.8154.6",
+        "twoTurns": true,
+        "sendRestored": true,
+        "oneBubblePerTurn": true,
+        "reloadNoDuplicates": true,
+        "pageErrors": [],
+        "navigationAborts": []
+      },
+      {
+        "name": "webkit",
+        "version": "27.2",
+        "twoTurns": true,
+        "sendRestored": true,
+        "oneBubblePerTurn": true,
+        "reloadNoDuplicates": true,
+        "pageErrors": [],
+        "navigationAborts": [
+          "/ipwho.is/ due to access control checks.",
+          "/ipapi.co/json/ due to access control checks."
+        ]
+      }
+    ],
+    "externalModelNetwork": false,
+    "actualCLI": true,
+    "actualCodex": "0.169.0",
+    "officialSDK": "0.142.5",
+    "rawNetworkRetained": 4,
+    "nativeSdkArchiveAndResumeValid": true,
+    "requests": [
+      {
+        "path": "/v1/responses",
+        "model": "gpt-5"
+      },
+      {
+        "path": "/v1/responses",
+        "model": "gpt-5"
+      },
+      {
+        "path": "/v1/responses",
+        "model": "gpt-5"
+      },
+      {
+        "path": "/v1/responses",
+        "model": "gpt-5"
+      }
+    ]
+  },
+  "nativeDefaultAppServer": "B8-E28-default-appserver-route.json",
+  "excludedByUser": "proxy retry configuration and statistics; E5–E7 reverted in 66b6a28",
+  "promptScope": "new sessions only; native resume/fork pinning preserved",
+  "contextScope": "owned native current-turn usable window; absent window unknown",
+  "nativeRoleScope": "owned main/subagent ancestry; default SDK exec unsupported; no Teammate",
+  "ownedFinalSdkFixturesExited": true,
+  "productionRestart": false,
+  "unverified": [
+    "external models and instruction compliance",
+    "actual automatic compaction triggering",
+    "user live SDK URL and normal backend restart",
+    "physical device/audio/IME/touch",
+    "real LAN/TLS",
+    "other OS/minimum Node",
+    "historical intermittent IM concurrency cause"
+  ],
+  "postValidationFormatting": {
+    "commit": "7983660",
+    "change": "Remove one trailing blank line in model-id-variants.js; no behavior change. Build/pack and full fresh production install repeated afterwards. Full 2232 suite and native/GUI receipts validate the same executable content before this whitespace-only cleanup."
+  }
+}

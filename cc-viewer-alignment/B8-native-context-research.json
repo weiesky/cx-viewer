@@ -1,0 +1,134 @@
+{
+  "version": "codex-cli 0.169.0",
+  "isolatedRoot": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b8-native-context-mmTYqX",
+  "catalog": "official rust-v0.171.0 bundled models, explicitly selected in isolated fixture",
+  "requests": 5,
+  "checks": [
+    {
+      "label": "default",
+      "model": "gpt-6.1-sol",
+      "expectedWindow": 475000,
+      "tokenUsage": {
+        "total": {
+          "totalTokens": 20100,
+          "inputTokens": 20000,
+          "cachedInputTokens": 0,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 100,
+          "reasoningOutputTokens": 0
+        },
+        "last": {
+          "totalTokens": 20100,
+          "inputTokens": 20000,
+          "cachedInputTokens": 0,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 100,
+          "reasoningOutputTokens": 0
+        },
+        "modelContextWindow": 475000
+      }
+    },
+    {
+      "label": "default",
+      "model": "gpt-6-astra",
+      "expectedWindow": 258400,
+      "tokenUsage": {
+        "total": {
+          "totalTokens": 40200,
+          "inputTokens": 40000,
+          "cachedInputTokens": 0,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 200,
+          "reasoningOutputTokens": 0
+        },
+        "last": {
+          "totalTokens": 20100,
+          "inputTokens": 20000,
+          "cachedInputTokens": 0,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 100,
+          "reasoningOutputTokens": 0
+        },
+        "modelContextWindow": 258400
+      }
+    },
+    {
+      "label": "default",
+      "model": "gpt-6.1-sol",
+      "expectedWindow": 475000,
+      "tokenUsage": {
+        "total": {
+          "totalTokens": 60300,
+          "inputTokens": 60000,
+          "cachedInputTokens": 0,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 300,
+          "reasoningOutputTokens": 0
+        },
+        "last": {
+          "totalTokens": 20100,
+          "inputTokens": 20000,
+          "cachedInputTokens": 0,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 100,
+          "reasoningOutputTokens": 0
+        },
+        "modelContextWindow": 475000
+      }
+    },
+    {
+      "label": "override100k",
+      "model": "gpt-6.1-sol",
+      "expectedWindow": 95000,
+      "tokenUsage": {
+        "total": {
+          "totalTokens": 20100,
+          "inputTokens": 20000,
+          "cachedInputTokens": 0,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 100,
+          "reasoningOutputTokens": 0
+        },
+        "last": {
+          "totalTokens": 20100,
+          "inputTokens": 20000,
+          "cachedInputTokens": 0,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 100,
+          "reasoningOutputTokens": 0
+        },
+        "modelContextWindow": 95000
+      }
+    },
+    {
+      "label": "override1m",
+      "model": "gpt-6.1-sol",
+      "expectedWindow": 828400,
+      "tokenUsage": {
+        "total": {
+          "totalTokens": 20100,
+          "inputTokens": 20000,
+          "cachedInputTokens": 0,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 100,
+          "reasoningOutputTokens": 0
+        },
+        "last": {
+          "totalTokens": 20100,
+          "inputTokens": 20000,
+          "cachedInputTokens": 0,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 100,
+          "reasoningOutputTokens": 0
+        },
+        "modelContextWindow": 828400
+      }
+    }
+  ],
+  "actualNativeCodex": true,
+  "loopbackSyntheticResponses": true,
+  "externalModel": false,
+  "toolsExecuted": false,
+  "ownedChildrenExited": true,
+  "actualAutoCompactionTriggered": false
+}

@@ -1,6 +1,6 @@
 # cc-viewer → cx-viewer 分批对齐规划
 
-2026-11-22 B7实施中（第8/12工作包），固定上游74cd752d99caf122e750216d2af3bb9f467c4de1，分支codex/b7-input-navigation-skills，起点main8968935，74索引候选及追加源码子项逐项核验。E1–E41及E19a/E31a/E31b/E40a独立完成；原普通PTY任务HUD接精确root计划快照，整CSS同基线，226/226、build与受控native协议双引擎6场12图通过；实际0.169未见plan工具事件，不记模型执行已验，继续审计。 普通“＋”、输入12行/ghost/导航/汇总/Skills菜单、窄split、主PTY与scratch进程树均已有分项证据；74候选完整闭合及最终全量/新安装仍待完成，B7未完成。新工作区权限遵循已选弹窗；/选技能填原生$name；合成AppServer会话使用codex://app-server/turn（均经用户选定）。活动7008不重启；IM偶发、物理设备/音频/外部模型/真实LAN/TLS/其他OS/最低Node未验保持，exec/显式AppServer渐进与353K不变。见[B7实施](./B7-implementation.md)。
+2026-11-22 B8已启动，分支 `alignment/b8-proxy-model-prompts`，固定上游 `74cd752d99caf122e750216d2af3bb9f467c4de1`。E1 `d8a0080`迁内嵌UltraReview最终规则，E2 `8e236aa`补独立测分专家v2/原载入链路，E3 `96f7983`补用户模型K3/DeepSeek别名，E4实际Codex0.169跨进程fresh/resume/fork两模式8请求验证通过。全量2182/2182、0skip、build/pack724及全部包文件字节/解包smoke通过；双引擎2场6图/零pageerror。B8仍进行中，54候选按子项保留，用户已选UltraReview自动修复P0/P1、内置preset适配后默认启用；代理重试配置与统计按用户明确要求整体忽略并已撤回。SDK用户报告优先修复（显式baseUrl/抓包与规范化聊天分离），2184完整/0skip/build/pack724通过；角色路由/模型热切/提示资产仍继续。活动7008未重启；exec/显式AppServer渐进、353K和已有权限选择保持。真实模型遵循、物理设备/音频/IME、外部模型、真实LAN/TLS、其他OS/最低Node等未验保持。见[B8实施](./B8-implementation.md)、[候选矩阵](./B8-candidate-matrix.md)；B7完成与PR #8/原51笔证据见[B7完成矩阵](./B7-completion-matrix.md)。
 
 2026-11-18 GitHub 同步：已按用户请求将 main 6045b53 与 codex/pnpm-workspace 2c0edc8 原子推送到 origin 同名分支，远端完整 hash 已读回核对，上游跟踪已设置。未执行强推、分支合并或活动安装切换；未提交的 AGENTS.md 与 cc-viewer-alignment 文档仍保留本地。
 
@@ -34,19 +34,20 @@
 
 ## 4. 工作包与当前进度
 
-进度更新至2026-11-22：B4/B5/B6均已由PR合并main，B6原16笔整合映射保留；B7按固定基线小步实施中，分项证据见B7实施，尚未完成包级验收。
+进度更新至2026-11-22：B4–B7均已验证并由PR合并main；B7原51笔映射/备份保留，PR #8合并89a8d9d，2181完整/634安装通过。B8已启动并完成E1–E4本轮子项，整包未完成，明示未验环境继续保留。
 
 | 工作包 | 当前状态 | 已完成与下一步 |
 | --- | --- | --- |
 | B0 | 已完结：台账与迁移准入复核 | 337 条范围核对、99 条合并/元数据归属、238 条代码/依赖对照、28 条高优先级候选决议；功能验收由各实施包负责。 |
 | B1 | B1.2 本地实现与隔离安装验收完成；真实验收待执行 | 配置保护、凭据库、auth/proxy/IM 条件启用运行时、回执保护、私有备份及 auth/proxy/IM 显式迁移入口已实现；按配置恢复、无损 key 修复及坏库现场留存已实现；已确认不提供有损整库回退，本地安装验收完成；真实验收尚待。 |
-| B2 | 已用户验收收口；普通PTY Header入口重新待纠偏 | 身份/队列/恢复/工作区UI按基线纠偏，未覆盖环境单列保留。 |
+| B2 | 已用户验收收口；后发现的普通PTY入口已由B7纠偏并验证 | 身份/队列/恢复/工作区UI保持；活动旧后端正常重启复验和未覆盖环境单列。 |
 | B3 | 已完成并推送main（第4/12工作包） | 聚合提交[7c3d849](https://github.com/weiesky/cx-viewer/commit/7c3d849b9e7acda1c974077843406c23627dbdcb)已快进推送；渐进分片、恢复/历史授权、mux背压、分页/增量扫描完成，1410项通过，见[B3完成矩阵](./B3-completion-matrix.md)。目标环境边界明示，下一包B4。 |
 | B4 | 已完成并由PR #4合并main（第5/12工作包） | E66实际GUI/1580完整及既有安装通过；见[B4完成矩阵](./B4-completion-matrix.md)。 |
 | B5 | 已完成（第6/12工作包），1commit/1PR交付，GitHub实际状态以关联PR为准 | 1781完整/487新安装/原GUI与32目标图；下一B6，见[B5完成矩阵](./B5-completion-matrix.md)。 |
 | B6 | 已完成并经PR #6合并main（第7/12工作包），9f3e2ce | 1986完整/525新安装/6场26图与10轮问答；见[B6完成矩阵](./B6-completion-matrix.md)。 |
-| B7 | 实施中（第8/12工作包），E1–E40及E19a/E31a/E31b/E40a已分笔验证 | 普通入口/输入导航Skills/原生忙队列/窄split已有证据；74索引候选及额外源码子项、完整验收仍待，见[B7实施](./B7-implementation.md)。 |
-| B8–B10 | 尚未逐包完成 | 混合候选逐子项保留。 |
+| B7 | 已完成（第8/12工作包），51笔已整合并由PR #8合并main | 2181/2181、build/pack723、新安装634/634；B7子项/混合边界及未验项见[B7完成矩阵](./B7-completion-matrix.md)。 |
+| B8 | 进行中，E1–E4本轮子项已实施/验证 | 54候选逐子项核验，两项策略待选；见[B8实施](./B8-implementation.md)。 |
+| B9–B10 | 尚未逐包完成 | 混合候选逐子项保留。 |
 | B11 / 工程前置 | A1 6287d2a 已主线，A2 3b15a6d 已工作树提交并通过本地验证 | 继续在新结构实施 B1 余项及 B2–B10；全局实例未切换，B11 其他验收继续。 |
 
 当前最新源码/构建/安装检查点为B6 E13：1986/1986、0skip，build/pack720通过；真实新安装525/525、源码/许可/211Web精确字节、B1.2与隔离CLI通过。双引擎6场26图与10轮问答见[B6完成矩阵](./B6-completion-matrix.md)。
@@ -138,7 +139,7 @@ B5安全复核：E7/E26/E33/E36/E39组合native凭据/历史/descriptor/alias/�
 
 ### B7 — 输入体验、导航和 Skills
 
-**当前状态：B7实施中，E1–E40及E19a/E31a/E31b/E40a已小步验证后提交。** 普通PTY入口、输入/导航/Skills、进程树、真实原生队列和窄split分项已有证据。继续核原21条主索引/72条交叉索引的74去重候选，并追加源码审计发现的2914d6479d窄split及80ced6a996只读扩窗子项；SDK chip/editor owner及单行即时输入修复已分项通过；剩余源码scope及最终全量/新安装仍待，见[B7实施](./B7-implementation.md)。[B7交接](./B7-handoff.md)为历史起点。
+**当前状态：已完成（第8/12工作包，2026-11-22）。** E1–E47及四笔追加共51笔独立验证后整合为5b1c397，经[PR #8](https://github.com/weiesky/cx-viewer/pull/8)合并main（89a8d9d）。74去重候选仅按B7 scope闭合，2914d6479d窄split及80ced6a996只读扩窗追加核验；混合其他包、实际native计划producer与真机/外部环境限制单列。最终2181/2181、0skip、build/pack723、新安装634/634与全部包/Web字节通过，见[B7完成矩阵](./B7-completion-matrix.md)。[B7交接](./B7-handoff.md)为历史起点；下一会话按[B8交接](./B8-handoff.md)继续，本轮不启动B8。
 
 **完整上游提交索引**：[B7 时间顺序索引](./cc-viewer-alignment-commit-index.md#b7)；[B0 交叉候选](./B0-cross-index.md#cross-b7)。逐项核对索引及交叉工作包中的修复、合并和后续替代记录。
 
@@ -148,9 +149,11 @@ B5安全复核：E7/E26/E33/E36/E39组合native凭据/历史/descriptor/alias/�
 
 ### B8 — 代理、模型与提示词
 
+**当前状态：2026-11-22进行中，未整包收口。** E1–E4与SDK补项、E10–E15已分笔提交；E16检查点2205/2205、0skip/build/pack735，生产新安装656/656及全部包/Web字节通过。已按用户选择完成独立UltraReview自动修复策略及7组native preset默认启用/原管理UI；代理重试配置与统计整项撤回并排除。用户最新选择只在新会话生效：保留native resume/fork指令钉扎，不迁代理层提示词热切换；角色/无GUI指令与剩余候选继续。见[B8实施](./B8-implementation.md)、[候选矩阵](./B8-candidate-matrix.md)、[检查点回执](./B8-E16-checkpoint.json)。
+
 **完整上游提交索引**：[B8 时间顺序索引](./cc-viewer-alignment-commit-index.md#b8)；[B0 交叉候选](./B0-cross-index.md#cross-b8)。逐项核对索引及交叉工作包中的修复、合并和后续替代记录。
 
-**工作项**：评估上游代理重试统计、配置、自动/手动刷新和 JSON 安全指标（先验证本地无同等能力，再纳入）；核对现有 profile、Responses 代理、角色身份与模型热切；验证提示词对 fresh/resume/fork 的绑定与缓存；只引入 Codex 支持的参数。评估上游模型 preset 的适用性，不假设第三方模型支持与 Claude 相同。
+**工作项**：代理重试配置与统计整体按用户2026-11-22要求排除；核对现有 profile、Responses 代理、角色身份与模型热切；验证提示词对 fresh/resume/fork 的绑定与缓存；只引入 Codex 支持的参数。评估上游模型 preset 的适用性，不假设第三方模型支持与 Claude 相同。
 
 **候选文件**：`proxy.js`、`interceptor.js`、`lib/proxy-profile.js`、`lib/model-system-prompts.js`、`lib/appserver-bridge.js`、设置 UI。**验收**：API key 与 ChatGPT 登录、角色路由、流/非流、失败及恢复、凭证不外泄；运行 `tests/proxy-profile.test.js`、`tests/interceptor-proxy-profile.test.js`、`tests/model-system-prompts.test.js`。**依赖**：B1/B2。
 
@@ -193,7 +196,7 @@ B5安全复核：E7/E26/E33/E36/E39组合native凭据/历史/descriptor/alias/�
 ## 6. 当前未完成与需决策项
 
 - B0 已完结；原 15 条待归类项已由人工分流明确归属，见 [B0 交接](./B0-handoff.md)。337 条提交的功能对齐与环境验收继续由 B1–B11 逐项完成，不以累计本地提交数抵扣整条上游提交。
-- B2已用户验收，B3已完成并以7c3d849推送main；B4已完成并由PR #4合并main，B5/B6已完成迁移验收并经PR合并main，B7正在小步实施；B1.2 本地实现与隔离安装验收已收尾，已确认不提供有损整库回退，真实用户/目标环境验收仍待；三类迁移、live 可读库的按配置恢复、可证明无损的 key 修复及损坏现场留存已实现，用户已选择 auth 恢复整份 preferences，真实用户迁移尚未执行。真实迁移前停用共享配置的进程、备份并验证可恢复；迁移完成仍停用时追加含新 key 的正常快照，迁移前快照不能保证包含新 key。
+- B2已用户验收，B3已完成并以7c3d849推送main；B4已完成并由PR #4合并main，B5/B6/B7已完成范围内迁移验收并经PR合并main，下一会话B8；B1.2 本地实现与隔离安装验收已收尾，已确认不提供有损整库回退，真实用户/目标环境验收仍待；三类迁移、live 可读库的按配置恢复、可证明无损的 key 修复及损坏现场留存已实现，用户已选择 auth 恢复整份 preferences，真实用户迁移尚未执行。真实迁移前停用共享配置的进程、备份并验证可恢复；迁移完成仍停用时追加含新 key 的正常快照，迁移前快照不能保证包含新 key。
 - 工程前置 A1/A2 已分别提交 6287d2a/3b15a6d，并完成当前 macOS/Node 24 的源码/npm/桌面 Node payload 验证。当前全局实例未切换，后续开发使用新结构工作树；Changesets 和进一步 core/content 抽取分别确认。
 - 自动审批、自动答题、定时任务及插件服务的权限语义仍须在对应工作包实施前明确。现有台账初筛标签保留历史线索，实施前仍需阅读完整 diff、后续修复和当前数据流。
 - 已通过的隔离测试不替代真实模型 CLI、GUI、移动端、Windows/Electron、跨平台、断电或持续高负载验证；失败记录及环境要求随工作包保留。

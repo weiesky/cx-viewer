@@ -21,6 +21,14 @@ export default function ConfirmRemoveButton({
   const role = tag === 'button' ? undefined : 'button';
   // tag='button' 时用原生 disabled；span 等非按钮标签靠 aria-disabled + click 守卫表达禁用态
   const nativeDisabled = tag === 'button' ? disabled : undefined;
+  const keyboardProps = tag === 'button' ? {} : {
+    tabIndex: disabled ? -1 : 0,
+    onKeyDown: (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      if (!disabled) e.currentTarget.click();
+    },
+  };
 
   if (isMobile) {
     const handleClick = (e) => {
@@ -40,6 +48,7 @@ export default function ConfirmRemoveButton({
     };
     return (
       <Tag
+        {...keyboardProps}
         className={className}
         onClick={handleClick}
         aria-label={ariaLabel}
@@ -64,6 +73,7 @@ export default function ConfirmRemoveButton({
       onCancel={(e) => e?.stopPropagation()}
     >
       <Tag
+        {...keyboardProps}
         className={className}
         onClick={(e) => e.stopPropagation()}
         aria-label={ariaLabel}

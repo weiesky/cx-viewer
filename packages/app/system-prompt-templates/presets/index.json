@@ -1,0 +1,63 @@
+{
+  "$comment": "Hand-editable manifest of built-in system-prompt presets. Each preset file (presets/<id>.md) is a self-contained template (its own boundary + OS-only Environment + verbatim Memory; no Git). `match` is a case-insensitive model-id substring with THREE effects: (1) auto-select a preset when adding a model in the Edit System Prompt modal, (2) pick the built-in prompt injected at spawn when the resolved model matches (see builtin-model-prompts.js), and (3) the preset's tombstone identity — the normalized-uppercase match is the key recorded in .builtin-disabled.json, so renaming `match` silently voids existing disables unless a TOMBSTONE_RENAMES mapping is added. `defaultMode` seeds the tab's override/append toggle.",
+  "categories": {
+    "Global": [
+      {
+        "id": "deepseek-v4-pro",
+        "title": "DeepSeek V4 Pro",
+        "file": "deepseek-v4-pro.md",
+        "description": "Thorough coding agent tuned for DeepSeek V4 Pro: careful reasoning, end-to-end persistence, tracked multi-step work, verify-before-done.",
+        "match": "deepseek-v4-pro",
+        "defaultMode": "override"
+      },
+      {
+        "id": "deepseek-v4-flash",
+        "title": "DeepSeek V4 Flash",
+        "file": "deepseek-v4-flash.md",
+        "description": "Terse, action-biased prompt tuned for the fast DeepSeek V4 Flash model: few-line answers, smallest change that works.",
+        "match": "deepseek-v4-flash",
+        "defaultMode": "override"
+      },
+      {
+        "id": "GLM-5.2",
+        "title": "GLM-5.2",
+        "file": "GLM-5.2.md",
+        "description": "Balanced software-engineering agent prompt tuned for GLM-5.2: action-default, changes through tools, parallel tool calls.",
+        "match": "glm-5.2",
+        "defaultMode": "override"
+      },
+      {
+        "id": "GLM-5.3",
+        "title": "GLM-5.3",
+        "file": "GLM-5.3.md",
+        "description": "Forked from the GLM-5.2 preset for GLM-5.3: action-default, changes through tools, parallel tool calls.",
+        "match": "glm-5.3",
+        "defaultMode": "override"
+      },
+      {
+        "id": "Qwen-3",
+        "title": "Qwen 3",
+        "file": "Qwen-3.md",
+        "description": "Thorough coding agent prompt for the Qwen 3 family (3.5/3.7/3.8 Max and siblings): minimal-change discipline and persistence.",
+        "match": "qwen-3",
+        "defaultMode": "override"
+      },
+      {
+        "id": "kimi-k2.7-code",
+        "title": "Kimi K2.7 Code",
+        "file": "kimi-k2.7-code.md",
+        "description": "Coding agent prompt tuned for Kimi K2.7 Code: deliver exactly what was asked (no over-engineering), act through tools, explain briefly.",
+        "match": "kimi-k2.7-code",
+        "defaultMode": "override"
+      },
+      {
+        "id": "kimi-k3",
+        "title": "Kimi K3",
+        "file": "kimi-k3.md",
+        "description": "Coding agent prompt tuned for Kimi K3: deliver exactly what was asked (no over-engineering), act through tools, explain briefly.",
+        "match": "kimi-k3",
+        "defaultMode": "override"
+      }
+    ]
+  }
+}

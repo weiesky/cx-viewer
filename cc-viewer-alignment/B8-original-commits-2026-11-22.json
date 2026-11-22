@@ -1,0 +1,189 @@
+{
+  "base": "89a8d9dc508b1a9d79ac218bc870e20c4750187c",
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "rawValidatedHead": "7983660424045028334620a9ec6f6de132af979f",
+  "rawCommitCount": 36,
+  "note": "Includes carried B7 post-merge docs, E5–E7 and their revert, map-only metadata and final whitespace cleanup. The following final receipt metadata commit is recorded separately after merge to avoid a recursive self-hash.",
+  "commits": [
+    {
+      "hash": "e18b7fe948807616c3a1f5fd03606a34aaa9ae0b",
+      "tree": "c244dba0b0288d61d42f8af7bf5012c0cf3bf913",
+      "subject": "docs(alignment): record B7 merge and prepare B8 handoff"
+    },
+    {
+      "hash": "d8a0080cc1859f9630f92d38f8a1e2b04f144e94",
+      "tree": "c8bd2b2558fe94f4ba62c38ace0554a8079ce8cd",
+      "subject": "fix(prompts): align embedded UltraReview remediation rules"
+    },
+    {
+      "hash": "8e236aa4024b83ea16723e884fd4170455eb6dbd",
+      "tree": "999e8e8fe8e591c741662380a0ebaba1e994c78c",
+      "subject": "feat(prompts): restore standalone test analysis expert preset"
+    },
+    {
+      "hash": "96f79830b44254d936db430a3bd9e5a6ec51cb57",
+      "tree": "b9a20176bdbfccd466f70afd7d4297bdd65085ae",
+      "subject": "fix(prompts): resolve upstream model aliases in managed entries"
+    },
+    {
+      "hash": "ed0a80f5ae1db08ff0d8d03076fd31a0451d95b2",
+      "tree": "829a451543b33b3a94378945f2f13202d887d8c7",
+      "subject": "test(prompts): verify native prompt binding across resume and fork"
+    },
+    {
+      "hash": "26f8b563e5cb4f538fee0942c5f942a66ed34e0d",
+      "tree": "6be664591345fdca6bc8a5c0f7085fcf7822c27e",
+      "subject": "feat(proxy): restore upstream retry engine with native route isolation"
+    },
+    {
+      "hash": "206a59acf741a60e05fa0eb76d4d9a8fd260a800",
+      "tree": "5ec3919539ce13cda2f5e188f991f3e422712071",
+      "subject": "feat(proxy): restore protected retry configuration and hot reload"
+    },
+    {
+      "hash": "7249d35877d3001b762f8e128812bcf1fa3d3a88",
+      "tree": "d708b92fcedea563d5117d70dc21f18533c04dc8",
+      "subject": "feat(proxy): persist scoped retry statistics through the native worker"
+    },
+    {
+      "hash": "66b6a2884ae353fdb8b0036a2d97d5fbd888c9bf",
+      "tree": "6779d7c5032498f2f120af0fa44a3b1961ff490a",
+      "subject": "revert(proxy): exclude retry and statistics per user scope"
+    },
+    {
+      "hash": "bdf4f603191d5905be4605c95fb5c04387246401",
+      "tree": "4eebf0f6dce221b5b3b996577318496e456d8e1c",
+      "subject": "fix(sdk): pass the owned proxy endpoint through official SDK options"
+    },
+    {
+      "hash": "c6195b6be08bc76fe42be5a1aba10c955c3b64b7",
+      "tree": "bffc85776e094a0ac8e9691ca991ace2a7db7f06",
+      "subject": "fix(sdk): keep wire captures out of chat and native resume identity"
+    },
+    {
+      "hash": "18618582bf7de3fcd5cb25a7b3af40492cc59114",
+      "tree": "82de3bb741154f9db5b11ba293bf575b9385e60d",
+      "subject": "fix(prompts): apply the selected standalone UltraReview remediation policy"
+    },
+    {
+      "hash": "dfb562c741c8d3b75bff557ef06fbf206ebb4b70",
+      "tree": "83732d014f730335513b6fca364c810edc0c32fc",
+      "subject": "feat(prompts): ship native-adapted upstream model presets"
+    },
+    {
+      "hash": "f614279f8fbfc89f398db262ec35883735f538bc",
+      "tree": "971e7f4e8a6b4a534cea4a033f9f2c39a09829c9",
+      "subject": "feat(prompts): persist protected builtin prompt opt-outs"
+    },
+    {
+      "hash": "f11e058da1cefa8f275e2ff87e419790c54195a3",
+      "tree": "5ef4a7940fd9a15c63462771d835e9a1e37d482c",
+      "subject": "fix(sdk): normalize default and custom API endpoint paths"
+    },
+    {
+      "hash": "aa86dbf9634c3f838e1044841aca6f947c413407",
+      "tree": "1129f26f41999dd4dfb9b8481d68f7ba3aa67ede",
+      "subject": "feat(prompts): enable upstream builtin model prompts with native controls"
+    },
+    {
+      "hash": "498d7719ed8ab389ed7a3e7c9445853946956cb2",
+      "tree": "42068b69ed3a50cd6ee5a57e68825b568b604edf",
+      "subject": "fix(prompts): preserve explicit native instructions before automatic presets"
+    },
+    {
+      "hash": "a91a0080f45410f63557a7e1f36cfaaecd8b20bc",
+      "tree": "ee77dfc267c095df7f59dc1d34e7aaf26d9762e1",
+      "subject": "fix(models): align Kimi logo and final model alias display"
+    },
+    {
+      "hash": "da4b99879f4a66d29f00fc5f87db17655f632432",
+      "tree": "8823880e0301bde867e59b15f2d3dfe1f5990912",
+      "subject": "chore(alignment): record B8 scope exclusions and verified checkpoint"
+    },
+    {
+      "hash": "515dc6c1494343fc5c8d4a1f042b4c00c2671a8e",
+      "tree": "6c0dcd504fc097db4df06f48886ec2ec1d25ebe1",
+      "subject": "docs(alignment): honor new-session-only system prompt scope"
+    },
+    {
+      "hash": "7852d656f9cb70cb26bc5e3b749f7631a63d4026",
+      "tree": "5f4320e9e61a73e1dea50597ab026a06f6ec9ed4",
+      "subject": "fix(cli): keep owned config options before literal prompt arguments"
+    },
+    {
+      "hash": "2bb9798a6ff42df29b6e3d1c62260c6e0b73d01e",
+      "tree": "be728cdba0c867b9c5a07b0db4d206735eaccf23",
+      "subject": "docs(alignment): research native Codex model windows and compaction thresholds"
+    },
+    {
+      "hash": "83ba649a7b8155938136286b1bcfd9b8a1454598",
+      "tree": "3189e895e3a2e1f745f9c1b69e1c5c6c0cc8fff2",
+      "subject": "feat(prompts): prepare managed instructions for fresh native exec launches"
+    },
+    {
+      "hash": "b03a08f05d841854cd9ba5e1effc8098598aa54d",
+      "tree": "23544e083855265dc2461585e88d0a780cc5cc3c",
+      "subject": "feat(cli): apply managed prompts to fresh headless Codex sessions"
+    },
+    {
+      "hash": "e630ea2753243ab51c9ceb1414033085bdc221e6",
+      "tree": "4d7abd67faef1f1dfb9d7c0a45ba4b725ed719ea",
+      "subject": "fix(context): follow owned native model windows and current usage"
+    },
+    {
+      "hash": "ade08fd2631b2f0ace797a14c4f0c3001f6d5a19",
+      "tree": "a8a6c491e1d94586c81e53649585e917f72fd522",
+      "subject": "feat(proxy): store native role assignments per workspace"
+    },
+    {
+      "hash": "f8ff34bc6e8be97f86977f3112c81a5da44c9917",
+      "tree": "16d755d533d874c3006ff8d59ac7b925e0a29f01",
+      "subject": "feat(proxy): route requests by owned native thread roles"
+    },
+    {
+      "hash": "1e10d01ae0dccb97efbd00047afa7a83b4a7537b",
+      "tree": "567ce94cef23b0e6cbe822e4281c0f73faaec84b",
+      "subject": "feat(proxy): expose scoped native role settings with capability gates"
+    },
+    {
+      "hash": "3c51eeab658c5bfb8a74f4f5a1da7dca87cab81e",
+      "tree": "5f3105cc7067e5575f0db4175a59e3f6c3715a88",
+      "subject": "feat(proxy): align native role controls and compact source labels"
+    },
+    {
+      "hash": "0348c981ec2649065e3dde21c5d7995272213700",
+      "tree": "67c408ff5e36ca7e8b3a5bcf6ee1b3e830a2f016",
+      "subject": "fix(sdk): keep child response models out of the root identity"
+    },
+    {
+      "hash": "02d820e617124c36e825e3101d5c79d956d99906",
+      "tree": "00c9025ca14c9beb152ca512e595ce16675f4178",
+      "subject": "fix(sdk): redirect the native AppServer default provider explicitly"
+    },
+    {
+      "hash": "81ab51f0495d415fd2586ea3387ee7dda82863dd",
+      "tree": "8ba2622adfaf952ec74cb3f40346435ad53159f1",
+      "subject": "fix(web): keep the control stream reconnecting after long outages"
+    },
+    {
+      "hash": "0f41f8501d18ac44a77d3562ed2016b3a1b250ea",
+      "tree": "31a02724545089e30058eea02f33e48187e1a1e7",
+      "subject": "docs(alignment): reconcile the final B8 candidate scopes"
+    },
+    {
+      "hash": "bd45cc94381840ee0e16e5f0572de98cfbb73c3e",
+      "tree": "db0a8579e5b3f14ef10b9dfbe5ea97f57e2a27ef",
+      "subject": "test(alignment): record final B8 release and native SDK acceptance"
+    },
+    {
+      "hash": "fe8e2506483cade925e8fe9e358a5f4b776167b8",
+      "tree": "4ef75159bb14b11bb0de71d640d1f921b60dc405",
+      "subject": "docs(alignment): preserve original B8 commits before consolidation"
+    },
+    {
+      "hash": "7983660424045028334620a9ec6f6de132af979f",
+      "tree": "8565bc8d1a9d17d2c7a276fbcb69ff09f0f0bdec",
+      "subject": "style(prompts): trim the alias helper trailing blank line"
+    }
+  ]
+}

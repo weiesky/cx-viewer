@@ -136,3 +136,20 @@ test('model prompt routes validate names and capability fail closed', async () =
   assert.equal(unsupported.status, 409);
   assert.equal((await unsupported.json()).code, 'system_prompt_unsupported');
 });
+
+test('preset catalogue and per-scope builtin actions preserve revisions and cannot delete overrides', async () => {
+  server.setSystemPromptRuntimeCapability({verified:true,append:true,override:true,transport:'app-server-bridge',version:'test'});
+  const catalogue=await fetch(`${base}/api/expert/system-prompt-presets`);assert.equal(catalogue.status,200);assert.match(catalogue.headers.get('cache-control'),/no-store/);assert.equal((await catalogue.json()).presets.length,7);
+  const get=async()=>await(await fetch(`${base}/api/expert/model-prompts`)).json();
+  const post=body=>fetch(`${base}/api/expert/model-prompts`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+  let state=await get();assert.equal(state.builtin.length,7);assert.equal(state.builtinRevisions.global,'0');
+  const disabled=await post({action:'disable-builtin',scope:'global',name:'kimi-k3',revision:'0'});assert.equal(disabled.status,200);const revision=(await disabled.json()).revision;
+  state=await get();assert.equal(state.builtin.find(e=>e.name==='KIMI-K3').disabled.global,true);assert.equal(state.builtinRevisions.global,revision);
+  assert.equal((await post({action:'enable-builtin',scope:'global',name:'KIMI-K3',revision:'0'})).status,409);
+  assert.equal((await post({action:'enable-builtin',scope:'global',name:'KIMI-K3'})).status,400);
+  const existing=state.workspace.find(e=>e.name==='GPT-5');
+  const typo=await post({action:'disbale-builtin',scope:'workspace',name:'GPT-5',revision:existing.revision,text:'',mode:'append'});assert.equal(typo.status,400);assert.equal((await typo.json()).code,'bad_action');
+  assert.equal((await get()).workspace.find(e=>e.name==='GPT-5').text,'model instruction');
+  assert.equal((await post({action:'disable-builtin',scope:'global',name:'UNKNOWN',revision})).status,400);
+  const enabled=await post({action:'enable-builtin',scope:'global',name:'KIMI-K3',revision});assert.equal(enabled.status,200);assert.equal((await get()).builtin.find(e=>e.name==='KIMI-K3').disabled.global,false);
+});

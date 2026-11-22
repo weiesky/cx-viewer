@@ -1,0 +1,14 @@
+{
+  "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-installed-runtime-_07clqyf",
+  "files": 723,
+  "source_bytes_match": true,
+  "web_asset_files": 211,
+  "runtime_tests": "634/634",
+  "b12_regression": "passed",
+  "installed_cli_relative_cd_boot": "passed",
+  "uses_fake_codex": true,
+  "uses_real_model_network": false,
+  "all_pack_files_compared": 723,
+  "all_pack_file_bytes_match_after_final_build": true,
+  "source": "npm production install; no npm publish; no production restart"
+}

@@ -1,0 +1,60 @@
+{
+  "fixture": {
+    "root": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b8-context-ui-ZDZR7b",
+    "pid": 25468,
+    "port": 20860,
+    "a": {
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b8-context-ui-ZDZR7b/one/same",
+      "projectName": "same",
+      "instanceKey": "cxv-083c3e31c1845fb2d441b5d5e106b9c4",
+      "sessionId": null,
+      "busy": false,
+      "active": true,
+      "transport": "appserver",
+      "url": "http://127.0.0.1:20860/?instance=cxv-083c3e31c1845fb2d441b5d5e106b9c4"
+    },
+    "b": {
+      "cwd": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b8-context-ui-ZDZR7b/two/same",
+      "projectName": "same",
+      "instanceKey": "cxv-edf866c00ff1e26c1e492bc74e733d40",
+      "sessionId": null,
+      "busy": false,
+      "active": true,
+      "transport": "appserver",
+      "reused": false,
+      "url": "http://127.0.0.1:20860/?instance=cxv-edf866c00ff1e26c1e492bc74e733d40"
+    }
+  },
+  "results": [
+    {
+      "name": "chromium",
+      "version": "159.0.8154.6",
+      "nativeModelWindows": true,
+      "unknownNoStalePercent": true,
+      "reload": true,
+      "siblingIsolation": true,
+      "mobileDrawer": true,
+      "pageErrors": [],
+      "navigationAborts": []
+    },
+    {
+      "name": "webkit",
+      "version": "27.2",
+      "nativeModelWindows": true,
+      "unknownNoStalePercent": true,
+      "reload": true,
+      "siblingIsolation": true,
+      "mobileDrawer": true,
+      "pageErrors": [],
+      "navigationAborts": [
+        "/ipwho.is/ due to access control checks.",
+        "/ipapi.co/json/ due to access control checks.",
+        "/ipwho.is/ due to access control checks.",
+        "/ipapi.co/json/ due to access control checks.",
+        "/127.0.0.1:20860/api/log-v2/snapshot?limit=400&instance=cxv-edf866c00ff1e26c1e492bc74e733d40 due to access control checks."
+      ]
+    }
+  ],
+  "nativeProtocolFixtureOnly": true,
+  "externalModel": false
+}

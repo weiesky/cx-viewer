@@ -1,0 +1,17 @@
+{
+  "results": [
+    {
+      "pid": 93478,
+      "marker": "b7-pty-fixture.mjs",
+      "descendants": 5,
+      "remaining": []
+    },
+    {
+      "pid": 70738,
+      "marker": "b7-sdk-ui-fixture.mjs",
+      "descendants": 1,
+      "remaining": []
+    }
+  ],
+  "production7008Untouched": true
+}

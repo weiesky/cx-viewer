@@ -1,0 +1,13 @@
+{
+  "upstream": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "commits": [
+    "e932bbef2eb3456c4424b6eaab41fe3d68eb4d27",
+    "6363a51ec0",
+    "f2ebb0fe6b"
+  ],
+  "assetHash": "29202d18fba5ded72c0aa9e715449b59622df57ba337036ef3720b605136df42",
+  "providerBlockHash": "8b1370981634e8c7082f5771f9a34691b53272a92583359346543c67d9fb2531",
+  "exactAsset": true,
+  "exactProviderBlock": true,
+  "contextBarChanged": false
+}

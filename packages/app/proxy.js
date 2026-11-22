@@ -9,6 +9,8 @@ import { extractApiErrorMessage, formatProxyRequestError } from './lib/proxy-err
 import { setupProxyEnv } from './lib/proxy-env.js';
 import { readOriginalOpenAiBaseUrl } from './lib/codex-config.js';
 import { captureRequestContext } from './lib/capture-context.js';
+import { joinUrlPaths } from './lib/proxy-profile.js';
+import { getCodexTurnMetadata, parseRequestBodyForLog } from './lib/interceptor-core.js';
 
 let _interceptorReady = null;
 
@@ -40,14 +42,17 @@ function getOriginalBaseUrl() {
   }
 
   // 4. Default
-  return DEFAULT_API_BASE;
+  return `${DEFAULT_API_BASE.replace(/\/+$/, '')}/v1`;
 }
 
 function buildUpstreamUrl(reqUrl) {
   const originalBaseUrl = getOriginalBaseUrl();
-  const cleanBase = originalBaseUrl.endsWith('/') ? originalBaseUrl.slice(0, -1) : originalBaseUrl;
-  const cleanReq = reqUrl.startsWith('/') ? reqUrl.slice(1) : reqUrl;
-  return { fullUrl: `${cleanBase}/${cleanReq}`, originalBaseUrl };
+  const target = new URL(originalBaseUrl);
+  const request = new URL(reqUrl, target.origin);
+  target.pathname = joinUrlPaths(target.pathname, request.pathname);
+  target.search = request.search;
+  target.hash = '';
+  return { fullUrl: target.toString(), originalBaseUrl };
 }
 
 // ─── Auth-aware upstream routing (PTY / -c redirect mode) ───
@@ -142,10 +147,8 @@ export function resolveUpstream(reqUrl, headers = {}) {
     cleanBase = process.env.CXV_ORIGINAL_BASE_URL.replace(/\/+$/, '');
     fallbackBase = _defaultOpenAiBase();
   } else {
-    // Backward-compat (Electron / SDK proxy callers, no redirect env): preserve
-    // the original config/OPENAI_BASE_URL resolution so custom gateways still
-    // route correctly. buildUpstreamUrl uses the raw reqUrl, not the stripped
-    // suffix, matching that path's historical behavior.
+    // SDK/Electron use the configured base. Join overlapping API prefixes once:
+    // native SDK requests may arrive as /responses or /v1/responses.
     let { fullUrl } = buildUpstreamUrl(reqUrl);
     if (_isSelfForward(fullUrl)) {
       fullUrl = _defaultOpenAiBase().replace(/\/+$/, '') + cleanSuffix;
@@ -197,7 +200,8 @@ export function createProxy() {
       stopProxyOwner(owner);
       owner = { server: null, port: null, stopped: false };
       const captureContext = options.captureContext
-        ? Object.freeze({ cwd: options.captureContext.cwd, instanceKey: options.captureContext.instanceKey })
+        ? Object.freeze({ cwd: options.captureContext.cwd, instanceKey: options.captureContext.instanceKey,
+          ...(options.captureContext.sdkTransport === true ? { sdkTransport: true } : {}) })
         : null;
       return startProxyServer({ ...options, captureContext }, owner);
     },
@@ -329,7 +333,7 @@ function safeUpstreamLabel(value) {
   }
 }
 
-function startProxyServer({ captureContext = null, onResponseModel = null, onSlowUpstream = null, slowUpstreamMs = 30_000, port = 0, health = null, readiness = null, maxRequestBodyBytes = 64 * 1024 * 1024 } = {}, owner) {
+function startProxyServer({ captureContext = null, resolveNativeRole = null, onResponseModel = null, onSlowUpstream = null, slowUpstreamMs = 30_000, port = 0, health = null, readiness = null, maxRequestBodyBytes = 64 * 1024 * 1024 } = {}, owner) {
   if (!Number.isSafeInteger(port) || port < 0 || port > 65535) {
     throw new TypeError('proxy port must be an integer between 0 and 65535');
   }
@@ -471,7 +475,23 @@ function startProxyServer({ captureContext = null, onResponseModel = null, onSlo
             if (fired) emit({ type: 'resolved' });
           };
         }
-        let response = await captureRequestContext.run(captureContext, () => fetch(fullUrl, fetchOptions));
+        let requestCaptureContext = captureContext;
+        let responseModelThreadId = null;
+        if ((captureContext && typeof resolveNativeRole === 'function') || typeof onResponseModel === 'function') {
+          // Native children share their root's HTTP session-id; their actual
+          // thread_id lives in turn metadata. It is only a lookup key until
+          // this proxy owner's protocol resolver proves its ancestry.
+          const metadata = getCodexTurnMetadata(parseRequestBodyForLog(body, req.headers));
+          const threadId = metadata.thread_id || req.headers['session-id'];
+          responseModelThreadId = typeof threadId === 'string' && threadId.length <= 256 && !threadId.includes('\0') ? threadId : null;
+          let role = null;
+          try { role = captureContext && responseModelThreadId && typeof resolveNativeRole === 'function'
+            ? await resolveNativeRole(responseModelThreadId) : null; } catch {}
+          if (role === 'main' || role === 'subagent') requestCaptureContext = Object.freeze({
+            ...captureContext, proxyRole: role, proxyThreadId: threadId,
+          });
+        }
+        let response = await captureRequestContext.run(requestCaptureContext, () => fetch(fullUrl, fetchOptions));
         // fetch resolves at headers. Keep waiting until the first BODY byte,
         // including error bodies; the native transform preserves backpressure.
         if (watchingSlowUpstream && response.body) {
@@ -527,7 +547,9 @@ function startProxyServer({ captureContext = null, onResponseModel = null, onSlo
             const [forwardBody, inspectBody] = responseBody.tee();
             responseBody = forwardBody;
             void observeResponseModelStream(inspectBody, model => {
-              if (!owner.stopped) onResponseModel(model);
+              if (!owner.stopped) onResponseModel(model, {
+                threadId: responseModelThreadId, proxyRole: requestCaptureContext?.proxyRole || null,
+              });
             }).catch(() => {});
           }
           // @ts-ignore

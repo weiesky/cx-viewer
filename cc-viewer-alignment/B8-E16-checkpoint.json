@@ -1,0 +1,69 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "productionHead": "a91a008",
+  "completedScopes": [
+    "E1–E4",
+    "SDK baseUrl/wire archive/API path",
+    "E10–E15"
+  ],
+  "b8Complete": false,
+  "excludedByUser": "proxy retry configuration and statistics, including E5–E7 reverted in 66b6a28",
+  "tests": {
+    "command": "env -u CXV_BYPASS_PERMISSIONS pnpm test",
+    "counts": [
+      5,
+      712,
+      1273,
+      215
+    ],
+    "total": 2205,
+    "pass": 2205,
+    "skip": 0,
+    "log": "/tmp/cxv-b8-e15-full-clean-env.log",
+    "initialAttempt": {
+      "log": "/tmp/cxv-b8-e15-full.log",
+      "failure": "One perm-bridge defer test inherited CXV_BYPASS_PERMISSIONS=1; unchanged production logic; reran with the established clean environment"
+    }
+  },
+  "build": {
+    "passed": true,
+    "log": "/tmp/cxv-b8-e15-build.log"
+  },
+  "pack": {
+    "passed": true,
+    "files": 735,
+    "log": "/tmp/cxv-b8-e15-pack.log"
+  },
+  "installed": {
+    "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-installed-runtime-9o5jwuz7",
+    "files": 735,
+    "source_bytes_match": true,
+    "all_pack_files_compared": 735,
+    "all_pack_file_bytes_match": true,
+    "web_asset_files": 211,
+    "runtime_tests": "656/656",
+    "b12_regression": "passed",
+    "installed_cli_relative_cd_boot": "passed",
+    "uses_fake_codex": true,
+    "uses_real_model_network": false
+  },
+  "runtimeReadOnly": {
+    "port": 7008,
+    "pid": 38260,
+    "cliMode": true,
+    "sdkMode": false,
+    "ptyMode": true,
+    "ptyQueueAvailable": true,
+    "stopped": false
+  },
+  "pending": [
+    "native managed-prompt hot-switch choice (question sent; no answer yet)",
+    "native role routing and headless shared prompt contract",
+    "remaining mixed source scopes and final B8 acceptance",
+    "user SDK URL and external model verification"
+  ],
+  "externalModel": false,
+  "productionRestart": false,
+  "push": false,
+  "pullRequest": false
+}

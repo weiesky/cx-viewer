@@ -1,3 +1,5 @@
+import { insertBeforeDashDash } from './cli-args.js';
+
 export const LEGACY_OTEL_MARKER = '# >>> CX-Viewer OTel >>>';
 export const LEGACY_OTEL_MARKER_END = '# <<< CX-Viewer OTel <<<';
 export const OTEL_AUTH_HEADER = 'x-cxv-otel-token';
@@ -58,6 +60,10 @@ function isOtelChildEnvScrubOverride(value) {
 export function appendOtelTraceExporterConfigArgsOnce(args = [], otelConfigArgs = []) {
   const next = [];
   for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--') {
+      next.push(...args.slice(i));
+      break;
+    }
     if (args[i] === '-c' && (isTraceExporterOverride(args[i + 1])
         || isOtelChildEnvScrubOverride(args[i + 1]))) {
       i++;
@@ -65,7 +71,7 @@ export function appendOtelTraceExporterConfigArgsOnce(args = [], otelConfigArgs 
     }
     next.push(args[i]);
   }
-  return otelConfigArgs.length > 0 ? [...next, ...otelConfigArgs] : next;
+  return otelConfigArgs.length > 0 ? insertBeforeDashDash(next, otelConfigArgs) : next;
 }
 
 /** Remove only the temporary block written by CX Viewer versions <= 1.0.8. */

@@ -1,0 +1,48 @@
+{
+  "scope": "Actual helper output and source SVG at avatar sizes; asset preview, not full product GUI",
+  "aliases": [
+    "k3",
+    "K3",
+    "k3.1-pro",
+    "k3.1-pro-highspeed",
+    "k3-pro",
+    "k3[1m]",
+    "k4",
+    "K4",
+    "k4.1-pro",
+    "k4.1-pro-highspeed",
+    "kimi-k2.7-code",
+    "moonshot-v1"
+  ],
+  "lookalikesExcluded": true,
+  "results": [
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "fills": [
+        [
+          "rgb(23, 131, 255)",
+          "rgb(255, 255, 255)"
+        ],
+        [
+          "rgb(23, 131, 255)",
+          "rgb(0, 0, 0)"
+        ]
+      ]
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "fills": [
+        [
+          "rgb(23, 131, 255)",
+          "rgb(255, 255, 255)"
+        ],
+        [
+          "rgb(23, 131, 255)",
+          "rgb(0, 0, 0)"
+        ]
+      ]
+    }
+  ]
+}

@@ -1,9 +1,9 @@
+import { getProxyChipView } from '../../utils/proxyProfileDisplay';
 import React from 'react';
 import { Tag } from 'antd';
 import { SwapOutlined } from '@ant-design/icons';
 import { t } from '../../i18n';
 import { shouldRenderSdkModelChip } from '../../utils/sdkModelChip';
-import { profileDisplayModel } from '../settings/ProxyModal';
 import styles from './ProxyChip.module.css';
 
 /**
@@ -13,23 +13,23 @@ import styles from './ProxyChip.module.css';
  * (Mobile tree never renders AppHeader). Purely presentational: the click is delegated to
  * `onOpenProxyModal` so the owning ChatView can mount the ProxyModal next to the input bar.
  *
- * Visibility follows the existing Codex instance-wide profile selection; in SDK mode
+ * Visibility follows the upstream main/role assignment rules; in SDK mode
  * only, a read-only launch-model chip fills the slot (shouldRenderSdkModelChip). Returns
  * null when neither applies (official Default, or non-SDK PTY with no profile).
  */
 export default function ProxyChip({
   proxyProfiles,
   activeProxyId,
+  proxyRoles,
+  proxyOfficialDefault,
+  proxyRoleRouting,
   sdkMode,
   sdkModel,
   onOpenProxyModal,
 }) {
-  const profiles = proxyProfiles || [];
-  const activeId = activeProxyId;
-  const p = profiles.find(x => x.id === activeId);
-  // Codex currently routes one profile for the whole instance; no per-role
-  // assignment or official-endpoint flag exists in this control contract.
-  const proxyChipVisible = !!activeId && activeId !== 'max' && !!p;
+  const { visible: proxyChipVisible, mainLabel, title } = getProxyChipView({
+    proxyProfiles, activeProxyId, proxyRoles, proxyOfficialDefault, proxyRoleRouting,
+  });
 
   if (!proxyChipVisible) {
     // SDK launch-model chip only fills this slot when the proxy chip renders nothing
@@ -42,11 +42,10 @@ export default function ProxyChip({
     );
   }
 
-  const mainLabel = p ? `${p.name}${profileDisplayModel(p) ? ` · ${profileDisplayModel(p)}` : ''}` : 'Default';
   return (
     <Tag
       className={styles.proxyChip}
-      title={mainLabel}
+      title={title}
       onClick={onOpenProxyModal}
       role="button"
       tabIndex={0}

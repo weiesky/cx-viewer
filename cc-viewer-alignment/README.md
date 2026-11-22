@@ -2,9 +2,9 @@
 
 **迁移约束：优先参考 PR 的实际代码，禁止根据文档自由改版。** B2已按上游组件/CSS/交互纠偏并经用户验收收口；B4及后续工作包继续遵守该规则，运行性测试不能单独代表视觉对齐。必读[源码优先迁移规范与已确认偏差](./migration-code-first.md)。
 
-2026-11-22 B7实施中（第8/12工作包），固定上游74cd752d99caf122e750216d2af3bb9f467c4de1，分支codex/b7-input-navigation-skills，起点main8968935，74索引候选及追加源码子项逐项核验。E1–E41及E19a/E31a/E31b/E40a独立完成；原普通PTY任务HUD接精确root计划快照，整CSS同基线，226/226、build与受控native协议双引擎6场12图通过；实际0.169未见plan工具事件，不记模型执行已验，继续审计。 普通“＋”、输入12行/ghost/导航/汇总/Skills菜单、窄split、主PTY与scratch进程树均已有分项证据；74候选完整闭合及最终全量/新安装仍待完成，B7未完成。新工作区权限遵循已选弹窗；/选技能填原生$name；合成AppServer会话使用codex://app-server/turn（均经用户选定）。活动7008不重启；IM偶发、物理设备/音频/外部模型/真实LAN/TLS/其他OS/最低Node未验保持，exec/显式AppServer渐进与353K不变。见[B7实施](./B7-implementation.md)。
+当前进度：2026-11-22 B8进行中，分支 `alignment/b8-proxy-model-prompts`，固定上游 `74cd752d99caf122e750216d2af3bb9f467c4de1`。E1–E4专家资产/模型别名与实际native fresh/resume/fork钉扎完成；E10已按用户选择对齐独立UltraReview自动修复P0/P1、评估P2；E11–E13（aa86dbf）完成7组默认启用的原生适配preset、原管理UI/CPU菜单、私有CAS禁用/物化与新thread注入。E13全量2202/2202、0skip，键盘后Web712/双引擎、实际Codex0.169共15请求逐字验证、build/pack735；480px上游模式标签截短保留，不算完整窄屏视觉通过。E14（498d771）补显式native基础指令/指令文件优先，12定向及实际Codex两请求通过；E15（a91a008）逐字迁最终Kimi头像/K3/K4边界，build和双引擎主题资产预览通过。E16最终检查点2205/2205、0skip/build/pack735，全新生产安装656/656、735包文件与211Web全部精确字节、B1.2/隔离CLI通过；首轮继承bypass变量的单项失败已记录并按既定clean env重跑，未改权限逻辑。用户明确排除代理重试配置与统计，E5–E7已撤回，不再迁入。SDK无回应已补官方SDK baseUrl、独立wire归档/聊天去重与默认/custom API路径（bdf4f60/c6195b6/f11e058）；实际CLI双引擎收发/刷新及恢复通过，路径另36定向，用户实际地址/外部模型仍待。54候选继续按子项核销；用户最新选择只在新会话生效：保留native resume/fork指令钉扎，不迁代理层提示词热切换；角色/无GUI共享指令链及剩余候选继续，尚未整包收口。未停止活动7008（外部已重启为PID38260）；exec/显式AppServer渐进、353K与既有权限选择保持。真实模型遵循、物理设备/音频/IME、真实LAN/TLS、其他OS/最低Node未验保持。见[B8实施](./B8-implementation.md)、[候选矩阵](./B8-candidate-matrix.md)；B7/PR #8/原51笔见[B7完成矩阵](./B7-completion-matrix.md)。
 
-2026-11-21 用户截图发现普通CLI/PTY增加工作区入口缺失：本地sdkMode门槛隐藏“＋”，与旧进程问题独立；B2普通模式Header恢复待纠偏，不能沿用SDK GUI通过结论。见[实际调用链与修复边界](./B2-pty-workspace-entry-gap-2026-11-21.md)。
+2026-11-22 普通CLI/PTY“＋”已由B7 E1–E13接齐并经真实双工作区GUI验证；历史缺口记录保留。B8 E16只读确认7008已具ptyMode/队列能力，普通PTY模式；本轮SDK修复是否加载仍须其对应进程正常重启核对，未停止用户实例。见[B7完成矩阵](./B7-completion-matrix.md)。
 
 2026-11-21 活动入口核对：cxv已指向本仓库packages/app/cli.js；7008旧进程未重启，前端新而B6后端未加载，两个新API仍回首页HTML。当前会话由该进程托管，本次未停止它；见[核对回执和重启步骤](./B6-runtime-entry-2026-11-21.md)。B6已通过PR #6交付；用户本次已明确启动B7，活动进程仍不由本会话停止。
 
@@ -20,15 +20,16 @@
 | --- | --- |
 | B0 | 已完结：337 条台账、归属与迁移准入复核；产品验收由各实施包负责。 |
 | B1 | 本地实现与隔离安装验收完成（b549125）；保留现场并拒绝覆盖策略已确认，真实用户/目标环境验收仍待。 |
-| B2 | 已用户验收收口；普通CLI/PTY的工作区“＋”入口重新待纠偏，见[缺口记录](./B2-pty-workspace-entry-gap-2026-11-21.md)。 |
+| B2 | 已用户验收收口；后发现的普通PTY“＋”缺口已由B7修复并验证，活动旧后端正常重启复验仍待。见[B7完成矩阵](./B7-completion-matrix.md)。 |
 | B3 | 已完成并推送main：[7c3d849](https://github.com/weiesky/cx-viewer/commit/7c3d849b9e7acda1c974077843406c23627dbdcb)；1410项通过，见[B3完成矩阵](./B3-completion-matrix.md) |
 | B4 | 已完成并通过[PR #4](https://github.com/weiesky/cx-viewer/pull/4)合并main：288faea；见[B4完成矩阵](./B4-completion-matrix.md)。 |
 | B5 | 已完成（第6/12工作包），按最新授权1commit/1PR自行合并，原46笔备份/映射保留；见[B5完成矩阵](./B5-completion-matrix.md)及[最终回执](./B5-final-2026-11-21.json)。 |
 | B6 | 已完成（第7/12工作包），1986完整/525安装/6场26图与10轮问答；见[B6完成矩阵](./B6-completion-matrix.md)，已由[PR #6](https://github.com/weiesky/cx-viewer/pull/6)合并main（9f3e2ce）。 |
-| B7–B10 | 尚未逐包完成，下一B7；按台账独立核验 |
+| B7 | 已完成并由PR #8合并main（89a8d9d），见[B7完成矩阵](./B7-completion-matrix.md)。 |
+| B8–B10 | B8进行中；按台账独立核验，见[B8交接](./B8-handoff.md)。 |
 | B11 / 工程前置 | A1 6287d2a 已主线；A2 3b15a6d 已提交工作树并通过本地验证，当前全局实例未切换。 |
 
-本次已按最新请求启动B7，当前实施以[B7实施](./B7-implementation.md)为准；[上轮交接](./B7-handoff.md)保留历史检查点。
+B7已交付，当前以[B7完成矩阵](./B7-completion-matrix.md)及[B8交接](./B8-handoff.md)为准；[B7历史交接](./B7-handoff.md)保留起点，不代表当前待办。
 
 pnpm/workspace 已按用户选择前置实施，先稳定结构，再继续功能对齐；见 [提交、边界与验收](./A1-A2-engineering.md)。
 

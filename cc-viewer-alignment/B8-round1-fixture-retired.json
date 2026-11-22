@@ -1,0 +1,14 @@
+{
+  "owner": {
+    "pid": 55374,
+    "ppid": 38269,
+    "startId": "Sun Nov 22 09:41:49 2026",
+    "startTime": "Sun Nov 22 09:41:49 2026",
+    "command": "node /tmp/cxv-b8-expert-fixture.mjs",
+    "commandHash": "8e4b8d5726f13d09b4c5e4e05156e50a9b5c5bc78dd4ca5a3176e57efe74084d",
+    "cwd": "/Users/sky/.npm-global/lib/node_modules/cx-viewer"
+  },
+  "descendants": [],
+  "remaining": [],
+  "production7008Touched": false
+}

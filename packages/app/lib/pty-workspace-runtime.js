@@ -57,7 +57,7 @@ export async function startPtyWorkspaceRuntime({ cwd, instanceKey, projectId, pt
   const onAbort = () => { void stop().catch(error => callbacks.onWarning?.(error)); };
   signal?.addEventListener('abort', onAbort, { once: true });
   try {
-    const proxyPort = await proxy.start({ captureContext: scope });
+    const proxyPort = await proxy.start({ captureContext: scope, resolveNativeRole: owner.getNativeProxyRole });
     check();
     const baseArgs = [...getReasoningSummaryConfigArgs(), ...getDefaultModeRequestUserInputConfigArgs(), '-c', `openai_base_url="http://127.0.0.1:${proxyPort}/v1"`];
     const capability = systemPromptCapability || inspectCodexSystemPromptSupport(codexPath);
@@ -67,6 +67,7 @@ export async function startPtyWorkspaceRuntime({ cwd, instanceKey, projectId, pt
       bridge = await owner.startAppServerBridge({ cwd: scope.cwd, codexPath, rawDir, env: childEnv, signal,
         extraConfigArgs: appendOtelTraceExporterConfigArgsOnce(baseArgs, otelArgs),
         systemPromptCapability: capability, systemPromptLogDir: logDir,
+        resolveSystemPromptModel: callbacks.resolveSystemPromptModel,
         onApprovalsReviewerActive: value => { activeReviewer = normalizeApprovalsReviewer(value); callbacks.onApprovalsReviewerActive?.(value, scope); },
         onRequestUserInput: request => callbacks.onRequestUserInput?.(scopedAsk(request)) === true,
         onRequestUserInputCleared: request => callbacks.onRequestUserInputCleared?.(scopedAsk(request)),
@@ -91,6 +92,7 @@ export async function startPtyWorkspaceRuntime({ cwd, instanceKey, projectId, pt
       codexPath, isNpmVersion, serverPort, invocation: parseCodexInvocation(tuiArgs) });
     check();
     return {
+      nativeProxyRoles: !!bridge,
       proxyPort, appServerPort: bridge?.appServerPort || null, stop,
       getContext: owner.getAppServerRuntimeContext,
       getInputState: owner.getAppServerInputState,
