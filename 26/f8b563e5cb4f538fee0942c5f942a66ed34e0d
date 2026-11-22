@@ -1,0 +1,47 @@
+packages/app/tests/proxy-retry-cancel.test.js
+  s_4ca8f338668363::t_31904063711911 1-226
+packages/app/lib/proxy-retry.js
+  s_4ca8f338668363::t_31904063711911 1-5,10-403,407-439,441-493,495-607,609-689,691-778
+  s_4ca8f338668363::t_43b342995f1c63 404-406,494,608,690
+  s_4ca8f338668363::t_43c75721920732 6-9
+  s_4ca8f338668363::t_ae91a02098c2a7 440
+packages/app/interceptor.js
+  s_4ca8f338668363::t_70a4ea8e4393ed 10,73-78,482-485,629
+packages/app/proxy.js
+  s_4ca8f338668363::t_70a4ea8e4393ed 12-13,22,335,343,477-490,516
+packages/app/tests/proxy-retry.test.js
+  s_4ca8f338668363::t_31904063711911 1-359,362-372,374-533
+  s_4ca8f338668363::t_0d6ed3cf082bae 360-361,373
+  s_4ca8f338668363::t_d5d83a32845b76 534-546
+packages/app/tests/proxy-retry-stream-idle.test.js
+  s_4ca8f338668363::t_31904063711911 1-111
+packages/app/tests/interceptor-proxy-profile.test.js
+  s_4ca8f338668363::t_2e46c6dbc828ad 498-534
+packages/app/tests/proxy-retry-http.test.js
+  s_4ca8f338668363::t_2e46c6dbc828ad 27-28
+  s_4ca8f338668363::t_0496d3d654ae9a 1-26,29-38
+AGENTS.md
+  s_4ca8f338668363::t_717c4bf5a75332 26
+cc-viewer-alignment/B8-E5-retry-source.json
+  s_4ca8f338668363::t_63eba8d0257dc2 1-23
+cc-viewer-alignment/B8-implementation.md
+  s_4ca8f338668363::t_19328acac1a664 52-60
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4ca8f338668363::t_c8ac9c46cb65c2 16570-16573
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "26f8b563e5cb4f538fee0942c5f942a66ed34e0d",
+  "prompts": {},
+  "sessions": {
+    "s_4ca8f338668363": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a200e6-7324-7162-956b-e799486390a7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
