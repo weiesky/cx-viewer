@@ -1,0 +1,33 @@
+packages/app/lib/scheduled-task-routes.js
+  s_b808e5a13726e4::t_d428bba941d549 1-98
+packages/app/tests/scheduled-task-api.test.js
+  s_b808e5a13726e4::t_a497399341aa8e 1-70
+packages/app/lib/scheduled-task-store.js
+  s_b808e5a13726e4::t_d428bba941d549 353
+  s_b808e5a13726e4::t_662523d20d9572 429
+packages/app/server.js
+  s_b808e5a13726e4::t_d428bba941d549 109,1872-1879
+  s_b808e5a13726e4::t_cae22c602f0fea 1880
+AGENTS.md
+  s_b808e5a13726e4::t_1f167687f87155 26
+cc-viewer-alignment/B9-implementation.md
+  s_b808e5a13726e4::t_f1c021fa87817d 53-59
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_b808e5a13726e4::t_6c948b03c6ceb7 4043-4044
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "423b381aec617017e9167804b8e3be7aaeceed1f",
+  "prompts": {},
+  "sessions": {
+    "s_b808e5a13726e4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a203fe-9d11-73a0-a439-ec8c7212a4f4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
