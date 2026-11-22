@@ -1,0 +1,33 @@
+packages/app/lib/schedule-model.js
+  s_b808e5a13726e4::t_8cc3e233343006 1-149
+packages/app/tests/cron.test.js
+  s_b808e5a13726e4::t_8cc3e233343006 1-124
+packages/app/lib/cron.js
+  s_b808e5a13726e4::t_8cc3e233343006 1-181
+packages/app/tests/schedule-model.test.js
+  s_b808e5a13726e4::t_8cc3e233343006 1-95
+AGENTS.md
+  s_b808e5a13726e4::t_4b96a2b2a0dcdc 26
+cc-viewer-alignment/B9-implementation.md
+  s_b808e5a13726e4::t_9cbc70814683d1 1-11
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_b808e5a13726e4::t_ece7cb9e93781f 4076-4077
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_b808e5a13726e4::t_20a49b92815e49 162
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "01c36c5d8e70b9b5020966b69c6dcfd59526541c",
+  "prompts": {},
+  "sessions": {
+    "s_b808e5a13726e4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a203fe-9d11-73a0-a439-ec8c7212a4f4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
