@@ -16746,3 +16746,5 @@ B9 E25（177b85/6081b5必要native适配）：实际rollout发现exec强制never
 B9 E26（177b85/2914d647/451ef48/6081b5）：双浏览器SDK/普通PTY/手机6配置16图，原菜单/CSS、实际附件/once/运行历史/暂停/discard/Ask托管取消手动；普通PTY GUI只证队列接受。E25后2443/2443/build/新安装859和747包/211Web字节全部复验。本地 `f3ad7be`（`test(schedule): verify original menus and hosting in both browsers`）。
 
 B9 E27（177b85）：实际CLI/node-pty/Codex正常权限，经隔离生成hook review后，Run now原队列→精确末条prompt模型请求1次，SID不变，native rollout on-request/workspace-write；两主请求+两标题请求，外部模型无。本地 `232350b`（`test(schedule): verify actual native PTY task delivery`）。
+
+B9 E29（2026-11-23交付）：29笔原始提交完整备份至backup/b9-raw-20261123与已验bundle，整合0a162b4；原/整合/远端tree均77d5d480b9368998f7d00597fed5e34a3a3e8c4d。已创建[PR #11](https://github.com/weiesky/cx-viewer/pull/11)到main，创建时逐页核120远端路径/状态/blob一致，实际无PR checks/分支Actions runs。按用户要求PR创建后才追加本进度更新；PR仍OPEN、未合并，B10未启动。原上游→本地hash映射保留并补整合关系，见[B9整合记录](./B9-local-commit-consolidation-2026-11-23.md)。

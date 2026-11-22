@@ -1,7 +1,7 @@
 {
   "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
   "count": 14,
-  "note": "2026-11-23 B9本地实施/验收完成，14候选按B9子项核销，详B9-candidate-matrix.md；不整条认混合提交完成。保留native权限、Ask可选默认off；独立任务按用户明确选择用AppServer，常驻不变。B9未PR/合并，B10未启动。",
+  "note": "2026-11-23: B9 native scope is complete; 14 candidates audited by subitem. The 29 raw local commits are backed up and consolidated into 0a162b4; PR #11 targets main and is OPEN, not merged. Native permissions/reviewer retained; Ask hosting defaults off; independent tasks use AppServer by user choice. B10 has not started.",
   "candidates": [
     {
       "hash": "93a17ea62361d6e90b7c89e9d317496353cd95d3",

@@ -1,6 +1,6 @@
 # B9 交接：定时任务与授权
 
-> 历史交接：本文保留B9开始前的状态。2026-11-23本地完成与未验边界见[B9完成矩阵](./B9-completion-matrix.md)，尚未PR/合并。
+> 历史交接：本文保留B9开始前的状态。2026-11-23本地完成与未验边界见[B9完成矩阵](./B9-completion-matrix.md)；29笔原始提交已整合并创建[PR #11](https://github.com/weiesky/cx-viewer/pull/11)，尚未合并。
 
 B8 已完成验收并合并 main；最终 PR、合并 hash 与检查点见 [B8 完成矩阵](./B8-completion-matrix.md)。本轮只准备 B9，未迁入定时任务或改变权限默认值。
 

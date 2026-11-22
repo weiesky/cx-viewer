@@ -3,7 +3,7 @@
   "base": "cb40a553061970abd878a87f1e1c38c07a4fe0a3",
   "branch": "alignment/b9-scheduling-authorization",
   "count": 28,
-  "note": "All implementation/verification commits through E27; final audit/progress metadata commit is intentionally outside this self-referential map. No squash, PR or merge.",
+  "note": "Original 28 implementation/verification commits through E27 are preserved below. Final audit metadata commit is listed separately. All 29 raw commits are retained in the verified backup, then consolidated into 0a162b4. PR #11 is open, not merged.",
   "commits": [
     {
       "local": "01c36c5d8e70b9b5020966b69c6dcfd59526541c",
@@ -224,5 +224,31 @@
         "177b85df2cab3358dfec08cfc5591da29e27a8d1"
       ]
     }
-  ]
+  ],
+  "auditMetadataCommit": {
+    "local": "8dd6ebe2f399e74b735b185f3f6c146fbbf41281",
+    "subject": "docs(alignment): close B9 scope audit and record verified handoff"
+  },
+  "consolidation": {
+    "pr": "https://github.com/weiesky/cx-viewer/pull/11",
+    "prNumber": 11,
+    "state": "OPEN",
+    "base": "main",
+    "baseCommit": "cb40a553061970abd878a87f1e1c38c07a4fe0a3",
+    "consolidatedHead": "0a162b4e323b52f52bf665d5ebfcc179599168ac",
+    "originalHead": "8dd6ebe2f399e74b735b185f3f6c146fbbf41281",
+    "originalCommitCount": 29,
+    "originalTree": "77d5d480b9368998f7d00597fed5e34a3a3e8c4d",
+    "consolidatedTree": "77d5d480b9368998f7d00597fed5e34a3a3e8c4d",
+    "remoteTreeAtCreation": "77d5d480b9368998f7d00597fed5e34a3a3e8c4d",
+    "remoteFilesReviewedAtCreation": 120,
+    "allRemoteBlobIdsMatchAtCreation": true,
+    "statusCheckRollupAtCreation": [],
+    "ciConclusion": "No PR checks configured/reported; no branch Actions runs. Existing local validation applies to the identical tree.",
+    "backupBranch": "backup/b9-raw-20261123",
+    "bundle": "/Users/sky/.codex/backups/cx-viewer/B9-20261123/raw-before-consolidation.bundle",
+    "bundleVerified": true,
+    "prCreatedBeforeProgressUpdate": true,
+    "merged": false
+  }
 }

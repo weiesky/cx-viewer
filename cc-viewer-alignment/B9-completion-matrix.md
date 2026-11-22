@@ -1,6 +1,6 @@
 # B9 完成矩阵（2026-11-23）
 
-B9本地实施与验收完成，位于 `alignment/b9-scheduling-authorization`，起点 `cb40a55`；尚未创建B9 PR或合并main。固定上游 `74cd752d99caf122e750216d2af3bb9f467c4de1`。14候选已按[B9子项核销表](./B9-candidate-matrix.md)处理，混合B10/B11不冒认全线完成。
+B9本地实施与验收完成，位于 `alignment/b9-scheduling-authorization`，起点 `cb40a55`；29笔原始提交已备份并整合为 `0a162b4`，已创建面向main的[PR #11](https://github.com/weiesky/cx-viewer/pull/11)，当前待审、未合并。原/整合/远端tree与创建时120文件逐一核对一致；实际无PR checks，详见[整合记录](./B9-local-commit-consolidation-2026-11-23.md)。固定上游 `74cd752d99caf122e750216d2af3bb9f467c4de1`。14候选已按[B9子项核销表](./B9-candidate-matrix.md)处理，混合B10/B11不冒认全线完成。
 
 | 范围 | 结果与证据 |
 | --- | --- |

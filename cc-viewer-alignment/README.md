@@ -2,7 +2,7 @@
 
 **迁移约束：优先参考 PR 的实际代码，禁止根据文档自由改版。** B2已按上游组件/CSS/交互纠偏并经用户验收收口；B4及后续工作包继续遵守该规则，运行性测试不能单独代表视觉对齐。必读[源码优先迁移规范与已确认偏差](./migration-code-first.md)。
 
-当前进度：2026-11-23 B9本地实施/验收完成，尚未PR/合并，B10未启动。固定74cd752，14候选按B9子项核销；最终2443/2443、0skip/build/pack747，新生产安装859/859、747包/211Web精确字节、实际native SDK/PTY及双浏览器6配置16图通过。独立任务按用户选择用AppServer保留原生审批，常驻transport不变；Ask托管可选默认关闭，三秒权限默认不迁。见[B9完成矩阵](./B9-completion-matrix.md)、[候选核销](./B9-candidate-matrix.md)与[最终回执](./B9-final-2026-11-23.json)。B8仍由[PR #9](https://github.com/weiesky/cx-viewer/pull/9)合并main `6106d41`。
+当前进度：2026-11-23 B9本地实施/验收完成，29笔原始提交已备份并整合 `0a162b4`，已创建面向main的[PR #11](https://github.com/weiesky/cx-viewer/pull/11)，OPEN、未合并，B10未启动。原/整合/远端内容一致，创建时120文件逐项核对；实际没有PR checks。按要求PR创建后才更新本进度。固定74cd752，14候选按B9子项核销；2443/2443、0skip/build/pack747，新生产安装859/859、747包/211Web精确字节、实际native与双浏览器6配置16图通过。见[B9完成矩阵](./B9-completion-matrix.md)、[整合记录](./B9-local-commit-consolidation-2026-11-23.md)及[最终回执](./B9-final-2026-11-23.json)。独立任务保留原生审批、常驻transport不变；Ask托管默认关闭。B8已由PR #9合并main `6106d41`。
 
 2026-11-22 普通CLI/PTY“＋”已由B7 E1–E13接齐并经真实双工作区GUI验证；历史缺口记录保留。B8 E16只读确认7008已具ptyMode/队列能力，普通PTY模式；本轮SDK修复是否加载仍须其对应进程正常重启核对，未停止用户实例。见[B7完成矩阵](./B7-completion-matrix.md)。
 
@@ -27,7 +27,7 @@
 | B6 | 已完成（第7/12工作包），1986完整/525安装/6场26图与10轮问答；见[B6完成矩阵](./B6-completion-matrix.md)，已由[PR #6](https://github.com/weiesky/cx-viewer/pull/6)合并main（9f3e2ce）。 |
 | B7 | 已完成并由PR #8合并main（89a8d9d），见[B7完成矩阵](./B7-completion-matrix.md)。 |
 | B8 | 已完成并由[PR #9](https://github.com/weiesky/cx-viewer/pull/9)合并main，见[B8完成矩阵](./B8-completion-matrix.md)。 |
-| B9 | 本地完成，尚未PR/合并；见[B9完成矩阵](./B9-completion-matrix.md)。 |
+| B9 | 本地完成，已提交[PR #11](https://github.com/weiesky/cx-viewer/pull/11)，待审未合并；见[B9完成矩阵](./B9-completion-matrix.md)。 |
 | B10 | 未启动；服务插件/反向代理按规划另行推进。 |
 | B11 / 工程前置 | A1 6287d2a 已主线；A2 3b15a6d 已提交工作树并通过本地验证，当前全局实例未切换。 |
 

@@ -179,3 +179,11 @@ E25后完整2443/2443、0skip、build与新生产安装859/859、全部747包/21
 14候选按B9子项逐项核销，第一父diff SHA/完整文件清单、原CSS逐字hash及用户权限/transport选择已存[B9源审计](./B9-source-audit.json)。28笔实施/验证原始本地提交（E1–E27含E11a）与上游完整hash映射保留；本笔仅维护核销/进度元数据，不自引用自己的commit hash。未执行squash、PR、merge或npm publish。当前B9本地完成，B10未启动；[完成矩阵](./B9-completion-matrix.md)、[候选核销](./B9-candidate-matrix.md)、[最终回执](./B9-final-2026-11-23.json)为最新入口。
 
 最终clean-env 2443/2443、0skip；build/pack747与E25后全新安装859/859、747包/211Web及README字节通过。实际SDK12本机请求、实际PTY两主+两标题请求、双浏览器6配置16图已分别实证，不混淆协议夹具/外部模型/队列接受。三组自有fixture正常退出、各自cwd无残留进程，见[B9清理](./B9-cleanup.json)。用户活动实例未停止/重启，未验环境/30分钟上限见完成矩阵；用户现用后端正常重启才生效。
+
+## E29 — 本地整合、PR #11与提交后进度更新
+
+用户本轮明确要求先整合本地commit、提交main PR、提交完成后更新进度文档。确认origin/main仍为cb40a55、工作区干净、无同分支PR后，备份全部29笔原始提交（E28核销元数据也保留），建立backup/b9-raw-20261123及已验bundle，再整合为0a162b4。原始8dd6ebe与整合commit的tree均为77d5d480b9368998f7d00597fed5e34a3a3e8c4d，内容无差异；没有重写功能实现。
+
+[PR #11](https://github.com/weiesky/cx-viewer/pull/11)已创建，base main、head alignment/b9-scheduling-authorization、OPEN/CLEAN/MERGEABLE；创建时逐页核120文件的路径/状态/blob SHA与精确head完全一致，远端tree亦一致。实际statusCheckRollup为空且分支无Actions runs，只有tag/release发布workflow，不冒称远端CI通过。此后才更新AGENTS/专项README/规划/完成矩阵/台账/JSON回执与原始映射，并以独立进度提交推送同一PR；详见[整合记录](./B9-local-commit-consolidation-2026-11-23.md)。
+
+整合前的2443/2443、build/pack747、新安装859/859/native/GUI证据适用于相同生产文件内容；本轮无需重跑同内容测试，核对git diff --check、备份、tree与远端文件。未合并PR、未发布npm、未启动B10，未停止/重启用户实例。
