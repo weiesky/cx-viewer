@@ -1,0 +1,78 @@
+packages/app/server/lib/context-rules.js
+  s_4ca8f338668363::t_575fa20285449e 3-25,87-89
+  s_4ca8f338668363::t_7e28d889e42b5a 80
+  s_4ca8f338668363::t_aa30b1497e61d5 90-97
+packages/app/tests/sdk-appserver-transport.test.js
+  s_4ca8f338668363::t_aa30b1497e61d5 40,358-359
+cc-viewer-alignment/B8-candidate-index.json
+  s_4ca8f338668363::t_97072e2ff82775 562
+apps/web/src/components/dashboard/AppHeader.jsx
+  s_4ca8f338668363::t_575fa20285449e 1210,1214-1215,1221,1225
+apps/web/src/components/dashboard/CachePopoverContent.jsx
+  s_4ca8f338668363::t_575fa20285449e 1,417
+apps/web/src/utils/helpers.js
+  s_4ca8f338668363::t_575fa20285449e 31,33,35
+  s_4ca8f338668363::t_aa30b1497e61d5 34
+cc-viewer-alignment/B8-implementation.md
+  s_4ca8f338668363::t_1f3318b8068a48 149-153,155-156
+  s_4ca8f338668363::t_94d5a06fa164a8 154
+packages/app/lib/sdk-manager.js
+  s_4ca8f338668363::t_575fa20285449e 781,894,907
+AGENTS.md
+  s_4ca8f338668363::t_1f3318b8068a48 26
+packages/app/lib/sdk-appserver-transport.js
+  s_4ca8f338668363::t_575fa20285449e 253-256,266
+packages/app/lib/context-watcher.js
+  s_4ca8f338668363::t_575fa20285449e 3,12,17,21,24
+cc-viewer-alignment/B8-candidate-matrix.md
+  s_4ca8f338668363::t_1f3318b8068a48 29
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4ca8f338668363::t_1f3318b8068a48 16635-16638
+apps/web/src/Mobile.jsx
+  s_4ca8f338668363::t_575fa20285449e 430,436-437,444,448,533
+packages/app/lib/sdk-adapter.js
+  s_4ca8f338668363::t_575fa20285449e 278
+packages/app/server.js
+  s_4ca8f338668363::t_575fa20285449e 53,1450
+packages/app/tests/context-window.test.js
+  s_4ca8f338668363::t_aa30b1497e61d5 1-38
+cc-viewer-alignment/probes/b8-native-context-research.mjs
+  s_4ca8f338668363::t_43873d0506b3b0 12-16,47-55,59-60
+packages/app/tests/sdk-appserver-manager.test.js
+  s_4ca8f338668363::t_aa30b1497e61d5 68,95-96
+cc-viewer-alignment/probes/b8-context-gui.mjs
+  s_4ca8f338668363::t_d0c599de9ea45b 1-2,5,8
+  s_4ca8f338668363::t_c24d39f5a9234b 3-4,6-7
+apps/web/src/components/dashboard/LiveTagPopover.jsx
+  s_4ca8f338668363::t_575fa20285449e 1,45,97
+cc-viewer-alignment/probes/b8-context-ui-fixture.mjs
+  s_4ca8f338668363::t_9af18da20648a7 1-20
+cc-viewer-alignment/B8-context-gui/result.json
+  s_4ca8f338668363::t_99b204cb735f03 1-2,5-6,8,10-13,15-16,18,20-24,26-52,55-60
+  s_4ca8f338668363::t_48953d9b05a165 3-4
+  s_4ca8f338668363::t_9b33fc955728fc 7
+  s_4ca8f338668363::t_a0e69f0a1c926f 9
+  s_4ca8f338668363::t_555880c5f0ec2a 14
+  s_4ca8f338668363::t_7aa84112487744 17
+  s_4ca8f338668363::t_76f7fca53adfab 19
+  s_4ca8f338668363::t_86ec90e4364aa5 25
+  s_4ca8f338668363::t_6dc8983aee1e7a 53-54
+cc-viewer-alignment/B8-E22-native-context-display.json
+  s_4ca8f338668363::t_f05408f0e8119a 1-186
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "e630ea2753243ab51c9ceb1414033085bdc221e6",
+  "prompts": {},
+  "sessions": {
+    "s_4ca8f338668363": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a200e6-7324-7162-956b-e799486390a7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
