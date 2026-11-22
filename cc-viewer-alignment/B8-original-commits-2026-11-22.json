@@ -2,8 +2,8 @@
   "base": "89a8d9dc508b1a9d79ac218bc870e20c4750187c",
   "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
   "rawValidatedHead": "7983660424045028334620a9ec6f6de132af979f",
-  "rawCommitCount": 36,
-  "note": "Includes carried B7 post-merge docs, E5–E7 and their revert, map-only metadata and final whitespace cleanup. The following final receipt metadata commit is recorded separately after merge to avoid a recursive self-hash.",
+  "rawCommitCount": 37,
+  "note": "All 37 original commits, including B7 local close-out docs, reverted E5–E7, metadata commits and whitespace-only cleanup, map to consolidatedHead. Full history is preserved in backup/b8-raw-20261122 and verified external final.bundle.",
   "commits": [
     {
       "hash": "e18b7fe948807616c3a1f5fd03606a34aaa9ae0b",
@@ -184,6 +184,14 @@
       "hash": "7983660424045028334620a9ec6f6de132af979f",
       "tree": "8565bc8d1a9d17d2c7a276fbcb69ff09f0f0bdec",
       "subject": "style(prompts): trim the alias helper trailing blank line"
+    },
+    {
+      "hash": "eed714f0195d8c3119361bc170223d8f1c60426a",
+      "tree": "ae05e2959919990bddf0ac4ddf06558a0499654e",
+      "subject": "docs(alignment): finalize B8 validation and original commit receipts"
     }
-  ]
+  ],
+  "rawFinalHead": "eed714f0195d8c3119361bc170223d8f1c60426a",
+  "consolidatedHead": "e2ee6e327c818d5c550b2c6e8ccbb8b373e21c27",
+  "mergedMain": "6106d41c5da0509595ed1d5a108bec6ab6d09513"
 }

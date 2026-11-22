@@ -16672,3 +16672,7 @@ d5e66ec1d8 headless子项 → 本笔feat(cli): apply managed prompts to fresh he
 ### B8 E31 — 最终验收
 
 最终2232/2232、0skip/build/pack737，全新安装685/685及全部737包/211Web精确字节、B1.2/隔离CLI通过；最终真实SDK默认exec两浏览器4请求/4最终图、idle与发送恢复/刷新/归档恢复通过。E28显式AppServer default provider实际3请求证明另保留。无外部模型/真机声明。E30 0f41f85；见[B8最终回执](./B8-final-2026-11-22.json)。整合/PR合并后再更新全局完成标记。
+
+### B8最终交付与B9准备（合并后更新）
+
+E1–E34按独立子项记录；37原始本地commit已备份/映射（含B7本地完成文档、已撤回E5–E7和元数据），整合e2ee6e3经[PR #9](https://github.com/weiesky/cx-viewer/pull/9)合并main `6106d41c5da0509595ed1d5a108bec6ab6d09513`，4个tree精确一致；实际无PR checks，不声称CI通过。最终2232/2232、0skip/build/pack737，新生产安装685/685及737包/211Web字节、B1.2/隔离CLI与真实SDK/native分项通过。54候选仅按B8职责闭合，代理重试配置/统计用户排除，混合B9–B11保留；见[B8完成矩阵](./B8-completion-matrix.md)。B9交接/14候选只准备，尚未执行，权限默认值未改。

@@ -1,0 +1,77 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "count": 14,
+  "note": "11主索引+交叉并集13，再加B8实读发现的134权限倒计时混合子项，共14；本文件只准备索引，未开始B9实施。",
+  "candidates": [
+    {
+      "hash": "93a17ea62361d6e90b7c89e9d317496353cd95d3",
+      "subject": "chore(tarball): add approval-policy.js + launch-config.js to the tarball baseline",
+      "status": "B9待实际diff/完整调用链/CSS审阅；既有包只按子项复用，不整条认完成"
+    },
+    {
+      "hash": "51c974e4415828296a8f91b469f54379b055c073",
+      "subject": "feat(permission): default auto-approve to a 3s countdown",
+      "status": "B9待实际diff/完整调用链/CSS审阅；既有包只按子项复用，不整条认完成"
+    },
+    {
+      "hash": "3d4f098f08211b53f5d5f58d4c17b603027f3899",
+      "subject": "fix(web): stop askUserQuestion 'Other' input from triggering browser password save (#155)",
+      "status": "B9待实际diff/完整调用链/CSS审阅；既有包只按子项复用，不整条认完成"
+    },
+    {
+      "hash": "177b85df2cab3358dfec08cfc5591da29e27a8d1",
+      "subject": "feat(server+web): add scheduled tasks (\"设置定时任务\")",
+      "status": "B9待实际diff/完整调用链/CSS审阅；既有包只按子项复用，不整条认完成"
+    },
+    {
+      "hash": "5ee6739cbaba22a6a6d341c020bb7d54c493e5d0",
+      "subject": "feat: merge SDK context usage into blood bars",
+      "status": "B9待实际diff/完整调用链/CSS审阅；既有包只按子项复用，不整条认完成"
+    },
+    {
+      "hash": "aaa3a59444884254cf8d5cf93ce032b35ef8aa24",
+      "subject": "docs: changelog for server-side approval countdown and UltraReview template",
+      "status": "B9待实际diff/完整调用链/CSS审阅；既有包只按子项复用，不整条认完成"
+    },
+    {
+      "hash": "208f1348279758d95b72798442105c3236fa1dd3",
+      "subject": "fix(server+web): fork review fixes for 1.9.17 — new-file save 403, plan modal reopen, fallback countdown",
+      "status": "B9待实际diff/完整调用链/CSS审阅；既有包只按子项复用，不整条认完成"
+    },
+    {
+      "hash": "7a0ba39edf6a0b54ca7a425e0f08ab410e515407",
+      "subject": "test(app): deflake git + scheduled-task tests — poll async launch, retry rmSync cleanup",
+      "status": "B9待实际diff/完整调用链/CSS审阅；既有包只按子项复用，不整条认完成"
+    },
+    {
+      "hash": "2914d6479d2845e0b193ba1c09aa6667c66850a6",
+      "subject": "feat(web): quick-fill time buttons for one-time scheduled tasks (#169)",
+      "status": "B9待实际diff/完整调用链/CSS审阅；既有包只按子项复用，不整条认完成"
+    },
+    {
+      "hash": "00fdfade7948cd895e2f714f71626f2f9e3678bd",
+      "subject": "chore: release 1.9.27",
+      "status": "B9待实际diff/完整调用链/CSS审阅；既有包只按子项复用，不整条认完成"
+    },
+    {
+      "hash": "1b3c2268e3bd0e73ffef043bf450662d01a28371",
+      "subject": "feat(web): 「添加到对话」覆盖代码 diff、工具参数区与 AskUserQuestion 卡片",
+      "status": "B9待实际diff/完整调用链/CSS审阅；既有包只按子项复用，不整条认完成"
+    },
+    {
+      "hash": "451ef48d6a7dc73347d49e3d2d13cf8fafccad8f",
+      "subject": "feat(server+web): scheduled tasks — storage in preferences.json + run history split + modal UX polish",
+      "status": "B9待实际diff/完整调用链/CSS审阅；既有包只按子项复用，不整条认完成"
+    },
+    {
+      "hash": "6081b5d01a1ae5a12063cfdc15959c392c5f37ba",
+      "subject": "feat(ask): AskUserQuestion auto-answer (问答题自动托管) — server-side hosting",
+      "status": "B9待实际diff/完整调用链/CSS审阅；既有包只按子项复用，不整条认完成"
+    },
+    {
+      "hash": "134a0de7ac166db5f9375d9f2c60bcd97248852b",
+      "subject": "docs(ultraplan): rewrite UltraReview team workflow to named Agent teammates",
+      "status": "B9待实际diff/完整调用链/CSS审阅；既有包只按子项复用，不整条认完成"
+    }
+  ]
+}

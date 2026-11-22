@@ -3,7 +3,7 @@
   "productionHead": "7983660",
   "scopeAudit": "0f41f85",
   "b8ScopeValidated": true,
-  "mergePending": true,
+  "mergePending": false,
   "tests": {
     "command": "env -u CXV_BYPASS_PERMISSIONS pnpm test",
     "counts": [
@@ -113,5 +113,20 @@
   "postValidationFormatting": {
     "commit": "7983660",
     "change": "Remove one trailing blank line in model-id-variants.js; no behavior change. Build/pack and full fresh production install repeated afterwards. Full 2232 suite and native/GUI receipts validate the same executable content before this whitespace-only cleanup."
+  },
+  "b8Complete": true,
+  "delivery": {
+    "pr": "https://github.com/weiesky/cx-viewer/pull/9",
+    "mergeCommit": "6106d41c5da0509595ed1d5a108bec6ab6d09513",
+    "mergedAt": "2026-11-22T10:23:04Z",
+    "consolidatedHead": "e2ee6e327c818d5c550b2c6e8ccbb8b373e21c27",
+    "validatedTree": "ae05e2959919990bddf0ac4ddf06558a0499654e",
+    "mergedTree": "ae05e2959919990bddf0ac4ddf06558a0499654e",
+    "remoteFilesReviewed": 238,
+    "statusCheckRollup": [],
+    "ciConclusion": "No PR checks configured/reported; local checks passed. Only npm release workflow exists.",
+    "backupBranch": "backup/b8-raw-20261122",
+    "bundle": "/Users/sky/.codex/backups/cx-viewer/B8-20261122/final.bundle",
+    "originalCommits": 37
   }
 }
