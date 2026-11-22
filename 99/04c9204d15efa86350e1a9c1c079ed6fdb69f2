@@ -1,0 +1,52 @@
+apps/web/tests/ask-auto-answer-options.test.js
+  s_b808e5a13726e4::t_2f1914106e8d95 1-48
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_b808e5a13726e4::t_c61b9e475435bd 392-398,400-413
+  s_b808e5a13726e4::t_9cfb9994d24b97 399
+cc-viewer-alignment/B9-implementation.md
+  s_b808e5a13726e4::t_45978481408ce8 122-127
+AGENTS.md
+  s_b808e5a13726e4::t_8fae7bef08eafc 26
+apps/web/src/App.jsx
+  s_b808e5a13726e4::t_df6b21f23bd7bb 465
+apps/web/src/AppBase.jsx
+  s_b808e5a13726e4::t_88efb289afb1e6 13,190,374-375,2593-2596
+apps/web/src/Mobile.jsx
+  s_b808e5a13726e4::t_419b01aaed68bb 12,759,788,998-1014
+apps/web/src/components/chat/ChatInputBar.jsx
+  s_b808e5a13726e4::t_b49fe4104d53c7 65,641
+apps/web/src/components/chat/ChatView.jsx
+  s_b808e5a13726e4::t_c451c24f13d190 806,5277,5371
+apps/web/src/components/common/QuickAutoApproveRows.jsx
+  s_b808e5a13726e4::t_82da9fb99372fb 2-3,6-7,14,34-38,52-62
+apps/web/src/components/common/quickMenuIcons.jsx
+  s_b808e5a13726e4::t_24449d56177836 114-123
+apps/web/src/components/dashboard/AppHeader.jsx
+  s_b808e5a13726e4::t_6441d21eb0cec4 12,1612-1626
+apps/web/src/components/settings/PreferencesForm.jsx
+  s_b808e5a13726e4::t_4e574c7a3216c5 5,14,20,46-54
+apps/web/src/components/terminal/TerminalPanel.jsx
+  s_b808e5a13726e4::t_5fefc700c084bb 1793
+apps/web/src/i18n.js
+  s_b808e5a13726e4::t_dca25141f12166 4-71
+apps/web/src/utils/autoApproveOptions.js
+  s_b808e5a13726e4::t_ba27e8599cb1d9 24-49
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_b808e5a13726e4::t_96e60437115481 16717-16718
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "9904c9204d15efa86350e1a9c1c079ed6fdb69f2",
+  "prompts": {},
+  "sessions": {
+    "s_b808e5a13726e4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a203fe-9d11-73a0-a439-ec8c7212a4f4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
