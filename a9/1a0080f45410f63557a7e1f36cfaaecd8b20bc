@@ -1,0 +1,37 @@
+cc-viewer-alignment/B8-candidate-index.json
+  s_4ca8f338668363::t_2ad4d6b57bdb66 112,984,1007
+cc-viewer-alignment/B8-candidate-matrix.md
+  s_4ca8f338668363::t_2ad4d6b57bdb66 15,42-43
+apps/web/src/img/model-kimi.svg
+  s_4ca8f338668363::t_8ae199e653da10 2
+cc-viewer-alignment/B8-model-logo-gui/result.json
+  s_4ca8f338668363::t_bfdcd85344728e 1-48
+AGENTS.md
+  s_4ca8f338668363::t_2ad4d6b57bdb66 26
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4ca8f338668363::t_2ad4d6b57bdb66 16607-16610
+cc-viewer-alignment/probes/b8-model-logo-gui.mjs
+  s_4ca8f338668363::t_f30d498cb4a4cb 1-16
+apps/web/src/utils/helpers.js
+  s_4ca8f338668363::t_8ae199e653da10 120,123
+cc-viewer-alignment/B8-E15-model-logo-source.json
+  s_4ca8f338668363::t_8ae199e653da10 1-13
+cc-viewer-alignment/B8-implementation.md
+  s_4ca8f338668363::t_2ad4d6b57bdb66 105-110
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a91a0080f45410f63557a7e1f36cfaaecd8b20bc",
+  "prompts": {},
+  "sessions": {
+    "s_4ca8f338668363": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a200e6-7324-7162-956b-e799486390a7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": null
+    }
+  }
+}
