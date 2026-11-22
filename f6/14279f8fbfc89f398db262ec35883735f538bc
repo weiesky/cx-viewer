@@ -1,0 +1,33 @@
+packages/app/server.js
+  s_4ca8f338668363::t_1020f2999e8747 2262-2263
+  s_4ca8f338668363::t_577b089b249e08 117,119,2208-2214,2257-2261
+AGENTS.md
+  s_4ca8f338668363::t_0befa99e799453 26
+packages/app/tests/builtin-prompt-state.test.js
+  s_4ca8f338668363::t_4832728bcadc83 1-15
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4ca8f338668363::t_a83485a205a0c8 16591-16594
+packages/app/tests/system-prompt-server.test.js
+  s_4ca8f338668363::t_4832728bcadc83 139-155
+packages/app/lib/model-system-prompts.js
+  s_4ca8f338668363::t_577b089b249e08 1,24,190,220-226,231-258,262-263,265-266
+  s_4ca8f338668363::t_46d35d45626f25 101-102,227-230
+cc-viewer-alignment/B8-implementation.md
+  s_4ca8f338668363::t_a83485a205a0c8 77-84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f614279f8fbfc89f398db262ec35883735f538bc",
+  "prompts": {},
+  "sessions": {
+    "s_4ca8f338668363": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a200e6-7324-7162-956b-e799486390a7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": null
+    }
+  }
+}
