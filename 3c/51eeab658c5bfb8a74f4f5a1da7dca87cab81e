@@ -1,0 +1,110 @@
+apps/web/src/utils/proxyProfileDisplay.js
+  s_4ca8f338668363::t_769b5b28dbd462 1-14,18,20-25,33
+  s_4ca8f338668363::t_8955f310d41429 15-17,19,26-32
+packages/app/concepts/ja/ProxySwitch.md
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+  s_4ca8f338668363::t_5a9010984ccc71 38
+packages/app/concepts/zh/ProxySwitch.md
+  s_4ca8f338668363::t_9fd7e921b87d09 58-67
+  s_4ca8f338668363::t_5a9010984ccc71 5,41,55
+apps/web/src/AppBase.jsx
+  s_4ca8f338668363::t_8955f310d41429 1,156,920,1765,2394-2446,2450,2455-2456,2467
+  s_4ca8f338668363::t_6bd2d3b3cfdd94 2471
+  s_4ca8f338668363::t_add54b8db1872e 2476
+AGENTS.md
+  s_4ca8f338668363::t_5f9523eb1d2653 26
+packages/app/concepts/pt-BR/ProxySwitch.md
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+  s_4ca8f338668363::t_5a9010984ccc71 38
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_4ca8f338668363::t_8955f310d41429 278
+  s_4ca8f338668363::t_980d53f3443a8e 56-57,2100-2156
+packages/app/concepts/uk/ProxySwitch.md
+  s_4ca8f338668363::t_5a9010984ccc71 38
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+apps/web/src/components/settings/ProxyModal.jsx
+  s_4ca8f338668363::t_8955f310d41429 1,50,178,182,193,197
+  s_4ca8f338668363::t_769b5b28dbd462 31-32,39-41,63-69,109-110,126-132,173-177,179-181,183-192,194-196,198-209,219-220
+packages/app/concepts/tr/ProxySwitch.md
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+  s_4ca8f338668363::t_5a9010984ccc71 38
+packages/app/concepts/pl/ProxySwitch.md
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+  s_4ca8f338668363::t_5a9010984ccc71 38
+apps/web/src/i18n.js
+  s_4ca8f338668363::t_769b5b28dbd462 13083-13242
+packages/app/concepts/ko/ProxySwitch.md
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+  s_4ca8f338668363::t_5a9010984ccc71 38
+packages/app/concepts/it/ProxySwitch.md
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+  s_4ca8f338668363::t_5a9010984ccc71 38
+packages/app/concepts/ar/ProxySwitch.md
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+  s_4ca8f338668363::t_5a9010984ccc71 38
+packages/app/concepts/es/ProxySwitch.md
+  s_4ca8f338668363::t_5a9010984ccc71 38
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+packages/app/concepts/th/ProxySwitch.md
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+  s_4ca8f338668363::t_5a9010984ccc71 38
+packages/app/concepts/zh-TW/ProxySwitch.md
+  s_4ca8f338668363::t_5a9010984ccc71 41,55
+  s_4ca8f338668363::t_9fd7e921b87d09 58-67
+cc-viewer-alignment/B8-E26-role-ui-source.json
+  s_4ca8f338668363::t_c463e813b17c79 1-21
+packages/app/concepts/de/ProxySwitch.md
+  s_4ca8f338668363::t_5a9010984ccc71 38
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+packages/app/concepts/ru/ProxySwitch.md
+  s_4ca8f338668363::t_5a9010984ccc71 38
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+apps/web/src/components/settings/ProxyModal.module.css
+  s_4ca8f338668363::t_769b5b28dbd462 88-126
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4ca8f338668363::t_5f9523eb1d2653 16651-16654
+cc-viewer-alignment/B8-implementation.md
+  s_4ca8f338668363::t_5f9523eb1d2653 181-188
+packages/app/concepts/fr/ProxySwitch.md
+  s_4ca8f338668363::t_5a9010984ccc71 38
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+packages/app/concepts/da/ProxySwitch.md
+  s_4ca8f338668363::t_5a9010984ccc71 38
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+packages/app/concepts/en/ProxySwitch.md
+  s_4ca8f338668363::t_5a9010984ccc71 5,41
+  s_4ca8f338668363::t_9fd7e921b87d09 55,58-67
+packages/app/concepts/no/ProxySwitch.md
+  s_4ca8f338668363::t_5a9010984ccc71 38
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+apps/web/src/App.jsx
+  s_4ca8f338668363::t_792fd9555d9a81 375,465
+apps/web/src/Mobile.jsx
+  s_4ca8f338668363::t_62f6c50d257972 738,888
+apps/web/src/components/chat/ChatView.jsx
+  s_4ca8f338668363::t_b2a94a7879a4c9 782-784,4535,5271
+apps/web/src/components/chat/ProxyChip.jsx
+  s_4ca8f338668363::t_158d762892ca6e 1,16,23-25,30-32,48
+apps/web/src/components/dashboard/AppHeader.jsx
+  s_4ca8f338668363::t_12f50ef9e2e69e 1,35,297-298,817-819,1201-1211,1419,1894
+cc-viewer-alignment/probes/b8-role-gui.mjs
+  s_4ca8f338668363::t_9b60593780f943 1-22
+cc-viewer-alignment/probes/b8-role-ui-fixture.mjs
+  s_4ca8f338668363::t_4028a7a0068378 1-8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "3c51eeab658c5bfb8a74f4f5a1da7dca87cab81e",
+  "prompts": {},
+  "sessions": {
+    "s_4ca8f338668363": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a200e6-7324-7162-956b-e799486390a7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
