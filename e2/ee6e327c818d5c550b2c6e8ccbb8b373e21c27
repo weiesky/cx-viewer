@@ -1,0 +1,628 @@
+apps/web/src/utils/helpers.js
+  s_4ca8f338668363::t_8ae199e653da10 107,110
+  s_4ca8f338668363::t_575fa20285449e 31,33,35
+  s_4ca8f338668363::t_aa30b1497e61d5 34
+cc-viewer-alignment/probes/b8-sdk-send-gui.mjs
+  s_4ca8f338668363::t_09d7aa8d33a3dd 9
+  s_4ca8f338668363::t_5de3164e4c3d3f 5,8
+  s_4ca8f338668363::t_9a685e12c678e0 1,4,6,11-12,14-16
+  s_4ca8f338668363::t_1216c75a4e6547 2-3
+  s_4ca8f338668363::t_d0049781237494 13
+  s_4ca8f338668363::t_3b4e638f15b3fd 7,10
+cc-viewer-alignment/B8-model-logo-gui/result.json
+  s_4ca8f338668363::t_bfdcd85344728e 1-48
+packages/app/tests/ultra-agents-route.test.js
+  s_4ca8f338668363::t_5584924ee1bb65 8,51,57-64,70
+packages/app/tests/sdk-appserver-manager.test.js
+  s_4ca8f338668363::t_aa30b1497e61d5 68,95-96
+cc-viewer-alignment/B8-expert-gui/result.json
+  s_4ca8f338668363::t_8622475e687584 1-34
+cc-viewer-alignment/probes/b8-sdk-cli-fixture.mjs
+  s_4ca8f338668363::t_bc743345e3efdc 1-11
+packages/app/tests/cli-args.test.js
+  s_4ca8f338668363::t_2f50e738c907af 121-132
+apps/web/src/components/settings/SystemTextModal.jsx
+  s_4ca8f338668363::t_fd68cb623694da 14-16
+  s_4ca8f338668363::t_f1a56a8ca09e5d 1-5,7-10,23,28-33,41-45,53-54,56-57,59-64,71-72,87-88,93,97-111,116-131,155-165,178-180,188-191,194-195,210-258,260,263,266,268,277-279,281,284-298,301-303,305-308,310,314,316,319-326,334-338,341,373-375,378,383-393,404,406,412-414,451-462,472-482,484,488,490-492,496-516,518
+cc-viewer-alignment/probes/b8-native-manual-prompt.mjs
+  s_4ca8f338668363::t_3f8266f5d2add0 1-50
+packages/app/lib/log-v2/coordinator.js
+  s_4ca8f338668363::t_781f8e540432f4 76-84
+packages/app/concepts/pl/ProxySwitch.md
+  s_4ca8f338668363::t_5a9010984ccc71 38
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+cc-viewer-alignment/B8-original-commits-2026-11-22.json
+  s_4ca8f338668363::t_c2d0fe6e0d689a 1-3,7-176,187-189
+  s_4ca8f338668363::t_ac83c58ecd9858 4-6,177-186
+packages/app/concepts/zh/ProxySwitch.md
+  s_4ca8f338668363::t_9fd7e921b87d09 58-67
+  s_4ca8f338668363::t_5a9010984ccc71 5,41,55
+packages/app/system-prompt-templates/presets/deepseek-v4-flash.md
+  s_4ca8f338668363::t_38e475a7706023 1-67
+apps/web/src/utils/proxyProfileDisplay.js
+  s_4ca8f338668363::t_769b5b28dbd462 1-14,18,20-25,33
+  s_4ca8f338668363::t_8955f310d41429 15-17,19,26-32
+packages/app/concepts/ko/UltraPlan.md
+  s_4ca8f338668363::t_1410907ce121ba 86,89-90,96,101
+apps/web/src/img/model-kimi.svg
+  s_4ca8f338668363::t_8ae199e653da10 2
+packages/app/concepts/th/UltraPlan.md
+  s_4ca8f338668363::t_1410907ce121ba 86,89-90,96,101
+apps/web/src/components/chat/ProxyChip.jsx
+  s_4ca8f338668363::t_158d762892ca6e 1,16,23-25,30-32,48
+apps/web/src/utils/modelSuggestions.js
+  s_4ca8f338668363::t_99fe1d3e096517 1-16
+cc-viewer-alignment/B8-E11-preset-source.json
+  s_4ca8f338668363::t_38e475a7706023 1-182
+packages/app/concepts/tr/UltraPlan.md
+  s_4ca8f338668363::t_1410907ce121ba 86,89-90,96,101
+cc-viewer-alignment/B7-final-2026-11-22.json
+  s_76602f25d7665d::t_a7cfc8b0bae6a4 1-61
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_4ca8f338668363::t_8955f310d41429 278
+  s_4ca8f338668363::t_bbe7179968cb12 323,325,793-794
+  s_4ca8f338668363::t_980d53f3443a8e 56-57,2100-2156
+  s_4ca8f338668363::t_3a451e493d1642 2157-2187
+cc-viewer-alignment/probes/b8-native-literal-args.mjs
+  s_4ca8f338668363::t_e3ec45f9579267 1-3,5-8,10
+  s_4ca8f338668363::t_9339f3baed67ff 4,9
+packages/app/lib/appserver-bridge.js
+  s_4ca8f338668363::t_614f1c3a3bfa5f 1,177,2572,2731
+  s_4ca8f338668363::t_2ae37f0d09bbbb 532-548,2848,2870
+  s_4ca8f338668363::t_fad8a64019219e 182-187,191
+packages/app/interceptor.js
+  s_4ca8f338668363::t_e91e9254e326ed 606
+  s_4ca8f338668363::t_a652ad647cd35d 78-80
+  s_4ca8f338668363::t_07df3d0787bba4 15,76
+  s_4ca8f338668363::t_574ea1f33a79e5 25,84,86-89,91-92,179-185,479,601-605,607-615,619,638
+packages/app/system-prompt-templates/presets/index.json
+  s_4ca8f338668363::t_38e475a7706023 1-63
+packages/app/concepts/no/UltraPlan.md
+  s_4ca8f338668363::t_1410907ce121ba 86,89-90,96,101
+cc-viewer-alignment/B8-scope-audit.md
+  s_4ca8f338668363::t_e5e0b77e5ef44b 2,4,6,17
+  s_4ca8f338668363::t_da2b0a63b9f49f 1,3,5,7-16,18
+packages/app/lib/builtin-model-prompts.js
+  s_4ca8f338668363::t_0c7fe8b2761e86 1-39
+apps/web/src/components/common/ConfirmRemoveButton.jsx
+  s_4ca8f338668363::t_a6f7a18f07428d 24-31,51,76
+packages/app/lib/interceptor-core.js
+  s_4ca8f338668363::t_07df3d0787bba4 56-63
+packages/app/concepts/uk/UltraPlan.md
+  s_4ca8f338668363::t_1410907ce121ba 86,89-90,96,101
+packages/app/concepts/th/ProxySwitch.md
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+  s_4ca8f338668363::t_5a9010984ccc71 38
+cc-viewer-alignment/B8-E26-role-ui-source.json
+  s_4ca8f338668363::t_c463e813b17c79 1-21
+packages/app/tests/sdk-root-model.test.js
+  s_4ca8f338668363::t_59b4c094534c40 6
+  s_4ca8f338668363::t_289a61201b44b3 1,3-5,7-8,11-12
+  s_4ca8f338668363::t_4e2f6076fcbe0c 2,9-10
+cc-viewer-alignment/B7-original-commits-2026-11-22.json
+  s_76602f25d7665d::t_a7cfc8b0bae6a4 1-237
+cc-viewer-alignment/B8-implementation.md
+  s_4ca8f338668363::t_1f3318b8068a48 149-153,155-156
+  s_4ca8f338668363::t_fb9dee78045740 201-206
+  s_4ca8f338668363::t_2f3e4a3e8d3fb1 219-222
+  s_4ca8f338668363::t_d2bc9b2d1a51da 142
+  s_4ca8f338668363::t_57247c196cc18e 135-141
+  s_4ca8f338668363::t_bbe06534f9756d 123-128
+  s_4ca8f338668363::t_7e255492ae5665 211-218
+  s_4ca8f338668363::t_6738f73055f113 189-194
+  s_4ca8f338668363::t_88626840963194 14-23,41
+  s_4ca8f338668363::t_acd6ec8d593612 195-200
+  s_4ca8f338668363::t_000611b0518335 99-104
+  s_4ca8f338668363::t_7e2e29e0862938 38,42-51
+  s_4ca8f338668363::t_92ac83da972081 59-65
+  s_4ca8f338668363::t_94d5a06fa164a8 154
+  s_4ca8f338668363::t_870d3807a835c3 28,31-37
+  s_4ca8f338668363::t_a83485a205a0c8 77-84
+  s_4ca8f338668363::t_19328acac1a664 52-53,55
+  s_4ca8f338668363::t_1505cfa4088206 1-13,39-40
+  s_4ca8f338668363::t_3469b2ce5585ab 129-134
+  s_4ca8f338668363::t_641c1d20ab7ea8 24-27,29-30
+  s_4ca8f338668363::t_1e1db26f081118 163-170
+  s_4ca8f338668363::t_4406557faa830d 54,56,58
+  s_4ca8f338668363::t_2ad4d6b57bdb66 105-110
+  s_4ca8f338668363::t_97f3c9b58b773a 143-148
+  s_4ca8f338668363::t_da2b0a63b9f49f 207-210
+  s_4ca8f338668363::t_97accfb9fb5283 119-122
+  s_4ca8f338668363::t_9bb9a49afffb07 111-118
+  s_4ca8f338668363::t_5f9523eb1d2653 181-188
+  s_4ca8f338668363::t_c585d1d08e54e2 57
+  s_4ca8f338668363::t_ea97841504679e 171-180
+  s_4ca8f338668363::t_b1b1b68c71f145 66-76
+  s_4ca8f338668363::t_205de482abe0b0 85-98
+  s_4ca8f338668363::t_3f1adf975c2594 157-162
+packages/app/lib/headless-system-prompts.js
+  s_4ca8f338668363::t_ea5ae8d3ac2422 102,104,110-112,115
+  s_4ca8f338668363::t_f13ed0255bf0f7 54-55,58-59,64,97-98
+  s_4ca8f338668363::t_84d8b9845d7b7d 19,23,25-27
+  s_4ca8f338668363::t_41baef99a99d61 1-8,10-18,20-22,24,28-33,36,38-39,45-53,56-57,60-63,65-74,78-92,94-96,99-101,105-109,113-114,116-118
+  s_4ca8f338668363::t_2c41d61b6a3caa 93,103
+  s_4ca8f338668363::t_25f081e57ecdb5 9,34-35,37,40-44,75-77
+packages/app/tests/ultraplan-generated-assets.test.js
+  s_4ca8f338668363::t_1cfc4843dc9f79 49
+cc-viewer-alignment/B8-E22-native-context-display.json
+  s_4ca8f338668363::t_f05408f0e8119a 1-186
+packages/app/concepts/uk/ProxySwitch.md
+  s_4ca8f338668363::t_5a9010984ccc71 38
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+packages/app/lib/context-watcher.js
+  s_4ca8f338668363::t_575fa20285449e 3,12,17,21,24
+apps/web/src/components/dashboard/CachePopoverContent.jsx
+  s_4ca8f338668363::t_575fa20285449e 1,417
+packages/app/concepts/ru/UltraPlan.md
+  s_4ca8f338668363::t_1410907ce121ba 86,89-90,96,101
+cc-viewer-alignment/B7-installed-2026-11-22.json
+  s_76602f25d7665d::t_a7cfc8b0bae6a4 1-14
+cc-viewer-alignment/B8-E13-ui-source.json
+  s_4ca8f338668363::t_4001191acc1906 1-41
+cc-viewer-alignment/B8-E18-native-literal-args.json
+  s_4ca8f338668363::t_cf20e5430f6d54 1-12
+apps/web/tests/builtin-prompt-tabs.test.js
+  s_4ca8f338668363::t_477384dcaa550b 1-77
+packages/app/tests/headless-system-prompts.test.js
+  s_4ca8f338668363::t_84d8b9845d7b7d 38-39
+  s_4ca8f338668363::t_9cb3b80e8c49ea 1-6,8-17,29-34,40-87
+  s_4ca8f338668363::t_a5ccab0197554c 35-37
+  s_4ca8f338668363::t_076ef3b0fd6fd7 7,18-27
+  s_4ca8f338668363::t_c093a4219205ef 28
+  s_4ca8f338668363::t_a9852c7d039b7b 88-101
+cc-viewer-alignment/probes/b8-model-prompts-fixture.mjs
+  s_4ca8f338668363::t_9f138cafa12407 1-45
+cc-viewer-alignment/B7-local-commit-consolidation-2026-11-22.md
+  s_76602f25d7665d::t_c99b177ea7be61 1-13,15-72
+  s_76602f25d7665d::t_b1d59bdbe02c27 14
+packages/app/tests/logger-bootstrap.test.js
+  s_4ca8f338668363::t_e8091d4caa9eb4 185-215
+  s_4ca8f338668363::t_31622a47531b70 127-135
+apps/web/src/components/settings/SystemTextModal.module.css
+  s_4ca8f338668363::t_e5d6cf2170d749 197-198,269,279-296,313-314,336-386,388-389,392-405,407,412-422
+cc-viewer-alignment/README.md
+  s_4ca8f338668363::t_9bb9a49afffb07 7
+  s_4ca8f338668363::t_17bb1f697a4d54 29
+  s_76602f25d7665d::t_a1fa5d45d7ae8c 23,28,32
+  s_4ca8f338668363::t_97accfb9fb5283 5
+apps/web/src/utils/builtinPromptTabs.js
+  s_4ca8f338668363::t_e5d6cf2170d749 1-60
+packages/app/lib/proxy-profile.js
+  s_4ca8f338668363::t_5e8bbfdfa1366c 102
+cc-viewer-alignment/B8-E21-native-headless-cli.json
+  s_4ca8f338668363::t_b766bc0d4a2bb7 1-68
+packages/app/concepts/da/ProxySwitch.md
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+  s_4ca8f338668363::t_5a9010984ccc71 38
+apps/web/src/components/dashboard/AppHeader.jsx
+  s_4ca8f338668363::t_575fa20285449e 1222,1226-1227,1233,1237
+  s_4ca8f338668363::t_f1a56a8ca09e5d 2,180-181
+  s_4ca8f338668363::t_12f50ef9e2e69e 1,35,297-298,817-819,1201-1211,1419,1894
+cc-viewer-alignment/B7-fixtures-retired-2026-11-22.json
+  s_76602f25d7665d::t_a7cfc8b0bae6a4 1-17
+packages/app/tests/builtin-model-prompts.test.js
+  s_4ca8f338668363::t_0c7fe8b2761e86 1-13
+apps/web/src/components/settings/ModelPromptTabs.jsx
+  s_4ca8f338668363::t_e5d6cf2170d749 1-2,4,8-29,32-36,38,43-44,46,53-70,72-77,80,86-96,99-110,124-130,135,141-145,147-151,157-158,162,167-176,178-186,188-251
+packages/app/system-prompt-templates/presets/kimi-k2.7-code.md
+  s_4ca8f338668363::t_38e475a7706023 1-80
+packages/app/server.js
+  s_4ca8f338668363::t_6680b773632476 22-24,957-989,2267,3069-3070,3072,3116,3123-3124,3132-3133,3140-3142,3144-3145,3147,6485-6486
+  s_4ca8f338668363::t_577b089b249e08 120,123,2246-2248,2250-2252,2299-2303
+  s_4ca8f338668363::t_614f1c3a3bfa5f 121,124,2249,2268-2269,2272
+  s_4ca8f338668363::t_575fa20285449e 56,1485
+  s_4ca8f338668363::t_1020f2999e8747 2304-2305
+  s_4ca8f338668363::t_7a03055179e34a 3117-3122,3125-3126,3134,3143
+packages/app/tests/otel-config.test.js
+  s_4ca8f338668363::t_3c9e3d2d121590 73-80
+apps/web/src/i18n.js
+  s_4ca8f338668363::t_769b5b28dbd462 13103-13262
+  s_4ca8f338668363::t_f1a56a8ca09e5d 4-19
+  s_4ca8f338668363::t_452d078d6b5d5f 3624-3643
+  s_4ca8f338668363::t_d3d798dca6e997 10624-10641
+packages/app/lib/otel-config.js
+  s_4ca8f338668363::t_f268d4c45029d8 1-2,63-66,74
+packages/app/concepts/zh-TW/UltraPlan.md
+  s_4ca8f338668363::t_1410907ce121ba 86,89-90,96,101
+cc-viewer-alignment/probes/b8-context-gui.mjs
+  s_4ca8f338668363::t_d0c599de9ea45b 1-2,5,8
+  s_4ca8f338668363::t_c24d39f5a9234b 3-4,6-7
+apps/web/src/components/dashboard/LiveTagPopover.jsx
+  s_4ca8f338668363::t_575fa20285449e 1,45,97
+packages/app/system-prompt-templates/presets/GLM-5.2.md
+  s_4ca8f338668363::t_38e475a7706023 1-73
+packages/app/concepts/tr/ProxySwitch.md
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+  s_4ca8f338668363::t_5a9010984ccc71 38
+packages/app/lib/sdk-exec-transport.js
+  s_4ca8f338668363::t_cf51f087aebbfa 11-12
+  s_4ca8f338668363::t_d1d6cf005d3540 13
+cc-viewer-alignment/B8-E25-headless-workspace.json
+  s_4ca8f338668363::t_6bf903c0478d25 1-77
+packages/app/lib/workspace-proxy.js
+  s_4ca8f338668363::t_a652ad647cd35d 10,26-30,37,71
+  s_4ca8f338668363::t_2c41d61b6a3caa 2,41-45
+  s_4ca8f338668363::t_909eb098ed9605 1,3-9,11-25,31-36,38-40,46-70,72-86
+cc-viewer-alignment/B8-E20-native-headless-prompt.json
+  s_4ca8f338668363::t_4e0389291804b3 1-66
+packages/app/lib/pty-workspace-runtime.js
+  s_4ca8f338668363::t_2c41d61b6a3caa 95
+  s_4ca8f338668363::t_614f1c3a3bfa5f 70
+  s_4ca8f338668363::t_2ae37f0d09bbbb 60
+apps/web/src/components/settings/ProxyModal.module.css
+  s_4ca8f338668363::t_769b5b28dbd462 88-126
+cc-viewer-alignment/B8-round1-fixture-retired.json
+  s_4ca8f338668363::t_fbc64b18ffe52c 1-14
+apps/web/src/AppBase.jsx
+  s_4ca8f338668363::t_add54b8db1872e 2496
+  s_4ca8f338668363::t_6bd2d3b3cfdd94 2491
+  s_4ca8f338668363::t_452d078d6b5d5f 1046,1048-1049,1051,1057-1063,1093-1094,1097-1100,1102,1138-1142,1557,1623-1627
+  s_4ca8f338668363::t_8955f310d41429 1,156,920,1785,2414-2466,2470,2475-2476,2487
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4ca8f338668363::t_0efb7dcf54ddb5 16562-16565
+  s_4ca8f338668363::t_da2b0a63b9f49f 16667-16670
+  s_4ca8f338668363::t_60c82ab7bc3914 16553-16557
+  s_4ca8f338668363::t_57247c196cc18e 16627-16630
+  s_4ca8f338668363::t_c8ac9c46cb65c2 16570-16571
+  s_4ca8f338668363::t_5f52a6bc3fa985 16575-16578
+  s_4ca8f338668363::t_fb9dee78045740 16663-16666
+  s_4ca8f338668363::t_7e255492ae5665 16671-16674
+  s_4ca8f338668363::t_2ad4d6b57bdb66 16607-16610
+  s_4ca8f338668363::t_ea97841504679e 16647-16650
+  s_4ca8f338668363::t_eca628148bc5b6 16583-16586
+  s_76602f25d7665d::t_069ffb28c13d89 15404
+  s_4ca8f338668363::t_9bb9a49afffb07 16611-16614
+  s_4ca8f338668363::t_7b51c6aa292974 16572,16574
+  s_4ca8f338668363::t_79cf420fa889f3 16595-16598
+  s_4ca8f338668363::t_452b27fdaa5575 16579-16582
+  s_4ca8f338668363::t_97f3c9b58b773a 16631-16634
+  s_4ca8f338668363::t_9515655bb2729b 5952
+  s_4ca8f338668363::t_3f1adf975c2594 16639-16642
+  s_4ca8f338668363::t_1f3318b8068a48 16635-16638
+  s_4ca8f338668363::t_49df948052f115 16587-16590
+  s_4ca8f338668363::t_acd6ec8d593612 16659-16662
+  s_4ca8f338668363::t_1e1db26f081118 16643-16646
+  s_4ca8f338668363::t_205de482abe0b0 16599-16602
+  s_4ca8f338668363::t_6738f73055f113 16655-16658
+  s_4ca8f338668363::t_000611b0518335 16603-16606
+  s_4ca8f338668363::t_bbe06534f9756d 16619-16622
+  s_4ca8f338668363::t_97accfb9fb5283 16615-16618
+  s_4ca8f338668363::t_8c68ba22ec69e2 16558-16561
+  s_4ca8f338668363::t_3469b2ce5585ab 16623-16626
+  s_4ca8f338668363::t_17bb1f697a4d54 16566-16569
+  s_76602f25d7665d::t_a7cfc8b0bae6a4 3,90-91,121-122,170-171,205-206,240-241,402-403,469-470,718-719,1300-1301,1330-1331,1358-1359,1391-1392,1409-1410,1662-1663,1683-1684,2203-2204,2224-2225,2338-2339,2520-2521,2645-2646,2665-2666,2685-2686,2790-2791,2869-2870,2940-2941,3038-3039,3106-3107,3126-3127,3328-3329,3415-3416,3457-3458,3689-3690,3839-3840,4185-4186,4229-4230,4261-4262,4396-4397,4416-4417,4558-4559,4581-4582,4598-4599,4622-4623,4677-4678,4829-4830,5015-5016,5312-5313,5455-5456,5551-5552,5619-5620,5774-5775,5990-5991,6616-6617,6642-6643,6938-6939,7051-7052,7229-7230,7349-7350,7405-7406,7457-7458,7604-7605,7662-7663,7755-7756,7920-7921,8013-8014,8091-8092,8236-8237,8260-8261,8397-8398,15247-15248,15265-15266,15288-15289,15321-15322,15350-15351,15403
+  s_4ca8f338668363::t_8d37b8ac249220 16573
+  s_4ca8f338668363::t_5f9523eb1d2653 16651-16654
+  s_4ca8f338668363::t_a83485a205a0c8 16591-16594
+cc-viewer-alignment/probes/b8-expert-gui.mjs
+  s_4ca8f338668363::t_129ef99a61f724 1-36
+cc-viewer-alignment/B8-handoff.md
+  s_76602f25d7665d::t_b1d59bdbe02c27 7
+  s_4ca8f338668363::t_97accfb9fb5283 3
+  s_76602f25d7665d::t_c99b177ea7be61 5-6,8-15
+  s_4ca8f338668363::t_17bb1f697a4d54 1-2,4
+packages/app/concepts/de/ProxySwitch.md
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+  s_4ca8f338668363::t_5a9010984ccc71 38
+packages/app/concepts/ar/ProxySwitch.md
+  s_4ca8f338668363::t_5a9010984ccc71 38
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+apps/web/src/components/common/ChipIcon.jsx
+  s_4ca8f338668363::t_e5d6cf2170d749 1-24
+packages/app/tests/system-prompt-server.test.js
+  s_4ca8f338668363::t_4832728bcadc83 139-155
+packages/app/system-prompt-templates/presets/kimi-k3.md
+  s_4ca8f338668363::t_38e475a7706023 1-93
+apps/web/tests/ultrareview-policy.test.js
+  s_4ca8f338668363::t_27e18dd94c0676 1-8
+packages/app/concepts/de/UltraPlan.md
+  s_4ca8f338668363::t_1410907ce121ba 86,89-90,96,101
+cc-viewer-alignment/B8-native-context-research.json
+  s_4ca8f338668363::t_4650f6386a3f62 1-134
+cc-viewer-alignment/B7-handoff.md
+  s_76602f25d7665d::t_a7cfc8b0bae6a4 1-3
+packages/app/concepts/it/ProxySwitch.md
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+  s_4ca8f338668363::t_5a9010984ccc71 38
+packages/app/lib/sdk-adapter.js
+  s_4ca8f338668363::t_575fa20285449e 278
+packages/app/tests/native-role-proxy.test.js
+  s_4ca8f338668363::t_d5e3a3364dd7f5 18,23
+  s_4ca8f338668363::t_527364e4724fe9 1-17,19-22,24-28
+packages/app/proxy.js
+  s_4ca8f338668363::t_84ddf3c7b955fc 488
+  s_4ca8f338668363::t_2ae37f0d09bbbb 336,478,487,490-494
+  s_4ca8f338668363::t_781f8e540432f4 203-204
+  s_4ca8f338668363::t_c378697ad606e3 479-480,486,489,550-552
+  s_4ca8f338668363::t_5e8bbfdfa1366c 12,45,50-55
+  s_4ca8f338668363::t_0b7050e7c5483b 150-151
+  s_4ca8f338668363::t_07df3d0787bba4 13,481-485
+packages/app/concepts/da/UltraPlan.md
+  s_4ca8f338668363::t_1410907ce121ba 86,89-90,96,101
+cc-viewer-alignment/probes/b8-model-logo-gui.mjs
+  s_4ca8f338668363::t_f30d498cb4a4cb 1-16
+cc-viewer-alignment/B8-E16-checkpoint.json
+  s_4ca8f338668363::t_9bb9a49afffb07 1-69
+AGENTS.md
+  s_4ca8f338668363::t_97f3c9b58b773a 31
+  s_4ca8f338668363::t_7e255492ae5665 26
+  s_4ca8f338668363::t_9bb9a49afffb07 27-28
+packages/app/system-prompt-templates/presets/GLM-5.3.md
+  s_4ca8f338668363::t_38e475a7706023 1-75
+packages/app/src/utils/ultraplanTemplates.js
+  s_4ca8f338668363::t_e6c43e59135a6a 64,67-68,74,79
+cc-viewer-alignment/B8-E28-default-appserver-route.json
+  s_4ca8f338668363::t_9b6b472063506f 1-42
+cc-viewer-alignment/probes/b8-native-builtin-binding.mjs
+  s_4ca8f338668363::t_67dea0ab620ded 1-63
+apps/web/src/components/chat/ChatView.jsx
+  s_4ca8f338668363::t_b2a94a7879a4c9 782-784,4535,5271
+cc-viewer-alignment/probes/b8-native-context-research.mjs
+  s_4ca8f338668363::t_3469b2ce5585ab 36
+  s_4ca8f338668363::t_99439cf6b6b85c 1-11,17-35,37-46,56-58
+  s_4ca8f338668363::t_43873d0506b3b0 12-16,47-55,59-60
+packages/app/concepts/zh/UltraPlan.md
+  s_4ca8f338668363::t_1410907ce121ba 86,89-90,96,101
+packages/app/tests/model-system-prompts.test.js
+  s_4ca8f338668363::t_e3cad716a39be2 57-77
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_4ca8f338668363::t_97accfb9fb5283 152
+  s_4ca8f338668363::t_961ebe27fce534 153
+  s_4ca8f338668363::t_17bb1f697a4d54 37,49-50
+  s_4ca8f338668363::t_452b27fdaa5575 3,156
+  s_76602f25d7665d::t_a7cfc8b0bae6a4 48,142
+  s_76602f25d7665d::t_d67e954f5afe5f 43,199
+packages/app/tests/log-v2-coordinator.test.js
+  s_4ca8f338668363::t_ffd29599dc89c2 721-747
+cc-viewer-alignment/B8-E15-model-logo-source.json
+  s_4ca8f338668363::t_8ae199e653da10 1-13
+packages/app/concepts/fr/ProxySwitch.md
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+  s_4ca8f338668363::t_5a9010984ccc71 38
+cc-viewer-alignment/B8-E4-native-prompt-binding.json
+  s_4ca8f338668363::t_ef92e4033a9bd3 1-83
+cc-viewer-alignment/B8-E28-default-appserver-red.json
+  s_4ca8f338668363::t_4349316668373d 1-11
+packages/app/lib/sdk-manager.js
+  s_4ca8f338668363::t_c378697ad606e3 457-462
+  s_4ca8f338668363::t_2ae37f0d09bbbb 439-444
+  s_4ca8f338668363::t_72f6e071525789 437-438
+  s_4ca8f338668363::t_575fa20285449e 791,904,917
+cc-viewer-alignment/probes/b8-role-gui.mjs
+  s_4ca8f338668363::t_9b60593780f943 1-22
+packages/app/tests/builtin-prompt-selection.test.js
+  s_4ca8f338668363::t_0e257dbb3e7507 18-26
+  s_4ca8f338668363::t_cde4044eb11a11 1-17,27
+packages/app/tests/workspace-proxy-api.test.js
+  s_4ca8f338668363::t_637121f9873872 1-24
+packages/app/package.json
+  s_4ca8f338668363::t_ebf1725f21101b 88
+  s_4ca8f338668363::t_38e475a7706023 70
+packages/app/concepts/pt-BR/ProxySwitch.md
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+  s_4ca8f338668363::t_5a9010984ccc71 38
+apps/web/src/App.jsx
+  s_4ca8f338668363::t_792fd9555d9a81 375,465
+packages/app/concepts/pl/UltraPlan.md
+  s_4ca8f338668363::t_1410907ce121ba 86,89-90,96,101
+packages/app/tests/sdk-manager.test.js
+  s_4ca8f338668363::t_cf51f087aebbfa 28-31
+packages/app/tests/context-window.test.js
+  s_4ca8f338668363::t_aa30b1497e61d5 1-38
+cc-viewer-alignment/B8-context-gui/result.json
+  s_4ca8f338668363::t_7aa84112487744 17
+  s_4ca8f338668363::t_48953d9b05a165 3-4
+  s_4ca8f338668363::t_555880c5f0ec2a 14
+  s_4ca8f338668363::t_99b204cb735f03 1-2,5-6,8,10-13,15-16,18,20-24,26-52,55-60
+  s_4ca8f338668363::t_86ec90e4364aa5 25
+  s_4ca8f338668363::t_6dc8983aee1e7a 53-54
+  s_4ca8f338668363::t_a0e69f0a1c926f 9
+  s_4ca8f338668363::t_76f7fca53adfab 19
+  s_4ca8f338668363::t_9b33fc955728fc 7
+packages/app/lib/cli-args.js
+  s_4ca8f338668363::t_7e073f311a295a 241-249,255,259
+apps/web/src/Mobile.jsx
+  s_4ca8f338668363::t_575fa20285449e 430,436-437,444,448,533
+  s_4ca8f338668363::t_62f6c50d257972 738,888
+packages/app/concepts/no/ProxySwitch.md
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+  s_4ca8f338668363::t_5a9010984ccc71 38
+cc-viewer-alignment/probes/b8-role-ui-fixture.mjs
+  s_4ca8f338668363::t_4028a7a0068378 1-8
+packages/app/tests/sdk-appserver-transport.test.js
+  s_4ca8f338668363::t_aa30b1497e61d5 40,358-359
+  s_4ca8f338668363::t_828a09e6c469fe 491
+  s_4ca8f338668363::t_2e3efd3f53fb15 6,50-52,469-490
+packages/app/cli.js
+  s_4ca8f338668363::t_f13ed0255bf0f7 261-268,271-272,274,278
+  s_4ca8f338668363::t_2ae37f0d09bbbb 450-451
+  s_4ca8f338668363::t_5d8c737bdc2fde 13,244-248,259-260,269-270,275-277,279-286,294,299,305
+  s_4ca8f338668363::t_2c41d61b6a3caa 273,496,562,578
+cc-viewer-alignment/B7-implementation.md
+  s_76602f25d7665d::t_d67e954f5afe5f 3
+  s_76602f25d7665d::t_c99b177ea7be61 412-467
+  s_76602f25d7665d::t_b1d59bdbe02c27 5-7
+cc-viewer-alignment/probes/b8-context-ui-fixture.mjs
+  s_4ca8f338668363::t_9af18da20648a7 1-20
+cc-viewer-alignment/probes/b3-installed-check.py
+  s_4ca8f338668363::t_3d73e197a8f07d 29-30,44,105
+  s_4ca8f338668363::t_da2b0a63b9f49f 43
+packages/app/server/lib/context-rules.js
+  s_4ca8f338668363::t_575fa20285449e 3-25,87-89
+  s_4ca8f338668363::t_7e28d889e42b5a 80
+  s_4ca8f338668363::t_aa30b1497e61d5 90-97
+cc-viewer-alignment/B8-codex-context-research.md
+  s_4ca8f338668363::t_38be38fecedf89 1-43
+cc-viewer-alignment/probes/b8-native-headless-prompt.mjs
+  s_4ca8f338668363::t_bfc1c29fc52e10 1-3,5,7-8
+  s_4ca8f338668363::t_e657148f1e5449 16,18-20,22,26-30,32-34,40
+  s_4ca8f338668363::t_434d9fc37f61c9 31
+  s_4ca8f338668363::t_d29f3ba03bbe00 35
+  s_4ca8f338668363::t_37b41a2ab02753 6,13,36-39,41
+  s_4ca8f338668363::t_9c1b5d1ffba25a 4,9-12,14-15,17,21,23-25
+packages/app/concepts/en/ProxySwitch.md
+  s_4ca8f338668363::t_5a9010984ccc71 5,41
+  s_4ca8f338668363::t_9fd7e921b87d09 55,58-67
+cc-viewer-alignment/B8-round1-artifact.json
+  s_4ca8f338668363::t_d83c4d92080da5 1-9
+packages/app/concepts/pt-BR/UltraPlan.md
+  s_4ca8f338668363::t_1410907ce121ba 86,89-90,96,101
+packages/app/lib/model-system-prompts.js
+  s_4ca8f338668363::t_614f1c3a3bfa5f 1,293,295-304
+  s_4ca8f338668363::t_577b089b249e08 2,25,191,221-227,232-259,263-264,266-267
+  s_4ca8f338668363::t_cb9639876c408e 284,286,288-289
+  s_4ca8f338668363::t_46d35d45626f25 102-103,228-231
+  s_4ca8f338668363::t_38e475a7706023 3,283
+packages/app/concepts/es/UltraPlan.md
+  s_4ca8f338668363::t_1410907ce121ba 86,89-90,96,101
+cc-viewer-alignment/B8-sdk-send-investigation.md
+  s_4ca8f338668363::t_acd6ec8d593612 32-35
+  s_4ca8f338668363::t_594e3ff62c8ac5 22-27
+  s_4ca8f338668363::t_2d69b506721dfb 1-11
+  s_4ca8f338668363::t_452b27fdaa5575 12-21
+  s_4ca8f338668363::t_9bb9a49afffb07 28-31
+packages/app/concepts/es/ProxySwitch.md
+  s_4ca8f338668363::t_5a9010984ccc71 38
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+cc-viewer-alignment/B7-candidate-matrix.md
+  s_76602f25d7665d::t_a7cfc8b0bae6a4 1-82
+apps/web/tests/model-suggestions.test.js
+  s_4ca8f338668363::t_730c8308f9546b 1-7
+cc-viewer-alignment/B7-completion-matrix.md
+  s_76602f25d7665d::t_c99b177ea7be61 1-22
+packages/app/ultraAgents/README.md
+  s_4ca8f338668363::t_5584924ee1bb65 26-27
+tests/conversation-entry-normalize.test.js
+  s_4ca8f338668363::t_72f6e071525789 50-59
+cc-viewer-alignment/B8-models-gui/result.json
+  s_4ca8f338668363::t_2e8af618cc7927 1-40
+packages/app/concepts/ko/ProxySwitch.md
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+  s_4ca8f338668363::t_5a9010984ccc71 38
+packages/app/concepts/fr/UltraPlan.md
+  s_4ca8f338668363::t_1410907ce121ba 86,89-90,96,101
+packages/app/lib/sdk-appserver-transport.js
+  s_4ca8f338668363::t_575fa20285449e 253-256,266
+  s_4ca8f338668363::t_2e3efd3f53fb15 327-328
+pnpm-lock.yaml
+  s_4ca8f338668363::t_2d405d90af4c6e 257-259,4026-4029,9050-9051
+packages/app/concepts/zh-TW/ProxySwitch.md
+  s_4ca8f338668363::t_9fd7e921b87d09 58-67
+  s_4ca8f338668363::t_5a9010984ccc71 41,55
+packages/app/ultraAgents/test-analysis-expert.json
+  s_4ca8f338668363::t_71adfd50140614 1-45
+cc-viewer-alignment/B8-E14-native-manual-prompt.json
+  s_4ca8f338668363::t_9c110c8bebc8fc 1-24
+cc-viewer-alignment/B8-E24-native-role-routing.json
+  s_4ca8f338668363::t_dc13d1839dc961 3,20,25,30,39-40
+  s_4ca8f338668363::t_4696b566d10e01 1-2,4-19,21-24,26-29,31-38,41
+packages/app/tests/appserver-bridge-isolation.test.js
+  s_4ca8f338668363::t_527364e4724fe9 186-200,203-209
+  s_4ca8f338668363::t_e91e9254e326ed 201-202
+cc-viewer-alignment/B8-sdk-gui/result.json
+  s_4ca8f338668363::t_06eb0263027b3a 1-55
+packages/app/ultraAgents/code-expert.json
+  s_4ca8f338668363::t_d3d798dca6e997 44
+packages/app/tests/pty-install-layout.test.js
+  s_4ca8f338668363::t_11069254ca9187 28
+packages/app/concepts/ja/ProxySwitch.md
+  s_4ca8f338668363::t_5a9010984ccc71 38
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+packages/app/system-prompt-templates/presets/deepseek-v4-pro.md
+  s_4ca8f338668363::t_38e475a7706023 1-76
+apps/web/src/components/settings/ProxyModal.jsx
+  s_4ca8f338668363::t_769b5b28dbd462 31-32,39-41,63-69,109-110,126-132,173-177,179-181,183-192,194-196,198-209,219-220
+  s_4ca8f338668363::t_8955f310d41429 1,50,178,182,193,197
+cc-viewer-alignment/B8-candidate-index.json
+  s_4ca8f338668363::t_205de482abe0b0 123,136,170,186,583,592,604,810,1131,1312,1435,1446
+  s_4ca8f338668363::t_da2b0a63b9f49f 112,247,288,432,547,691,742,761,863,963,984,1007,1022,1071,1120,1148,1169,1224,1322,1339,1468,1484,1505,1519
+  s_4ca8f338668363::t_147a4f092470cb 1-13,15-24,26-34,36-43,45-53,55-63,65-75,77-89,91-111,113-122,124-135,137-169,171-185,187-246,248-287,289-410,412-431,433-462,464-525,527-546,548-561,563-582,584-591,593-603,605-615,617-630,632-690,692-741,743-760,762-809,811-862,864-937,939-962,964-983,985-1006,1008-1021,1023-1070,1072-1119,1121-1130,1132-1147,1149-1168,1170-1223,1225-1311,1313-1321,1323-1338,1340-1423,1425-1434,1436-1445,1447-1467,1469-1483,1485-1504,1506-1518,1520-1522
+  s_4ca8f338668363::t_97072e2ff82775 562
+  s_4ca8f338668363::t_fa37deaced436d 54,76,90,411,463,616,938,1424
+  s_4ca8f338668363::t_97accfb9fb5283 526
+  s_4ca8f338668363::t_89fc9544b8c6be 631
+  s_4ca8f338668363::t_9a635ad04a0e5d 14,25,35,44,64
+packages/app/tests/sdk-proxy-api-path.test.js
+  s_4ca8f338668363::t_ad0d66f8368fa8 1-16
+packages/app/concepts/ar/UltraPlan.md
+  s_4ca8f338668363::t_1410907ce121ba 86,89-90,96,101
+cc-viewer-alignment/probes/b8-native-prompt-binding.mjs
+  s_4ca8f338668363::t_92a7afe1c23a97 1-13,15-23,25-39,42-43,45-46,49,51-54,56
+  s_4ca8f338668363::t_436fd46d3e9bbb 14,24,40-41,44,47-48,50,55
+cc-viewer-alignment/B7-E48-effective-source.json
+  s_76602f25d7665d::t_a7cfc8b0bae6a4 1-1956
+cc-viewer-alignment/B8-E10-ultrareview-policy.json
+  s_4ca8f338668363::t_d3d798dca6e997 1-102
+cc-viewer-alignment/probes/b8-native-role-routing.mjs
+  s_4ca8f338668363::t_69de948805c574 1-4,6-8,11-16,18
+  s_4ca8f338668363::t_46a7de91ec9aa3 9-10
+  s_4ca8f338668363::t_d3424fe5dc652f 5,19-22,24
+  s_4ca8f338668363::t_d5e3a3364dd7f5 17,23
+cc-viewer-alignment/B7-candidate-index-2026-11-21.json
+  s_76602f25d7665d::t_a7cfc8b0bae6a4 15-22,29-36,44-51,59-66,74,77,79,89,92,94,104-111,119-126,134-141,149-156,164-171,179-186,194-201,209-216,224-231,238-245,253-260,268-275,283-290,298-305,313-320,327-334,341-348,355-362,369-376,383-390,397-404,411-418,425-432,439-446,453,456,458,467-474,481-488,495-502,509-516,523-530,537-544,551-558,565-572,579-586,593-600,607-614,621,624,626,635-642,649,652,654,663-670,677,680,682,691,694,696,705-712,719-726,733-740,747-754,761-768,775-782,789-796,803-810,817-824,831-838,845-852,859-866,873-880,887-894,901-908,915-922,929-936,943-950,957-964,971-978,985-992,999-1006,1013-1020,1027-1034,1041-1048,1055-1062
+cc-viewer-alignment/B8-final-2026-11-22.json
+  s_4ca8f338668363::t_7e255492ae5665 1-2,4-29,31-111,117
+  s_4ca8f338668363::t_4b455ff4ae4ddd 3,30,112-116
+packages/app/lib/model-id-variants.js
+  s_4ca8f338668363::t_38e475a7706023 1-13
+apps/web/src/utils/conversationEntryNormalize.js
+  s_4ca8f338668363::t_72f6e071525789 32-33
+packages/app/concepts/ru/ProxySwitch.md
+  s_4ca8f338668363::t_9fd7e921b87d09 52,55-64
+  s_4ca8f338668363::t_5a9010984ccc71 38
+cc-viewer-alignment/probes/b8-model-prompts-gui.mjs
+  s_4ca8f338668363::t_e9d41d108cd710 1-32
+cc-viewer-alignment/B8-E2-test-expert-source.json
+  s_4ca8f338668363::t_dc9c3aef029e44 1-110
+cc-viewer-alignment/B8-candidate-matrix.md
+  s_4ca8f338668363::t_d31439a90c7348 7-10,12
+  s_4ca8f338668363::t_205de482abe0b0 16-19,30-32,38,47,51,55-56
+  s_4ca8f338668363::t_97f3c9b58b773a 34
+  s_4ca8f338668363::t_1f3318b8068a48 29
+  s_4ca8f338668363::t_fa37deaced436d 11,13-14,22,24,33,40,54
+  s_4ca8f338668363::t_147a4f092470cb 1-6,25,27
+  s_4ca8f338668363::t_97accfb9fb5283 26
+  s_4ca8f338668363::t_da2b0a63b9f49f 15,20-21,23,28,35-37,39,41-46,48-50,52-53,57-62
+packages/app/concepts/ja/UltraPlan.md
+  s_4ca8f338668363::t_1410907ce121ba 86,89-90,96,101
+packages/app/system-prompt-templates/presets/Qwen-3.md
+  s_4ca8f338668363::t_38e475a7706023 1-73
+cc-viewer-alignment/probes/b8-model-current-gui.mjs
+  s_4ca8f338668363::t_205de482abe0b0 1-7
+packages/app/tests/builtin-prompt-state.test.js
+  s_4ca8f338668363::t_4832728bcadc83 1-15
+packages/app/tests/workspace-proxy.test.js
+  s_4ca8f338668363::t_ef92386e50606a 2,5
+  s_4ca8f338668363::t_909eb098ed9605 1,3-4,6-7
+  s_4ca8f338668363::t_1e1db26f081118 8
+packages/app/concepts/en/UltraPlan.md
+  s_4ca8f338668363::t_1410907ce121ba 86,89-90,96,101
+packages/app/concepts/it/UltraPlan.md
+  s_4ca8f338668363::t_1410907ce121ba 86,89-90,96,101
+packages/app/lib/system-prompt-render.js
+  s_4ca8f338668363::t_614f1c3a3bfa5f 1-32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "e2ee6e327c818d5c550b2c6e8ccbb8b373e21c27",
+  "prompts": {},
+  "sessions": {
+    "s_4ca8f338668363": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a200e6-7324-7162-956b-e799486390a7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    },
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
