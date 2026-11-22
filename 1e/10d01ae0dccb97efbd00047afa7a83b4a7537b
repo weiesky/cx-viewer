@@ -1,0 +1,42 @@
+AGENTS.md
+  s_4ca8f338668363::t_ea97841504679e 26
+cc-viewer-alignment/B8-E25-headless-workspace.json
+  s_4ca8f338668363::t_6bf903c0478d25 1-77
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4ca8f338668363::t_ea97841504679e 16647-16650
+packages/app/tests/headless-system-prompts.test.js
+  s_4ca8f338668363::t_a9852c7d039b7b 88-101
+cc-viewer-alignment/B8-implementation.md
+  s_4ca8f338668363::t_ea97841504679e 171-180
+packages/app/lib/pty-workspace-runtime.js
+  s_4ca8f338668363::t_2c41d61b6a3caa 95
+packages/app/server.js
+  s_4ca8f338668363::t_7a03055179e34a 3117-3122,3125-3126,3134,3143
+  s_4ca8f338668363::t_6680b773632476 22-24,957-989,2267,3069-3070,3072,3116,3123-3124,3132-3133,3140-3142,3144-3145,3147,6485-6486
+packages/app/lib/workspace-proxy.js
+  s_4ca8f338668363::t_2c41d61b6a3caa 2,41-45
+packages/app/cli.js
+  s_4ca8f338668363::t_2c41d61b6a3caa 273,496,562,578
+packages/app/lib/headless-system-prompts.js
+  s_4ca8f338668363::t_2c41d61b6a3caa 93,103
+packages/app/tests/workspace-proxy-api.test.js
+  s_4ca8f338668363::t_637121f9873872 1-24
+cc-viewer-alignment/probes/b8-native-headless-prompt.mjs
+  s_4ca8f338668363::t_37b41a2ab02753 6,13,36-39,41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1e10d01ae0dccb97efbd00047afa7a83b4a7537b",
+  "prompts": {},
+  "sessions": {
+    "s_4ca8f338668363": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a200e6-7324-7162-956b-e799486390a7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
