@@ -1,0 +1,27 @@
+cc-viewer-alignment/B8-model-logo-gui/result.json
+  s_4ca8f338668363::t_bfdcd85344728e 1-48
+apps/web/src/img/model-kimi.svg
+  s_4ca8f338668363::t_8ae199e653da10 2
+apps/web/src/utils/helpers.js
+  s_4ca8f338668363::t_8ae199e653da10 120,123
+cc-viewer-alignment/B8-E15-model-logo-source.json
+  s_4ca8f338668363::t_8ae199e653da10 1-13
+cc-viewer-alignment/probes/b8-model-logo-gui.mjs
+  s_4ca8f338668363::t_f30d498cb4a4cb 1-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "c65c7235ed263c26b0789611e05dcc94cb04afc5",
+  "prompts": {},
+  "sessions": {
+    "s_4ca8f338668363": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a200e6-7324-7162-956b-e799486390a7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": null
+    }
+  }
+}
