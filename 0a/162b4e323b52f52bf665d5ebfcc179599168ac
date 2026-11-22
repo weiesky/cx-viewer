@@ -1,0 +1,357 @@
+apps/web/src/utils/ultraplanController.js
+  s_b808e5a13726e4::t_5af56fc46e35fc 92
+cc-viewer-alignment/B9-candidate-index.json
+  s_b808e5a13726e4::t_46394154ca2c3d 4,9,14,19,24,29,34,39,44,49,54,59,64,69,74
+packages/app/src/utils/ultraplanTemplates.js
+  s_b808e5a13726e4::t_a987dd60198e19 265
+  s_b808e5a13726e4::t_e38c836ffe0d90 210,228-264
+packages/app/lib/scheduled-task-runs-store.js
+  s_b808e5a13726e4::t_cca59150a56c71 1-12,14,16-17,19-121
+  s_b808e5a13726e4::t_f727259f254de2 13,15,18
+cc-viewer-alignment/B9-handoff.md
+  s_b808e5a13726e4::t_387a9f02f4dc4b 3-4
+apps/web/src/components/chat/ChatMessage.module.css
+  s_b808e5a13726e4::t_f4e71939bc0f11 930-954
+cc-viewer-alignment/probes/b9-ui-fixture.mjs
+  s_b808e5a13726e4::t_d4b66c61a83ac0 1-28
+apps/web/src/components/approval/ApprovalModal.jsx
+  s_b808e5a13726e4::t_760ed907eeda30 295-298
+apps/web/package.json
+  s_b808e5a13726e4::t_dd2ba7dd204703 43
+cc-viewer-alignment/probes/b9-native-scheduled.mjs
+  s_b808e5a13726e4::t_c69f16379a4e4b 1-4,6-53,94-123
+  s_b808e5a13726e4::t_ccb4475fd83c75 54-82,89-92
+  s_b808e5a13726e4::t_8486ffaf64a70d 5,83-88,93
+apps/web/tests/schedule-description.test.js
+  s_b808e5a13726e4::t_5af56fc46e35fc 1-80
+packages/app/tests/scheduled-task-store.test.js
+  s_b808e5a13726e4::t_dc0b6785118ab8 508-562
+  s_b808e5a13726e4::t_59ffc1256f7ca9 1-507
+packages/app/lib/sdk-manager.js
+  s_b808e5a13726e4::t_c98adfa33c1671 288-292
+  s_b808e5a13726e4::t_3893dcb5b0c25a 55,156-160,162-164,240-243,298-317,321-326,328-367,1263,1325,1338,1356
+  s_b808e5a13726e4::t_4fa125187f79a1 245-248,1349
+  s_b808e5a13726e4::t_49a5499f468a75 319-320
+  s_b808e5a13726e4::t_adc61d3ce1a89e 318
+  s_b808e5a13726e4::t_97029f829fc9e2 327
+  s_b808e5a13726e4::t_b545f75a4e242e 244,293
+cc-viewer-alignment/probes/b3-installed-check.py
+  s_b808e5a13726e4::t_58638bfd095dfe 45,48-49
+cc-viewer-alignment/B9-implementation.md
+  s_b808e5a13726e4::t_a2869c7628b703 29-34
+  s_b808e5a13726e4::t_45978481408ce8 122-126
+  s_b808e5a13726e4::t_de8cf564e6e35a 97-102
+  s_b808e5a13726e4::t_f35560fbd1d028 116-120
+  s_b808e5a13726e4::t_a45a4be5af6e68 47-52
+  s_b808e5a13726e4::t_674f958cd8bfbc 85-90
+  s_b808e5a13726e4::t_b04eeae3d065bd 35-40
+  s_b808e5a13726e4::t_33bce65aefb75b 150-152
+  s_b808e5a13726e4::t_fd710fd24cdc79 11-16
+  s_b808e5a13726e4::t_d5f920fbadd2f1 128-132
+  s_b808e5a13726e4::t_82c91e45b21f6c 170-174
+  s_b808e5a13726e4::t_3469971e8fbc24 41-46
+  s_b808e5a13726e4::t_3616fbab03077b 80-84
+  s_b808e5a13726e4::t_40099d91651c13 91-96
+  s_b808e5a13726e4::t_7421a0cdbe0a52 162-168
+  s_b808e5a13726e4::t_0c757e51deb4d2 104-108
+  s_b808e5a13726e4::t_8cb9501eb0ceb1 144-148
+  s_b808e5a13726e4::t_888eb4c3e40c8f 23-28
+  s_b808e5a13726e4::t_e160411c9e7d76 17-22
+  s_b808e5a13726e4::t_ceb5b3df44c306 134-136
+  s_b808e5a13726e4::t_db9cab41c3fcaf 154-160
+  s_b808e5a13726e4::t_46394154ca2c3d 103,115,121,127,133,137,143,149,153,161,169,175
+  s_b808e5a13726e4::t_f3206cd1fe02fc 109-114
+  s_b808e5a13726e4::t_27a3d24a02a071 59-66
+  s_b808e5a13726e4::t_b30242a71e766c 73-79
+  s_b808e5a13726e4::t_9cbc70814683d1 1-10
+  s_b808e5a13726e4::t_248f561bf04651 138-142
+  s_b808e5a13726e4::t_101695171a3e83 67-72
+  s_b808e5a13726e4::t_f76dac53a75523 176-181
+  s_b808e5a13726e4::t_f1c021fa87817d 53-58
+AGENTS.md
+  s_b808e5a13726e4::t_387a9f02f4dc4b 26
+cc-viewer-alignment/probes/b9-schedule-gui.mjs
+  s_b808e5a13726e4::t_8486ffaf64a70d 14
+  s_b808e5a13726e4::t_c03ffbe9ed0893 1-13,15-99
+apps/web/tests/ask-auto-answer-options.test.js
+  s_b808e5a13726e4::t_2f1914106e8d95 1-48
+packages/app/tests/pty-workspace-routing.test.js
+  s_b808e5a13726e4::t_07a9e432603da6 167-192
+packages/app/tests/ask-auto-answer-picker.test.js
+  s_b808e5a13726e4::t_30f11571f1c7d6 11-24
+  s_b808e5a13726e4::t_71a1469ca4e0f2 1-10,25-158
+apps/web/src/Mobile.jsx
+  s_b808e5a13726e4::t_419b01aaed68bb 12,759,788,998-1014
+pnpm-lock.yaml
+  s_b808e5a13726e4::t_78fafeb034fdc1 167-169
+cc-viewer-alignment/B9-native-pty.json
+  s_b808e5a13726e4::t_8da77e764a4220 8,14-18
+  s_b808e5a13726e4::t_470f171a9c40e3 1-7,9-11,19
+  s_b808e5a13726e4::t_89637953d6611b 12-13
+packages/app/lib/workspace-upload-paths.js
+  s_b808e5a13726e4::t_f956b4881428ca 1-13
+packages/app/src/utils/ask-auto-answer.js
+  s_b808e5a13726e4::t_71a1469ca4e0f2 1-122
+packages/app/tests/ask-auto-answer.test.js
+  s_b808e5a13726e4::t_71a1469ca4e0f2 1-199
+README.md
+  s_b808e5a13726e4::t_bdf324f91299ea 166-173
+apps/web/src/components/common/ScheduleTaskModal.jsx
+  s_b808e5a13726e4::t_5fdfdcd4074ff6 1-573,575-822
+  s_b808e5a13726e4::t_40920a05954f5f 574
+cc-viewer-alignment/probes/b9-pty-ui-fixture.mjs
+  s_b808e5a13726e4::t_cee1d33fb1311c 1-15
+packages/app/server.js
+  s_b808e5a13726e4::t_ec5c99ebef30c9 4292-4299
+  s_b808e5a13726e4::t_4fa125187f79a1 6074,6076-6078
+  s_b808e5a13726e4::t_40920a05954f5f 2858-2859
+  s_b808e5a13726e4::t_aaf3b96bcdaae2 132
+  s_b808e5a13726e4::t_cae22c602f0fea 1945
+  s_b808e5a13726e4::t_17bc2bb19f7e82 2199,2223,2282
+  s_b808e5a13726e4::t_d428bba941d549 113,1937-1944
+  s_b808e5a13726e4::t_5d2dbb20f42b0a 6530-6531
+  s_b808e5a13726e4::t_c98adfa33c1671 111,926-970,5486,6522-6526
+  s_b808e5a13726e4::t_f956b4881428ca 112,2073-2074,2080-2081,2083,2087,2090,4289-4291,4302-4307,4309-4312,4314-4317
+  s_b808e5a13726e4::t_0d3f616b109af4 5,407,411,417-420,425,435,440,468,470-477,507,3983,6235-6240,6544
+  s_b808e5a13726e4::t_bf52fa33767533 110
+packages/app/tests/scheduled-attachments.test.js
+  s_b808e5a13726e4::t_22b4bc7f11c326 1-41
+apps/web/tests/ask-flow-controller.test.js
+  s_b808e5a13726e4::t_345abe98e26731 487
+  s_b808e5a13726e4::t_d74bab6faa5ee7 448-449,457-486
+apps/web/src/utils/scheduleDescription.js
+  s_b808e5a13726e4::t_5af56fc46e35fc 1-94,97-129
+  s_b808e5a13726e4::t_4a24360a7670cc 95-96
+packages/app/tests/codex-ask-server.test.js
+  s_b808e5a13726e4::t_225904e6fdcf66 247
+  s_b808e5a13726e4::t_aaf3b96bcdaae2 18,72,208-246
+apps/web/src/components/chat/AskQuestionForm.jsx
+  s_b808e5a13726e4::t_1fb60f60569be0 7,261-262
+  s_b808e5a13726e4::t_5738b8cf0e520f 233-236
+packages/app/lib/credential-file-policy.js
+  s_b808e5a13726e4::t_17bc2bb19f7e82 6,105-116,118
+cc-viewer-alignment/B9-installed.json
+  s_b808e5a13726e4::t_bd2b076b81989d 1,3-16,25
+  s_b808e5a13726e4::t_d95c75a23deb0f 2,17-24
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_b808e5a13726e4::t_19a04d5a34fb00 56-57,416-440
+  s_b808e5a13726e4::t_9febf36ea6f84e 442
+  s_b808e5a13726e4::t_5738b8cf0e520f 443-454
+  s_b808e5a13726e4::t_35d50a1cedadce 382,385-386,393
+  s_b808e5a13726e4::t_35a87dff455a59 2396-2416
+  s_b808e5a13726e4::t_27995c57e588ba 2346
+  s_b808e5a13726e4::t_5af56fc46e35fc 29,282,2321-2345
+  s_b808e5a13726e4::t_6784358d5d88f6 53,344-381,383-384,387-392
+  s_b808e5a13726e4::t_dde6eda3e76ee9 441,455-470
+  s_b808e5a13726e4::t_c61b9e475435bd 394-400,402-415
+  s_b808e5a13726e4::t_2b32099ac2b94f 28,2347-2395
+  s_b808e5a13726e4::t_9cfb9994d24b97 401
+apps/web/tests/schedule-i18n.test.js
+  s_b808e5a13726e4::t_5af56fc46e35fc 1-55
+apps/web/src/AppBase.jsx
+  s_b808e5a13726e4::t_88efb289afb1e6 13,190,374-375,2593-2596
+  s_b808e5a13726e4::t_53341c62367890 21-22,1628-1648,1841
+packages/app/lib/cron.js
+  s_b808e5a13726e4::t_8cc3e233343006 1-181
+apps/web/src/components/chat/controllers/askFlowController.js
+  s_b808e5a13726e4::t_3c8ae1aa46891a 143-144,148-157,160,707-732,862,908,959-962,1008,1018-1019,1062
+cc-viewer-alignment/B9-E12-source.json
+  s_b808e5a13726e4::t_1e8de7af7907b8 1-5
+apps/web/tests/sdk-resume-api.test.js
+  s_b808e5a13726e4::t_40920a05954f5f 48-59
+packages/app/tests/sdk-scheduled-session.test.js
+  s_b808e5a13726e4::t_a0a5059001122a 13
+  s_b808e5a13726e4::t_49a5499f468a75 79-95
+  s_b808e5a13726e4::t_9f95c0bf489d9a 1-10,12,14-57,59-62,71-72,74-78,96-97
+  s_b808e5a13726e4::t_016424e5af5cba 58
+  s_b808e5a13726e4::t_f048cec13dd506 11,63-70,73
+packages/app/lib/schedule-model.js
+  s_b808e5a13726e4::t_8cc3e233343006 1-149
+apps/web/src/components/terminal/UltraplanPanel.module.css
+  s_b808e5a13726e4::t_0862b7dfd954f3 579,581
+  s_b808e5a13726e4::t_5af56fc46e35fc 384-394,552-578,580
+packages/app/lib/preferences.js
+  s_b808e5a13726e4::t_17bc2bb19f7e82 22,24-26,36,44-46,66-67,99,101,103,105
+packages/app/tests/cron.test.js
+  s_b808e5a13726e4::t_8cc3e233343006 1-124
+packages/app/lib/codex-request-user-input.js
+  s_b808e5a13726e4::t_e4944d2ca5c065 1-2,43-54
+  s_b808e5a13726e4::t_b7a0ef32453a90 55-56
+packages/app/tests/sdk-resume-history.test.js
+  s_b808e5a13726e4::t_0f1ec015a8cfb1 115
+  s_b808e5a13726e4::t_40920a05954f5f 9,101-114
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_b808e5a13726e4::t_40099d91651c13 4114-4115
+  s_b808e5a13726e4::t_8d641557130a0c 16723
+  s_b808e5a13726e4::t_eb5ff99423bd8a 16725
+  s_b808e5a13726e4::t_2a8c419103afbd 1503-1504
+  s_b808e5a13726e4::t_96e60437115481 16731
+  s_b808e5a13726e4::t_e13a7b5ecf094b 1507-1508
+  s_b808e5a13726e4::t_f9af6fe74fb85d 16743
+  s_b808e5a13726e4::t_46394154ca2c3d 16724,16726,16728,16730,16732,16734,16736,16738,16740,16742,16744,16746,16748
+  s_b808e5a13726e4::t_c6c91c3328ea2f 16737
+  s_b808e5a13726e4::t_8e4ec24a1eb03d 16727
+  s_b808e5a13726e4::t_5f48bb33eda56a 4056-4057
+  s_b808e5a13726e4::t_2738504eea3a48 4112-4113
+  s_b808e5a13726e4::t_039f0707ccf516 4054-4055
+  s_b808e5a13726e4::t_32e37bc30ee6a6 174,407,1415,1513,1832,2992,3278,3293,3764,4062,4118,4724,7879,8307
+  s_b808e5a13726e4::t_3ae141f6a25242 16733
+  s_b808e5a13726e4::t_0f6d0dd2535ef1 4108-4109
+  s_b808e5a13726e4::t_88d62bfb62ba53 3758-3759
+  s_b808e5a13726e4::t_05cae29bcca94f 1828-1829
+  s_b808e5a13726e4::t_8822a290b6fd97 1505-1506
+  s_b808e5a13726e4::t_c0941dd37b27c5 16745
+  s_b808e5a13726e4::t_f1235e6fca99c4 16739
+  s_b808e5a13726e4::t_e1ec594304a7fd 16729
+  s_b808e5a13726e4::t_15eb51e4a13516 16747
+  s_b808e5a13726e4::t_6c948b03c6ceb7 4058-4059
+  s_b808e5a13726e4::t_fbba499b4c1353 16735
+  s_b808e5a13726e4::t_ece7cb9e93781f 4104-4105
+  s_b808e5a13726e4::t_7c1669a2a74497 16741
+  s_b808e5a13726e4::t_f119ff21e2b03f 4106-4107
+  s_b808e5a13726e4::t_a474290e544564 4110-4111
+  s_b808e5a13726e4::t_b383f2e26aeb44 1509-1510
+apps/web/src/components/dashboard/AppHeader.jsx
+  s_b808e5a13726e4::t_6441d21eb0cec4 12,1612-1626
+packages/app/tests/schedule-model.test.js
+  s_b808e5a13726e4::t_8cc3e233343006 1-95
+apps/web/src/components/terminal/TerminalPanel.jsx
+  s_b808e5a13726e4::t_53341c62367890 42,45,261,1772-1779,1985-1986,2075-2083
+  s_b808e5a13726e4::t_5fefc700c084bb 1793
+cc-viewer-alignment/probes/b9-pty-schedule-gui.mjs
+  s_b808e5a13726e4::t_984ef414b4d75f 1-43
+packages/app/lib/ask-auto-answer.js
+  s_b808e5a13726e4::t_71a1469ca4e0f2 1-19,21-153
+  s_b808e5a13726e4::t_a99794e0e297a1 20
+cc-viewer-alignment/README.md
+  s_b808e5a13726e4::t_387a9f02f4dc4b 5,30-31,34
+packages/app/tests/scheduled-task-executor.test.js
+  s_b808e5a13726e4::t_8e962028b222e1 1-185
+  s_b808e5a13726e4::t_95e7940538bfa7 186-233
+packages/app/tests/fixtures/scheduled-native.txt
+  s_b808e5a13726e4::t_a0a5059001122a 1-5,7-13,15-17
+  s_b808e5a13726e4::t_f048cec13dd506 6,14
+apps/web/src/components/terminal/UltraplanPanel.jsx
+  s_b808e5a13726e4::t_5af56fc46e35fc 6-14,81,87-94,171-187,189,214,216,218-227,233,242,274-275,278-281,283,328-330,336
+packages/app/lib/scheduled-task-store.js
+  s_b808e5a13726e4::t_d428bba941d549 353
+  s_b808e5a13726e4::t_662523d20d9572 429
+  s_b808e5a13726e4::t_59ffc1256f7ca9 1-352,354-428,430-634
+apps/web/src/components/chat/ChatView.jsx
+  s_b808e5a13726e4::t_c7901cbc2490cd 1038-1039,1044-1046,2090,2304,2447-2448,2465-2466,2534-2535,3424
+  s_b808e5a13726e4::t_53341c62367890 60,357,4923-4932,5224-5225,5392-5400
+  s_b808e5a13726e4::t_c451c24f13d190 806,5287,5381
+cc-viewer-alignment/B9-candidate-matrix.md
+  s_b808e5a13726e4::t_20f9b98e717592 1-22
+cc-viewer-alignment/B9-E11-source.json
+  s_b808e5a13726e4::t_4248ccefbb2ade 1-15
+packages/app/lib/sdk-appserver-approvals.js
+  s_b808e5a13726e4::t_f048cec13dd506 67
+  s_b808e5a13726e4::t_4fa125187f79a1 4-5,16,24,81-91,94-95,100-102,112-120
+cc-viewer-alignment/B9-gui.json
+  s_b808e5a13726e4::t_a83096b307f648 1-56
+packages/app/tests/scheduled-task-security.test.js
+  s_b808e5a13726e4::t_393da09038ced4 1-62
+cc-viewer-alignment/B9-cleanup.json
+  s_b808e5a13726e4::t_e56e96483ed22c 1-10
+packages/app/tests/sdk-appserver-approvals.test.js
+  s_b808e5a13726e4::t_c9b4245e375bfb 147
+  s_b808e5a13726e4::t_a7244af6b5bf12 3,99-146
+apps/web/src/utils/deadlineCountdown.js
+  s_b808e5a13726e4::t_01a6fadd1c9a63 1-86
+apps/web/src/components/chat/ChatInputBar.jsx
+  s_b808e5a13726e4::t_53341c62367890 11,625-632,712-716
+  s_b808e5a13726e4::t_b49fe4104d53c7 65,641
+cc-viewer-alignment/B9-pty-gui.json
+  s_b808e5a13726e4::t_a0fe14c12d4040 1-32
+packages/app/tests/scheduled-task-pty-runtime.test.js
+  s_b808e5a13726e4::t_f7350caf473bef 1-42,44-53
+  s_b808e5a13726e4::t_75a2e69bf9a8f1 43
+apps/web/tests/scheduled-task-events.test.js
+  s_b808e5a13726e4::t_d9297bfd3d980b 1-16
+apps/web/src/components/common/quickMenuIcons.jsx
+  s_b808e5a13726e4::t_56123f1ea297fc 111-113
+  s_b808e5a13726e4::t_24449d56177836 114-123
+apps/web/src/components/chat/AskAutoHostCountdown.jsx
+  s_b808e5a13726e4::t_1d3dc1a840ab5d 1-50
+packages/app/lib/sdk-resume-history.js
+  s_b808e5a13726e4::t_40920a05954f5f 47-50,54-55
+cc-viewer-alignment/probes/b9-native-pty-fixture.mjs
+  s_b808e5a13726e4::t_33e012f28c1d79 1-13
+packages/app/tests/scheduled-task-scheduler.test.js
+  s_b808e5a13726e4::t_5d2dbb20f42b0a 245-262
+  s_b808e5a13726e4::t_212ba7bfa90b34 210-244
+  s_b808e5a13726e4::t_07818c8121a923 1-209
+cc-viewer-alignment/B9-original-commits-2026-11-23.json
+  s_b808e5a13726e4::t_46394154ca2c3d 1-228
+packages/app/tests/scheduled-task-runtime.test.js
+  s_b808e5a13726e4::t_a0a5059001122a 1-14,16-75,92-108
+  s_b808e5a13726e4::t_1633f530d02585 15,76-91
+cc-viewer-alignment/B9-completion-matrix.md
+  s_b808e5a13726e4::t_20f9b98e717592 1-27
+packages/app/tests/scheduled-task-api.test.js
+  s_b808e5a13726e4::t_a497399341aa8e 1-70
+packages/app/lib/scheduled-task-routes.js
+  s_b808e5a13726e4::t_d428bba941d549 1-98
+apps/web/src/components/settings/PreferencesForm.jsx
+  s_b808e5a13726e4::t_4e574c7a3216c5 5,14,20,46-54
+apps/web/src/components/chat/ChatMessage.jsx
+  s_b808e5a13726e4::t_c6afa0aa003ec8 185,824-828
+apps/web/src/components/common/QuickAutoApproveRows.jsx
+  s_b808e5a13726e4::t_82da9fb99372fb 2-3,6-7,14,34-38,52-62
+packages/app/lib/scheduled-task-scheduler.js
+  s_b808e5a13726e4::t_07818c8121a923 1-32,34-145,147-152,161-245,247-273
+  s_b808e5a13726e4::t_bf52fa33767533 33,146,153-160,246
+apps/web/src/utils/autoApproveOptions.js
+  s_b808e5a13726e4::t_ba27e8599cb1d9 24-49
+packages/app/tests/scheduled-prompt.test.js
+  s_b808e5a13726e4::t_e38c836ffe0d90 1-27
+cc-viewer-alignment/B9-final-2026-11-23.json
+  s_b808e5a13726e4::t_46394154ca2c3d 1-56
+packages/app/lib/scheduled-task-executor.js
+  s_b808e5a13726e4::t_8e962028b222e1 1-130
+cc-viewer-alignment/probes/b9-native-pty-scheduled.mjs
+  s_b808e5a13726e4::t_89637953d6611b 2,49-56
+  s_b808e5a13726e4::t_8da77e764a4220 13-44
+  s_b808e5a13726e4::t_53f32a0058e2d8 1,3-12,45-48,57-58
+packages/app/tests/scheduled-task-runs-store.test.js
+  s_b808e5a13726e4::t_cca59150a56c71 1-4,7-87,118
+  s_b808e5a13726e4::t_f727259f254de2 5-6,88-117
+apps/web/src/components/common/ScheduleTaskModal.module.css
+  s_b808e5a13726e4::t_ecef23b0b2bc84 1-254
+apps/web/src/utils/sdkResumeApi.js
+  s_b808e5a13726e4::t_40920a05954f5f 12-13
+cc-viewer-alignment/B9-source-audit.json
+  s_b808e5a13726e4::t_e265de53ac7cb1 1-441
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_b808e5a13726e4::t_387a9f02f4dc4b 162
+apps/web/src/i18n.js
+  s_b808e5a13726e4::t_dca25141f12166 4-71
+  s_b808e5a13726e4::t_4a24360a7670cc 72-93
+  s_b808e5a13726e4::t_5af56fc46e35fc 94-2273
+apps/web/src/App.jsx
+  s_b808e5a13726e4::t_df6b21f23bd7bb 465
+apps/web/tests/deadline-countdown.test.js
+  s_b808e5a13726e4::t_89f554c96c140a 1-144
+apps/web/src/utils/scheduledTaskEvents.js
+  s_b808e5a13726e4::t_5af56fc46e35fc 1-17,21-24,26-35
+  s_b808e5a13726e4::t_4a24360a7670cc 18-20,25
+cc-viewer-alignment/B9-native-scheduled.json
+  s_b808e5a13726e4::t_5c4763f110c56f 1-48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "0a162b4e323b52f52bf665d5ebfcc179599168ac",
+  "prompts": {},
+  "sessions": {
+    "s_b808e5a13726e4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a203fe-9d11-73a0-a439-ec8c7212a4f4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
