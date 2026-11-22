@@ -1,0 +1,51 @@
+packages/app/lib/model-system-prompts.js
+  s_4ca8f338668363::t_38e475a7706023 1,237
+packages/app/package.json
+  s_4ca8f338668363::t_38e475a7706023 70
+packages/app/system-prompt-templates/presets/GLM-5.3.md
+  s_4ca8f338668363::t_38e475a7706023 1-75
+packages/app/system-prompt-templates/presets/index.json
+  s_4ca8f338668363::t_38e475a7706023 1-63
+packages/app/system-prompt-templates/presets/kimi-k2.7-code.md
+  s_4ca8f338668363::t_38e475a7706023 1-80
+packages/app/system-prompt-templates/presets/Qwen-3.md
+  s_4ca8f338668363::t_38e475a7706023 1-73
+packages/app/lib/builtin-model-prompts.js
+  s_4ca8f338668363::t_0c7fe8b2761e86 1-39
+packages/app/system-prompt-templates/presets/kimi-k3.md
+  s_4ca8f338668363::t_38e475a7706023 1-93
+cc-viewer-alignment/B8-E11-preset-source.json
+  s_4ca8f338668363::t_38e475a7706023 1-182
+packages/app/system-prompt-templates/presets/deepseek-v4-flash.md
+  s_4ca8f338668363::t_38e475a7706023 1-67
+packages/app/system-prompt-templates/presets/deepseek-v4-pro.md
+  s_4ca8f338668363::t_38e475a7706023 1-76
+packages/app/system-prompt-templates/presets/GLM-5.2.md
+  s_4ca8f338668363::t_38e475a7706023 1-73
+packages/app/tests/builtin-model-prompts.test.js
+  s_4ca8f338668363::t_0c7fe8b2761e86 1-13
+packages/app/lib/model-id-variants.js
+  s_4ca8f338668363::t_38e475a7706023 1-14
+AGENTS.md
+  s_4ca8f338668363::t_0befa99e799453 26
+cc-viewer-alignment/B8-implementation.md
+  s_4ca8f338668363::t_b1b1b68c71f145 66-76
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4ca8f338668363::t_49df948052f115 16587-16590
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "dfb562c741c8d3b75bff557ef06fbf206ebb4b70",
+  "prompts": {},
+  "sessions": {
+    "s_4ca8f338668363": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a200e6-7324-7162-956b-e799486390a7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
