@@ -1,0 +1,39 @@
+cc-viewer-alignment/B9-completion-matrix.md
+  s_b808e5a13726e4::t_2e8578ad4b865e 3
+cc-viewer-alignment/B9-implementation.md
+  s_b808e5a13726e4::t_14b5c9c0bed887 182-189
+cc-viewer-alignment/B9-candidate-index.json
+  s_b808e5a13726e4::t_0d87d1dca0bc04 4
+cc-viewer-alignment/B9-local-commit-consolidation-2026-11-23.md
+  s_b808e5a13726e4::t_2e8578ad4b865e 1-15
+cc-viewer-alignment/B9-original-commits-2026-11-23.json
+  s_b808e5a13726e4::t_0d87d1dca0bc04 6,227-253
+AGENTS.md
+  s_b808e5a13726e4::t_32f83cc97b075a 26,31
+cc-viewer-alignment/B9-final-2026-11-23.json
+  s_b808e5a13726e4::t_0d87d1dca0bc04 44,55-77
+cc-viewer-alignment/B9-handoff.md
+  s_b808e5a13726e4::t_2e8578ad4b865e 3
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_b808e5a13726e4::t_14b5c9c0bed887 16749-16750
+cc-viewer-alignment/README.md
+  s_b808e5a13726e4::t_32f83cc97b075a 5,30
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_b808e5a13726e4::t_2e8578ad4b865e 162
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "231a8a72f665c752bebf89a7f097fb4800f9aeb5",
+  "prompts": {},
+  "sessions": {
+    "s_b808e5a13726e4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a203fe-9d11-73a0-a439-ec8c7212a4f4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
