@@ -1,0 +1,48 @@
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_b808e5a13726e4::t_19a04d5a34fb00 56-57,416-440
+  s_b808e5a13726e4::t_dde6eda3e76ee9 441,443-458
+  s_b808e5a13726e4::t_9febf36ea6f84e 442
+cc-viewer-alignment/B9-implementation.md
+  s_b808e5a13726e4::t_d5f920fbadd2f1 128-133
+apps/web/tests/ask-flow-controller.test.js
+  s_b808e5a13726e4::t_d74bab6faa5ee7 448-449,457-486
+  s_b808e5a13726e4::t_345abe98e26731 487
+AGENTS.md
+  s_b808e5a13726e4::t_2201b4aed943ca 26
+apps/web/src/components/approval/ApprovalModal.jsx
+  s_b808e5a13726e4::t_760ed907eeda30 295-298
+apps/web/src/components/chat/AskAutoHostCountdown.jsx
+  s_b808e5a13726e4::t_1d3dc1a840ab5d 1-50
+apps/web/src/components/chat/AskQuestionForm.jsx
+  s_b808e5a13726e4::t_1fb60f60569be0 7,257-258
+apps/web/src/components/chat/ChatMessage.jsx
+  s_b808e5a13726e4::t_c6afa0aa003ec8 185,824-828
+apps/web/src/components/chat/ChatMessage.module.css
+  s_b808e5a13726e4::t_f4e71939bc0f11 930-954
+apps/web/src/components/chat/ChatView.jsx
+  s_b808e5a13726e4::t_c7901cbc2490cd 1038-1039,1044-1046,2090,2304,2447-2448,2465-2466,2534-2535,3424
+apps/web/src/components/chat/controllers/askFlowController.js
+  s_b808e5a13726e4::t_3c8ae1aa46891a 143-144,148-157,160,707-732,862,908,959-962,1008,1018-1019,1062
+apps/web/src/utils/deadlineCountdown.js
+  s_b808e5a13726e4::t_01a6fadd1c9a63 1-86
+apps/web/tests/deadline-countdown.test.js
+  s_b808e5a13726e4::t_89f554c96c140a 1-144
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_b808e5a13726e4::t_3ae141f6a25242 16719-16720
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "68465c18851c84c36a489d14363011203d67664d",
+  "prompts": {},
+  "sessions": {
+    "s_b808e5a13726e4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a203fe-9d11-73a0-a439-ec8c7212a4f4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
