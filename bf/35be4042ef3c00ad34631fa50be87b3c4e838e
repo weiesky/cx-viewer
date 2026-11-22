@@ -1,0 +1,27 @@
+cc-viewer-alignment/B9-implementation.md
+  s_b808e5a13726e4::t_8cb9501eb0ceb1 144-149
+cc-viewer-alignment/B9-installed.json
+  s_b808e5a13726e4::t_bd2b076b81989d 1-18
+cc-viewer-alignment/probes/b3-installed-check.py
+  s_b808e5a13726e4::t_58638bfd095dfe 45,48-49
+AGENTS.md
+  s_b808e5a13726e4::t_9b2beef2e6fc82 26
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_b808e5a13726e4::t_f1235e6fca99c4 16725-16726
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "bf35be4042ef3c00ad34631fa50be87b3c4e838e",
+  "prompts": {},
+  "sessions": {
+    "s_b808e5a13726e4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a203fe-9d11-73a0-a439-ec8c7212a4f4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
