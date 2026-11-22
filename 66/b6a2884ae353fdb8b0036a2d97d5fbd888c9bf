@@ -1,0 +1,33 @@
+AGENTS.md
+  s_4ca8f338668363::t_02813e996feb9e 26
+packages/app/lib/stats-worker.js
+  s_4ca8f338668363::t_02813e996feb9e 83,89,115
+packages/app/interceptor.js
+  s_4ca8f338668363::t_02813e996feb9e 475-476,620
+packages/app/proxy.js
+  s_4ca8f338668363::t_02813e996feb9e 332,340,474
+cc-viewer-alignment/B8-candidate-index.json
+  s_4ca8f338668363::t_9a635ad04a0e5d 14,25,35,44,64
+cc-viewer-alignment/B8-candidate-matrix.md
+  s_4ca8f338668363::t_d31439a90c7348 7-10,12
+cc-viewer-alignment/B8-implementation.md
+  s_4ca8f338668363::t_4406557faa830d 54,56,58
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4ca8f338668363::t_7b51c6aa292974 16572,16574
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "66b6a2884ae353fdb8b0036a2d97d5fbd888c9bf",
+  "prompts": {},
+  "sessions": {
+    "s_4ca8f338668363": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a200e6-7324-7162-956b-e799486390a7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
