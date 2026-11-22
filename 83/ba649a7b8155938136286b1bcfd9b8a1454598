@@ -1,0 +1,40 @@
+packages/app/lib/headless-system-prompts.js
+  s_4ca8f338668363::t_25f081e57ecdb5 9,33-34,36,39-43,71-73
+  s_4ca8f338668363::t_41baef99a99d61 1-8,10-32,35,37-38,44-70,74-109
+packages/app/package.json
+  s_4ca8f338668363::t_ebf1725f21101b 88
+cc-viewer-alignment/probes/b8-native-headless-prompt.mjs
+  s_4ca8f338668363::t_bfc1c29fc52e10 1-9
+  s_4ca8f338668363::t_434d9fc37f61c9 25
+  s_4ca8f338668363::t_e657148f1e5449 10-24,26-32
+cc-viewer-alignment/B8-implementation.md
+  s_4ca8f338668363::t_d2bc9b2d1a51da 142
+  s_4ca8f338668363::t_57247c196cc18e 135-141
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4ca8f338668363::t_57247c196cc18e 16627-16630
+packages/app/tests/headless-system-prompts.test.js
+  s_4ca8f338668363::t_9cb3b80e8c49ea 1-23,27-74
+  s_4ca8f338668363::t_a5ccab0197554c 24-26
+AGENTS.md
+  s_4ca8f338668363::t_57247c196cc18e 26
+cc-viewer-alignment/B8-E20-native-headless-prompt.json
+  s_4ca8f338668363::t_4e0389291804b3 1-66
+pnpm-lock.yaml
+  s_4ca8f338668363::t_2d405d90af4c6e 257-259,4026-4029,9050-9051
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "83ba649a7b8155938136286b1bcfd9b8a1454598",
+  "prompts": {},
+  "sessions": {
+    "s_4ca8f338668363": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a200e6-7324-7162-956b-e799486390a7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
