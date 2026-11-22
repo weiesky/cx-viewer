@@ -1,0 +1,45 @@
+packages/app/lib/stats-worker.js
+  s_4ca8f338668363::t_d520dab8978d73 8,67,85,117-124
+  s_4ca8f338668363::t_9f73776280aa74 86
+packages/app/tests/proxy-stats.test.js
+  s_4ca8f338668363::t_1306bdc833fae6 1-451
+packages/app/interceptor.js
+  s_4ca8f338668363::t_d520dab8978d73 76-81,616
+packages/app/server.js
+  s_4ca8f338668363::t_53be119e5dc5e7 132,1534-1563,2957-2978,5275,6432
+  s_4ca8f338668363::t_d19c3400a68337 6433-6434
+packages/app/tests/proxy-stats-api.test.js
+  s_4ca8f338668363::t_a68cf5b3c7dfbe 23
+  s_4ca8f338668363::t_db0bdca4a47f1f 1-22,24-35
+packages/app/proxy.js
+  s_4ca8f338668363::t_d520dab8978d73 12,15-19,485,487,492-493,495-498,501-502
+  s_4ca8f338668363::t_aa569ceb0f89ff 488,494,499-500
+packages/app/lib/proxy-stats.js
+  s_4ca8f338668363::t_9f73776280aa74 9,455-458,463-466
+  s_4ca8f338668363::t_1306bdc833fae6 1-8,12-111,113-123,127-454,459-462,467-486
+  s_4ca8f338668363::t_aa569ceb0f89ff 10-11,112,124-126
+AGENTS.md
+  s_4ca8f338668363::t_e031f4a7b08f52 26
+cc-viewer-alignment/B8-implementation.md
+  s_4ca8f338668363::t_163d66cbb8cfce 70-80
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_4ca8f338668363::t_2524bcd1d18cfe 16578-16581
+packages/app/tests/stats-worker.test.js
+  s_4ca8f338668363::t_0aaa1c16d14ec3 72-88
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "7249d35877d3001b762f8e128812bcf1fa3d3a88",
+  "prompts": {},
+  "sessions": {
+    "s_4ca8f338668363": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a200e6-7324-7162-956b-e799486390a7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
