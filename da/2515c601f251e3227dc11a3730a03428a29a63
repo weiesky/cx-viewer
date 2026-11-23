@@ -1,0 +1,27 @@
+AGENTS.md
+  s_d7280c55e1029f::t_8676455d274856 26
+cc-viewer-alignment/B11-implementation.md
+  s_d7280c55e1029f::t_9fe416e2dd2176 150-155
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_d7280c55e1029f::t_7f01d79cd242ad 16971-16974
+packages/app/lib/dingtalk-im-senders.js
+  s_d7280c55e1029f::t_7529ab3454ee2d 45
+packages/app/tests/dingtalk-im-senders.test.js
+  s_d7280c55e1029f::t_e9b87e9422d2da 4,52-67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "da2515c601f251e3227dc11a3730a03428a29a63",
+  "prompts": {},
+  "sessions": {
+    "s_d7280c55e1029f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a204a6-35f5-7a91-8f49-0742da1c75f9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
