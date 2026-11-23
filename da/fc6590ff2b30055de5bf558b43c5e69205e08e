@@ -1,0 +1,161 @@
+packages/app/tests/ensure-hooks.test.js
+  s_d7280c55e1029f::t_da9e9c35fa2287 6,27,38-44
+packages/app/tests/dingtalk-im-process-manager.test.js
+  s_d7280c55e1029f::t_da9e9c35fa2287 5,41
+cc-viewer-alignment/B11-lib-group-file-map.json
+  s_d7280c55e1029f::t_da9e9c35fa2287 297,542-548
+  s_d7280c55e1029f::t_6dc69c433b6280 1-296,298-541,549
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_d7280c55e1029f::t_ef3ebec28e8d44 16991-16994
+packages/app/tests/perm-bridge.test.js
+  s_d7280c55e1029f::t_da9e9c35fa2287 43-45,62
+  s_d7280c55e1029f::t_19c8f76e99d9a9 63
+cc-viewer-alignment/B11-implementation.md
+  s_d7280c55e1029f::t_ef3ebec28e8d44 190-195
+.changeset/b11-lib-groups.md
+  s_d7280c55e1029f::t_e02025a1f027c0 1-5
+AGENTS.md
+  s_d7280c55e1029f::t_b1c2c6d33bfa43 26
+packages/app/cli.js
+  s_d7280c55e1029f::t_15d328d2b191fc 639-640,643,646
+packages/app/interceptor.js
+  s_d7280c55e1029f::t_94da15563e02c5 8
+packages/app/lib/appserver-bridge.js
+  s_d7280c55e1029f::t_97b61b1fdea929 34
+packages/app/lib/ask-auto-answer.js
+  s_d7280c55e1029f::t_8823b911e0d265 1-2
+packages/app/lib/ask/ask-auto-answer.js
+  s_d7280c55e1029f::t_4a63a9ace19b15 1-153
+packages/app/lib/ask/codex-request-user-input.js
+  s_d7280c55e1029f::t_1f547906ca293c 1-234
+packages/app/lib/ask/perm-bridge.js
+  s_d7280c55e1029f::t_de666542f8dc7c 1-188
+packages/app/lib/async-file-lock.js
+  s_d7280c55e1029f::t_7dce14b240334a 7
+packages/app/lib/codex-app-logger-daemon.js
+  s_d7280c55e1029f::t_5d23a49eb13b29 61
+packages/app/lib/codex-app-logger.js
+  s_d7280c55e1029f::t_51932a7cfd4b2a 18
+packages/app/lib/codex-appserver-capabilities.js
+  s_d7280c55e1029f::t_80f5bc8350157c 6
+packages/app/lib/codex-request-user-input.js
+  s_d7280c55e1029f::t_a8694d8b71ac0c 1-2
+packages/app/lib/credential-recovery.js
+  s_d7280c55e1029f::t_45b754131864a9 12
+packages/app/lib/dingtalk-im-bridge.js
+  s_d7280c55e1029f::t_7d72048859a92d 1-2
+packages/app/lib/dingtalk-im-config.js
+  s_d7280c55e1029f::t_8f2a79c034f433 1-2
+packages/app/lib/dingtalk-im-lock.js
+  s_d7280c55e1029f::t_1135e4d18504dc 1-2
+packages/app/lib/dingtalk-im-log-watcher.js
+  s_d7280c55e1029f::t_cbacaf6b486d38 1-2
+packages/app/lib/dingtalk-im-persona.js
+  s_d7280c55e1029f::t_d2acfa4662c7ca 1-2
+packages/app/lib/dingtalk-im-process-manager.js
+  s_d7280c55e1029f::t_eb9b91750f4b42 1-2
+packages/app/lib/dingtalk-im-routes.js
+  s_d7280c55e1029f::t_725f3936d2bdaf 1-2
+packages/app/lib/dingtalk-im-senders.js
+  s_d7280c55e1029f::t_39f0f779102cdb 1-2
+packages/app/lib/dingtalk-im-skills.js
+  s_d7280c55e1029f::t_2de957929deef0 1-2
+packages/app/lib/ensure-hooks.js
+  s_d7280c55e1029f::t_bbde56d08fa804 45
+packages/app/lib/im/dingtalk-im-bridge.js
+  s_d7280c55e1029f::t_b055e71e5c1fd9 1-444
+packages/app/lib/im/dingtalk-im-config.js
+  s_d7280c55e1029f::t_46e9136c8316c2 1-374
+packages/app/lib/im/dingtalk-im-lock.js
+  s_d7280c55e1029f::t_e7ce4d599b3324 1-192
+packages/app/lib/im/dingtalk-im-log-watcher.js
+  s_d7280c55e1029f::t_22d1853ca9fdca 1-61
+packages/app/lib/im/dingtalk-im-persona.js
+  s_d7280c55e1029f::t_055f8232e4af7e 1-50
+packages/app/lib/im/dingtalk-im-process-manager.js
+  s_d7280c55e1029f::t_7ff1963faacdd8 1-193
+packages/app/lib/im/dingtalk-im-routes.js
+  s_d7280c55e1029f::t_19826a9b76ab78 1-440
+packages/app/lib/im/dingtalk-im-senders.js
+  s_d7280c55e1029f::t_3aaf242f9d6ea3 1-47
+packages/app/lib/im/dingtalk-im-skills.js
+  s_d7280c55e1029f::t_dc5f58f6e29795 1-51
+packages/app/lib/perm-bridge.js
+  s_d7280c55e1029f::t_d7b0e9719a8075 1-2
+packages/app/lib/proxy-env.js
+  s_d7280c55e1029f::t_ed7d7d0e3c8146 1-2
+packages/app/lib/proxy-errors.js
+  s_d7280c55e1029f::t_dd69a30fdac0eb 1-2
+packages/app/lib/proxy/proxy-env.js
+  s_d7280c55e1029f::t_d8b51798776b9f 1-96
+packages/app/lib/proxy/proxy-errors.js
+  s_d7280c55e1029f::t_2c52d2ff5ef350 1-18
+packages/app/lib/restart.js
+  s_d7280c55e1029f::t_fbd19d392aa09d 6
+packages/app/lib/scheduled-task-store.js
+  s_d7280c55e1029f::t_85f40ed774b101 37
+packages/app/lib/sdk-appserver-approvals.js
+  s_d7280c55e1029f::t_7832ebf546f7f1 4-5
+packages/app/lib/update-job.js
+  s_d7280c55e1029f::t_ab538f75098f54 15
+packages/app/proxy.js
+  s_d7280c55e1029f::t_d10ad45279cf89 8-9
+packages/app/scripts/migrate-im-credentials.mjs
+  s_d7280c55e1029f::t_62ce5a25287a05 24
+packages/app/server.js
+  s_d7280c55e1029f::t_6bf857afe3d99f 6,67-69,144,1138,1148-1150
+packages/content/concepts/ar/GlobalSettings.md
+  s_d7280c55e1029f::t_ac09687f94e89e 123
+packages/content/concepts/da/GlobalSettings.md
+  s_d7280c55e1029f::t_90cd2588b60556 123
+packages/content/concepts/de/GlobalSettings.md
+  s_d7280c55e1029f::t_c852bce7b231da 123
+packages/content/concepts/en/GlobalSettings.md
+  s_d7280c55e1029f::t_28a1c8daad06f1 123
+packages/content/concepts/es/GlobalSettings.md
+  s_d7280c55e1029f::t_5aab8c13226fe4 123
+packages/content/concepts/fr/GlobalSettings.md
+  s_d7280c55e1029f::t_e412a2badc13bd 123
+packages/content/concepts/it/GlobalSettings.md
+  s_d7280c55e1029f::t_b6e8ebce98e5eb 123
+packages/content/concepts/ja/GlobalSettings.md
+  s_d7280c55e1029f::t_2b7a8731aa0ca5 123
+packages/content/concepts/ko/GlobalSettings.md
+  s_d7280c55e1029f::t_5d7cc5668f0c25 123
+packages/content/concepts/no/GlobalSettings.md
+  s_d7280c55e1029f::t_9b78265892de69 123
+packages/content/concepts/pl/GlobalSettings.md
+  s_d7280c55e1029f::t_efe3a6b2db092a 123
+packages/content/concepts/pt-BR/GlobalSettings.md
+  s_d7280c55e1029f::t_a871a90cafdb3f 123
+packages/content/concepts/ru/GlobalSettings.md
+  s_d7280c55e1029f::t_e49e5e53ef2a96 123
+packages/content/concepts/th/GlobalSettings.md
+  s_d7280c55e1029f::t_cc5b6efc31c3aa 123
+packages/content/concepts/tr/GlobalSettings.md
+  s_d7280c55e1029f::t_33be31ded7cd3c 123
+packages/content/concepts/uk/GlobalSettings.md
+  s_d7280c55e1029f::t_4bdd0a03e14a36 123
+packages/content/concepts/zh-TW/GlobalSettings.md
+  s_d7280c55e1029f::t_d7f0c389a2f1c9 123
+packages/content/concepts/zh/GlobalSettings.md
+  s_d7280c55e1029f::t_f20cc8d2e1b081 123
+scripts/tarball-baseline.json
+  s_d7280c55e1029f::t_034d6d2147675a 354-356,414-422,480-481
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "dafc6590ff2b30055de5bf558b43c5e69205e08e",
+  "prompts": {},
+  "sessions": {
+    "s_d7280c55e1029f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a204a6-35f5-7a91-8f49-0742da1c75f9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
