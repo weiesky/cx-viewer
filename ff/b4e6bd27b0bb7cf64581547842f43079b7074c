@@ -1,0 +1,61 @@
+packages/app/scripts/sync-ultraplan-presets.mjs
+  s_d7280c55e1029f::t_1640b4c416ff6a 5,9-11,247-248
+pnpm-lock.yaml
+  s_d7280c55e1029f::t_2c1dcb28802b16 281-282
+scripts/verify-tarball-drift.mjs
+  s_d7280c55e1029f::t_179e801f6dc028 28-30,33
+packages/content/package.json
+  s_d7280c55e1029f::t_d8f252050f4b76 1-9
+cc-viewer-alignment/B11-content-file-map.json
+  s_d7280c55e1029f::t_7f55260f111b4a 1-1554,1566
+  s_d7280c55e1029f::t_7aff65984135c7 1555-1565
+cc-viewer-alignment/B11-implementation.md
+  s_d7280c55e1029f::t_e0fcc1148b417a 178-183
+packages/app/server/lib/ultra-agents-api.js
+  s_d7280c55e1029f::t_be34c963fc6567 2,4-5
+packages/app/scripts/assemble-dist.mjs
+  s_d7280c55e1029f::t_92523a15b67956 27-32
+scripts/tarball-baseline.json
+  s_d7280c55e1029f::t_4acbbd878f8753 544,557
+.changeset/b11-content-extraction.md
+  s_d7280c55e1029f::t_4bd8ab49f64666 1-5
+packages/content/tests/paths-content.test.mjs
+  s_d7280c55e1029f::t_55f7f4294fb785 1-2,11-32
+  s_d7280c55e1029f::t_64c429d4ad85f0 3-10
+tests/tool-catalog-concepts.test.js
+  s_d7280c55e1029f::t_6422ca8be76081 8
+.gitignore
+  s_d7280c55e1029f::t_646237724daedc 16-20
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_d7280c55e1029f::t_e0fcc1148b417a 16983-16986
+packages/app/server/_paths.js
+  s_d7280c55e1029f::t_60700b0f985dce 1-18
+packages/app/tests/ultraplan-generated-assets.test.js
+  s_d7280c55e1029f::t_61c2ba95255405 7,32-33
+packages/app/package.json
+  s_d7280c55e1029f::t_a245430807db6d 61
+packages/app/lib/dingtalk-im-skills.js
+  s_d7280c55e1029f::t_13959b6660e29f 3,11
+packages/app/server.js
+  s_d7280c55e1029f::t_c4284ecbb0ce64 1,5284,5291
+AGENTS.md
+  s_d7280c55e1029f::t_ce5ee072e38962 26
+packages/app/tests/auth-server.test.js
+  s_d7280c55e1029f::t_b3e9f35478d7e1 630-631
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "ffb4e6bd27b0bb7cf64581547842f43079b7074c",
+  "prompts": {},
+  "sessions": {
+    "s_d7280c55e1029f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a204a6-35f5-7a91-8f49-0742da1c75f9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": null
+    }
+  }
+}
