@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
-import { isOpenAiResponsesMasterEntry } from '../openai-responses-url.js';
-import { isTemporaryTitleThread } from '../codex-thread-source.js';
+import { isOpenAiResponsesMasterEntry } from "@cxv/core/openai-responses-url";
+import { isTemporaryTitleThread } from "@cxv/core/codex-thread-source";
 
 function firstNonEmpty(...values) {
   return values.find((value) => typeof value === 'string' && value.trim() !== '')?.trim() ?? null;

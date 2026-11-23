@@ -1,4 +1,5 @@
 import { describe, it, before, after } from 'node:test';
+import { waitForProcessExit } from './helpers/process-exit.js';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -379,7 +380,7 @@ describe('service plugin end-to-end (real child process)', { concurrency: false 
     const response = await httpReq('/api/plugins?dir=hello-service', { method: 'DELETE' });
     assert.equal(response.status, 200, response.body);
     assert.equal(existsSync(PLUGIN_DIR), false);
-    assert.throws(() => process.kill(before.pid, 0), { code: 'ESRCH' });
+    await waitForProcessExit(before.pid);
     assert.equal((await httpReq('/plugins/hello-service/hello')).status, 404);
     assert.deepEqual(JSON.parse((await httpReq('/api/plugin-panels')).body).panels, []);
   });

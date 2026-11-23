@@ -3,7 +3,7 @@ import {
   LOG_V2_WIRE_KINDS,
   LOG_V2_WIRE_LIMITS,
   LOG_V2_WIRE_VERSION,
-} from '../../../../packages/app/lib/log-v2/wire-schema.js';
+} from "@cxv/core/log-v2/wire-schema";
 
 export async function readNdjsonResponse(response, onValue = null, { collect = true } = {}) {
   if (!response.ok) {

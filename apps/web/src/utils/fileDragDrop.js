@@ -1,5 +1,5 @@
 import { planPasteSend } from './terminalClipboard.js';
-import { sanitizeBracketPasteText } from '../../../../packages/app/src/utils/ptyChunkBuilder.js';
+import { sanitizeBracketPasteText } from "@cxv/core/ptyChunkBuilder";
 
 export const FILE_DRAG_TYPE = 'text/x-ccv-file';
 export const FOLDER_DRAG_TYPE = 'text/x-ccv-folder';

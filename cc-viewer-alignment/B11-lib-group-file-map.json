@@ -1,0 +1,549 @@
+{
+  "sourceCommit": "e6c0f9b",
+  "files": [
+    {
+      "old": "packages/app/lib/dingtalk-im-bridge.js",
+      "source": "packages/app/lib/im/dingtalk-im-bridge.js",
+      "beforeSha256": "596cfa3cdbb667a197d86a88e1ac40efbd7d5f51f059c372896ec2e0af7dac02",
+      "afterSha256": "5ad59327b17779ffa0043f8b8e6fb69084e22e9acbe6906b9e9f548e12f36cf9",
+      "importSpecifierEdits": [
+        {
+          "start": 398,
+          "end": 430,
+          "before": "'./adapters/dingtalk-adapter.js'",
+          "after": "\"../adapters/dingtalk-adapter.js\""
+        },
+        {
+          "start": 77,
+          "end": 100,
+          "before": "'./main-agent-entry.js'",
+          "after": "\"../main-agent-entry.js\""
+        }
+      ],
+      "locationAdaptation": null
+    },
+    {
+      "old": "packages/app/lib/dingtalk-im-config.js",
+      "source": "packages/app/lib/im/dingtalk-im-config.js",
+      "beforeSha256": "3a62e14356250780d2e0c9e9f5ae065c43800402ca2f2d5851398c49cb38b163",
+      "afterSha256": "9559250be985c6ca609a1b4b0e6bcde047c7d70a76b453d8c7477c168c2fa2c7",
+      "importSpecifierEdits": [
+        {
+          "start": 1057,
+          "end": 1076,
+          "before": "'./config-paths.js'",
+          "after": "\"../config-paths.js\""
+        },
+        {
+          "start": 956,
+          "end": 980,
+          "before": "'./credential-backup.js'",
+          "after": "\"../credential-backup.js\""
+        },
+        {
+          "start": 860,
+          "end": 893,
+          "before": "'./credential-migration-state.js'",
+          "after": "\"../credential-migration-state.js\""
+        },
+        {
+          "start": 737,
+          "end": 764,
+          "before": "'./credential-reference.js'",
+          "after": "\"../credential-reference.js\""
+        },
+        {
+          "start": 630,
+          "end": 653,
+          "before": "'./credential-store.js'",
+          "after": "\"../credential-store.js\""
+        },
+        {
+          "start": 567,
+          "end": 590,
+          "before": "'./credential-paths.js'",
+          "after": "\"../credential-paths.js\""
+        },
+        {
+          "start": 511,
+          "end": 532,
+          "before": "'./log-v2/storage.js'",
+          "after": "\"../log-v2/storage.js\""
+        },
+        {
+          "start": 437,
+          "end": 456,
+          "before": "'./config-paths.js'",
+          "after": "\"../config-paths.js\""
+        },
+        {
+          "start": 380,
+          "end": 395,
+          "before": "'./file-api.js'",
+          "after": "\"../file-api.js\""
+        },
+        {
+          "start": 328,
+          "end": 342,
+          "before": "'../findcx.js'",
+          "after": "\"../../findcx.js\""
+        }
+      ],
+      "locationAdaptation": null
+    },
+    {
+      "old": "packages/app/lib/dingtalk-im-lock.js",
+      "source": "packages/app/lib/im/dingtalk-im-lock.js",
+      "beforeSha256": "d8ae9b84c58a1eeb26aa8e9f50c9bfb98271d358d5cc952c9983f9831c4bb409",
+      "afterSha256": "d8ae9b84c58a1eeb26aa8e9f50c9bfb98271d358d5cc952c9983f9831c4bb409",
+      "importSpecifierEdits": [],
+      "locationAdaptation": null
+    },
+    {
+      "old": "packages/app/lib/dingtalk-im-log-watcher.js",
+      "source": "packages/app/lib/im/dingtalk-im-log-watcher.js",
+      "beforeSha256": "8cc4835d97fe56a587fc62027ce08ee4acd2fda58440adf96231ae063abb5caf",
+      "afterSha256": "cda1267dcb18b9947116132c601520f5a1601550242e1a35b496bd7afd4a0e69",
+      "importSpecifierEdits": [
+        {
+          "start": 459,
+          "end": 483,
+          "before": "'./log-v2/project-id.js'",
+          "after": "\"../log-v2/project-id.js\""
+        },
+        {
+          "start": 396,
+          "end": 418,
+          "before": "'./log-v2/identity.js'",
+          "after": "\"../log-v2/identity.js\""
+        }
+      ],
+      "locationAdaptation": null
+    },
+    {
+      "old": "packages/app/lib/dingtalk-im-persona.js",
+      "source": "packages/app/lib/im/dingtalk-im-persona.js",
+      "beforeSha256": "2556433099461801e66dff602dae78e9e340daa3a225b407304dfee3881faaaf",
+      "afterSha256": "2556433099461801e66dff602dae78e9e340daa3a225b407304dfee3881faaaf",
+      "importSpecifierEdits": [],
+      "locationAdaptation": null
+    },
+    {
+      "old": "packages/app/lib/dingtalk-im-process-manager.js",
+      "source": "packages/app/lib/im/dingtalk-im-process-manager.js",
+      "beforeSha256": "458720e6c0684ee3160a2edb76bd5e9434dfca9231b634bb08f48a007f09aa0c",
+      "afterSha256": "fbdbccd9065e974137de1311c8cecfadd38f2f010161fa1b6fd6a5cb22b370cd",
+      "importSpecifierEdits": [
+        {
+          "start": 632,
+          "end": 652,
+          "before": "'./cxv-processes.js'",
+          "after": "\"../cxv-processes.js\""
+        }
+      ],
+      "locationAdaptation": {
+        "before": "resolve(dirname(fileURLToPath(import.meta.url)), '..', 'cli.js')",
+        "after": "resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', 'cli.js')"
+      }
+    },
+    {
+      "old": "packages/app/lib/dingtalk-im-routes.js",
+      "source": "packages/app/lib/im/dingtalk-im-routes.js",
+      "beforeSha256": "5173edebb1d999df3b95aba46b6034bbc7709f5b60e30b9aa2a4c2c5dabd6853",
+      "afterSha256": "5c31f35feb37bc172af64433c140f8bff2b55eef07d7a1e29d4e6d8796dcd31f",
+      "importSpecifierEdits": [
+        {
+          "start": 1065,
+          "end": 1082,
+          "before": "'./skills-api.js'",
+          "after": "\"../skills-api.js\""
+        },
+        {
+          "start": 346,
+          "end": 378,
+          "before": "'./adapters/dingtalk-adapter.js'",
+          "after": "\"../adapters/dingtalk-adapter.js\""
+        },
+        {
+          "start": 225,
+          "end": 249,
+          "before": "'./log-v2/project-id.js'",
+          "after": "\"../log-v2/project-id.js\""
+        },
+        {
+          "start": 158,
+          "end": 184,
+          "before": "'./log-v2/materializer.js'",
+          "after": "\"../log-v2/materializer.js\""
+        },
+        {
+          "start": 106,
+          "end": 120,
+          "before": "'../findcx.js'",
+          "after": "\"../../findcx.js\""
+        }
+      ],
+      "locationAdaptation": null
+    },
+    {
+      "old": "packages/app/lib/dingtalk-im-senders.js",
+      "source": "packages/app/lib/im/dingtalk-im-senders.js",
+      "beforeSha256": "73df59ac382c87c242ae0caec8c383f14614d2920a8c6ae6c7beb8e8a629ce2f",
+      "afterSha256": "57ea38b676cbe1717b30a68441dd48d67c8efcc3249ca3097d7941676777c207",
+      "importSpecifierEdits": [
+        {
+          "start": 536,
+          "end": 557,
+          "before": "'./log-v2/storage.js'",
+          "after": "\"../log-v2/storage.js\""
+        }
+      ],
+      "locationAdaptation": null
+    },
+    {
+      "old": "packages/app/lib/dingtalk-im-skills.js",
+      "source": "packages/app/lib/im/dingtalk-im-skills.js",
+      "beforeSha256": "670d761bee82ca790cb0e677af29276ee387c969f457fc0fb92b7bc51c9fd4c5",
+      "afterSha256": "db81943bb6976423a07f36a92c7792366d2e45681cc3f43da7eef63ecce1093f",
+      "importSpecifierEdits": [
+        {
+          "start": 172,
+          "end": 190,
+          "before": "'./preferences.js'",
+          "after": "\"../preferences.js\""
+        },
+        {
+          "start": 116,
+          "end": 137,
+          "before": "'../server/_paths.js'",
+          "after": "\"../../server/_paths.js\""
+        }
+      ],
+      "locationAdaptation": null
+    },
+    {
+      "old": "packages/app/lib/ask-auto-answer.js",
+      "source": "packages/app/lib/ask/ask-auto-answer.js",
+      "beforeSha256": "ba9de326174ee0238f6f5e08aa31611065cf2738e974e07901ce93e50961d3fb",
+      "afterSha256": "675c4a3fa1562554bd35d19529c92a8f0ad8736d00b32b28cd58a5d8bba43ccd",
+      "importSpecifierEdits": [
+        {
+          "start": 1156,
+          "end": 1189,
+          "before": "'../src/utils/ask-auto-answer.js'",
+          "after": "\"../../src/utils/ask-auto-answer.js\""
+        },
+        {
+          "start": 1090,
+          "end": 1121,
+          "before": "'../server/lib/error-report.js'",
+          "after": "\"../../server/lib/error-report.js\""
+        },
+        {
+          "start": 1038,
+          "end": 1056,
+          "before": "'./preferences.js'",
+          "after": "\"../preferences.js\""
+        }
+      ],
+      "locationAdaptation": null
+    },
+    {
+      "old": "packages/app/lib/codex-request-user-input.js",
+      "source": "packages/app/lib/ask/codex-request-user-input.js",
+      "beforeSha256": "9d95208f08e93e94939b5197980aafb1a6e6ce7361d879eb06b2cde199795dff",
+      "afterSha256": "5eadba9b0e9cf827298754832d4daf9071619ae602464bf69630fbd534b3341a",
+      "importSpecifierEdits": [
+        {
+          "start": 32,
+          "end": 65,
+          "before": "'../src/utils/ask-auto-answer.js'",
+          "after": "\"../../src/utils/ask-auto-answer.js\""
+        }
+      ],
+      "locationAdaptation": null
+    },
+    {
+      "old": "packages/app/lib/perm-bridge.js",
+      "source": "packages/app/lib/ask/perm-bridge.js",
+      "beforeSha256": "5f5f0611363835ffabdacdf04f61b8ef4b12f179060dc606fe6e7d0748862476",
+      "afterSha256": "5f5f0611363835ffabdacdf04f61b8ef4b12f179060dc606fe6e7d0748862476",
+      "importSpecifierEdits": [],
+      "locationAdaptation": null
+    },
+    {
+      "old": "packages/app/lib/proxy-env.js",
+      "source": "packages/app/lib/proxy/proxy-env.js",
+      "beforeSha256": "bc3644ca80b77c7ef2aaf6d2edf0b5bd36af75d6ec5e41164e94469d20b88e95",
+      "afterSha256": "23dc7baa790f99de4171be9eb1bf880e8384b2280022b40fa6aa50b4ce6ff91d",
+      "importSpecifierEdits": [
+        {
+          "start": 347,
+          "end": 368,
+          "before": "'./logger-install.js'",
+          "after": "\"../logger-install.js\""
+        }
+      ],
+      "locationAdaptation": null
+    },
+    {
+      "old": "packages/app/lib/proxy-errors.js",
+      "source": "packages/app/lib/proxy/proxy-errors.js",
+      "beforeSha256": "47dcfdc95a40ea8f2472189fc0f828bddd8a8a8d7fdfdcd2f1251477e3d61384",
+      "afterSha256": "47dcfdc95a40ea8f2472189fc0f828bddd8a8a8d7fdfdcd2f1251477e3d61384",
+      "importSpecifierEdits": [],
+      "locationAdaptation": null
+    }
+  ],
+  "callers": [
+    {
+      "file": "packages/app/cli.js",
+      "importSpecifierEdits": [
+        {
+          "start": 26117,
+          "end": 26146,
+          "before": "'./lib/dingtalk-im-skills.js'",
+          "after": "\"./lib/im/dingtalk-im-skills.js\""
+        },
+        {
+          "start": 25962,
+          "end": 25992,
+          "before": "'./lib/dingtalk-im-persona.js'",
+          "after": "\"./lib/im/dingtalk-im-persona.js\""
+        },
+        {
+          "start": 25659,
+          "end": 25686,
+          "before": "'./lib/dingtalk-im-lock.js'",
+          "after": "\"./lib/im/dingtalk-im-lock.js\""
+        },
+        {
+          "start": 25596,
+          "end": 25625,
+          "before": "'./lib/dingtalk-im-config.js'",
+          "after": "\"./lib/im/dingtalk-im-config.js\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/interceptor.js",
+      "importSpecifierEdits": [
+        {
+          "start": 327,
+          "end": 347,
+          "before": "'./lib/proxy-env.js'",
+          "after": "\"./lib/proxy/proxy-env.js\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/appserver-bridge.js",
+      "importSpecifierEdits": [
+        {
+          "start": 1520,
+          "end": 1551,
+          "before": "'./codex-request-user-input.js'",
+          "after": "\"./ask/codex-request-user-input.js\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/async-file-lock.js",
+      "importSpecifierEdits": [
+        {
+          "start": 275,
+          "end": 298,
+          "before": "'./dingtalk-im-lock.js'",
+          "after": "\"./im/dingtalk-im-lock.js\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/codex-app-logger-daemon.js",
+      "importSpecifierEdits": [
+        {
+          "start": 2299,
+          "end": 2315,
+          "before": "'./proxy-env.js'",
+          "after": "\"./proxy/proxy-env.js\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/codex-app-logger.js",
+      "importSpecifierEdits": [
+        {
+          "start": 567,
+          "end": 583,
+          "before": "'./proxy-env.js'",
+          "after": "\"./proxy/proxy-env.js\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/codex-appserver-capabilities.js",
+      "importSpecifierEdits": [
+        {
+          "start": 254,
+          "end": 285,
+          "before": "'./codex-request-user-input.js'",
+          "after": "\"./ask/codex-request-user-input.js\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/credential-recovery.js",
+      "importSpecifierEdits": [
+        {
+          "start": 1006,
+          "end": 1031,
+          "before": "'./dingtalk-im-config.js'",
+          "after": "\"./im/dingtalk-im-config.js\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/restart.js",
+      "importSpecifierEdits": [
+        {
+          "start": 277,
+          "end": 300,
+          "before": "'./dingtalk-im-lock.js'",
+          "after": "\"./im/dingtalk-im-lock.js\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/scheduled-task-store.js",
+      "importSpecifierEdits": [
+        {
+          "start": 2428,
+          "end": 2451,
+          "before": "'./dingtalk-im-lock.js'",
+          "after": "\"./im/dingtalk-im-lock.js\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/sdk-appserver-approvals.js",
+      "importSpecifierEdits": [
+        {
+          "start": 445,
+          "end": 467,
+          "before": "'./ask-auto-answer.js'",
+          "after": "\"./ask/ask-auto-answer.js\""
+        },
+        {
+          "start": 296,
+          "end": 327,
+          "before": "'./codex-request-user-input.js'",
+          "after": "\"./ask/codex-request-user-input.js\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/update-job.js",
+      "importSpecifierEdits": [
+        {
+          "start": 1011,
+          "end": 1034,
+          "before": "'./dingtalk-im-lock.js'",
+          "after": "\"./im/dingtalk-im-lock.js\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/proxy.js",
+      "importSpecifierEdits": [
+        {
+          "start": 380,
+          "end": 400,
+          "before": "'./lib/proxy-env.js'",
+          "after": "\"./lib/proxy/proxy-env.js\""
+        },
+        {
+          "start": 325,
+          "end": 348,
+          "before": "'./lib/proxy-errors.js'",
+          "after": "\"./lib/proxy/proxy-errors.js\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/scripts/migrate-im-credentials.mjs",
+      "importSpecifierEdits": [
+        {
+          "start": 1187,
+          "end": 1217,
+          "before": "'../lib/dingtalk-im-config.js'",
+          "after": "\"../lib/im/dingtalk-im-config.js\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/server.js",
+      "importSpecifierEdits": [
+        {
+          "start": 48957,
+          "end": 48984,
+          "before": "'./lib/dingtalk-im-lock.js'",
+          "after": "\"./lib/im/dingtalk-im-lock.js\""
+        },
+        {
+          "start": 48914,
+          "end": 48943,
+          "before": "'./lib/dingtalk-im-config.js'",
+          "after": "\"./lib/im/dingtalk-im-config.js\""
+        },
+        {
+          "start": 48871,
+          "end": 48900,
+          "before": "'./lib/dingtalk-im-bridge.js'",
+          "after": "\"./lib/im/dingtalk-im-bridge.js\""
+        },
+        {
+          "start": 48456,
+          "end": 48494,
+          "before": "'./lib/dingtalk-im-process-manager.js'",
+          "after": "\"./lib/im/dingtalk-im-process-manager.js\""
+        },
+        {
+          "start": 8662,
+          "end": 8697,
+          "before": "'./lib/codex-request-user-input.js'",
+          "after": "\"./lib/ask/codex-request-user-input.js\""
+        },
+        {
+          "start": 5746,
+          "end": 5775,
+          "before": "'./lib/dingtalk-im-routes.js'",
+          "after": "\"./lib/im/dingtalk-im-routes.js\""
+        },
+        {
+          "start": 5677,
+          "end": 5706,
+          "before": "'./lib/dingtalk-im-config.js'",
+          "after": "\"./lib/im/dingtalk-im-config.js\""
+        },
+        {
+          "start": 5602,
+          "end": 5636,
+          "before": "'./lib/dingtalk-im-log-watcher.js'",
+          "after": "\"./lib/im/dingtalk-im-log-watcher.js\""
+        },
+        {
+          "start": 357,
+          "end": 383,
+          "before": "'./lib/ask-auto-answer.js'",
+          "after": "\"./lib/ask/ask-auto-answer.js\""
+        }
+      ]
+    }
+  ],
+  "validation": {
+    "implementationBodiesUnchanged": true,
+    "onlyLocationAdaptation": "IM worker CLI anchor gains one parent",
+    "addedPublishedFiles": 14,
+    "stablePublishedPaths": 624
+  }
+}

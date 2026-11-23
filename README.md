@@ -369,3 +369,5 @@ Run commands from the repository root: `pnpm test`, `pnpm run build`, `pnpm run 
 ### Guided npm updates
 
 The version dialog checks and downloads a verified npm release. Installation runs after you confirm **Restart and update**; the helper preserves the original working directory and arguments. Other running viewer instances block staging. Source checkouts, pnpm, Homebrew and Electron keep manual or installer-managed updates. A failed installation records diagnostics and attempts to restart the previous CLI; it does not promise filesystem rollback after a partial npm failure.
+
+Configuration sync is currently local. The documentation-only [cloud contract](docs/config-cloud-sync.md) ([中文](docs/config-cloud-sync.zh.md)) records the frozen scope and credential boundary; no cloud service or upload is enabled.

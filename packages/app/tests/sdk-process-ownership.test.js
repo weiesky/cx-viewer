@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { waitForProcessExit } from './helpers/process-exit.js';
 import assert from 'node:assert/strict';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -45,7 +46,7 @@ if(input!=='fresh'){
     assert.equal(getSdkStreamingState({ instanceKey: infoA.instanceKey }).active, true, 'busy is truthful during the grace period');
     assert.equal(existsSync(join(b, 'signalled')), false);
     await runningA;
-    assert.throws(() => process.kill(pidA, 0), { code: 'ESRCH' });
+    await waitForProcessExit(pidA);
     assert.doesNotThrow(() => process.kill(pidB, 0));
     assert.equal(getSdkStreamingState({ instanceKey: infoA.instanceKey }).active, false);
     assert.equal(getSdkStreamingState({ instanceKey: infoB.instanceKey }).active, true);

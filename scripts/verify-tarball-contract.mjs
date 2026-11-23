@@ -1,0 +1,102 @@
+#!/usr/bin/env node
+// L4 tarball-contract gate: the published tarball's physical layout is the public API
+// (bin entry, exports map, native CLI injection markers, managed hook paths — see
+// docs/refactor/pnpm-monorepo-migration-plan.zh.md §0.1). This script packs the real artifact from
+// packages/app and diffs the file list against the committed baseline.
+//
+// dist/assets/* is excluded from the diff: vite content-hashes those filenames on every
+// web change. dist/ is instead asserted structurally (index.html + voice-packs present).
+//
+// Usage:
+//   node scripts/verify-tarball-contract.mjs          # diff vs baseline, exit 1 on delta
+//   node scripts/verify-tarball-contract.mjs --write  # regenerate the baseline
+import { execFileSync } from 'node:child_process';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { parseNpmPackFiles } from '../packages/app/scripts/lib/npm-pack-json.mjs';
+
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const APP_DIR = join(REPO_ROOT, 'packages', 'app');
+const BASELINE = join(REPO_ROOT, 'scripts', 'tarball-baseline.json');
+const writeMode = process.argv.includes('--write');
+
+function fail(msg) {
+  console.error(`[verify-tarball] ${msg}`);
+  process.exit(1);
+}
+
+// Assemble first (idempotent; fails loudly on stale/missing web dist), then create the
+// actual tarball in a temporary directory. npm 11 can return `[]` for the combination
+// of `pack --dry-run --json` and setup-node's CI npmrc, so a dry run is not a reliable
+// source of the publish contract. Packing to a temp dir also verifies the real artifact.
+// --ignore-scripts keeps prepack's stdout from corrupting npm's --json output.
+execFileSync(process.execPath, [join(APP_DIR, 'scripts', 'assemble-dist.mjs')], { cwd: APP_DIR, stdio: 'inherit' });
+const packDir = mkdtempSync(join(tmpdir(), 'cxv-tarball-contract-'));
+let out;
+try {
+  const npmCache = join(packDir, 'npm-cache');
+  const args = ['pack', '--json', '--ignore-scripts', '--pack-destination', packDir];
+  const isWin = process.platform === 'win32';
+  const quoted = ['npm', ...args].map(s => `"${s.replaceAll('"', '""')}"`).join(' ');
+  out = execFileSync(isWin ? process.env.COMSPEC || 'cmd.exe' : 'npm', isWin ? ['/d', '/s', '/c', `"${quoted}"`] : args, {
+    windowsVerbatimArguments: isWin, windowsHide: true,
+    cwd: APP_DIR,
+    encoding: 'utf8',
+    env: { ...process.env, npm_config_cache: npmCache, NPM_CONFIG_CACHE: npmCache },
+    stdio: ['ignore', 'pipe', 'inherit'],
+  });
+} finally {
+  rmSync(packDir, { recursive: true, force: true });
+}
+
+let files;
+try {
+  files = parseNpmPackFiles(out);
+} catch (error) {
+  fail(error.message);
+}
+
+// Structural assertions for the hash-named parts of dist/.
+if (!files.includes('dist/index.html')) fail('dist/index.html missing from tarball');
+for (const dir of ['dist/voice-packs/default/', 'dist/voice-packs/sanguo/']) {
+  if (!files.some((f) => f.startsWith(dir))) fail(`tarball carries no files under ${dir}`);
+}
+// dist/assets/* is excluded from the file-list diff (hashed names), so assert the bundle
+// is actually loadable: every asset referenced by dist/index.html must be in the pack list.
+{
+  const indexHtml = readFileSync(join(APP_DIR, 'dist', 'index.html'), 'utf8');
+  const refs = [...indexHtml.matchAll(/assets\/[A-Za-z0-9_.-]+\.(?:js|css)/g)].map((m) => `dist/${m[0]}`);
+  if (refs.length === 0) fail('dist/index.html references no assets/* bundle — broken web build');
+  const packSet = new Set(files);
+  const missing = refs.filter((r) => !packSet.has(r));
+  if (missing.length) fail(`dist/index.html references assets missing from the tarball: ${missing.join(', ')}`);
+}
+
+const stable = files.filter((f) => !f.startsWith('dist/assets/'));
+
+if (writeMode) {
+  writeFileSync(BASELINE, JSON.stringify(stable, null, 2) + '\n');
+  console.log(`[verify-tarball] baseline written: ${stable.length} entries → ${BASELINE}`);
+  process.exit(0);
+}
+
+if (!existsSync(BASELINE)) {
+  fail(`baseline missing at ${BASELINE} — regenerate with \`node scripts/verify-tarball-contract.mjs --write\``);
+}
+const baseline = JSON.parse(readFileSync(BASELINE, 'utf8'));
+const currentSet = new Set(stable);
+const baselineSet = new Set(baseline);
+const added = stable.filter((f) => !baselineSet.has(f));
+const removed = baseline.filter((f) => !currentSet.has(f));
+
+if (added.length || removed.length) {
+  console.error('[verify-tarball] tarball file list differs from baseline:');
+  for (const f of added) console.error(`  + ${f}`);
+  for (const f of removed) console.error(`  - ${f}`);
+  console.error('[verify-tarball] if this delta is intentional, review it line by line, then regenerate:');
+  console.error('  node scripts/verify-tarball-contract.mjs --write');
+  process.exit(1);
+}
+console.log(`[verify-tarball] OK — ${stable.length} files match baseline (dist/assets excluded: hashed names)`);

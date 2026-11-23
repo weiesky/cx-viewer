@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path';
 import {
   checkpointWireArchiveState,
   createWireArchiveState,
-} from './reducer.js';
+} from "@cxv/core/log-v2/reducer";
 import { createV2WireLiveReader } from './materializer.js';
 import {
   assertV2WireCursorFile,

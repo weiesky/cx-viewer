@@ -14,7 +14,7 @@
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { EVENT_KEYS } from '../server/lib/voice-pack-events.js';
+import { EVENT_KEYS } from "@cxv/core/voice-pack-events";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = join(__dirname, '..', 'public', 'voice-packs', 'default');

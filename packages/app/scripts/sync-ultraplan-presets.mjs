@@ -2,13 +2,13 @@
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { ULTRAPLAN_VARIANTS } from '../src/utils/ultraplanTemplates.js';
+import { CONCEPTS_DIR, ULTRA_AGENTS_DIR } from '../server/_paths.js';
+import { ULTRAPLAN_VARIANTS } from "@cxv/core/ultraplanTemplates";
 import { isLocalizedText, validateUltraAgentId } from '../server/lib/ultra-agents-api.js';
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const MANIFEST_PATH = join(ROOT, 'ultraAgents', 'manifest.json');
-const OUTPUT_DIR = join(ROOT, 'ultraAgents');
+const ROOT = dirname(ULTRA_AGENTS_DIR);
+const MANIFEST_PATH = join(ULTRA_AGENTS_DIR, 'manifest.json');
+const OUTPUT_DIR = ULTRA_AGENTS_DIR;
 const LOCALES = ['ar', 'da', 'de', 'en', 'es', 'fr', 'it', 'ja', 'ko', 'no', 'pl', 'pt-BR', 'ru', 'th', 'tr', 'uk', 'zh-TW', 'zh'];
 const checkOnly = process.argv.includes('--check');
 const manifest = JSON.parse(readFileSync(MANIFEST_PATH, 'utf8'));
@@ -244,8 +244,8 @@ function customExpertDoc(language) {
 validateManifest();
 for (const agent of manifest.agents) syncFile(join(OUTPUT_DIR, `${agent.id}.json`), generatedAgent(agent));
 for (const locale of LOCALES) {
-  syncFile(join(ROOT, 'concepts', locale, 'UltraPlan.md'), ultraPlanDoc(locale));
-  syncFile(join(ROOT, 'concepts', locale, 'CustomUltraplanExpert.md'), customExpertDoc(locale));
+  syncFile(join(CONCEPTS_DIR, locale, 'UltraPlan.md'), ultraPlanDoc(locale));
+  syncFile(join(CONCEPTS_DIR, locale, 'CustomUltraplanExpert.md'), customExpertDoc(locale));
 }
 
 if (mismatches.length) {

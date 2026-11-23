@@ -17,7 +17,7 @@ import { attachMobileTouchScroll } from '../../utils/mobileTouchScroll';
 import styles from './TerminalPanel.module.css';
 import { TerminalWriteQueue, INBAND_RESET } from '../../utils/terminalWriteQueue';
 import { diagCount } from '../../utils/termDiag';
-import { sanitizeBracketPasteText } from '../../../../../packages/app/src/utils/ptyChunkBuilder';
+import { sanitizeBracketPasteText } from "@cxv/core/ptyChunkBuilder";
 import { clipboardKeyAction, copyTextToClipboard, planPasteSend } from '../../utils/terminalClipboard';
 import { appendToken, appendWorkspaceInstance, getBasePath } from '../../utils/apiUrl';
 

@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { copyFileSync, mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { copyFileSync, cpSync, mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { arch, platform, tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 for (const name of ['pty-manager.js', 'scratch-pty-manager.js']) {
   test(`${name} repairs the helper for npm-hoisted node-pty before spawning`, { skip: process.platform === 'win32' }, async () => {
@@ -12,6 +12,11 @@ for (const name of ['pty-manager.js', 'scratch-pty-manager.js']) {
     const pty = join(prefix, 'node_modules', 'node-pty');
     const write = (path, value) => { mkdirSync(dirname(path), { recursive: true }); writeFileSync(path, value); };
     try {
+      const core = dirname(dirname(fileURLToPath(import.meta.resolve('@cxv/core/cli-args'))));
+      const bundledCore = join(app, 'node_modules', '@cxv', 'core');
+      mkdirSync(bundledCore, { recursive: true });
+      copyFileSync(join(core, 'package.json'), join(bundledCore, 'package.json'));
+      cpSync(join(core, 'src'), join(bundledCore, 'src'), { recursive: true });
       write(join(app, 'package.json'), '{"name":"cx-viewer","type":"module"}');
       write(join(pty, 'package.json'), '{"name":"node-pty","type":"module","exports":{".":"./index.js","./package.json":"./package.json"}}');
       const helper = join(pty, 'prebuilds', `${platform()}-${arch()}`, 'spawn-helper');

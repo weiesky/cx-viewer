@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ImageLightbox from '../common/ImageLightbox';
 import { apiUrl } from '../../utils/apiUrl';
-import { findUserImageRefs } from '../../../../../packages/app/src/utils/userImageRefs';
+import { findUserImageRefs } from "@cxv/core/userImageRefs";
 import { describeRemoteImage } from '../../utils/remoteImageDisclosure';
 import { t } from '../../i18n';
 import styles from './CachePopoverContent.module.css';

@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Button, Collapse, Modal, Tabs } from 'antd';
 import { DownloadOutlined } from '@ant-design/icons';
-import { classifyUserContent, isMainAgent, extractDisplayText } from '../../../../../packages/app/src/utils/contentFilter';
+import { classifyUserContent, isMainAgent, extractDisplayText } from "@cxv/core/contentFilter";
 import { normalizeConversationEntry, shouldExcludeFromConversation } from '../../utils/conversationEntryNormalize';
 import { parseImOrigin } from '../../utils/imOrigin';
 import { parsePromptSegments } from '../../utils/promptSegments';

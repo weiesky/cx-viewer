@@ -9,8 +9,8 @@ import { resolveAppServerThreadIdentity } from './identity.js';
 import { materializeSessionArchive } from './materializer.js';
 import { LogV2Writer } from './writer.js';
 import { readV2WireSnapshot } from './transport.js';
-import { applyWireCommit, checkpointWireArchiveState, createWireArchiveState } from './reducer.js';
-import { LOG_V2_WIRE_KINDS, LOG_V2_WIRE_VERSION } from './wire-schema.js';
+import { applyWireCommit, checkpointWireArchiveState, createWireArchiveState } from "@cxv/core/log-v2/reducer";
+import { LOG_V2_WIRE_KINDS, LOG_V2_WIRE_VERSION } from "@cxv/core/log-v2/wire-schema";
 
 function directoryBytes(root) {
   let bytes = 0;

@@ -4,6 +4,7 @@ import { mkdtempSync, mkdirSync, rmSync, existsSync, readFileSync } from 'node:f
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createPtySession } from '../pty-manager.js';
+import { waitForProcessExit } from './helpers/process-exit.js';
 
 function fakePty() {
   const calls = [];
@@ -132,7 +133,7 @@ require('node:fs').writeFileSync(${JSON.stringify(file + '.tmp')},JSON.stringify
     while (!existsSync(file)) { assert.ok(Date.now() < deadline); await new Promise(r => setTimeout(r, 10)); }
     pids = JSON.parse(readFileSync(file)); await new Promise(r => setTimeout(r, 100));
     await pty.killPty();
-    for (const pid of pids) assert.throws(() => process.kill(pid, 0), { code: 'ESRCH' });
+    for (const pid of pids) await waitForProcessExit(pid);
   } finally {
     for (const pid of pids.reverse()) try { process.kill(pid, 'SIGKILL'); } catch {}
     await pty.killPty(); rmSync(root, { recursive: true, force: true });
@@ -152,7 +153,7 @@ require('node:fs').writeFileSync(${JSON.stringify(file + '.tmp')},JSON.stringify
     pids = JSON.parse(readFileSync(file)); await new Promise(r => setTimeout(r, 100));
     const exited = new Promise(resolve => { const off = pty.onPtyExit(() => { off(); resolve(); }); });
     pty.writeToPty('finish\r'); await exited; await pty.killPty();
-    for (const pid of pids) assert.throws(() => process.kill(pid, 0), { code: 'ESRCH' });
+    for (const pid of pids) await waitForProcessExit(pid);
   } finally {
     for (const pid of pids.reverse()) try { process.kill(pid, 'SIGKILL'); } catch {}
     await pty.killPty(); rmSync(root, { recursive: true, force: true });

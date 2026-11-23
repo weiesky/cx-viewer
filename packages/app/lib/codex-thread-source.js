@@ -1,8 +1,2 @@
-// Native protocol facts; no prompt-text inference or browser/Node dependency.
-export function isTemporaryTitleThread(thread) {
-  return thread?.ephemeral === true && thread.threadSource === 'thread_title';
-}
-
-export function isNativeTitleEntry(entry) {
-  return entry?._appServerSource === true && isTemporaryTitleThread(entry.body?.metadata);
-}
+// Compatibility path for existing installations and late runtime imports.
+export * from '@cxv/core/codex-thread-source';

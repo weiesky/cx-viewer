@@ -1,7 +1,7 @@
 // Wire format 协议详见 docs/WIRE_FORMAT.md（applyInPlaceLastMsgReplace 信号驱动短路是其客户端唯一消费方）
 import { parseImOrigin } from './imOrigin.js';
-import { classifySessionTransition, conversationIdsConflict, getEntryUserId, getMainAgentConversationId, isPostClearCheckpoint, getMainAgentSessionKey } from '../../../../packages/app/src/utils/clearCheckpoint.js';
-import { getEffectiveModelName } from '../../../../packages/app/src/utils/modelIdentity.js';
+import { classifySessionTransition, conversationIdsConflict, getEntryUserId, getMainAgentConversationId, isPostClearCheckpoint, getMainAgentSessionKey } from "@cxv/core/clearCheckpoint";
+import { getEffectiveModelName } from "@cxv/core/modelIdentity";
 
 export const HOT_SESSION_COUNT = 8;
 

@@ -9,7 +9,7 @@ import { readReferencedSecret, stageSecretReference } from './credential-referen
 import { isConfigurationMigrated, markConfigurationMigrated } from './credential-migration-state.js';
 import { AUTH_CREDENTIAL_VERSION_FIELD, authCredentialOwner } from './auth.js';
 import { getPreferencesPath, withPreferencesLock } from './preferences.js';
-import { DINGTALK_SECRET_OWNER, IM_CREDENTIAL_VERSION_FIELD, ensureDingTalkPrivateDirectory, getDingTalkImConfigPath, withDingTalkImConfigLock } from './dingtalk-im-config.js';
+import { DINGTALK_SECRET_OWNER, IM_CREDENTIAL_VERSION_FIELD, ensureDingTalkPrivateDirectory, getDingTalkImConfigPath, withDingTalkImConfigLock } from "./im/dingtalk-im-config.js";
 import { PROXY_CREDENTIAL_VERSION_FIELD, withProxyProfilesLock } from './proxy-profile-credentials.js';
 import { createDefaultProxyProfiles } from './proxy-profile.js';
 import { atomicWriteFile } from './logger-install.js';

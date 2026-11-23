@@ -34,3 +34,28 @@
   background: var(--color-error, #ff4d4f);
   pointer-events: none;
 }
+
+/* Amber pulsing dot while the IM socket is down and the SDK is auto-reconnecting. */
+.dotReconnecting {
+  position: absolute;
+  right: -2px;
+  top: -2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-warning, #f59e0b);
+  pointer-events: none;
+  animation: imDotPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes imDotPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* The static amber dot still encodes the state by presence + color. */
+@media (prefers-reduced-motion: reduce) {
+  .dotReconnecting {
+    animation: none;
+  }
+}

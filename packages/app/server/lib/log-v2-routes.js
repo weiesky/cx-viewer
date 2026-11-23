@@ -10,7 +10,7 @@ import {
   LOG_V2_WIRE_LIMITS,
   LOG_V2_WIRE_VERSION,
   sameWireArchive,
-} from '../../lib/log-v2/wire-schema.js';
+} from "@cxv/core/log-v2/wire-schema";
 import { watchV2Timeline } from '../../lib/log-v2/timeline-watcher.js';
 
 const OBJECT_HANDLE_TTL_MS = 30 * 60 * 1000;

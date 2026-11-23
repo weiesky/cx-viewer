@@ -1,0 +1,66 @@
+{
+  "date": "2026-11-23",
+  "status": "in-progress-awaiting-engineering-scope-choice",
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "runtimeCodeCommit": "da2515c601f251e3227dc11a3730a03428a29a63",
+  "branch": "alignment/b11-engineering-safety-platforms",
+  "candidateCount": 201,
+  "primaryCount": 42,
+  "crossCount": 193,
+  "pendingEngineeringCandidates": [
+    "20ccfb7304d3d298be3b818bb406a35a6779527a",
+    "729b8868939392a255648582615f1474c44b6724",
+    "7d83b5deffb3d84a0f86ae4df3aaffba4c00d171",
+    "f9467bfc838a6ef724c0f7144e0ef302e1256523",
+    "047db59b80186ff7eb10150c54916f1bd03173f7"
+  ],
+  "sourceReview": "B11-candidate-matrix.md; scoped dispositions, not whole mixed-commit completion",
+  "checks": {
+    "electron": 9,
+    "web": 808,
+    "app": 1725,
+    "integration": 220,
+    "total": 2762,
+    "skipped": 0,
+    "build": true,
+    "stableTarballPaths": 579,
+    "packageFiles": 778,
+    "webAssetFiles": 211,
+    "cleanInstalledTests": "1196/1196",
+    "allPackageAndWebBytesMatch": true,
+    "minimumNode": "20.12.0",
+    "minimumNodeBoot": true,
+    "minimumNodeTargetedTests": "46/46",
+    "minimumNodeFullSuite": false,
+    "electronStageAll778BytesMatch": true,
+    "browserConfigurations": 14,
+    "browserScreenshots": 30,
+    "remoteCiClaimedPassed": false
+  },
+  "installedBase": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-installed-runtime-pzwj03ud",
+  "failedAttemptsRetained": [
+    "/tmp/cxv-b11-full-first.log (host bypass inherited by a fixture; E16 corrected)",
+    "/tmp/cxv-b11-final-app.log (packing assembled shared dist during HTTP test; serial full app rerun passed)",
+    "/tmp/cxv-b11-electron-prepare.log (ENETDOWN)",
+    "/tmp/cxv-b11-electron-prepare-retry.log (55s download deadline)"
+  ],
+  "passingFinalLogs": [
+    "/tmp/cxv-b11-final-build.log",
+    "/tmp/cxv-b11-final-contract.log",
+    "/tmp/cxv-b11-final-app-serial.log",
+    "/tmp/cxv-b11-final-integration.log",
+    "/tmp/cxv-b11-final-installed.log",
+    "/tmp/cxv-b11-node-floor-final-tests.log",
+    "/tmp/cxv-b11-final-electron-stage.log"
+  ],
+  "userRuntime": "B11-active-entry-readonly.json; no assistant restart/stop",
+  "ownFixtureCleanup": "B11-fixture-cleanup.json",
+  "limitations": [
+    "Windows/Linux actual execution and Electron GUI/signing/notarization not verified",
+    "minimum Node exercised on current macOS only; not the full suite",
+    "real DingTalk and external model calls not performed",
+    "browser connection/start/stop states controlled; Save/logs/V2/profiles/disk invalidation real isolated HTTP/files",
+    "physical touch/IME/audio/password-manager plugins, LAN/TLS and historical intermittent IM issues unverified",
+    "native approvals/reviewer, resident transport, independent AppServer and Ask default-off unchanged; run ceiling30min retained"
+  ]
+}

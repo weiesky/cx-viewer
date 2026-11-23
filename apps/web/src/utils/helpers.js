@@ -1,7 +1,7 @@
-import { isSkillText, isMainAgent } from '../../../../packages/app/src/utils/contentFilter.js';
-import { getInstructionsText, getResponseInputItems, getResponseInstructions, getResponseTools, textFromContent } from '../../../../packages/app/lib/openai-body.js';
-import { getInputCacheUsage } from '../../../../packages/app/lib/token-usage.js';
-import { projectVisibleRequests } from '../../../../packages/app/lib/request-visibility.js';
+import { isSkillText, isMainAgent } from "@cxv/core/contentFilter";
+import { getInstructionsText, getResponseInputItems, getResponseInstructions, getResponseTools, textFromContent } from "@cxv/core/openai-body";
+import { getInputCacheUsage } from "@cxv/core/token-usage";
+import { projectVisibleRequests } from "@cxv/core/request-visibility";
 import modelCodexUrl from '../img/model-codex.svg';
 import modelOpenaiUrl from '../img/model-openai.svg';
 import modelGeminiUrl from '../img/model-gemini.svg';
@@ -14,7 +14,7 @@ import modelCodexAnimatedSvg from '../img/codex/writing.svg?raw';
 import {
   getEffectiveModelName,
   resolveProducerModelName,
-} from '../../../../packages/app/src/utils/modelIdentity.js';
+} from "@cxv/core/modelIdentity";
 
 export {
   getEffectiveModelName,
@@ -24,7 +24,7 @@ export {
   normalizeModelName,
   resolveProducerModelName,
   sessionIdentityCandidatesMatch,
-} from '../../../../packages/app/src/utils/modelIdentity.js';
+} from "@cxv/core/modelIdentity";
 
 // 上下文相关规则唯一事实源在 server/lib/context-rules.js(CLIENT-SAFE,无 node 依赖,
 // Vite 跨目录打包,先例见 toolsXmlFormatter.js)。前端一律经此处 re-export 取用,
@@ -36,7 +36,7 @@ export {
   getModelMaxTokens,
   sumUsageInputTokens,
   sumUsageContextTokens,
-} from '../../../../packages/app/server/lib/context-rules.js';
+} from "@cxv/core/context-rules";
 
 /**
  * Resolve the effective model name for a log request entry, preferring the

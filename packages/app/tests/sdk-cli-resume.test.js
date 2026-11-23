@@ -278,6 +278,7 @@ test('CLI opens and prints the configured public prefix with its own token and p
   assert.equal(decodeURIComponent(url.pathname), '/session/{token}/');
   assert.equal(url.searchParams.get('resume'), '1');
   assert.ok(url.searchParams.get('token'));
+  await state.wait(() => state.output.includes('External: ') && state.output.includes('Local:   '));
   assert.match(state.output, /External: https:\/\/viewer\.example\/session\/\{token\}\/\?token=/);
   assert.ok(state.output.includes(`Local:   http://127.0.0.1:${state.port}/session/{token}/?resume=1`));
   assert.equal(existsSync(join(f.home, 'calls')), false, 'opening the picker never launches a model turn');

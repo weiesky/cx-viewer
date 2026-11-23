@@ -5,7 +5,7 @@ import { closeSync, existsSync, fsyncSync, lstatSync, mkdirSync, openSync, readF
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { atomicWriteJsonSync, fsyncDirectorySync, readJsonReferenceSync, scanJsonlSync, sha256 } from './storage.js';
-import { restoreWireArchiveState } from './reducer.js';
+import { restoreWireArchiveState } from "@cxv/core/log-v2/reducer";
 import { SHARDED_SESSION_FORMAT_VERSION } from './schema.js';
 
 export const SHARD_PROMPT_THRESHOLD = 2000;

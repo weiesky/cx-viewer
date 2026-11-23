@@ -1,7 +1,7 @@
-import { getResponseInputItems } from '../../../../packages/app/lib/openai-body.js';
-import { conversationIdsConflict, getEntryUserId, getMainAgentConversationId, getMainAgentSessionKey, isPostClearCheckpoint } from '../../../../packages/app/src/utils/clearCheckpoint.js';
-import { isMainAgent } from '../../../../packages/app/src/utils/contentFilter.js';
-import { projectedPromptFingerprint, projectUserPrompts, sanitizeProjectedUserPrompts } from '../../../../packages/app/src/utils/userPromptContent.js';
+import { getResponseInputItems } from "@cxv/core/openai-body";
+import { conversationIdsConflict, getEntryUserId, getMainAgentConversationId, getMainAgentSessionKey, isPostClearCheckpoint } from "@cxv/core/clearCheckpoint";
+import { isMainAgent } from "@cxv/core/contentFilter";
+import { projectedPromptFingerprint, projectUserPrompts, sanitizeProjectedUserPrompts } from "@cxv/core/userPromptContent";
 
 export const CONTEXT_COMPACTION_SUMMARY_LIMIT = 4096;
 export const CONTEXT_COMPACTION_EPOCH_STORAGE_KEY = 'cxv_context_compaction_excluded_epoch';

@@ -40,6 +40,7 @@ test('adapter dynamically imports dingtalk-stream and normalizes a robot callbac
       conversationId: 'conversation-1',
       conversationType: '1',
       senderStaffId: 'staff-1',
+      senderNick: 'Alice',
       robotCode: 'robot-1',
     }),
   };
@@ -48,6 +49,7 @@ test('adapter dynamically imports dingtalk-stream and normalizes a robot callbac
     messageId: 'message-1',
     text: 'hello',
     senderStaffId: 'staff-1',
+    senderName: 'Alice',
     conversationId: 'conversation-1',
     conversationType: '1',
     target: {

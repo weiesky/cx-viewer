@@ -10,12 +10,12 @@ import {
   unlinkSync,
 } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { isNativeTitleEntry } from '../codex-thread-source.js';
+import { isNativeTitleEntry } from "@cxv/core/codex-thread-source";
 
 import { activeTimelinePath } from './shards.js';
-import { projectUserPromptItem, projectedPromptFingerprint } from '../../src/utils/userPromptContent.js';
-import { splitEntryParts } from './entry-codec.js';
-import { scanMaterializedSessionArchive } from './materializer.js';
+import { projectUserPromptItem, projectedPromptFingerprint } from "@cxv/core/userPromptContent";
+import { splitEntryParts } from "@cxv/core/log-v2/entry-codec";
+import { scanMaterializedSessionArchive } from './archive-scanner.js';
 import { SESSION_SUMMARY_KIND, validateSessionSummary } from './schema.js';
 import { atomicWriteJsonSync, sha256, stableJsonStringify, withFileLockSync } from './storage.js';
 

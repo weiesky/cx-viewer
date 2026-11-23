@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { isNativeTitleEntry } from '../codex-thread-source.js';
+import { isNativeTitleEntry } from "@cxv/core/codex-thread-source";
 import {
   existsSync,
   lstatSync,
@@ -29,7 +29,7 @@ import {
 } from './identity.js';
 import { assertLogLayoutWritable } from './layout.js';
 import { activeTimelinePath, publishTimelineShard, readShardBaseline, readShardLayout, SHARD_PROMPT_THRESHOLD } from './shards.js';
-import { resolveWireInputRefs, restoreWireArchiveState } from './reducer.js';
+import { resolveWireInputRefs, restoreWireArchiveState } from "@cxv/core/log-v2/reducer";
 import { readV2WireSnapshot } from './transport.js';
 import {
   applyInputOperations,
@@ -38,7 +38,7 @@ import {
   deriveTurnId,
   diffInputReferences,
   splitEntryParts,
-} from './entry-codec.js';
+} from "@cxv/core/log-v2/entry-codec";
 import {
   appendJsonLineSync,
   atomicWriteJsonSync,
@@ -62,7 +62,7 @@ import {
   writeSessionSummary,
   directoryLogicalBytes,
 } from './session-summary.js';
-import { buildRequestSummary } from './request-summary.js';
+import { buildRequestSummary } from "@cxv/core/log-v2/request-summary";
 
 const PROJECT_MANIFEST_FILE = 'project.json';
 const SESSION_MANIFEST_FILE = 'manifest.json';

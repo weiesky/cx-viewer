@@ -16,7 +16,7 @@ import { SettingsContext } from './contexts/SettingsContext';
 import { filterRelevantRequests, isRelevantRequest, visibleRequests } from './utils/helpers';
 import { snapToPreset, stepPreset } from './utils/displayScaleHelper';
 import { getProjectAlias, subscribeToAlias } from './utils/projectAlias';
-import { isMainAgent, classifySessionTransition, getEntryUserId, getMainAgentConversationId, getMainAgentSessionKey, isPostClearCheckpoint } from '../../../packages/app/src/utils/contentFilter';
+import { isMainAgent, classifySessionTransition, getEntryUserId, getMainAgentConversationId, getMainAgentSessionKey, isPostClearCheckpoint } from "@cxv/core/contentFilter";
 import { apiUrl, getBasePath } from './utils/apiUrl';
 import { publish as publishWorkflowUpdate } from './utils/workflowStore';
 import { publishScheduledTaskEvent } from './utils/scheduledTaskEvents';
@@ -25,8 +25,8 @@ import { reportSwallowed } from './utils/errorReport';
 import { shouldWipeApprovalDismissal } from './utils/approvalDismissal';
 import { createMuxTransport } from './utils/wsMuxTransport';
 import { playEvent as playVoiceEvent, unlockAudio, setTurnEndCooldownMs } from './utils/voicePackPlayer';
-import { getDefaultBindingsForLocale as vpDefaultBindingsForLocale } from '../../../packages/app/server/lib/voice-pack-events';
-import { mergeVoicePackInto } from '../../../packages/app/server/lib/approval-modal-prefs';
+import { getDefaultBindingsForLocale as vpDefaultBindingsForLocale } from "@cxv/core/voice-pack-events";
+import { mergeVoicePackInto } from "@cxv/core/approval-modal-prefs";
 import { saveEntries, loadEntries, clearEntries, getCacheMeta, saveSessionEntries, loadSessionEntries } from './utils/entryCache';
 import SdkWorkspaceTabs from './components/dashboard/SdkWorkspaceTabs';
 import { sdkWorkspacePageUrl, navigateSdkWorkspace } from './utils/sdkWorkspaceNavigation';
@@ -34,7 +34,7 @@ import { buildSessionIndex, splitHotCold, mergeSessionIndices, HOT_SESSION_COUNT
 import { mergeMainAgentSessions as _mergeMainAgentSessions, isColdIngestMergeBlockedEntry, isMergeBlockedEntry } from './utils/sessionMerge';
 import { createConversationEntryNormalizer, shouldExcludeFromConversation, stampConversationMessageCount } from './utils/conversationEntryNormalize';
 import { createEntrySlimmer, createIncrementalSlimmer, restoreSlimmedEntry, inheritToolSnapshotOnDedup, internMainAgentInput } from './utils/entry-slim.js';
-import { setLatestMapValue } from '../../../packages/app/lib/log-entry-order.js';
+import { setLatestMapValue } from "@cxv/core/log-entry-order";
 import { yieldToMain, runChunkedPass, INGEST_BATCH_SIZE } from './utils/ingestPipeline.js';
 import { reinitializeMermaid } from './hooks/useMermaidRender';
 import { APPROVALS_REVIEWER_DEFAULT, normalizeApprovalsReviewer } from './utils/approvalReviewerOptions';
@@ -43,7 +43,7 @@ import { buildLegacyRequestViewModels } from './utils/requestViewModels';
 import { fetchLogV2Page, fetchLogV2Snapshot } from './utils/logV2Transport';
 import { loadV2CachedSnapshot, reconcileV2CachedSnapshot, saveV2CachedSnapshot, v2SnapshotCacheScope } from './utils/logV2Cache';
 import { isV2ConversationCandidate, LogV2Archive } from './utils/logV2Archive';
-import { LOG_V2_WIRE_KINDS, LOG_V2_WIRE_LIMITS, LOG_V2_WIRE_VERSION } from '../../../packages/app/lib/log-v2/wire-schema';
+import { LOG_V2_WIRE_KINDS, LOG_V2_WIRE_LIMITS, LOG_V2_WIRE_VERSION } from "@cxv/core/log-v2/wire-schema";
 import styles from './App.module.css';
 
 export { styles };
@@ -132,7 +132,6 @@ class AppBase extends React.Component {
       isDragging: false,
       dragZone: null,
       selectedLogs: new Set(),   // Set<file>
-      githubStars: null,
       cliMode: false,
       sdkMode: false,
       ptyMode: false, ptyQueueAvailable: false,
@@ -983,12 +982,6 @@ class AppBase extends React.Component {
           });
         }
       })
-      .catch(() => { });
-
-    // 获取 GitHub star 数
-    fetch('https://api.github.com/repos/weiesky/cx-viewer')
-      .then(res => res.json())
-      .then(data => { if (data.stargazers_count != null) this.setState({ githubStars: data.stargazers_count }); })
       .catch(() => { });
 
     // 检测 CLI 模式 / 工作区模式
@@ -1849,6 +1842,9 @@ class AppBase extends React.Component {
         if (data.project && this.state.projectName && data.project !== this.state.projectName) return;
         handler(data);
       };
+      this.eventSource.addEventListener('im_log_update', voiceListener(data => {
+        if (data.platform === 'dingtalk') window.dispatchEvent(new CustomEvent('cxv:im-log-update', { detail: { platform: data.platform } }));
+      }));
       this.eventSource.addEventListener('scheduled_tasks', voiceListener(data => this._onScheduledTasks(data)));
       this.eventSource.addEventListener('turn_end', voiceListener(data => this._onTurnEndVoice(data)));
       this.eventSource.addEventListener('agent_loop_start', voiceListener(data => this._onAgentLoopVoice('start', data)));

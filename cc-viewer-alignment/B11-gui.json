@@ -1,0 +1,106 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "fixture": {
+    "root": "/tmp/cxv-b11-ui-rx6cz7",
+    "pid": 4663,
+    "port": 21140
+  },
+  "results": [
+    {
+      "engine": "chromium",
+      "configuration": "desktop-a-light",
+      "instance": "cxv-2325f8a639c8a118d787dff5ccabe8a9",
+      "save": true,
+      "historyV2": true,
+      "senderFromActualPrivateMap": true,
+      "localLinkNoNavigation": true,
+      "stopConfirmation": true,
+      "start": true,
+      "reconnecting": true,
+      "unexpectedPageErrors": []
+    },
+    {
+      "engine": "chromium",
+      "configuration": "desktop-b-dark",
+      "instance": "cxv-10fddfc9252838a2854574599e9c9bfd",
+      "save": true,
+      "historyV2": true,
+      "senderFromActualPrivateMap": true,
+      "localLinkNoNavigation": true,
+      "stopConfirmation": true,
+      "start": true,
+      "reconnecting": false,
+      "unexpectedPageErrors": []
+    },
+    {
+      "engine": "chromium",
+      "configuration": "narrow-pc-a-light",
+      "instance": "cxv-2325f8a639c8a118d787dff5ccabe8a9",
+      "save": true,
+      "historyV2": true,
+      "senderFromActualPrivateMap": true,
+      "localLinkNoNavigation": true,
+      "stopConfirmation": true,
+      "start": true,
+      "reconnecting": false,
+      "unexpectedPageErrors": []
+    },
+    {
+      "engine": "chromium",
+      "configuration": "phone-a-light",
+      "originalMobileNoImEntry": true,
+      "unexpectedPageErrors": []
+    },
+    {
+      "engine": "webkit",
+      "configuration": "desktop-a-light",
+      "instance": "cxv-2325f8a639c8a118d787dff5ccabe8a9",
+      "save": true,
+      "historyV2": true,
+      "senderFromActualPrivateMap": true,
+      "localLinkNoNavigation": true,
+      "stopConfirmation": true,
+      "start": true,
+      "reconnecting": true,
+      "unexpectedPageErrors": []
+    },
+    {
+      "engine": "webkit",
+      "configuration": "desktop-b-dark",
+      "instance": "cxv-10fddfc9252838a2854574599e9c9bfd",
+      "save": true,
+      "historyV2": true,
+      "senderFromActualPrivateMap": true,
+      "localLinkNoNavigation": true,
+      "stopConfirmation": true,
+      "start": true,
+      "reconnecting": false,
+      "unexpectedPageErrors": []
+    },
+    {
+      "engine": "webkit",
+      "configuration": "narrow-pc-a-light",
+      "instance": "cxv-2325f8a639c8a118d787dff5ccabe8a9",
+      "save": true,
+      "historyV2": true,
+      "senderFromActualPrivateMap": true,
+      "localLinkNoNavigation": true,
+      "stopConfirmation": true,
+      "start": true,
+      "reconnecting": false,
+      "unexpectedPageErrors": []
+    },
+    {
+      "engine": "webkit",
+      "configuration": "phone-a-light",
+      "originalMobileNoImEntry": true,
+      "unexpectedPageErrors": []
+    }
+  ],
+  "limitations": [
+    "status/start/stop use controlled responses; no external DingTalk connection or real worker spawned",
+    "save and V2 history use actual isolated main server and native archive",
+    "mobile viewport/touch simulation; no physical device",
+    "frozen original Mobile has no IM entry; narrow desktop view checked separately"
+  ]
+}

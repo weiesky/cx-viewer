@@ -15,7 +15,7 @@ import { randomBytes } from 'node:crypto';
 
 import { getCodexConfigDir, getCodexConfigPath, isLoopbackBaseUrl } from './codex-config.js';
 import { atomicWriteFile } from './logger-install.js';
-import { resolveProxyConfig } from './proxy-env.js';
+import { resolveProxyConfig } from "./proxy/proxy-env.js";
 
 export const CODEX_APP_LOGGER_LABEL = 'com.cxviewer.codex-app-logger';
 export const CODEX_APP_LOGGER_PORT = 57891;

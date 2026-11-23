@@ -1,0 +1,16 @@
+{
+  "name": "@cxv/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared native classification and projection modules; bundled inside cx-viewer.",
+  "exports": {
+    "./*": "./src/*.js"
+  },
+  "files": [
+    "src/"
+  ],
+  "scripts": {
+    "test": "node --test"
+  }
+}

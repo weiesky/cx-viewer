@@ -11,7 +11,7 @@
 import { existsSync, mkdirSync, writeFileSync, unlinkSync, readdirSync, statSync, readFileSync, lstatSync } from 'node:fs';
 import { join, extname } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { EVENT_KEYS, DEFAULT_BINDINGS, BUNDLED_PACK_IDS } from './voice-pack-events.js';
+import { EVENT_KEYS, DEFAULT_BINDINGS, BUNDLED_PACK_IDS } from "@cxv/core/voice-pack-events";
 import { fileURLToPath } from 'node:url';
 import { assertPublicFilePath } from '../../lib/credential-file-policy.js';
 import { readPublicFileSync } from '../../lib/public-file-read.js';
@@ -39,7 +39,7 @@ for (const packId of BUNDLED_PACK_IDS) {
   }
 }
 
-export { EVENT_KEYS } from './voice-pack-events.js';
+export { EVENT_KEYS } from "@cxv/core/voice-pack-events";
 export const ID_PATTERN = /^[a-f0-9-]{8,64}$/;
 export const ALLOWED_EXTS = new Set(['.mp3', '.wav', '.ogg', '.m4a']);
 export const MAX_AUDIO_BYTES = 2 * 1024 * 1024; // 2MB per file

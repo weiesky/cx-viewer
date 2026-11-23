@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { waitForProcessExit } from './helpers/process-exit.js';
 import test from 'node:test';
 import { createRequire } from 'node:module';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync, existsSync } from 'node:fs';
@@ -166,7 +167,7 @@ require('node:fs').writeFileSync(${JSON.stringify(pidFile)},JSON.stringify([proc
       env: { ...process.env, HOME: root, CODEX_HOME: join(root, 'codex'), HTTPS_PROXY: 'http://fixture.invalid' } });
     pids = JSON.parse(readFileSync(pidFile)); await new Promise(resolve => setTimeout(resolve, 100));
     await runtime.stop();
-    for (const pid of pids) assert.throws(() => process.kill(pid, 0), { code: 'ESRCH' });
+    for (const pid of pids) await waitForProcessExit(pid);
   } finally {
     for (const pid of pids.reverse()) try { process.kill(pid, 'SIGKILL'); } catch {}
     await runtime?.stop(); rmSync(root, { recursive: true, force: true });

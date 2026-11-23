@@ -5,7 +5,7 @@ import { join } from 'node:path';
 
 import { ALL_TOOL_NAMES, TOOL_CATALOG } from '../apps/web/src/utils/toolCatalog.js';
 
-const conceptsDir = new URL('../packages/app/concepts', import.meta.url).pathname;
+const conceptsDir = new URL('../packages/content/concepts', import.meta.url).pathname;
 const expectedDocs = new Set(ALL_TOOL_NAMES.map((name) => `Tool-${name}.md`));
 
 function walkToolDocs(dir, out = []) {

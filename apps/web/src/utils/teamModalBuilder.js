@@ -3,9 +3,9 @@
  * Pure function — no React/state dependencies.
  */
 
-import { classifyUserContent, isMainAgent, extractDisplayText } from '../../../../packages/app/src/utils/contentFilter';
+import { classifyUserContent, isMainAgent, extractDisplayText } from "@cxv/core/contentFilter";
 import { restoreSlimmedEntry } from './entry-slim.js';
-import { classifyRequest, formatRequestTag, formatTeammateLabel } from '../../../../packages/app/src/utils/requestType';
+import { classifyRequest, formatRequestTag, formatTeammateLabel } from "@cxv/core/requestType";
 import { getModelInfo, getEffectiveModel } from './helpers';
 import { getTeammateAvatar } from './teammateAvatars';
 import { buildSubAgentResultMap, buildGlobalToolResultIndex } from './toolResultBuilder';

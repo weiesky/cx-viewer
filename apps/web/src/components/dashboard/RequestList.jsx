@@ -3,7 +3,7 @@ import { List, Tag, Empty } from 'antd';
 import { t } from '../../i18n';
 import { formatTokenCount, getModelShort } from '../../utils/helpers';
 import { getInputCacheUsage } from '../../utils/tokenUsage';
-import { classifyRequest, formatCodexInternalRequestTag, formatRequestTag } from '../../../../../packages/app/src/utils/requestType';
+import { classifyRequest, formatCodexInternalRequestTag, formatRequestTag } from "@cxv/core/requestType";
 import styles from './RequestList.module.css';
 
 class RequestList extends React.Component {

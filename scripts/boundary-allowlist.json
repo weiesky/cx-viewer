@@ -1,0 +1,100 @@
+[
+  {
+    "from": "packages/app/lib/im/dingtalk-im-config.js",
+    "to": "packages/app/lib/log-v2/storage.js",
+    "rule": "R3",
+    "reason": "IM encrypted configuration reuses native atomic storage, fsync and cross-process lock semantics.",
+    "since": "2026-11-23"
+  },
+  {
+    "from": "packages/app/lib/im/dingtalk-im-log-watcher.js",
+    "to": "packages/app/lib/log-v2/identity.js",
+    "rule": "R3",
+    "reason": "IM live invalidation reuses canonical V2 project identity instead of a second log layout.",
+    "since": "2026-11-23"
+  },
+  {
+    "from": "packages/app/lib/im/dingtalk-im-log-watcher.js",
+    "to": "packages/app/lib/log-v2/project-id.js",
+    "rule": "R3",
+    "reason": "IM live invalidation reuses canonical V2 project identity instead of a second log layout.",
+    "since": "2026-11-23"
+  },
+  {
+    "from": "packages/app/lib/im/dingtalk-im-routes.js",
+    "to": "packages/app/lib/log-v2/materializer.js",
+    "rule": "R3",
+    "reason": "IM log history serves the existing scoped V2 archive page and canonical project identity.",
+    "since": "2026-11-23"
+  },
+  {
+    "from": "packages/app/lib/im/dingtalk-im-routes.js",
+    "to": "packages/app/lib/log-v2/project-id.js",
+    "rule": "R3",
+    "reason": "IM log history serves the existing scoped V2 archive page and canonical project identity.",
+    "since": "2026-11-23"
+  },
+  {
+    "from": "packages/app/lib/im/dingtalk-im-senders.js",
+    "to": "packages/app/lib/log-v2/storage.js",
+    "rule": "R3",
+    "reason": "Optional private sender metadata reuses native atomic writes and nonblocking file-lock semantics.",
+    "since": "2026-11-23"
+  },
+  {
+    "from": "packages/app/lib/codex-app-logger-daemon.js",
+    "to": "packages/app/interceptor.js",
+    "rule": "R5",
+    "reason": "Native daemon fallback initializes its capture interceptor; existing process bootstrap seam.",
+    "since": "2026-11-23"
+  },
+  {
+    "from": "packages/app/lib/codex-app-logger-daemon.js",
+    "to": "packages/app/proxy.js",
+    "rule": "R5",
+    "reason": "Native daemon startup owns the capture proxy lifecycle; existing process bootstrap seam.",
+    "since": "2026-11-23"
+  },
+  {
+    "from": "packages/app/lib/file-access-policy.js",
+    "to": "packages/app/workspace-registry.js",
+    "rule": "R5",
+    "reason": "File trust roots come from the existing native workspace registry; retaining this security authority avoids a second registry.",
+    "since": "2026-11-23"
+  },
+  {
+    "from": "packages/app/lib/logger-bootstrap.js",
+    "to": "packages/app/interceptor.js",
+    "rule": "R5",
+    "reason": "Native logger bootstrap selects direct interceptor capture when no daemon is used.",
+    "since": "2026-11-23"
+  },
+  {
+    "from": "packages/app/lib/logger-bootstrap.js",
+    "to": "packages/app/proxy.js",
+    "rule": "R5",
+    "reason": "Native logger bootstrap selects the existing loopback capture proxy for owned CLI processes.",
+    "since": "2026-11-23"
+  },
+  {
+    "from": "packages/app/lib/pty-workspace-runtime.js",
+    "to": "packages/app/proxy.js",
+    "rule": "R5",
+    "reason": "PTY workspace runtime owns the per-workspace native capture proxy start/stop lifecycle.",
+    "since": "2026-11-23"
+  },
+  {
+    "from": "packages/app/lib/pty-workspaces.js",
+    "to": "packages/app/pty-manager.js",
+    "rule": "R5",
+    "reason": "Native PTY workspace orchestration owns the existing PTY manager; state is not duplicated.",
+    "since": "2026-11-23"
+  },
+  {
+    "from": "packages/app/lib/sdk-manager.js",
+    "to": "packages/app/proxy.js",
+    "rule": "R5",
+    "reason": "Native resident SDK sessions own the existing per-workspace capture proxy lifecycle.",
+    "since": "2026-11-23"
+  }
+]

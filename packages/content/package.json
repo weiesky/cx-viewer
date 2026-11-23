@@ -1,0 +1,9 @@
+{
+  "name": "@cxv/content",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Bundled native concept, expert and IM skill assets; copied into the single cx-viewer package.",
+  "scripts": {
+    "test": "node --test"
+  }
+}

@@ -6,7 +6,7 @@
 
 import { internToolResult } from './readResultPool.js';
 import { classifyToolResultError } from './toolResultClassifier.js';
-import { parseSupportedToolResultImage } from '../../../../packages/app/lib/tool-result-image-protocol.js';
+import { parseSupportedToolResultImage } from "@cxv/core/tool-result-image-protocol";
 
 export function extractToolResultText(toolResult) {
   if (!toolResult.content) return String(toolResult.content ?? '');

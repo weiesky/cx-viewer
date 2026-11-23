@@ -1,4 +1,5 @@
 import { test } from 'node:test';
+import { waitForProcessExit } from './helpers/process-exit.js';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -82,7 +83,7 @@ test('real service crash/restart/reload, HTTP/WS proxy and owned cleanup', { tim
     assert.equal((await restartPlugin('real-service')).ok, true);
     await ready(reloaded.pid);
     await onServerStopping();
-    for (const pid of pids) assert.throws(() => process.kill(pid, 0), { code: 'ESRCH' });
+    for (const pid of pids) await waitForProcessExit(pid);
     const files = readdirSync(join(root, 'plugins-runtime', 'real-service'));
     assert.deepEqual(files.filter(name => name.endsWith('.lock') || name.endsWith('.json')), []);
   } finally {

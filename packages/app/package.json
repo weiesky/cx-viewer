@@ -58,7 +58,7 @@
     "i18n.js",
     "findcx.js",
     "lib/",
-    "server/lib/",
+    "server/",
     "electron/",
     "scripts/",
     "plugins/",
@@ -87,7 +87,11 @@
     "node-pty": "^1.1.0",
     "smol-toml": "1.9.1",
     "undici": "^7.22.0",
-    "ws": "^8.19.0"
+    "ws": "^8.19.0",
+    "@cxv/core": "0.0.0"
   },
-  "packageManager": "pnpm@10.34.9"
+  "packageManager": "pnpm@10.34.9",
+  "bundledDependencies": [
+    "@cxv/core"
+  ]
 }

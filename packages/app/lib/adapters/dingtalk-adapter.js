@@ -50,6 +50,7 @@ function parseInbound(raw) {
     messageId,
     text: typeof message?.text?.content === 'string' ? message.text.content : '',
     senderStaffId,
+    senderName: typeof message?.senderNick === 'string' ? message.senderNick : null,
     conversationId,
     conversationType,
     target: Object.freeze({ conversationId, conversationType, robotCode, senderStaffId }),

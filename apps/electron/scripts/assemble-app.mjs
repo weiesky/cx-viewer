@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
-import { chmodSync, existsSync, lstatSync, readdirSync, realpathSync, rmSync, statSync, unlinkSync } from 'node:fs';
+import { chmodSync, cpSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, unlinkSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -17,6 +17,19 @@ if (result.status !== 0) process.exit(result.status || 1);
 // Node resolves app self-references through its manifest; omit the escaping link.
 const selfLink = join(stage, 'node_modules', '.pnpm', 'node_modules', 'cx-viewer');
 if (lstatSync(selfLink, { throwIfNoEntry: false })?.isSymbolicLink()) unlinkSync(selfLink);
+
+// Legacy deploy leaves this private workspace dependency linked to the checkout.
+// Vendor the same package.json + src payload npm bundledDependencies carries.
+// Only the disposable stage is replaced; development dependency links stay put.
+const coreSource = join(repo, 'packages', 'core');
+const coreManifest = JSON.parse(readFileSync(join(coreSource, 'package.json'), 'utf8'));
+if (coreManifest.name !== '@cxv/core' || coreManifest.private !== true) throw new Error('Private core workspace is missing');
+const coreStage = join(stage, 'node_modules', '@cxv', 'core');
+if (lstatSync(coreStage, { throwIfNoEntry: false })?.isSymbolicLink()) unlinkSync(coreStage);
+else rmSync(coreStage, { recursive: true, force: true });
+mkdirSync(coreStage, { recursive: true });
+cpSync(join(coreSource, 'package.json'), join(coreStage, 'package.json'));
+cpSync(join(coreSource, 'src'), join(coreStage, 'src'), { recursive: true });
 const canonicalStage = realpathSync(stage);
 function verifyLinks(directory) {
   for (const name of readdirSync(directory)) {

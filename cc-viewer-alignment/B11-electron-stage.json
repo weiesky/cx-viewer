@@ -1,0 +1,15 @@
+{
+  "stage": "/private/tmp/cxv-b11-six-workspace-1ca71mgj/apps/electron/stage",
+  "productionDeployPassed": true,
+  "packageFiles": 825,
+  "allPackageFileBytesMatch": true,
+  "manifestIdentityAndDependencyMetadataMatch": true,
+  "bundledCoreRealFiles": 29,
+  "noEscapingDependencyLinks": true,
+  "checkedDependencyLinks": 395,
+  "runtimeOnlyNotElectronGui": true,
+  "verifiedRuntimeCodeCommit": "7ce46a0",
+  "assemblerFollowup": "E33 private core copied into disposable stage only",
+  "firstFailureLog": "/tmp/cxv-b11-structure-stage.log",
+  "passedLog": "/tmp/cxv-b11-structure-stage-fixed.log"
+}

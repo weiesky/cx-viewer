@@ -2,7 +2,7 @@
 
 **迁移约束：优先参考 PR 的实际代码，禁止根据文档自由改版。** B2已按上游组件/CSS/交互纠偏并经用户验收收口；B4及后续工作包继续遵守该规则，运行性测试不能单独代表视觉对齐。必读[源码优先迁移规范与已确认偏差](./migration-code-first.md)。
 
-当前进度：2026-11-23 B9/B10已通过[PR #12](https://github.com/weiesky/cx-viewer/pull/12)合并main（代码提交`d829772`，第11/12工作包完成）。当前分支26笔未合并提交（B9两笔+B10二十四笔）已备份并整合为`da60ff2`；原始/整合/远端/合并tree完全相同，252文件路径/状态/blob逐一核对。旧PR #11已关闭，由#12覆盖，无重复合并；实际无PR checks/分支Actions runs，不冒称远端CI。按本轮要求合并后才更新进度文档，见[整合与合并](./B9-B10-consolidation-and-merge-2026-11-23.md)及[完整原映射](./B9-B10-original-commits-2026-11-23.json)。最终2713/2713、0skip/build/pack773，新安装1096/1096、773包/211Web精确字节/B1.2/安装CLI通过；B10双浏览器14配置34图、13原组件/CSS/模板精确字节及原B9 native证据保持，本轮只整合历史与更新进度，产品内容未变。固定74cd752；B10 12候选按子项核销，B11目录/Activation/content与平台范围保留，下一步B11。后端HTTPS密码门、原生权限/reviewer、独立任务AppServer、常驻transport不变、Ask默认关、代理重试排除持续有效。自有fixture均退出，7008及其他用户实例未由代理停止/重启，正常重启才加载后端。真实全局升级/发布下载、Electron GUI/签名、其他OS/最低Node、真实DNS/LAN-TLS、外部模型、真机/触控/音频/IME/密码插件、长等待/睡眠及历史IM偶发未验，30分钟独立run上限保留。
+当前进度：2026-11-23 B11本地实施与可用环境验收完成（第12/12工作包），34笔小步提交保留在alignment/b11-engineering-safety-platforms，尚未提交B11 PR或合并。201候选逐项范围核销；用户选定Changesets/core/content后的5个工程候选已落实。最终2820/2820、0skip/build、626稳定路径/601源码门，严格六workspace冻结安装，新生产1197/1197及825包/211Web精确字节，Electron stage825字节/395链接/独立启动，实际Node20.12启动+46项、双浏览器14配置30图通过。仅当前macOS/Node24与所列隔离环境结论，无远端CI、Windows/Linux或Electron GUI签名公证通过声明；7008/PID97674及其他用户实例未重启，正常重启才加载后端。下一步B11 PR交付及真实目标环境验收；见[B11完成矩阵](./B11-completion-matrix.md)、[实施](./B11-implementation.md)与[最终回执](./B11-validation-2026-11-23.json)。
 
 2026-11-22 普通CLI/PTY“＋”已由B7 E1–E13接齐并经真实双工作区GUI验证；历史缺口记录保留。B8 E16只读确认7008已具ptyMode/队列能力，普通PTY模式；本轮SDK修复是否加载仍须其对应进程正常重启核对，未停止用户实例。见[B7完成矩阵](./B7-completion-matrix.md)。
 
@@ -29,9 +29,9 @@
 | B8 | 已完成并由[PR #9](https://github.com/weiesky/cx-viewer/pull/9)合并main，见[B8完成矩阵](./B8-completion-matrix.md)。 |
 | B9 | 已由PR #12与B10一起合并main d829772，旧#11关闭；原验证/备份保留。 |
 | B10 | 已由[PR #12](https://github.com/weiesky/cx-viewer/pull/12)合并main d829772；2713项/pack773/新安装1096，见[B10矩阵](./B10-completion-matrix.md)。 |
-| B11 / 工程前置 | A1 6287d2a 已主线；A2 3b15a6d 已提交工作树并通过本地验证，当前全局实例未切换。 |
+| B11 | 本地实施/可用环境验收完成（第12/12包），34笔保留；2820/1197与825包字节、14配置30图，待PR交付/真实环境验收。见[B11完成矩阵](./B11-completion-matrix.md)。 |
 
-当前以[B9完成矩阵](./B9-completion-matrix.md)为准；B7/B8/B9历史交接保留开始时起点，不代表当前待办。
+当前以[B11实施](./B11-implementation.md)与[范围矩阵](./B11-candidate-matrix.md)为准；B11是最近本地完成包，B7/B8/B9历史交接保留当时起点。
 
 pnpm/workspace 已按用户选择前置实施，先稳定结构，再继续功能对齐；见 [提交、边界与验收](./A1-A2-engineering.md)。
 

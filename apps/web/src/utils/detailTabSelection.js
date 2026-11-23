@@ -1,4 +1,4 @@
-import { getCodexMcpToolUseName, getCodexToolUseName } from '../../../../packages/app/src/utils/requestType.js';
+import { getCodexMcpToolUseName, getCodexToolUseName } from "@cxv/core/requestType";
 
 export function requestHidesContextTab(request) {
   return getCodexToolUseName(request) !== null

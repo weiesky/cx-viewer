@@ -23,15 +23,15 @@ import { BINARY_NAME } from '../findcx.js';
 import { createProcessAdapter } from './cxv-processes.js';
 import { stopOwnedProcessTree } from './shutdown.js';
 import WebSocket, { WebSocketServer } from 'ws';
-import { isTemporaryTitleThread } from './codex-thread-source.js';
-import { isSupportedApprovalsReviewer, normalizeApprovalsReviewer } from './approval-reviewer.js';
-import { parseSupportedToolResultImage } from './tool-result-image-protocol.js';
+import { isTemporaryTitleThread } from "@cxv/core/codex-thread-source";
+import { isSupportedApprovalsReviewer, normalizeApprovalsReviewer } from "@cxv/core/approval-reviewer";
+import { parseSupportedToolResultImage } from "@cxv/core/tool-result-image-protocol";
 import { APPROVAL_SERVER_REQUEST_METHODS, describeServerRequest } from './codex-server-request.js';
 import {
   CodexRequestUserInputRelay,
   codexRequestUserInputItemId,
   isCodexRequestUserInputMessage,
-} from './codex-request-user-input.js';
+} from "./ask/codex-request-user-input.js";
 import {
   injectSystemPromptIntoThreadStart,
   selectSystemPrompt,

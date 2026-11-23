@@ -34,11 +34,11 @@ import { join, isAbsolute } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { readPreferences, writePreferences, withPreferencesLock } from './preferences.js';
-import { isProcessAlive as isPidAlive } from './dingtalk-im-lock.js';
+import { isProcessAlive as isPidAlive } from "./im/dingtalk-im-lock.js";
 import { normalizeSchedule, nextBaseFor, occurrencesAtOrBefore, jitterForTaskId } from './schedule-model.js';
 import { appendRuns, appendRun, deleteRunsForTask, findRunByClaimId } from './scheduled-task-runs-store.js';
 import { reportSwallowed } from '../server/lib/error-report.js';
-import { assembleScheduledPrompt } from '../src/utils/ultraplanTemplates.js';
+import { assembleScheduledPrompt } from "@cxv/core/ultraplanTemplates";
 
 const LEGACY_FILE_NAME = 'scheduled-tasks.json';
 const PREFS_FILE_NAME = 'preferences.json';

@@ -1,15 +1,24 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
-import { Drawer, Button, Spin, Empty, Tooltip, Tag, message } from 'antd';
+import { Drawer, Button, Empty, Tooltip, Tag, Popconfirm, message } from 'antd';
+import Loading from '../common/Loading';
 import { ReloadOutlined, SettingOutlined } from '@ant-design/icons';
 import ChatMessage from '../chat/ChatMessage';
 import { cachedBuildToolResultMap } from '../../utils/toolResultBuilder';
-import { classifyUserContent, isSystemText, isMainAgent, extractDisplayText } from '../../../../../packages/app/src/utils/contentFilter';
+import { classifyUserContent, isSystemText, isMainAgent, extractDisplayText } from "@cxv/core/contentFilter";
 import { mergeMainAgentSessions } from '../../utils/sessionMerge';
 import { normalizeConversationEntry, shouldExcludeFromConversation } from '../../utils/conversationEntryNormalize';
-import { reconstructEntries } from '../../../../../packages/app/server/lib/delta-reconstructor.js';
+import { fetchLogV2Snapshot } from '../../utils/logV2Transport';
+import { LogV2Archive, isV2ConversationCandidate } from '../../utils/logV2Archive';
+import { reconstructEntries } from "@cxv/core/delta-reconstructor";
 import { apiUrl } from '../../utils/apiUrl';
 import { IM_PLATFORMS } from './imPlatforms';
 import { t } from '../../i18n';
+import { imTr } from '../../utils/imTr';
+import { imBadgeModel } from '../../utils/imConnState';
+import { reportSwallowed } from '../../utils/errorReport';
+
+const START_POLL_TIMEOUT_MS = 30000; // Native worker boot identity window.
+const START_POLL_INTERVAL_MS = 1000;
 import styles from './ImConversationModal.module.css';
 
 // 把一份独立 IM worker 的 .jsonl 重建出的 entries 折叠成 mainAgentSessions。
@@ -159,10 +168,20 @@ export default function ImConversationModal({ open, onClose, platform, onOpenCon
   // 连接状态（与设置弹窗同源 /status）：打开时拉一次并每 5s 轮询，让用户在对话记录里也能确认桥接已连通。
   const [imConn, setImConn] = useState(null);
   const [imProc, setImProc] = useState(null);
+  // 轮询期间用户可能切平台/关抽屉：闭包里记住目标平台，与最新值比对后再 setState，防止串台。
+  const platformRef = useRef(platform);
+  platformRef.current = platform;
+  // 真卸载（HMR/父级卸载）守卫 + 启动期间暂停 5s 后台轮询（对齐 ImPlatformSettings 的 mountedRef/busyRef 范式）。
+  const mountedRef = useRef(true);
+  useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; }; }, []);
+  const busyRef = useRef(false);
   useEffect(() => {
     if (!open || !platform) return undefined;
     let cancelled = false;
     const poll = async () => {
+      // 启动轮询进行中：暂停后台轮询——其 catch 分支会把状态复位成断连，瞬态失败会让徽标在
+      // booting→ready 过渡中闪回「未连接」（与 ImPlatformSettings 的 busyRef 同理）。
+      if (busyRef.current) return;
       try {
         const r = await fetch(apiUrl(`/api/im/${encodeURIComponent(platform)}/status`));
         if (!r.ok) { if (!cancelled) { setImConn({ running: false, connected: false }); setImProc(null); } return; }
@@ -176,25 +195,142 @@ export default function ImConversationModal({ open, onClose, platform, onOpenCon
     // reloadKey: 手动刷新时一并重拉连接状态（与下方对话/发送者 effect 对齐，否则刷新只更新内容不更新状态徽标）。
   }, [open, platform, reloadKey]);
 
-  // 状态徽标：以真实进程状态为准（含服务端口）。远端无 process → 回落 connection。与 ImPlatformSettings 一致。
-  const renderStatus = () => {
-    if (imConn?.lastError) return <Tag color="error">{t('ui.im.statusError')}: {imConn.lastError}</Tag>;
-    const portSuffix = imProc?.port ? ` :${imProc.port}` : '';
-    const st = imProc?.state;
-    if (st) {
-      if (st === 'ready') {
-        return imConn?.connected
-          ? <Tag color="success">{t('ui.im.statusConnected')}{portSuffix}</Tag>
-          : <Tag color="processing">{t('ui.im.statusRunning')}{portSuffix}</Tag>;
+  // 「启动」按钮：worker 确认已死（procState==='dead' → 徽标显示「未连接」）时出现在徽标旁，
+  // 让用户不必绕道设置弹窗即可拉起。POST /process {action:'start'}（服务端校验凭证并持久化 enabled:true），
+  // 然后轮询 status 直到桥接真连上或超时。
+  // 远端（LAN）客户端 status 不含 process → imProc 为 null → 按钮自然隐藏（/process 本就 loopback-only）。
+  // startingPlatform 按平台记「正在启动谁」：全局布尔曾在「启动中切平台」时被 finally 的守卫跳过复位，
+  // 导致按钮在其他平台串台出现并永久卡死 loading（review P1）。
+  const [startingPlatform, setStartingPlatform] = useState(null);
+  // 停止中标记：按平台无关的单布尔即可——停止是即时操作，且「停止中切平台」时 finally 用
+  // mountedRef 守卫复位，不会像 start 那样留下永久 loading（停止无轮询等待阶段）。
+  const [stopping, setStopping] = useState(false);
+
+  // 「停止」按钮（disabled 语义）：POST /config {enabled:false, applyProcess:true} —— 停进程
+  // 并写盘 enabled:false，重启后 reconcileImProcesses 不再拉起（区别于 /process {action:'stop'}
+  // 的纯杀进程）。与设置面板 ImPlatformSettings.stop 同一语义、同一端点。
+  // 远端（LAN）客户端 status 不含 process → imProc 为 null → 按钮不渲染（/config 需 admin）。
+  //
+  // 配置字段保留由服务端兜底：imConfigPost 对「只动 enabled」的 body 做 read-merge-write
+  // （合并 loadConfig 的已存值），故此处只发 enabled/applyProcess 两个键也不会清空
+  // appKey/白名单/region 等。客户端无需回填。
+  const stopWorker = async () => {
+    const target = platform;
+    setStopping(true);
+    busyRef.current = true;
+    try {
+      const r = await fetch(apiUrl(`/api/im/${encodeURIComponent(target)}/config`), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: false, applyProcess: true }),
+      });
+      let body = null;
+      try { body = await r.json(); } catch (e) { reportSwallowed('fetch.im-stop', e); }
+      if (!r.ok || body?.ok === false) {
+        const detail = body?.detail || body?.error || '';
+        message.error(imTr('ui.im.stopFailed', null, 'Stop failed') + (detail ? `: ${detail}` : ''));
+        return;
       }
-      if (st === 'booting') return <Tag color="processing">{t('ui.im.statusBooting')}</Tag>;
-      if (st === 'hung') return <Tag color="warning">{t('ui.im.statusHung')}</Tag>;
-      return <Tag>{t('ui.im.statusDisconnected')}</Tag>;
+      // 通知头部 ImStatusChip 重新探测/停用轮询（对齐 ImPlatformSettings.postConfig 的广播）。
+      try { window.dispatchEvent(new CustomEvent('cxv:im-config-changed', { detail: { id: target } })); } catch { /* no-op */ }
+      // 立即把本弹窗徽标翻到「未连接」并让「启动」按钮出现（后台 5s 轮询会再收敛到真实态）。
+      if (mountedRef.current && platformRef.current === target) {
+        setImConn({ running: false, connected: false });
+        setImProc((p) => (p ? { ...p, state: 'dead' } : p));
+      }
+    } catch (e) {
+      reportSwallowed('fetch.im-stop', e);
+      message.error(imTr('ui.im.stopFailed', null, 'Stop failed'));
+    } finally {
+      busyRef.current = false;
+      if (mountedRef.current) setStopping(false);
     }
-    if (!imConn) return null;
-    if (imConn.connected) return <Tag color="success">{t('ui.im.statusConnected')}</Tag>;
-    if (imConn.running) return <Tag color="processing">{t('ui.im.statusRunning')}</Tag>;
-    return <Tag>{t('ui.im.statusDisconnected')}</Tag>;
+  };
+
+  const startWorker = async () => {
+    const target = platform;
+    setStartingPlatform(target);
+    busyRef.current = true;
+    try {
+      const r = await fetch(apiUrl(`/api/im/${encodeURIComponent(target)}/process`), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'start' }),
+      });
+      let body = null;
+      try { body = await r.json(); } catch (e) { reportSwallowed('fetch.im-process-start', e); }
+      if (!r.ok || body?.ok === false) {
+        // 服务端凭证校验失败等会带 detail（如 "missing appId/appSecret"），拼进 toast 帮助定位。
+        const detail = body?.detail || body?.error || '';
+        message.error(t('ui.im.startFailed') + (detail ? `: ${detail}` : ''));
+        return;
+      }
+      // 轮询 status 直到桥接真连上或超时。ready 只代表 worker 的 HTTP 身份服务就绪，凭证失效时
+      // bridge no-op 而 worker 照样 ready——若以 ready 为判据会误报「已连接」（review P2）。
+      const deadline = Date.now() + START_POLL_TIMEOUT_MS;
+      let ready = false;
+      while (Date.now() < deadline) {
+        await new Promise((res) => setTimeout(res, START_POLL_INTERVAL_MS));
+        if (!mountedRef.current || platformRef.current !== target) return;
+        try {
+          const s = await fetch(apiUrl(`/api/im/${encodeURIComponent(target)}/status`));
+          if (!s.ok) continue;
+          const d = await s.json();
+          if (!mountedRef.current || platformRef.current !== target) return;
+          setImConn(d.connection || null);
+          setImProc(d.process || null);
+          if (d?.process?.state === 'ready'
+            && (d?.connection?.connected || d?.connection?.connectionState === 'connected')) { ready = true; break; }
+        } catch (e) { reportSwallowed('fetch.im-start-poll', e); /* transient → keep polling until deadline */ }
+      }
+      if (ready) message.success(t('ui.im.statusConnected'));
+      else message.error(t('ui.im.startFailed'));
+    } catch (e) {
+      reportSwallowed('fetch.im-process-start', e);
+      message.error(t('ui.im.startFailed'));
+    } finally {
+      busyRef.current = false;
+      // 函数式更新只清自己这一轮：无条件复位会误清切平台后新发起的另一轮启动。
+      setStartingPlatform((p) => (p === target ? null : p));
+    }
+  };
+
+  // 状态徽标：以真实进程状态为准（含服务端口）。远端无 process → 回落 connection。与 ImPlatformSettings 一致。
+  // Decision logic lives in imBadgeModel (shared with ImPlatformSettings).
+  const renderStatus = () => {
+    const m = imBadgeModel({ procState: imProc?.state, connection: imConn });
+    if (!m) return null;
+    const portSuffix = m.withPort && imProc?.port ? ` :${imProc.port}` : '';
+    // 启动中徽标会先翻成「启动中…」（booting）：按钮保持 loading 可见直到就绪/超时，反馈不中断。
+    // dead && !lastError 等价于「徽标此刻显示未连接」（imBadgeModel 对 dead 只有 lastError 一个更高优先级
+    // 分支），直接用语义字段判断，不比对 i18n key 字符串（key 重命名会静默失效，review P2）。
+    const showStart = startingPlatform === platform || (imProc?.state === 'dead' && !imConn?.lastError);
+    // 停止按钮：仅在本地拿到进程信息且 worker 存活时显示（远端无 process → 隐藏；dead → 由启动接管）。
+    const showStop = !!imProc && imProc.state !== 'dead';
+    return (
+      <>
+        {showStart ? (
+          <Button type="primary" size="small" loading={startingPlatform === platform} onClick={startWorker}>
+            {t('ui.im.start')}
+          </Button>
+        ) : null}
+        <Tag color={m.color || undefined}>
+          {t(m.key)}{m.error ? `: ${m.error}` : ''}{portSuffix}
+        </Tag>
+        {showStop ? (
+          <Popconfirm
+            title={imTr('ui.im.stopConfirm', null, "Stop? This stops the platform's IM service and it won't auto-start on next launch.")}
+            okText={imTr('ui.ok', null, 'OK')}
+            cancelText={imTr('ui.cancel', null, 'Cancel')}
+            okButtonProps={{ danger: true }}
+            onConfirm={stopWorker}
+          >
+            {/* 启动轮询进行中禁用停止：否则 start 的轮询循环仍可能在停止后观察到 ready/connected
+                并弹出「已连接」，与已停止的 worker 矛盾（review P1）。 */}
+            <Button type="text" size="small" danger loading={stopping} disabled={startingPlatform === platform}>
+              {t('ui.im.stop')}
+            </Button>
+          </Popconfirm>
+        ) : null}
+      </>
+    );
   };
 
   useEffect(() => {
@@ -204,6 +340,7 @@ export default function ImConversationModal({ open, onClose, platform, onOpenCon
     const isPureRefresh = prevRef.current.open === true && prevRef.current.platform === platform;
     prevRef.current = { open, platform };
     let es = null;
+    const controller = new AbortController();
     let cancelled = false;
     setLoading(true); setError(null);
     if (!isPureRefresh) setSessions([]);
@@ -215,11 +352,25 @@ export default function ImConversationModal({ open, onClose, platform, onOpenCon
 
     (async () => {
       try {
-        const r = await fetch(apiUrl(`/api/im/${encodeURIComponent(platform)}/logs`));
+        const r = await fetch(apiUrl(`/api/im/${encodeURIComponent(platform)}/logs`), { signal: controller.signal });
         if (!r.ok) throw new Error(`logs ${r.status}`);
         const { latest } = await r.json();
         if (cancelled) return;
         if (!latest) { setSessions([]); setLoading(false); return; }
+
+        // Native archives use the existing reference transport, not a second
+        // materialized SSE protocol. This keeps the main workspace stream intact.
+        if (latest.endsWith('/timeline.jsonl')) {
+          const snapshot = await fetchLogV2Snapshot({ file: latest, readOnly: true, signal: controller.signal });
+          const archive = new LogV2Archive(snapshot);
+          const entries = [];
+          for (const row of archive.rows) {
+            if (cancelled) return;
+            if (isV2ConversationCandidate(row)) entries.push(await archive.projectConversation(row._v2RowHandle, { signal: controller.signal }));
+          }
+          if (!cancelled) { setSessions(buildSessionsFromEntries(entries)); setLoading(false); }
+          return;
+        }
 
         const entries = [];
         es = new EventSource(apiUrl(`/api/im-log?platform=${encodeURIComponent(platform)}&file=${encodeURIComponent(latest)}`));
@@ -241,7 +392,7 @@ export default function ImConversationModal({ open, onClose, platform, onOpenCon
       }
     })();
 
-    return () => { cancelled = true; if (es) try { es.close(); } catch { /* noop */ } };
+    return () => { cancelled = true; controller.abort(); if (es) try { es.close(); } catch { /* noop */ } };
   }, [open, platform, reloadKey]);
 
   // 助手回复零滞后自动刷新：主服务 fs.watch 到本平台 IM 日志写入 → im_log_update SSE → AppBase 转 window 事件。
@@ -307,13 +458,16 @@ export default function ImConversationModal({ open, onClose, platform, onOpenCon
       // header 高度由 global.css 的 `.cxvSideDrawer .ant-drawer-header` 统一压到 40px(对齐主窗口顶栏)。
       styles={{ body: { padding: 0, overflow: 'hidden', background: 'var(--bg-elevated)' }, header: { background: 'var(--bg-elevated)' } }}
     >
-      <div className={styles.scrollBody} ref={bodyRef} onScroll={handleScroll}>
+      <div className={styles.scrollBody} ref={bodyRef} onScroll={handleScroll} onClick={(e) => {
+        const fileLink = e.target.closest('.chat-md a[data-md-file]');
+        if (fileLink) e.preventDefault();
+      }}>
         {items.length > 0 ? (
           // 有内容优先渲染（刷新期间也是），保证高度稳定、不塌缩成 Spin
           items
         ) : loading ? (
           // 仅首屏加载（尚无内容）显示整页 Spin；刷新进度改由标题刷新图标的 spin 呈现
-          <div className={styles.center}><Spin /><span className={styles.hint}>{t('ui.imRecord.loading')}</span></div>
+          <div className={styles.center}><Loading /><span className={styles.hint}>{t('ui.imRecord.loading')}</span></div>
         ) : error ? (
           <div className={styles.center}>
             <Empty description={t('ui.imRecord.loadFailed')} />

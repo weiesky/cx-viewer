@@ -12,7 +12,7 @@ function newest(path) {
   return stat.isDirectory() ? Math.max(stat.mtimeMs, ...readdirSync(path).map(name => newest(join(path, name)))) : stat.mtimeMs;
 }
 if (!existsSync(join(dist, 'index.html'))) throw new Error('Build @cxv/web before assembling the published package');
-const inputs = [join(web, 'src'), join(web, 'public'), join(web, 'index.html'), join(web, 'vite.config.js'), ...['src', 'lib', 'server'].map(name => join(app, name))];
+const inputs = [join(web, 'src'), join(web, 'public'), join(web, 'index.html'), join(web, 'vite.config.js'), join(repo, 'packages/core/src'), ...['src', 'lib', 'server'].map(name => join(app, name))];
 if (statSync(join(dist, 'index.html')).mtimeMs < Math.max(...inputs.map(newest))) throw new Error('Web build is older than its source inputs; rebuild before packing');
 const pkg = JSON.parse(readFileSync(join(app, 'package.json'), 'utf8'));
 for (const section of ['dependencies', 'optionalDependencies', 'peerDependencies']) {
@@ -23,6 +23,12 @@ for (const section of ['dependencies', 'optionalDependencies', 'peerDependencies
 for (const [source, destination] of [[dist, 'dist'], [join(web, 'public'), 'public'], [join(repo, 'apps', 'electron', 'electron'), 'electron'], [join(repo, 'docs'), 'docs']]) {
   rmSync(join(app, destination), { recursive: true, force: true });
   cpSync(source, join(app, destination), { recursive: true });
+}
+for (const name of ['concepts', 'ultraAgents', 'imSkills']) {
+  const source = join(repo, 'packages', 'content', name);
+  if (!existsSync(source)) throw new Error(`Content workspace is missing ${name}`);
+  rmSync(join(app, name), { recursive: true, force: true });
+  cpSync(source, join(app, name), { recursive: true });
 }
 for (const name of ['README.md', 'LICENSE.md']) cpSync(join(repo, name), join(app, name));
 console.log('Assembled web assets, Electron runtime and package documents');

@@ -1,0 +1,8 @@
+{
+  "node": "v24.14.0",
+  "privateRoot": "/tmp/cxv-b11-node-floor-gOWeHk",
+  "isolatedServerBoot": true,
+  "port": 21240,
+  "cliMode": true,
+  "noModel": true
+}

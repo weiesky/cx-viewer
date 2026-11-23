@@ -17,7 +17,7 @@ import {
   applyWireCommit,
   checkpointWireArchiveState,
   restoreWireArchiveState,
-} from './reducer.js';
+} from "@cxv/core/log-v2/reducer";
 
 function serializeError(error) {
   return {

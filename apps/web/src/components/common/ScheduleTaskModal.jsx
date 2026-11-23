@@ -7,7 +7,7 @@ import { apiUrl, withViewParams } from '../../utils/apiUrl';
 import { reportSwallowed } from '../../utils/errorReport';
 import { subscribeScheduledTasks } from '../../utils/scheduledTaskEvents';
 import { resizeImageIfNeeded } from '../../utils/imageResize';
-import { assembleScheduledPrompt } from '../../../../../packages/app/src/utils/ultraplanTemplates';
+import { assembleScheduledPrompt } from "@cxv/core/ultraplanTemplates";
 import { buildExpertList } from '../../utils/ultraplanExperts';
 import { UltraplanController } from '../../utils/ultraplanController';
 import { SettingsContext } from '../../contexts/SettingsContext';

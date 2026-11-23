@@ -15,7 +15,7 @@
 // that's fine: each tab unlocks its own audio independently per browser policy.
 
 import { apiUrl } from './apiUrl.js';
-import { BUNDLED_PACK_IDS } from '../../../../packages/app/server/lib/voice-pack-events.js';
+import { BUNDLED_PACK_IDS } from "@cxv/core/voice-pack-events";
 
 // Mirror BUNDLED_PACK_IDS into a Set for O(1) lookup in the hot URL-building
 // path. Frozen array ↔ Set conversion at module load is fine; the source list

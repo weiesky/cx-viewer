@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { parseNpmPackFiles } from './lib/npm-pack-json.mjs';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -22,15 +23,15 @@ if (result.status !== 0) {
   process.exit(result.status ?? 1);
 }
 
-let report;
+let packedFiles;
 try {
-  report = JSON.parse(result.stdout);
+  packedFiles = parseNpmPackFiles(result.stdout);
 } catch (error) {
   process.stderr.write(`Unable to parse npm pack report: ${error.message}\n${result.stdout}\n`);
   process.exit(1);
 }
 
-const files = new Set((report?.[0]?.files || []).map((entry) => entry.path));
+const files = new Set(packedFiles);
 const required = [
   'lib/plugin-host.mjs', 'lib/plugin-runtime.js', 'lib/plugin-proxy.js',
   'lib/plugin-manifest.js', 'lib/plugin-panels.js', 'lib/plugin-service-manager.js',

@@ -13,3 +13,8 @@ packages/app/README.md
 packages/app/LICENSE*
 apps/electron/stage/
 packages/app/docs/
+
+# Assembled from the private content workspace; keep published paths stable.
+packages/app/concepts/
+packages/app/ultraAgents/
+packages/app/imSkills/

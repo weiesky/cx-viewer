@@ -1,8 +1,9 @@
+import { CONCEPTS_DIR } from './server/_paths.js';
 import { createServer } from 'node:http';
 import { EventEmitter } from 'node:events';
 import { pipeline } from 'node:stream';
 import { reportSwallowed } from './server/lib/error-report.js';
-import { computeAskAutoAnswer, createAskAutoAnswerState, cancelAskAutoAnswerState, replayAskAutoAnswerFields } from './lib/ask-auto-answer.js';
+import { computeAskAutoAnswer, createAskAutoAnswerState, cancelAskAutoAnswerState, replayAskAutoAnswerFields } from "./lib/ask/ask-auto-answer.js";
 import { createStreamMuxServer } from './server/lib/ws-mux.js';
 import { createServer as createHttpsServer } from 'node:https';
 import { createConnection } from 'node:net';
@@ -57,13 +58,15 @@ import { stripBasePath, validateBasePath } from './lib/base-path.js';
 import { getUserProfile } from './lib/user-profile.js';
 import { getGitDiffs, getUnpushedCommits, isValidCommitHash, isSafeRelativePath, PATH_TRAVERSAL, execFileAsync as gitExecFileAsync } from './lib/git-diff.js';
 import { getGitWorkingTreeLineStats } from './lib/git-change-stats.js';
-import { parseCodexInvocation } from './lib/cli-args.js';
+import { parseCodexInvocation } from "@cxv/core/cli-args";
 import { createPtyChatQueue } from './server/lib/pty-chat-queue.js';
 import { createPtyWorkspaceRegistry } from './lib/pty-workspaces.js';
 import { CONTEXT_WINDOW_FILE, buildContextWindowEvent } from './lib/context-watcher.js';
-import { nativeContextWindow, sumUsageContextTokens } from './server/lib/context-rules.js';
+import { nativeContextWindow, sumUsageContextTokens } from "@cxv/core/context-rules";
 import { isMainAgentEntry } from './lib/main-agent-entry.js';
-import { handleDingTalkImRoute } from './lib/dingtalk-im-routes.js';
+import { createDingTalkImLogWatcher } from "./lib/im/dingtalk-im-log-watcher.js";
+import { getDingTalkImWorkerDir } from "./lib/im/dingtalk-im-config.js";
+import { handleDingTalkImRoute } from "./lib/im/dingtalk-im-routes.js";
 import {
   deleteLogFiles,
   validateImLogPath,
@@ -94,7 +97,7 @@ import {
   readCodexMemoryFile,
   readCodexMemoryOverview,
 } from './lib/codex-memory.js';
-import { APPROVALS_REVIEWER_DEFAULT, isSupportedApprovalsReviewer, normalizeApprovalsReviewer, shouldDeferPermissionHookToCodex } from './lib/approval-reviewer.js';
+import { APPROVALS_REVIEWER_DEFAULT, isSupportedApprovalsReviewer, normalizeApprovalsReviewer, shouldDeferPermissionHookToCodex } from "@cxv/core/approval-reviewer";
 import { searchCode } from './lib/code-search.js';
 import { searchReplace } from './lib/code-replace.js';
 import { OTEL_AUTH_HEADER } from './lib/otel-config.js';
@@ -121,7 +124,7 @@ import { handleScheduledTaskRoute } from './lib/scheduled-task-routes.js';
 import { handleVoicePackRoute } from './lib/voice-pack-routes.js';
 import { getAppServerAgentLoopSnapshot } from './lib/appserver-bridge.js';
 import { reconcileVoicePackPrefs } from './server/lib/voice-pack-manager.js';
-import { mergeApprovalModalPrefs } from './server/lib/approval-modal-prefs.js';
+import { mergeApprovalModalPrefs } from "@cxv/core/approval-modal-prefs";
 import {
   getDefaultSystemPrompt,
   getModelSystemPrompts,
@@ -138,7 +141,7 @@ import {
   buildCodexAutoResolutionAnswers,
   pickCodexAutoAnswers,
   projectCodexAnswersForConversation,
-} from './lib/codex-request-user-input.js';
+} from "./lib/ask/codex-request-user-input.js";
 import {
   createActiveV2RecoveryState,
   serveLogV2Live,
@@ -275,6 +278,17 @@ function sendEventToClients(targets, eventName, data) {
   for (const client of targets) {
     try { client.write(`event: ${eventName}\ndata: ${JSON.stringify(data)}\n\n`); } catch {}
   }
+}
+
+let _imLogWatcher = null;
+function ensureImLogWatch() {
+  if (process.env.CXV_IM_WORKER === '1') return;
+  _imLogWatcher ||= createDingTalkImLogWatcher({
+    getLogDir: () => LOG_DIR,
+    getWorkerDir: getDingTalkImWorkerDir,
+    onChange: platform => sendEventToClients(clients, 'im_log_update', { platform }),
+  });
+  _imLogWatcher.ensure();
 }
 
 export function getApprovalsReviewerPreference() {
@@ -1121,7 +1135,7 @@ export async function initPostLaunch() {
     notifyStatsWorker();
     startStreamingStatusTimer();
     try {
-      const { reconcileDingTalkImProcess } = await import('./lib/dingtalk-im-process-manager.js');
+      const { reconcileDingTalkImProcess } = await import("./lib/im/dingtalk-im-process-manager.js");
       await reconcileDingTalkImProcess();
     } catch (error) {
       console.warn('[CX Viewer] DingTalk IM worker reconciliation failed:', error?.message || error);
@@ -1131,9 +1145,9 @@ export async function initPostLaunch() {
   if (process.env.CXV_IM_PLATFORM !== 'dingtalk') return;
 
   const [{ createDingTalkImBridge }, { loadDingTalkImConfig }, lockMod, ptyMod, appServerMod] = await Promise.all([
-    import('./lib/dingtalk-im-bridge.js'),
-    import('./lib/dingtalk-im-config.js'),
-    import('./lib/dingtalk-im-lock.js'),
+    import("./lib/im/dingtalk-im-bridge.js"),
+    import("./lib/im/dingtalk-im-config.js"),
+    import("./lib/im/dingtalk-im-lock.js"),
     import('./pty-manager.js'),
     import('./lib/appserver-bridge.js'),
   ]);
@@ -1937,6 +1951,7 @@ async function handleViewerRequest(req, res) {
   if (await handleDingTalkImRoute(req, res, parsedUrl, {
     isLocal,
     bridge: _dingtalkImBridge,
+    ensureLogWatch: ensureImLogWatch,
     workerReady: getDingTalkImWorkerStatus().ready,
     readUpload: readMultipartUpload,
   })) return;
@@ -5266,14 +5281,14 @@ async function handleViewerRequest(req, res) {
       res.end(JSON.stringify({ error: 'Invalid parameters' }));
       return;
     }
-    let mdPath = join(__dirname, 'concepts', lang, `${doc}.md`);
+    let mdPath = join(CONCEPTS_DIR, lang, `${doc}.md`);
     if (!existsSync(mdPath)) {
       const fallbackLangs = (doc === 'Tools' || doc.startsWith('Tool-'))
         ? (lang === 'zh-TW' ? ['zh', 'en'] : ['en', 'zh'])
         : ['zh'];
       for (const fallbackLang of fallbackLangs) {
         if (fallbackLang === lang) continue;
-        const fallbackPath = join(__dirname, 'concepts', fallbackLang, `${doc}.md`);
+        const fallbackPath = join(CONCEPTS_DIR, fallbackLang, `${doc}.md`);
         if (existsSync(fallbackPath)) {
           mdPath = fallbackPath;
           break;
@@ -6693,6 +6708,8 @@ export function stopViewer({ deadlineAt = Date.now() + SHUTDOWN_DEADLINE_MS } = 
 }
 async function _doStop(deadlineAt) {
   _viewerStopping = true;
+  _imLogWatcher?.dispose();
+  _imLogWatcher = null;
   try { await pluginRuntime.onServerStopping(); }
   catch (error) { reportSwallowed('plugins.shutdown', error); }
   stopScheduledTaskScheduler();

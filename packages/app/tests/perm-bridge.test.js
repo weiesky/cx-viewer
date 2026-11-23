@@ -20,7 +20,7 @@ function runBridgeAgainst(response, { env = {}, command = 'npm test' } = {}) {
     server.listen(0, '127.0.0.1', () => {
       const child = spawn(process.execPath, ['lib/perm-bridge.js'], {
         cwd: fileURLToPath(new URL('..', import.meta.url)),
-        env: { ...process.env, ...env, CXVIEWER_PORT: String(server.address().port) },
+        env: { ...process.env, CXV_BYPASS_PERMISSIONS: '0', ...env, CXVIEWER_PORT: String(server.address().port) },
         stdio: ['pipe', 'pipe', 'pipe'],
       });
       let stdout = '';
@@ -40,8 +40,9 @@ function runBridgeAgainst(response, { env = {}, command = 'npm test' } = {}) {
   });
 }
 
-test('perm-bridge emits Codex PermissionRequest decisions', () => {
-  const child = spawnSync(process.execPath, ['lib/perm-bridge.js'], {
+for (const bridgePath of ['lib/perm-bridge.js', 'lib/ask/perm-bridge.js']) {
+test(`${bridgePath} emits Codex PermissionRequest decisions`, () => {
+  const child = spawnSync(process.execPath, [bridgePath], {
     cwd: fileURLToPath(new URL('..', import.meta.url)),
     input: JSON.stringify({
       hook_event_name: 'PermissionRequest',
@@ -57,6 +58,8 @@ test('perm-bridge emits Codex PermissionRequest decisions', () => {
   assert.equal(output.hookSpecificOutput.hookEventName, 'PermissionRequest');
   assert.equal(output.hookSpecificOutput.decision.behavior, 'allow');
 });
+
+}
 
 test('perm-bridge can defer a PermissionRequest to the native Codex reviewer', async () => {
   const child = await runBridgeAgainst({ deferToCodex: true });

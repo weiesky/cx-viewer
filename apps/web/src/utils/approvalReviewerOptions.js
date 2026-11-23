@@ -4,7 +4,7 @@ import {
   APPROVALS_REVIEWER_OPTIONS,
   APPROVALS_REVIEWER_USER,
   normalizeApprovalsReviewer,
-} from '../../../../packages/app/lib/approval-reviewer.js';
+} from "@cxv/core/approval-reviewer";
 
 export {
   APPROVALS_REVIEWER_AUTO,
