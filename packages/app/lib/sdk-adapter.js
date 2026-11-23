@@ -120,8 +120,9 @@ export function sdkItemToAssistantBlock(item) {
   }
 
   if (item.type === 'error') {
+    // The SDK defines ErrorItem as non-fatal; turn.failed owns real failures.
     const text = nonEmptyString(item.message);
-    return text ? { type: 'text', text: `Error: ${text}` } : null;
+    return text ? { type: 'text', text: `Warning: ${text}` } : null;
   }
 
   if (isSdkToolItem(item)) {
@@ -275,6 +276,7 @@ export function sdkToJSONLEntry(assistantMsg, messages, model, projectName, opts
         model: model || respBody.model || null,
         stop_reason: opts.stopReason || 'end_turn',
         ...(usage ? { usage } : {}),
+        ...(Object.hasOwn(respBody, 'context_usage') ? { context_usage: sdkUsageToViewerUsage(respBody.context_usage) } : {}),
         ...(Number.isSafeInteger(respBody.context_window) && respBody.context_window > 0 ? { context_window: respBody.context_window } : {}),
         ...(respBody.turn ? { turn: respBody.turn } : {}),
         ...(respBody.error ? { error: respBody.error } : {}),

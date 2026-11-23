@@ -1,5 +1,9 @@
 # cc-viewer 逐提交对齐台账
 
+2026-11-23 SDK上下文维护（不新增上游迁移）：复核固定74cd752d中的Claude getContextUsage控制面/血条调用链及efc7f8ea实际adapter diff，完成Codex exec的精确线程原生last/window采集、累计记账分离、SSE隔离/重连及规范冷加载。真实同线程两轮2%/3%、独立Chrome血条/弹层9%与刷新通过，最终隔离全量2833/2833、0skip/build/531边界/602源码/627包门通过；首跑环境污染失败与复跑保留。代码/changeset/文档在工作区，未提交/PR/推送/发布；活动实例未重启、用户历史未改，目录/分页历史/Windows/活动GUI未验。上游依据、本地路径及完整验证见[本轮记录](./SDK-context-usage-2026-11-23.md)与[机器回执](./SDK-context-usage-2026-11-23.json)。
+
+2026-11-23 SDK启动维护（不新增上游迁移）：本机Codex 0.169.0配置清理/插件SessionEnd 3秒、非致命item的Warning标签与逐回合去重；本地实现、固定上游74cd752d/efc7f8ea实际代码依据及验证见[修复记录](./SDK-startup-warnings-2026-11-23.md)。真实新SDK请求OK/0诊断，14定向及132全组回归通过、build/边界门通过。实现与文档在工作区，未新增PR/推送/发布；活动实例未重启、已有历史保留，正常重启后的展示与活动GUI未验。B11及其他包核销不变。
+
 2026-11-23 B11已通过[PR #13](https://github.com/weiesky/cx-viewer/pull/13)合并main `3a4bf40`（第12/12工作包），34笔原始提交备份后整合为1笔 `539822e`，合并后更新本轮文档。201候选按子项核销，Changesets/core/content与边界门已落实。最终本地2823/2823、0skip/build/626稳定路径/601源码门，新生产1237/1237及825包/211Web精确字节，桌面stage825字节/395链接/独立启动，实际Node20.12启动+93、双浏览器14配置30图通过。PR的10项远端检查全成功：Ubuntu Node20/22/24全套及macOS/Windows定向合同；Windows完整运行、Electron GUI/签名/公证和真实外部环境仍未验。7008/PID97674及其他用户实例未停止/重启，正常重启才加载后端。下一步补齐目标环境验收；见[B11完成矩阵](./B11-completion-matrix.md)、[整合与合并记录](./B11-consolidation-and-merge-2026-11-23.md)与[最终回执](./B11-validation-2026-11-23.json)。
 
 2026-11-21 B6交付：原16笔完整备份并整为e885d8b，PR #6已合并main（9f3e2ce），精确head guard及合并tree已核；实际无PR CI检查。交付复建/pack720/新artifact-only字节通过，生产实现不变；原上游映射继续有效。普通PTY入口待纠偏及旧后端未重启保持，B7下一会话执行，见[整合记录](./B6-local-commit-consolidation-2026-11-21.md)及[B7交接](./B7-handoff.md)。

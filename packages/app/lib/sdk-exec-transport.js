@@ -1,11 +1,13 @@
 import { fileURLToPath } from 'node:url';
+import { createSdkExecContextReader } from './sdk-exec-context.js';
 
 const SDK_EXEC_LAUNCHER = fileURLToPath(new URL('./sdk-exec-launcher.sh', import.meta.url));
 const SDK_EXEC_RUNNER = fileURLToPath(new URL('./sdk-exec-runner.mjs', import.meta.url));
 
 // The manager owns queueing, proxy startup and cancellation. This transport owns
 // only the official SDK client/thread; preserve the existing supervised child.
-export function createSdkExecTransport({ Codex, cwd, instanceKey, codexPath, codexOptions, threadOptions, proxyPort }) {
+export function createSdkExecTransport({ Codex, cwd, instanceKey, codexPath, codexOptions, threadOptions, proxyPort,
+  contextReaderFactory = createSdkExecContextReader }) {
   const options = {
     ...codexOptions,
     // The official SDK serializes baseUrl as openai_base_url. Environment
@@ -34,11 +36,29 @@ export function createSdkExecTransport({ Codex, cwd, instanceKey, codexPath, cod
   let thread = null;
   return {
     get threadId() { return thread?.id || null; },
-    runStreamed(text, { signal, threadId }) {
+    async runStreamed(text, { signal, threadId }) {
       if (!thread) thread = threadId
         ? codex.resumeThread(threadId, threadOptions)
         : codex.startThread(threadOptions);
-      return thread.runStreamed(text, { signal });
+      const startedAt = Date.now();
+      const streamed = await thread.runStreamed(text, { signal });
+      return { events: (async function* () {
+        let reader, context, revision;
+        try {
+          for await (const event of streamed.events) {
+            if (event.type === 'thread.started' && !reader) reader = contextReaderFactory({
+              threadId: event.thread_id, cwd, codexPath: executable, env: options.env, startedAt, signal });
+            // Publish thread ownership before the first context update.
+            if (event.type === 'thread.started') { yield event; continue; }
+            context = await reader?.read({ complete: event.type === 'turn.completed' });
+            const next = context && JSON.stringify(context);
+            if (next && next !== revision) { revision = next; yield { type: 'context.updated', ...context }; }
+            yield event.type === 'turn.completed'
+              ? { ...event, context_usage: context?.usage || null, context_window: context?.context_window ?? null }
+              : event;
+          }
+        } finally { await reader?.close(); }
+      })() };
     },
   };
 }

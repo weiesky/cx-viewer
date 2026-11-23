@@ -62,7 +62,7 @@ import { parseCodexInvocation } from "@cxv/core/cli-args";
 import { createPtyChatQueue } from './server/lib/pty-chat-queue.js';
 import { createPtyWorkspaceRegistry } from './lib/pty-workspaces.js';
 import { CONTEXT_WINDOW_FILE, buildContextWindowEvent } from './lib/context-watcher.js';
-import { nativeContextWindow, sumUsageContextTokens } from "@cxv/core/context-rules";
+import { contextUsageForEntry, nativeContextWindow, sumUsageContextTokens } from "@cxv/core/context-rules";
 import { isMainAgentEntry } from './lib/main-agent-entry.js';
 import { createDingTalkImLogWatcher } from "./lib/im/dingtalk-im-log-watcher.js";
 import { getDingTalkImWorkerDir } from "./lib/im/dingtalk-im-config.js";
@@ -1573,7 +1573,7 @@ setLogV2CommitListener((entry, _result, context) => {
   notifyStatsWorker(context?.projectId);
   void _dingtalkImBridge?.notifyLogV2Commit(entry, _result, context);
   if (!isMainAgentEntry(entry)) return;
-  const usage = entry.response?.body?.usage;
+  const usage = contextUsageForEntry(entry);
   const contextEvent = usage ? buildContextWindowEvent(usage, nativeContextWindow(entry)) : null;
   if (contextEvent) {
     if (isSdkMode) sendSdkEvent('context_window', { ...contextEvent, cwd: context.cwd,
@@ -3118,6 +3118,8 @@ async function handleViewerRequest(req, res) {
     if (res.cxvSdkSession) {
       sendEventToClients([res], 'sdk_workspace', res.cxvSdkSession);
       sendEventToClients([res], 'streaming_status', sdkManager.getSdkStreamingState({ instanceKey: res.cxvSdkSession.instanceKey }));
+      const context = sdkManager.getSdkContextUsageSnapshot({ instanceKey: res.cxvSdkSession.instanceKey });
+      if (context) sendEventToClients([res], 'context_window', context);
     } else {
       sendEventToClients([res], 'turn_active', { active: [..._ptyAgentLoops.values()].some(data => ptyScopeMatches(res, ptyScope(data))), project: requestProjectName });
     }
@@ -6814,6 +6816,10 @@ export function pushSdkEntry(entry) {
 /** Update streaming status (for SDK mode). */
 export function setSdkStreamingState(data) {
   sendSdkEvent('streaming_status', data);
+}
+
+export function setSdkContextUsage(data) {
+  sendSdkEvent('context_window', data);
 }
 
 /** Push live SDK text/thinking blocks without polluting the JSONL request list. */

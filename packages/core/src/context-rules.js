@@ -4,10 +4,32 @@
 // the owned native thread/turn window; an absent window remains unknown.
 export function nativeContextWindow(entry) {
   const native = entry?._appServerSource === true || (entry?._sdkSource === true
-    && entry.body?.metadata?.transport === 'appserver');
+    && (entry.body?.metadata?.transport === 'appserver' || entry.response?.body?.context_usage));
   const window = native ? entry.response?.body?.context_window : null;
   return Number.isSafeInteger(window) && window > 0 ? window : null;
 }
+
+// SDK exec usage is cumulative accounting. Only the owned rollout snapshot
+// describes its active context; never display cumulative usage as occupancy.
+export function contextUsageForEntry(entry) {
+  return entry?._sdkSource === true && entry.body?.metadata?.transport !== 'appserver'
+    ? entry.response?.body?.context_usage || null : entry?.response?.body?.usage || null;
+}
+
+function contextForView({ contextWindow, lastMainAgent = null }) {
+  if (lastMainAgent) {
+    const meta = lastMainAgent.body?.metadata;
+    const live = lastMainAgent._sdkSource === true && contextWindow?.source === 'codex-rollout'
+      && meta?.thread_id && meta.cwd && meta.instance_key
+      && meta?.thread_id === contextWindow.sessionId && meta?.cwd === contextWindow.cwd
+      && meta?.instance_key === contextWindow.instanceKey
+      && Date.parse(contextWindow.turn_timestamp) >= Date.parse(lastMainAgent.timestamp);
+    if (!live) return { usage: contextUsageForEntry(lastMainAgent), window: nativeContextWindow(lastMainAgent) };
+  }
+  return { usage: contextWindow?.current_usage || null, window: contextWindow?.context_window_size };
+}
+
+export function contextUsageForView(options) { return contextForView(options).usage; }
 
 // Codex protocol TokenUsage::percent_of_context_window_remaining: the native
 // window is already the usable window (usually 95% of the raw model window).
@@ -91,8 +113,6 @@ export function sumUsageContextTokens(usage) {
 // A latest entry with no native window invalidates an older SSE snapshot.
 // In particular, never borrow another model/turn's window or cumulative usage.
 export function computeContextPercent({ contextWindow, lastMainAgent = null }) {
-  if (lastMainAgent) return nativeContextPercent(
-    sumUsageContextTokens(lastMainAgent.response?.body?.usage), nativeContextWindow(lastMainAgent));
-  return contextWindow ? nativeContextPercent(sumUsageContextTokens(contextWindow.current_usage),
-    contextWindow.context_window_size) : null;
+  const { usage, window } = contextForView({ contextWindow, lastMainAgent });
+  return usage ? nativeContextPercent(sumUsageContextTokens(usage), window) : null;
 }

@@ -19,6 +19,7 @@ import {
 } from './sdk-adapter.js';
 import { createProxy } from '../proxy.js';
 import { readCodexGlobalConfig } from './codex-config.js';
+import { buildContextWindowEvent } from './context-watcher.js';
 import { parseCodexInvocation, stripResumeInvocation } from "@cxv/core/cli-args";
 import { createHash, randomUUID } from 'node:crypto';
 import { basename, resolve } from 'node:path';
@@ -264,6 +265,10 @@ export function getMcpStatusSnapshot(anchor) {
   return sessionForAnchor(anchor)?.getMcpStatusSnapshot() || null;
 }
 
+export function getSdkContextUsageSnapshot(anchor) {
+  return sessionForAnchor(anchor)?.getContextUsageSnapshot() || null;
+}
+
 export function getInitialPrompt(anchor) {
   return sessionForAnchor(anchor)?.getInitialPrompt() || null;
 }
@@ -413,10 +418,12 @@ function createSdkSession(instanceKey) {
   let _retryOf = null;
   let _taskTurnFailed = false;
   let _taskItemId = null;
+  let _turnContextUsage = null, _contextSnapshot = null;
 
   let _onEntry = null;
   let _onStreamingStatus = null;
   let _onStreamProgress = null;
+  let _onContextUsage = null;
   let _broadcastWs = null;
   let _onAgentLoopStart = null, _onAgentLoopEnd = null, _agentLoop = null;
   let _sdkProxy = createProxy();
@@ -470,6 +477,7 @@ function createSdkSession(instanceKey) {
     onEntry,
     onStreamingStatus,
     onStreamProgress,
+    onContextUsage,
     onAgentLoopStart, onAgentLoopEnd,
     broadcastWs,
     permissionMode,
@@ -486,6 +494,7 @@ function createSdkSession(instanceKey) {
     _onEntry = onEntry;
     _onStreamingStatus = onStreamingStatus;
     _onStreamProgress = onStreamProgress;
+    _onContextUsage = onContextUsage;
     _onAgentLoopStart = onAgentLoopStart;
     _onAgentLoopEnd = onAgentLoopEnd;
     _broadcastWs = broadcastWs;
@@ -873,13 +882,25 @@ function createSdkSession(instanceKey) {
         break;
 
       case 'item.completed':
-        _upsertItem(event.item);
-        _handleCompletedItem(event.item);
+        _handleCompletedItem(_upsertItem(event.item));
         _scheduleStreamProgress();
         break;
 
       case 'turn.completed':
-        try { _emitCompletedEntry(event.usage, _transportKind === 'appserver' ? event.context_window : null); } finally { _finishAgentLoop('success'); }
+        try {
+          _turnContextUsage = _transportKind === 'exec' ? event.context_usage || null : null;
+          _emitCompletedEntry(event.usage, event.context_window);
+        } finally { _finishAgentLoop('success'); }
+        break;
+
+      case 'context.updated':
+        if (_transportKind !== 'exec' || event.thread_id !== _sessionId) break;
+        _turnContextUsage = event.usage;
+        _contextSnapshot = { ...buildContextWindowEvent(event.usage, event.context_window),
+          source: 'codex-rollout', cwd: _cwd, instanceKey, sessionId: _sessionId,
+          turnId: event.turn_id, turn_timestamp: _turnTimestamp, timestamp: event.timestamp };
+        try { _onContextUsage?.(cloneJson(_contextSnapshot)); }
+        catch (error) { console.warn('[SDK] Context callback failed:', error.message); }
         break;
 
       case 'turn.failed':
@@ -904,12 +925,20 @@ function createSdkSession(instanceKey) {
   function _upsertItem(item) {
     if (!item || typeof item !== 'object') return;
     const id = item.id || `${item.type || 'item'}_${_itemOrder.length}`;
+    // Native exec can repeat startup warnings under different item IDs.
+    // Keep the first diagnostic in both the live stream and durable transcript.
+    if (item.type === 'error') {
+      for (const previous of _currentItems.values()) {
+        if (previous.type === 'error' && previous.id !== id && previous.message === item.message) return;
+      }
+    }
     if (!_currentItems.has(id)) _itemOrder.push(id);
     _currentItems.set(id, { ...item, id });
     if (item.type === 'todo_list' || item.type === 'todoList') {
       _taskItemId = id;
       _broadcastTaskState();
     }
+    return _currentItems.get(id);
   }
 
   // Reuse the SDK's authoritative item table. todo_list is a replacement list,
@@ -1005,6 +1034,7 @@ function createSdkSession(instanceKey) {
         model: _model,
         content: finalContent,
         usage,
+        ...(_transportKind === 'exec' ? { context_usage: _turnContextUsage } : {}),
         ...(Number.isSafeInteger(contextWindow) && contextWindow > 0 ? { context_window: contextWindow } : {}),
       },
     };
@@ -1278,7 +1308,7 @@ function createSdkSession(instanceKey) {
     // this workspace's model, permissions, executable and callbacks.
     initSdkSession(_cwd, _projectName, {
       onEntry: _onEntry, onStreamingStatus: _onStreamingStatus,
-      onStreamProgress: _onStreamProgress, onAgentLoopStart: _onAgentLoopStart, onAgentLoopEnd: _onAgentLoopEnd, broadcastWs: _broadcastWs, codexPath: _codexPath,
+      onStreamProgress: _onStreamProgress, onContextUsage: _onContextUsage, onAgentLoopStart: _onAgentLoopStart, onAgentLoopEnd: _onAgentLoopEnd, broadcastWs: _broadcastWs, codexPath: _codexPath,
       transport: _transportKind,
     }, { codexOptions: _codexOptions, threadOptions: _threadOptions, configOverrides: _configOverrides, resumeThreadId: history.threadId });
     _accumulatedMessages = messages;
@@ -1301,6 +1331,7 @@ function createSdkSession(instanceKey) {
     _retryOf = null;
     _taskTurnFailed = false;
     _taskItemId = null;
+    _turnContextUsage = null;
     _clearStreamThrottle();
   }
 
@@ -1324,6 +1355,7 @@ function createSdkSession(instanceKey) {
     const retiringTransport = _transport; _transport = null;
     const cleanup = Promise.resolve(retiringTransport?.stop?.()).catch(error => console.warn('[SDK] Transport cleanup failed:', error.message));
     _sessionId = null;
+    _contextSnapshot = null;
     _model = keepConfig ? (_threadOptions.model || null) : null;
     _queryBusy = false;
     _messageQueue = [];
@@ -1348,6 +1380,7 @@ function createSdkSession(instanceKey) {
     getPendingApprovals: () => _nativeApprovals?.replay() || [],
     cancelAskHosting: id => _nativeApprovals?.cancelAskHosting(id) || false,
     getMcpStatusSnapshot: () => cloneJson(_lastMcpStatus),
+    getContextUsageSnapshot: () => cloneJson(_contextSnapshot),
     getAgentState: () => _nativeAgents?.snapshot() || { type: 'sdk-agent-snapshot', sessionId: _sessionId,
       cwd: _cwd, instanceKey, available: true, agents: [] },
     get revision() { return `${_sessionGeneration}:${_activityRevision}`; },

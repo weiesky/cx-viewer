@@ -1,7 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { DEFAULT_CODEX_TOOLS, sdkUsageToViewerUsage } from '../lib/sdk-adapter.js';
+import { DEFAULT_CODEX_TOOLS, sdkItemToAssistantBlock, sdkUsageToViewerUsage } from '../lib/sdk-adapter.js';
+
+test('non-fatal SDK error items are labeled as warnings', () => {
+  assert.deepEqual(sdkItemToAssistantBlock({ type: 'error', message: 'old configuration' }),
+    { type: 'text', text: 'Warning: old configuration' });
+  assert.equal(sdkItemToAssistantBlock({ type: 'error', message: '' }), null);
+});
 
 test('SDK mode does not advertise an unserviceable request_user_input tool', () => {
   assert.equal(DEFAULT_CODEX_TOOLS.some(tool => tool.name === 'request_user_input'), false);

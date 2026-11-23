@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { computeContextPercent, formatContextUsage, nativeContextWindow, nativeContextPercent, sumUsageContextTokens } from '../server/lib/context-rules.js';
+import { computeContextPercent, contextUsageForView, formatContextUsage, nativeContextWindow, nativeContextPercent, sumUsageContextTokens } from '../server/lib/context-rules.js';
 import { buildContextWindowEvent } from '../lib/context-watcher.js';
 const entry = (window, total = 20100) => ({ _appServerSource: true,
   response: { body: { context_window: window, usage: { input_tokens: 20000, output_tokens: 100, total_tokens: total }, total_usage: { total_tokens: 990000 } } } });
@@ -35,4 +35,26 @@ test('server SSE and frontend use the same native window and last-turn total wit
   assert.equal(sumUsageContextTokens(usage), 20100);
   assert.equal(buildContextWindowEvent(usage).used_percentage, null);
   assert.equal(buildContextWindowEvent(usage).context_window_size, null);
+});
+
+test('SDK exec context uses a separate native snapshot across live updates and cold entry replay', () => {
+  const sdk = { _sdkSource: true, timestamp: '2026-11-23T14:00:00Z',
+    body: { metadata: { transport: 'exec', thread_id: 'root', cwd: '/project', instance_key: 'a' } },
+    response: { body: { usage: { total_tokens: 4140366 } } } };
+  assert.equal(contextUsageForView({ lastMainAgent: sdk }), null);
+  assert.equal(computeContextPercent({ lastMainAgent: sdk }), null);
+  sdk.response.body.context_usage = { total_tokens: 54985 };
+  sdk.response.body.context_window = 475000;
+  assert.equal(computeContextPercent({ lastMainAgent: sdk }), 9);
+  const live = { source: 'codex-rollout', sessionId: 'root', cwd: '/project', instanceKey: 'a',
+    turn_timestamp: '2026-11-23T14:01:00Z', ...buildContextWindowEvent({ total_tokens: 171029 }, 475000) };
+  assert.equal(computeContextPercent({ contextWindow: live, lastMainAgent: sdk }), 34);
+  assert.equal(sumUsageContextTokens(contextUsageForView({ contextWindow: live, lastMainAgent: sdk })), 171029);
+  for (const override of [{ sessionId: 'sibling' }, { cwd: '/other' }, { instanceKey: 'b' }, { turn_timestamp: '2026-11-23T13:59:00Z' }]) {
+    assert.equal(computeContextPercent({ contextWindow: { ...live, ...override }, lastMainAgent: sdk }), 9);
+  }
+  const cold = JSON.parse(JSON.stringify(sdk));
+  assert.equal(computeContextPercent({ lastMainAgent: cold }), 9);
+  assert.equal(cold.response.body.usage.total_tokens, 4140366, 'accounting remains separate');
+  assert.equal(computeContextPercent({ contextWindow: live }), 34);
 });
