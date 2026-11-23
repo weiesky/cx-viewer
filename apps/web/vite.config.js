@@ -100,6 +100,8 @@ export default defineConfig(() => {
         '/events': `http://127.0.0.1:${port}`,
         '/api': `http://127.0.0.1:${port}`,
         '/ws/terminal': { target: `ws://127.0.0.1:${port}`, ws: true },
+        '/plugin-panels': `http://127.0.0.1:${port}`,
+        '/plugins': { target: `http://127.0.0.1:${port}`, ws: true },
       },
     },
   };

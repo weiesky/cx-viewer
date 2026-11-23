@@ -1,3 +1,5 @@
+import { pickAutoAnswers } from '../src/utils/ask-auto-answer.js';
+
 const REQUEST_USER_INPUT_METHODS = new Set([
   // Codex CLI 0.144.x generated app-server schema.
   'item/tool/requestUserInput',
@@ -36,6 +38,20 @@ export function buildCodexAutoResolutionAnswers(questions = []) {
     answers[question.id] = { answers: [String(question.options[0]?.label ?? '')] };
   }
   return answers;
+}
+
+/** Hosting uses native question IDs; duplicate question text must not overwrite answers. */
+export function pickCodexAutoAnswers(questions) {
+  if (!Array.isArray(questions) || !questions.length) return null;
+  const entries = [], ids = new Set();
+  for (const question of questions) {
+    if (typeof question?.id !== 'string' || !question.id || ids.has(question.id)) return null;
+    const picked = pickAutoAnswers([question]);
+    if (!picked) return null;
+    ids.add(question.id);
+    entries.push([question.id, { answers: [picked[question.question]] }]);
+  }
+  return Object.fromEntries(entries);
 }
 
 /** Project Codex's id-keyed answer shape to the question-text map used by cards. */

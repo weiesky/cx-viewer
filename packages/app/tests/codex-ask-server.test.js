@@ -15,6 +15,7 @@ process.env.CXV_WORKSPACE_MODE = '1';
 process.env.CXV_CLI_MODE = '1';
 
 let server;
+let writePreferences;
 let port;
 let ws;
 const messages = [];
@@ -68,6 +69,7 @@ function ask(id, overrides = {}) {
 
 before(async () => {
   server = await import('../server.js');
+  ({ writePreferences } = await import('../lib/preferences.js'));
   await server.startViewer();
   port = server.getPort();
   server.setCodexRequestUserInputBridge({
@@ -202,4 +204,44 @@ test('last GUI disconnect releases a claimed request back to the Codex TUI', asy
   }
   assert.deepEqual(calls.release, ['ask-disconnect']);
   assert.deepEqual(await pendingAsks(), []);
+});
+
+test('opt-in PTY hosting answers offline, cancellation stays manual and native fallback remains authoritative', async () => {
+  const callCount = calls.resolve.length;
+  assert.equal(server.offerCodexRequestUserInput(ask('offline-off')), false);
+  writePreferences({ approvalModal: { askAutoAnswerMinutes: 0 } });
+  const questions = [{ id: 'choice', question: 'Choose?', options: [{ label: 'First' }, { label: 'Second (Recommended)' }] }];
+  assert.equal(server.offerCodexRequestUserInput(ask('offline-hosted', { autoResolutionMs: null, questions })), true);
+  assert.deepEqual(calls.resolve[callCount], { id: 'offline-hosted', answers: { choice: { answers: ['Second (Recommended)'] } } });
+  assert.deepEqual(await pendingAsks(), []);
+  assert.equal(server.offerCodexRequestUserInput(ask('offline-free', { questions: [{ id: 'free', question: 'Enter' }] })), false);
+  writePreferences({ approvalModal: { askAutoAnswerMinutes: 10 } });
+  messages.length = 0;
+  ws = new WebSocket(`ws://127.0.0.1:${port}/ws/terminal`, { headers: { Origin: `http://127.0.0.1:${port}` } });
+  ws.on('message', raw => {
+    const message = JSON.parse(raw.toString()), index = waiters.findIndex(waiter => waiter.type === message.type);
+    if (index >= 0) waiters.splice(index, 1)[0].resolve(message); else messages.push(message);
+  });
+  await new Promise((resolve, reject) => { ws.once('open', resolve); ws.once('error', reject); });
+  assert.equal(server.offerCodexRequestUserInput(ask('cancel-hosting', { autoResolutionMs: null, questions })), true);
+  const pending = await receive('ask-hook-pending');
+  assert.equal(pending.autoAnswerSeconds, 600);
+  ws.send(JSON.stringify({ type: 'ask-auto-cancel', id: pending.id }));
+  assert.equal((await receive('ask-auto-cancel')).id, pending.id);
+  const replay = (await pendingAsks()).find(row => row.id === pending.id);
+  assert.equal(replay.autoAnswerAt, null); assert.equal(replay.autoCancelled, true);
+  assert.equal(calls.resolve.length, callCount + 1, 'cancelling hosting does not answer the question');
+  ws.send(JSON.stringify({ type: 'ask-hook-answer', id: pending.id, codexAnswers: { choice: { answers: ['First'] } } }));
+  await receive('ask-hook-resolved');
+  assert.deepEqual(calls.resolve.at(-1).answers, { choice: { answers: ['First'] } });
+  assert.equal(server.offerCodexRequestUserInput(ask('native-deadline', { autoResolutionMs: 30, questions })), true);
+  await receive('ask-hook-pending'); await receive('ask-hook-timeout');
+  assert.deepEqual(calls.resolve.at(-1).answers, { choice: { answers: ['First'] } }, 'explicit native autoResolutionMs is preserved');
+  assert.equal(server.offerCodexRequestUserInput(ask('disconnect-hosting', { autoResolutionMs: null, questions })), true);
+  await receive('ask-hook-pending');
+  const closed = new Promise(resolve => ws.once('close', resolve)); ws.close(); await closed;
+  assert.ok((await pendingAsks()).some(row => row.id === 'disconnect-hosting'), 'hosting survives last GUI disconnect');
+  assert.equal(calls.release.includes('disconnect-hosting'), false);
+  server.clearCodexRequestUserInput({ uiId: 'disconnect-hosting' });
+  writePreferences({});
 });

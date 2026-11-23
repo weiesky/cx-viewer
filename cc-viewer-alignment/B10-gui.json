@@ -1,0 +1,150 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "fixture": {
+    "root": "/tmp/cxv-b10-ui-uOrbVh",
+    "pid": 59555,
+    "port": 21040,
+    "stopped": true
+  },
+  "results": [
+    {
+      "engine": "chromium",
+      "configuration": "desktop-a-light",
+      "instance": "cxv-1f296d9ec6fec835fc294237ce0b81aa",
+      "shape": {
+        "width": 1100,
+        "height": 393.84375
+      },
+      "lifecycle": {
+        "mounts": 3,
+        "closes": 3
+      },
+      "unexpectedPageErrors": []
+    },
+    {
+      "engine": "chromium",
+      "configuration": "desktop-b-dark",
+      "instance": "cxv-f5664351341097cfd5d4ee55664335d3",
+      "shape": {
+        "width": 1100,
+        "height": 393.84375
+      },
+      "lifecycle": {
+        "mounts": 1,
+        "closes": 1
+      },
+      "unexpectedPageErrors": []
+    },
+    {
+      "engine": "chromium",
+      "configuration": "phone-a-light",
+      "instance": "cxv-1f296d9ec6fec835fc294237ce0b81aa",
+      "shape": {
+        "width": 390,
+        "height": 797
+      },
+      "lifecycle": {
+        "mounts": 1,
+        "closes": 1
+      },
+      "unexpectedPageErrors": []
+    },
+    {
+      "engine": "webkit",
+      "configuration": "desktop-a-light",
+      "instance": "cxv-1f296d9ec6fec835fc294237ce0b81aa",
+      "shape": {
+        "width": 1100,
+        "height": 393.84375
+      },
+      "lifecycle": {
+        "mounts": 3,
+        "closes": 3
+      },
+      "unexpectedPageErrors": []
+    },
+    {
+      "engine": "webkit",
+      "configuration": "desktop-b-dark",
+      "instance": "cxv-f5664351341097cfd5d4ee55664335d3",
+      "shape": {
+        "width": 1100,
+        "height": 393.84375
+      },
+      "lifecycle": {
+        "mounts": 1,
+        "closes": 1
+      },
+      "unexpectedPageErrors": []
+    },
+    {
+      "engine": "webkit",
+      "configuration": "phone-a-light",
+      "instance": "cxv-1f296d9ec6fec835fc294237ce0b81aa",
+      "shape": {
+        "width": 390,
+        "height": 797
+      },
+      "lifecycle": {
+        "mounts": 1,
+        "closes": 1
+      },
+      "unexpectedPageErrors": []
+    }
+  ],
+  "limitations": [
+    "simulated mobile viewport/touch; no physical device",
+    "no external models",
+    "base URL/TLS and guided update not included"
+  ],
+  "screenshots": [
+    {
+      "file": "B10-gui/chromium-desktop-a-light.png",
+      "sha256": "715190e3f50c35dc6ac8830eade8b7ea56aac8227d896f208ec0f570117aa3a2"
+    },
+    {
+      "file": "B10-gui/chromium-desktop-b-dark.png",
+      "sha256": "4d70d2ce3b9c35f1f4035b0d4180fb6ae8ce1b162ab365952ed44f27f1ee7928"
+    },
+    {
+      "file": "B10-gui/chromium-management.png",
+      "sha256": "96693c6d0e2f83d9d9075c26814c71012d0e868f60284f41c878b19c35aebc4b"
+    },
+    {
+      "file": "B10-gui/chromium-phone-a-light.png",
+      "sha256": "08b92efa8fa1d4e0c3aa05d5e96b33acdf9580af2172beedf111ec7bebeaeb70"
+    },
+    {
+      "file": "B10-gui/chromium-render-error.png",
+      "sha256": "ca8d5889c8bd805bc4a409bc0025cc3f565e4c62698931e1db79dc4146c9ad0f"
+    },
+    {
+      "file": "B10-gui/webkit-desktop-a-light.png",
+      "sha256": "960d947c72cb9e877c6307cef16ec76a844c1340d8b4db8a19af035db546c6ac"
+    },
+    {
+      "file": "B10-gui/webkit-desktop-b-dark.png",
+      "sha256": "1396e2f80eea7ab571f3033cea4d209de76b1c627f3f57eb39eabe9ecbaab1db"
+    },
+    {
+      "file": "B10-gui/webkit-management.png",
+      "sha256": "cd4c3d93204699d6dfe072a717264d184300ac6d553db219215acf9f9c4e6d20"
+    },
+    {
+      "file": "B10-gui/webkit-phone-a-light.png",
+      "sha256": "ae9506abfe6ad230b4343348570ddbffd92b080fd3f3727413d810aef46d4ca0"
+    },
+    {
+      "file": "B10-gui/webkit-render-error.png",
+      "sha256": "fd6a0116339aa6ca5800fd428f31bc01377b7fcc42533f77f5554aa57df84f09"
+    }
+  ],
+  "sourceEquality": {
+    "src/components/plugins/PanelHost.jsx": "ffe29f3cec9686e380d8912a31c63a76aab2122ffff6e35af0b6a087af24bf20",
+    "src/components/plugins/PanelHost.module.css": "a96d153a42db125398856bf1435c6df81813c17690e257cf68004cda878a5b66",
+    "src/components/plugins/PluginPanelModal.jsx": "74e5fe8def2694ed8ffac308e20dae2b8fba2616581fb6d9aa33905270f5953d",
+    "src/components/settings/PluginModal.jsx": "3ca72d5b953ac2b006d51f1074d59062c5b7e8587c5f8d610348cb69af539149",
+    "src/components/settings/PluginModal.module.css": "ebcc434a226d0fa03c84f9ed6bc7a3beae0e01478c01e1437398b2fe67208025"
+  },
+  "fixtureStopped": true
+}

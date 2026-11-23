@@ -6,11 +6,12 @@ const _urlToken = typeof window !== 'undefined'
 // 反向代理子路径部署: 从 <base> 标签或 SSR 注入的全局变量读取 base path，
 // 使 API/WebSocket 等动态请求也能正确路由到代理后端。
 export function getBasePath() {
-  if (typeof window !== 'undefined' && window.__CXV_BASE_PATH__) return window.__CXV_BASE_PATH__;
-  if (typeof document === 'undefined' || !document.querySelector) return '';
-  const base = document.querySelector('base');
-  if (base && base.href) return base.getAttribute('href');
-  return '';
+  const injected = typeof window !== 'undefined' ? window.__CXV_BASE_PATH__ : '';
+  const base = typeof document !== 'undefined' && document.querySelector ? document.querySelector('base') : null;
+  const raw = injected || base?.getAttribute('href') || '';
+  // Server injection is path-only; do not attach credentials to a foreign <base>.
+  return typeof raw === 'string' && raw.startsWith('/') && !raw.startsWith('//')
+    && !/[\\\u0000-\u0020\u007f?#]/.test(raw) ? raw : '';
 }
 
 // 把 token 追加到任意 URL（HTTP path 或 ws:// 完整 URL 皆可）。无 token 时原样返回。

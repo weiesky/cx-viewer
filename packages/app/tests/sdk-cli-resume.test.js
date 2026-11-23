@@ -53,13 +53,13 @@ for (const event of [
     return { timeline, file: relative(logs, timeline).split(sep).join('/') };
   };
   const processes = [];
-  const start = async args => {
+  const start = async (args, extraEnv = {}) => {
     const socket = createServer(); socket.listen(0, '127.0.0.1'); await once(socket, 'listening');
     const port = socket.address().port; await new Promise(resolve => socket.close(resolve));
     const child = spawn(process.execPath, [cli, '--sdk', ...args], {
       cwd: join(root, 'a'), env: { ...process.env, HOME: home, CODEX_HOME: join(home, 'codex'),
         PATH: bin + ':/usr/bin:/bin', SHELL: '/bin/bash', CXV_LOG_DIR: logs, CXV_TEST: '1',
-        CXV_CAPTURE_ONLY: '1', CXV_START_PORT: String(port), CXV_MAX_PORT: String(port) },
+        CXV_CAPTURE_ONLY: '1', CXV_START_PORT: String(port), CXV_MAX_PORT: String(port), ...extraEnv },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     const state = { child, exited: once(child, 'exit'), output: '', port };
@@ -266,4 +266,19 @@ test('exec CLI rejects unsupported or incomplete launch flags before workspace, 
     assert.equal(existsSync(join(f.home, 'opened')), false);
     assert.equal(existsSync(join(f.logs, 'workspaces.json')), false);
   }
+}));
+
+
+test('CLI opens and prints the configured public prefix with its own token and picker query', { timeout: 30000 }, async () => fixture(async f => {
+  const state = await f.start(['resume', '-C', 'same'], { CXV_BASE_URL: 'https://viewer.example/session/{token}', CXV_BASE_PATH: '/ignored/' });
+  await state.ready();
+  const opened = readFileSync(join(f.home, 'opened'), 'utf8').trim();
+  const url = new URL(opened);
+  assert.equal(url.origin, 'https://viewer.example');
+  assert.equal(decodeURIComponent(url.pathname), '/session/{token}/');
+  assert.equal(url.searchParams.get('resume'), '1');
+  assert.ok(url.searchParams.get('token'));
+  assert.match(state.output, /External: https:\/\/viewer\.example\/session\/\{token\}\/\?token=/);
+  assert.ok(state.output.includes(`Local:   http://127.0.0.1:${state.port}/session/{token}/?resume=1`));
+  assert.equal(existsSync(join(f.home, 'calls')), false, 'opening the picker never launches a model turn');
 }));

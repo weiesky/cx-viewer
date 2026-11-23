@@ -33,6 +33,7 @@ before(async () => {
   sdk.setSdkLaunchConfig({ codexPath: process.execPath });
   infoA = sdk.initSdkSession(a, 'same', { codexPath: process.execPath });
   infoB = sdk.launchSdkSession(b, 'same');
+  process.env.CXV_ALLOWED_HOSTS = ['localhost', '127.0.0.1', '::1', '[::1]', 'remote.example.test', ...server.getAllLocalIps()].join(',');
   await server.startViewer(); port = server.getPort();
 });
 after(async () => { sdk.stopSession(); await server.stopViewer(); rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }); });

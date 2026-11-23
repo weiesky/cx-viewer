@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { computeAskAutoAnswer } from '../lib/ask-auto-answer.js';
 import { createSdkAppServerApprovals } from '../lib/sdk-appserver-approvals.js';
 
 const request = (id = 1, method = 'item/commandExecution/requestApproval', extra = {}) => ({
@@ -94,4 +95,53 @@ test('failed UI delivery releases a native question with no grant or invented an
   assert.deepEqual(replies, [{ answers: {} }]);
   assert.deepEqual(projected, ['card', { answers: {} }]);
   assert.deepEqual(bridge.replay(), []); assert.equal(timers.size, 0);
+});
+
+for (const action of ['deadline', 'manual', 'cancel', 'close', 'clearTurn', 'resolvedNative']) {
+  test(`opt-in native Ask hosting: ${action} wins and never changes permission approvals`, async t => {
+    t.mock.timers.enable({ apis: ['Date', 'setTimeout'], now: 1000 });
+    const frames = [], replies = [];
+    const bridge = createSdkAppServerApprovals({ scope: { instanceKey: 'owner', cwd: '/a' },
+      ownsThread: async id => id === 'root', broadcast: frame => frames.push(frame),
+      computeHosting: (_, options) => computeAskAutoAnswer('/a', { ...options,
+        readPrefs: () => ({ approvalModal: { askAutoAnswerMinutes: 10 } }) }) });
+    const questions = [{ id: 'choice', question: 'Choose', options: [{ label: 'A' }, { label: 'B (Recommended)' }] }];
+    await bridge.handle(request(1, 'item/tool/requestUserInput', { questions }), result => replies.push(result));
+    const first = bridge.replay()[0];
+    assert.equal(first.autoAnswerAt, 601000); assert.equal(first.timeoutMs, 86400000);
+    t.mock.timers.tick(600000); assert.equal(replies.length, 0, 'deadline buffer preserves manual priority');
+    assert.equal(bridge.replay()[0].autoAnswerAt, first.autoAnswerAt, 'replay never rebases deadline');
+    if (action === 'manual') assert.equal(bridge.resolve(first.id, { choice: { answers: ['A'] } }), true);
+    if (action === 'cancel') {
+      assert.equal(bridge.cancelAskHosting(first.id), true); assert.equal(bridge.cancelAskHosting(first.id), true);
+      assert.equal(bridge.replay()[0].autoCancelled, true); assert.equal(bridge.replay()[0].autoAnswerAt, null);
+      assert.equal(frames.filter(frame => frame.type === 'ask-auto-cancel').length, 1);
+    }
+    if (action === 'close') bridge.close();
+    if (action === 'clearTurn') bridge.clearTurn('root', 'turn');
+    if (action === 'resolvedNative') bridge.resolvedNative(1);
+    t.mock.timers.tick(1001);
+    if (action === 'deadline') assert.deepEqual(replies, [{ answers: { choice: { answers: ['B (Recommended)'] } } }]);
+    if (action === 'manual') assert.deepEqual(replies, [{ answers: { choice: { answers: ['A'] } } }]);
+    if (action === 'cancel' || action === 'resolvedNative') assert.equal(replies.length, 0);
+    if (action === 'close' || action === 'clearTurn') assert.deepEqual(replies, [{ answers: {} }]);
+    bridge.close(); t.mock.timers.tick(86400000);
+    assert.equal(bridge.replay().length, 0);
+  });
+}
+
+test('instant hosting emits pending before native resolution; free text and permissions remain manual', async () => {
+  const frames = [], replies = [];
+  const bridge = createSdkAppServerApprovals({ scope: { instanceKey: 'owner' }, ownsThread: async () => true,
+    broadcast: frame => frames.push(frame),
+    computeHosting: () => ({ enabled: true, instant: true, minutes: 0, seconds: 0, autoAnswerAt: Date.now() }) });
+  await bridge.handle(request(1, 'item/tool/requestUserInput', { questions: [{ id: 'x', question: 'Pick', options: [{ label: 'yes' }] }] }), result => replies.push(result));
+  assert.deepEqual(frames.map(frame => frame.type), ['sdk-ask-pending', 'sdk-ask-resolved']);
+  assert.deepEqual(replies, [{ answers: { x: { answers: ['yes'] } } }]);
+  assert.equal(bridge.replay().length, 0);
+  await bridge.handle(request(2, 'item/tool/requestUserInput', { questions: [{ id: 'free', question: 'Enter' }] }), result => replies.push(result));
+  assert.equal(bridge.replay()[0].autoAnswerAt, null);
+  await bridge.handle(request(3), result => replies.push(result));
+  assert.equal(bridge.replay().find(frame => frame.type === 'perm-hook-pending').autoAnswerAt, undefined);
+  assert.equal(replies.length, 1); bridge.close();
 });

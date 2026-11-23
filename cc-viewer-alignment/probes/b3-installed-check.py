@@ -1,10 +1,12 @@
+# --resume BASE reuses a passing runtime result only after package and test bytes match.
 import json, os, re, shutil, shlex, socket, subprocess, sys, tempfile, time, urllib.request
 from pathlib import Path
 repo = Path(__file__).resolve().parents[2]
 source = repo / 'packages/app'
-base = Path(tempfile.mkdtemp(prefix='cxv-installed-runtime-')).resolve()
+resume = len(sys.argv) == 3 and sys.argv[1] == '--resume'
+base = Path(sys.argv[2]).resolve(strict=True) if resume else Path(tempfile.mkdtemp(prefix='cxv-installed-runtime-')).resolve()
 home = base / 'home'
-home.mkdir()
+home.mkdir(exist_ok=True)
 env = {**os.environ, 'HOME': str(home), 'CODEX_HOME': str(home / 'codex'), 'CXV_TEST': '1', 'CXV_CAPTURE_ONLY': '1', 'CXV_WORKSPACE_MODE': '1', 'CXV_LOG_DIR': str(base / 'logs')}
 env.pop('CXV_BYPASS_PERMISSIONS', None)
 
@@ -22,9 +24,9 @@ def run(args, cwd, logfile, timeout=180):
         raise SystemExit(result.returncode)
     return result.stdout
 
-pack_output = run(['npm', 'pack', '--json', '--pack-destination', str(base), '--cache', '/tmp/cx-viewer-npm-cache'], source, 'pack.log')
-pack = json.loads(pack_output[pack_output.index('[\n'):])[0]
-run(['npm', 'install', '--prefix', str(base), '--omit=dev', '--no-audit', '--no-fund', '--cache', '/tmp/cx-viewer-npm-cache', str(base / pack['filename'])], base, 'install.log')
+pack_output = (base / 'pack.log').read_text() if resume else run(['npm', 'pack', '--json', '--pack-destination', str(base), '--cache', '/tmp/cx-viewer-npm-cache'], source, 'pack.log')
+pack = json.JSONDecoder().raw_decode(pack_output[pack_output.index('[\n'):])[0][0]
+if not resume: run(['npm', 'install', '--prefix', str(base), '--omit=dev', '--no-audit', '--no-fund', '--cache', '/tmp/cx-viewer-npm-cache', str(base / pack['filename'])], base, 'install.log')
 installed = base / 'node_modules/cx-viewer'
 for item in pack['files']:
     assert (source / item['path']).read_bytes() == (installed / item['path']).read_bytes(), item['path']
@@ -42,9 +44,14 @@ if sys.argv[1:] == ['--artifact-only']:
 tests = ['pty-workspaces.test.js', 'pty-workspace-runtime.test.js', 'pty-workspace-args.test.js', 'pty-workspace-routing.test.js', 'pty-session-isolation.test.js', 'pty-manager.test.js', 'pty-install-layout.test.js', 'pty-chat-queue.test.js', 'pty-chunk-builder.test.js', 'appserver-bridge-isolation.test.js', 'scratch-pty-tree.test.js', 'cxv-editor.test.js', 'log-v2-schema.test.js', 'audio-stream.test.js', 'audio-preview-api.test.js', 'archive-preview-api.test.js', 'frontend-classification.test.js', 'log-v2-identity.test.js', 'log-v2-session-summary.test.js', 'log-v2-request-summary.test.js', 'cli-args.test.js', 'ws-mux.test.js', 'ws-mux-backpressure.test.js', 'ws-mux-routes.test.js', 'log-v2-materializer.test.js', 'log-v2-shards.test.js', 'log-v2-concurrency.test.js', 'sdk-cli-resume.test.js', 'log-v2-resume-watermark.test.js', 'sdk-resume-history.test.js', 'scratch-pty-manager.test.js', 'sdk-manager.test.js', 'codex-appserver-client.test.js', 'sdk-appserver-transport.test.js', 'sdk-appserver-manager.test.js', 'sdk-appserver-approvals.test.js', 'sdk-appserver-agents.test.js', 'sdk-task-state.test.js', 'sdk-process-ownership.test.js', 'sdk-queue.test.js', 'terminal-ws-ping.test.js', 'sdk-session-registry.test.js', 'proxy-lifecycle.test.js', 'proxy-slow-upstream.test.js', 'proxy-workspace-capture.test.js', 'log-v2-project-allocation.test.js', 'sdk-workspace-auth.test.js', 'sdk-workspace-connections.test.js', 'voice-pack-api.test.js', 'search-worker.test.js', 'search-worker-policy.test.js', 'code-search.test.js', 'credential-search-boundary.test.js', 'search-endpoint.test.js', 'file-download.test.js', 'binary-sniff.test.js', 'file-content-binary.test.js', 'native-credential-file-policy.test.js', 'file-api.test.js', 'file-move.test.js', 'html-preview-scope.test.js', 'git-change-stats.test.js', 'git-unpushed-fallback.test.js', 'git-endpoints.test.js', 'file-access-policy.test.js', 'files-exists.test.js', 'target-scope.test.js', 'target-files.test.js', 'file-browser-native-state.test.js', 'skills-api.test.js']
 tests += ['sdk-root-model.test.js', 'headless-system-prompts.test.js', 'logger-bootstrap.test.js', 'otel-config.test.js', 'context-window.test.js', 'workspace-proxy.test.js', 'native-role-proxy.test.js', 'workspace-proxy-api.test.js']
 tests += ['builtin-model-prompts.test.js', 'builtin-prompt-selection.test.js', 'builtin-prompt-state.test.js', 'model-system-prompts.test.js', 'system-prompt-server.test.js', 'sdk-proxy-api-path.test.js']
+tests += ['cron.test.js', 'schedule-model.test.js', 'scheduled-prompt.test.js', 'scheduled-task-api.test.js', 'scheduled-task-executor.test.js', 'scheduled-task-runs-store.test.js', 'scheduled-task-store.test.js', 'scheduled-task-scheduler.test.js', 'scheduled-task-security.test.js', 'scheduled-task-runtime.test.js', 'scheduled-task-pty-runtime.test.js', 'scheduled-attachments.test.js', 'sdk-scheduled-session.test.js', 'ask-auto-answer.test.js', 'ask-auto-answer-picker.test.js', 'codex-ask-server.test.js']
+tests += ['api-base-url.test.js', 'async-file-lock.test.js', 'base-path-lib.test.js', 'base-url-lib.test.js', 'plugin-host.test.js', 'plugin-loader-service.test.js', 'plugin-manager-dir.test.js', 'plugin-manifest.test.js', 'plugin-mount-prefixes.test.js', 'plugin-panels.test.js', 'plugin-proxy.test.js', 'plugin-runtime-real.test.js', 'plugin-runtime.test.js', 'plugin-service-integration.test.js', 'plugin-service-manager.test.js', 'plugin-spawn-test-guard.test.js', 'restart-helper.test.js', 'update-instances.test.js', 'update-job.test.js', 'update-routes.test.js', 'updater.test.js']
+reuse_runtime = resume and (base / 'runtime.log').exists() and all((installed / 'tests' / name).read_bytes() == (source / 'tests' / name).read_bytes() for name in tests)
 for name in tests:
     shutil.copyfile(source / 'tests' / name, installed / 'tests' / name)
-runtime = run(['node', '--test', '--test-concurrency=1', *['tests/' + name for name in tests]], installed, 'runtime.log', 180)
+(installed / 'tests/fixtures').mkdir(exist_ok=True)
+shutil.copyfile(source / 'tests/fixtures/scheduled-native.txt', installed / 'tests/fixtures/scheduled-native.txt')
+runtime = (base / 'runtime.log').read_text() if reuse_runtime else run(['node', '--test', '--test-concurrency=1', *['tests/' + name for name in tests]], installed, 'runtime.log', 300)
 passed = re.search(r'pass (\d+)', runtime).group(1)
 total = re.search(r'tests (\d+)', runtime).group(1)
 assert passed == total

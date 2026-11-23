@@ -2,6 +2,106 @@
 // 要注意这个文件不是给客户端用的
 
 const i18nData = {
+  "basePath.missingLeadingSlash": {
+    "zh": "  ⚠️  CXV_BASE_PATH \"{value}\" 必须以 \"/\" 开头，已忽略。示例：\"/proxy/\"",
+    "en": "  ⚠️  CXV_BASE_PATH \"{value}\" must start with \"/\" — ignored. Use e.g. \"/proxy/\".",
+    "zh-TW": "  ⚠️  CXV_BASE_PATH \"{value}\" 必須以 \"/\" 開頭，已忽略。範例：\"/proxy/\"",
+    "ko": "  ⚠️  CXV_BASE_PATH \"{value}\"는 \"/\"로 시작해야 합니다 — 무시됨. 예: \"/proxy/\"",
+    "ja": "  ⚠️  CXV_BASE_PATH \"{value}\" は \"/\" で始まる必要があります — 無視されました。例: \"/proxy/\"",
+    "de": "  ⚠️  CXV_BASE_PATH \"{value}\" muss mit \"/\" beginnen — ignoriert. Beispiel: \"/proxy/\"",
+    "es": "  ⚠️  CXV_BASE_PATH \"{value}\" debe comenzar con \"/\" — ignorado. Ejemplo: \"/proxy/\"",
+    "fr": "  ⚠️  CXV_BASE_PATH \"{value}\" doit commencer par \"/\" — ignoré. Exemple : \"/proxy/\"",
+    "it": "  ⚠️  CXV_BASE_PATH \"{value}\" deve iniziare con \"/\" — ignorato. Esempio: \"/proxy/\"",
+    "da": "  ⚠️  CXV_BASE_PATH \"{value}\" skal starte med \"/\" — ignoreret. Eksempel: \"/proxy/\"",
+    "pl": "  ⚠️  CXV_BASE_PATH \"{value}\" musi zaczynać się od \"/\" — zignorowano. Przykład: \"/proxy/\"",
+    "ru": "  ⚠️  CXV_BASE_PATH \"{value}\" должен начинаться с \"/\" — проигнорировано. Пример: \"/proxy/\"",
+    "ar": "  ⚠️  يجب أن يبدأ CXV_BASE_PATH \"{value}\" بـ \"/\" — تم التجاهل. مثال: \"/proxy/\"",
+    "no": "  ⚠️  CXV_BASE_PATH \"{value}\" må starte med \"/\" — ignorert. Eksempel: \"/proxy/\"",
+    "pt-BR": "  ⚠️  CXV_BASE_PATH \"{value}\" deve começar com \"/\" — ignorado. Exemplo: \"/proxy/\"",
+    "th": "  ⚠️  CXV_BASE_PATH \"{value}\" ต้องขึ้นต้นด้วย \"/\" — ถูกละเว้น ตัวอย่าง: \"/proxy/\"",
+    "tr": "  ⚠️  CXV_BASE_PATH \"{value}\" \"/\" ile başlamalıdır — yok sayıldı. Örnek: \"/proxy/\"",
+    "uk": "  ⚠️  CXV_BASE_PATH \"{value}\" має починатися з \"/\" — проігноровано. Приклад: \"/proxy/\""
+  },
+  "baseUrl.invalid": {
+    "zh": "  ⚠️  CXV_BASE_URL \"{value}\" 无法解析或使用了不支持的 scheme（支持 http(s)://、ws(s)://、host/path 或 /path 写法），已忽略并回退到 CXV_BASE_PATH。",
+    "en": "  ⚠️  CXV_BASE_URL \"{value}\" is invalid or uses an unsupported scheme (use http(s)://, ws(s)://, host/path, or /path) — ignored; falling back to CXV_BASE_PATH.",
+    "zh-TW": "  ⚠️  CXV_BASE_URL \"{value}\" 無法解析或使用了不支援的 scheme（支援 http(s)://、ws(s)://、host/path 或 /path 寫法），已忽略並回退到 CXV_BASE_PATH。",
+    "ko": "  ⚠️  CXV_BASE_URL \"{value}\"을(를) 해석할 수 없거나 지원하지 않는 scheme입니다(http(s)://, ws(s)://, host/path 또는 /path 형식 사용) — 무시하고 CXV_BASE_PATH로 되돌립니다.",
+    "ja": "  ⚠️  CXV_BASE_URL \"{value}\" は解析できないか、未対応の scheme です（http(s)://、ws(s)://、host/path、/path 形式を使用）— 無視し、CXV_BASE_PATH にフォールバックします。",
+    "de": "  ⚠️  CXV_BASE_URL \"{value}\" ist ungültig oder verwendet ein nicht unterstütztes Schema (http(s)://, ws(s)://, host/path oder /path verwenden) — ignoriert; Rückfall auf CXV_BASE_PATH.",
+    "es": "  ⚠️  CXV_BASE_URL \"{value}\" no es válida o usa un esquema no admitido (use http(s)://, ws(s)://, host/path o /path) — ignorada; se recurre a CXV_BASE_PATH.",
+    "fr": "  ⚠️  CXV_BASE_URL « {value} » est invalide ou utilise un schéma non pris en charge (utilisez http(s)://, ws(s)://, host/path ou /path) — ignorée ; retour à CXV_BASE_PATH.",
+    "it": "  ⚠️  CXV_BASE_URL \"{value}\" non è valida o usa uno schema non supportato (usa http(s)://, ws(s)://, host/path o /path) — ignorata; ripiego su CXV_BASE_PATH.",
+    "da": "  ⚠️  CXV_BASE_URL \"{value}\" er ugyldig eller bruger et ikke-understøttet skema (brug http(s)://, ws(s)://, host/path eller /path) — ignoreret; falder tilbage på CXV_BASE_PATH.",
+    "pl": "  ⚠️  CXV_BASE_URL \"{value}\" jest nieprawidłowy lub używa nieobsługiwanego schematu (użyj http(s)://, ws(s)://, host/path lub /path) — zignorowano; powrót do CXV_BASE_PATH.",
+    "ru": "  ⚠️  CXV_BASE_URL \"{value}\" недействителен или использует неподдерживаемую схему (используйте http(s)://, ws(s)://, host/path или /path) — проигнорировано; возврат к CXV_BASE_PATH.",
+    "ar": "  ⚠️  CXV_BASE_URL \"{value}\" غير صالح أو يستخدم مخططًا غير مدعوم (استخدم http(s):// أو ws(s):// أو host/path أو /path) — تم التجاهل؛ الرجوع إلى CXV_BASE_PATH.",
+    "no": "  ⚠️  CXV_BASE_URL \"{value}\" er ugyldig eller bruker et ikke-støttet skjema (bruk http(s)://, ws(s)://, host/path eller /path) — ignorert; faller tilbake til CXV_BASE_PATH.",
+    "pt-BR": "  ⚠️  CXV_BASE_URL \"{value}\" é inválida ou usa um esquema não suportado (use http(s)://, ws(s)://, host/path ou /path) — ignorada; revertendo para CXV_BASE_PATH.",
+    "th": "  ⚠️  CXV_BASE_URL \"{value}\" ไม่ถูกต้องหรือใช้ scheme ที่ไม่รองรับ (ใช้ http(s)://, ws(s)://, host/path หรือ /path) — ถูกละเว้น กลับไปใช้ CXV_BASE_PATH",
+    "tr": "  ⚠️  CXV_BASE_URL \"{value}\" geçersiz veya desteklenmeyen bir şema kullanıyor (http(s)://, ws(s)://, host/path veya /path kullanın) — yoksayıldı; CXV_BASE_PATH değerine geri dönülüyor.",
+    "uk": "  ⚠️  CXV_BASE_URL \"{value}\" недійсний або використовує непідтримувану схему (використовуйте http(s)://, ws(s)://, host/path або /path) — проігноровано; повернення до CXV_BASE_PATH."
+  },
+  "baseUrl.queryFragmentIgnored": {
+    "zh": "  ⚠️  CXV_BASE_URL \"{value}\" 中的查询串/锚点已忽略（只使用 scheme、host 与 path）。",
+    "en": "  ⚠️  CXV_BASE_URL \"{value}\": query string / fragment ignored (only scheme, host, and path are used).",
+    "zh-TW": "  ⚠️  CXV_BASE_URL \"{value}\" 中的查詢串/錨點已忽略（只使用 scheme、host 與 path）。",
+    "ko": "  ⚠️  CXV_BASE_URL \"{value}\": 쿼리 문자열/프래그먼트는 무시됩니다(scheme, host, path만 사용).",
+    "ja": "  ⚠️  CXV_BASE_URL \"{value}\": クエリ文字列/フラグメントは無視されます（scheme、host、path のみ使用）。",
+    "de": "  ⚠️  CXV_BASE_URL \"{value}\": Query-String/Fragment ignoriert (nur Schema, Host und Pfad werden verwendet).",
+    "es": "  ⚠️  CXV_BASE_URL \"{value}\": cadena de consulta/fragmento ignorados (solo se usan esquema, host y ruta).",
+    "fr": "  ⚠️  CXV_BASE_URL « {value} » : chaîne de requête/fragment ignorés (seuls le schéma, l'hôte et le chemin sont utilisés).",
+    "it": "  ⚠️  CXV_BASE_URL \"{value}\": query string/frammento ignorati (vengono usati solo schema, host e percorso).",
+    "da": "  ⚠️  CXV_BASE_URL \"{value}\": forespørgselsstreng/fragment ignoreret (kun skema, vært og sti bruges).",
+    "pl": "  ⚠️  CXV_BASE_URL \"{value}\": ciąg zapytania/fragment zignorowane (używany jest tylko schemat, host i ścieżka).",
+    "ru": "  ⚠️  CXV_BASE_URL \"{value}\": строка запроса/фрагмент проигнорированы (используются только схема, хост и путь).",
+    "ar": "  ⚠️  CXV_BASE_URL \"{value}\": تم تجاهل سلسلة الاستعلام/الجزء (يُستخدم فقط المخطط والمضيف والمسار).",
+    "no": "  ⚠️  CXV_BASE_URL \"{value}\": spørrestreng/fragment ignorert (kun skjema, vert og sti brukes).",
+    "pt-BR": "  ⚠️  CXV_BASE_URL \"{value}\": query string/fragmento ignorados (apenas esquema, host e caminho são usados).",
+    "th": "  ⚠️  CXV_BASE_URL \"{value}\": ละเว้น query string/fragment (ใช้เฉพาะ scheme, host และ path)",
+    "tr": "  ⚠️  CXV_BASE_URL \"{value}\": sorgu dizesi/parça yoksayıldı (yalnızca şema, ana bilgisayar ve yol kullanılır).",
+    "uk": "  ⚠️  CXV_BASE_URL \"{value}\": рядок запиту/фрагмент проігноровано (використовуються лише схема, хост і шлях)."
+  },
+  "baseUrl.overridesBasePath": {
+    "zh": "  ℹ️  CXV_BASE_URL 与 CXV_BASE_PATH 同时设置，CXV_BASE_URL 优先（CXV_BASE_PATH 被忽略）。",
+    "en": "  ℹ️  Both CXV_BASE_URL and CXV_BASE_PATH are set; CXV_BASE_URL takes precedence (CXV_BASE_PATH is ignored).",
+    "zh-TW": "  ℹ️  CXV_BASE_URL 與 CXV_BASE_PATH 同時設定，CXV_BASE_URL 優先（CXV_BASE_PATH 被忽略）。",
+    "ko": "  ℹ️  CXV_BASE_URL과 CXV_BASE_PATH가 모두 설정되어 있습니다. CXV_BASE_URL이 우선합니다(CXV_BASE_PATH는 무시됨).",
+    "ja": "  ℹ️  CXV_BASE_URL と CXV_BASE_PATH の両方が設定されています。CXV_BASE_URL が優先されます（CXV_BASE_PATH は無視されます）。",
+    "de": "  ℹ️  CXV_BASE_URL und CXV_BASE_PATH sind beide gesetzt; CXV_BASE_URL hat Vorrang (CXV_BASE_PATH wird ignoriert).",
+    "es": "  ℹ️  CXV_BASE_URL y CXV_BASE_PATH están definidas; CXV_BASE_URL tiene prioridad (CXV_BASE_PATH se ignora).",
+    "fr": "  ℹ️  CXV_BASE_URL et CXV_BASE_PATH sont toutes deux définies ; CXV_BASE_URL est prioritaire (CXV_BASE_PATH est ignorée).",
+    "it": "  ℹ️  CXV_BASE_URL e CXV_BASE_PATH sono entrambe impostate; CXV_BASE_URL ha la precedenza (CXV_BASE_PATH viene ignorata).",
+    "da": "  ℹ️  Både CXV_BASE_URL og CXV_BASE_PATH er sat; CXV_BASE_URL har forrang (CXV_BASE_PATH ignoreres).",
+    "pl": "  ℹ️  Ustawiono zarówno CXV_BASE_URL, jak i CXV_BASE_PATH; CXV_BASE_URL ma pierwszeństwo (CXV_BASE_PATH jest ignorowana).",
+    "ru": "  ℹ️  Заданы и CXV_BASE_URL, и CXV_BASE_PATH; приоритет у CXV_BASE_URL (CXV_BASE_PATH игнорируется).",
+    "ar": "  ℹ️  تم تعيين كل من CXV_BASE_URL و CXV_BASE_PATH؛ الأولوية لـ CXV_BASE_URL (يتم تجاهل CXV_BASE_PATH).",
+    "no": "  ℹ️  Både CXV_BASE_URL og CXV_BASE_PATH er satt; CXV_BASE_URL har forrang (CXV_BASE_PATH ignoreres).",
+    "pt-BR": "  ℹ️  CXV_BASE_URL e CXV_BASE_PATH estão definidas; CXV_BASE_URL tem precedência (CXV_BASE_PATH é ignorada).",
+    "th": "  ℹ️  ตั้งค่าทั้ง CXV_BASE_URL และ CXV_BASE_PATH; CXV_BASE_URL มีความสำคัญกว่า (CXV_BASE_PATH จะถูกละเว้น)",
+    "tr": "  ℹ️  Hem CXV_BASE_URL hem CXV_BASE_PATH ayarlı; CXV_BASE_URL önceliklidir (CXV_BASE_PATH yoksayılır).",
+    "uk": "  ℹ️  Задано і CXV_BASE_URL, і CXV_BASE_PATH; пріоритет має CXV_BASE_URL (CXV_BASE_PATH ігнорується)."
+  },
+  "server.startedExternal": {
+    "zh": "  ➜ External: {url}",
+    "en": "  ➜ External: {url}",
+    "zh-TW": "  ➜ External: {url}",
+    "ko": "  ➜ External: {url}",
+    "ja": "  ➜ External: {url}",
+    "de": "  ➜ External: {url}",
+    "es": "  ➜ External: {url}",
+    "fr": "  ➜ External: {url}",
+    "it": "  ➜ External: {url}",
+    "da": "  ➜ External: {url}",
+    "pl": "  ➜ External: {url}",
+    "ru": "  ➜ External: {url}",
+    "ar": "  ➜ External: {url}",
+    "no": "  ➜ External: {url}",
+    "pt-BR": "  ➜ External: {url}",
+    "th": "  ➜ External: {url}",
+    "tr": "  ➜ External: {url}",
+    "uk": "  ➜ External: {url}"
+  },
   "cli.alreadyWorking": {
     "zh": "CX Viewer 已经能工作了",
     "en": "CX Viewer is already working",
@@ -388,44 +488,44 @@ const i18nData = {
     "uk": "\nCX Viewer запущено:"
   },
   "server.startedLocal": {
-    "zh": "  ➜ Local:   {protocol}://127.0.0.1:{port}",
-    "en": "  ➜ Local:   {protocol}://127.0.0.1:{port}",
-    "zh-TW": "  ➜ Local:   {protocol}://127.0.0.1:{port}",
-    "ko": "  ➜ Local:   {protocol}://127.0.0.1:{port}",
-    "ja": "  ➜ Local:   {protocol}://127.0.0.1:{port}",
-    "de": "  ➜ Local:   {protocol}://127.0.0.1:{port}",
-    "es": "  ➜ Local:   {protocol}://127.0.0.1:{port}",
-    "fr": "  ➜ Local:   {protocol}://127.0.0.1:{port}",
-    "it": "  ➜ Local:   {protocol}://127.0.0.1:{port}",
-    "da": "  ➜ Local:   {protocol}://127.0.0.1:{port}",
-    "pl": "  ➜ Local:   {protocol}://127.0.0.1:{port}",
-    "ru": "  ➜ Local:   {protocol}://127.0.0.1:{port}",
-    "ar": "  ➜ Local:   {protocol}://127.0.0.1:{port}",
-    "no": "  ➜ Local:   {protocol}://127.0.0.1:{port}",
-    "pt-BR": "  ➜ Local:   {protocol}://127.0.0.1:{port}",
-    "th": "  ➜ Local:   {protocol}://127.0.0.1:{port}",
-    "tr": "  ➜ Local:   {protocol}://127.0.0.1:{port}",
-    "uk": "  ➜ Local:   {protocol}://127.0.0.1:{port}"
+    "zh": "  ➜ Local:   {protocol}://127.0.0.1:{port}{basePath}",
+    "en": "  ➜ Local:   {protocol}://127.0.0.1:{port}{basePath}",
+    "zh-TW": "  ➜ Local:   {protocol}://127.0.0.1:{port}{basePath}",
+    "ko": "  ➜ Local:   {protocol}://127.0.0.1:{port}{basePath}",
+    "ja": "  ➜ Local:   {protocol}://127.0.0.1:{port}{basePath}",
+    "de": "  ➜ Local:   {protocol}://127.0.0.1:{port}{basePath}",
+    "es": "  ➜ Local:   {protocol}://127.0.0.1:{port}{basePath}",
+    "fr": "  ➜ Local:   {protocol}://127.0.0.1:{port}{basePath}",
+    "it": "  ➜ Local:   {protocol}://127.0.0.1:{port}{basePath}",
+    "da": "  ➜ Local:   {protocol}://127.0.0.1:{port}{basePath}",
+    "pl": "  ➜ Local:   {protocol}://127.0.0.1:{port}{basePath}",
+    "ru": "  ➜ Local:   {protocol}://127.0.0.1:{port}{basePath}",
+    "ar": "  ➜ Local:   {protocol}://127.0.0.1:{port}{basePath}",
+    "no": "  ➜ Local:   {protocol}://127.0.0.1:{port}{basePath}",
+    "pt-BR": "  ➜ Local:   {protocol}://127.0.0.1:{port}{basePath}",
+    "th": "  ➜ Local:   {protocol}://127.0.0.1:{port}{basePath}",
+    "tr": "  ➜ Local:   {protocol}://127.0.0.1:{port}{basePath}",
+    "uk": "  ➜ Local:   {protocol}://127.0.0.1:{port}{basePath}"
   },
   "server.startedNetwork": {
-    "zh": "  ➜ Network: {protocol}://{ip}:{port}?token={token}",
-    "en": "  ➜ Network: {protocol}://{ip}:{port}?token={token}",
-    "zh-TW": "  ➜ Network: {protocol}://{ip}:{port}?token={token}",
-    "ko": "  ➜ Network: {protocol}://{ip}:{port}?token={token}",
-    "ja": "  ➜ Network: {protocol}://{ip}:{port}?token={token}",
-    "de": "  ➜ Network: {protocol}://{ip}:{port}?token={token}",
-    "es": "  ➜ Network: {protocol}://{ip}:{port}?token={token}",
-    "fr": "  ➜ Network: {protocol}://{ip}:{port}?token={token}",
-    "it": "  ➜ Network: {protocol}://{ip}:{port}?token={token}",
-    "da": "  ➜ Network: {protocol}://{ip}:{port}?token={token}",
-    "pl": "  ➜ Network: {protocol}://{ip}:{port}?token={token}",
-    "ru": "  ➜ Network: {protocol}://{ip}:{port}?token={token}",
-    "ar": "  ➜ Network: {protocol}://{ip}:{port}?token={token}",
-    "no": "  ➜ Network: {protocol}://{ip}:{port}?token={token}",
-    "pt-BR": "  ➜ Network: {protocol}://{ip}:{port}?token={token}",
-    "th": "  ➜ Network: {protocol}://{ip}:{port}?token={token}",
-    "tr": "  ➜ Network: {protocol}://{ip}:{port}?token={token}",
-    "uk": "  ➜ Network: {protocol}://{ip}:{port}?token={token}"
+    "zh": "  ➜ Network: {protocol}://{ip}:{port}{basePath}?token={token}",
+    "en": "  ➜ Network: {protocol}://{ip}:{port}{basePath}?token={token}",
+    "zh-TW": "  ➜ Network: {protocol}://{ip}:{port}{basePath}?token={token}",
+    "ko": "  ➜ Network: {protocol}://{ip}:{port}{basePath}?token={token}",
+    "ja": "  ➜ Network: {protocol}://{ip}:{port}{basePath}?token={token}",
+    "de": "  ➜ Network: {protocol}://{ip}:{port}{basePath}?token={token}",
+    "es": "  ➜ Network: {protocol}://{ip}:{port}{basePath}?token={token}",
+    "fr": "  ➜ Network: {protocol}://{ip}:{port}{basePath}?token={token}",
+    "it": "  ➜ Network: {protocol}://{ip}:{port}{basePath}?token={token}",
+    "da": "  ➜ Network: {protocol}://{ip}:{port}{basePath}?token={token}",
+    "pl": "  ➜ Network: {protocol}://{ip}:{port}{basePath}?token={token}",
+    "ru": "  ➜ Network: {protocol}://{ip}:{port}{basePath}?token={token}",
+    "ar": "  ➜ Network: {protocol}://{ip}:{port}{basePath}?token={token}",
+    "no": "  ➜ Network: {protocol}://{ip}:{port}{basePath}?token={token}",
+    "pt-BR": "  ➜ Network: {protocol}://{ip}:{port}{basePath}?token={token}",
+    "th": "  ➜ Network: {protocol}://{ip}:{port}{basePath}?token={token}",
+    "tr": "  ➜ Network: {protocol}://{ip}:{port}{basePath}?token={token}",
+    "uk": "  ➜ Network: {protocol}://{ip}:{port}{basePath}?token={token}"
   },
   "update.updating": {
     "zh": "正在更新到 v{version}...",
@@ -1668,13 +1768,9 @@ export function getLang() {
 }
 
 export function t(key, params) {
-  let text = locales[currentLang]?.[key] || locales['en'][key] || key;
-  if (params) {
-    for (const [k, v] of Object.entries(params)) {
-      text = text.replaceAll(`{${k}}`, v);
-    }
-  }
-  return text;
+  const text = locales[currentLang]?.[key] || locales['en'][key] || key;
+  return params ? text.replace(/\{([A-Za-z0-9_]+)\}/g, (match, key) =>
+    Object.prototype.hasOwnProperty.call(params, key) ? String(params[key]) : match) : text;
 }
 
 // 自动检测并设置语言

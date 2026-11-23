@@ -1,0 +1,78 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "branch": "alignment/b9-scheduling-authorization",
+  "base": "cb40a553061970abd878a87f1e1c38c07a4fe0a3",
+  "verifiedImplementationHead": "232350bd411f18e006c5da1f535c640a1dd54613",
+  "lastProductionCodeCommit": "96fe83ad3f23fbba462dc5d7c92b22884e6038e9",
+  "implementationAndVerificationCommits": 28,
+  "candidatesAuditedWithinB9": 14,
+  "tests": {
+    "passed": 2443,
+    "total": 2443,
+    "skipped": 0
+  },
+  "build": "passed",
+  "packFiles": 747,
+  "installedTests": "859/859",
+  "allPackBytesMatch": true,
+  "webFilesBytesMatch": 211,
+  "gui": {
+    "engines": [
+      "Chromium159",
+      "WebKit27.2"
+    ],
+    "configurations": 6,
+    "screenshots": 16,
+    "pageErrors": 0
+  },
+  "nativeSdk": {
+    "version": "0.169.0",
+    "loopbackResponses": 12,
+    "independentTransport": "appserver",
+    "nativeApprovalPolicy": "on-request",
+    "residentTransportUnchanged": true
+  },
+  "nativePty": {
+    "mainPromptRequests": 2,
+    "scheduledMainPromptRequests": 1,
+    "nativeTitleRequests": 2,
+    "sessionPreserved": true
+  },
+  "normalFixtureShutdown": true,
+  "userInstancesRestarted": false,
+  "npmPublished": false,
+  "prCreated": true,
+  "merged": false,
+  "B10Started": false,
+  "limitations": [
+    "physical sleep/timezone changes",
+    "real devices/touch/IME/audio/password managers",
+    "external models and long waits",
+    "LAN/TLS",
+    "other OS and minimum Node",
+    "historical intermittent IM concurrency",
+    "30-minute independent-run limit retained"
+  ],
+  "delivery": {
+    "pr": "https://github.com/weiesky/cx-viewer/pull/11",
+    "prNumber": 11,
+    "state": "OPEN",
+    "base": "main",
+    "baseCommit": "cb40a553061970abd878a87f1e1c38c07a4fe0a3",
+    "consolidatedHead": "0a162b4e323b52f52bf665d5ebfcc179599168ac",
+    "originalHead": "8dd6ebe2f399e74b735b185f3f6c146fbbf41281",
+    "originalCommitCount": 29,
+    "originalTree": "77d5d480b9368998f7d00597fed5e34a3a3e8c4d",
+    "consolidatedTree": "77d5d480b9368998f7d00597fed5e34a3a3e8c4d",
+    "remoteTreeAtCreation": "77d5d480b9368998f7d00597fed5e34a3a3e8c4d",
+    "remoteFilesReviewedAtCreation": 120,
+    "allRemoteBlobIdsMatchAtCreation": true,
+    "statusCheckRollupAtCreation": [],
+    "ciConclusion": "No PR checks configured/reported; no branch Actions runs. Existing local validation applies to the identical tree.",
+    "backupBranch": "backup/b9-raw-20261123",
+    "bundle": "/Users/sky/.codex/backups/cx-viewer/B9-20261123/raw-before-consolidation.bundle",
+    "bundleVerified": true,
+    "prCreatedBeforeProgressUpdate": true,
+    "merged": false
+  }
+}

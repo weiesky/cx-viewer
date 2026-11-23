@@ -52,6 +52,7 @@ describe('single-port remote password access', { concurrency: false }, () => {
 
   before(async () => {
     mod = await import('../server.js');
+    process.env.CXV_ALLOWED_HOSTS = ['localhost', '127.0.0.1', '::1', '[::1]', 'viewer.example', ...mod.getAllLocalIps()].join(',');
     await mod.startViewer();
     port = mod.getPort();
     lanIp = mod.getAllLocalIps()[0];
@@ -69,6 +70,23 @@ describe('single-port remote password access', { concurrency: false }, () => {
     ws.once('open', () => done(true));
     ws.once('error', () => done(false));
     ws.once('unexpected-response', (_req, res) => { res.resume(); done(false); });
+  });
+
+  it('guards real update routes and exposes process identity without invoking installers', async () => {
+    const info = (await call('127.0.0.1', port, '/api/version-info')).json();
+    assert.equal(info.canRestart, false); assert.equal(typeof info.processId, 'string');
+    for (const path of ['/api/update/status', '/api/update/check', '/api/update/start', '/api/update/restart']) {
+      const method = path.endsWith('status') ? 'GET' : 'POST';
+      assert.equal((await call('127.0.0.1', port, path, { method, headers: { 'sec-fetch-site': 'cross-site' } })).status, 403);
+      assert.equal((await call('127.0.0.1', port, path, { method, headers: { Host: 'viewer.example' } })).status, 403);
+    }
+    assert.equal((await call('127.0.0.1', port, '/api/update/status')).json().status, 'idle');
+    assert.equal((await call('127.0.0.1', port, '/api/update/start', { method: 'POST' })).status, 409);
+    assert.equal((await call('127.0.0.1', port, '/api/update/restart', { method: 'POST' })).status, 409);
+    mod.setRestartHandler(() => { throw new Error('must not invoke without staging'); });
+    assert.equal((await call('127.0.0.1', port, '/api/version-info')).json().canRestart, true);
+    assert.equal((await call('127.0.0.1', port, '/api/update/restart', { method: 'POST' })).status, 409);
+    mod.setRestartHandler(null);
   });
 
   it('keeps one HTTP port but refuses remote password login without TLS', async t => {

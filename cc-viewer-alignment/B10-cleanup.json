@@ -1,0 +1,29 @@
+{
+  "ownFixtures": [
+    {
+      "evidence": "B10-gui.json",
+      "pid": 59555,
+      "originalFixtureStillRunning": false
+    },
+    {
+      "evidence": "B10-proxy-gui.json",
+      "pid": 56243,
+      "originalFixtureStillRunning": false
+    },
+    {
+      "evidence": "B10-update-gui.json",
+      "pid": 85644,
+      "originalFixtureStillRunning": false
+    }
+  ],
+  "port21040Listening": false,
+  "user7008ReadOnly": {
+    "pid": 97674,
+    "sdkMode": false,
+    "ptyMode": true,
+    "ptyQueueAvailable": true,
+    "version": "1.1.20",
+    "newUpdateVersionIdentityPresent": false
+  },
+  "userInstancesStoppedOrRestartedByAgent": false
+}

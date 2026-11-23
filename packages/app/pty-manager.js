@@ -366,6 +366,7 @@ export function createPtySession() {
     }
 
     const env = { ...launchEnv };
+    delete env.CXV_ELECTRON_TAB;
     if (!env.HTTPS_PROXY && !env.HTTP_PROXY && !env.https_proxy && !env.http_proxy) {
       Object.assign(env, extractShellProxyEnv());
     }

@@ -69,6 +69,26 @@ export const INJECT_IMPORT = "import '../../cx-viewer/interceptor.js';";
 
 // ============ 导出函数 ============
 
+export function buildNpmRootCommand(platform = process.platform, env = process.env) {
+  if (platform === 'win32') {
+    return {
+      cmd: env.COMSPEC || 'cmd.exe',
+      args: ['/d', '/s', '/c', 'npm root -g'],
+      // cmd.exe must receive `npm root -g` as one token; Node's default quoting
+      // would wrap it in quotes that cmd then fails to parse.
+      windowsVerbatimArguments: true,
+    };
+  }
+  return { cmd: 'npm', args: ['root', '-g'], windowsVerbatimArguments: false };
+}
+
+// npm may prepend warnings (funding/update notices) to stdout; the resolved path
+// is the last non-empty line. Exported for unit tests.
+export function parseNpmRootOutput(raw) {
+  const lines = String(raw ?? '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  return lines.length ? lines[lines.length - 1] : null;
+}
+
 export function getGlobalNodeModulesDir() {
   try {
     return execSync('npm root -g', { encoding: 'utf-8' }).trim();

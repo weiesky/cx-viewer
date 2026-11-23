@@ -141,6 +141,7 @@ const portProbe=createServer();
 await new Promise(r=>portProbe.listen(0,'127.0.0.1',r));
 const port=portProbe.address().port;await new Promise(r=>portProbe.close(r));
 process.env.CXV_START_PORT=String(port);process.env.CXV_MAX_PORT=String(port);
+process.env.CXV_ALLOWED_HOSTS='127.0.0.1,localhost,::1,[::1],viewer.invalid';
 const server=await import('./server.js');
 const interceptor=await import('./interceptor.js');
 const call=(path,body,headers={})=>new Promise((resolve,reject)=>{

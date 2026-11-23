@@ -1,22 +1,47 @@
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, realpathSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
-import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
-import { t } from '../i18n.js';
-import { readCodexGlobalConfig } from './codex-config.js';
+const PACKAGE_JSON = fileURLToPath(new URL('../package.json', import.meta.url));
+import { getCodexConfigDir, readCodexGlobalConfig } from './codex-config.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const CHECK_INTERVAL = 4 * 60 * 60 * 1000; // 4 hours
-const CACHE_DIR = join(homedir(), '.codex', 'cx-viewer');
+export function detectHomebrewInstall(dirOverride, realpathImpl = realpathSync) {
+  const dir = dirOverride || __dirname;
+  let real;
+  try { real = realpathImpl(dir); } catch { real = dir; }
+  const normalized = real.replace(/\\/g, '/');
+  const idx = normalized.indexOf('/Cellar/cx-viewer/');
+  if (idx === -1) return null;
+  const afterCellar = normalized.slice(idx + '/Cellar/cx-viewer/'.length);
+  if (!/^\d[\w.\-+]*\//.test(afterCellar)) return null;
+  return normalized.slice(0, idx);
+}
+
+export function detectPnpmGlobalInstall(dirOverride, realpathImpl = realpathSync) {
+  const dir = dirOverride || __dirname;
+  let real;
+  try { real = realpathImpl(dir); } catch { real = dir; }
+  const normalized = real.replace(/\\/g, '/');
+  const marker = '/.pnpm/cx-viewer@';
+  const idx = normalized.indexOf(marker);
+  if (idx === -1) return null;
+  if (!/^\d[\w.\-+]*\//.test(normalized.slice(idx + marker.length))) return null;
+  const globalIdx = normalized.indexOf('/global/');
+  if (globalIdx !== -1) return normalized.slice(0, globalIdx);
+  const preMarker = normalized.slice(0, idx);
+  return preMarker.endsWith('/node_modules') ? preMarker.slice(0, -'/node_modules'.length) : preMarker;
+}
+
+const CHECK_INTERVAL = 4 * 60 * 60 * 1000;
+const CACHE_DIR = join(getCodexConfigDir(), 'cx-viewer');
 const CACHE_FILE = join(CACHE_DIR, 'update-check.json');
+export const STABLE_VERSION_RE = /^\d+\.\d+\.\d+$/;
 
-function getCurrentVersion() {
-  const pkg = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8'));
-  return pkg.version;
+export function getCurrentVersion() {
+  return JSON.parse(readFileSync(PACKAGE_JSON, 'utf-8')).version;
 }
 
 function parseVersion(ver) {
@@ -24,7 +49,8 @@ function parseVersion(ver) {
   return { major, minor, patch };
 }
 
-function isNewer(remote, current) {
+export function isNewer(remote, current) {
+  if (!STABLE_VERSION_RE.test(remote) || !STABLE_VERSION_RE.test(current)) return false;
   const r = parseVersion(remote);
   const c = parseVersion(current);
   if (r.major !== c.major) return r.major > c.major;
@@ -32,7 +58,6 @@ function isNewer(remote, current) {
   return r.patch > c.patch;
 }
 
-// 读取 Codex 全局配置，判断是否允许自更新
 function isAutoUpdateEnabled() {
   // 环境变量禁用
   if (process.env.CODEX_DISABLE_NONESSENTIAL_TRAFFIC) return false;
@@ -46,11 +71,8 @@ function isAutoUpdateEnabled() {
 function shouldCheck() {
   try {
     if (!existsSync(CACHE_FILE)) return true;
-    const data = JSON.parse(readFileSync(CACHE_FILE, 'utf-8'));
-    return Date.now() - data.lastCheck > CHECK_INTERVAL;
-  } catch {
-    return true;
-  }
+    return Date.now() - JSON.parse(readFileSync(CACHE_FILE, 'utf-8')).lastCheck > CHECK_INTERVAL;
+  } catch { return true; }
 }
 
 function saveCheckTime() {
@@ -60,58 +82,45 @@ function saveCheckTime() {
   } catch { }
 }
 
+export function isAnyCcvBusy({ currentPid, busy, portRange, lsofImpl } = {}) {
+  if (busy) return true;
+  const [start, end] = Array.isArray(portRange) && portRange.length === 2 ? portRange : [7008, 7099];
+  const pid = typeof currentPid === 'number' ? currentPid : process.pid;
+  const runLsof = lsofImpl || ((cmd) => execSync(cmd, { timeout: 2000, encoding: 'utf-8', windowsHide: true }));
+  try {
+    const out = String(runLsof(`lsof -iTCP:${start}-${end} -sTCP:LISTEN -P -n -Fp`));
+    return out.replace(/\r/g, '').split('\n').filter(l => /^p\d+$/.test(l))
+      .map(l => Number(l.slice(1))).filter(n => n > 0 && n !== pid).length > 0;
+  } catch { return false; }
+}
+
+// A check never installs. Only an explicit, user-confirmed update job may do so.
 export async function checkAndUpdate(options = {}) {
   const fetchImpl = options.fetchImpl || fetch;
-  const execImpl = options.execImpl || execSync;
-  const dryRun = options.dryRun === true;
   const currentVersion = getCurrentVersion();
-
-  // 跟随 Codex 全局配置
-  if (!isAutoUpdateEnabled()) {
-    return { status: 'disabled', currentVersion, remoteVersion: null };
+  if (!isAutoUpdateEnabled() && !options.allowDisabled) return { status: 'disabled', currentVersion, remoteVersion: null };
+  if (!options.force && !shouldCheck()) return { status: 'skipped', currentVersion, remoteVersion: null };
+  if ((process.env.NODE_TEST_CONTEXT || process.env.NODE_ENV === 'test') && !options.fetchImpl) {
+    return { status: 'skipped_test_context', currentVersion, remoteVersion: null };
   }
-
-  if (!shouldCheck()) {
-    return { status: 'skipped', currentVersion, remoteVersion: null };
-  }
-
   try {
-    const res = await fetchImpl('https://registry.npmjs.org/cx-viewer');
+    const res = await fetchImpl('https://registry.npmjs.org/cx-viewer/latest', { signal: AbortSignal.timeout(15000) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    const remoteVersion = data['dist-tags']?.latest;
-
+    const remoteVersion = data.version || data['dist-tags']?.latest;
+    if (!STABLE_VERSION_RE.test(remoteVersion || '')) return { status: 'error', currentVersion, remoteVersion: null, error: 'No version found' };
     saveCheckTime();
-
-    if (!remoteVersion) {
-      return { status: 'error', currentVersion, remoteVersion: null, error: 'No version found' };
+    if (!isNewer(remoteVersion, currentVersion)) return { status: 'latest', currentVersion, remoteVersion };
+    const brewPrefix = options.brewPrefix !== undefined ? options.brewPrefix : detectHomebrewInstall();
+    const pnpmRoot = options.pnpmRoot !== undefined ? options.pnpmRoot : detectPnpmGlobalInstall();
+    if (process.versions.electron) return { status: 'electron_managed', currentVersion, remoteVersion };
+    if (brewPrefix) return { status: 'brew_managed', currentVersion, remoteVersion, brewPrefix };
+    if (pnpmRoot) return { status: 'pnpm_managed', currentVersion, remoteVersion, pnpmRoot };
+    if (!options.interactive && parseVersion(remoteVersion).major !== parseVersion(currentVersion).major) return { status: 'major_available', currentVersion, remoteVersion };
+    if (!options.interactive && (options.busy === true || isAnyCcvBusy({ currentPid: process.pid, busy: false, portRange: options.portRange, lsofImpl: options.lsofImpl }))) {
+      return { status: 'deferred_busy', currentVersion, remoteVersion };
     }
-
-    if (!isNewer(remoteVersion, currentVersion)) {
-      return { status: 'latest', currentVersion, remoteVersion };
-    }
-
-    const remote = parseVersion(remoteVersion);
-    const current = parseVersion(currentVersion);
-
-    // 跨大版本：仅提示
-    if (remote.major !== current.major) {
-      console.error(`[CX Viewer] ${t('update.majorAvailable', { version: remoteVersion })}`);
-      return { status: 'major_available', currentVersion, remoteVersion };
-    }
-
-    // 同大版本：自动更新
-    console.error(`[CX Viewer] ${t('update.updating', { version: remoteVersion })}`);
-    try {
-      if (!dryRun) {
-        execImpl(`npm install -g cx-viewer@${remoteVersion}`, { stdio: 'pipe', timeout: 60000 });
-      }
-      console.error(`[CX Viewer] ${t('update.completed', { version: remoteVersion })}`);
-      return { status: 'updated', currentVersion, remoteVersion };
-    } catch (err) {
-      console.error(`[CX Viewer] ${t('update.failed', { error: err.message })}`);
-      return { status: 'error', currentVersion, remoteVersion, error: err.message };
-    }
+    return { status: 'available', currentVersion, remoteVersion, release: data };
   } catch (err) {
     saveCheckTime();
     return { status: 'error', currentVersion, remoteVersion: null, error: err.message };

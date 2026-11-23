@@ -163,6 +163,14 @@ Once configured, use the `codex` command as normal. Visit `http://localhost:7008
 
 ## Features
 
+### Scheduled tasks
+
+Open **Scheduled tasks** from the (+) menu in the chat input bar or terminal toolbar. Choose hourly, daily, weekdays, weekly, a custom five-field cron, or a one-time date. A task either **injects its prompt into its exact live workspace session** (queued while busy) or **starts an isolated headless session** in SDK mode. The prompt uses the UltraPlan panel, with an empty template by default; expert templates and uploaded attachments are assembled when the task runs. Isolated runs use Codex's `on-request` approval policy and `workspace-write` sandbox by default.
+
+Definitions and scheduling state are stored in the `scheduledTasks` key of `preferences.json`; the last 20 runs per task are stored separately in `scheduled-task-runs.json`. Scheduling uses the server's local timezone and per-task jitter. A ten-second timer claims runs under a cross-process file lock. After a restart or sleep, it catches up the most recent missed run within seven days, without replaying every missed occurrence.
+
+You can **Run now**, pause, resume, delete, and open an isolated run's session from its history. Dispatch is silent; completion and failure appear as notifications. Tasks require a running, launched `cxv` workspace. An unlaunched workspace manager and IM workers do not execute tasks. A missing or replaced target session is recorded as a failure rather than redirected to another workspace.
+
 
 ### Programming Mode
 
@@ -250,7 +258,7 @@ You can upload images and describe your needs. You can also paste images directl
 
 <img width="600" height="370" alt="image" src="https://github.com/user-attachments/assets/87d332ea-3e34-4957-b442-f9d070211fbf" />
 
-You can customize plugins, manage all CX-Viewer processes, and hot-switch API-key or ChatGPT OAuth sessions to third-party services. Native Responses providers are passed through; Chat Completions providers such as DeepSeek use the built-in Codex text/reasoning/function/custom-tool adapter. Official login state is preserved while third-party model traffic uses isolated credentials.
+You can customize [hook and directory service plugins](docs/plugin-services.md), mount remote React panels, deploy behind a [public reverse-proxy URL](docs/base-url.md), manage all CX-Viewer processes, and hot-switch API-key or ChatGPT OAuth sessions to third-party services. Native Responses providers are passed through; Chat Completions providers such as DeepSeek use the built-in Codex text/reasoning/function/custom-tool adapter. Official login state is preserved while third-party model traffic uses isolated credentials.
 
 ---
 
@@ -357,3 +365,7 @@ npm remains the publication tool and users can continue installing cx-viewer thr
 - `tests`: cross-package integration and public contract checks; other tests live with their owning package.
 
 Run commands from the repository root: `pnpm test`, `pnpm run build`, `pnpm run pack:dry-run`, and `pnpm run electron:build`. The root package is private. Publish the app package only; assembly copies the built web assets and Electron runtime into its existing npm layout. `cxv`, the server/interceptor exports, and LOG_DIR/profile credential ownership retain their existing public and data contracts. Changesets and further content/core extraction are separate work.
+
+### Guided npm updates
+
+The version dialog checks and downloads a verified npm release. Installation runs after you confirm **Restart and update**; the helper preserves the original working directory and arguments. Other running viewer instances block staging. Source checkouts, pnpm, Homebrew and Electron keep manual or installer-managed updates. A failed installation records diagnostics and attempts to restart the previous CLI; it does not promise filesystem rollback after a partial npm failure.

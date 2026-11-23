@@ -47,7 +47,8 @@
 | B6 | 已完成并经PR #6合并main（第7/12工作包），9f3e2ce | 1986完整/525新安装/6场26图与10轮问答；见[B6完成矩阵](./B6-completion-matrix.md)。 |
 | B7 | 已完成（第8/12工作包），51笔已整合并由PR #8合并main | 2181/2181、build/pack723、新安装634/634；B7子项/混合边界及未验项见[B7完成矩阵](./B7-completion-matrix.md)。 |
 | B8 | 已完成，第9/12工作包，PR #9合并main | 54候选按B8子项核销，见[B8完成矩阵](./B8-completion-matrix.md)。 |
-| B9–B10 | B9已准备未执行 | 14候选与剩余权限/定时全链见[B9交接](./B9-handoff.md)。 |
+| B9 | 本地完成、PR #11 OPEN未合并 | 见[B9完成矩阵](./B9-completion-matrix.md)。 |
+| B10 | 已启动，E1–E10服务/原UI通过 | 见[B10实施](./B10-implementation.md)。 |
 | B11 / 工程前置 | A1 6287d2a 已主线，A2 3b15a6d 已工作树提交并通过本地验证 | 继续在新结构实施 B1 余项及 B2–B10；全局实例未切换，B11 其他验收继续。 |
 
 当前最新检查点为B8最终2232/2232、0skip、build/pack737；全新生产安装685/685、全部737包/211Web精确字节、B1.2与隔离CLI通过。真实SDK双引擎与native分源证据及未验范围见[B8完成矩阵](./B8-completion-matrix.md)。
@@ -159,7 +160,7 @@ B5安全复核：E7/E26/E33/E36/E39组合native凭据/历史/descriptor/alias/�
 
 ### B9 — 定时任务与授权
 
-**当前状态：已准备，尚未执行。** 14候选只作索引，先实读源码再分笔实施，见[B9交接](./B9-handoff.md)。
+**当前状态：2026-11-23本地实施/验收完成，已提交[PR #11](https://github.com/weiesky/cx-viewer/pull/11)，尚未合并。** 29笔原始提交已备份并整合为 `0a162b4`，原/整合/远端内容一致；实际没有PR checks，不冒称远端CI通过。14候选按B9子项核销，2443/2443、0skip/build/pack747、新生产安装859/859及747包/211Web精确字节通过；实际native SDK/PTY、双浏览器6配置16图通过。保留native权限/reviewer，用户明确选择独立任务用AppServer、常驻transport不变；问答托管可选默认关闭。见[B9完成矩阵](./B9-completion-matrix.md)、[整合记录](./B9-local-commit-consolidation-2026-11-23.md)与[B9实施](./B9-implementation.md)。未验环境继续单列；B10已完成本地实施与验收。
 
 **完整上游提交索引**：[B9 时间顺序索引](./cc-viewer-alignment-commit-index.md#b9)；[B0 交叉候选](./B0-cross-index.md#cross-b9)。逐项核对索引及交叉工作包中的修复、合并和后续替代记录。
 
@@ -168,6 +169,8 @@ B5安全复核：E7/E26/E33/E36/E39组合native凭据/历史/descriptor/alias/�
 **候选文件**：核固定上游完整调度/持久化/UI调用链，再复用现有配置/API/会话机制并作最小native适配；`server.js`、`src/components/chat/`、`lib/sdk-manager.js` 为接入点。**验收**：进程重启、重复触发、取消、目录消失、无权限、附件删除、两进程竞争、失败重试及历史；时钟用 fake timer，并辅以隔离联测。**依赖**：B1/B2/B4。
 
 ### B10 — 服务插件与反向代理
+
+**当前状态：2026-11-23本地实施与验收完成。** E1–E24按原源码小步提交；目录服务/面板、baseURL/编码前缀/TLS终止代理、引导更新与native恢复完成。2713/2713、0skip/build/pack773，新生产安装1096/1096及773包/211Web精确字节通过，双浏览器14配置34图核看。未推送/建B10 PR/合并；12候选只核销B10子项，B11目录/Activation/content与平台范围保留。见[B10完成矩阵](./B10-completion-matrix.md)、[B10实施](./B10-implementation.md)及[源码证据](./B10-source-audit.json)。
 
 **完整上游提交索引**：[B10 时间顺序索引](./cc-viewer-alignment-commit-index.md#b10)；[B0 交叉候选](./B0-cross-index.md#cross-b10)。逐项核对索引及交叉工作包中的修复、合并和后续替代记录。
 

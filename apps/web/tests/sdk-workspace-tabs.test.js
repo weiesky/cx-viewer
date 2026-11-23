@@ -25,6 +25,8 @@ await build({ stdin: { contents: `export { default as Component } from './src/co
 export { default as CachePopoverContent } from './src/components/dashboard/CachePopoverContent.jsx';
 export { default as UserPromptsModal } from './src/components/chat/UserPromptsModal.jsx';
 export { default as GitChanges } from './src/components/git/GitChanges.jsx';
+export { default as ScheduleTaskModal } from './src/components/common/ScheduleTaskModal.jsx';
+export { default as UltraplanPanel } from './src/components/terminal/UltraplanPanel.jsx';
 export { default as ChatInputBar } from './src/components/chat/ChatInputBar.jsx';
 export { default as ScratchTerminal } from './src/components/terminal/ScratchTerminal.jsx';
 export { default as TerminalPanel } from './src/components/terminal/TerminalPanel.jsx';
@@ -48,13 +50,20 @@ export { createFileMenuHandler } from './src/components/files/fileContextMenuAct
 export { buildFileContextMenuItems } from './src/components/files/fileContextMenu.js';
 export { default as AppHeader } from './src/components/dashboard/AppHeader.jsx';
 export { default as AppBase } from './src/AppBase.jsx';
+export { subscribeScheduledTasks } from './src/utils/scheduledTaskEvents.js';
 export { default as ChatView } from './src/components/chat/ChatView.jsx';
 export { default as ChatMessage } from './src/components/chat/ChatMessage.jsx';
+export { default as AskAutoHostCountdown } from './src/components/chat/AskAutoHostCountdown.jsx';
+export { default as AskQuestionForm } from './src/components/chat/AskQuestionForm.jsx';
 export { default as PreferencesForm } from './src/components/settings/PreferencesForm.jsx';
 export { default as DetailPanel } from './src/components/dashboard/DetailPanel.jsx';
 export { default as ContextTab } from './src/components/dashboard/ContextTab.jsx';
 export { default as ProxyChip } from './src/components/chat/ProxyChip.jsx';
-export { default as ProxyModal } from './src/components/settings/ProxyModal.jsx';`, resolveDir: web },
+export { default as ProxyModal } from './src/components/settings/ProxyModal.jsx';
+export { default as PluginPanelModal } from './src/components/plugins/PluginPanelModal.jsx';
+export { default as PanelHost } from './src/components/plugins/PanelHost.jsx';
+export { default as UpdateModal } from './src/components/update/UpdateModal.jsx';
+export { installPanelRuntime } from './src/components/plugins/panelRuntime.js';`, resolveDir: web },
   bundle: true, platform: 'node', format: 'cjs', packages: 'external', outfile: output,
   loader: { '.css': 'empty', '.svg': 'text', '.png': 'dataurl', '.gif': 'dataurl' }, logLevel: 'error' });
 test.after(() => rmSync(directory, { recursive: true, force: true }));
@@ -274,6 +283,7 @@ function fixture(t, { blocked = false, component = 'Component', props = {} } = {
         if (!hooks[index]) hooks[index] = { value: typeof initial === 'function' ? initial() : initial };
         return [hooks[index].value, value => { hooks[index].value = typeof value === 'function' ? value(hooks[index].value) : value; }];
       },
+      useContext(context) { cursor++; return context._currentValue; },
       useMemo(fn) { cursor++; return fn(); },
       useId() { return `fixture-id-${cursor++}`; },
       useCallback(fn) { cursor++; return fn; },
@@ -334,6 +344,133 @@ function voiceFixture(t) {
     events: { agentLoopStart: 'default', agentLoopEnd: 'sanguo', turnEnd: 'default', ...events } }; };
   return { ...f, app, plays, sources, emit, enable, exports };
 }
+
+test('scheduled task outcomes use the current exact SSE scope and deduplicate terminal notices', t => {
+  const f = voiceFixture(t), notices = [], published = [];
+  const toast = require('antd').message;
+  for (const name of ['success', 'error', 'warning']) {
+    const original = toast[name]; toast[name] = text => notices.push([name, text]);
+    t.after(() => { toast[name] = original; });
+  }
+  const unsubscribe = f.exports.subscribeScheduledTasks({ project: 'same', instance: 'a' }, data => published.push(data));
+  t.after(unsubscribe);
+  const frame = { type: 'task_run', status: 'completed', runId: 'r1', summary: 'scheduled result' };
+  f.emit('scheduled_tasks', { ...frame, instanceKey: 'b' });
+  f.emit('scheduled_tasks', { ...frame, project: 'other' });
+  assert.equal(notices.length, 0);
+  f.emit('scheduled_tasks', frame); f.emit('scheduled_tasks', frame);
+  assert.equal(notices.length, 1);
+  f.emit('scheduled_tasks', { ...frame, runId: 'r2', status: 'running' });
+  f.emit('scheduled_tasks', { ...frame, runId: 'r3', status: 'dispatched' });
+  assert.equal(notices.length, 1);
+  f.app._initControlSSE();
+  f.emit('scheduled_tasks', { ...frame, runId: 'old' }, 0);
+  assert.equal(notices.length, 1, 'a replaced stream cannot toast');
+  f.emit('scheduled_tasks', { ...frame, runId: 'r4', status: 'failed', reason: 'no_live_session' });
+  assert.equal(notices.at(-1)[0], 'error');
+  assert.equal(published.length, 0, 'refresh remains debounced');
+});
+
+test('original chat and terminal schedule entries open the shared modal with the exact native instance', t => {
+  const f = fixture(t), exports = require(output);
+  const chat = new f.ChatView({ cliMode: true, sdkMode: true, projectName: 'same', resumeInstanceKey: 'a', requests: [], mainAgentSessions: [] });
+  chat.setState = patch => Object.assign(chat.state, patch);
+  const nodes = (tree, name) => descendants(tree, node => node.type?.name === name);
+  let input = nodes(chat.render(), 'ChatInputBar')[0];
+  input.props.onOpenScheduleModal();
+  let modal = nodes(chat.render(), 'ScheduleTaskModal')[0];
+  assert.equal(modal.props.open, true); assert.equal(modal.props.instance, 'a'); assert.equal(modal.props.project, 'same');
+  modal.props.onClose(); assert.equal(chat.state.scheduleModalVisible, false);
+  chat.props = { ...chat.props, isLocalLog: true };
+  assert.equal(nodes(chat.render(), 'ChatInputBar')[0].props.onOpenScheduleModal, null);
+  const terminal = new exports.TerminalPanel({ projectName: 'same', resumeInstanceKey: 'b' });
+  terminal.setState = patch => Object.assign(terminal.state, patch);
+  exports.setLang('en');
+  const menu = descendants(terminal.render(), node => node.props?.content && node.props.open === false)[0];
+  const row = descendants(menu.props.content, node => node.type === 'button'
+    && descendants(node, child => child.props?.children === exports.translate('ui.schedule.menuItem')).length)[0];
+  assert.ok(row); row.props.onClick();
+  modal = nodes(terminal.render(), 'ScheduleTaskModal')[0];
+  assert.equal(modal.props.open, true); assert.equal(modal.props.instance, 'b');
+  assert.equal(terminal.state.quickSettingsOpen, false);
+});
+
+test('original Ask hosting settings default off and persist explicit null independently of native reviewer', t => {
+  const changes = [], toggles = [];
+  const f = fixture(t, { component: 'QuickAutoApproveRows', props: { approvalsReviewer: 'user',
+    planAutoApproveSeconds: 0, askAutoAnswerMinutes: null, expandedKey: 'ask',
+    onToggle: key => toggles.push(key), onHoverEnter() {}, onHoverLeave() {},
+    onAskAutoAnswerChange: value => changes.push(value) } });
+  const exports = require(output); exports.setLang('en'); f.draw();
+  const options = descendants(f.tree.at(-1), node => node.type === 'button' && node.props.children === exports.translate('ui.askAutoAnswer.off'));
+  assert.equal(options.length, 1); options[0].props.onClick();
+  assert.deepEqual(changes, [-1]); assert.deepEqual(toggles, [null]);
+  const app = new f.AppBase({});
+  assert.equal(app.state.approvalPrefs.askAutoAnswerMinutes, null);
+  app.handleApprovalPrefsChange = patch => changes.push(patch);
+  app.handleAskAutoAnswerChange(0); app.handleAskAutoAnswerChange(-1);
+  assert.deepEqual(changes.slice(-2), [{ askAutoAnswerMinutes: 0 }, { askAutoAnswerMinutes: null }]);
+  // PreferencesForm is a function; inspect its returned original Select callbacks.
+  const tree = exports.PreferencesForm({ values: { approvalModal: { askAutoAnswerMinutes: 10 } }, onPatch: patch => changes.push(patch) });
+  const select = descendants(tree, node => node.props?.options?.some(option => option.label === exports.translate('ui.askAutoAnswer.instant')))[0];
+  assert.equal(select.props.value, 10); select.props.onChange(-1);
+  assert.deepEqual(changes.at(-1), { approvalModal: { askAutoAnswerMinutes: null } });
+});
+
+test('Ask hosting countdown catches up by wall clock and only emits the explicit cancel callback', t => {
+  let now = 1000, cancelled = 0;
+  t.mock.method(Date, 'now', () => now);
+  const props = { autoAnswerAt: 601000, autoCancelled: false, onCancelHosting: () => cancelled++ };
+  const f = fixture(t, { component: 'AskAutoHostCountdown', props });
+  require(output).setLang('en'); f.draw(); f.draw();
+  assert.equal(f.tree.props['aria-live'], 'off');
+  assert.match(f.tree.props.children[0].props.children, /10:00/);
+  now = 301000; document.visibilityState = 'visible'; f.documentEvents.get('visibilitychange')(); f.draw();
+  assert.match(f.tree.props.children[0].props.children, /5:00/);
+  f.tree.props.children[1].props.onClick(); assert.equal(cancelled, 1);
+  props.autoCancelled = true; f.draw(); assert.equal(f.tree, null); assert.equal(f.timers.size, 0);
+  props.autoCancelled = false; props.autoAnswerAt = 1000; f.draw();
+  assert.equal(f.tree, null); assert.deepEqual(f.requests, []);
+});
+
+test('native inline Ask form cancels its own request instead of the queue head', t => {
+  fixture(t); const exports = require(output), cancelled = [];
+  const card = new exports.ChatMessage({ pendingAsk: { id: 'native_head' },
+    askMetaMap: { queued_card: { requestId: 'native_queued', autoAnswerAt: 601000, autoCancelled: false } },
+    onAskQuestionAutoCancel: (...args) => cancelled.push(args) });
+  const consumer = card.renderAskQuestionInteractive('queued_card', [{ id: 'q', question: 'Pick' }], 'native_queued');
+  const form = consumer.props.children(null);
+  assert.equal(form.props.autoAnswerAt, 601000); form.props.onCancelAutoHosting();
+  assert.deepEqual(cancelled, [['queued_card', 'native_queued']]);
+});
+
+test('original Other answer input carries password-manager opt-out without changing its text callback', t => {
+  fixture(t); const { AskQuestionForm } = require(output);
+  const form = new AskQuestionForm({ questions: [{ id: 'q', question: 'Pick', options: [{ label: 'A' }] }] });
+  form.state.otherActive = { 0: true };
+  form.setState = patch => Object.assign(form.state, typeof patch === 'function' ? patch(form.state) : patch);
+  const input = descendants(form.render(), node => node.props?.autoFocus)[0];
+  assert.equal(input.props.autoComplete, 'off'); assert.equal(input.props['data-1p-ignore'], true);
+  assert.equal(input.props['data-lpignore'], 'true'); assert.equal(input.props['data-form-type'], 'other');
+  input.props.onChange({ target: { value: 'native free text' } });
+  assert.equal(form.state.otherText[0], 'native free text');
+});
+
+test('cached native Ask cards refresh hosting metadata on full and incremental cache hits', t => {
+  const f = fixture(t), questions = [{ id: 'q', question: 'Pick', options: [{ label: 'A' }] }];
+  const messages = [{ role: 'assistant', content: [{ type: 'tool_use', id: 'card', name: 'request_user_input', input: { questions } }], _timestamp: '2026-01-01T00:00:01Z' }];
+  const session = { sessionId: 'native-root', messages };
+  const chat = new f.ChatView({ cliMode: true, sdkMode: true, requests: [], mainAgentSessions: [session] });
+  chat.state.pendingAsk = { id: 'native_request', itemId: 'card', questions };
+  const card = () => chat.buildAllItems().find(item => item.props?.content?.some?.(block => block.id === 'card'));
+  const first = card(); assert.ok(first);
+  chat.state.askMetaMap = { card: { requestId: 'native_request', autoAnswerAt: 601000, autoCancelled: false } };
+  const second = card(); assert.notEqual(second, first); assert.equal(second.props.askMetaMap, chat.state.askMetaMap);
+  chat.state.askMetaMap = { card: { ...chat.state.askMetaMap.card, autoCancelled: true } };
+  messages.push({ role: 'assistant', content: [{ type: 'text', text: 'additional stream' }], _timestamp: '2026-01-01T00:00:02Z' });
+  const third = card(); assert.equal(third.props.askMetaMap.card.autoCancelled, true);
+  assert.equal(third.props.pendingAsk.id, 'native_request');
+});
 
 test('actual approval transitions preserve minimisation on replay and only synthetic view clears', t => {
   const f = fixture(t), app = new f.AppBase({}); app.state.projectName = 'same';
@@ -2184,4 +2321,163 @@ test('control stream keeps healing after ten failed reconnects, restores its bud
   assert.equal(app.state.inputText, 'keep my unsent draft'); assert.equal(f.requests.length, 0);
   app.componentWillUnmount(); assert.equal(timers.size, 0); assert.ok(sources.every(source => source.closed));
   app._reconnectSSE(); app.initSSE(); assert.equal(timers.size, 0); assert.equal(sources.length, 13);
+});
+
+test('embedded expert panel retains optional host behavior, file cap and composition-safe shortcut', t => {
+  const picked = [], sent = [];
+  const props = { embedded: true, hideHeader: true, hideSend: true, variant: 'none', prompt: 'task', files: [],
+    templates: [{ key: 'none', kind: 'none' }, { key: 'codeExpert', kind: 'builtin' }],
+    customExperts: [], expertOrder: [], expertHidden: [], maxFiles: 1,
+    onVariantChange: key => picked.push(key), onPromptChange() {}, onSend: () => sent.push('send'), onUpload() {}, onPaste() {} };
+  const f = fixture(t, { component: 'UltraplanPanel', props }); f.draw();
+  const buttons = () => descendants(f.tree, node => node.type === 'button');
+  assert.equal(descendants(f.tree, node => node.props?.role === 'separator').length, 0);
+  const text = () => descendants(f.tree, node => node.type === 'textarea')[0];
+  assert.equal(text().props.autoFocus, false);
+  buttons()[0].props.onClick(); assert.deepEqual(picked, []);
+  buttons()[1].props.onClick(); assert.deepEqual(picked, ['codeExpert']);
+  const event = { key: 'Enter', ctrlKey: true, isComposing: true, preventDefault() {} };
+  text().props.onKeyDown(event); assert.deepEqual(sent, []);
+  text().props.onKeyDown({ ...event, isComposing: false }); assert.deepEqual(sent, ['send']);
+  props.files = [{ name: 'a.txt', path: '/tmp/a.txt' }]; f.draw();
+  assert.equal(text().props.onPaste, undefined);
+  assert.equal(buttons().at(-1).props.disabled, true);
+  props.onSend = undefined; f.draw();
+  assert.doesNotThrow(() => text().props.onKeyDown({ ...event, isComposing: false }));
+  props.embedded = props.hideHeader = props.hideSend = false; f.draw();
+  assert.equal(text().props.autoFocus, true);
+  assert.equal(descendants(f.tree, node => node.props?.role === 'separator').length, 1);
+});
+
+test('original schedule form fills once times and coalesces duplicate saves with an exact native scope', async t => {
+  const props = { open: true, project: 'same', instance: 'a', onClose() {} };
+  const f = fixture(t, { component: 'ScheduleTaskModal', props }), exports = require(output);
+  const toast = require('antd').message;
+  const success = toast.success, error = toast.error;
+  toast.success = toast.error = () => {};
+  t.after(() => { toast.success = success; toast.error = error; });
+  exports.setLang('en');
+  const calls = []; let resolveSave;
+  globalThis.fetch = async (url, options) => {
+    const body = options?.body && JSON.parse(options.body); calls.push({ url, body });
+    if (url.includes('/preview')) return { ok: true, status: 200, json: async () => ({ next: [], timezone: 'Asia/Shanghai' }) };
+    if (options?.method === 'POST') return new Promise(resolve => { resolveSave = () => resolve({ ok: true, status: 200, json: async () => ({ ok: true, task: { id: 'st_saved' } }) }); });
+    return { ok: true, status: 200, json: async () => ({ tasks: [], timezone: 'Asia/Shanghai', spawnAvailable: true }) };
+  };
+  f.draw(); await f.tick(); f.draw(); f.draw();
+  const nodes = predicate => descendants(f.tree, predicate);
+  const kind = nodes(node => node.props?.options?.some(option => option.value === 'hourly'))[0];
+  kind.props.onChange('once'); f.draw();
+  const quick = nodes(node => node.type === 'button' && node.props.children === exports.translate('ui.schedule.quick.5m'))[0];
+  assert.ok(quick); quick.props.onClick(); f.draw();
+  const date = nodes(node => node.props?.showTime && node.props.onChange)[0];
+  assert.ok(date.props.value.valueOf() > Date.now() + 3 * 60000);
+  const panel = nodes(node => node.type?.name === 'UltraplanPanel')[0];
+  assert.equal(panel.props.variant, 'none');
+  assert.equal(panel.props.hideHeader, true); assert.equal(panel.props.hideSend, true);
+  panel.props.onPromptChange('raw scheduled text'); f.draw();
+  const save = nodes(node => node.props?.onClick && node.props.children === exports.translate('ui.schedule.save'))[0];
+  const pending = save.props.onClick(); save.props.onClick();
+  assert.equal(calls.filter(call => call.body?.prompt).length, 1);
+  const written = calls.find(call => call.body?.prompt);
+  assert.equal(new URL(written.url, window.location.href).searchParams.get('instance'), 'a');
+  assert.equal(written.body.prompt, 'raw scheduled text'); assert.equal(written.body.template, 'none');
+  assert.equal(written.body.schedule.kind, 'once');
+  resolveSave(); await pending; await f.tick();
+});
+
+test('same-name native modal switch discards a stale project list response', async t => {
+  const props = { open: true, project: 'same', instance: 'a', onClose() {} };
+  const f = fixture(t, { component: 'ScheduleTaskModal', props });
+  const pending = [];
+  globalThis.fetch = (url) => new Promise(resolve => pending.push({ url, resolve }));
+  f.draw(); props.instance = 'b'; f.draw();
+  const foreign = pending.find(call => call.url.includes('/api/scheduled-tasks') && call.url.includes('instance=a'));
+  foreign.resolve({ ok: true, json: async () => ({ tasks: [{ id: 'foreign', prompt: 'private a', schedule: { kind: 'daily', time: '09:00' } }] }) });
+  await f.tick(); f.draw();
+  assert.equal(descendants(f.tree, node => node.props?.title === 'private a').length, 0);
+});
+
+test('schedule history opens the exact native archive through the existing resume callback', async t => {
+  const resumed = [], closed = [], calls = [];
+  const props = { open: true, project: 'same', instance: 'a', onClose: () => closed.push(true), onResumeSession: row => resumed.push(row) };
+  const f = fixture(t, { component: 'ScheduleTaskModal', props }), exports = require(output); exports.setLang('en');
+  const task = { id: 'st_old', prompt: 'original task', mode: 'spawn', schedule: { kind: 'daily', time: '09:00' }, enabled: true };
+  globalThis.fetch = async url => {
+    calls.push(url);
+    const data = url.includes('/api/resume-sessions') ? { instanceKey: 'a', items: [{ file: 'exact/timeline.jsonl', sessionId: 'native-old' }] }
+      : url.includes('/scheduled-tasks/runs') ? { runs: [{ id: 'run_old', sessionId: 'native-old', status: 'completed', at: 1 }] }
+      : { tasks: [task], spawnAvailable: true };
+    return { ok: true, status: 200, json: async () => data };
+  };
+  for (let i = 0; i < 5; i++) { f.draw(); await f.tick(); }
+  const button = descendants(f.tree, node => node.props?.onClick && node.props.children === exports.translate('ui.schedule.openSession'))[0];
+  assert.ok(button); await button.props.onClick();
+  assert.deepEqual(closed, [true]);
+  assert.deepEqual(resumed, [{ file: 'exact/timeline.jsonl', sessionId: 'native-old', sessionUuid: 'native-old', instanceKey: 'a' }]);
+  const query = new URL(calls.find(url => url.includes('/api/resume-sessions')), window.location.href);
+  assert.equal(query.searchParams.get('sessionId'), 'native-old'); assert.equal(query.searchParams.get('limit'), '1');
+});
+
+
+test('plugin menu opens the selected original panel, keeps its pin key and resets retries on reopen', t => {
+  fixture(t);
+  const { AppHeader } = require(output);
+  const header = new AppHeader({ preferences: {}, viewMode: 'chat' }, { preferences: {} });
+  header.setState = (patch, callback) => { Object.assign(header.state, typeof patch === 'function' ? patch(header.state) : patch); callback?.(); };
+  const a = { name: 'service-a', entryUrl: '/plugin-panels/service-a/index.js', title: 'Service A' };
+  header.state.pluginPanels = [a, { name: 'missing', entryUrl: null }];
+  let menu = header._getMenuDescriptors();
+  const index = menu.findIndex(item => item.key === 'plugin-management');
+  assert.equal(menu[index + 1].key, 'plugin-panel:service-a');
+  assert.equal(menu.some(item => item.key === 'plugin-panel:missing'), false);
+  menu[index + 1].onClick();
+  assert.equal(header.state.activePluginPanel, a);
+  header._handlePluginPanelRetry();
+  assert.equal(header.state.pluginPanelAttempt, 1);
+  header._handlePluginPanelClose();
+  assert.equal(header.state.activePluginPanel, null);
+  menu[index + 1].onClick();
+  assert.equal(header.state.pluginPanelAttempt, 0);
+  header.togglePin(menu[index + 1].key);
+  assert.deepEqual(header.state.pinnedKeys, ['plugin-panel:service-a']);
+  header.context = { updatePreferences: async patch => patch };
+});
+
+test('original panel modal clamps width and unmounts the panel host on close', t => {
+  const props = { panel: { name: 'demo', title: 'Demo', width: 1600, serviceStatus: 'ready' }, open: true,
+    onClose() {}, project: 'same', instance: 'a', theme: 'dark', lang: 'en' };
+  const f = fixture(t, { component: 'PluginPanelModal', props });
+  f.draw();
+  assert.equal(f.tree.props.width, 1168);
+  const children = require('react').Children.toArray(f.tree.props.children);
+  assert.equal(children.length, 1);
+  assert.equal(children[0].props.instance, 'a');
+  assert.equal(children[0].props.project, 'same');
+  assert.equal(children[0].props.theme, 'dark');
+  props.open = false; f.draw();
+  assert.equal(require('react').Children.toArray(f.tree.props.children).length, 0);
+});
+
+test('guided update modal gates channels, byte progress and explicit restart confirmation', () => {
+  const { UpdateModal } = require(output);
+  const original = require('antd').Modal.confirm; let confirmed; let restarted = 0;
+  require('antd').Modal.confirm = options => { confirmed = options; };
+  const walk = node => !node || typeof node !== 'object' ? [] : [node, ...[node.props?.children].flat(Infinity).flatMap(walk)];
+  try {
+    const props = { open: true, currentVersion: '1.1.20', method: 'npm', canRestart: true, onRestart: () => restarted++ };
+    const ready = walk(UpdateModal({ ...props, state: { status: 'restart_required', version: '1.1.21' } }));
+    const restart = ready.find(n => n.props?.danger && n.props?.onClick);
+    restart.props.onClick(); assert.equal(restarted, 0); assert.equal(typeof confirmed.content, 'string');
+    confirmed.onOk(); assert.equal(restarted, 1);
+    const manual = walk(UpdateModal({ ...props, canRestart: false, state: { status: 'available', version: '1.1.21' } }));
+    assert.equal(manual.some(n => n.props?.onClick === props.onRestart), false);
+    assert.ok(manual.some(n => n.type === 'code' && n.props.children.includes('cx-viewer@latest')));
+    const progress = walk(UpdateModal({ ...props, state: { status: 'downloading', downloaded: 50, total: 200 } }));
+    assert.ok(progress.some(n => n.props?.percent === 25));
+    for (const [method, command] of [['brew','brew upgrade'],['pnpm','pnpm add -g']]) {
+      const nodes = walk(UpdateModal({ ...props, method, state: { status: 'idle' } }));
+      assert.ok(nodes.some(n => n.type === 'code' && n.props.children.includes(command)));
+    }
+  } finally { require('antd').Modal.confirm = original; }
 });

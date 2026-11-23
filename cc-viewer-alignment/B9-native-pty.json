@@ -1,0 +1,19 @@
+{
+  "actualNativeCodexPty": true,
+  "loopbackSyntheticResponses": true,
+  "root": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b7-pty-gui-bkXOcU",
+  "owner": "cxv-4c75b0cbdad0fd58c576a281914d5ab1eeee",
+  "nativeSessionId": "01a20479-fbb4-7600-9d45-f89f42c0d25d",
+  "taskId": "st_576c8a178b1eaae4",
+  "requests": 4,
+  "scheduledNativeRequestObserved": true,
+  "noExternalModel": true,
+  "nativeApprovalPolicy": "on-request",
+  "sandbox": "workspace-write",
+  "nativeRolloutVerified": true,
+  "modelRequests": 4,
+  "mainPromptRequests": 2,
+  "scheduledPromptRequests": 1,
+  "nativeBackgroundTitleRequests": 2,
+  "nativeHookReview": "sole generated local perm-bridge.js verified before trusting in isolated HOME"
+}

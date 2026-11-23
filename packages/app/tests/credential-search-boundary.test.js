@@ -17,6 +17,7 @@ const { searchReplace } = await import('../lib/code-replace.js');
 const marker = 'BOUNDARY_NEEDLE';
 const backup = join(CREDENTIAL_PATHS.backupRoot, 'first', 'preferences.json');
 const privateFiles = [CREDENTIAL_PATHS.keyPath, CREDENTIAL_PATHS.file, backup,
+  ...[ 'update-state.json', 'restart-config.json', 'restart-ready.json', 'cx-viewer-fixture.tgz' ].map(name => join(process.env.CXV_LOG_DIR, name)),
   join(process.env.CXV_LOG_DIR, 'preferences.json'), join(process.env.CXV_LOG_DIR, 'im/dingtalk/config.json'),
   process.env.CXV_PROXY_PROFILE_PATH, `${process.env.CXV_PROXY_PROFILE_PATH}.bak`];
 for (const path of privateFiles) {

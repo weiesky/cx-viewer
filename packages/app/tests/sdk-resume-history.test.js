@@ -6,7 +6,7 @@ import { join, relative, sep } from 'node:path';
 import { LogV2Writer } from '../lib/log-v2/writer.js';
 import { resolveIngestionSourceIdentity } from '../lib/log-v2/identity.js';
 import { sdkToJSONLEntry } from '../lib/sdk-adapter.js';
-import { readSdkResumeHistory, resolveSdkCliResume } from '../lib/sdk-resume-history.js';
+import { readSdkResumeHistory, resolveSdkCliResume, listSdkResumeSessions } from '../lib/sdk-resume-history.js';
 
 async function fixture(run, { source = 'sdk', threadId = 'thread-native' } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'cxv-sdk-resume-history-'));
@@ -97,4 +97,19 @@ test('modern SDK resume preserves Viewer-only feedback and canonical display tim
   assert.deepEqual(history.messages, [...input, { role: 'assistant', content: [{ type: 'text', text: 'Error: interrupted' }],
     _sdkTimestamp: '2026-11-18T00:00:01.000Z', _sdkFeedback: true }]);
   assert.deepEqual(readFileSync(f.timeline), bytes);
+}));
+
+test('scheduled history resolves an exact older native SID before the recent-list cap without sibling fallback', async () => fixture(async f => {
+  f.append([{ role: 'user', content: 'scheduled original' }], 'old answer');
+  const writer = LogV2Writer.open({ rootDir: f.root, canonicalCwd: f.view.cwd, projectId: f.view.projectId,
+    sessionId: 'newer-thread', rootThreadId: 'newer-thread', source: 'sdk', createdAt: '2026-11-23T00:00:00.000Z' });
+  const entry = sdkToJSONLEntry({ message: { content: [{ type: 'text', text: 'new answer' }] } },
+    [{ role: 'user', content: 'newer' }], 'fixture', 'same', { timestamp: '2026-11-23T00:00:01.000Z', threadId: 'newer-thread', cwd: f.view.cwd });
+  writer.append(entry, resolveIngestionSourceIdentity(entry, { source: 'sdk', threadId: 'newer-thread', sessionId: 'newer-thread' }));
+  assert.equal(listSdkResumeSessions(f.root, f.view, 1)[0].sessionId, 'newer-thread');
+  const exact = listSdkResumeSessions(f.root, f.view, 1, { sessionId: 'thread-native' });
+  assert.equal(exact.length, 1); assert.equal(exact[0].file, f.file);
+  assert.deepEqual(listSdkResumeSessions(f.root, f.view, 1, { sessionId: 'unavailable' }), []);
+  assert.deepEqual(listSdkResumeSessions(f.root, { ...f.view, cwd: '/sibling/same' }, 1, { sessionId: 'thread-native' }), []);
+  assert.throws(() => listSdkResumeSessions(f.root, f.view, 1, { sessionId: '--last' }), { code: 'SDK_RESUME_UNAVAILABLE' });
 }));

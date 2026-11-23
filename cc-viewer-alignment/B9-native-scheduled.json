@@ -1,0 +1,48 @@
+{
+  "version": "codex-cli 0.169.0",
+  "root": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b9-native-og5vYD",
+  "requests": 12,
+  "checks": [
+    {
+      "transport": "exec",
+      "spawnTransport": "appserver",
+      "nativeApprovalPolicy": "on-request",
+      "sandbox": "workspace-write",
+      "inject": true,
+      "spawn": true,
+      "exactArchive": true,
+      "residentSessionPreserved": true,
+      "sessionId": "01a20474-94f0-7ae3-8b3d-0cfb789d22b7"
+    },
+    {
+      "transport": "exec",
+      "actualNativeResumeOfScheduledArchive": true
+    },
+    {
+      "transport": "appserver",
+      "spawnTransport": "appserver",
+      "nativeApprovalPolicy": "on-request",
+      "sandbox": "workspace-write",
+      "inject": true,
+      "spawn": true,
+      "exactArchive": true,
+      "residentSessionPreserved": true,
+      "sessionId": "01a20474-9cd9-7812-967c-cec0a018d72d"
+    },
+    {
+      "actualNativeAsk": true,
+      "instantRecommended": true,
+      "cancelThenManual": true,
+      "ephemeralOwnerPreserved": true
+    },
+    {
+      "transport": "appserver",
+      "actualNativeResumeOfScheduledArchive": true
+    }
+  ],
+  "actualInstalledCodex": true,
+  "loopbackSyntheticResponses": true,
+  "externalModel": false,
+  "nativeCommandsExecuted": false,
+  "ownSessionsStopped": true
+}

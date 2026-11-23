@@ -140,11 +140,24 @@ export class AskFlowController {
     this._lastClearedPendingAsk = null; // PTY 路径 abort 回滚面包屑
     this._lastAskSubmitIds = [];
     this._pendingCancelIds = null;    // Map<askId, reason>：WS 不可用时缓存的 cancel，reopen 时重发
+    this._pendingAutoCancelIds = new Set();
+    this._askAutoCancelled = new Set();
   }
 
   // 清 askMetaMap 中指定 askId 的 entry — 内存回收钩子。entry 不存在时返 null（不触发 re-render）。
+  _stampAskMeta = (askId, itemId, fields) => {
+    const reAssert = this._askAutoCancelled.has(askId);
+    const meta = { requestId: askId, startedAt: fields.startedAt, timeoutMs: fields.timeoutMs,
+      autoAnswerAt: reAssert || fields.autoCancelled === true ? null : (fields.autoAnswerAt ?? null),
+      autoAnswerSeconds: fields.autoAnswerSeconds ?? null,
+      autoCancelled: reAssert || fields.autoCancelled === true };
+    this.host.setState(prev => ({ askMetaMap: { ...prev.askMetaMap,
+      ...Object.fromEntries([askId, itemId].filter(Boolean).map(id => [id, meta])) } }));
+  };
+
   _clearAskMeta = (...askIds) => {
     const ids = askIds.filter(Boolean);
+    for (const id of ids) { this._askAutoCancelled.delete(id); this._pendingAutoCancelIds.delete(id); }
     if (ids.length === 0) return;
     this.host.setState(prev => {
       if (!prev.askMetaMap || !ids.some(id => prev.askMetaMap[id])) return null;
@@ -691,6 +704,32 @@ export class AskFlowController {
     return askId;
   };
 
+  _cancelHostingLocal = (id) => {
+    this._askAutoCancelled.add(id);
+    this.host.setState(prev => {
+      const entries = Object.entries(prev.askMetaMap || {});
+      if (!entries.some(([key, meta]) => key === id || meta.requestId === id)) return null;
+      return { askMetaMap: Object.fromEntries(entries.map(([key, meta]) => [key,
+        key === id || meta.requestId === id ? { ...meta, autoCancelled: true, autoAnswerAt: null } : meta])) };
+    });
+  };
+
+  handleAskAutoCancel = (askId, sdkRequestId) => {
+    if (!askId) return;
+    const id = sdkRequestId || this.host.getState().askMetaMap?.[askId]?.requestId || askId;
+    this._cancelHostingLocal(id);
+    this._pendingAutoCancelIds.add(id);
+    this._sendHostingCancels();
+  };
+
+  _sendHostingCancels = () => {
+    const ws = this.host.ws();
+    if (!ws || ws.readyState !== WS_OPEN) return;
+    for (const id of this._pendingAutoCancelIds) {
+      try { ws.send(JSON.stringify({ type: 'ask-auto-cancel', id })); this._pendingAutoCancelIds.delete(id); } catch {}
+    }
+  };
+
   handleAskQuestionSubmit = (answers, askId, questions, sdkRequestId) => {
     // 每次新提交入口重置 abort。
     this._askAbortRequested = false;
@@ -820,13 +859,7 @@ export class AskFlowController {
         const askId = msg.id != null ? String(msg.id) : LEGACY_ASK_PLACEHOLDER_ID;
         const itemId = msg.itemId != null ? String(msg.itemId) : null;
         if (typeof msg.startedAt === 'number' && typeof msg.timeoutMs === 'number') {
-          this.host.setState(prev => ({
-            askMetaMap: {
-              ...prev.askMetaMap,
-              [askId]: { startedAt: msg.startedAt, timeoutMs: msg.timeoutMs },
-              ...(itemId ? { [itemId]: { startedAt: msg.startedAt, timeoutMs: msg.timeoutMs } } : {}),
-            },
-          }));
+          this._stampAskMeta(askId, itemId, msg);
         }
         if (msg.id == null && this.host.getState().pendingAsk?.id === LEGACY_ASK_PLACEHOLDER_ID) {
           console.warn('[ChatView] legacy ask-hook-pending without id arrived while a placeholder ask is already active — second ask will be silently dropped (legacy server does not support concurrent asks). Upgrade server to enable multi-ask multiplexing.');
@@ -872,10 +905,7 @@ export class AskFlowController {
         const askId = String(msg.id);
         const itemId = msg.itemId != null ? String(msg.itemId) : null;
         if (typeof msg.startedAt === 'number' && typeof msg.timeoutMs === 'number') {
-          this.host.setState(prev => ({
-            askMetaMap: { ...prev.askMetaMap, ...Object.fromEntries([askId, itemId].filter(Boolean)
-              .map(id => [id, { startedAt: msg.startedAt, timeoutMs: msg.timeoutMs }])) },
-          }));
+          this._stampAskMeta(askId, itemId, msg);
         }
         this.host.setState(state => {
           if (state.pendingAsk) {
@@ -926,6 +956,10 @@ export class AskFlowController {
       if (askId != null) this._resolveAskById(askId);
       return true;
     }
+    if (msg.type === 'ask-auto-cancel') {
+      if (msg.id != null) this._cancelHostingLocal(String(msg.id));
+      return true;
+    }
     if (msg.type === 'ask-hook-cancelled') {
       // server ack：handleAskCancel 发的 ask-cancel 已处理。① 本端发起 + 等 ack flush → 立即 flush；
       // ② 兜底清 modal/queue（远端 cancel）；③ 写 localAskAnswers 灰态。
@@ -971,6 +1005,7 @@ export class AskFlowController {
       }
       this._pendingCancelIds.clear();
     }
+    this._sendHostingCancels();
     try {
       this.host.fetchPendingAsks()
         .then(data => {
@@ -980,6 +1015,8 @@ export class AskFlowController {
             this.handleWsMessage({
               type: 'ask-hook-pending', id: ask.id, itemId: ask.itemId, questions: ask.questions,
               startedAt: ask.createdAt,
+              autoAnswerAt: ask.autoAnswerAt ?? null, autoAnswerSeconds: ask.autoAnswerSeconds ?? null,
+              autoCancelled: ask.autoCancelled === true,
               timeoutMs: Number.isFinite(ask.timeoutMs) && ask.timeoutMs > 0
                 ? ask.timeoutMs
                 : 24 * 60 * 60 * 1000,
@@ -1022,5 +1059,6 @@ export class AskFlowController {
     if (this._waitForPtyTimer) clearTimeout(this._waitForPtyTimer);
     this._pendingHookAnswers = null;
     if (this._pendingCancelIds) this._pendingCancelIds.clear();
+    this._pendingAutoCancelIds.clear(); this._askAutoCancelled.clear();
   }
 }

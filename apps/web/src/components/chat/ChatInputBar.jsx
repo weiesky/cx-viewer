@@ -8,7 +8,7 @@ import ImageLightbox from '../common/ImageLightbox';
 import ConfirmRemoveButton from '../common/ConfirmRemoveButton';
 import styles from './ChatInputBar.module.css';
 import chrome from '../common/sharedChrome.module.css';
-import { AgentTeamIcon, UltraplanIcon, UploadIcon, TrashIcon, SPARKLE_MASK_STYLE, ULTRAPLAN_MASK_STYLE } from '../common/quickMenuIcons';
+import { AgentTeamIcon, UltraplanIcon, UploadIcon, TrashIcon, ScheduleIcon, SPARKLE_MASK_STYLE, ULTRAPLAN_MASK_STYLE } from '../common/quickMenuIcons';
 import SlashCommandMenu from './SlashCommandMenu';
 import ResumeSessionsRow from '../common/ResumeSessionsRow';
 import QuickAutoApproveRows from '../common/QuickAutoApproveRows';
@@ -62,7 +62,7 @@ const SPEECH_LANG_MAP = {
   tr: 'tr-TR', uk: 'uk-UA',
 };
 
-function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, sdkMode, onKeyDown, onChange, onSend, onStop, onSuggestionClick, onUploadPath, onAttachPath, presetItems, onPresetSend, onOpenPresetModal, onOpenUltraPlan, onClearContext, isStreaming, pendingImages, onRemovePendingImage, pendingQuotes, onRemovePendingQuote, uploadingItems, sendDeferred, onUploadStart, onUploadEnd, setContextBarSlot, approvalsReviewer, onApprovalsReviewerChange, planAutoApproveSeconds, onPlanAutoApproveChange, onClearContextNow, ultraplanPopover, onResumeSession, resumeInstanceKey, projectName, proxyChip, promptNavPopover, slashMenuOpen, slashMenuGroups, slashMenuActiveIndex, slashMenuLoading, onSlashMenuHover, onSlashMenuSelect, onSlashMenuClose }) {
+function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, sdkMode, onKeyDown, onChange, onSend, onStop, onSuggestionClick, onUploadPath, onAttachPath, presetItems, onPresetSend, onOpenPresetModal, onOpenScheduleModal, onOpenUltraPlan, onClearContext, isStreaming, pendingImages, onRemovePendingImage, pendingQuotes, onRemovePendingQuote, uploadingItems, sendDeferred, onUploadStart, onUploadEnd, setContextBarSlot, approvalsReviewer, onApprovalsReviewerChange, planAutoApproveSeconds, onPlanAutoApproveChange, askAutoAnswerMinutes, onAskAutoAnswerChange, onClearContextNow, ultraplanPopover, onResumeSession, resumeInstanceKey, projectName, proxyChip, promptNavPopover, slashMenuOpen, slashMenuGroups, slashMenuActiveIndex, slashMenuLoading, onSlashMenuHover, onSlashMenuSelect, onSlashMenuClose }) {
   const micOnRight = !isMobile && (sdkMode || !terminalVisible);
   const [plusOpen, setPlusOpen] = useState(false);
   // 桌面四芒星菜单的级联展开行（与终端工具栏同款交互）：null | 'perm' | 'plan' | 'agentteam'
@@ -622,6 +622,14 @@ function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, 
                     </button>
                     {/* 桌面：与终端工具栏四芒星菜单同款级联结构（共享 QuickAutoApproveRows）。
                         reviewer 与 Plan 档位都必须走 AppBase handler。 */}
+                    {onOpenScheduleModal && (
+                      <button className={chrome.quickMenuRow}
+                        onClick={() => { closePlusMenu(); onOpenScheduleModal(); }}
+                        onMouseEnter={() => { qmHover.cancel(); if (quickExpanded) setQuickExpanded(null); }}>
+                        <span className={chrome.quickMenuRowIcon}><ScheduleIcon /></span>
+                        <span className={chrome.quickMenuLabel}>{t('ui.schedule.menuItem')}</span>
+                      </button>
+                    )}
                     <QuickAutoApproveRows
                       middle={onResumeSession && <ResumeSessionsRow expanded={quickExpanded === 'history'}
                         onToggle={setQuickExpanded} onHoverEnter={qmHover.enter} onHoverLeave={qmHover.leave}
@@ -630,7 +638,7 @@ function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, 
                       approvalsReviewer={approvalsReviewer}
                       planAutoApproveSeconds={planAutoApproveSeconds}
                       onApprovalsReviewerChange={onApprovalsReviewerChange}
-                      onPlanAutoApproveChange={onPlanAutoApproveChange}
+                      onPlanAutoApproveChange={onPlanAutoApproveChange} askAutoAnswerMinutes={askAutoAnswerMinutes} onAskAutoAnswerChange={onAskAutoAnswerChange}
                       expandedKey={quickExpanded}
                       onToggle={setQuickExpanded}
                       onHoverEnter={qmHover.enter}
@@ -701,6 +709,11 @@ function ChatInputBar({ inputRef, inputEmpty, inputSuggestion, terminalVisible, 
                       <UploadIcon />
                       <span>{t('ui.terminal.upload')}</span>
                     </button>
+                    {onOpenScheduleModal && (
+                      <button className={styles.plusMenuItem} onClick={() => { closePlusMenu(); onOpenScheduleModal(); }}>
+                        <ScheduleIcon /><span>{t('ui.schedule.menuItem')}</span>
+                      </button>
+                    )}
                   </>
                 )}
               </div>

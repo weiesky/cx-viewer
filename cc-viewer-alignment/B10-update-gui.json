@@ -1,0 +1,117 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "fixture": {
+    "pid": 85644,
+    "root": "/tmp/cxv-b10-ui-D55VSk",
+    "port": 21040,
+    "stopped": true
+  },
+  "results": [
+    {
+      "engine": "chromium",
+      "theme": "light",
+      "starts": 1,
+      "restarts": 1,
+      "unexpectedPageErrors": [],
+      "screenshots": [
+        {
+          "name": "manual",
+          "sha256": "36314094a567fe700c79955d2948dc7e65f68ab31c5955737c82120eb51a04f9"
+        },
+        {
+          "name": "downloading",
+          "sha256": "e156116539fe64f4a27ecd25c707b91fd9da2e04ec585b1e9329ec8358c01069"
+        },
+        {
+          "name": "confirmation",
+          "sha256": "2c8fd0eae37baf61424f5499261cb255b93e3a1828f36208d59d4ec4706bf37a"
+        },
+        {
+          "name": "restart-rejected",
+          "sha256": "aa019648c2f989cade4b2e29d3a264dc9861b91391fa47a90e78ebcf67e8caf5"
+        }
+      ]
+    },
+    {
+      "engine": "chromium",
+      "theme": "dark",
+      "starts": 1,
+      "restarts": 1,
+      "unexpectedPageErrors": [],
+      "screenshots": [
+        {
+          "name": "manual",
+          "sha256": "73dbc8c2a979f86e4fbea6cd071ff47a98f77eed1d877aa6a5a55bd93bb7979f"
+        },
+        {
+          "name": "downloading",
+          "sha256": "65fa09aa6bb4048299551ef85ef7e0297534800500dc78142a991a034998dce3"
+        },
+        {
+          "name": "confirmation",
+          "sha256": "9e6c7bd447989d4699e7c912cbd1c3da828aa8065b6927db2c51b7930217cca8"
+        },
+        {
+          "name": "restart-rejected",
+          "sha256": "daba9919a0322c7af17854c4bf66c5f40093d65192bd1329f79956939becbacd"
+        }
+      ]
+    },
+    {
+      "engine": "webkit",
+      "theme": "light",
+      "starts": 1,
+      "restarts": 1,
+      "unexpectedPageErrors": [],
+      "screenshots": [
+        {
+          "name": "manual",
+          "sha256": "1534ecb883e9438e99c94ef027509c5ea0e85387d18f6ffabc82c2fe3918ece5"
+        },
+        {
+          "name": "downloading",
+          "sha256": "353a36d31a70cf365990dd7915f3b7f4e5743de4e48b0731b2c782bb08e5e2ca"
+        },
+        {
+          "name": "confirmation",
+          "sha256": "7b750a76edc9ea55843991addd6c964f60ff4952cdb51c869ee16ddc4739a2e1"
+        },
+        {
+          "name": "restart-rejected",
+          "sha256": "8f4d29db0fd3f740d1e8498d1a0ae64634524877e0da9dbcbdfabcdb90ab2132"
+        }
+      ]
+    },
+    {
+      "engine": "webkit",
+      "theme": "dark",
+      "starts": 1,
+      "restarts": 1,
+      "unexpectedPageErrors": [],
+      "screenshots": [
+        {
+          "name": "manual",
+          "sha256": "9eeb201c3729b1c59bd576b2c5a938c1c835c31aa07c34a70de63044796586c7"
+        },
+        {
+          "name": "downloading",
+          "sha256": "584512281b7ac80c4a2e9a5725b9bc6037a1ebea2d139717e0c67ba9dc1aed16"
+        },
+        {
+          "name": "confirmation",
+          "sha256": "2d01f9a85639db6f8e3df8be5b5db12fd101f28fbddc97db8e87d372b3000647"
+        },
+        {
+          "name": "restart-rejected",
+          "sha256": "ef8d94beb78aedde0b623fd255ee110229e22c43b8e19d9395408611bd41713e"
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Actual isolated main server and bundled UI; release/progress/restart responses are controlled Playwright fixtures",
+    "No real global package replaced and no external models",
+    "The upstream updater entry is desktop-only; no new mobile UI added"
+  ],
+  "inspection": "All 16 screenshots visually inspected; original width560/CSS and confirmation layout retained."
+}
