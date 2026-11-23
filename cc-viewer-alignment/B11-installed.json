@@ -1,11 +1,11 @@
 {
-  "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-installed-runtime-q18firh0",
+  "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-installed-runtime-75tdhlp8",
   "files": 825,
   "source_bytes_match": true,
   "all_pack_files_compared": 825,
   "all_pack_file_bytes_match": true,
   "web_asset_files": 211,
-  "runtime_tests": "1197/1197",
+  "runtime_tests": "1237/1237",
   "b12_regression": "passed",
   "installed_cli_relative_cd_boot": "passed",
   "uses_fake_codex": true,
@@ -13,5 +13,10 @@
   "installedCoreAliasContracts": 28,
   "installedContentFallback": true,
   "rootWorkspaceAlsoAll825BytesMatch": true,
-  "verifiedRuntimeCodeCommit": "7ce46a0"
+  "verifiedRuntimeCodeCommit": "3a4bf400017a41732c3aab12d3041d952fc8a0eb",
+  "webBytesUnchangedSinceE34Gui": {
+    "comparedFiles": 211,
+    "allBytesMatch": true,
+    "priorInstalledBase": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-installed-runtime-q18firh0"
+  }
 }

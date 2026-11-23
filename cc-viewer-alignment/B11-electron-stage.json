@@ -8,8 +8,9 @@
   "noEscapingDependencyLinks": true,
   "checkedDependencyLinks": 395,
   "runtimeOnlyNotElectronGui": true,
-  "verifiedRuntimeCodeCommit": "7ce46a0",
+  "verifiedRuntimeCodeCommit": "3a4bf400017a41732c3aab12d3041d952fc8a0eb",
+  "passedLog": "/tmp/cxv-b11-reviewed-stage.log",
   "assemblerFollowup": "E33 private core copied into disposable stage only",
   "firstFailureLog": "/tmp/cxv-b11-structure-stage.log",
-  "passedLog": "/tmp/cxv-b11-structure-stage-fixed.log"
+  "runtimeBootReceipt": "B11-stage-runtime-boot.json"
 }

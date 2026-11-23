@@ -1,9 +1,9 @@
 {
   "date": "2026-11-23",
-  "status": "local-implementation-and-available-environment-validation-complete",
+  "status": "merged-to-main-with-post-merge-progress-update",
   "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
-  "runtimeCodeCommit": "7ce46a0cab8aef91e115de665b6661e44e20714b",
-  "branch": "alignment/b11-engineering-safety-platforms",
+  "runtimeCodeCommit": "3a4bf400017a41732c3aab12d3041d952fc8a0eb",
+  "branch": "main",
   "candidateCount": 201,
   "primaryCount": 42,
   "crossCount": 193,
@@ -14,16 +14,16 @@
     "content": 7,
     "core": 28,
     "web": 808,
-    "app": 1722,
+    "app": 1725,
     "integration": 246,
-    "total": 2820,
+    "total": 2823,
     "skipped": 0,
     "build": true,
     "stableTarballPaths": 626,
     "sourceDriftPaths": 601,
     "packageFiles": 825,
     "webAssetFiles": 211,
-    "cleanInstalledTests": "1197/1197",
+    "cleanInstalledTests": "1237/1237",
     "allPackageAndWebBytesMatch": true,
     "cleanSixWorkspaceFrozenInstall": true,
     "rootAndStrictInstall825BytesMatch": true,
@@ -31,7 +31,7 @@
     "installedContentFallback": true,
     "minimumNode": "20.12.0",
     "minimumNodeBoot": true,
-    "minimumNodeTargetedTests": "46/46",
+    "minimumNodeTargetedTests": "93/93",
     "minimumNodeFullSuite": false,
     "electronStageAll825BytesMatch": true,
     "electronStageDependencyLinksChecked": 395,
@@ -42,9 +42,11 @@
     "boundaryFixtureTests": 26,
     "browserConfigurations": 14,
     "browserScreenshots": 30,
-    "remoteCiClaimedPassed": false
+    "remoteCiClaimedPassed": true,
+    "remoteCiChecksSucceeded": 10,
+    "webBytesUnchangedSinceE34Gui": true
   },
-  "installedBase": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-installed-runtime-q18firh0",
+  "installedBase": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-installed-runtime-75tdhlp8",
   "failedAttemptsRetained": [
     "/tmp/cxv-b11-full-first.log (host bypass inherited by a fixture; E16 corrected)",
     "/tmp/cxv-b11-final-app.log (packing assembled shared dist during HTTP test; serial full app rerun passed)",
@@ -52,7 +54,10 @@
     "/tmp/cxv-b11-electron-prepare-retry.log (55s download deadline)",
     "/tmp/cxv-b11-core-app.log (2 incomplete synthetic install fixtures fixed; CLI transient connection refused; targeted11 and serial1721 passed, final normal root2820 passed)",
     "/tmp/cxv-b11-structure-stage.log (private core workspace link correctly rejected; E33 copies real files; actual stage rerun passed)",
-    "/tmp/cxv-b11-structure-settings-gui.log (earlier live fixture dropped original nonce; corrected cumulative input, fresh owned fixture and all14 configurations rerun passed)"
+    "/tmp/cxv-b11-structure-settings-gui.log (earlier live fixture dropped original nonce; corrected cumulative input, fresh owned fixture and all14 configurations rerun passed)",
+    "/tmp/cxv-b11-ci-lock-race-red.log",
+    "/tmp/cxv-b11-ci-zero-link-red.log",
+    "/tmp/cxv-b11-ci-store-snapshot-red.log"
   ],
   "passingFinalLogs": [
     "/tmp/cxv-b11-structure-full.log",
@@ -69,12 +74,22 @@
     "/tmp/cxv-b11-structure-gui-final.log",
     "/tmp/cxv-b11-structure-settings-gui-final.log",
     "/tmp/cxv-b11-structure-live-gui-final.log",
-    "/tmp/cxv-b11-structure-footer-gui-final.log"
+    "/tmp/cxv-b11-structure-footer-gui-final.log",
+    "/tmp/cxv-b11-reviewed-local-full.log",
+    "/tmp/cxv-b11-reviewed-build.log",
+    "/tmp/cxv-b11-reviewed-pack.log",
+    "/tmp/cxv-b11-reviewed-installed.log",
+    "/tmp/cxv-b11-reviewed-stage.log",
+    "/tmp/cxv-b11-reviewed-stage-boot.log",
+    "/tmp/cxv-b11-reviewed-node-floor-tests.log",
+    "/tmp/cxv-b11-ci-lock-stress.log",
+    "/tmp/cxv-b11-ci-auth-lock-stress.log",
+    "/tmp/cxv-b11-ci-im-store-stress.log"
   ],
   "userRuntime": "B11-active-entry-readonly.json; no assistant restart/stop",
   "ownFixtureCleanup": "B11-fixture-cleanup.json",
   "limitations": [
-    "Windows/Linux actual execution and Electron GUI/signing/notarization not verified",
+    "Ubuntu full Node20/22/24 CI and macOS/Windows targeted contracts passed; full Windows runtime and Electron GUI/signing/notarization not verified",
     "minimum Node exercised on current macOS only; not the full suite",
     "real DingTalk and external model calls not performed",
     "browser connection/start/stop states controlled; Save/logs/V2/profiles/disk invalidation real isolated HTTP/files",
@@ -86,15 +101,171 @@
     "coreContent": "extract",
     "implemented": "E27-E33"
   },
-  "priorCheckpoint": "B11-validation-E26-2026-11-23.json",
+  "priorCheckpoint": "B11-validation-pre-consolidation-2026-11-23.json",
   "delivery": {
-    "localCommitsWithFinalDocumentation": 34,
-    "implementationCommitsRecorded": 33,
-    "newB11PrCreated": false,
-    "pushedOrMergedThisB11Branch": false
+    "originalLocalCommits": 34,
+    "featureCommitsInPr": 1,
+    "prNumber": 13,
+    "prUrl": "https://github.com/weiesky/cx-viewer/pull/13",
+    "state": "MERGED",
+    "baseCommit": "a3fbc0f06ff42119a33f24a252e36b621269316e",
+    "finalFeatureCommit": "539822e93ae2e3b6d16b56cff545791d40248f36",
+    "mergeCommit": "3a4bf400017a41732c3aab12d3041d952fc8a0eb",
+    "mergedAt": "2026-11-23T07:19:32Z",
+    "mergeTreeMatchesFinalCandidate": true,
+    "progressDocumentationUpdatedAfterMerge": true,
+    "postMergeDocumentationCommitSubject": "docs(alignment): record B11 merge and CI verification",
+    "documentationCommitOwnHashOmitted": true,
+    "mapping": "B11-original-commits-2026-11-23.json",
+    "record": "B11-consolidation-and-merge-2026-11-23.md"
   },
   "correctedFixtureAttempts": [
     "E28 macOS temp alias normalized with realpath in fixture; final content7 passed",
     "E28 test invocation corrected to normal app cwd; final app callers46 passed"
-  ]
+  ],
+  "remoteCi": {
+    "verifiedHead": "539822e93ae2e3b6d16b56cff545791d40248f36",
+    "beforeMerge": true,
+    "allChecksSucceeded": true,
+    "checkCount": 10,
+    "runIds": [
+      45129697080,
+      45129691111
+    ],
+    "checks": [
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-11-23T07:18:01Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45129697080/job/137542126082",
+        "name": "test (20.x)",
+        "startedAt": "2026-11-23T07:14:55Z",
+        "status": "COMPLETED",
+        "workflowName": "CI"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-11-23T07:17:23Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45129691111/job/137542107705",
+        "name": "test (20.x)",
+        "startedAt": "2026-11-23T07:14:52Z",
+        "status": "COMPLETED",
+        "workflowName": "CI"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-11-23T07:17:24Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45129697080/job/137542125762",
+        "name": "test (22.x)",
+        "startedAt": "2026-11-23T07:14:56Z",
+        "status": "COMPLETED",
+        "workflowName": "CI"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-11-23T07:17:51Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45129691111/job/137542107726",
+        "name": "test (22.x)",
+        "startedAt": "2026-11-23T07:14:52Z",
+        "status": "COMPLETED",
+        "workflowName": "CI"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-11-23T07:17:35Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45129697080/job/137542126071",
+        "name": "test (24.x)",
+        "startedAt": "2026-11-23T07:14:55Z",
+        "status": "COMPLETED",
+        "workflowName": "CI"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-11-23T07:17:59Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45129691111/job/137542107383",
+        "name": "test (24.x)",
+        "startedAt": "2026-11-23T07:14:53Z",
+        "status": "COMPLETED",
+        "workflowName": "CI"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-11-23T07:15:35Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45129697080/job/137542125992",
+        "name": "platform-contracts (macos-latest)",
+        "startedAt": "2026-11-23T07:14:56Z",
+        "status": "COMPLETED",
+        "workflowName": "CI"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-11-23T07:15:32Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45129691111/job/137542107680",
+        "name": "platform-contracts (macos-latest)",
+        "startedAt": "2026-11-23T07:14:52Z",
+        "status": "COMPLETED",
+        "workflowName": "CI"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-11-23T07:15:51Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45129697080/job/137542126174",
+        "name": "platform-contracts (windows-latest)",
+        "startedAt": "2026-11-23T07:14:56Z",
+        "status": "COMPLETED",
+        "workflowName": "CI"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-11-23T07:15:44Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45129691111/job/137542107690",
+        "name": "platform-contracts (windows-latest)",
+        "startedAt": "2026-11-23T07:14:54Z",
+        "status": "COMPLETED",
+        "workflowName": "CI"
+      }
+    ],
+    "scope": [
+      "Ubuntu full suite/build/pack on Node 20.x, 22.x, 24.x",
+      "macOS and Windows targeted discovery/package/platform contracts"
+    ],
+    "limits": [
+      "Windows contract job skips one POSIX-only shell fixture; not a full Windows runtime or Electron GUI run",
+      "Post-merge documentation-only push CI is separate from these verified PR checks"
+    ]
+  },
+  "ciFollowups": {
+    "paths": [
+      ".github/workflows/ci.yml",
+      "apps/web/tests/sdk-workspace-tabs.test.js",
+      "cc-viewer-alignment/probes/b3-installed-check.py",
+      "packages/app/findcx.js",
+      "packages/app/lib/credential-backup.js",
+      "packages/app/lib/credential-store.js",
+      "packages/app/tests/appserver-bridge-isolation.test.js",
+      "packages/app/tests/credential-backup.test.js",
+      "packages/app/tests/credential-store.test.js",
+      "packages/app/tests/helpers/process-exit.js",
+      "packages/app/tests/logger-bootstrap.test.js",
+      "packages/app/tests/plugin-runtime-real.test.js",
+      "packages/app/tests/plugin-service-integration.test.js",
+      "packages/app/tests/process-exit-helper.test.js",
+      "packages/app/tests/pty-session-isolation.test.js",
+      "packages/app/tests/scratch-pty-tree.test.js",
+      "packages/app/tests/sdk-cli-resume.test.js",
+      "packages/app/tests/sdk-process-ownership.test.js"
+    ],
+    "count": 18,
+    "record": "B11-consolidation-and-merge-2026-11-23.md",
+    "foldedIntoSingleFeatureCommit": true
+  }
 }

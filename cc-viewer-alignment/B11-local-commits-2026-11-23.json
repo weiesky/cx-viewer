@@ -206,5 +206,23 @@
     "iteration": "E34",
     "subject": "docs: close B11 with final package and workspace validation",
     "selfHashOmitted": true
-  }
+  },
+  "deliveryUpdate": {
+    "originalLocalCommits": 34,
+    "featureCommitsInPr": 1,
+    "prNumber": 13,
+    "prUrl": "https://github.com/weiesky/cx-viewer/pull/13",
+    "state": "MERGED",
+    "baseCommit": "a3fbc0f06ff42119a33f24a252e36b621269316e",
+    "finalFeatureCommit": "539822e93ae2e3b6d16b56cff545791d40248f36",
+    "mergeCommit": "3a4bf400017a41732c3aab12d3041d952fc8a0eb",
+    "mergedAt": "2026-11-23T07:19:32Z",
+    "mergeTreeMatchesFinalCandidate": true,
+    "progressDocumentationUpdatedAfterMerge": true,
+    "postMergeDocumentationCommitSubject": "docs(alignment): record B11 merge and CI verification",
+    "documentationCommitOwnHashOmitted": true,
+    "mapping": "B11-original-commits-2026-11-23.json",
+    "record": "B11-consolidation-and-merge-2026-11-23.md"
+  },
+  "historicalCheckpointNote": "Original E1-E33 mapping and E34 planned subject retained as the pre-consolidation checkpoint. Full original E1-E34 hashes/trees and final shipping identity are in B11-original-commits-2026-11-23.json."
 }

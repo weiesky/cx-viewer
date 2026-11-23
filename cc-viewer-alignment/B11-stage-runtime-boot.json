@@ -1,8 +1,10 @@
 {
   "node": "v24.14.0",
-  "privateRoot": "/tmp/cxv-b11-node-floor-gOWeHk",
+  "privateRoot": "/tmp/cxv-b11-node-floor-gIumnv",
   "isolatedServerBoot": true,
   "port": 21240,
   "cliMode": true,
-  "noModel": true
+  "noModel": true,
+  "verifiedRuntimeCodeCommit": "3a4bf400017a41732c3aab12d3041d952fc8a0eb",
+  "runtimeOnlyNotElectronGui": true
 }

@@ -1,0 +1,120 @@
+{
+  "verifiedHead": "539822e93ae2e3b6d16b56cff545791d40248f36",
+  "beforeMerge": true,
+  "allChecksSucceeded": true,
+  "checkCount": 10,
+  "runIds": [
+    45129697080,
+    45129691111
+  ],
+  "checks": [
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-23T07:18:01Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45129697080/job/137542126082",
+      "name": "test (20.x)",
+      "startedAt": "2026-11-23T07:14:55Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-23T07:17:23Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45129691111/job/137542107705",
+      "name": "test (20.x)",
+      "startedAt": "2026-11-23T07:14:52Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-23T07:17:24Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45129697080/job/137542125762",
+      "name": "test (22.x)",
+      "startedAt": "2026-11-23T07:14:56Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-23T07:17:51Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45129691111/job/137542107726",
+      "name": "test (22.x)",
+      "startedAt": "2026-11-23T07:14:52Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-23T07:17:35Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45129697080/job/137542126071",
+      "name": "test (24.x)",
+      "startedAt": "2026-11-23T07:14:55Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-23T07:17:59Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45129691111/job/137542107383",
+      "name": "test (24.x)",
+      "startedAt": "2026-11-23T07:14:53Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-23T07:15:35Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45129697080/job/137542125992",
+      "name": "platform-contracts (macos-latest)",
+      "startedAt": "2026-11-23T07:14:56Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-23T07:15:32Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45129691111/job/137542107680",
+      "name": "platform-contracts (macos-latest)",
+      "startedAt": "2026-11-23T07:14:52Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-23T07:15:51Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45129697080/job/137542126174",
+      "name": "platform-contracts (windows-latest)",
+      "startedAt": "2026-11-23T07:14:56Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-23T07:15:44Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45129691111/job/137542107690",
+      "name": "platform-contracts (windows-latest)",
+      "startedAt": "2026-11-23T07:14:54Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    }
+  ],
+  "scope": [
+    "Ubuntu full suite/build/pack on Node 20.x, 22.x, 24.x",
+    "macOS and Windows targeted discovery/package/platform contracts"
+  ],
+  "limits": [
+    "Windows contract job skips one POSIX-only shell fixture; not a full Windows runtime or Electron GUI run",
+    "Post-merge documentation-only push CI is separate from these verified PR checks"
+  ]
+}

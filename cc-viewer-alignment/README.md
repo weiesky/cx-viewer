@@ -2,7 +2,7 @@
 
 **迁移约束：优先参考 PR 的实际代码，禁止根据文档自由改版。** B2已按上游组件/CSS/交互纠偏并经用户验收收口；B4及后续工作包继续遵守该规则，运行性测试不能单独代表视觉对齐。必读[源码优先迁移规范与已确认偏差](./migration-code-first.md)。
 
-当前进度：2026-11-23 B11本地实施与可用环境验收完成（第12/12工作包），34笔小步提交保留在alignment/b11-engineering-safety-platforms，尚未提交B11 PR或合并。201候选逐项范围核销；用户选定Changesets/core/content后的5个工程候选已落实。最终2820/2820、0skip/build、626稳定路径/601源码门，严格六workspace冻结安装，新生产1197/1197及825包/211Web精确字节，Electron stage825字节/395链接/独立启动，实际Node20.12启动+46项、双浏览器14配置30图通过。仅当前macOS/Node24与所列隔离环境结论，无远端CI、Windows/Linux或Electron GUI签名公证通过声明；7008/PID97674及其他用户实例未重启，正常重启才加载后端。下一步B11 PR交付及真实目标环境验收；见[B11完成矩阵](./B11-completion-matrix.md)、[实施](./B11-implementation.md)与[最终回执](./B11-validation-2026-11-23.json)。
+当前进度：2026-11-23 B11已通过[PR #13](https://github.com/weiesky/cx-viewer/pull/13)合并main `3a4bf40`（第12/12工作包），34笔原始提交备份后整合为1笔 `539822e`，合并后更新本轮文档。201候选按子项核销，Changesets/core/content与边界门已落实。最终本地2823/2823、0skip/build/626稳定路径/601源码门，新生产1237/1237及825包/211Web精确字节，桌面stage825字节/395链接/独立启动，实际Node20.12启动+93、双浏览器14配置30图通过。PR的10项远端检查全成功：Ubuntu Node20/22/24全套及macOS/Windows定向合同；Windows完整运行、Electron GUI/签名/公证和真实外部环境仍未验。7008/PID97674及其他用户实例未停止/重启，正常重启才加载后端。下一步补齐目标环境验收；见[B11完成矩阵](./B11-completion-matrix.md)、[整合与合并记录](./B11-consolidation-and-merge-2026-11-23.md)与[最终回执](./B11-validation-2026-11-23.json)。
 
 2026-11-22 普通CLI/PTY“＋”已由B7 E1–E13接齐并经真实双工作区GUI验证；历史缺口记录保留。B8 E16只读确认7008已具ptyMode/队列能力，普通PTY模式；本轮SDK修复是否加载仍须其对应进程正常重启核对，未停止用户实例。见[B7完成矩阵](./B7-completion-matrix.md)。
 
@@ -29,9 +29,9 @@
 | B8 | 已完成并由[PR #9](https://github.com/weiesky/cx-viewer/pull/9)合并main，见[B8完成矩阵](./B8-completion-matrix.md)。 |
 | B9 | 已由PR #12与B10一起合并main d829772，旧#11关闭；原验证/备份保留。 |
 | B10 | 已由[PR #12](https://github.com/weiesky/cx-viewer/pull/12)合并main d829772；2713项/pack773/新安装1096，见[B10矩阵](./B10-completion-matrix.md)。 |
-| B11 | 本地实施/可用环境验收完成（第12/12包），34笔保留；2820/1197与825包字节、14配置30图，待PR交付/真实环境验收。见[B11完成矩阵](./B11-completion-matrix.md)。 |
+| B11 | 已由PR #13合并main 3a4bf40（第12/12包），34→1并保留备份；2823/1237、825包字节、14配置30图、远端10检查成功；目标环境余项见[B11完成矩阵](./B11-completion-matrix.md)。 |
 
-当前以[B11实施](./B11-implementation.md)与[范围矩阵](./B11-candidate-matrix.md)为准；B11是最近本地完成包，B7/B8/B9历史交接保留当时起点。
+当前以[B11实施](./B11-implementation.md)与[范围矩阵](./B11-candidate-matrix.md)为准；B11是最近已合并交付包，B7/B8/B9历史交接保留当时起点。
 
 pnpm/workspace 已按用户选择前置实施，先稳定结构，再继续功能对齐；见 [提交、边界与验收](./A1-A2-engineering.md)。
 

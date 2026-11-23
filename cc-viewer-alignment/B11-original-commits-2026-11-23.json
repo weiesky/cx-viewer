@@ -1,0 +1,372 @@
+{
+  "base": "a3fbc0f06ff42119a33f24a252e36b621269316e",
+  "rawHead": "64288c88f93497a7641341624b77635ea6769967",
+  "rawTree": "13c9f51fc60ef957a3c1be4ea915c3f63d588623",
+  "backupBranch": "backup/b11-raw-20261123",
+  "bundle": "/Users/sky/.codex/backups/cx-viewer/B11-20261123/raw-before-consolidation.bundle",
+  "bundleVerified": true,
+  "originalCommits": [
+    {
+      "commit": "259df3a8fc5fee480f228f6e9cce447af2aa2047",
+      "tree": "75c8c904c95e8417edf90ba3196216bc9e512449",
+      "parents": "a3fbc0f06ff42119a33f24a252e36b621269316e",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T11:44:44+08:00",
+      "commitDate": "2026-11-23T11:44:44+08:00",
+      "subject": "fix(discovery): use fixed npm argv and guarded installation fallback"
+    },
+    {
+      "commit": "1218d22408d9490e75cf8771c7dee06a7ddbefc2",
+      "tree": "12b0364fd0a9b4c6a788e2019805c4b786a8bf5d",
+      "parents": "259df3a8fc5fee480f228f6e9cce447af2aa2047",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T11:46:38+08:00",
+      "commitDate": "2026-11-23T11:46:38+08:00",
+      "subject": "fix(electron): fall back to bundled Node and settle failed tab launches"
+    },
+    {
+      "commit": "1c92a35542c0ff614b2b5ed0945c05073404077b",
+      "tree": "c4976cdc92813d188abc536427a88bd4cad86ff1",
+      "parents": "1218d22408d9490e75cf8771c7dee06a7ddbefc2",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T11:49:59+08:00",
+      "commitDate": "2026-11-23T11:49:59+08:00",
+      "subject": "fix(discovery): filter Windows shims while preserving native Codex launchers"
+    },
+    {
+      "commit": "3e754712fefb690b6375478724bb31b6fbfb9f8b",
+      "tree": "e365d73038413016c57c6d71b4df0a7ba399709b",
+      "parents": "1c92a35542c0ff614b2b5ed0945c05073404077b",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T11:51:12+08:00",
+      "commitDate": "2026-11-23T11:51:12+08:00",
+      "subject": "fix(package): accept npm 12 reports and reject ambiguous package lists"
+    },
+    {
+      "commit": "af5eb3d2522e37da90ea560d779287f08a4e40b3",
+      "tree": "e770e96418badb2c453e75a25c0ff39334e5375a",
+      "parents": "3e754712fefb690b6375478724bb31b6fbfb9f8b",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T11:54:22+08:00",
+      "commitDate": "2026-11-23T11:54:22+08:00",
+      "subject": "build(package): enforce the actual tarball layout contract"
+    },
+    {
+      "commit": "62cc7a342e324aa6522a652c4dbffbe020a56671",
+      "tree": "5dd9b30ebcbd5c877dae788f75b357525e2a9157",
+      "parents": "af5eb3d2522e37da90ea560d779287f08a4e40b3",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T11:56:07+08:00",
+      "commitDate": "2026-11-23T11:56:07+08:00",
+      "subject": "fix(im): reject non-object configuration before writes and process control"
+    },
+    {
+      "commit": "e364136b4626ff20a3a6261310326c89ad00ccfb",
+      "tree": "81172493e8b842b4878ca1688de385369ebf3d7d",
+      "parents": "62cc7a342e324aa6522a652c4dbffbe020a56671",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T11:58:42+08:00",
+      "commitDate": "2026-11-23T11:58:42+08:00",
+      "subject": "fix(im): restore original reconnecting status and configuration wakeups"
+    },
+    {
+      "commit": "e7bc503149643e5f08303a5158dffb70a226c781",
+      "tree": "65c504a0579e101e2f6734dfcc45db380eec2d60",
+      "parents": "e364136b4626ff20a3a6261310326c89ad00ccfb",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T12:03:39+08:00",
+      "commitDate": "2026-11-23T12:03:39+08:00",
+      "subject": "feat(im): restore original save and conversation worker controls"
+    },
+    {
+      "commit": "ccaf4bde1b3c1fb189c8c1ef2351dbaf0e0210b6",
+      "tree": "1802880b14774e8c44fbca759435d47af4164955",
+      "parents": "e7bc503149643e5f08303a5158dffb70a226c781",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T12:08:13+08:00",
+      "commitDate": "2026-11-23T12:08:13+08:00",
+      "subject": "fix(im): mount the original conversation drawer from header actions"
+    },
+    {
+      "commit": "b7deaf417c752f7f27c9e24206d38d1882899e87",
+      "tree": "5a583d09c4f6e3acbc9e57d82fe381033f919935",
+      "parents": "ccaf4bde1b3c1fb189c8c1ef2351dbaf0e0210b6",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T12:13:50+08:00",
+      "commitDate": "2026-11-23T12:13:50+08:00",
+      "subject": "fix(im): read independent worker conversations through native V2 archives"
+    },
+    {
+      "commit": "664cd75cae2c7278699ebabfe124fcfbc57c7c51",
+      "tree": "f620d104cb79cb76a211bbafb102d0b6db8d0713",
+      "parents": "b7deaf417c752f7f27c9e24206d38d1882899e87",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T12:17:31+08:00",
+      "commitDate": "2026-11-23T12:18:04+08:00",
+      "subject": "fix(im): refresh the conversation drawer when native worker logs change"
+    },
+    {
+      "commit": "7868d63708b334f18d13f8350238b84ac56227bd",
+      "tree": "6f0d59f092147da75a134958ed9f0a9e2eb6fdf5",
+      "parents": "664cd75cae2c7278699ebabfe124fcfbc57c7c51",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T12:20:05+08:00",
+      "commitDate": "2026-11-23T12:20:05+08:00",
+      "subject": "fix(web): align footer data gates and remove star-count requests"
+    },
+    {
+      "commit": "2105b01e9bd2e2c0ae3b2e8c23318491ebaf2d76",
+      "tree": "599354ac31e3f4ba0e580c26d3a32d3f70fdf2b6",
+      "parents": "7868d63708b334f18d13f8350238b84ac56227bd",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T12:21:25+08:00",
+      "commitDate": "2026-11-23T12:21:25+08:00",
+      "subject": "fix(deps): carry the frozen fast-uri security pin into the workspace"
+    },
+    {
+      "commit": "d628715937d48d0410c81df981e5fdbffbf7866a",
+      "tree": "a6aedff924525e4bea9d11bcaa2f73650d6bfce4",
+      "parents": "2105b01e9bd2e2c0ae3b2e8c23318491ebaf2d76",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T12:22:58+08:00",
+      "commitDate": "2026-11-23T12:22:58+08:00",
+      "subject": "fix(electron): use the temporary keychain password for signing ACLs"
+    },
+    {
+      "commit": "cc94f5a5d0d6b9a973f87f97c9ac4c60d2379dc7",
+      "tree": "66ad76aba90b54da9e7e2a567a0f7441521e74ee",
+      "parents": "d628715937d48d0410c81df981e5fdbffbf7866a",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T12:26:35+08:00",
+      "commitDate": "2026-11-23T12:26:35+08:00",
+      "subject": "ci: verify platform contracts and real tarballs before release"
+    },
+    {
+      "commit": "ab7211329c19123320cf6b0f76f0c23427f16b15",
+      "tree": "35eb29d13a4f8396c454479494702361b2c9f93e",
+      "parents": "cc94f5a5d0d6b9a973f87f97c9ac4c60d2379dc7",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T12:28:39+08:00",
+      "commitDate": "2026-11-23T12:28:39+08:00",
+      "subject": "test: isolate permission bridge fixtures from host bypass mode"
+    },
+    {
+      "commit": "bd735d8b7040b920f838eeea4af9b7edb2648e90",
+      "tree": "94cca9f72010c765b5d016b44d0bbb5b8303938e",
+      "parents": "ab7211329c19123320cf6b0f76f0c23427f16b15",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T12:29:22+08:00",
+      "commitDate": "2026-11-23T12:29:22+08:00",
+      "subject": "build: reject published source drift before local tests"
+    },
+    {
+      "commit": "377f23b7bb5109218c4288bc1850c8f33b715bc8",
+      "tree": "45757172879f75a6ebc6f6a6f88fccae32b4d546",
+      "parents": "bd735d8b7040b920f838eeea4af9b7edb2648e90",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T12:31:53+08:00",
+      "commitDate": "2026-11-23T12:31:53+08:00",
+      "subject": "docs: adapt the frozen cloud contract to native configuration boundaries"
+    },
+    {
+      "commit": "72eb2ec01e3d727493fbaaa720b88227eadc68ea",
+      "tree": "fc0e9577009225b59b7690831a252657a68ee462",
+      "parents": "377f23b7bb5109218c4288bc1850c8f33b715bc8",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T12:32:33+08:00",
+      "commitDate": "2026-11-23T12:32:33+08:00",
+      "subject": "fix(im): describe the native sender allowlist boundary accurately"
+    },
+    {
+      "commit": "86c291a420e327ce3ff7a7a9e5b7de34298ddb1f",
+      "tree": "d00fb435be38b07278b1711c6f18e077e743ced9",
+      "parents": "72eb2ec01e3d727493fbaaa720b88227eadc68ea",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T12:36:47+08:00",
+      "commitDate": "2026-11-23T12:36:47+08:00",
+      "subject": "fix(im): restore sender names without changing native turn correlation"
+    },
+    {
+      "commit": "270b17ffbd082d04414e16869758aec1ac802d30",
+      "tree": "851bdc76f7fb1c74a8388889e9410d37e9980229",
+      "parents": "86c291a420e327ce3ff7a7a9e5b7de34298ddb1f",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T12:43:00+08:00",
+      "commitDate": "2026-11-23T12:43:00+08:00",
+      "subject": "test: verify B11 in clean production and minimum-Node runtimes"
+    },
+    {
+      "commit": "13a824ed1f52ba30be15d6df3bf062267a672e57",
+      "tree": "9042075eddc0fe334f6761dcad62eba7bad6ca20",
+      "parents": "270b17ffbd082d04414e16869758aec1ac802d30",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T12:44:47+08:00",
+      "commitDate": "2026-11-23T12:44:47+08:00",
+      "subject": "chore: reconcile legacy build dependencies with the frozen security pin"
+    },
+    {
+      "commit": "7397fd218e18dce37ccea72dd433fa28bb026380",
+      "tree": "0a35f05ff38265d4e870909db59b00cde8442117",
+      "parents": "13a824ed1f52ba30be15d6df3bf062267a672e57",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T12:49:10+08:00",
+      "commitDate": "2026-11-23T12:49:10+08:00",
+      "subject": "ci: select the publish tag without a separate OIDC metadata mutation"
+    },
+    {
+      "commit": "8c972fe82adf5b5449a2398da2d928b92aadecad",
+      "tree": "3531c24b393aa67e2713fb0dd90904f31da8588d",
+      "parents": "7397fd218e18dce37ccea72dd433fa28bb026380",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T12:53:22+08:00",
+      "commitDate": "2026-11-23T12:53:22+08:00",
+      "subject": "fix(im): share reconnecting badge decisions in the settings panel"
+    },
+    {
+      "commit": "da2515c601f251e3227dc11a3730a03428a29a63",
+      "tree": "13597d720c6dc9ba6d01630d20c5a431af538caa",
+      "parents": "8c972fe82adf5b5449a2398da2d928b92aadecad",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T12:54:33+08:00",
+      "commitDate": "2026-11-23T12:54:33+08:00",
+      "subject": "fix(im): skip a busy sender-cache lock without delaying delivery"
+    },
+    {
+      "commit": "0821edca1dcfbdcfa5b255c7e72244dbadb6b810",
+      "tree": "16a50bc1588c6b67293fd0be87f0f1219c79d2bd",
+      "parents": "da2515c601f251e3227dc11a3730a03428a29a63",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T13:04:50+08:00",
+      "commitDate": "2026-11-23T13:04:50+08:00",
+      "subject": "docs: record B11 validation and the remaining engineering choices"
+    },
+    {
+      "commit": "57a90c2d2b68c320af9bf42c1c2765a28827950c",
+      "tree": "bce49b4298153669b523575474e313c06f54f6a8",
+      "parents": "0821edca1dcfbdcfa5b255c7e72244dbadb6b810",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T13:27:22+08:00",
+      "commitDate": "2026-11-23T13:27:22+08:00",
+      "subject": "build: adopt Changesets for the single published native package"
+    },
+    {
+      "commit": "ffb4e6bd27b0bb7cf64581547842f43079b7074c",
+      "tree": "37eaef72ef9a698e2636252b386f9b99c8291f19",
+      "parents": "57a90c2d2b68c320af9bf42c1c2765a28827950c",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T13:34:38+08:00",
+      "commitDate": "2026-11-23T13:35:08+08:00",
+      "subject": "refactor(content): extract native assets with installed-path fallback"
+    },
+    {
+      "commit": "e6c0f9bc323ceb7daf603aa326acf205924084f3",
+      "tree": "5bea563fd23a270c5dea8c2227c337debe25e7b7",
+      "parents": "ffb4e6bd27b0bb7cf64581547842f43079b7074c",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T13:42:10+08:00",
+      "commitDate": "2026-11-23T13:42:10+08:00",
+      "subject": "refactor(core): bundle native shared modules behind package imports"
+    },
+    {
+      "commit": "dafc6590ff2b30055de5bf558b43c5e69205e08e",
+      "tree": "ce0e1e3e171ad364f981141b1950fc3a9fd21e5c",
+      "parents": "e6c0f9bc323ceb7daf603aa326acf205924084f3",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T13:44:39+08:00",
+      "commitDate": "2026-11-23T13:44:39+08:00",
+      "subject": "refactor(server): group native IM approval and proxy helpers"
+    },
+    {
+      "commit": "7d1da800dbe845c131d5f16f5b4464b3f8a9ef32",
+      "tree": "c4b1f5fbc62131e372c1dcb62df90f339b80f880",
+      "parents": "dafc6590ff2b30055de5bf558b43c5e69205e08e",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T13:46:22+08:00",
+      "commitDate": "2026-11-23T13:46:22+08:00",
+      "subject": "refactor(log-v2): share archive scanning below summary and materializer"
+    },
+    {
+      "commit": "5892034f6211f1d8dc5292e05f2366f1e6dd1ccd",
+      "tree": "b7e50f04bcaed5c08b449cf7c911a46536bf5a92",
+      "parents": "7d1da800dbe845c131d5f16f5b4464b3f8a9ef32",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T13:50:37+08:00",
+      "commitDate": "2026-11-23T13:50:37+08:00",
+      "subject": "build: enforce native package import boundaries with a shrinking exception list"
+    },
+    {
+      "commit": "7ce46a0cab8aef91e115de665b6661e44e20714b",
+      "tree": "d430c2d5538cc0dbbb934dfadfe4004ecb71a7d0",
+      "parents": "5892034f6211f1d8dc5292e05f2366f1e6dd1ccd",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T13:56:02+08:00",
+      "commitDate": "2026-11-23T13:56:02+08:00",
+      "subject": "fix(electron): vendor private core files into the portable runtime stage"
+    },
+    {
+      "commit": "64288c88f93497a7641341624b77635ea6769967",
+      "tree": "13c9f51fc60ef957a3c1be4ea915c3f63d588623",
+      "parents": "7ce46a0cab8aef91e115de665b6661e44e20714b",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T14:02:07+08:00",
+      "commitDate": "2026-11-23T14:02:07+08:00",
+      "subject": "docs: close B11 with final package and workspace validation"
+    }
+  ],
+  "firstSquashedCommit": "d09bcddf596bc217e9e97e3a178d11af7648ec26",
+  "firstSquashedTree": "13c9f51fc60ef957a3c1be4ea915c3f63d588623",
+  "rawAndSquashedDiffIdenticalBeforeCiFollowup": true,
+  "squashedCommit": "539822e93ae2e3b6d16b56cff545791d40248f36",
+  "squashedTree": "34f3be16ae088392205d69be9b3dd403d2114b33",
+  "ciFollowupPaths": [
+    ".github/workflows/ci.yml",
+    "apps/web/tests/sdk-workspace-tabs.test.js",
+    "cc-viewer-alignment/probes/b3-installed-check.py",
+    "packages/app/findcx.js",
+    "packages/app/lib/credential-backup.js",
+    "packages/app/lib/credential-store.js",
+    "packages/app/tests/appserver-bridge-isolation.test.js",
+    "packages/app/tests/credential-backup.test.js",
+    "packages/app/tests/credential-store.test.js",
+    "packages/app/tests/helpers/process-exit.js",
+    "packages/app/tests/logger-bootstrap.test.js",
+    "packages/app/tests/plugin-runtime-real.test.js",
+    "packages/app/tests/plugin-service-integration.test.js",
+    "packages/app/tests/process-exit-helper.test.js",
+    "packages/app/tests/pty-session-isolation.test.js",
+    "packages/app/tests/scratch-pty-tree.test.js",
+    "packages/app/tests/sdk-cli-resume.test.js",
+    "packages/app/tests/sdk-process-ownership.test.js"
+  ],
+  "ciFollowupDiffVerified": true,
+  "finalChangedFileCount": 636,
+  "finalRemoteTreeAllEntriesMatch": true,
+  "finalRemoteTreeEntries": 2260,
+  "consolidatedBundle": "/Users/sky/.codex/backups/cx-viewer/B11-20261123/final-539822e.bundle",
+  "consolidatedBundleVerified": true,
+  "mergeCommit": "3a4bf400017a41732c3aab12d3041d952fc8a0eb",
+  "mergedAt": "2026-11-23T07:19:32Z",
+  "mergedTree": "34f3be16ae088392205d69be9b3dd403d2114b33",
+  "mergeTreeMatchesFinalCandidate": true,
+  "originalChangedFileCount": 622,
+  "rawAndFinalFeatureTreesIdentical": false,
+  "delivery": {
+    "originalLocalCommits": 34,
+    "featureCommitsInPr": 1,
+    "prNumber": 13,
+    "prUrl": "https://github.com/weiesky/cx-viewer/pull/13",
+    "state": "MERGED",
+    "baseCommit": "a3fbc0f06ff42119a33f24a252e36b621269316e",
+    "finalFeatureCommit": "539822e93ae2e3b6d16b56cff545791d40248f36",
+    "mergeCommit": "3a4bf400017a41732c3aab12d3041d952fc8a0eb",
+    "mergedAt": "2026-11-23T07:19:32Z",
+    "mergeTreeMatchesFinalCandidate": true,
+    "progressDocumentationUpdatedAfterMerge": true,
+    "postMergeDocumentationCommitSubject": "docs(alignment): record B11 merge and CI verification",
+    "documentationCommitOwnHashOmitted": true,
+    "mapping": "B11-original-commits-2026-11-23.json",
+    "record": "B11-consolidation-and-merge-2026-11-23.md"
+  },
+  "remoteCi": "B11-remote-ci-2026-11-23.json",
+  "intermediateBackupsPreserved": true
+}

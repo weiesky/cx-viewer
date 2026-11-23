@@ -2,7 +2,7 @@
 
 固定上游：`74cd752d99caf122e750216d2af3bb9f467c4de1`；42主/193交叉去重201条。本文是**范围处置记录，不是整条混合提交全部完成的声明**。实际diff SHA256、稳定patch ID、明确第一父路径和此前证据保存在[候选索引](./B11-candidate-index.json)。源码hash只证明足迹，不能替代组件/调用链/环境验证。
 
-E1–E34实现、失败与逐步验证见[B11实施](./B11-implementation.md)。用户已选择Changesets及完整core/content工程方向，5个结构候选已按原生实际范围实施；最终本地结构验收已完成，2820/0skip、新生产1197、825包字节及双浏览器14配置30图通过；目标环境未验另列。平台未验另列，不伪造远端CI。74条仅版本/历史/changeset/star记录已作语义JSON比较；13个merge按第一父展开后分项，不整体抵扣。
+E1–E34实现、失败与逐步验证及E35交付见[B11实施](./B11-implementation.md)。用户选择的Changesets及完整core/content方向、5个结构候选均已按原生范围实施；34笔备份整为1笔，[PR #13](https://github.com/weiesky/cx-viewer/pull/13)已合并main `3a4bf40`。最终本地2823/0skip、新生产1237、825包字节及双浏览器14配置30图通过；远端10项CI成功，Ubuntu全套与macOS/Windows定向合同的覆盖界限见[完成矩阵](./B11-completion-matrix.md)。74条仅版本/历史/changeset/star记录已作语义JSON比较；13个merge按第一父展开分项，不整体抵扣。
 
 ## 已确认工程方向
 

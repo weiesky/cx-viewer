@@ -1,6 +1,6 @@
 # cc-viewer 逐提交对齐台账
 
-2026-11-23 B11本地实施与可用环境验收完成（第12/12工作包）。34笔小步提交保留，B11尚未创建PR/推送/合并；此前B9/B10的PR #12已完成。201候选按子项范围核销，用户选定Changesets/core/content及分组/边界门全部落实。最终2820/2820、0skip/build/626稳定路径/601源码门、新生产1197与825包/211Web字节、Electron stage825字节/395链接/独立启动、实际Node20.12启动+46、双浏览器14配置30图通过。Windows/Linux、实际Electron GUI/签名/公证及真实外部环境仍未验，无远端CI通过声明；7008/PID97674及其他用户实例未重启。详见[B11完成矩阵](./B11-completion-matrix.md)、[候选矩阵](./B11-candidate-matrix.md)与[最终回执](./B11-validation-2026-11-23.json)。
+2026-11-23 B11已通过[PR #13](https://github.com/weiesky/cx-viewer/pull/13)合并main `3a4bf40`（第12/12工作包），34笔原始提交备份后整合为1笔 `539822e`，合并后更新本轮文档。201候选按子项核销，Changesets/core/content与边界门已落实。最终本地2823/2823、0skip/build/626稳定路径/601源码门，新生产1237/1237及825包/211Web精确字节，桌面stage825字节/395链接/独立启动，实际Node20.12启动+93、双浏览器14配置30图通过。PR的10项远端检查全成功：Ubuntu Node20/22/24全套及macOS/Windows定向合同；Windows完整运行、Electron GUI/签名/公证和真实外部环境仍未验。7008/PID97674及其他用户实例未停止/重启，正常重启才加载后端。下一步补齐目标环境验收；见[B11完成矩阵](./B11-completion-matrix.md)、[整合与合并记录](./B11-consolidation-and-merge-2026-11-23.md)与[最终回执](./B11-validation-2026-11-23.json)。
 
 2026-11-21 B6交付：原16笔完整备份并整为e885d8b，PR #6已合并main（9f3e2ce），精确head guard及合并tree已核；实际无PR CI检查。交付复建/pack720/新artifact-only字节通过，生产实现不变；原上游映射继续有效。普通PTY入口待纠偏及旧后端未重启保持，B7下一会话执行，见[整合记录](./B6-local-commit-consolidation-2026-11-21.md)及[B7交接](./B7-handoff.md)。
 
@@ -17014,3 +17014,9 @@ f9467bfc83到本笔 `refactor(server): group native IM approval and proxy helper
 ### B11 E34 — 本地完成与最终新产物回执
 
 201候选按原生子项核销，用户选定的5个工程候选由E27–E33落实；本笔 `docs: close B11 with final package and workspace validation`，E33 7ce46a0。最终正常pnpm test2820/2820、0skip、严格六workspace/build/626稳定路径/601源码门；新生产1197与全部825包/211Web精确字节、安装28别名同实例/内容回退、桌面825字节/395链接/独立启动、实际Node20.12启动+46、双浏览器14配置30图通过。Changesets全部当前记录六workspace隔离演练通过，源版本1.1.20不改，未发布。原始失败/修正与未验范围完整保留，见[B11完成矩阵](./B11-completion-matrix.md)及[最终JSON](./B11-validation-2026-11-23.json)。34笔保留，B11未PR/推送/合并；用户7008/PID97674未重启，自有夹具已关闭。后续PR交付与真实目标环境验收，不把混合整条或未验平台算完成。
+
+### B11 E35 — 34笔整合、CI收口与合并后进度
+
+既有201候选的E1–E34上游/本地映射保留；本笔为交付与CI后续，不新增上游候选。原始34笔末端64288c8已备份及bundle验证，首轮精确整合d09bcdd保持原tree。实际远端CI的18条路径修正折入最终单笔539822e（锁释放/零链接/不可变库替换严格重读、目标路径、detached基线与进程/浏览器/stdout夹具），原始与最终tree不同；最终远端/本地/merge tree一致。
+
+[PR #13](https://github.com/weiesky/cx-viewer/pull/13)在最终10/10检查成功后于2026-11-23T07:19:32Z合并main 3a4bf40，之后才更新本进度。最终2823/2823、0skip/build/pack626/601源码门，新生产1237及825包/211Web字节、stage825/395链接/独立启动、实际Node20.12启动+93通过；211Web与E34字节相同，沿用14配置30图。Ubuntu Node20/22/24全套和macOS/Windows定向合同已远端通过，不抵扣Windows完整运行、Electron GUI/签名/公证及真实外部环境余项。7008/PID97674与其他用户实例未重启，版本仍1.1.20、未发布。见[整合记录](./B11-consolidation-and-merge-2026-11-23.md)、[完整原始映射](./B11-original-commits-2026-11-23.json)和[最终JSON](./B11-validation-2026-11-23.json)。
