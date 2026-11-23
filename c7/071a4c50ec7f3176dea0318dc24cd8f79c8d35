@@ -1,0 +1,804 @@
+apps/web/src/components/settings/VoicePackSettings.jsx
+  s_d7280c55e1029f::t_ed152f5d3c6589 7
+packages/app/lib/main-agent-entry.js
+  s_d7280c55e1029f::t_59596e19dad993 1-2
+docs/config-cloud-sync.md
+  s_d7280c55e1029f::t_acccf0a744148c 1-42
+apps/electron/tests/mac-keychain.test.js
+  s_d7280c55e1029f::t_c63fba83a84205 1-54
+cc-viewer-alignment/B11-live-gui.json
+  s_d7280c55e1029f::t_9692a78446bfe1 1-2,6-21
+  s_d7280c55e1029f::t_9eebdbd30a0806 3-5
+packages/app/lib/log-v2/shards.js
+  s_d7280c55e1029f::t_f1284943bb1446 8
+apps/web/src/utils/identityHeal.js
+  s_d7280c55e1029f::t_adf5f4f3f3370f 2
+packages/content/concepts/fr/GlobalSettings.md
+  s_d7280c55e1029f::t_e412a2badc13bd 123
+  s_d7280c55e1029f::t_40bab8f2b938c7 1-122,124-224
+packages/core/src/errorReport.js
+  s_d7280c55e1029f::t_fd3b45ae21718f 1-40
+packages/app/proxy.js
+  s_d7280c55e1029f::t_d10ad45279cf89 8-9
+packages/core/src/userImageRefs.js
+  s_d7280c55e1029f::t_9527cfa08440e6 1-49
+packages/core/src/context-rules.js
+  s_d7280c55e1029f::t_965a3308209b0b 1-98
+packages/app/tests/dingtalk-adapter.test.js
+  s_d7280c55e1029f::t_ec2b31ee214e2e 43,52
+packages/app/package.json
+  s_d7280c55e1029f::t_a245430807db6d 61
+  s_d7280c55e1029f::t_a819201dac2f94 90-91,93-96
+packages/app/lib/log-v2/reducer.js
+  s_d7280c55e1029f::t_6ec992dff8deff 1-2
+packages/app/tests/dingtalk-im-senders.test.js
+  s_d7280c55e1029f::t_e9b87e9422d2da 4,52-67
+  s_d7280c55e1029f::t_582033fa0b6488 1-3,5-51
+packages/core/src/tool-result-image-protocol.js
+  s_d7280c55e1029f::t_6de6c7af7a2f7b 1-44
+cc-viewer-alignment/B11-electron-stage.json
+  s_d7280c55e1029f::t_dbd039a297d967 11
+  s_d7280c55e1029f::t_34aa2223528b7e 2,4-5,7,9,12-14
+  s_d7280c55e1029f::t_57ea4a295e51d5 15
+  s_d7280c55e1029f::t_cd07f00ffba768 1,3,6,8,10
+packages/app/tests/ultraplan-generated-assets.test.js
+  s_d7280c55e1029f::t_61c2ba95255405 7,32-33
+scripts/verify-tarball-drift.mjs
+  s_d7280c55e1029f::t_aa50bc02741635 24,26
+  s_d7280c55e1029f::t_9503b92379a94a 1-23,25,27-28,32-33,35-81
+  s_d7280c55e1029f::t_179e801f6dc028 29-31,34
+packages/content/concepts/pt-BR/GlobalSettings.md
+  s_d7280c55e1029f::t_a871a90cafdb3f 123
+  s_d7280c55e1029f::t_7fb5b3b36dc1a9 1-122,124-224
+apps/web/src/utils/logV2Transport.js
+  s_d7280c55e1029f::t_80a6cfc86ee45f 6
+apps/web/src/components/chat/optimisticQueueMessage.js
+  s_d7280c55e1029f::t_875d086630fd92 1
+packages/app/tests/appserver-bridge-isolation.test.js
+  s_d7280c55e1029f::t_9060d0fe6a7cec 2,170
+apps/electron/electron/main.js
+  s_d7280c55e1029f::t_0d1880b16243b2 109-121,123-129,132-137,601-602,661-663,736-742
+apps/web/src/components/settings/ImStatusChip.module.css
+  s_d7280c55e1029f::t_31c0316619b6fd 37-61
+packages/core/src/modelIdentity.js
+  s_d7280c55e1029f::t_e88125f11198ef 1-210
+packages/core/src/teammateDetector.js
+  s_d7280c55e1029f::t_c381ce7186426c 1-106
+packages/app/tests/perm-bridge.test.js
+  s_d7280c55e1029f::t_19c8f76e99d9a9 63
+  s_d7280c55e1029f::t_39a85b4b7b99c1 23
+  s_d7280c55e1029f::t_da9e9c35fa2287 43-45,62
+apps/web/src/components/dashboard/RequestList.jsx
+  s_d7280c55e1029f::t_f87f3194d6cfcb 6
+apps/web/src/components/chat/ChatMessage.jsx
+  s_d7280c55e1029f::t_d7b5fdc0212488 18
+packages/app/lib/dingtalk-im-routes.js
+  s_d7280c55e1029f::t_725f3936d2bdaf 1-2
+.gitignore
+  s_d7280c55e1029f::t_646237724daedc 16-20
+packages/app/tests/sdk-cli-resume.test.js
+  s_d7280c55e1029f::t_50851c99b1f9a6 281
+packages/content/concepts/no/GlobalSettings.md
+  s_d7280c55e1029f::t_9b78265892de69 123
+  s_d7280c55e1029f::t_20f89639bf974d 1-122,124-224
+apps/web/src/components/settings/ImPlatformSettings.jsx
+  s_d7280c55e1029f::t_7ca8c278f9847b 5,334-341
+  s_d7280c55e1029f::t_c9ba81309d8c3b 308
+  s_d7280c55e1029f::t_23bad1490274bb 169
+  s_d7280c55e1029f::t_83b646ab092f35 31,49,233-239,294-307,309-315,469
+apps/web/src/utils/contextCompaction.js
+  s_d7280c55e1029f::t_5bb0c758bb5227 1-4
+cc-viewer-alignment/B11-changesets-rehearsal.json
+  s_d7280c55e1029f::t_b1886027bd4d0b 1,3,5-7,10-14,16-17
+  s_d7280c55e1029f::t_febbcc122b5572 15
+  s_d7280c55e1029f::t_3ca70fff5e2ec7 2,4,8-9
+apps/web/src/components/settings/ImConversationModal.module.css
+  s_d7280c55e1029f::t_b8c9779ddfe0ea 30-31
+packages/content/concepts/zh/GlobalSettings.md
+  s_d7280c55e1029f::t_f20cc8d2e1b081 123
+packages/app/tests/sdk-process-ownership.test.js
+  s_d7280c55e1029f::t_0d8f36ee62f5cc 2
+  s_33c4bc22026691::t_c2fb971a3d2421 49
+packages/app/lib/dingtalk-im-skills.js
+  s_d7280c55e1029f::t_2de957929deef0 1-2
+packages/app/lib/credential-backup.js
+  s_d7280c55e1029f::t_c6e60cdf292145 41,57-59,61-62,65-66,135,175
+  s_d7280c55e1029f::t_d8f05f2fcbef16 60,67-69
+  s_d7280c55e1029f::t_dbb5799b6716e6 53
+cc-viewer-alignment/B11-fixture-cleanup.json
+  s_d7280c55e1029f::t_fb3ca341dd5882 2,7-8
+  s_d7280c55e1029f::t_73a67e0d4ada24 1,3-6,9
+packages/app/server/lib/approval-modal-prefs.js
+  s_d7280c55e1029f::t_6278e8676842f6 1-2
+packages/app/tests/dingtalk-im-log-watcher.test.js
+  s_d7280c55e1029f::t_0b063a51fee3d0 1-44
+packages/content/concepts/da/GlobalSettings.md
+  s_d7280c55e1029f::t_90cd2588b60556 123
+tests/release-publish.test.js
+  s_d7280c55e1029f::t_7cbd5353bb2e4e 1-40
+packages/core/src/approval-modal-prefs.js
+  s_d7280c55e1029f::t_ce9061533f11c9 1-72
+packages/app/lib/ask/codex-request-user-input.js
+  s_d7280c55e1029f::t_1f547906ca293c 1-234
+patches/app-builder-lib@26.15.3.patch
+  s_d7280c55e1029f::t_c63fba83a84205 1-23
+packages/core/src/log-v2/request-summary.js
+  s_d7280c55e1029f::t_d890723feaaf90 1-134
+packages/app/lib/otel-config.js
+  s_d7280c55e1029f::t_8bd863e6f606bd 1
+apps/web/src/components/terminal/ScratchTerminal.jsx
+  s_d7280c55e1029f::t_315d76fb73409e 20
+packages/core/src/clearCheckpoint.js
+  s_d7280c55e1029f::t_1604a1586a4117 1-248
+packages/app/lib/ask-auto-answer.js
+  s_d7280c55e1029f::t_8823b911e0d265 1-2
+cc-viewer-alignment/B11-implementation.md
+  s_d7280c55e1029f::t_e0fcc1148b417a 178-183
+  s_d7280c55e1029f::t_11528dc97e1ab7 12-17
+  s_d7280c55e1029f::t_02bb5114388acc 144-149
+  s_d7280c55e1029f::t_d6e85df3f5cddd 25-29
+  s_d7280c55e1029f::t_077e28850fb860 72-77
+  s_d7280c55e1029f::t_f331dbd4aecf36 132-137
+  s_d7280c55e1029f::t_679c9e07fc6e8c 55-59
+  s_d7280c55e1029f::t_19b727b15f98a7 214-223
+  s_d7280c55e1029f::t_5018a2e2bb8528 42-47
+  s_d7280c55e1029f::t_2a6781118a26a1 184-189
+  s_d7280c55e1029f::t_f3b889961a8190 156-167
+  s_d7280c55e1029f::t_52142d637be1ab 196-201
+  s_d7280c55e1029f::t_729e470e1c64ec 114-117
+  s_d7280c55e1029f::t_d465a93e16b9f8 78-83
+  s_d7280c55e1029f::t_7109db5665413b 90-95
+  s_d7280c55e1029f::t_b6fee75ba4153e 66-71
+  s_d7280c55e1029f::t_ef3ebec28e8d44 190-195
+  s_d7280c55e1029f::t_197151bd0d7ee0 202-207
+  s_d7280c55e1029f::t_b46ec4794a9cc9 48-54
+  s_d7280c55e1029f::t_af716b39e93cd8 102-107
+  s_d7280c55e1029f::t_1785ecc4f409d8 108-113
+  s_d7280c55e1029f::t_67f9abead87529 1-11
+  s_d7280c55e1029f::t_e290b4b58a67a8 118-123
+  s_d7280c55e1029f::t_c30671399f8715 30-35
+  s_d7280c55e1029f::t_afde37c2f990fe 84-89
+  s_d7280c55e1029f::t_5939b23b70f16e 124-131
+  s_d7280c55e1029f::t_600cf23496de11 18-24
+  s_d7280c55e1029f::t_62c138bbb1384f 208-213
+  s_d7280c55e1029f::t_3c9a59e7df7fba 138-143
+  s_d7280c55e1029f::t_80c8be29ec91e1 36-41
+  s_d7280c55e1029f::t_609e05e6f2eec5 60-65
+  s_d7280c55e1029f::t_89dbfa8fa6540b 168-177
+  s_d7280c55e1029f::t_049ffe39ecdde5 96-101
+  s_d7280c55e1029f::t_9fe416e2dd2176 150-155
+cc-viewer-alignment/B11-node-floor.json
+  s_d7280c55e1029f::t_46a51f097da57c 3
+  s_d7280c55e1029f::t_73a67e0d4ada24 8
+  s_d7280c55e1029f::t_113c24d699d79c 1-2,4-6,15
+  s_d7280c55e1029f::t_cd07f00ffba768 7,9-14
+packages/content/concepts/th/GlobalSettings.md
+  s_d7280c55e1029f::t_cc5b6efc31c3aa 123
+  s_d7280c55e1029f::t_b62a8a5287b007 1-122,124-224
+packages/app/lib/credential-store.js
+  s_d7280c55e1029f::t_dbb5799b6716e6 25,28-30,124
+package.json
+  s_d7280c55e1029f::t_2c7116f3c74c3e 24
+  s_d7280c55e1029f::t_207439e4bbbaa5 28-30,49-51
+  s_d7280c55e1029f::t_96d1cbf6e1144a 48
+  s_d7280c55e1029f::t_69c112ba6ecb80 14
+  s_d7280c55e1029f::t_29a43a6e0a8b61 25
+  s_d7280c55e1029f::t_9503b92379a94a 26-27
+packages/app/server/lib/context-rules.js
+  s_d7280c55e1029f::t_cf3e63b59f6faa 1-2
+apps/web/src/components/dashboard/ContextTab.jsx
+  s_d7280c55e1029f::t_bd02d8e3d640ad 11
+packages/app/findcx.js
+  s_d7280c55e1029f::t_6a1c7c3220a6f6 1,118-119
+  s_d7280c55e1029f::t_ba1f8f2f6cd80e 243-248,256-257,259-260,262,265,276-278,282-284
+  s_d7280c55e1029f::t_5d364588a32713 163
+  s_d7280c55e1029f::t_9f2d5215745705 5,93,95-107,109-111,115-117,120-162
+packages/app/lib/log-v2/transport.js
+  s_d7280c55e1029f::t_86613d7dda594a 4,6,10,20
+packages/app/src/utils/modelIdentity.js
+  s_d7280c55e1029f::t_ab3773499ee2aa 1-2
+apps/web/src/utils/voicePackPlayer.js
+  s_d7280c55e1029f::t_ce3b46b0a07b18 18
+packages/app/lib/dingtalk-im-lock.js
+  s_d7280c55e1029f::t_1135e4d18504dc 1-2
+packages/app/server.js
+  s_d7280c55e1029f::t_c4284ecbb0ce64 1,5284,5291
+  s_d7280c55e1029f::t_6bf857afe3d99f 6,67-69,144,1138,1148-1150
+  s_d7280c55e1029f::t_9e5b7511cc9165 283-293,1954,6711-6712
+  s_d7280c55e1029f::t_7d2e82e4503f8a 61,65,100,127
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_d7280c55e1029f::t_bd01ce145f46ae 3,50-52,54
+  s_d7280c55e1029f::t_7fcce2e0d14135 185,187,204-205
+packages/app/lib/log-v2/materializer.js
+  s_d7280c55e1029f::t_52142d637be1ab 3
+  s_d7280c55e1029f::t_d2c50eafa93482 1-2
+  s_d7280c55e1029f::t_d183adb8e1eaaa 8
+packages/app/lib/dingtalk-im-process-manager.js
+  s_d7280c55e1029f::t_eb9b91750f4b42 1-2
+packages/app/lib/proxy-errors.js
+  s_d7280c55e1029f::t_dd69a30fdac0eb 1-2
+apps/web/src/components/dashboard/AppHeader.jsx
+  s_d7280c55e1029f::t_af804061d32a6e 14,18-19
+  s_d7280c55e1029f::t_e65fdefc75ab16 43,120,383,1405,1959-1964
+packages/app/tests/pty-session-isolation.test.js
+  s_d7280c55e1029f::t_9f01514c67b255 7,136,156
+packages/app/lib/sdk-adapter.js
+  s_d7280c55e1029f::t_1120f71c1645fc 9
+apps/web/src/components/chat/ChatView.jsx
+  s_d7280c55e1029f::t_1188b2c55f263d 23-24,29,34,67
+packages/app/interceptor.js
+  s_d7280c55e1029f::t_94da15563e02c5 8
+apps/web/src/utils/sessionManager.js
+  s_d7280c55e1029f::t_b409362a52245e 3-4
+packages/content/tests/paths-content.test.mjs
+  s_d7280c55e1029f::t_64c429d4ad85f0 3-10
+  s_d7280c55e1029f::t_55f7f4294fb785 1-2,11-32
+apps/web/src/components/dashboard/CompactionPromptHistory.jsx
+  s_d7280c55e1029f::t_cc7036168126ff 4
+apps/web/src/components/chat/UserPromptsModal.jsx
+  s_d7280c55e1029f::t_7c73fc65c56b0f 4
+packages/app/tests/auth-server.test.js
+  s_d7280c55e1029f::t_b3e9f35478d7e1 630-631
+docs/config-cloud-sync.zh.md
+  s_d7280c55e1029f::t_26d6bef07c57a8 1-42
+packages/content/concepts/ja/GlobalSettings.md
+  s_d7280c55e1029f::t_2b7a8731aa0ca5 123
+  s_d7280c55e1029f::t_6f2290773250a0 1-122,124-224
+apps/web/src/utils/errorReport.js
+  s_d7280c55e1029f::t_0920e74d16cbc7 1
+packages/app/src/utils/ultraplanTemplates.js
+  s_d7280c55e1029f::t_85e30fad1b3c93 1-2
+scripts/verify-tarball-contract.mjs
+  s_d7280c55e1029f::t_84c73e9ded3719 1-2,5-102
+  s_d7280c55e1029f::t_f99764f3ff69f4 3-4
+packages/app/lib/sdk-resume-history.js
+  s_d7280c55e1029f::t_182c003dd41b24 4
+packages/app/cli.js
+  s_d7280c55e1029f::t_15d328d2b191fc 639-640,643,646
+  s_d7280c55e1029f::t_dd2d59963d19db 14,16
+packages/app/tests/ensure-hooks.test.js
+  s_d7280c55e1029f::t_da9e9c35fa2287 6,27,38-44
+apps/web/src/utils/approvalReviewerOptions.js
+  s_d7280c55e1029f::t_1608e1e85475b4 7
+cc-viewer-alignment/B11-local-build-dependencies.json
+  s_d7280c55e1029f::t_ba2f97bef1d88b 1-8
+.changeset/README.md
+  s_d7280c55e1029f::t_4201d83017403d 1-5
+packages/app/tests/plugin-runtime-real.test.js
+  s_d7280c55e1029f::t_7527b933e5adb2 2,86
+packages/app/lib/im/dingtalk-im-skills.js
+  s_d7280c55e1029f::t_dc5f58f6e29795 1-51
+apps/web/src/utils/planUsageDisplay.js
+  s_d7280c55e1029f::t_60fe272a1519b3 17-18
+apps/web/src/components/dashboard/WorkspaceList.jsx
+  s_d7280c55e1029f::t_38cc8b6279b304 6
+packages/app/lib/log-v2/session-summary.js
+  s_d7280c55e1029f::t_f86c875747689a 18
+  s_d7280c55e1029f::t_c536fe1fc4e603 13,16-17
+packages/content/concepts/zh-TW/GlobalSettings.md
+  s_d7280c55e1029f::t_d7f0c389a2f1c9 123
+apps/web/src/utils/requestTools.js
+  s_d7280c55e1029f::t_6f80bfe00180b7 1-2,4
+packages/core/package.json
+  s_d7280c55e1029f::t_fd51240d84e854 1-16
+cc-viewer-alignment/B11-candidate-index.json
+  s_d7280c55e1029f::t_652394b70eea4d 12644-12648,12651
+  s_d7280c55e1029f::t_243e11eb04ce65 1-23,31-48,56-70,78-91,99-130,141-157,165-176,187-244,256-273,287-300,314-329,340-352,364-375,386-398,406-421,433-444,452-463,471-486,494-506,514-526,539-550,558-577,589-640,654-665,673-703,711-723,731-743,751-781,789-801,809-820,831-844,857-868,876-887,901-921,936-1026,1039-1050,1061-1072,1080-1091,1099-1133,1145-1158,1166-1180,1191-1211,1226-1237,1248-1260,1271-1280,1317-1330,1338-1350,1361-1372,1380-1389,1452-1461,1474-1488,1496-1505,1519-1535,1546-1557,1565-1576,1584-1595,1603-1618,1626-1639,1647-1658,1666-1678,1686-1697,1705-1717,1725-2206,2218-2788,2799-2808,2820-2830,7100-7101,7103,7106-7222,7224-7228,7230-7397,7399-7406,7409-7417,7419-7480,7482-7484,7486-7502,7505-7507,8266-8273,8281-8296,8304-8375,8390-8399,8432-8454,8462-8475,8486-8504,8515-8526,8534-8547,8555-8566,8578-8593,8601-8612,8625-8638,8646-8657,8665-8678,8686-8699,8707-8724,8737-8752,8760-8774,8782-8794,8802-8813,8821-8835,8843-8854,8862-8876,8884-8897,8905-8917,8925-8936,8948-8961,8969-8981,8992-9003,9011-9022,9030-9083,9096-9111,9119-9137,9145-9163,9177-9192,9200-9211,9219-9230,9238-9262,9276-9287,9295-9326,9337-9358,9369-9383,9391-9405,9413-9444,9452-9473,9481-9492,9500-9511,9519-9537,9545-9556,9564-9592,9606-9624,9632-9643,9651-9670,9678-9689,9703-9718,9726-9744,9755-9769,9777-9786,9798-9812,9820-9829,9852-9863,9871-9895,9908-9921,9929-9944,9957-9970,9978-10031,10042-10057,10065-10081,10095-10109,10117-10133,10146-10160,10168-10181,10189-10202,10213-10222,10235-10249,10257-10294,10308-10340,10353-10364,10375-10394,10405-10456,10475-10512,10524-10541,10549-10580,10594-10619,10632-10647,10661-10678,10686-10714,10728-10747,10760-10783,10797-10814,10825-10899,10917-10991,11009-11024,11038-11052,11066-11075,11089-11104,11112-11133,11149-11160,11168-11190,11203-11215,11229-11236,11398-11418,11426-11435,11455-11466,11478-11492,11500-11519,11534-11575,11589-11605,11613-11624,11632-11708,11725-11777,11791-11829,11843-11879,11894-11903,12025-12046,12058-12067,12080-12111,12125-12166,12181-12241,12254-12271,12284-12293,12401-12420,12434-12443,12486-12502,12510-12521,12529-12546,12652
+  s_d7280c55e1029f::t_3ee918be75c5c2 1281-1316,1331-1337,1351-1360,1373-1379,1390-1451,1462-1473,1489-1495,1506-1518,1536-1545,1558-1564,1577-1583,1596-1602,1619-1625,1640-1646,1659-1665,1679-1685,1698-1704,1718-1724,2207-2217,2789-2798,2809-2819,2831-3590,3598-3611,3619-3630,3638-3658,3669-5064,5066-5069,5072-5119,5121-5124,5127-5146,5148-5151,5154-7099,7102,7104-7105,7223,7229,7398,7407-7408,7418,7481,7485,7503-7504,7508-7678,7680-7683,7686-8265,8275-8278,8297-8303,8376-8389,8400-8431,8455-8461,8476-8485,8505-8514,8527-8533,8548-8554,8567-8577,8594-8600,8613-8624,8639-8645,8658-8664,8679-8685,8700-8706,8725-8736,8753-8759,8775-8781,8795-8801,8814-8820,8836-8842,8855-8861,8877-8883,8898-8904,8918-8924,8937-8947,8962-8968,8982-8991,9004-9010,9023-9029,9084-9095,9112-9118,9138-9144,9164-9176,9193-9199,9212-9218,9231-9237,9263-9275,9288-9294,9327-9336,9359-9368,9384-9390,9406-9412,9445-9451,9474-9480,9493-9499,9512-9518,9538-9544,9557-9563,9593-9605,9625-9631,9644-9650,9671-9677,9690-9702,9719-9725,9745-9754,9770-9776,9787-9797,9813-9819,9830-9851,9864-9870,9896-9907,9922-9928,9945-9956,9971-9977,10032-10041,10058-10064,10082-10094,10110-10116,10134-10145,10161-10167,10182-10188,10203-10212,10223-10234,10250-10256,10295-10307,10341-10352,10365-10374,10395-10404,10457-10474,10513-10523,10542-10548,10581-10593,10620-10631,10648-10660,10679-10685,10715-10727,10748-10759,10784-10796,10815-10824,10900-10916,10992-11008,11025-11037,11053-11065,11076-11088,11105-11111,11134-11148,11161-11167,11191-11202,11216-11228,11237-11397,11419-11425,11436-11454,11467-11477,11493-11499,11520-11533,11576-11588,11606-11612,11625-11631,11709-11724,11778-11790,11830-11842,11880-11893,11904-12024,12047-12057,12068-12079,12112-12124,12167-12180,12242-12253,12272-12283,12294-12400,12421-12433,12444-12478
+  s_d7280c55e1029f::t_0828e6b01bf89c 12582-12593,12610
+  s_d7280c55e1029f::t_89d6642227b48a 24-30,49-55,71-77,92-98,131-140,158-164,177-186,245-255,274-286,301-313,330-339,353-363,376-385,399-405,422-432,445-451,464-470,487-493,507-513,527-538,551-557,578-588,641-653,666-672,704-710,724-730,744-750,782-788,802-808,821-830,845-856,869-875,888-900,922-935,1027-1038,1051-1060,1073-1079,1092-1098,1134-1144,1159-1165,1181-1190,1212-1225,1238-1247,1261-1270,3591-3597,3612-3618,3631-3637,3659-3668,12479-12485,12503-12509,12522-12528,12547-12581,12611-12619,12621-12643
+  s_d7280c55e1029f::t_46415fe35327e1 5065,5070-5071,5120,5125-5126,5147,5152-5153,7679,7684-7685,8274,12620,12649
+  s_d7280c55e1029f::t_7fcce2e0d14135 8279-8280,12650
+  s_d7280c55e1029f::t_688e01cac77874 12594-12597
+  s_d7280c55e1029f::t_d821fa2cb2d5df 12598-12609
+packages/app/lib/im/dingtalk-im-persona.js
+  s_d7280c55e1029f::t_055f8232e4af7e 1-50
+packages/app/lib/proxy/proxy-errors.js
+  s_d7280c55e1029f::t_2c52d2ff5ef350 1-18
+packages/content/concepts/tr/GlobalSettings.md
+  s_d7280c55e1029f::t_33be31ded7cd3c 123
+  s_d7280c55e1029f::t_895643b4d92da6 1-122,124-224
+apps/web/src/utils/logV2ObjectStore.js
+  s_d7280c55e1029f::t_7a16de8693e1dc 1-3
+packages/app/lib/scheduled-task-executor.js
+  s_d7280c55e1029f::t_ad3e543149e615 21
+apps/web/tests/im-conn-state.test.js
+  s_d7280c55e1029f::t_c29262445d0c77 1-98
+packages/core/src/requestType.js
+  s_d7280c55e1029f::t_9897283bfe3e60 1-334
+AGENTS.md
+  s_d7280c55e1029f::t_bd01ce145f46ae 26
+  s_d7280c55e1029f::t_ce5ee072e38962 34-35
+  s_d7280c55e1029f::t_d6ba79fd3cd600 28
+pnpm-lock.yaml
+  s_d7280c55e1029f::t_e5d9c00dd5f193 139-141,241-243,295-296
+  s_d7280c55e1029f::t_c7f04d88e9fd74 10-14,19-21,49-54,86,6935,7102-7103,7498,7543,7552
+  s_d7280c55e1029f::t_2c1dcb28802b16 293-294
+  s_d7280c55e1029f::t_1c025ad583d964 7-9
+packages/core/src/ptyChunkBuilder.js
+  s_d7280c55e1029f::t_d28296e9ea398b 1-264
+packages/app/lib/log-v2/benchmark.js
+  s_d7280c55e1029f::t_a2ee5fc3d0fdfb 12-13
+packages/app/tests/dingtalk-im-routes.test.js
+  s_d7280c55e1029f::t_579b239a8607a0 260-269
+  s_d7280c55e1029f::t_c882fe0f4c7e2b 91
+packages/core/src/userPromptContent.js
+  s_d7280c55e1029f::t_3a904d562fadb4 1-380
+packages/app/lib/scheduled-task-store.js
+  s_d7280c55e1029f::t_c56c9a06c57116 41
+  s_d7280c55e1029f::t_85f40ed774b101 37
+README.md
+  s_d7280c55e1029f::t_9a0542dc92abfe 372-373
+packages/core/tests/compatibility.test.mjs
+  s_d7280c55e1029f::t_ff18cae70f4212 1-30
+apps/web/src/i18n.js
+  s_d7280c55e1029f::t_d29ea4474186ac 6
+  s_d7280c55e1029f::t_d66600a876c92e 5355
+  s_d7280c55e1029f::t_f517eaa063c036 4-5,5366
+packages/app/scripts/migrate-im-credentials.mjs
+  s_d7280c55e1029f::t_62ce5a25287a05 24
+packages/core/src/log-entry-order.js
+  s_d7280c55e1029f::t_f2c07990b30433 1-13
+packages/app/lib/log-v2/writer.js
+  s_d7280c55e1029f::t_3c4731607375f6 2,32,41,65
+packages/app/scripts/sync-ultraplan-presets.mjs
+  s_d7280c55e1029f::t_5a8d4d6b44fcb3 6
+  s_d7280c55e1029f::t_1640b4c416ff6a 5,9-11,247-248
+packages/app/lib/stats-worker.js
+  s_d7280c55e1029f::t_42fd43418e86c0 7
+cc-viewer-alignment/B11-active-entry-readonly.json
+  s_d7280c55e1029f::t_5b4f915b10e952 1-17
+cc-viewer-alignment/B11-content-file-map.json
+  s_d7280c55e1029f::t_7f55260f111b4a 1-1554,1566
+  s_d7280c55e1029f::t_7aff65984135c7 1555-1565
+cc-viewer-alignment/B11-core-file-map.json
+  s_d7280c55e1029f::t_ef66d715d55f4a 1-1521
+packages/app/tests/scratch-pty-tree.test.js
+  s_d7280c55e1029f::t_1acec406b9468f 7,43,47
+packages/app/lib/pty-workspace-runtime.js
+  s_d7280c55e1029f::t_3062c328b4347f 3,6
+apps/electron/scripts/assemble-app.mjs
+  s_d7280c55e1029f::t_504f6a4eff560e 3,20-32
+cc-viewer-alignment/B11-completion-matrix.md
+  s_d7280c55e1029f::t_bd01ce145f46ae 1-29
+packages/app/lib/codex-thread-source.js
+  s_d7280c55e1029f::t_d320bf663c3b7c 1-2
+cc-viewer-alignment/B11-installed.json
+  s_d7280c55e1029f::t_cd07f00ffba768 1,4,6-7,9-11,17
+  s_d7280c55e1029f::t_a6674ea86c2d86 2-3,5,8,12-16
+cc-viewer-alignment/B11-settings-state-gui.json
+  s_d7280c55e1029f::t_adeca0ad3ab8f7 1-21
+packages/app/lib/openai-responses-url.js
+  s_d7280c55e1029f::t_36c83c6cf69110 1-2
+packages/app/lib/otel-adapter.js
+  s_d7280c55e1029f::t_bc74c164b30895 11
+apps/web/src/components/mobile/MobileStats.jsx
+  s_d7280c55e1029f::t_7deece58cfd788 3
+packages/app/lib/async-file-lock.js
+  s_d7280c55e1029f::t_7dce14b240334a 7
+apps/web/src/utils/toolResultCore.js
+  s_d7280c55e1029f::t_147a0da280d094 9
+packages/app/lib/ensure-hooks.js
+  s_d7280c55e1029f::t_bbde56d08fa804 45
+cc-viewer-alignment/B11-footer-gui.json
+  s_d7280c55e1029f::t_ba031656fdf442 1-19
+packages/app/tests/credential-store.test.js
+  s_d7280c55e1029f::t_44bf77c582e46e 212-221,223-241
+  s_d7280c55e1029f::t_e0c0b8e3076fc0 222
+packages/app/tests/process-exit-helper.test.js
+  s_d7280c55e1029f::t_2c3625f51b43ca 1-16
+apps/web/src/components/dashboard/UsageWindowPill.jsx
+  s_d7280c55e1029f::t_779fbb2cbdef60 103,119
+packages/app/lib/codex-appserver-capabilities.js
+  s_d7280c55e1029f::t_80f5bc8350157c 6
+cc-viewer-alignment/probes/b3-installed-check.py
+  s_d7280c55e1029f::t_daf3aeb1ce06a1 49
+  s_d7280c55e1029f::t_7f2e6213935caf 53
+apps/web/src/utils/sessionMerge.js
+  s_d7280c55e1029f::t_00c2332d8d4834 2-3
+packages/app/server/lib/pty-chat-queue.js
+  s_d7280c55e1029f::t_ffae617339430f 37
+packages/content/concepts/ru/GlobalSettings.md
+  s_d7280c55e1029f::t_e49e5e53ef2a96 123
+  s_d7280c55e1029f::t_5e675ab455d326 1-122,124-224
+packages/app/lib/perm-bridge.js
+  s_d7280c55e1029f::t_d7b0e9719a8075 1-2
+packages/app/scripts/npm-pack-dry-run.mjs
+  s_d7280c55e1029f::t_26543737b31212 3,26,28,34
+packages/app/tests/logger-bootstrap.test.js
+  s_d7280c55e1029f::t_7a14b16f6f73bd 2,213
+packages/app/src/utils/ptyChunkBuilder.js
+  s_d7280c55e1029f::t_ad853d060c0ecb 1-2
+packages/app/lib/approval-reviewer.js
+  s_d7280c55e1029f::t_ab2292f1f60667 1-2
+cc-viewer-alignment/B11-core-installation.json
+  s_d7280c55e1029f::t_a5e30ebe7ad896 1-10
+packages/app/lib/openai-body.js
+  s_d7280c55e1029f::t_3e79a9d85a2d33 1-2
+apps/web/src/components/dashboard/DetailPanel.jsx
+  s_d7280c55e1029f::t_1edd29d92ea842 9-11,13
+packages/app/lib/im/dingtalk-im-bridge.js
+  s_d7280c55e1029f::t_b055e71e5c1fd9 1-444
+packages/app/server/lib/voice-pack-manager.js
+  s_d7280c55e1029f::t_097d382b342f41 14,42
+apps/web/src/AppBase.jsx
+  s_d7280c55e1029f::t_9e5b7511cc9165 1845-1847
+  s_d7280c55e1029f::t_7647485de76bfc 19,28-29,37,46
+cc-viewer-alignment/B11-local-commits-2026-11-23.json
+  s_d7280c55e1029f::t_d6ba79fd3cd600 1-2,4-7,10-13,16-19,22-25,28-31,34-37,40-43,46-49,52-55,58-61,64-67,70-73,76-79,82-85,88-91,94-97,100-103,106-109,112-115,118-121,124-127,130-133,136-139,142-145,148-151,202-203,210
+  s_d7280c55e1029f::t_2f3a78d603c06c 3,8-9,14-15,20-21,26-27,32-33,38-39,44-45,50-51,56-57,62-63,68-69,74-75,80-81,86-87,92-93,98-99,104-105,110-111,116-117,122-123,128-129,134-135,140-141,146-147,152-201,205-209
+  s_d7280c55e1029f::t_bd01ce145f46ae 204
+packages/app/lib/im/dingtalk-im-config.js
+  s_d7280c55e1029f::t_46e9136c8316c2 1-374
+packages/app/lib/ask/perm-bridge.js
+  s_d7280c55e1029f::t_de666542f8dc7c 1-188
+packages/app/src/utils/userImageRefs.js
+  s_d7280c55e1029f::t_461ef0655b0c09 1-2
+packages/app/lib/log-v2/identity.js
+  s_d7280c55e1029f::t_5a68783464b6f0 2-3
+packages/core/src/ultraplanTemplates.js
+  s_d7280c55e1029f::t_b38909fddbf969 1-265
+packages/content/concepts/de/GlobalSettings.md
+  s_d7280c55e1029f::t_c852bce7b231da 123
+packages/app/tests/pty-install-layout.test.js
+  s_d7280c55e1029f::t_529aaafbca1ef6 3,6,15-19
+packages/content/concepts/ko/GlobalSettings.md
+  s_d7280c55e1029f::t_5d7cc5668f0c25 123
+  s_d7280c55e1029f::t_66546a67b35526 1-122,124-224
+apps/web/src/utils/fileDragDrop.js
+  s_d7280c55e1029f::t_2ee3f57dbcd4fd 2
+packages/app/lib/update-job.js
+  s_d7280c55e1029f::t_ab538f75098f54 15
+packages/app/lib/request-visibility.js
+  s_d7280c55e1029f::t_287ca27062fa6e 1-2
+cc-viewer-alignment/A1-A2-engineering.md
+  s_d7280c55e1029f::t_7fcce2e0d14135 3-4
+packages/app/scripts/gen-default-voicepack.js
+  s_d7280c55e1029f::t_53ebaa2891f253 17
+packages/core/src/contentFilter.js
+  s_d7280c55e1029f::t_7e8d7a9e2fac49 1-682
+cc-viewer-alignment/B11-stage-runtime-boot.json
+  s_d7280c55e1029f::t_34aa2223528b7e 1-8
+.changeset/b11-core-extraction.md
+  s_d7280c55e1029f::t_c86c24449f5df5 1-5
+packages/app/lib/adapters/dingtalk-adapter.js
+  s_d7280c55e1029f::t_c882fe0f4c7e2b 53
+docs/refactor/package-boundaries.zh.md
+  s_d7280c55e1029f::t_f5827d1aa1d3d0 1-25
+packages/core/src/voice-pack-events.js
+  s_d7280c55e1029f::t_17a2a5a8a6a1ca 1-88
+apps/web/src/utils/toolsXmlFormatter.js
+  s_d7280c55e1029f::t_939b3759000144 3
+apps/web/src/utils/detailTabSelection.js
+  s_d7280c55e1029f::t_fc986e5942df0f 1
+packages/app/lib/context-watcher.js
+  s_d7280c55e1029f::t_190f3a19e4b18b 3
+packages/app/lib/restart.js
+  s_d7280c55e1029f::t_fbd19d392aa09d 6
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_d7280c55e1029f::t_62c138bbb1384f 17009-17012
+  s_d7280c55e1029f::t_52142d637be1ab 17001-17004
+  s_d7280c55e1029f::t_f0076ddb1dbab1 16893-16896
+  s_d7280c55e1029f::t_6fd5522f440e2e 16937-16940
+  s_d7280c55e1029f::t_bd01ce145f46ae 3,8534,9121,9168,9276,10677,10699
+  s_d7280c55e1029f::t_9670c9dd62d4d6 16933-16936
+  s_d7280c55e1029f::t_a3bf200619698e 16961-16964
+  s_d7280c55e1029f::t_4b05961255db0d 16901-16904
+  s_d7280c55e1029f::t_2a6781118a26a1 16993-16996
+  s_d7280c55e1029f::t_0dce90af96e30d 16941-16944
+  s_d7280c55e1029f::t_1f4b834ec208a4 16921-16923
+  s_d7280c55e1029f::t_640cf5bae22d27 16929-16932
+  s_d7280c55e1029f::t_fefdc516fc49c4 16969-16972
+  s_d7280c55e1029f::t_ef3ebec28e8d44 16997-17000
+  s_d7280c55e1029f::t_9dbe6b04544014 16924-16928
+  s_d7280c55e1029f::t_e29f2f5f329e7b 16985-16988
+  s_d7280c55e1029f::t_dc0ce1215568e5 16905-16908
+  s_d7280c55e1029f::t_bafc700554b694 16953-16956
+  s_d7280c55e1029f::t_1856bacff21dfe 16889-16892
+  s_d7280c55e1029f::t_b46ec4794a9cc9 16909-16912
+  s_d7280c55e1029f::t_013941446c1c6d 16949-16952
+  s_d7280c55e1029f::t_a1da288aa5121b 16917-16920
+  s_d7280c55e1029f::t_594e5ec4ac53a1 16881-16884
+  s_d7280c55e1029f::t_0b83f8a590466e 16973-16976
+  s_d7280c55e1029f::t_be2e944e944ea3 16981-16984
+  s_d7280c55e1029f::t_19b727b15f98a7 17013-17016
+  s_d7280c55e1029f::t_54fb2147937727 16885-16888
+  s_d7280c55e1029f::t_a54ac4ce14cc9f 16913-16916
+  s_d7280c55e1029f::t_0039bfd12d7296 16945-16948
+  s_d7280c55e1029f::t_3c92eca87643f1 16957-16960
+  s_d7280c55e1029f::t_9bd52a4dd110b4 16965-16968
+  s_d7280c55e1029f::t_7f01d79cd242ad 16977-16980
+  s_d7280c55e1029f::t_11f266990abfa6 16897-16900
+  s_d7280c55e1029f::t_e0fcc1148b417a 16989-16992
+  s_d7280c55e1029f::t_197151bd0d7ee0 17005-17008
+.changeset/b11-engineering-safety.md
+  s_d7280c55e1029f::t_3d440098d56eb1 1-5
+packages/core/src/token-usage.js
+  s_d7280c55e1029f::t_5092541f7c326d 1-29
+packages/core/src/request-visibility.js
+  s_d7280c55e1029f::t_93602616eba4d6 1-158
+cc-viewer-alignment/B11-lib-group-file-map.json
+  s_d7280c55e1029f::t_6dc69c433b6280 1-296,298-541,549
+  s_d7280c55e1029f::t_da9e9c35fa2287 297,542-548
+apps/electron/package.json
+  s_d7280c55e1029f::t_29a43a6e0a8b61 11,16
+packages/core/src/delta-reconstructor.js
+  s_d7280c55e1029f::t_1d6ede29e49892 1-292
+packages/app/lib/im/dingtalk-im-lock.js
+  s_d7280c55e1029f::t_e7ce4d599b3324 1-192
+apps/web/src/components/terminal/TerminalPanel.jsx
+  s_d7280c55e1029f::t_714a260e1bff32 22,24
+tests/tool-catalog-concepts.test.js
+  s_d7280c55e1029f::t_6422ca8be76081 8
+cc-viewer-alignment/B11-scanner-extraction.json
+  s_d7280c55e1029f::t_6715051b806938 1-24
+apps/electron/tests/electron-launch.test.js
+  s_d7280c55e1029f::t_0d1880b16243b2 1-38
+packages/app/lib/appserver-bridge.js
+  s_d7280c55e1029f::t_97b61b1fdea929 34
+  s_d7280c55e1029f::t_73d60ee34f8aee 26-28
+packages/app/tests/npm-root-discovery.test.js
+  s_d7280c55e1029f::t_9f2d5215745705 1-35
+cc-viewer-alignment/B11-validation-2026-11-23.json
+  s_d7280c55e1029f::t_d6ba79fd3cd600 1-2,4,6-9,11-13,16,20-21,25,27,32-35,43-46,48-51,56-57,73-82,99-100
+  s_d7280c55e1029f::t_bd01ce145f46ae 95-98
+  s_d7280c55e1029f::t_7fcce2e0d14135 3,5,10,14-15,17-19,22-24,26,28-31,36-42,47,52-55,58-72,83-94
+packages/app/lib/credential-recovery.js
+  s_d7280c55e1029f::t_45b754131864a9 12
+packages/core/src/log-v2/entry-codec.js
+  s_d7280c55e1029f::t_65d15f78a4e287 1-177
+packages/app/lib/tool-result-image-protocol.js
+  s_d7280c55e1029f::t_ad485dac308642 1-2
+packages/app/lib/ask/ask-auto-answer.js
+  s_d7280c55e1029f::t_4a63a9ace19b15 1-153
+packages/app/tests/dingtalk-im-process-manager.test.js
+  s_d7280c55e1029f::t_da9e9c35fa2287 5,41
+cc-viewer-alignment/B11-gui.json
+  s_d7280c55e1029f::t_b077835fbcd9fa 15,28,41,60,73,86
+  s_d7280c55e1029f::t_9eebdbd30a0806 4-12,25,38,57,70,83
+  s_d7280c55e1029f::t_dece6687d0b7dc 1-3,13-14,16-24,26-27,29-37,39-40,42-56,58-59,61-69,71-72,74-82,84-85,87-106
+apps/web/src/utils/logV2Archive.js
+  s_d7280c55e1029f::t_1815a44f9af2ce 1,4-7
+apps/web/src/components/settings/ImStatusChip.jsx
+  s_d7280c55e1029f::t_332f966846e290 1,5,13-19,30,34-35,38,40-62,64-73,79-80,82,88-94,96-98,107
+  s_d7280c55e1029f::t_375d16ac163abf 12
+packages/core/src/codex-thread-source.js
+  s_d7280c55e1029f::t_d2a75d36b003e7 1-8
+apps/web/src/components/settings/ImConversationModal.jsx
+  s_d7280c55e1029f::t_9d7bfcae191dfa 7,12
+  s_d7280c55e1029f::t_8305b55454e8c2 2-3,461-464,470
+  s_d7280c55e1029f::t_c1b6bf89d99018 16-21,171-177,182-184,198-238,240-245,247-333
+  s_d7280c55e1029f::t_10d717b2993cb6 10-11,343,355,361-374,395
+packages/core/src/openai-body.js
+  s_d7280c55e1029f::t_0e9eb6340974ee 1-101
+packages/app/pty-manager.js
+  s_d7280c55e1029f::t_c11dd3af62e6e2 9
+apps/web/src/components/common/ScheduleTaskModal.jsx
+  s_d7280c55e1029f::t_18de3ded4fa8ac 10
+packages/app/src/utils/errorReport.js
+  s_d7280c55e1029f::t_215a8ad4e29df3 1-2
+apps/web/src/utils/conversationEntryNormalize.js
+  s_d7280c55e1029f::t_6b7f5738ae9385 7,9,11-12
+pnpm-workspace.yaml
+  s_d7280c55e1029f::t_c63fba83a84205 17-20
+  s_d7280c55e1029f::t_d6b5b2439bb46c 21-23
+  s_d7280c55e1029f::t_f62c7da5dee3f7 14-16
+apps/web/src/Mobile.jsx
+  s_d7280c55e1029f::t_696c5743b528f2 6
+.changeset/b11-electron-core-stage.md
+  s_d7280c55e1029f::t_62c138bbb1384f 1-5
+packages/app/lib/im/dingtalk-im-process-manager.js
+  s_d7280c55e1029f::t_7ff1963faacdd8 1-193
+packages/app/lib/proxy/proxy-env.js
+  s_d7280c55e1029f::t_d8b51798776b9f 1-96
+scripts/tarball-baseline.json
+  s_d7280c55e1029f::t_034d6d2147675a 355-357,415-423,482-483
+  s_d7280c55e1029f::t_4acbbd878f8753 589,602
+  s_d7280c55e1029f::t_4672c9b50b4b05 1-305,308-317,319-354,358-414,424-481,484-527,557-588,590-601,603-628
+  s_d7280c55e1029f::t_20602cc5d6a57f 318
+  s_d7280c55e1029f::t_a691ef7ebed318 528-556
+  s_d7280c55e1029f::t_7e3c45d9041b18 306-307
+packages/app/server/lib/ultra-agents-api.js
+  s_d7280c55e1029f::t_be34c963fc6567 2,4-5
+packages/app/src/utils/clearCheckpoint.js
+  s_d7280c55e1029f::t_091841f0ed34a5 1-2
+packages/app/lib/log-v2/timeline-watcher.js
+  s_d7280c55e1029f::t_d20da626613d7e 7
+packages/app/scripts/assemble-dist.mjs
+  s_d7280c55e1029f::t_b824e98601e7ff 15
+  s_d7280c55e1029f::t_92523a15b67956 27-32
+packages/app/lib/log-v2/archive-scanner.js
+  s_d7280c55e1029f::t_689de909f7f558 1-162
+packages/app/lib/token-usage.js
+  s_d7280c55e1029f::t_958ebdd40efd37 1-2
+packages/app/lib/sdk-appserver-approvals.js
+  s_d7280c55e1029f::t_7832ebf546f7f1 4-5
+cc-viewer-alignment/README.md
+  s_d7280c55e1029f::t_7fcce2e0d14135 5,32,34
+packages/app/server/_paths.js
+  s_d7280c55e1029f::t_60700b0f985dce 1-18
+scripts/boundary-allowlist.json
+  s_d7280c55e1029f::t_a462ed9e3e2b98 1-100
+packages/app/tests/dingtalk-im-bridge.test.js
+  s_d7280c55e1029f::t_551fb74698d03f 57,62,334-348
+.changeset/b11-lib-groups.md
+  s_d7280c55e1029f::t_e02025a1f027c0 1-5
+apps/web/src/components/chat/controllers/askFlowController.js
+  s_d7280c55e1029f::t_a2c30c73434d4a 24
+packages/app/src/utils/contentFilter.js
+  s_d7280c55e1029f::t_289e72de7edbcb 1-2
+cc-viewer-alignment/B11-validation-E26-2026-11-23.json
+  s_d7280c55e1029f::t_7fcce2e0d14135 1-66
+packages/app/lib/log-v2/entry-codec.js
+  s_d7280c55e1029f::t_e81a377b309c0a 1-2
+tests/boundary-checker.test.js
+  s_d7280c55e1029f::t_9d16e23e75222f 1-17,19-78,80-98,100-168,170-183
+  s_d7280c55e1029f::t_7b7f4b99757adf 18,79,99,169,184-403
+packages/app/lib/interceptor-core.js
+  s_d7280c55e1029f::t_00819673f9f3b0 22-23,27
+.github/workflows/ci.yml
+  s_d7280c55e1029f::t_f99764f3ff69f4 1-24,27-33,38-62
+  s_d7280c55e1029f::t_83626c8d162e41 37
+  s_d7280c55e1029f::t_6a1c7c3220a6f6 25-26,36
+  s_d7280c55e1029f::t_19fd7bf069e7d7 34-35
+packages/app/server/lib/log-v2-routes.js
+  s_d7280c55e1029f::t_10de61f877f087 13
+packages/app/scripts/lib/npm-pack-json.mjs
+  s_d7280c55e1029f::t_6a3a2a1345b762 1-32
+packages/app/lib/cli-args.js
+  s_d7280c55e1029f::t_b2a00b1aeca7ef 1-2
+packages/app/tests/native-path-discovery.test.js
+  s_d7280c55e1029f::t_2148f2e2244ca4 1-18
+packages/app/lib/codex-app-logger-daemon.js
+  s_d7280c55e1029f::t_5d23a49eb13b29 61
+packages/app/src/utils/teammateDetector.js
+  s_d7280c55e1029f::t_fe89b93a02c77f 1-2
+packages/app/lib/log-v2/reader-worker.js
+  s_d7280c55e1029f::t_47576928ba7e60 20
+packages/app/src/utils/requestType.js
+  s_d7280c55e1029f::t_cd9bf95e68ede9 1-2
+packages/core/src/approval-reviewer.js
+  s_d7280c55e1029f::t_9d25025b8e079e 1-25
+packages/core/src/log-v2/wire-schema.js
+  s_d7280c55e1029f::t_62cf708f0e88a3 1-160
+apps/web/src/utils/imConnState.js
+  s_d7280c55e1029f::t_b2a7bd3ed4e3cb 1-59
+packages/app/server/lib/error-report.js
+  s_d7280c55e1029f::t_9f5e23425ff7c3 19
+packages/core/src/tools-xml-formatter.js
+  s_d7280c55e1029f::t_1523e76b895dfb 1-91
+packages/app/lib/log-v2/wire-schema.js
+  s_d7280c55e1029f::t_3c3479cf4176f9 1-2
+.changeset/b11-v2-scanner-boundary.md
+  s_d7280c55e1029f::t_9e72e9fd486251 1-5
+packages/core/src/cli-args.js
+  s_d7280c55e1029f::t_33f3aa4755ef22 1-291
+packages/content/concepts/es/GlobalSettings.md
+  s_d7280c55e1029f::t_5aab8c13226fe4 123
+packages/app/lib/dingtalk-im-log-watcher.js
+  s_d7280c55e1029f::t_cbacaf6b486d38 1-2
+packages/app/server/lib/voice-pack-events.js
+  s_d7280c55e1029f::t_d5151cf1713ac6 1-2
+packages/app/lib/dingtalk-im-config.js
+  s_d7280c55e1029f::t_8f2a79c034f433 1-2
+packages/app/lib/dingtalk-im-persona.js
+  s_d7280c55e1029f::t_d2acfa4662c7ca 1-2
+apps/web/src/App.jsx
+  s_d7280c55e1029f::t_c450b05b173f9d 505-507,515
+  s_d7280c55e1029f::t_bdc3f77977676d 19-20
+.github/workflows/npm-publish.yml
+  s_d7280c55e1029f::t_8e90d06235cc30 110,112-128
+  s_d7280c55e1029f::t_69c112ba6ecb80 44-46
+packages/content/concepts/uk/GlobalSettings.md
+  s_d7280c55e1029f::t_4bdd0a03e14a36 123
+  s_d7280c55e1029f::t_cbc0cecbda6ddc 1-122,124-224
+.changeset/config.json
+  s_d7280c55e1029f::t_463cee46a17afa 1-13
+packages/app/src/utils/userPromptContent.js
+  s_d7280c55e1029f::t_b806cb684c5838 1-2
+packages/core/src/openai-responses-url.js
+  s_d7280c55e1029f::t_cc2643b0b33f62 1-30
+packages/app/lib/log-entry-order.js
+  s_d7280c55e1029f::t_abd54493109d95 1-2
+packages/core/src/log-v2/reducer.js
+  s_d7280c55e1029f::t_e47ea36eebaf6f 1-337
+packages/app/lib/im/dingtalk-im-log-watcher.js
+  s_d7280c55e1029f::t_22d1853ca9fdca 1-61
+packages/content/concepts/ar/GlobalSettings.md
+  s_d7280c55e1029f::t_ac09687f94e89e 123
+packages/app/server/lib/tools-xml-formatter.js
+  s_d7280c55e1029f::t_73fafd10f301a6 1-2
+packages/app/lib/proxy-env.js
+  s_d7280c55e1029f::t_ed7d7d0e3c8146 1-2
+packages/app/lib/dingtalk-im-senders.js
+  s_d7280c55e1029f::t_39f0f779102cdb 1-2
+packages/app/server/lib/delta-reconstructor.js
+  s_d7280c55e1029f::t_e46fd086f0cd3e 1-2
+.changeset/b11-content-extraction.md
+  s_d7280c55e1029f::t_4bd8ab49f64666 1-5
+apps/web/tests/plan-usage-display.test.js
+  s_d7280c55e1029f::t_377574ca6f2bdf 35-36,38
+packages/content/concepts/pl/GlobalSettings.md
+  s_d7280c55e1029f::t_efe3a6b2db092a 123
+  s_d7280c55e1029f::t_3508fe31cb1305 1-122,124-224
+packages/app/tests/dingtalk-im-logs.test.js
+  s_d7280c55e1029f::t_1c8147b29b2bc4 1-48
+apps/web/src/utils/helpers.js
+  s_d7280c55e1029f::t_17cd48f8684dd8 1-4,17,27,39
+packages/app/tests/helpers/process-exit.js
+  s_d7280c55e1029f::t_d636fb8a985b07 1-28
+packages/app/lib/log-v2/request-summary.js
+  s_d7280c55e1029f::t_4a23a585b39f4c 1-2
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_d7280c55e1029f::t_eadf1d6cf629a1 246
+  s_d7280c55e1029f::t_84a0fdbf661d3e 65-67,2500-2524
+  s_d7280c55e1029f::t_757a0b88c55e97 2525-2531
+  s_d7280c55e1029f::t_7daa580761305a 68,2489-2499
+  s_d7280c55e1029f::t_99dfc6eb5c85cf 2532-2542
+packages/content/concepts/en/GlobalSettings.md
+  s_d7280c55e1029f::t_28a1c8daad06f1 123
+packages/app/lib/sdk-manager.js
+  s_d7280c55e1029f::t_8e360f1ef1f709 22
+packages/app/tests/npm-pack-json.test.js
+  s_d7280c55e1029f::t_f8e014f237b0b5 1-35
+packages/app/lib/dingtalk-im-bridge.js
+  s_d7280c55e1029f::t_7d72048859a92d 1-2
+packages/app/lib/im/dingtalk-im-senders.js
+  s_d7280c55e1029f::t_3aaf242f9d6ea3 1-47
+packages/app/tests/plugin-service-integration.test.js
+  s_d7280c55e1029f::t_a75d579462dde7 2,383
+apps/web/src/utils/teamModalBuilder.js
+  s_d7280c55e1029f::t_d1c614c6dbe859 6,8
+packages/app/lib/im/dingtalk-im-routes.js
+  s_d7280c55e1029f::t_19826a9b76ab78 1-440
+apps/web/package.json
+  s_d7280c55e1029f::t_cdaa35c69e070b 59-60
+packages/content/concepts/it/GlobalSettings.md
+  s_d7280c55e1029f::t_b6e8ebce98e5eb 123
+  s_d7280c55e1029f::t_32109cf06690e4 1-122,124-224
+cc-viewer-alignment/B11-candidate-matrix.md
+  s_d7280c55e1029f::t_79f4ffa88d13a8 1-4,6,8,10,16,18-91,95,98-226,228-235
+  s_d7280c55e1029f::t_46415fe35327e1 7,9,11-15,17,92-94,96
+  s_d7280c55e1029f::t_7fcce2e0d14135 97
+  s_d7280c55e1029f::t_bd01ce145f46ae 5
+  s_d7280c55e1029f::t_d821fa2cb2d5df 227
+packages/app/lib/codex-request-user-input.js
+  s_d7280c55e1029f::t_a8694d8b71ac0c 1-2
+apps/web/src/utils/entry-slim.js
+  s_d7280c55e1029f::t_f868a398901c0a 27,29
+packages/content/package.json
+  s_d7280c55e1029f::t_d8f252050f4b76 1-9
+apps/web/src/utils/tokenUsage.js
+  s_d7280c55e1029f::t_b8da28d2ab9149 1
+scripts/verify-boundaries.mjs
+  s_d7280c55e1029f::t_bfe228f9edb4ca 1-471
+packages/app/tests/credential-backup.test.js
+  s_d7280c55e1029f::t_d8f05f2fcbef16 263,265-268,270-271,273,287-289
+  s_d7280c55e1029f::t_78d6feeb73d8b6 256-262,264,269,272,274-286,290-312
+packages/app/lib/codex-app-logger.js
+  s_d7280c55e1029f::t_51932a7cfd4b2a 18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "c7071a4c50ec7f3176dea0318dc24cd8f79c8d35",
+  "prompts": {},
+  "sessions": {
+    "s_33c4bc22026691": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ef81-9641-7562-8716-fb5b6a9ae27f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    },
+    "s_d7280c55e1029f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a204a6-35f5-7a91-8f49-0742da1c75f9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": null
+    }
+  }
+}
