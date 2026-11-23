@@ -1,0 +1,31 @@
+apps/electron/scripts/assemble-app.mjs
+  s_d7280c55e1029f::t_504f6a4eff560e 3,20-32
+cc-viewer-alignment/B11-implementation.md
+  s_d7280c55e1029f::t_62c138bbb1384f 208-213
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_d7280c55e1029f::t_62c138bbb1384f 17003-17006
+cc-viewer-alignment/B11-electron-stage.json
+  s_d7280c55e1029f::t_34aa2223528b7e 2,4-5,7,9,11-14
+.changeset/b11-electron-core-stage.md
+  s_d7280c55e1029f::t_62c138bbb1384f 1-5
+cc-viewer-alignment/B11-stage-runtime-boot.json
+  s_d7280c55e1029f::t_34aa2223528b7e 1-8
+AGENTS.md
+  s_d7280c55e1029f::t_f0a0508c05eb4a 26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "7ce46a0cab8aef91e115de665b6661e44e20714b",
+  "prompts": {},
+  "sessions": {
+    "s_d7280c55e1029f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a204a6-35f5-7a91-8f49-0742da1c75f9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
