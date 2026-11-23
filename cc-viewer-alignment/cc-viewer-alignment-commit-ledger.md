@@ -1,5 +1,7 @@
 # cc-viewer 逐提交对齐台账
 
+2026-11-23 SDK修复交付：用户明确授权PR到main并自行合并。两项修复整为实现 `4a56de77fdea9584f7c1acb29aff008d45adfdf2`，经[PR #14](https://github.com/weiesky/cx-viewer/pull/14)于2026-11-23T14:56:09Z squash合并main `fcbaf59d2306105544a713cbfbbd17af934b87a0`；merge tree与已验证实现tree相同，精确head guard，无admin override。合并时9项远端成功/1项重复PR macOS仍无runner排队；相同head的Ubuntu Node20/22/24全套与macOS/Windows定向五类均成功，不把排队标通过。本地main已同步，合并后更新本轮文档。未发布npm、未重启活动实例、未改用户历史；原目录/分页/Windows完整运行/活动GUI未验边界保留。逐项检查与本地2833/2833证据见[回执](./SDK-context-usage-2026-11-23.json)。
+
 2026-11-23 SDK上下文维护（不新增上游迁移）：复核固定74cd752d中的Claude getContextUsage控制面/血条调用链及efc7f8ea实际adapter diff，完成Codex exec的精确线程原生last/window采集、累计记账分离、SSE隔离/重连及规范冷加载。真实同线程两轮2%/3%、独立Chrome血条/弹层9%与刷新通过，最终隔离全量2833/2833、0skip/build/531边界/602源码/627包门通过；首跑环境污染失败与复跑保留。代码/changeset/文档在工作区，未提交/PR/推送/发布；活动实例未重启、用户历史未改，目录/分页历史/Windows/活动GUI未验。上游依据、本地路径及完整验证见[本轮记录](./SDK-context-usage-2026-11-23.md)与[机器回执](./SDK-context-usage-2026-11-23.json)。
 
 2026-11-23 SDK启动维护（不新增上游迁移）：本机Codex 0.169.0配置清理/插件SessionEnd 3秒、非致命item的Warning标签与逐回合去重；本地实现、固定上游74cd752d/efc7f8ea实际代码依据及验证见[修复记录](./SDK-startup-warnings-2026-11-23.md)。真实新SDK请求OK/0诊断，14定向及132全组回归通过、build/边界门通过。实现与文档在工作区，未新增PR/推送/发布；活动实例未重启、已有历史保留，正常重启后的展示与活动GUI未验。B11及其他包核销不变。

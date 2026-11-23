@@ -1,7 +1,7 @@
 {
   "date": "2026-11-23",
   "task": "SDK exec native context usage",
-  "status": "local-validation-complete",
+  "status": "merged-to-main",
   "codexCli": "0.169.0",
   "sdk": "0.142.5",
   "nativeExec": [
@@ -131,5 +131,83 @@
     "Older archives without context_usage stay unknown until a fresh measured turn.",
     "Measurements are refreshed at SDK event boundaries, not on every streamed output token.",
     "Windows and active-user-instance GUI not validated."
-  ]
+  ],
+  "delivery": {
+    "pullRequest": 14,
+    "url": "https://github.com/weiesky/cx-viewer/pull/14",
+    "implementationCommit": "4a56de77fdea9584f7c1acb29aff008d45adfdf2",
+    "mergeCommit": "fcbaf59d2306105544a713cbfbbd17af934b87a0",
+    "mergedAt": "2026-11-23T14:56:09Z",
+    "mergedTreeMatchesValidatedImplementation": true,
+    "mergeHeadGuard": "4a56de77fdea9584f7c1acb29aff008d45adfdf2",
+    "adminOverrideUsed": false,
+    "checksAtMerge": {
+      "passed": 9,
+      "pending": 1,
+      "allFiveJobCategoriesPassedOnSameHead": true,
+      "pendingReason": "Duplicate pull_request macOS contract job was still queued without a runner; the push macOS contract job on the same head had passed."
+    },
+    "checks": [
+      {
+        "name": "test (20.x)",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS",
+        "url": "https://github.com/weiesky/cx-viewer/actions/runs/45198446199/job/137775125124"
+      },
+      {
+        "name": "test (20.x)",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS",
+        "url": "https://github.com/weiesky/cx-viewer/actions/runs/45198360996/job/137774800668"
+      },
+      {
+        "name": "test (22.x)",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS",
+        "url": "https://github.com/weiesky/cx-viewer/actions/runs/45198446199/job/137775124646"
+      },
+      {
+        "name": "test (22.x)",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS",
+        "url": "https://github.com/weiesky/cx-viewer/actions/runs/45198360996/job/137774800538"
+      },
+      {
+        "name": "test (24.x)",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS",
+        "url": "https://github.com/weiesky/cx-viewer/actions/runs/45198446199/job/137775124537"
+      },
+      {
+        "name": "test (24.x)",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS",
+        "url": "https://github.com/weiesky/cx-viewer/actions/runs/45198360996/job/137774800740"
+      },
+      {
+        "name": "platform-contracts (macos-latest)",
+        "status": "QUEUED",
+        "conclusion": "",
+        "url": "https://github.com/weiesky/cx-viewer/actions/runs/45198446199/job/137775123909"
+      },
+      {
+        "name": "platform-contracts (macos-latest)",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS",
+        "url": "https://github.com/weiesky/cx-viewer/actions/runs/45198360996/job/137774800355"
+      },
+      {
+        "name": "platform-contracts (windows-latest)",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS",
+        "url": "https://github.com/weiesky/cx-viewer/actions/runs/45198446199/job/137775124378"
+      },
+      {
+        "name": "platform-contracts (windows-latest)",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS",
+        "url": "https://github.com/weiesky/cx-viewer/actions/runs/45198360996/job/137774800487"
+      }
+    ]
+  }
 }

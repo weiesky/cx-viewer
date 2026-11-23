@@ -27,4 +27,6 @@
 
 当前支持本机默认 legacy JSONL；原生目录/分页历史会显示未知，尚未实现其适配。旧规范日志未写入 context_usage 时显示未知，下一次带原生测量的回复开始正常记录，不批量改写历史。Windows、活动实例 GUI 与真实跨环境未验。
 
-本轮代码/changeset/记录仍在工作区，未提交、推送、发 PR 或发布，未运行 version。用户活动实例未停止或重启，后端模块需正常重启后加载；自有探针和隔离 GUI 服务已结束。
+本轮两项 SDK 修复已整为一个实现提交 `4a56de77fdea9584f7c1acb29aff008d45adfdf2`，经 [PR #14](https://github.com/weiesky/cx-viewer/pull/14) 于 `2026-11-23T14:56:09Z` squash 合并 main `fcbaf59d2306105544a713cbfbbd17af934b87a0`。合并 tree 与已验证实现 tree 完全一致；合并使用精确 head guard，未用 admin override。合并时远端 9 项成功、1 项重复 PR macOS contract 仍排队且无 runner；同一 head 的 push 五类检查（Ubuntu Node20/22/24 全套、macOS/Windows 定向）均成功。逐项 URL/状态见机器回执，不将排队记为成功。
+
+合并后同步本地 main 并更新文档；未发布 npm、未运行 version。用户活动实例未停止或重启，后端模块需正常重启后加载；自有探针和隔离 GUI 服务已结束。

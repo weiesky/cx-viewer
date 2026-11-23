@@ -25,4 +25,4 @@
 - 定向 adapter/manager/task 测试 14/14；SDK 全组与 thinking cold replay 回归 132/132，0 skip。
 - `pnpm run build` 通过（保留既有大 chunk 提示）；boundaries 530 文件、0 违规；tarball-drift 601 源码通过；`git diff --check` 通过。
 
-本轮代码、测试、changeset 与记录保留在工作区，未新建 PR、推送或发布。正在运行的后端不会热加载模块，展示修复需正常重启后加载；每次新启动的原生 exec 已能读取清理后的配置。已有历史里的旧警告保留，不做数据删除。未做活动实例 GUI 验收，真实 SDK 无诊断与事件测试不冒充该项通过。
+本轮代码、测试、changeset 与上下文用量修复合为实现提交 `4a56de77fdea9584f7c1acb29aff008d45adfdf2`，经 [PR #14](https://github.com/weiesky/cx-viewer/pull/14) squash 合并 main `fcbaf59d2306105544a713cbfbbd17af934b87a0`，随后更新记录；未发布 npm。合并与远端检查详情见 [上下文修复回执](./SDK-context-usage-2026-11-23.json)。正在运行的后端不会热加载模块，展示修复需正常重启后加载；每次新启动的原生 exec 已能读取清理后的配置。已有历史里的旧警告保留，不做数据删除。未做活动实例 GUI 验收，真实 SDK 无诊断与事件测试不冒充该项通过。
