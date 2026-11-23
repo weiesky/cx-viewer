@@ -1,0 +1,305 @@
+cc-viewer-alignment/B11-core-installation.json
+  s_d7280c55e1029f::t_a5e30ebe7ad896 1-10
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_d7280c55e1029f::t_2a6781118a26a1 16987-16990
+packages/core/tests/compatibility.test.mjs
+  s_d7280c55e1029f::t_ff18cae70f4212 1-30
+cc-viewer-alignment/B11-implementation.md
+  s_d7280c55e1029f::t_2a6781118a26a1 184-189
+.changeset/b11-core-extraction.md
+  s_d7280c55e1029f::t_c86c24449f5df5 1-5
+AGENTS.md
+  s_d7280c55e1029f::t_e2ef6d6b3f8659 26
+apps/web/package.json
+  s_d7280c55e1029f::t_cdaa35c69e070b 59-60
+apps/web/src/App.jsx
+  s_d7280c55e1029f::t_bdc3f77977676d 19-20
+apps/web/src/AppBase.jsx
+  s_d7280c55e1029f::t_7647485de76bfc 19,28-29,37,46
+apps/web/src/Mobile.jsx
+  s_d7280c55e1029f::t_696c5743b528f2 6
+apps/web/src/components/chat/ChatMessage.jsx
+  s_d7280c55e1029f::t_d7b5fdc0212488 18
+apps/web/src/components/chat/ChatView.jsx
+  s_d7280c55e1029f::t_1188b2c55f263d 23-24,29,34,67
+apps/web/src/components/chat/UserPromptsModal.jsx
+  s_d7280c55e1029f::t_7c73fc65c56b0f 4
+apps/web/src/components/chat/controllers/askFlowController.js
+  s_d7280c55e1029f::t_a2c30c73434d4a 24
+apps/web/src/components/chat/optimisticQueueMessage.js
+  s_d7280c55e1029f::t_875d086630fd92 1
+apps/web/src/components/common/ScheduleTaskModal.jsx
+  s_d7280c55e1029f::t_18de3ded4fa8ac 10
+apps/web/src/components/dashboard/AppHeader.jsx
+  s_d7280c55e1029f::t_af804061d32a6e 14,18-19
+apps/web/src/components/dashboard/CompactionPromptHistory.jsx
+  s_d7280c55e1029f::t_cc7036168126ff 4
+apps/web/src/components/dashboard/ContextTab.jsx
+  s_d7280c55e1029f::t_bd02d8e3d640ad 11
+apps/web/src/components/dashboard/DetailPanel.jsx
+  s_d7280c55e1029f::t_1edd29d92ea842 9-11,13
+apps/web/src/components/dashboard/RequestList.jsx
+  s_d7280c55e1029f::t_f87f3194d6cfcb 6
+apps/web/src/components/dashboard/WorkspaceList.jsx
+  s_d7280c55e1029f::t_38cc8b6279b304 6
+apps/web/src/components/mobile/MobileStats.jsx
+  s_d7280c55e1029f::t_7deece58cfd788 3
+apps/web/src/components/settings/ImConversationModal.jsx
+  s_d7280c55e1029f::t_9d7bfcae191dfa 7,12
+apps/web/src/components/settings/VoicePackSettings.jsx
+  s_d7280c55e1029f::t_ed152f5d3c6589 7
+apps/web/src/components/terminal/ScratchTerminal.jsx
+  s_d7280c55e1029f::t_315d76fb73409e 20
+apps/web/src/components/terminal/TerminalPanel.jsx
+  s_d7280c55e1029f::t_714a260e1bff32 22,24
+apps/web/src/utils/approvalReviewerOptions.js
+  s_d7280c55e1029f::t_1608e1e85475b4 7
+apps/web/src/utils/contextCompaction.js
+  s_d7280c55e1029f::t_5bb0c758bb5227 1-4
+apps/web/src/utils/conversationEntryNormalize.js
+  s_d7280c55e1029f::t_6b7f5738ae9385 7,9,11-12
+apps/web/src/utils/detailTabSelection.js
+  s_d7280c55e1029f::t_fc986e5942df0f 1
+apps/web/src/utils/entry-slim.js
+  s_d7280c55e1029f::t_f868a398901c0a 27,29
+apps/web/src/utils/errorReport.js
+  s_d7280c55e1029f::t_0920e74d16cbc7 1
+apps/web/src/utils/fileDragDrop.js
+  s_d7280c55e1029f::t_2ee3f57dbcd4fd 2
+apps/web/src/utils/helpers.js
+  s_d7280c55e1029f::t_17cd48f8684dd8 1-4,17,27,39
+apps/web/src/utils/identityHeal.js
+  s_d7280c55e1029f::t_adf5f4f3f3370f 2
+apps/web/src/utils/logV2Archive.js
+  s_d7280c55e1029f::t_1815a44f9af2ce 1,4-7
+apps/web/src/utils/logV2ObjectStore.js
+  s_d7280c55e1029f::t_7a16de8693e1dc 1-3
+apps/web/src/utils/logV2Transport.js
+  s_d7280c55e1029f::t_80a6cfc86ee45f 6
+apps/web/src/utils/requestTools.js
+  s_d7280c55e1029f::t_6f80bfe00180b7 1-2,4
+apps/web/src/utils/sessionManager.js
+  s_d7280c55e1029f::t_b409362a52245e 3-4
+apps/web/src/utils/sessionMerge.js
+  s_d7280c55e1029f::t_00c2332d8d4834 2-3
+apps/web/src/utils/teamModalBuilder.js
+  s_d7280c55e1029f::t_d1c614c6dbe859 6,8
+apps/web/src/utils/tokenUsage.js
+  s_d7280c55e1029f::t_b8da28d2ab9149 1
+apps/web/src/utils/toolResultCore.js
+  s_d7280c55e1029f::t_147a0da280d094 9
+apps/web/src/utils/toolsXmlFormatter.js
+  s_d7280c55e1029f::t_939b3759000144 3
+apps/web/src/utils/voicePackPlayer.js
+  s_d7280c55e1029f::t_ce3b46b0a07b18 18
+cc-viewer-alignment/B11-core-file-map.json
+  s_d7280c55e1029f::t_ef66d715d55f4a 1-1521
+packages/app/cli.js
+  s_d7280c55e1029f::t_dd2d59963d19db 14,16
+packages/app/lib/approval-reviewer.js
+  s_d7280c55e1029f::t_ab2292f1f60667 1-2
+packages/app/lib/appserver-bridge.js
+  s_d7280c55e1029f::t_73d60ee34f8aee 26-28
+packages/app/lib/cli-args.js
+  s_d7280c55e1029f::t_b2a00b1aeca7ef 1-2
+packages/app/lib/codex-thread-source.js
+  s_d7280c55e1029f::t_d320bf663c3b7c 1-2
+packages/app/lib/context-watcher.js
+  s_d7280c55e1029f::t_190f3a19e4b18b 3
+packages/app/lib/dingtalk-im-bridge.js
+  s_d7280c55e1029f::t_7753988d3f63ca 4,8
+packages/app/lib/interceptor-core.js
+  s_d7280c55e1029f::t_00819673f9f3b0 22-23,27
+packages/app/lib/log-entry-order.js
+  s_d7280c55e1029f::t_abd54493109d95 1-2
+packages/app/lib/log-v2/benchmark.js
+  s_d7280c55e1029f::t_a2ee5fc3d0fdfb 12-13
+packages/app/lib/log-v2/entry-codec.js
+  s_d7280c55e1029f::t_e81a377b309c0a 1-2
+packages/app/lib/log-v2/identity.js
+  s_d7280c55e1029f::t_5a68783464b6f0 2-3
+packages/app/lib/log-v2/materializer.js
+  s_d7280c55e1029f::t_d183adb8e1eaaa 6-7
+packages/app/lib/log-v2/reader-worker.js
+  s_d7280c55e1029f::t_47576928ba7e60 20
+packages/app/lib/log-v2/reducer.js
+  s_d7280c55e1029f::t_6ec992dff8deff 1-2
+packages/app/lib/log-v2/request-summary.js
+  s_d7280c55e1029f::t_4a23a585b39f4c 1-2
+packages/app/lib/log-v2/session-summary.js
+  s_d7280c55e1029f::t_c536fe1fc4e603 13,16-17
+packages/app/lib/log-v2/shards.js
+  s_d7280c55e1029f::t_f1284943bb1446 8
+packages/app/lib/log-v2/timeline-watcher.js
+  s_d7280c55e1029f::t_d20da626613d7e 7
+packages/app/lib/log-v2/transport.js
+  s_d7280c55e1029f::t_86613d7dda594a 4,6,10,20
+packages/app/lib/log-v2/wire-schema.js
+  s_d7280c55e1029f::t_3c3479cf4176f9 1-2
+packages/app/lib/log-v2/writer.js
+  s_d7280c55e1029f::t_3c4731607375f6 2,32,41,65
+packages/app/lib/main-agent-entry.js
+  s_d7280c55e1029f::t_59596e19dad993 1-2
+packages/app/lib/openai-body.js
+  s_d7280c55e1029f::t_3e79a9d85a2d33 1-2
+packages/app/lib/openai-responses-url.js
+  s_d7280c55e1029f::t_36c83c6cf69110 1-2
+packages/app/lib/otel-adapter.js
+  s_d7280c55e1029f::t_bc74c164b30895 11
+packages/app/lib/otel-config.js
+  s_d7280c55e1029f::t_8bd863e6f606bd 1
+packages/app/lib/pty-workspace-runtime.js
+  s_d7280c55e1029f::t_3062c328b4347f 3,6
+packages/app/lib/request-visibility.js
+  s_d7280c55e1029f::t_287ca27062fa6e 1-2
+packages/app/lib/scheduled-task-executor.js
+  s_d7280c55e1029f::t_ad3e543149e615 21
+packages/app/lib/scheduled-task-store.js
+  s_d7280c55e1029f::t_c56c9a06c57116 41
+packages/app/lib/sdk-adapter.js
+  s_d7280c55e1029f::t_1120f71c1645fc 9
+packages/app/lib/sdk-manager.js
+  s_d7280c55e1029f::t_8e360f1ef1f709 22
+packages/app/lib/sdk-resume-history.js
+  s_d7280c55e1029f::t_182c003dd41b24 4
+packages/app/lib/stats-worker.js
+  s_d7280c55e1029f::t_42fd43418e86c0 7
+packages/app/lib/token-usage.js
+  s_d7280c55e1029f::t_958ebdd40efd37 1-2
+packages/app/lib/tool-result-image-protocol.js
+  s_d7280c55e1029f::t_ad485dac308642 1-2
+packages/app/package.json
+  s_d7280c55e1029f::t_a819201dac2f94 90-91,93-96
+packages/app/pty-manager.js
+  s_d7280c55e1029f::t_c11dd3af62e6e2 9
+packages/app/scripts/assemble-dist.mjs
+  s_d7280c55e1029f::t_b824e98601e7ff 15
+packages/app/scripts/gen-default-voicepack.js
+  s_d7280c55e1029f::t_53ebaa2891f253 17
+packages/app/scripts/sync-ultraplan-presets.mjs
+  s_d7280c55e1029f::t_5a8d4d6b44fcb3 6
+packages/app/server.js
+  s_d7280c55e1029f::t_7d2e82e4503f8a 61,65,100,127
+packages/app/server/lib/approval-modal-prefs.js
+  s_d7280c55e1029f::t_6278e8676842f6 1-2
+packages/app/server/lib/context-rules.js
+  s_d7280c55e1029f::t_cf3e63b59f6faa 1-2
+packages/app/server/lib/delta-reconstructor.js
+  s_d7280c55e1029f::t_e46fd086f0cd3e 1-2
+packages/app/server/lib/error-report.js
+  s_d7280c55e1029f::t_9f5e23425ff7c3 19
+packages/app/server/lib/log-v2-routes.js
+  s_d7280c55e1029f::t_10de61f877f087 13
+packages/app/server/lib/pty-chat-queue.js
+  s_d7280c55e1029f::t_ffae617339430f 37
+packages/app/server/lib/tools-xml-formatter.js
+  s_d7280c55e1029f::t_73fafd10f301a6 1-2
+packages/app/server/lib/voice-pack-events.js
+  s_d7280c55e1029f::t_d5151cf1713ac6 1-2
+packages/app/server/lib/voice-pack-manager.js
+  s_d7280c55e1029f::t_097d382b342f41 14,42
+packages/app/src/utils/clearCheckpoint.js
+  s_d7280c55e1029f::t_091841f0ed34a5 1-2
+packages/app/src/utils/contentFilter.js
+  s_d7280c55e1029f::t_289e72de7edbcb 1-2
+packages/app/src/utils/errorReport.js
+  s_d7280c55e1029f::t_215a8ad4e29df3 1-2
+packages/app/src/utils/modelIdentity.js
+  s_d7280c55e1029f::t_ab3773499ee2aa 1-2
+packages/app/src/utils/ptyChunkBuilder.js
+  s_d7280c55e1029f::t_ad853d060c0ecb 1-2
+packages/app/src/utils/requestType.js
+  s_d7280c55e1029f::t_cd9bf95e68ede9 1-2
+packages/app/src/utils/teammateDetector.js
+  s_d7280c55e1029f::t_fe89b93a02c77f 1-2
+packages/app/src/utils/ultraplanTemplates.js
+  s_d7280c55e1029f::t_85e30fad1b3c93 1-2
+packages/app/src/utils/userImageRefs.js
+  s_d7280c55e1029f::t_461ef0655b0c09 1-2
+packages/app/src/utils/userPromptContent.js
+  s_d7280c55e1029f::t_b806cb684c5838 1-2
+packages/app/tests/pty-install-layout.test.js
+  s_d7280c55e1029f::t_529aaafbca1ef6 3,6,15-19
+packages/core/package.json
+  s_d7280c55e1029f::t_fd51240d84e854 1-16
+packages/core/src/approval-modal-prefs.js
+  s_d7280c55e1029f::t_ce9061533f11c9 1-72
+packages/core/src/approval-reviewer.js
+  s_d7280c55e1029f::t_9d25025b8e079e 1-25
+packages/core/src/clearCheckpoint.js
+  s_d7280c55e1029f::t_1604a1586a4117 1-248
+packages/core/src/cli-args.js
+  s_d7280c55e1029f::t_33f3aa4755ef22 1-291
+packages/core/src/codex-thread-source.js
+  s_d7280c55e1029f::t_d2a75d36b003e7 1-8
+packages/core/src/contentFilter.js
+  s_d7280c55e1029f::t_7e8d7a9e2fac49 1-682
+packages/core/src/context-rules.js
+  s_d7280c55e1029f::t_965a3308209b0b 1-98
+packages/core/src/delta-reconstructor.js
+  s_d7280c55e1029f::t_1d6ede29e49892 1-292
+packages/core/src/errorReport.js
+  s_d7280c55e1029f::t_fd3b45ae21718f 1-40
+packages/core/src/log-entry-order.js
+  s_d7280c55e1029f::t_f2c07990b30433 1-13
+packages/core/src/log-v2/entry-codec.js
+  s_d7280c55e1029f::t_65d15f78a4e287 1-177
+packages/core/src/log-v2/reducer.js
+  s_d7280c55e1029f::t_e47ea36eebaf6f 1-337
+packages/core/src/log-v2/request-summary.js
+  s_d7280c55e1029f::t_d890723feaaf90 1-134
+packages/core/src/log-v2/wire-schema.js
+  s_d7280c55e1029f::t_62cf708f0e88a3 1-160
+packages/core/src/modelIdentity.js
+  s_d7280c55e1029f::t_e88125f11198ef 1-210
+packages/core/src/openai-body.js
+  s_d7280c55e1029f::t_0e9eb6340974ee 1-101
+packages/core/src/openai-responses-url.js
+  s_d7280c55e1029f::t_cc2643b0b33f62 1-30
+packages/core/src/ptyChunkBuilder.js
+  s_d7280c55e1029f::t_d28296e9ea398b 1-264
+packages/core/src/request-visibility.js
+  s_d7280c55e1029f::t_93602616eba4d6 1-158
+packages/core/src/requestType.js
+  s_d7280c55e1029f::t_9897283bfe3e60 1-334
+packages/core/src/teammateDetector.js
+  s_d7280c55e1029f::t_c381ce7186426c 1-106
+packages/core/src/token-usage.js
+  s_d7280c55e1029f::t_5092541f7c326d 1-29
+packages/core/src/tool-result-image-protocol.js
+  s_d7280c55e1029f::t_6de6c7af7a2f7b 1-44
+packages/core/src/tools-xml-formatter.js
+  s_d7280c55e1029f::t_1523e76b895dfb 1-91
+packages/core/src/ultraplanTemplates.js
+  s_d7280c55e1029f::t_b38909fddbf969 1-265
+packages/core/src/userImageRefs.js
+  s_d7280c55e1029f::t_9527cfa08440e6 1-49
+packages/core/src/userPromptContent.js
+  s_d7280c55e1029f::t_3a904d562fadb4 1-380
+packages/core/src/voice-pack-events.js
+  s_d7280c55e1029f::t_17a2a5a8a6a1ca 1-88
+pnpm-lock.yaml
+  s_d7280c55e1029f::t_e5d9c00dd5f193 133-135,235-237,289-290
+pnpm-workspace.yaml
+  s_d7280c55e1029f::t_d6b5b2439bb46c 21-23
+scripts/tarball-baseline.json
+  s_d7280c55e1029f::t_a691ef7ebed318 512-540
+scripts/verify-tarball-drift.mjs
+  s_d7280c55e1029f::t_aa50bc02741635 24,26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "e6c0f9bc323ceb7daf603aa326acf205924084f3",
+  "prompts": {},
+  "sessions": {
+    "s_d7280c55e1029f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a204a6-35f5-7a91-8f49-0742da1c75f9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
