@@ -1,0 +1,44 @@
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_d7280c55e1029f::t_aeffc07d18934c 16801-16805
+packages/app/lib/plugin-host.mjs
+  s_d7280c55e1029f::t_ba915821f92bc7 51
+apps/web/src/utils/apiUrl.js
+  s_d7280c55e1029f::t_44777e942167a0 9-14
+packages/app/lib/auth.js
+  s_d7280c55e1029f::t_44777e942167a0 430-431,456
+packages/app/i18n.js
+  s_d7280c55e1029f::t_44777e942167a0 5-104,491-508,511-528,1771-1773
+packages/app/tests/api-base-url.test.js
+  s_d7280c55e1029f::t_f8946041216ac3 55,288
+  s_d7280c55e1029f::t_ba915821f92bc7 1-54,56-287,289-298,319
+  s_d7280c55e1029f::t_8fdd8e56608ffd 299-318
+cc-viewer-alignment/B10-implementation.md
+  s_d7280c55e1029f::t_aeffc07d18934c 75-82
+packages/app/tests/plugin-service-integration.test.js
+  s_d7280c55e1029f::t_8fdd8e56608ffd 26-27,50,52,54-57,59-60,108,197-204,226,234,255,281
+apps/web/tests/api-url-instance.test.js
+  s_d7280c55e1029f::t_ba915821f92bc7 62-71
+packages/app/tests/base-url-lib.test.js
+  s_d7280c55e1029f::t_ba915821f92bc7 297-309
+packages/app/server.js
+  s_d7280c55e1029f::t_ba915821f92bc7 1593-1594
+  s_d7280c55e1029f::t_44777e942167a0 53-54,1615-1618,1765-1767,1771-1791,1840,1889,4948,4955-4956,4961-4962,5422-5424,5442,5572-5577,5580-5581,5584,5594-5598,5616,5649,5684,5721
+AGENTS.md
+  s_d7280c55e1029f::t_aeffc07d18934c 26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "0c247bb393ae2730d2531dc62377a47982d862ad",
+  "prompts": {},
+  "sessions": {
+    "s_d7280c55e1029f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a204a6-35f5-7a91-8f49-0742da1c75f9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
