@@ -1,0 +1,29 @@
+AGENTS.md
+  s_d7280c55e1029f::t_1a7b6590568ecf 26
+cc-viewer-alignment/B11-candidate-index.json
+  s_d7280c55e1029f::t_ffc6c50f4706b3 43-44,60-61
+cc-viewer-alignment/B11-implementation.md
+  s_d7280c55e1029f::t_600cf23496de11 18-24
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_d7280c55e1029f::t_1856bacff21dfe 16883-16886
+packages/app/findcx.js
+  s_d7280c55e1029f::t_ba1f8f2f6cd80e 244-249,257-258,260-261,263,266,277-279,283-285
+packages/app/tests/native-path-discovery.test.js
+  s_d7280c55e1029f::t_2148f2e2244ca4 1-18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1c92a35542c0ff614b2b5ed0945c05073404077b",
+  "prompts": {},
+  "sessions": {
+    "s_d7280c55e1029f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a204a6-35f5-7a91-8f49-0742da1c75f9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
