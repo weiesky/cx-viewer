@@ -1,0 +1,29 @@
+packages/app/server.js
+  s_d7280c55e1029f::t_6b36fe48f8965f 2019-2025
+packages/app/tests/plugin-service-integration.test.js
+  s_d7280c55e1029f::t_114a499a8770ea 185
+  s_d7280c55e1029f::t_6b36fe48f8965f 40-44,184,186-187
+  s_d7280c55e1029f::t_e03e8cc39a3209 188-189
+AGENTS.md
+  s_d7280c55e1029f::t_6c444dcc30665f 26
+cc-viewer-alignment/B10-implementation.md
+  s_d7280c55e1029f::t_e47fd780bbaea7 134-139
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_d7280c55e1029f::t_a31faa134f2c69 16843-16846
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "fb59b220e0b94ab2442d49de19c8389fe2cf8ffc",
+  "prompts": {},
+  "sessions": {
+    "s_d7280c55e1029f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a204a6-35f5-7a91-8f49-0742da1c75f9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
