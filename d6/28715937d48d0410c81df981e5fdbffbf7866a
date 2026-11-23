@@ -1,0 +1,35 @@
+package.json
+  s_d7280c55e1029f::t_29a43a6e0a8b61 25-26
+apps/electron/tests/mac-keychain.test.js
+  s_d7280c55e1029f::t_c63fba83a84205 1-54
+patches/app-builder-lib@26.15.3.patch
+  s_d7280c55e1029f::t_c63fba83a84205 1-23
+apps/electron/package.json
+  s_d7280c55e1029f::t_29a43a6e0a8b61 11,16
+pnpm-workspace.yaml
+  s_d7280c55e1029f::t_c63fba83a84205 17-20
+AGENTS.md
+  s_d7280c55e1029f::t_b6ba011007cfab 26
+cc-viewer-alignment/B11-implementation.md
+  s_d7280c55e1029f::t_afde37c2f990fe 84-89
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_d7280c55e1029f::t_9670c9dd62d4d6 16927-16930
+pnpm-lock.yaml
+  s_d7280c55e1029f::t_c7f04d88e9fd74 10-14,77,6652,7213,7258,7267
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d628715937d48d0410c81df981e5fdbffbf7866a",
+  "prompts": {},
+  "sessions": {
+    "s_d7280c55e1029f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a204a6-35f5-7a91-8f49-0742da1c75f9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
