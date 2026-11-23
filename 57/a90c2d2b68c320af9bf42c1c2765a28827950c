@@ -1,0 +1,37 @@
+cc-viewer-alignment/B11-changesets-rehearsal.json
+  s_d7280c55e1029f::t_b1886027bd4d0b 1-14
+.changeset/README.md
+  s_d7280c55e1029f::t_4201d83017403d 1-5
+.changeset/b11-engineering-safety.md
+  s_d7280c55e1029f::t_3d440098d56eb1 1-5
+.changeset/config.json
+  s_d7280c55e1029f::t_463cee46a17afa 1-13
+.github/workflows/ci.yml
+  s_d7280c55e1029f::t_19fd7bf069e7d7 32-34
+AGENTS.md
+  s_d7280c55e1029f::t_ce5ee072e38962 26,34-35
+cc-viewer-alignment/B11-candidate-index.json
+  s_d7280c55e1029f::t_652394b70eea4d 5065,5070,5120,5125,5147,5152,7679,7684,8274,8279,12633,12645-12651
+cc-viewer-alignment/B11-implementation.md
+  s_d7280c55e1029f::t_89dbfa8fa6540b 168-177
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_d7280c55e1029f::t_e29f2f5f329e7b 16979-16982
+package.json
+  s_d7280c55e1029f::t_96d1cbf6e1144a 47-48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "57a90c2d2b68c320af9bf42c1c2765a28827950c",
+  "prompts": {},
+  "sessions": {
+    "s_d7280c55e1029f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a204a6-35f5-7a91-8f49-0742da1c75f9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
