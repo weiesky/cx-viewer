@@ -21,7 +21,7 @@
 //   isUnmounted()     → this._unmounted
 //   notifyAskResolved(payload) → window.tabBridge?.notifyAskResolved（透传 tabId/reason）
 
-import { buildChunksForAnswer } from '../../../../../../packages/app/src/utils/ptyChunkBuilder.js';
+import { buildChunksForAnswer } from "@cxv/core/ptyChunkBuilder";
 import { isPlanApprovalPrompt, isDangerousOperationPrompt } from '../../../utils/promptClassifier.js';
 
 // 故意不 import antd / i18n / 任何 JSX：让本控制器能在 node:test 下被直接 import 单测

@@ -18,7 +18,7 @@
 // summaries/toasts stay human-readable.
 
 import { accessSync, statSync, constants } from 'node:fs';
-import { assembleScheduledPrompt } from '../src/utils/ultraplanTemplates.js';
+import { assembleScheduledPrompt } from "@cxv/core/ultraplanTemplates";
 
 /**
  * @param {object} task   the claimed task (has .mode/.prompt/.cwd/.project/.schedule)

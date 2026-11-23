@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { waitForProcessExit } from './helpers/process-exit.js';
 import { spawn } from 'node:child_process';
 import { chmodSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
@@ -209,7 +210,7 @@ setInterval(() => {}, 1000);
   const pid = Number(readFileSync(pidFile, 'utf8'));
   child.kill('SIGTERM');
   assert.equal(await closed, 143, stderr);
-  assert.throws(() => process.kill(pid, 0), { code: 'ESRCH' });
+  await waitForProcessExit(pid);
   assert.equal(readdirSync(root).includes('unexpected-exec'), false);
   assert.doesNotMatch(stderr, /private prompt|Viewer started/);
 });

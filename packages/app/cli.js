@@ -11,9 +11,9 @@ import { spawn } from 'node:child_process';
 import { t } from './i18n.js';
 import { resolveBaseConfig, externalUrlFromConfig } from './lib/base-url.js';
 import { INJECT_IMPORT, LOG_DIR, resolveCliPath, resolveNativePath, resolveNpmCodexPath } from './findcx.js';
-import { appendCxvFinalConfigArgs, buildPtyWorkspaceLaunchArgs, getDefaultModeRequestUserInputConfigArgs, normalizeCodexArgs, hasBypassPermissions, getReasoningSummaryConfigArgs, parseCodexInvocation, extractSdkTransportOptions, insertBeforeDashDash } from './lib/cli-args.js';
+import { appendCxvFinalConfigArgs, buildPtyWorkspaceLaunchArgs, getDefaultModeRequestUserInputConfigArgs, normalizeCodexArgs, hasBypassPermissions, getReasoningSummaryConfigArgs, parseCodexInvocation, extractSdkTransportOptions, insertBeforeDashDash } from "@cxv/core/cli-args";
 import { ensureHooks } from './lib/ensure-hooks.js';
-import { APPROVALS_REVIEWER_DEFAULT } from './lib/approval-reviewer.js';
+import { APPROVALS_REVIEWER_DEFAULT } from "@cxv/core/approval-reviewer";
 import { inspectCodexSystemPromptSupport } from './lib/codex-appserver-capabilities.js';
 import { appendOtelTraceExporterConfigArgsOnce, getOtelTraceExporterConfigArgs, OTEL_TRACE_HEADERS_ENV, stripLegacyOtelConfigBlock, withOtelTraceAuthHeader } from './lib/otel-config.js';
 import { registerSignalShutdown } from './lib/shutdown.js';
@@ -636,14 +636,14 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
 }
 
 async function runDingTalkImMode() {
-  const configMod = await import('./lib/dingtalk-im-config.js');
-  const lockMod = await import('./lib/dingtalk-im-lock.js');
+  const configMod = await import("./lib/im/dingtalk-im-config.js");
+  const lockMod = await import("./lib/im/dingtalk-im-lock.js");
   const config = configMod.validateDingTalkImConfig(configMod.loadDingTalkImConfig(), { requireEnabled: true });
   configMod.ensureDingTalkPrivateDirectory(configMod.getDingTalkImWorkerDir());
-  const { DEFAULT_DINGTALK_IM_PERSONA, ensureDingTalkImPersona } = await import('./lib/dingtalk-im-persona.js');
+  const { DEFAULT_DINGTALK_IM_PERSONA, ensureDingTalkImPersona } = await import("./lib/im/dingtalk-im-persona.js");
   ensureDingTalkImPersona(DEFAULT_DINGTALK_IM_PERSONA);
   try {
-    const { ensureDingTalkImBuiltinSkill } = await import('./lib/dingtalk-im-skills.js');
+    const { ensureDingTalkImBuiltinSkill } = await import("./lib/im/dingtalk-im-skills.js");
     ensureDingTalkImBuiltinSkill();
   } catch (error) {
     console.warn('[CX Viewer] Failed to sync DingTalk built-in skill (non-fatal):', error.message);

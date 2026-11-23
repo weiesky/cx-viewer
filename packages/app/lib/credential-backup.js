@@ -38,7 +38,7 @@ function sourceNames(sources) {
   return names.sort();
 }
 
-function readFile(root, name, privateMode = false) {
+function readFile(root, name, privateMode = false, allowRemoved = false) {
   directory(root);
   const parts = name.split('/');
   let path = root;
@@ -50,12 +50,23 @@ function readFile(root, name, privateMode = false) {
   path = join(root, ...parts);
   const before = lstatSync(path, { throwIfNoEntry: false });
   if (!before) return null;
+  if (allowRemoved && before.nlink === 0) return readFile(root, name, privateMode);
   const safe = stat => stat.isFile() && stat.nlink === 1 && stat.size <= MAX_BYTES
     && (!privateMode || process.platform === 'win32' || !(stat.mode & 0o077));
   if (!safe(before) || before.isSymbolicLink()) throw failure();
-  const fd = openSync(path, constants.O_RDONLY | (constants.O_NOFOLLOW || 0) | (constants.O_NONBLOCK || 0));
+  let fd;
+  try { fd = openSync(path, constants.O_RDONLY | (constants.O_NOFOLLOW || 0) | (constants.O_NONBLOCK || 0)); }
+  catch (error) {
+    if (allowRemoved && error.code === 'ENOENT') return readFile(root, name, privateMode);
+    throw error;
+  }
   try {
     const stat = fstatSync(fd);
+    // Only the coordination lock may be released by its legitimate holder
+    // during this preflight. Key, ciphertext and source reads remain strict.
+    if (allowRemoved && (stat.nlink === 0 || stat.dev !== before.dev || stat.ino !== before.ino)) {
+      return readFile(root, name, privateMode);
+    }
     if (!safe(stat) || stat.dev !== before.dev || stat.ino !== before.ino) throw failure();
     const bytes = readFileSync(fd);
     if (bytes.length > MAX_BYTES) throw failure();
@@ -121,7 +132,7 @@ export function readCredentialStoreFiles(ownerDirectory) {
     const owner = resolve(ownerDirectory);
     const files = new Map(STORE_FILES.map(name => [name, readFile(owner, name, true)]));
     const root = credentialPathsForDirectory(owner).root;
-    if (lstatSync(root, { throwIfNoEntry: false })) readFile(root, 'credentials.lock', true);
+    if (lstatSync(root, { throwIfNoEntry: false })) readFile(root, 'credentials.lock', true, true);
     return files;
   } catch { throw failure(); }
 }
@@ -161,7 +172,7 @@ function createBackup(ownerDirectory, sources, evidence) {
     };
     if (!lstatSync(paths.root, { throwIfNoEntry: false })) return capture();
     directory(paths.root, true);
-    readFile(paths.root, 'credentials.lock', true); // Reject unsafe existing lock paths.
+    readFile(paths.root, 'credentials.lock', true, true); // Reject unsafe existing lock paths; allow a normal release.
     return withFileLockSync(join(paths.root, 'credentials.lock'), capture, { timeoutMs: 2000, staleMs: 60_000 });
   } catch {
     if (path) try { rmSync(path, { recursive: true, force: true }); } catch {}

@@ -1,10 +1,10 @@
-import { applyWireCommit, resolveWireInputRefs, restoreWireArchiveState } from '../../../../packages/app/lib/log-v2/reducer.js';
+import { applyWireCommit, resolveWireInputRefs, restoreWireArchiveState } from "@cxv/core/log-v2/reducer";
 import { LogV2ObjectStore } from './logV2ObjectStore.js';
 import { projectLogV2ConversationEntry } from './logV2ConversationProjection.js';
-import { classifyRequest } from '../../../../packages/app/src/utils/requestType.js';
-import { selectUsageHeaders } from '../../../../packages/app/lib/log-v2/request-summary.js';
-import { isOpenAiResponsesMasterEntry } from '../../../../packages/app/lib/openai-responses-url.js';
-import { isNativeTitleEntry } from '../../../../packages/app/lib/codex-thread-source.js';
+import { classifyRequest } from "@cxv/core/requestType";
+import { selectUsageHeaders } from "@cxv/core/log-v2/request-summary";
+import { isOpenAiResponsesMasterEntry } from "@cxv/core/openai-responses-url";
+import { isNativeTitleEntry } from "@cxv/core/codex-thread-source";
 
 function summaryEntry(summary, descriptor, handle) {
   const responseSummary = summary.response;

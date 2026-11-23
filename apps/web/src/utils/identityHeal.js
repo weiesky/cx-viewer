@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatTeammateLabel } from '../../../../packages/app/src/utils/requestType.js';
+import { formatTeammateLabel } from "@cxv/core/requestType";
 
 /**
  * Late-identity healing helpers for ChatView.buildAllItems.

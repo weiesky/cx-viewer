@@ -100,7 +100,7 @@ function localizedWindowName(w, short = false) {
   return label || String(id || '');
 }
 
-function UsageWindowPill({ planUsage, authType }) {
+function UsageWindowPill({ planUsage }) {
   const windows = Array.isArray(planUsage?.windows) ? planUsage.windows : [];
   const summaryWindow = useMemo(() => windows[0] || null, [windows]);
   const planMeta = useMemo(() => {
@@ -116,26 +116,7 @@ function UsageWindowPill({ planUsage, authType }) {
     };
   }, [summaryWindow]);
 
-  // 没有套餐限流数据时:OAuth(订阅)显示静默占位 pill,等待数据;其余(API Key / 未知)不渲染。
-  if (!planUsage) {
-    if (authType === 'OAuth') {
-      return (
-        <Popover
-          content={<div className={styles.pop}>{t('ui.usage.waiting')}</div>}
-          trigger="hover"
-          placement="top"
-          overlayInnerStyle={POPOVER_OVERLAY_STYLE}
-        >
-          <span className={`${styles.usagePill} ${styles.muted}`} role="button" tabIndex={0} aria-label={t('ui.usage.ariaLabel')}>
-            <span className={styles.usageContent}>
-              <span className={styles.usageText}>—</span>
-            </span>
-          </span>
-        </Popover>
-      );
-    }
-    return null;
-  }
+  if (!planUsage) return null;
 
   const pillLabel = summaryWindow ? `${windowShort(summaryWindow)} ${fmtPct(summaryWindow.utilization)}` : '—';
 

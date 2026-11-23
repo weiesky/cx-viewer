@@ -88,6 +88,7 @@ test('sensitive routes are loopback-only', async () => {
     ['/api/im/dingtalk/process', 'POST'],
     ['/api/im/dingtalk/append-system', 'GET'],
     ['/api/im/dingtalk/skills', 'GET'],
+    ['/api/im/dingtalk/senders', 'GET'],
   ]) {
     const result = await call(path, { method, isLocal: false });
     assert.equal(result.status, 403, path);
@@ -255,4 +256,14 @@ test('default JSON reader rejects invalid and oversized bodies structurally', as
   const huge = await call('/api/im/dingtalk/config', { method: 'POST', body: JSON.stringify({ value: 'x'.repeat(100 * 1024) }) });
   assert.equal(huge.status, 413);
   assert.equal(huge.json.code, 'BODY_TOO_LARGE');
+});
+
+test('invalid non-object config bodies fail before credential writes or worker control',async()=>{
+ for(const input of ['null','"text"','42','true','[]']){
+  let saved=0,stopped=0;
+  const result=await call('/api/im/dingtalk/config',{method:'POST',body:input,
+   loadConfig:()=>({appKey:'fixture',appSecret:'fixture-secret'}),saveConfig:()=>{saved++;},stopProcess:()=>{stopped++;},
+  });
+  assert.equal(result.status,400,input);assert.equal(result.json.code,'INVALID_CONFIG');assert.equal(saved,0);assert.equal(stopped,0);
+ }
 });

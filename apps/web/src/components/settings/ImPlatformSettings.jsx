@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Switch, Input, Button, Select, Tag, Tooltip, Dropdown, message } from 'antd';
 import { DownOutlined, RightOutlined, QuestionCircleOutlined, PlusOutlined, SettingOutlined, FolderOpenOutlined, FileZipOutlined, FileMarkdownOutlined } from '@ant-design/icons';
 import { apiUrl } from '../../utils/apiUrl';
+import { imBadgeModel } from '../../utils/imConnState';
 import { imTr as _tr } from '../../utils/imTr';
 import ImAppendSystemModal from './ImAppendSystemModal';
 import ImSkillsModal from './ImSkillsModal';
@@ -27,7 +28,7 @@ const START_POLL_INTERVAL_MS = 500;
  * badge stays fresh. Secret (password) fields are never returned by the server (only hasSecret) —
  * an empty secret field on save means "keep the stored one".
  *
- * 交互模型（用户确认）：配置随输入失焦/变更**自动保存**（仅存盘、不驱动进程），故无「保存」按钮、
+ * 交互模型（用户确认）：配置随输入失焦/变更**自动保存**（仅存盘、不驱动进程），另有独立「保存」按钮（同样仅存盘）；
  * 无顶部「启用」开关；底部用「启动 / 停止」显式控制 worker 进程。启动后前端轮询 status 直到 worker
  * 真就绪才算成功——状态以「实际进程启动成功」为准（含展示真实服务端口）。
  */
@@ -45,6 +46,7 @@ export default function ImPlatformSettings({ descriptor }) {
   const [proc, setProc] = useState(null); // { state, port, pid, ... } 仅本机 admin 有；远端为 null
   const [starting, setStarting] = useState(false);
   const [stopping, setStopping] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [personaOpen, setPersonaOpen] = useState(false); // 「模型性格定义」(worker AGENTS.md) 编辑弹窗
@@ -164,6 +166,7 @@ export default function ImPlatformSettings({ descriptor }) {
           try { const e = await r.json(); detail = e.detail || e.error || ''; code = e.code || ''; } catch { detail = `HTTP ${r.status}`; }
           return { ok: false, detail, code };
         }
+        try { window.dispatchEvent(new CustomEvent('cxv:im-config-changed', { detail: { id: descriptor.id } })); } catch { /* no-op */ }
         return { ok: true };
       } catch {
         return { ok: false, detail: '' };
@@ -227,6 +230,13 @@ export default function ImPlatformSettings({ descriptor }) {
   // 变更即保存（select / tags / switch 这类无可靠 blur 的控件）：先写值再提交。
   const setFieldAndCommit = (key, val) => { setField(key, val); commit(); };
 
+  const allowlistField = descriptor.fields.find((f) => f.type === 'tags');
+  const isAllowlistEmpty = () => {
+    if (!allowlistField) return false;
+    const v = valuesRef.current[allowlistField.key];
+    return !Array.isArray(v) || v.length === 0;
+  };
+
   const procState = proc?.state;
   // 单按钮的两态：运行中(enabled)显示「停止」，否则显示「启动」；启动/停止过渡期间显示对应态的 loading。
   // starting 期间 enabled 已被乐观置 true，故 starting 优先级高于 enabled，避免过渡时按钮提前翻成「停止」。
@@ -281,6 +291,28 @@ export default function ImPlatformSettings({ descriptor }) {
     }
   };
 
+  // 「保存」：仅存盘（applyProcess:false，不驱动进程），与启动/停止解耦。enabled 取当前开关态，
+  // 不改 enabled——保存当前表单的凭证/字段，进程是否重启由启动/停止按钮决定。
+  const save = async () => {
+    // 脏检查：签名（含 enabled）与上次持久化一致则无事可做。
+    const sig = fieldSig(valuesRef.current, enabledRef.current);
+    if (sig === lastSavedSigRef.current) { message.success(_tr('ui.im.saved', null, 'Saved')); return; }
+    setSaving(true);
+    busyRef.current = true;
+    try {
+      const { ok, detail } = await postConfig(buildBody(valuesRef.current, enabledRef.current, false));
+      if (!ok) { message.error(_tr('ui.im.saveFailed', null, 'Save failed') + (detail ? `: ${detail}` : '')); return; }
+      lastSavedSigRef.current = sig;
+      message.success(_tr('ui.im.saved', null, 'Saved'));
+      if (isAllowlistEmpty()) {
+        message.warning(_tr('ui.im.savedNoAllowlistWarn', null, 'No sender allowlist set: anyone who can message this bot can drive its local session without approval. Add an allowlist under More settings.'), 8);
+      }
+    } finally {
+      busyRef.current = false;
+      if (mountedRef.current) setSaving(false);
+    }
+  };
+
   const testConn = async () => {
     setTesting(true);
     try {
@@ -299,23 +331,14 @@ export default function ImPlatformSettings({ descriptor }) {
 
   // 状态徽标：以真实进程状态为准（含服务端口）。远端无 process → 回落 connection。
   const renderBadge = () => {
-    if (connection?.lastError) return <Tag color="error">{_tr('ui.im.statusError', null, 'Error')}: {connection.lastError}</Tag>;
-    const portSuffix = proc?.port ? ` :${proc.port}` : '';
-    if (procState) {
-      if (procState === 'ready') {
-        return connection?.connected
-          ? <Tag color="success">{_tr('ui.im.statusConnected', null, 'Connected')}{portSuffix}</Tag>
-          : <Tag color="processing">{_tr('ui.im.statusRunning', null, 'Running, connecting…')}{portSuffix}</Tag>;
-      }
-      if (procState === 'booting') return <Tag color="processing">{_tr('ui.im.statusBooting', null, 'Starting…')}</Tag>;
-      if (procState === 'hung') return <Tag color="warning">{_tr('ui.im.statusHung', null, 'Not responding')}</Tag>;
-      return <Tag>{_tr('ui.im.statusDisconnected', null, 'Disconnected')}</Tag>; // dead
-    }
-    // 远端回落（无 process 字段）
-    if (!connection) return null;
-    if (connection.connected) return <Tag color="success">{_tr('ui.im.statusConnected', null, 'Connected')}</Tag>;
-    if (connection.running) return <Tag color="processing">{_tr('ui.im.statusRunning', null, 'Running, connecting…')}</Tag>;
-    return <Tag>{_tr('ui.im.statusDisconnected', null, 'Disconnected')}</Tag>;
+    const m = imBadgeModel({ procState, connection });
+    if (!m) return null;
+    const portSuffix = m.withPort && proc?.port ? ` :${proc.port}` : '';
+    return (
+      <Tag color={m.color || undefined}>
+        {_tr(m.key, null, m.fallback)}{m.error ? `: ${m.error}` : ''}{portSuffix}
+      </Tag>
+    );
   };
 
   const renderField = (f) => {
@@ -443,6 +466,7 @@ export default function ImPlatformSettings({ descriptor }) {
 
       <div className={styles.actions}>
         <Button className={styles.testBtn} onClick={testConn} loading={testing}>{_tr('ui.im.test', null, 'Test connection')}</Button>
+        <Button onClick={save} loading={saving} disabled={starting || stopping}>{_tr('ui.im.save', null, 'Save')}</Button>
         <Button
           type={showStop ? 'default' : 'primary'}
           danger={showStop}

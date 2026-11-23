@@ -1,1 +1,1 @@
-export * from '../../../../packages/app/src/utils/errorReport.js';
+export * from "@cxv/core/errorReport";

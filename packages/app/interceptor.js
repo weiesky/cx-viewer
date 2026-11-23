@@ -5,7 +5,7 @@
 const _cxvSkipArgs = ['--version', '-v', '--v', '--help', '-h', 'doctor', 'install', 'update', 'upgrade', 'auth', 'setup-token', 'agents', 'plugin', 'plugins', 'mcp'];
 const _cxvSkip = _cxvSkipArgs.includes(process.argv[2]);
 
-import './lib/proxy-env.js';
+import "./lib/proxy/proxy-env.js";
 import { captureRequestContext } from './lib/capture-context.js';
 import { unwatchFile, watchFile } from 'node:fs';
 import { EventEmitter } from 'node:events';

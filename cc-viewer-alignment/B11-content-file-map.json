@@ -1,0 +1,1566 @@
+{
+  "sourceCommit": "57a90c2",
+  "files": [
+    {
+      "published": "concepts/pl/ProxySwitch.md",
+      "source": "packages/content/concepts/pl/ProxySwitch.md",
+      "sha256": "d2029c9c22eaa8921edb316ded037a5ccfe388ee807bf855990cd80b4feede95"
+    },
+    {
+      "published": "concepts/pl/TranslateContextPollution.md",
+      "source": "packages/content/concepts/pl/TranslateContextPollution.md",
+      "sha256": "cef1dd12517bda305ed9a82c912e273646c0c86b703928451eb6359e30ad3401"
+    },
+    {
+      "published": "concepts/pl/ToolsFirst.md",
+      "source": "packages/content/concepts/pl/ToolsFirst.md",
+      "sha256": "76c2fb99d57ffb7a2af2809d90568386b723e4c249acac2896c82dc9ee49ee3c"
+    },
+    {
+      "published": "concepts/pl/SubAgent-Search.md",
+      "source": "packages/content/concepts/pl/SubAgent-Search.md",
+      "sha256": "ff9696214cf33b4c77f347fd25ee4c20dc764025b43a7a95b24876631f748f9f"
+    },
+    {
+      "published": "concepts/pl/GlobalSettings.md",
+      "source": "packages/content/concepts/pl/GlobalSettings.md",
+      "sha256": "145c965765c800687c3af6d236ce836641827ebd94faf180fe49d5665bcccada"
+    },
+    {
+      "published": "concepts/pl/MainAgent.md",
+      "source": "packages/content/concepts/pl/MainAgent.md",
+      "sha256": "2577c2203e85a6a6db7186ed321ed9b0d2278e4ed06939f69ace9017c295a7f0"
+    },
+    {
+      "published": "concepts/pl/Teammate.md",
+      "source": "packages/content/concepts/pl/Teammate.md",
+      "sha256": "28402815ade39ff4f00965f17074c16c2fd054809f588bc6e0d2ef64c8b10c42"
+    },
+    {
+      "published": "concepts/pl/UltraPlan.md",
+      "source": "packages/content/concepts/pl/UltraPlan.md",
+      "sha256": "aca1f90bbd326c504de4d7af5e21a02632e829a9c5e88313e5c3d507c5a20c9a"
+    },
+    {
+      "published": "concepts/pl/ResponseFields.md",
+      "source": "packages/content/concepts/pl/ResponseFields.md",
+      "sha256": "51ca923e38e45240ae2248b847fb7fe5f6be65be02393d9fda1e03ce61bdc8e5"
+    },
+    {
+      "published": "concepts/pl/CustomUltraplanExpert.md",
+      "source": "packages/content/concepts/pl/CustomUltraplanExpert.md",
+      "sha256": "cd08b5d27e2b8eece255f6445962b4e3f4cfffe6bb87b953c67f80e2e70672a2"
+    },
+    {
+      "published": "concepts/pl/QRCode.md",
+      "source": "packages/content/concepts/pl/QRCode.md",
+      "sha256": "20995b7f5276d7c0c3058d56ff2d562bc6d6b98487be97a33af9ebbd52fca0c7"
+    },
+    {
+      "published": "concepts/pl/BodyDiffJSON.md",
+      "source": "packages/content/concepts/pl/BodyDiffJSON.md",
+      "sha256": "e4877c7fa5d61c3d76300f4e2abc744b839d113397851b5fae73ae4ad4f9f571"
+    },
+    {
+      "published": "concepts/pl/BodyFields.md",
+      "source": "packages/content/concepts/pl/BodyFields.md",
+      "sha256": "b06326898619b380fa6c18ca970bf863f96a878b4d254318cd0f3cd977f4005f"
+    },
+    {
+      "published": "concepts/da/ProxySwitch.md",
+      "source": "packages/content/concepts/da/ProxySwitch.md",
+      "sha256": "d2029c9c22eaa8921edb316ded037a5ccfe388ee807bf855990cd80b4feede95"
+    },
+    {
+      "published": "concepts/da/TranslateContextPollution.md",
+      "source": "packages/content/concepts/da/TranslateContextPollution.md",
+      "sha256": "4f29d3e81da09523e0a2c7a10bc8e8f5e5983c92e717d2e6bd2596078d504a4b"
+    },
+    {
+      "published": "concepts/da/ToolsFirst.md",
+      "source": "packages/content/concepts/da/ToolsFirst.md",
+      "sha256": "76c2fb99d57ffb7a2af2809d90568386b723e4c249acac2896c82dc9ee49ee3c"
+    },
+    {
+      "published": "concepts/da/SubAgent-Search.md",
+      "source": "packages/content/concepts/da/SubAgent-Search.md",
+      "sha256": "ff9696214cf33b4c77f347fd25ee4c20dc764025b43a7a95b24876631f748f9f"
+    },
+    {
+      "published": "concepts/da/GlobalSettings.md",
+      "source": "packages/content/concepts/da/GlobalSettings.md",
+      "sha256": "145c965765c800687c3af6d236ce836641827ebd94faf180fe49d5665bcccada"
+    },
+    {
+      "published": "concepts/da/MainAgent.md",
+      "source": "packages/content/concepts/da/MainAgent.md",
+      "sha256": "5d985d20336f3bfa702ddc98faf0f1a2e0c0acacf1344ab01bcf2f3e5e4be65e"
+    },
+    {
+      "published": "concepts/da/Teammate.md",
+      "source": "packages/content/concepts/da/Teammate.md",
+      "sha256": "28402815ade39ff4f00965f17074c16c2fd054809f588bc6e0d2ef64c8b10c42"
+    },
+    {
+      "published": "concepts/da/UltraPlan.md",
+      "source": "packages/content/concepts/da/UltraPlan.md",
+      "sha256": "aca1f90bbd326c504de4d7af5e21a02632e829a9c5e88313e5c3d507c5a20c9a"
+    },
+    {
+      "published": "concepts/da/ResponseFields.md",
+      "source": "packages/content/concepts/da/ResponseFields.md",
+      "sha256": "51ca923e38e45240ae2248b847fb7fe5f6be65be02393d9fda1e03ce61bdc8e5"
+    },
+    {
+      "published": "concepts/da/CustomUltraplanExpert.md",
+      "source": "packages/content/concepts/da/CustomUltraplanExpert.md",
+      "sha256": "cd08b5d27e2b8eece255f6445962b4e3f4cfffe6bb87b953c67f80e2e70672a2"
+    },
+    {
+      "published": "concepts/da/QRCode.md",
+      "source": "packages/content/concepts/da/QRCode.md",
+      "sha256": "3a6b89d7c06b20a40d92644ba6662576b31f6afd2649b9c3634dfb6dced614dd"
+    },
+    {
+      "published": "concepts/da/BodyDiffJSON.md",
+      "source": "packages/content/concepts/da/BodyDiffJSON.md",
+      "sha256": "b594aa2984ccba97fe525df11e36a38feaa30a47f620fa8b0a6a9cbbd6289c48"
+    },
+    {
+      "published": "concepts/da/BodyFields.md",
+      "source": "packages/content/concepts/da/BodyFields.md",
+      "sha256": "b06326898619b380fa6c18ca970bf863f96a878b4d254318cd0f3cd977f4005f"
+    },
+    {
+      "published": "concepts/no/ProxySwitch.md",
+      "source": "packages/content/concepts/no/ProxySwitch.md",
+      "sha256": "d2029c9c22eaa8921edb316ded037a5ccfe388ee807bf855990cd80b4feede95"
+    },
+    {
+      "published": "concepts/no/TranslateContextPollution.md",
+      "source": "packages/content/concepts/no/TranslateContextPollution.md",
+      "sha256": "8820a9d1d5bf40303b9cb1b48f770563616a6fd9045ccaa2c47cde5e3eab8d87"
+    },
+    {
+      "published": "concepts/no/ToolsFirst.md",
+      "source": "packages/content/concepts/no/ToolsFirst.md",
+      "sha256": "76c2fb99d57ffb7a2af2809d90568386b723e4c249acac2896c82dc9ee49ee3c"
+    },
+    {
+      "published": "concepts/no/SubAgent-Search.md",
+      "source": "packages/content/concepts/no/SubAgent-Search.md",
+      "sha256": "ff9696214cf33b4c77f347fd25ee4c20dc764025b43a7a95b24876631f748f9f"
+    },
+    {
+      "published": "concepts/no/GlobalSettings.md",
+      "source": "packages/content/concepts/no/GlobalSettings.md",
+      "sha256": "145c965765c800687c3af6d236ce836641827ebd94faf180fe49d5665bcccada"
+    },
+    {
+      "published": "concepts/no/MainAgent.md",
+      "source": "packages/content/concepts/no/MainAgent.md",
+      "sha256": "b5b5f44872d5a91286ed195a0c9fbdae3af7bd851c76d01b315c8013db67ff75"
+    },
+    {
+      "published": "concepts/no/Teammate.md",
+      "source": "packages/content/concepts/no/Teammate.md",
+      "sha256": "28402815ade39ff4f00965f17074c16c2fd054809f588bc6e0d2ef64c8b10c42"
+    },
+    {
+      "published": "concepts/no/UltraPlan.md",
+      "source": "packages/content/concepts/no/UltraPlan.md",
+      "sha256": "aca1f90bbd326c504de4d7af5e21a02632e829a9c5e88313e5c3d507c5a20c9a"
+    },
+    {
+      "published": "concepts/no/ResponseFields.md",
+      "source": "packages/content/concepts/no/ResponseFields.md",
+      "sha256": "51ca923e38e45240ae2248b847fb7fe5f6be65be02393d9fda1e03ce61bdc8e5"
+    },
+    {
+      "published": "concepts/no/CustomUltraplanExpert.md",
+      "source": "packages/content/concepts/no/CustomUltraplanExpert.md",
+      "sha256": "cd08b5d27e2b8eece255f6445962b4e3f4cfffe6bb87b953c67f80e2e70672a2"
+    },
+    {
+      "published": "concepts/no/QRCode.md",
+      "source": "packages/content/concepts/no/QRCode.md",
+      "sha256": "14fe4c37d2b4bf68d8a322543edc2f43b49c20b92026623153d6fb3b84995a0a"
+    },
+    {
+      "published": "concepts/no/BodyDiffJSON.md",
+      "source": "packages/content/concepts/no/BodyDiffJSON.md",
+      "sha256": "5536e706839bddaa01a5d480bc06ff0eb9ccfcb7a458dcd1dabceb8bc12686f1"
+    },
+    {
+      "published": "concepts/no/BodyFields.md",
+      "source": "packages/content/concepts/no/BodyFields.md",
+      "sha256": "b06326898619b380fa6c18ca970bf863f96a878b4d254318cd0f3cd977f4005f"
+    },
+    {
+      "published": "concepts/ja/ProxySwitch.md",
+      "source": "packages/content/concepts/ja/ProxySwitch.md",
+      "sha256": "d2029c9c22eaa8921edb316ded037a5ccfe388ee807bf855990cd80b4feede95"
+    },
+    {
+      "published": "concepts/ja/TranslateContextPollution.md",
+      "source": "packages/content/concepts/ja/TranslateContextPollution.md",
+      "sha256": "04a37abee620b745f5777a4cef78b6873d61ab5c6315a07a694b4c7bbf1d6bb3"
+    },
+    {
+      "published": "concepts/ja/ToolsFirst.md",
+      "source": "packages/content/concepts/ja/ToolsFirst.md",
+      "sha256": "76c2fb99d57ffb7a2af2809d90568386b723e4c249acac2896c82dc9ee49ee3c"
+    },
+    {
+      "published": "concepts/ja/SubAgent-Search.md",
+      "source": "packages/content/concepts/ja/SubAgent-Search.md",
+      "sha256": "ff9696214cf33b4c77f347fd25ee4c20dc764025b43a7a95b24876631f748f9f"
+    },
+    {
+      "published": "concepts/ja/GlobalSettings.md",
+      "source": "packages/content/concepts/ja/GlobalSettings.md",
+      "sha256": "145c965765c800687c3af6d236ce836641827ebd94faf180fe49d5665bcccada"
+    },
+    {
+      "published": "concepts/ja/MainAgent.md",
+      "source": "packages/content/concepts/ja/MainAgent.md",
+      "sha256": "112f1fa465ad3ad5adde024a71d3beffb5cc77b5e0ca3e92c1aec640d773f0de"
+    },
+    {
+      "published": "concepts/ja/Teammate.md",
+      "source": "packages/content/concepts/ja/Teammate.md",
+      "sha256": "28402815ade39ff4f00965f17074c16c2fd054809f588bc6e0d2ef64c8b10c42"
+    },
+    {
+      "published": "concepts/ja/UltraPlan.md",
+      "source": "packages/content/concepts/ja/UltraPlan.md",
+      "sha256": "aca1f90bbd326c504de4d7af5e21a02632e829a9c5e88313e5c3d507c5a20c9a"
+    },
+    {
+      "published": "concepts/ja/ResponseFields.md",
+      "source": "packages/content/concepts/ja/ResponseFields.md",
+      "sha256": "51ca923e38e45240ae2248b847fb7fe5f6be65be02393d9fda1e03ce61bdc8e5"
+    },
+    {
+      "published": "concepts/ja/CustomUltraplanExpert.md",
+      "source": "packages/content/concepts/ja/CustomUltraplanExpert.md",
+      "sha256": "cd08b5d27e2b8eece255f6445962b4e3f4cfffe6bb87b953c67f80e2e70672a2"
+    },
+    {
+      "published": "concepts/ja/QRCode.md",
+      "source": "packages/content/concepts/ja/QRCode.md",
+      "sha256": "56e447e86066aa2f2818c3677e7a3fff8e2d4e34b2633055fa70bd385e3c27d7"
+    },
+    {
+      "published": "concepts/ja/BodyDiffJSON.md",
+      "source": "packages/content/concepts/ja/BodyDiffJSON.md",
+      "sha256": "42e322b0a5f625f878fe4570be5ddafce1a062043ad73b823a0d98d96e437ba5"
+    },
+    {
+      "published": "concepts/ja/BodyFields.md",
+      "source": "packages/content/concepts/ja/BodyFields.md",
+      "sha256": "b06326898619b380fa6c18ca970bf863f96a878b4d254318cd0f3cd977f4005f"
+    },
+    {
+      "published": "concepts/it/ProxySwitch.md",
+      "source": "packages/content/concepts/it/ProxySwitch.md",
+      "sha256": "d2029c9c22eaa8921edb316ded037a5ccfe388ee807bf855990cd80b4feede95"
+    },
+    {
+      "published": "concepts/it/TranslateContextPollution.md",
+      "source": "packages/content/concepts/it/TranslateContextPollution.md",
+      "sha256": "208a926f8ff40d5481b252bcc33d2f60fbe3b8d5d1cd60f45ff77de306e6abac"
+    },
+    {
+      "published": "concepts/it/ToolsFirst.md",
+      "source": "packages/content/concepts/it/ToolsFirst.md",
+      "sha256": "76c2fb99d57ffb7a2af2809d90568386b723e4c249acac2896c82dc9ee49ee3c"
+    },
+    {
+      "published": "concepts/it/SubAgent-Search.md",
+      "source": "packages/content/concepts/it/SubAgent-Search.md",
+      "sha256": "ff9696214cf33b4c77f347fd25ee4c20dc764025b43a7a95b24876631f748f9f"
+    },
+    {
+      "published": "concepts/it/GlobalSettings.md",
+      "source": "packages/content/concepts/it/GlobalSettings.md",
+      "sha256": "145c965765c800687c3af6d236ce836641827ebd94faf180fe49d5665bcccada"
+    },
+    {
+      "published": "concepts/it/MainAgent.md",
+      "source": "packages/content/concepts/it/MainAgent.md",
+      "sha256": "1239bfa3df8891791b8a1ff4e9845a0ee88242a460fa152d10eb94e96eb5edc3"
+    },
+    {
+      "published": "concepts/it/Teammate.md",
+      "source": "packages/content/concepts/it/Teammate.md",
+      "sha256": "28402815ade39ff4f00965f17074c16c2fd054809f588bc6e0d2ef64c8b10c42"
+    },
+    {
+      "published": "concepts/it/UltraPlan.md",
+      "source": "packages/content/concepts/it/UltraPlan.md",
+      "sha256": "aca1f90bbd326c504de4d7af5e21a02632e829a9c5e88313e5c3d507c5a20c9a"
+    },
+    {
+      "published": "concepts/it/ResponseFields.md",
+      "source": "packages/content/concepts/it/ResponseFields.md",
+      "sha256": "51ca923e38e45240ae2248b847fb7fe5f6be65be02393d9fda1e03ce61bdc8e5"
+    },
+    {
+      "published": "concepts/it/CustomUltraplanExpert.md",
+      "source": "packages/content/concepts/it/CustomUltraplanExpert.md",
+      "sha256": "cd08b5d27e2b8eece255f6445962b4e3f4cfffe6bb87b953c67f80e2e70672a2"
+    },
+    {
+      "published": "concepts/it/QRCode.md",
+      "source": "packages/content/concepts/it/QRCode.md",
+      "sha256": "ecc7a6edf1dc8654370df0ddc947c98d2efcdd5f6d8a4f52e7ba5314b31ee61c"
+    },
+    {
+      "published": "concepts/it/BodyDiffJSON.md",
+      "source": "packages/content/concepts/it/BodyDiffJSON.md",
+      "sha256": "24125394ef0b6a4138b36f8270725d1facf5fae59caf0a6eb59e2c6a98aa6414"
+    },
+    {
+      "published": "concepts/it/BodyFields.md",
+      "source": "packages/content/concepts/it/BodyFields.md",
+      "sha256": "b06326898619b380fa6c18ca970bf863f96a878b4d254318cd0f3cd977f4005f"
+    },
+    {
+      "published": "concepts/ru/ProxySwitch.md",
+      "source": "packages/content/concepts/ru/ProxySwitch.md",
+      "sha256": "d2029c9c22eaa8921edb316ded037a5ccfe388ee807bf855990cd80b4feede95"
+    },
+    {
+      "published": "concepts/ru/TranslateContextPollution.md",
+      "source": "packages/content/concepts/ru/TranslateContextPollution.md",
+      "sha256": "abf72f740f72a374fa3309626b5930507a04446fbe4cdadb580d4d2380a489ad"
+    },
+    {
+      "published": "concepts/ru/ToolsFirst.md",
+      "source": "packages/content/concepts/ru/ToolsFirst.md",
+      "sha256": "76c2fb99d57ffb7a2af2809d90568386b723e4c249acac2896c82dc9ee49ee3c"
+    },
+    {
+      "published": "concepts/ru/SubAgent-Search.md",
+      "source": "packages/content/concepts/ru/SubAgent-Search.md",
+      "sha256": "ff9696214cf33b4c77f347fd25ee4c20dc764025b43a7a95b24876631f748f9f"
+    },
+    {
+      "published": "concepts/ru/GlobalSettings.md",
+      "source": "packages/content/concepts/ru/GlobalSettings.md",
+      "sha256": "145c965765c800687c3af6d236ce836641827ebd94faf180fe49d5665bcccada"
+    },
+    {
+      "published": "concepts/ru/MainAgent.md",
+      "source": "packages/content/concepts/ru/MainAgent.md",
+      "sha256": "dcf590e25fce0438d42e139aca9ead654b894f67c5ac0e86710e632e7c9a1d9f"
+    },
+    {
+      "published": "concepts/ru/Teammate.md",
+      "source": "packages/content/concepts/ru/Teammate.md",
+      "sha256": "28402815ade39ff4f00965f17074c16c2fd054809f588bc6e0d2ef64c8b10c42"
+    },
+    {
+      "published": "concepts/ru/UltraPlan.md",
+      "source": "packages/content/concepts/ru/UltraPlan.md",
+      "sha256": "aca1f90bbd326c504de4d7af5e21a02632e829a9c5e88313e5c3d507c5a20c9a"
+    },
+    {
+      "published": "concepts/ru/ResponseFields.md",
+      "source": "packages/content/concepts/ru/ResponseFields.md",
+      "sha256": "51ca923e38e45240ae2248b847fb7fe5f6be65be02393d9fda1e03ce61bdc8e5"
+    },
+    {
+      "published": "concepts/ru/CustomUltraplanExpert.md",
+      "source": "packages/content/concepts/ru/CustomUltraplanExpert.md",
+      "sha256": "cd08b5d27e2b8eece255f6445962b4e3f4cfffe6bb87b953c67f80e2e70672a2"
+    },
+    {
+      "published": "concepts/ru/QRCode.md",
+      "source": "packages/content/concepts/ru/QRCode.md",
+      "sha256": "a2401511b6fb4fe5ca8a13f5d4fb587815fdfeabed75f8d17e1cc67915012403"
+    },
+    {
+      "published": "concepts/ru/BodyDiffJSON.md",
+      "source": "packages/content/concepts/ru/BodyDiffJSON.md",
+      "sha256": "5eedbb2503a882fd183087717a3827595a745bb6f6523542efaa90dca79e80aa"
+    },
+    {
+      "published": "concepts/ru/BodyFields.md",
+      "source": "packages/content/concepts/ru/BodyFields.md",
+      "sha256": "b06326898619b380fa6c18ca970bf863f96a878b4d254318cd0f3cd977f4005f"
+    },
+    {
+      "published": "concepts/zh/Tool-exec_command.md",
+      "source": "packages/content/concepts/zh/Tool-exec_command.md",
+      "sha256": "61a88eff7f62f2d62a81c3a3b504dfff16d55e6434a47d0a3c082a049eeee419"
+    },
+    {
+      "published": "concepts/zh/ProxySwitch.md",
+      "source": "packages/content/concepts/zh/ProxySwitch.md",
+      "sha256": "030bdae04dd60051a191ad421c5fc2c44fa0e0f60d48567805527d17976f61f5"
+    },
+    {
+      "published": "concepts/zh/Tool-list_mcp_resource_templates.md",
+      "source": "packages/content/concepts/zh/Tool-list_mcp_resource_templates.md",
+      "sha256": "69340bd33e03685b2eb2688f0e79739ef7f86d4b1304935c696800d05464ff7f"
+    },
+    {
+      "published": "concepts/zh/Tool-update_plan.md",
+      "source": "packages/content/concepts/zh/Tool-update_plan.md",
+      "sha256": "b1d70131c0f682df132b6648e29a915291f053b91d52324dfc13e441892c0e2f"
+    },
+    {
+      "published": "concepts/zh/Tool-list_agents.md",
+      "source": "packages/content/concepts/zh/Tool-list_agents.md",
+      "sha256": "15d3e226326e64f2ef4bb284d170d25c54df76fa883992659c68e715d318c347"
+    },
+    {
+      "published": "concepts/zh/Tool-get_goal.md",
+      "source": "packages/content/concepts/zh/Tool-get_goal.md",
+      "sha256": "efb8f51187a875d9aedc91938ab76543f82ef2379c59dce3c34b2566b808a909"
+    },
+    {
+      "published": "concepts/zh/Tool-create_goal.md",
+      "source": "packages/content/concepts/zh/Tool-create_goal.md",
+      "sha256": "42444ea6e07c089d25689627e59ac5b6076c9a533e5a80a2b0332d73aa752774"
+    },
+    {
+      "published": "concepts/zh/TranslateContextPollution.md",
+      "source": "packages/content/concepts/zh/TranslateContextPollution.md",
+      "sha256": "3ceb4d969aa62bf20ef892073f38c9364b9138c86f1c582fdc4a5625d74ab054"
+    },
+    {
+      "published": "concepts/zh/Tool-followup_task.md",
+      "source": "packages/content/concepts/zh/Tool-followup_task.md",
+      "sha256": "07f07ab2acb82d0b8dd6bc1081d6c48955b45ce343c48e6f60e187e902e8ff54"
+    },
+    {
+      "published": "concepts/zh/ToolsFirst.md",
+      "source": "packages/content/concepts/zh/ToolsFirst.md",
+      "sha256": "8d79ad54cbe4e575579badf4d3c9c5c478310b87b14bc797b5e4c4b2bcb5d047"
+    },
+    {
+      "published": "concepts/zh/Tool-spawn_agent.md",
+      "source": "packages/content/concepts/zh/Tool-spawn_agent.md",
+      "sha256": "7bda4b3842b29fb753e35a7ff3896659e1e7d5b4c22872140bf8fdb99655f4d6"
+    },
+    {
+      "published": "concepts/zh/SubAgent-Search.md",
+      "source": "packages/content/concepts/zh/SubAgent-Search.md",
+      "sha256": "d2a422e8725e521418076403077e4257e3c88203ec917c1fb0372703b12683b0"
+    },
+    {
+      "published": "concepts/zh/Tool-request_user_input.md",
+      "source": "packages/content/concepts/zh/Tool-request_user_input.md",
+      "sha256": "f655a8c445f79110bcb24c5f12fec07fbb29e9ee015717b6fa890910a918df10"
+    },
+    {
+      "published": "concepts/zh/Tool-send_message.md",
+      "source": "packages/content/concepts/zh/Tool-send_message.md",
+      "sha256": "c3b3eb724e5fe31e8cd5f7353bfdc5b1c339832e16b60642aedf4b8f797aaa2e"
+    },
+    {
+      "published": "concepts/zh/GlobalSettings.md",
+      "source": "packages/content/concepts/zh/GlobalSettings.md",
+      "sha256": "25f16de16ddd7a81023d80fa0f5483119c5ecebc5b25e661f7fc6c87f573faf7"
+    },
+    {
+      "published": "concepts/zh/MainAgent.md",
+      "source": "packages/content/concepts/zh/MainAgent.md",
+      "sha256": "bc640367f742523781915f6d2fe745454cc0a95e62dcc6d45499add56315966d"
+    },
+    {
+      "published": "concepts/zh/Teammate.md",
+      "source": "packages/content/concepts/zh/Teammate.md",
+      "sha256": "3b8fb85125dbeb406d9e31e36b8924a21443f6c585c400d8806f812cf362a1b9"
+    },
+    {
+      "published": "concepts/zh/Tool-wait_agent.md",
+      "source": "packages/content/concepts/zh/Tool-wait_agent.md",
+      "sha256": "790e75ca7874919072f3b396185bae93d81d578e8f28e5cf5f65725a1cb6e906"
+    },
+    {
+      "published": "concepts/zh/Tool-image_generation.md",
+      "source": "packages/content/concepts/zh/Tool-image_generation.md",
+      "sha256": "c41f647659feeeffcccdfffaa4dd3c8c0627a1b9f734288c97123d2c3a0796cd"
+    },
+    {
+      "published": "concepts/zh/Tool-collaboration.md",
+      "source": "packages/content/concepts/zh/Tool-collaboration.md",
+      "sha256": "acb8289d699b4b4b33b42c8e1d6698d63c9a81e6e860f7d417b31475fb2464ab"
+    },
+    {
+      "published": "concepts/zh/Tool-view_image.md",
+      "source": "packages/content/concepts/zh/Tool-view_image.md",
+      "sha256": "e510c70cdd1f77e9138fc550902bb8769c32c33070555676bf25f1763e7ac7a7"
+    },
+    {
+      "published": "concepts/zh/Tool-list_mcp_resources.md",
+      "source": "packages/content/concepts/zh/Tool-list_mcp_resources.md",
+      "sha256": "0409cdaa3c8533ec937bf8fa7f95e0390b3ccf3b6cab43283c1d834bce1edc4f"
+    },
+    {
+      "published": "concepts/zh/UltraPlan.md",
+      "source": "packages/content/concepts/zh/UltraPlan.md",
+      "sha256": "26156d4cf8e137ae10b1c7dc604557ce52e48231a72141dc276eea070fd03c0f"
+    },
+    {
+      "published": "concepts/zh/Tool-read_mcp_resource.md",
+      "source": "packages/content/concepts/zh/Tool-read_mcp_resource.md",
+      "sha256": "3504e443ebbb2d9e2c2bf40b89c049651e5a4ddab481c3617f0d0f61507a1ad3"
+    },
+    {
+      "published": "concepts/zh/Tool-wait.md",
+      "source": "packages/content/concepts/zh/Tool-wait.md",
+      "sha256": "49bd700a4b58ef6a546d00840be3af79c2bd463ebffae54d9afdb58001deba0c"
+    },
+    {
+      "published": "concepts/zh/Tool-write_stdin.md",
+      "source": "packages/content/concepts/zh/Tool-write_stdin.md",
+      "sha256": "04c67db30802dfb6c923826019ece783ce26c9d96dfce5908882e07fafa4dd7d"
+    },
+    {
+      "published": "concepts/zh/Tool-interrupt_agent.md",
+      "source": "packages/content/concepts/zh/Tool-interrupt_agent.md",
+      "sha256": "d20a300f72cdae67ea0b18277765d3af51c95663c47ffb5bc25350c174cccd98"
+    },
+    {
+      "published": "concepts/zh/Tool-exec.md",
+      "source": "packages/content/concepts/zh/Tool-exec.md",
+      "sha256": "8dbddd1cbd9ab31c588bfa1fa8d160698b521c4d323c83666bb856c456417a44"
+    },
+    {
+      "published": "concepts/zh/ResponseFields.md",
+      "source": "packages/content/concepts/zh/ResponseFields.md",
+      "sha256": "0efeae69825a2527d758e2dd78c08d6fcb0332cb87892651a57d41a595b5dc38"
+    },
+    {
+      "published": "concepts/zh/CustomUltraplanExpert.md",
+      "source": "packages/content/concepts/zh/CustomUltraplanExpert.md",
+      "sha256": "c8d2f390549f0df0fd68e294273c4cf1d091ab2bcb4d1828b9dac6ddeab84aa5"
+    },
+    {
+      "published": "concepts/zh/Tool-shell_command.md",
+      "source": "packages/content/concepts/zh/Tool-shell_command.md",
+      "sha256": "36b58b2fa6630bca8067123441e1ba5331994d91e5e69dd97db75e40de959707"
+    },
+    {
+      "published": "concepts/zh/Tool-tool_search.md",
+      "source": "packages/content/concepts/zh/Tool-tool_search.md",
+      "sha256": "81938869623208d12e41e9359c8fd15031de30f84889d3db84fdffc2068e62d5"
+    },
+    {
+      "published": "concepts/zh/QRCode.md",
+      "source": "packages/content/concepts/zh/QRCode.md",
+      "sha256": "222f946700f45c5b7eaf8c8dd5c181a97ddc13cc349dff2cb28e4ac67a96b161"
+    },
+    {
+      "published": "concepts/zh/Tool-web_search.md",
+      "source": "packages/content/concepts/zh/Tool-web_search.md",
+      "sha256": "d62c1a4a14dbff62ed76fa49464c292d48c819a63c3cab1a93bce614859f940d"
+    },
+    {
+      "published": "concepts/zh/Tool-update_goal.md",
+      "source": "packages/content/concepts/zh/Tool-update_goal.md",
+      "sha256": "aa3704be6d34a2181e15e9d7cb0d35c7b186e9207b3d4e9d7f89f0aaed6a88b9"
+    },
+    {
+      "published": "concepts/zh/BodyDiffJSON.md",
+      "source": "packages/content/concepts/zh/BodyDiffJSON.md",
+      "sha256": "f4b262d50b59680d8001ef18123fc41447c72d9589aee09ee9071ba439e44987"
+    },
+    {
+      "published": "concepts/zh/Tool-apply_patch.md",
+      "source": "packages/content/concepts/zh/Tool-apply_patch.md",
+      "sha256": "ca9451f838a3919488702de3279acf7d0c5afd2458ac904ed7a4ce1765f49725"
+    },
+    {
+      "published": "concepts/zh/BodyFields.md",
+      "source": "packages/content/concepts/zh/BodyFields.md",
+      "sha256": "807246ea9bbf171ecaeea6d399ab39402d11c804bb1d68fb54c92025c96c394a"
+    },
+    {
+      "published": "concepts/zh/Tools.md",
+      "source": "packages/content/concepts/zh/Tools.md",
+      "sha256": "5b01bed92376ec5b13a5bf4d8662ea089df1181c28048b8ad82a92847227e5fa"
+    },
+    {
+      "published": "concepts/uk/ProxySwitch.md",
+      "source": "packages/content/concepts/uk/ProxySwitch.md",
+      "sha256": "d2029c9c22eaa8921edb316ded037a5ccfe388ee807bf855990cd80b4feede95"
+    },
+    {
+      "published": "concepts/uk/TranslateContextPollution.md",
+      "source": "packages/content/concepts/uk/TranslateContextPollution.md",
+      "sha256": "7d6606c9f4c4ce0a5d0e8bf88619bd09fda50601304a261964a8a88dc08b8f6b"
+    },
+    {
+      "published": "concepts/uk/ToolsFirst.md",
+      "source": "packages/content/concepts/uk/ToolsFirst.md",
+      "sha256": "76c2fb99d57ffb7a2af2809d90568386b723e4c249acac2896c82dc9ee49ee3c"
+    },
+    {
+      "published": "concepts/uk/SubAgent-Search.md",
+      "source": "packages/content/concepts/uk/SubAgent-Search.md",
+      "sha256": "ff9696214cf33b4c77f347fd25ee4c20dc764025b43a7a95b24876631f748f9f"
+    },
+    {
+      "published": "concepts/uk/GlobalSettings.md",
+      "source": "packages/content/concepts/uk/GlobalSettings.md",
+      "sha256": "145c965765c800687c3af6d236ce836641827ebd94faf180fe49d5665bcccada"
+    },
+    {
+      "published": "concepts/uk/MainAgent.md",
+      "source": "packages/content/concepts/uk/MainAgent.md",
+      "sha256": "7609bb9ccfaae7bbf0ba491d3aef44ac4b449b9580f4260d0434cebb2d8b9f77"
+    },
+    {
+      "published": "concepts/uk/Teammate.md",
+      "source": "packages/content/concepts/uk/Teammate.md",
+      "sha256": "28402815ade39ff4f00965f17074c16c2fd054809f588bc6e0d2ef64c8b10c42"
+    },
+    {
+      "published": "concepts/uk/UltraPlan.md",
+      "source": "packages/content/concepts/uk/UltraPlan.md",
+      "sha256": "aca1f90bbd326c504de4d7af5e21a02632e829a9c5e88313e5c3d507c5a20c9a"
+    },
+    {
+      "published": "concepts/uk/ResponseFields.md",
+      "source": "packages/content/concepts/uk/ResponseFields.md",
+      "sha256": "51ca923e38e45240ae2248b847fb7fe5f6be65be02393d9fda1e03ce61bdc8e5"
+    },
+    {
+      "published": "concepts/uk/CustomUltraplanExpert.md",
+      "source": "packages/content/concepts/uk/CustomUltraplanExpert.md",
+      "sha256": "cd08b5d27e2b8eece255f6445962b4e3f4cfffe6bb87b953c67f80e2e70672a2"
+    },
+    {
+      "published": "concepts/uk/QRCode.md",
+      "source": "packages/content/concepts/uk/QRCode.md",
+      "sha256": "7e7b97eebd922525182566ad0f960998ad1c388833784448c7ba8fab8eb70fb4"
+    },
+    {
+      "published": "concepts/uk/BodyDiffJSON.md",
+      "source": "packages/content/concepts/uk/BodyDiffJSON.md",
+      "sha256": "40a8c31ab969873fef8cfd06250105a790819780fd1afaa3c536d1514d9d00d5"
+    },
+    {
+      "published": "concepts/uk/BodyFields.md",
+      "source": "packages/content/concepts/uk/BodyFields.md",
+      "sha256": "b06326898619b380fa6c18ca970bf863f96a878b4d254318cd0f3cd977f4005f"
+    },
+    {
+      "published": "concepts/zh-TW/ProxySwitch.md",
+      "source": "packages/content/concepts/zh-TW/ProxySwitch.md",
+      "sha256": "1973d5ee67d2639a484852703d0b8ff3f724e9daf2961bfb2812d74025609357"
+    },
+    {
+      "published": "concepts/zh-TW/TranslateContextPollution.md",
+      "source": "packages/content/concepts/zh-TW/TranslateContextPollution.md",
+      "sha256": "a4e27fc97ec5c142e18faf5c591519cd651db839a1c8bf7b61dbb8d312eda796"
+    },
+    {
+      "published": "concepts/zh-TW/ToolsFirst.md",
+      "source": "packages/content/concepts/zh-TW/ToolsFirst.md",
+      "sha256": "8d79ad54cbe4e575579badf4d3c9c5c478310b87b14bc797b5e4c4b2bcb5d047"
+    },
+    {
+      "published": "concepts/zh-TW/SubAgent-Search.md",
+      "source": "packages/content/concepts/zh-TW/SubAgent-Search.md",
+      "sha256": "d2a422e8725e521418076403077e4257e3c88203ec917c1fb0372703b12683b0"
+    },
+    {
+      "published": "concepts/zh-TW/GlobalSettings.md",
+      "source": "packages/content/concepts/zh-TW/GlobalSettings.md",
+      "sha256": "653304c7fa41ea0217a33e97cacdb5e6299b85e91c255401163ea75866902617"
+    },
+    {
+      "published": "concepts/zh-TW/MainAgent.md",
+      "source": "packages/content/concepts/zh-TW/MainAgent.md",
+      "sha256": "c775b104a5b31d4c7c143b6499f1671dfeb9e17315d486fd68dc999b76f96c1c"
+    },
+    {
+      "published": "concepts/zh-TW/Teammate.md",
+      "source": "packages/content/concepts/zh-TW/Teammate.md",
+      "sha256": "3b8fb85125dbeb406d9e31e36b8924a21443f6c585c400d8806f812cf362a1b9"
+    },
+    {
+      "published": "concepts/zh-TW/UltraPlan.md",
+      "source": "packages/content/concepts/zh-TW/UltraPlan.md",
+      "sha256": "26156d4cf8e137ae10b1c7dc604557ce52e48231a72141dc276eea070fd03c0f"
+    },
+    {
+      "published": "concepts/zh-TW/ResponseFields.md",
+      "source": "packages/content/concepts/zh-TW/ResponseFields.md",
+      "sha256": "0efeae69825a2527d758e2dd78c08d6fcb0332cb87892651a57d41a595b5dc38"
+    },
+    {
+      "published": "concepts/zh-TW/CustomUltraplanExpert.md",
+      "source": "packages/content/concepts/zh-TW/CustomUltraplanExpert.md",
+      "sha256": "c8d2f390549f0df0fd68e294273c4cf1d091ab2bcb4d1828b9dac6ddeab84aa5"
+    },
+    {
+      "published": "concepts/zh-TW/QRCode.md",
+      "source": "packages/content/concepts/zh-TW/QRCode.md",
+      "sha256": "28172ac54054ba3ee43c9f57c417d50c64ac3662dfb4a12139038eadb16e6e03"
+    },
+    {
+      "published": "concepts/zh-TW/BodyDiffJSON.md",
+      "source": "packages/content/concepts/zh-TW/BodyDiffJSON.md",
+      "sha256": "7d941ec4b816891d7241651b412b1b50ff573db58fd39a57eeda9a3681a1f674"
+    },
+    {
+      "published": "concepts/zh-TW/BodyFields.md",
+      "source": "packages/content/concepts/zh-TW/BodyFields.md",
+      "sha256": "807246ea9bbf171ecaeea6d399ab39402d11c804bb1d68fb54c92025c96c394a"
+    },
+    {
+      "published": "concepts/ar/ProxySwitch.md",
+      "source": "packages/content/concepts/ar/ProxySwitch.md",
+      "sha256": "d2029c9c22eaa8921edb316ded037a5ccfe388ee807bf855990cd80b4feede95"
+    },
+    {
+      "published": "concepts/ar/TranslateContextPollution.md",
+      "source": "packages/content/concepts/ar/TranslateContextPollution.md",
+      "sha256": "56c2734a9380e6e10d10030834eaf659143ff32ebd803aa2c27b51c1666da503"
+    },
+    {
+      "published": "concepts/ar/ToolsFirst.md",
+      "source": "packages/content/concepts/ar/ToolsFirst.md",
+      "sha256": "76c2fb99d57ffb7a2af2809d90568386b723e4c249acac2896c82dc9ee49ee3c"
+    },
+    {
+      "published": "concepts/ar/SubAgent-Search.md",
+      "source": "packages/content/concepts/ar/SubAgent-Search.md",
+      "sha256": "ff9696214cf33b4c77f347fd25ee4c20dc764025b43a7a95b24876631f748f9f"
+    },
+    {
+      "published": "concepts/ar/GlobalSettings.md",
+      "source": "packages/content/concepts/ar/GlobalSettings.md",
+      "sha256": "145c965765c800687c3af6d236ce836641827ebd94faf180fe49d5665bcccada"
+    },
+    {
+      "published": "concepts/ar/MainAgent.md",
+      "source": "packages/content/concepts/ar/MainAgent.md",
+      "sha256": "171fdb11d69498654a56915c8991c555fb4e2595e8e7bf9dff1e8aa456eba6aa"
+    },
+    {
+      "published": "concepts/ar/Teammate.md",
+      "source": "packages/content/concepts/ar/Teammate.md",
+      "sha256": "28402815ade39ff4f00965f17074c16c2fd054809f588bc6e0d2ef64c8b10c42"
+    },
+    {
+      "published": "concepts/ar/UltraPlan.md",
+      "source": "packages/content/concepts/ar/UltraPlan.md",
+      "sha256": "aca1f90bbd326c504de4d7af5e21a02632e829a9c5e88313e5c3d507c5a20c9a"
+    },
+    {
+      "published": "concepts/ar/ResponseFields.md",
+      "source": "packages/content/concepts/ar/ResponseFields.md",
+      "sha256": "51ca923e38e45240ae2248b847fb7fe5f6be65be02393d9fda1e03ce61bdc8e5"
+    },
+    {
+      "published": "concepts/ar/CustomUltraplanExpert.md",
+      "source": "packages/content/concepts/ar/CustomUltraplanExpert.md",
+      "sha256": "cd08b5d27e2b8eece255f6445962b4e3f4cfffe6bb87b953c67f80e2e70672a2"
+    },
+    {
+      "published": "concepts/ar/QRCode.md",
+      "source": "packages/content/concepts/ar/QRCode.md",
+      "sha256": "6c082c901481790701397f7981e712bd6cf05218bd2db0ce09cc21a5e6332b57"
+    },
+    {
+      "published": "concepts/ar/BodyDiffJSON.md",
+      "source": "packages/content/concepts/ar/BodyDiffJSON.md",
+      "sha256": "c6ed6be85f89a9ee7d774eeec3b93e8ef751253ba69c3d79f91410137ba08370"
+    },
+    {
+      "published": "concepts/ar/BodyFields.md",
+      "source": "packages/content/concepts/ar/BodyFields.md",
+      "sha256": "b06326898619b380fa6c18ca970bf863f96a878b4d254318cd0f3cd977f4005f"
+    },
+    {
+      "published": "concepts/pt-BR/ProxySwitch.md",
+      "source": "packages/content/concepts/pt-BR/ProxySwitch.md",
+      "sha256": "d2029c9c22eaa8921edb316ded037a5ccfe388ee807bf855990cd80b4feede95"
+    },
+    {
+      "published": "concepts/pt-BR/TranslateContextPollution.md",
+      "source": "packages/content/concepts/pt-BR/TranslateContextPollution.md",
+      "sha256": "1b5095c91c3deb1a2ce9c09488eadd9028e045b952cdfc175e5ee012da1a7f65"
+    },
+    {
+      "published": "concepts/pt-BR/ToolsFirst.md",
+      "source": "packages/content/concepts/pt-BR/ToolsFirst.md",
+      "sha256": "76c2fb99d57ffb7a2af2809d90568386b723e4c249acac2896c82dc9ee49ee3c"
+    },
+    {
+      "published": "concepts/pt-BR/SubAgent-Search.md",
+      "source": "packages/content/concepts/pt-BR/SubAgent-Search.md",
+      "sha256": "ff9696214cf33b4c77f347fd25ee4c20dc764025b43a7a95b24876631f748f9f"
+    },
+    {
+      "published": "concepts/pt-BR/GlobalSettings.md",
+      "source": "packages/content/concepts/pt-BR/GlobalSettings.md",
+      "sha256": "145c965765c800687c3af6d236ce836641827ebd94faf180fe49d5665bcccada"
+    },
+    {
+      "published": "concepts/pt-BR/MainAgent.md",
+      "source": "packages/content/concepts/pt-BR/MainAgent.md",
+      "sha256": "050050ab4fadba0cdf11952d37703b78c29781e45b9dd44ea52396a4d890f782"
+    },
+    {
+      "published": "concepts/pt-BR/Teammate.md",
+      "source": "packages/content/concepts/pt-BR/Teammate.md",
+      "sha256": "28402815ade39ff4f00965f17074c16c2fd054809f588bc6e0d2ef64c8b10c42"
+    },
+    {
+      "published": "concepts/pt-BR/UltraPlan.md",
+      "source": "packages/content/concepts/pt-BR/UltraPlan.md",
+      "sha256": "aca1f90bbd326c504de4d7af5e21a02632e829a9c5e88313e5c3d507c5a20c9a"
+    },
+    {
+      "published": "concepts/pt-BR/ResponseFields.md",
+      "source": "packages/content/concepts/pt-BR/ResponseFields.md",
+      "sha256": "51ca923e38e45240ae2248b847fb7fe5f6be65be02393d9fda1e03ce61bdc8e5"
+    },
+    {
+      "published": "concepts/pt-BR/CustomUltraplanExpert.md",
+      "source": "packages/content/concepts/pt-BR/CustomUltraplanExpert.md",
+      "sha256": "cd08b5d27e2b8eece255f6445962b4e3f4cfffe6bb87b953c67f80e2e70672a2"
+    },
+    {
+      "published": "concepts/pt-BR/QRCode.md",
+      "source": "packages/content/concepts/pt-BR/QRCode.md",
+      "sha256": "561e60f3040725aeeae7b1e11f376d2d27004d2af693c79942de4179547ab5f2"
+    },
+    {
+      "published": "concepts/pt-BR/BodyDiffJSON.md",
+      "source": "packages/content/concepts/pt-BR/BodyDiffJSON.md",
+      "sha256": "acba2c1a06cf7bd310d11422ba53be4741d18aad8c7d45dca6e4ddd9bb836dc2"
+    },
+    {
+      "published": "concepts/pt-BR/BodyFields.md",
+      "source": "packages/content/concepts/pt-BR/BodyFields.md",
+      "sha256": "b06326898619b380fa6c18ca970bf863f96a878b4d254318cd0f3cd977f4005f"
+    },
+    {
+      "published": "concepts/de/ProxySwitch.md",
+      "source": "packages/content/concepts/de/ProxySwitch.md",
+      "sha256": "d2029c9c22eaa8921edb316ded037a5ccfe388ee807bf855990cd80b4feede95"
+    },
+    {
+      "published": "concepts/de/TranslateContextPollution.md",
+      "source": "packages/content/concepts/de/TranslateContextPollution.md",
+      "sha256": "7931695f46a88cc0e444c7c56718b28636a512f1804b4e10d1e8361140b8defe"
+    },
+    {
+      "published": "concepts/de/ToolsFirst.md",
+      "source": "packages/content/concepts/de/ToolsFirst.md",
+      "sha256": "76c2fb99d57ffb7a2af2809d90568386b723e4c249acac2896c82dc9ee49ee3c"
+    },
+    {
+      "published": "concepts/de/SubAgent-Search.md",
+      "source": "packages/content/concepts/de/SubAgent-Search.md",
+      "sha256": "ff9696214cf33b4c77f347fd25ee4c20dc764025b43a7a95b24876631f748f9f"
+    },
+    {
+      "published": "concepts/de/GlobalSettings.md",
+      "source": "packages/content/concepts/de/GlobalSettings.md",
+      "sha256": "145c965765c800687c3af6d236ce836641827ebd94faf180fe49d5665bcccada"
+    },
+    {
+      "published": "concepts/de/MainAgent.md",
+      "source": "packages/content/concepts/de/MainAgent.md",
+      "sha256": "28dd3f0175c8277b176b303d07e03e2466fc0f86016586f9f8ec5b5d4c22c0e8"
+    },
+    {
+      "published": "concepts/de/Teammate.md",
+      "source": "packages/content/concepts/de/Teammate.md",
+      "sha256": "28402815ade39ff4f00965f17074c16c2fd054809f588bc6e0d2ef64c8b10c42"
+    },
+    {
+      "published": "concepts/de/UltraPlan.md",
+      "source": "packages/content/concepts/de/UltraPlan.md",
+      "sha256": "aca1f90bbd326c504de4d7af5e21a02632e829a9c5e88313e5c3d507c5a20c9a"
+    },
+    {
+      "published": "concepts/de/ResponseFields.md",
+      "source": "packages/content/concepts/de/ResponseFields.md",
+      "sha256": "51ca923e38e45240ae2248b847fb7fe5f6be65be02393d9fda1e03ce61bdc8e5"
+    },
+    {
+      "published": "concepts/de/CustomUltraplanExpert.md",
+      "source": "packages/content/concepts/de/CustomUltraplanExpert.md",
+      "sha256": "cd08b5d27e2b8eece255f6445962b4e3f4cfffe6bb87b953c67f80e2e70672a2"
+    },
+    {
+      "published": "concepts/de/QRCode.md",
+      "source": "packages/content/concepts/de/QRCode.md",
+      "sha256": "ab3e6351910416269abc0e57af08d229e57b2fb02d8ba197492ad50c21eeb45d"
+    },
+    {
+      "published": "concepts/de/BodyDiffJSON.md",
+      "source": "packages/content/concepts/de/BodyDiffJSON.md",
+      "sha256": "a415ef22ece9b4a8c6d0ae4906cd850a9570fc389d2e9ee8007cecc7b87e8c2f"
+    },
+    {
+      "published": "concepts/de/BodyFields.md",
+      "source": "packages/content/concepts/de/BodyFields.md",
+      "sha256": "b06326898619b380fa6c18ca970bf863f96a878b4d254318cd0f3cd977f4005f"
+    },
+    {
+      "published": "concepts/ko/ProxySwitch.md",
+      "source": "packages/content/concepts/ko/ProxySwitch.md",
+      "sha256": "d2029c9c22eaa8921edb316ded037a5ccfe388ee807bf855990cd80b4feede95"
+    },
+    {
+      "published": "concepts/ko/TranslateContextPollution.md",
+      "source": "packages/content/concepts/ko/TranslateContextPollution.md",
+      "sha256": "1edc899c596b0fed6f62b03347536d278eff5eb58e2108c8ac595266c2e0c3b6"
+    },
+    {
+      "published": "concepts/ko/ToolsFirst.md",
+      "source": "packages/content/concepts/ko/ToolsFirst.md",
+      "sha256": "76c2fb99d57ffb7a2af2809d90568386b723e4c249acac2896c82dc9ee49ee3c"
+    },
+    {
+      "published": "concepts/ko/SubAgent-Search.md",
+      "source": "packages/content/concepts/ko/SubAgent-Search.md",
+      "sha256": "ff9696214cf33b4c77f347fd25ee4c20dc764025b43a7a95b24876631f748f9f"
+    },
+    {
+      "published": "concepts/ko/GlobalSettings.md",
+      "source": "packages/content/concepts/ko/GlobalSettings.md",
+      "sha256": "145c965765c800687c3af6d236ce836641827ebd94faf180fe49d5665bcccada"
+    },
+    {
+      "published": "concepts/ko/MainAgent.md",
+      "source": "packages/content/concepts/ko/MainAgent.md",
+      "sha256": "1b1064d15de07937f91354fefe5f712685bbd9f1f686dae6aaaf74e32c13a3c7"
+    },
+    {
+      "published": "concepts/ko/Teammate.md",
+      "source": "packages/content/concepts/ko/Teammate.md",
+      "sha256": "28402815ade39ff4f00965f17074c16c2fd054809f588bc6e0d2ef64c8b10c42"
+    },
+    {
+      "published": "concepts/ko/UltraPlan.md",
+      "source": "packages/content/concepts/ko/UltraPlan.md",
+      "sha256": "aca1f90bbd326c504de4d7af5e21a02632e829a9c5e88313e5c3d507c5a20c9a"
+    },
+    {
+      "published": "concepts/ko/ResponseFields.md",
+      "source": "packages/content/concepts/ko/ResponseFields.md",
+      "sha256": "51ca923e38e45240ae2248b847fb7fe5f6be65be02393d9fda1e03ce61bdc8e5"
+    },
+    {
+      "published": "concepts/ko/CustomUltraplanExpert.md",
+      "source": "packages/content/concepts/ko/CustomUltraplanExpert.md",
+      "sha256": "cd08b5d27e2b8eece255f6445962b4e3f4cfffe6bb87b953c67f80e2e70672a2"
+    },
+    {
+      "published": "concepts/ko/QRCode.md",
+      "source": "packages/content/concepts/ko/QRCode.md",
+      "sha256": "72c140b9d58da70825a0cdc1f350071455cb2c8dabac91777ba079276fd3a40d"
+    },
+    {
+      "published": "concepts/ko/BodyDiffJSON.md",
+      "source": "packages/content/concepts/ko/BodyDiffJSON.md",
+      "sha256": "5f1b9518e6105ffc02c511883b8b39eb22c41bc0453631e2cc1d9ae9c3771788"
+    },
+    {
+      "published": "concepts/ko/BodyFields.md",
+      "source": "packages/content/concepts/ko/BodyFields.md",
+      "sha256": "b06326898619b380fa6c18ca970bf863f96a878b4d254318cd0f3cd977f4005f"
+    },
+    {
+      "published": "concepts/fr/ProxySwitch.md",
+      "source": "packages/content/concepts/fr/ProxySwitch.md",
+      "sha256": "d2029c9c22eaa8921edb316ded037a5ccfe388ee807bf855990cd80b4feede95"
+    },
+    {
+      "published": "concepts/fr/TranslateContextPollution.md",
+      "source": "packages/content/concepts/fr/TranslateContextPollution.md",
+      "sha256": "8d2f5e03375c6a9566ef47dd4117d19c08e496524b1d775874d9de0f564a0fc6"
+    },
+    {
+      "published": "concepts/fr/ToolsFirst.md",
+      "source": "packages/content/concepts/fr/ToolsFirst.md",
+      "sha256": "76c2fb99d57ffb7a2af2809d90568386b723e4c249acac2896c82dc9ee49ee3c"
+    },
+    {
+      "published": "concepts/fr/SubAgent-Search.md",
+      "source": "packages/content/concepts/fr/SubAgent-Search.md",
+      "sha256": "ff9696214cf33b4c77f347fd25ee4c20dc764025b43a7a95b24876631f748f9f"
+    },
+    {
+      "published": "concepts/fr/GlobalSettings.md",
+      "source": "packages/content/concepts/fr/GlobalSettings.md",
+      "sha256": "145c965765c800687c3af6d236ce836641827ebd94faf180fe49d5665bcccada"
+    },
+    {
+      "published": "concepts/fr/MainAgent.md",
+      "source": "packages/content/concepts/fr/MainAgent.md",
+      "sha256": "03efbfcda0a76dd2392f5c066cf439b726ba2d053d4e4f2dd059973c4d3e2588"
+    },
+    {
+      "published": "concepts/fr/Teammate.md",
+      "source": "packages/content/concepts/fr/Teammate.md",
+      "sha256": "28402815ade39ff4f00965f17074c16c2fd054809f588bc6e0d2ef64c8b10c42"
+    },
+    {
+      "published": "concepts/fr/UltraPlan.md",
+      "source": "packages/content/concepts/fr/UltraPlan.md",
+      "sha256": "aca1f90bbd326c504de4d7af5e21a02632e829a9c5e88313e5c3d507c5a20c9a"
+    },
+    {
+      "published": "concepts/fr/ResponseFields.md",
+      "source": "packages/content/concepts/fr/ResponseFields.md",
+      "sha256": "51ca923e38e45240ae2248b847fb7fe5f6be65be02393d9fda1e03ce61bdc8e5"
+    },
+    {
+      "published": "concepts/fr/CustomUltraplanExpert.md",
+      "source": "packages/content/concepts/fr/CustomUltraplanExpert.md",
+      "sha256": "cd08b5d27e2b8eece255f6445962b4e3f4cfffe6bb87b953c67f80e2e70672a2"
+    },
+    {
+      "published": "concepts/fr/QRCode.md",
+      "source": "packages/content/concepts/fr/QRCode.md",
+      "sha256": "654882688bfe303593a3dfe4e7c51a721efd77d5ee9330738ecd2dbe284df3dd"
+    },
+    {
+      "published": "concepts/fr/BodyDiffJSON.md",
+      "source": "packages/content/concepts/fr/BodyDiffJSON.md",
+      "sha256": "91fd4d8a2e241e82855c92a8a8ec03d53e975aae53eb3847404cd6bf25300701"
+    },
+    {
+      "published": "concepts/fr/BodyFields.md",
+      "source": "packages/content/concepts/fr/BodyFields.md",
+      "sha256": "b06326898619b380fa6c18ca970bf863f96a878b4d254318cd0f3cd977f4005f"
+    },
+    {
+      "published": "concepts/es/ProxySwitch.md",
+      "source": "packages/content/concepts/es/ProxySwitch.md",
+      "sha256": "d2029c9c22eaa8921edb316ded037a5ccfe388ee807bf855990cd80b4feede95"
+    },
+    {
+      "published": "concepts/es/TranslateContextPollution.md",
+      "source": "packages/content/concepts/es/TranslateContextPollution.md",
+      "sha256": "0abb449bdc9caa54cd077e39ba648511bf4777f9162d11cdf1ca0ec441d181f6"
+    },
+    {
+      "published": "concepts/es/ToolsFirst.md",
+      "source": "packages/content/concepts/es/ToolsFirst.md",
+      "sha256": "76c2fb99d57ffb7a2af2809d90568386b723e4c249acac2896c82dc9ee49ee3c"
+    },
+    {
+      "published": "concepts/es/SubAgent-Search.md",
+      "source": "packages/content/concepts/es/SubAgent-Search.md",
+      "sha256": "ff9696214cf33b4c77f347fd25ee4c20dc764025b43a7a95b24876631f748f9f"
+    },
+    {
+      "published": "concepts/es/GlobalSettings.md",
+      "source": "packages/content/concepts/es/GlobalSettings.md",
+      "sha256": "145c965765c800687c3af6d236ce836641827ebd94faf180fe49d5665bcccada"
+    },
+    {
+      "published": "concepts/es/MainAgent.md",
+      "source": "packages/content/concepts/es/MainAgent.md",
+      "sha256": "a46945b436bb0a0850cd6aefda6567766a78c3e0d32053e0283d1eb39e290934"
+    },
+    {
+      "published": "concepts/es/Teammate.md",
+      "source": "packages/content/concepts/es/Teammate.md",
+      "sha256": "28402815ade39ff4f00965f17074c16c2fd054809f588bc6e0d2ef64c8b10c42"
+    },
+    {
+      "published": "concepts/es/UltraPlan.md",
+      "source": "packages/content/concepts/es/UltraPlan.md",
+      "sha256": "aca1f90bbd326c504de4d7af5e21a02632e829a9c5e88313e5c3d507c5a20c9a"
+    },
+    {
+      "published": "concepts/es/ResponseFields.md",
+      "source": "packages/content/concepts/es/ResponseFields.md",
+      "sha256": "51ca923e38e45240ae2248b847fb7fe5f6be65be02393d9fda1e03ce61bdc8e5"
+    },
+    {
+      "published": "concepts/es/CustomUltraplanExpert.md",
+      "source": "packages/content/concepts/es/CustomUltraplanExpert.md",
+      "sha256": "cd08b5d27e2b8eece255f6445962b4e3f4cfffe6bb87b953c67f80e2e70672a2"
+    },
+    {
+      "published": "concepts/es/QRCode.md",
+      "source": "packages/content/concepts/es/QRCode.md",
+      "sha256": "9e12f3c5c42baba456a1b970c5fd6953c7ad4e00daaa890edab6e246ec5503fa"
+    },
+    {
+      "published": "concepts/es/BodyDiffJSON.md",
+      "source": "packages/content/concepts/es/BodyDiffJSON.md",
+      "sha256": "97f01987ee681afcf76a97570105a106039b59d814b848ce1fc7e6661bf74e67"
+    },
+    {
+      "published": "concepts/es/BodyFields.md",
+      "source": "packages/content/concepts/es/BodyFields.md",
+      "sha256": "b06326898619b380fa6c18ca970bf863f96a878b4d254318cd0f3cd977f4005f"
+    },
+    {
+      "published": "concepts/en/Tool-exec_command.md",
+      "source": "packages/content/concepts/en/Tool-exec_command.md",
+      "sha256": "d188b727aa2e1564abacbfc15bd2cede05f13aaaba29b9b1016b7c38fd36004e"
+    },
+    {
+      "published": "concepts/en/ProxySwitch.md",
+      "source": "packages/content/concepts/en/ProxySwitch.md",
+      "sha256": "1a92446662cf93d9d32d77cd53322462690d3dabe39f00d858cdfd5e2889197c"
+    },
+    {
+      "published": "concepts/en/Tool-list_mcp_resource_templates.md",
+      "source": "packages/content/concepts/en/Tool-list_mcp_resource_templates.md",
+      "sha256": "db84cc055b33b277748ddcaeeb4818dabc39d6d0f7c0da88d025ae6e1b90f0b1"
+    },
+    {
+      "published": "concepts/en/Tool-update_plan.md",
+      "source": "packages/content/concepts/en/Tool-update_plan.md",
+      "sha256": "5f61191a83abb9427f2e8b4a06e9fcb0f0c47e6c8659f40a937bd7e687883eef"
+    },
+    {
+      "published": "concepts/en/Tool-list_agents.md",
+      "source": "packages/content/concepts/en/Tool-list_agents.md",
+      "sha256": "033675d3d90b4f5237307fe4cc30c6d35542603ea07e60e110104f19af326514"
+    },
+    {
+      "published": "concepts/en/Tool-get_goal.md",
+      "source": "packages/content/concepts/en/Tool-get_goal.md",
+      "sha256": "a4e9e66a68387172a3e12cf5d18ab2a7518bafda2d45095bb2ee490c2e829e41"
+    },
+    {
+      "published": "concepts/en/Tool-create_goal.md",
+      "source": "packages/content/concepts/en/Tool-create_goal.md",
+      "sha256": "39dfe2295566ed5447b9742f85e6f78f27643f714b489f3d4f4c8d612649b133"
+    },
+    {
+      "published": "concepts/en/TranslateContextPollution.md",
+      "source": "packages/content/concepts/en/TranslateContextPollution.md",
+      "sha256": "ab36031359f4b8058b89c76a4ace0f946f012ca0016deec94510107fa7b9f6ad"
+    },
+    {
+      "published": "concepts/en/Tool-followup_task.md",
+      "source": "packages/content/concepts/en/Tool-followup_task.md",
+      "sha256": "472869b9f32d2036ac8438219a4797f49cf5371f4b1d0f9a5b4595d10b16d77d"
+    },
+    {
+      "published": "concepts/en/ToolsFirst.md",
+      "source": "packages/content/concepts/en/ToolsFirst.md",
+      "sha256": "76c2fb99d57ffb7a2af2809d90568386b723e4c249acac2896c82dc9ee49ee3c"
+    },
+    {
+      "published": "concepts/en/Tool-spawn_agent.md",
+      "source": "packages/content/concepts/en/Tool-spawn_agent.md",
+      "sha256": "6cdec716c1df6874034afa0030cc33f8344ec0ebd4d733a72350a015ff475cd6"
+    },
+    {
+      "published": "concepts/en/SubAgent-Search.md",
+      "source": "packages/content/concepts/en/SubAgent-Search.md",
+      "sha256": "ff9696214cf33b4c77f347fd25ee4c20dc764025b43a7a95b24876631f748f9f"
+    },
+    {
+      "published": "concepts/en/Tool-request_user_input.md",
+      "source": "packages/content/concepts/en/Tool-request_user_input.md",
+      "sha256": "0c1087fef8ba1828001b37db6e5fd24b020fa5fb2cfc54707c6c7eac13a3e4ac"
+    },
+    {
+      "published": "concepts/en/Tool-send_message.md",
+      "source": "packages/content/concepts/en/Tool-send_message.md",
+      "sha256": "6faf4fc0daffab0005e3fee2e245f1f9683321f6404b3d1183534399ad1a831a"
+    },
+    {
+      "published": "concepts/en/GlobalSettings.md",
+      "source": "packages/content/concepts/en/GlobalSettings.md",
+      "sha256": "64cc52202bce05ca372a39e2be6e6e65990fa1b5c8eb2f895387259ee67ddccc"
+    },
+    {
+      "published": "concepts/en/MainAgent.md",
+      "source": "packages/content/concepts/en/MainAgent.md",
+      "sha256": "d58088a8a0642d81df7bb79726e2091f8b2141986b974dc13918c35521d9ba1a"
+    },
+    {
+      "published": "concepts/en/Teammate.md",
+      "source": "packages/content/concepts/en/Teammate.md",
+      "sha256": "28402815ade39ff4f00965f17074c16c2fd054809f588bc6e0d2ef64c8b10c42"
+    },
+    {
+      "published": "concepts/en/Tool-wait_agent.md",
+      "source": "packages/content/concepts/en/Tool-wait_agent.md",
+      "sha256": "4e871329886cd196d516e74e74a0845194a7cfa4be34f499943c9951683aef40"
+    },
+    {
+      "published": "concepts/en/Tool-image_generation.md",
+      "source": "packages/content/concepts/en/Tool-image_generation.md",
+      "sha256": "01b2aa69a9ee26b1a61893fef1e42d255f59a634120f6dcbb03fdf2a44faf063"
+    },
+    {
+      "published": "concepts/en/Tool-collaboration.md",
+      "source": "packages/content/concepts/en/Tool-collaboration.md",
+      "sha256": "bd95cec49253cecbc350051040a8c59a28b74835d167ba2028d1c0a1bdec77a5"
+    },
+    {
+      "published": "concepts/en/Tool-view_image.md",
+      "source": "packages/content/concepts/en/Tool-view_image.md",
+      "sha256": "59b9fa4fee9ed2b3c9d863d905e08e42d6a719add9990ba8bb0f42ebe0c9caee"
+    },
+    {
+      "published": "concepts/en/Tool-list_mcp_resources.md",
+      "source": "packages/content/concepts/en/Tool-list_mcp_resources.md",
+      "sha256": "d777e930453ed1d2dc9c6a705ba52704b264d928b6252fbe900c40b60fca9634"
+    },
+    {
+      "published": "concepts/en/UltraPlan.md",
+      "source": "packages/content/concepts/en/UltraPlan.md",
+      "sha256": "aca1f90bbd326c504de4d7af5e21a02632e829a9c5e88313e5c3d507c5a20c9a"
+    },
+    {
+      "published": "concepts/en/Tool-read_mcp_resource.md",
+      "source": "packages/content/concepts/en/Tool-read_mcp_resource.md",
+      "sha256": "7aeccfb119b6d8aa5b804d0b7c689e667369a9e5969b0cb57481380e67498b4b"
+    },
+    {
+      "published": "concepts/en/Tool-wait.md",
+      "source": "packages/content/concepts/en/Tool-wait.md",
+      "sha256": "49a8f6b90867b10da711ef6a6c4189fe8b19be76bb3bd5f054a60d047b56feb0"
+    },
+    {
+      "published": "concepts/en/Tool-write_stdin.md",
+      "source": "packages/content/concepts/en/Tool-write_stdin.md",
+      "sha256": "f85ceae73262404dc58acb0d69776c92776b0af871171ed6a48fdebfa19376a5"
+    },
+    {
+      "published": "concepts/en/Tool-interrupt_agent.md",
+      "source": "packages/content/concepts/en/Tool-interrupt_agent.md",
+      "sha256": "fb458f97e7d17903487ee2d30ce51d152c3a6085329652450253b9b9a537f0de"
+    },
+    {
+      "published": "concepts/en/Tool-exec.md",
+      "source": "packages/content/concepts/en/Tool-exec.md",
+      "sha256": "a8fb5146e6ebd0454e949eecb6f1525537028bf6bc5f39fb399c31c5165b6e79"
+    },
+    {
+      "published": "concepts/en/ResponseFields.md",
+      "source": "packages/content/concepts/en/ResponseFields.md",
+      "sha256": "51ca923e38e45240ae2248b847fb7fe5f6be65be02393d9fda1e03ce61bdc8e5"
+    },
+    {
+      "published": "concepts/en/CustomUltraplanExpert.md",
+      "source": "packages/content/concepts/en/CustomUltraplanExpert.md",
+      "sha256": "cd08b5d27e2b8eece255f6445962b4e3f4cfffe6bb87b953c67f80e2e70672a2"
+    },
+    {
+      "published": "concepts/en/Tool-shell_command.md",
+      "source": "packages/content/concepts/en/Tool-shell_command.md",
+      "sha256": "5e26272ccbb6c97f24784a5c135ea10f4d629bc482b70ed1787a7d519bf88f5f"
+    },
+    {
+      "published": "concepts/en/Tool-tool_search.md",
+      "source": "packages/content/concepts/en/Tool-tool_search.md",
+      "sha256": "9f794f49bfcb7b1ab99508f6ae48a1f8248d1452a2032c65d69d26ced26031f9"
+    },
+    {
+      "published": "concepts/en/QRCode.md",
+      "source": "packages/content/concepts/en/QRCode.md",
+      "sha256": "6ed27068df3d47662938cd72231a71579db320f38091dd5910b168b6ed29c2e9"
+    },
+    {
+      "published": "concepts/en/Tool-web_search.md",
+      "source": "packages/content/concepts/en/Tool-web_search.md",
+      "sha256": "3893337233133bd5ce18fde2754b92217803cc4ae4a7dfda0d071d68364eb61a"
+    },
+    {
+      "published": "concepts/en/Tool-update_goal.md",
+      "source": "packages/content/concepts/en/Tool-update_goal.md",
+      "sha256": "aea8bcf7b052d3d11e386b6b44cc5a3da28d0ebd4b1fe6814b6a895a30af4ea8"
+    },
+    {
+      "published": "concepts/en/BodyDiffJSON.md",
+      "source": "packages/content/concepts/en/BodyDiffJSON.md",
+      "sha256": "da91102cbcde443327ffa7f2c69ff814352149dd89d9028fa98af3293e2bf378"
+    },
+    {
+      "published": "concepts/en/Tool-apply_patch.md",
+      "source": "packages/content/concepts/en/Tool-apply_patch.md",
+      "sha256": "531ea9b418c19d851aef82f18458f203c70be19e88b0568fdda79e3477b6b52a"
+    },
+    {
+      "published": "concepts/en/BodyFields.md",
+      "source": "packages/content/concepts/en/BodyFields.md",
+      "sha256": "b06326898619b380fa6c18ca970bf863f96a878b4d254318cd0f3cd977f4005f"
+    },
+    {
+      "published": "concepts/en/Tools.md",
+      "source": "packages/content/concepts/en/Tools.md",
+      "sha256": "4c9c2683871368e266ea6448db191a0e732221bf28a77e2ebdedc19f7b875f89"
+    },
+    {
+      "published": "concepts/th/ProxySwitch.md",
+      "source": "packages/content/concepts/th/ProxySwitch.md",
+      "sha256": "d2029c9c22eaa8921edb316ded037a5ccfe388ee807bf855990cd80b4feede95"
+    },
+    {
+      "published": "concepts/th/TranslateContextPollution.md",
+      "source": "packages/content/concepts/th/TranslateContextPollution.md",
+      "sha256": "8cc1ab1db0af09f9e05ea05bca2b99e38570fc5d13b0815d1a6ee8080488cda2"
+    },
+    {
+      "published": "concepts/th/ToolsFirst.md",
+      "source": "packages/content/concepts/th/ToolsFirst.md",
+      "sha256": "76c2fb99d57ffb7a2af2809d90568386b723e4c249acac2896c82dc9ee49ee3c"
+    },
+    {
+      "published": "concepts/th/SubAgent-Search.md",
+      "source": "packages/content/concepts/th/SubAgent-Search.md",
+      "sha256": "ff9696214cf33b4c77f347fd25ee4c20dc764025b43a7a95b24876631f748f9f"
+    },
+    {
+      "published": "concepts/th/GlobalSettings.md",
+      "source": "packages/content/concepts/th/GlobalSettings.md",
+      "sha256": "145c965765c800687c3af6d236ce836641827ebd94faf180fe49d5665bcccada"
+    },
+    {
+      "published": "concepts/th/MainAgent.md",
+      "source": "packages/content/concepts/th/MainAgent.md",
+      "sha256": "60928125648e3a0958875a4e3c02b75a7076c134c06d2d412774d46db0cbf0e5"
+    },
+    {
+      "published": "concepts/th/Teammate.md",
+      "source": "packages/content/concepts/th/Teammate.md",
+      "sha256": "28402815ade39ff4f00965f17074c16c2fd054809f588bc6e0d2ef64c8b10c42"
+    },
+    {
+      "published": "concepts/th/UltraPlan.md",
+      "source": "packages/content/concepts/th/UltraPlan.md",
+      "sha256": "aca1f90bbd326c504de4d7af5e21a02632e829a9c5e88313e5c3d507c5a20c9a"
+    },
+    {
+      "published": "concepts/th/ResponseFields.md",
+      "source": "packages/content/concepts/th/ResponseFields.md",
+      "sha256": "51ca923e38e45240ae2248b847fb7fe5f6be65be02393d9fda1e03ce61bdc8e5"
+    },
+    {
+      "published": "concepts/th/CustomUltraplanExpert.md",
+      "source": "packages/content/concepts/th/CustomUltraplanExpert.md",
+      "sha256": "cd08b5d27e2b8eece255f6445962b4e3f4cfffe6bb87b953c67f80e2e70672a2"
+    },
+    {
+      "published": "concepts/th/QRCode.md",
+      "source": "packages/content/concepts/th/QRCode.md",
+      "sha256": "7c9e53af8acdef58dcbdbe8a4fe8dda711f710fe502b20d3fee8cfcdcbbca653"
+    },
+    {
+      "published": "concepts/th/BodyDiffJSON.md",
+      "source": "packages/content/concepts/th/BodyDiffJSON.md",
+      "sha256": "ad7eb0bde320d6d074dc68ee4479676c0aa6f98087df026c46ae87dfe9c19db8"
+    },
+    {
+      "published": "concepts/th/BodyFields.md",
+      "source": "packages/content/concepts/th/BodyFields.md",
+      "sha256": "b06326898619b380fa6c18ca970bf863f96a878b4d254318cd0f3cd977f4005f"
+    },
+    {
+      "published": "concepts/tr/ProxySwitch.md",
+      "source": "packages/content/concepts/tr/ProxySwitch.md",
+      "sha256": "d2029c9c22eaa8921edb316ded037a5ccfe388ee807bf855990cd80b4feede95"
+    },
+    {
+      "published": "concepts/tr/TranslateContextPollution.md",
+      "source": "packages/content/concepts/tr/TranslateContextPollution.md",
+      "sha256": "ec39e4b20fbfd0000079342074336e37f3681d95fe43df307d9440e7d397956c"
+    },
+    {
+      "published": "concepts/tr/ToolsFirst.md",
+      "source": "packages/content/concepts/tr/ToolsFirst.md",
+      "sha256": "76c2fb99d57ffb7a2af2809d90568386b723e4c249acac2896c82dc9ee49ee3c"
+    },
+    {
+      "published": "concepts/tr/SubAgent-Search.md",
+      "source": "packages/content/concepts/tr/SubAgent-Search.md",
+      "sha256": "ff9696214cf33b4c77f347fd25ee4c20dc764025b43a7a95b24876631f748f9f"
+    },
+    {
+      "published": "concepts/tr/GlobalSettings.md",
+      "source": "packages/content/concepts/tr/GlobalSettings.md",
+      "sha256": "145c965765c800687c3af6d236ce836641827ebd94faf180fe49d5665bcccada"
+    },
+    {
+      "published": "concepts/tr/MainAgent.md",
+      "source": "packages/content/concepts/tr/MainAgent.md",
+      "sha256": "6a931589f332abb0adc07f47ce6ae820a3b5ea696007bb208fdc3d2a2b5c1824"
+    },
+    {
+      "published": "concepts/tr/Teammate.md",
+      "source": "packages/content/concepts/tr/Teammate.md",
+      "sha256": "28402815ade39ff4f00965f17074c16c2fd054809f588bc6e0d2ef64c8b10c42"
+    },
+    {
+      "published": "concepts/tr/UltraPlan.md",
+      "source": "packages/content/concepts/tr/UltraPlan.md",
+      "sha256": "aca1f90bbd326c504de4d7af5e21a02632e829a9c5e88313e5c3d507c5a20c9a"
+    },
+    {
+      "published": "concepts/tr/ResponseFields.md",
+      "source": "packages/content/concepts/tr/ResponseFields.md",
+      "sha256": "51ca923e38e45240ae2248b847fb7fe5f6be65be02393d9fda1e03ce61bdc8e5"
+    },
+    {
+      "published": "concepts/tr/CustomUltraplanExpert.md",
+      "source": "packages/content/concepts/tr/CustomUltraplanExpert.md",
+      "sha256": "cd08b5d27e2b8eece255f6445962b4e3f4cfffe6bb87b953c67f80e2e70672a2"
+    },
+    {
+      "published": "concepts/tr/QRCode.md",
+      "source": "packages/content/concepts/tr/QRCode.md",
+      "sha256": "2b4a00f794b771367faf803d0111c2f2949711fb71090bf2f91804f7b62e2778"
+    },
+    {
+      "published": "concepts/tr/BodyDiffJSON.md",
+      "source": "packages/content/concepts/tr/BodyDiffJSON.md",
+      "sha256": "a9232f2aba9bb4547719d28a189cc7977d4d1925aa2897427c184319335d741e"
+    },
+    {
+      "published": "concepts/tr/BodyFields.md",
+      "source": "packages/content/concepts/tr/BodyFields.md",
+      "sha256": "b06326898619b380fa6c18ca970bf863f96a878b4d254318cd0f3cd977f4005f"
+    },
+    {
+      "published": "ultraAgents/test-analysis-expert.json",
+      "source": "packages/content/ultraAgents/test-analysis-expert.json",
+      "sha256": "412e1218c495dfcec01be5addc5f1cab65b6f7d9f07c32682de677fd6c07391f"
+    },
+    {
+      "published": "ultraAgents/code-expert.json",
+      "source": "packages/content/ultraAgents/code-expert.json",
+      "sha256": "f0ac18b6ea1e930a09f560d6524e92e876220bb8975e9f529200f3323fd0547e"
+    },
+    {
+      "published": "ultraAgents/README.md",
+      "source": "packages/content/ultraAgents/README.md",
+      "sha256": "296b556b154c27f833a6ab61b699eff11647b6871af5a50db7c52f7e302c7596"
+    },
+    {
+      "published": "ultraAgents/research-expert.json",
+      "source": "packages/content/ultraAgents/research-expert.json",
+      "sha256": "150dc4b42fa877280b8ef1d6f2a23ec010d95ecf3ff10c9825564d1f8631ba4a"
+    },
+    {
+      "published": "ultraAgents/manifest.json",
+      "source": "packages/content/ultraAgents/manifest.json",
+      "sha256": "cc6d070bb64e6441edc8c8f25dec61d1973f5c618570ffa41b1285107eb1cb8a"
+    },
+    {
+      "published": "imSkills/pl/manage-cxv-projects/SKILL.md",
+      "source": "packages/content/imSkills/pl/manage-cxv-projects/SKILL.md",
+      "sha256": "803d75ff58a3030a5c4aa9b2c121143ae899fd75f2eacccc7a98d6c8c0e8a799"
+    },
+    {
+      "published": "imSkills/da/manage-cxv-projects/SKILL.md",
+      "source": "packages/content/imSkills/da/manage-cxv-projects/SKILL.md",
+      "sha256": "fd880469c71b65d378a27cf6c12171cdac2410e6e521a55b1f96aeeccfac99a3"
+    },
+    {
+      "published": "imSkills/no/manage-cxv-projects/SKILL.md",
+      "source": "packages/content/imSkills/no/manage-cxv-projects/SKILL.md",
+      "sha256": "6c429b5d3c8c9e12f8387426b160c37d9a5e427154525758554f2a92f60742ea"
+    },
+    {
+      "published": "imSkills/ja/manage-cxv-projects/SKILL.md",
+      "source": "packages/content/imSkills/ja/manage-cxv-projects/SKILL.md",
+      "sha256": "ebd78d44da63fa94f2c707aed2524a873e9c9c5f0aa2cee75fd025aac09acb02"
+    },
+    {
+      "published": "imSkills/it/manage-cxv-projects/SKILL.md",
+      "source": "packages/content/imSkills/it/manage-cxv-projects/SKILL.md",
+      "sha256": "267fc6c8368fe945c1c59405af24ff6f682f775727c623b0569f17fcb9d310f3"
+    },
+    {
+      "published": "imSkills/ru/manage-cxv-projects/SKILL.md",
+      "source": "packages/content/imSkills/ru/manage-cxv-projects/SKILL.md",
+      "sha256": "0fc4a2eb50b23ab036e9723b5eee4546ce86dba2d6e0b1f213ba617187101b14"
+    },
+    {
+      "published": "imSkills/zh/manage-cxv-projects/SKILL.md",
+      "source": "packages/content/imSkills/zh/manage-cxv-projects/SKILL.md",
+      "sha256": "f9c0f8ce721fb9e4d99bc9c28919580614f89cd77ef23ea047757914c62a7746"
+    },
+    {
+      "published": "imSkills/uk/manage-cxv-projects/SKILL.md",
+      "source": "packages/content/imSkills/uk/manage-cxv-projects/SKILL.md",
+      "sha256": "0371f4f4848ce8781a70206a66a62469e96dcd38cb107fd82ed450e1807b979d"
+    },
+    {
+      "published": "imSkills/zh-TW/manage-cxv-projects/SKILL.md",
+      "source": "packages/content/imSkills/zh-TW/manage-cxv-projects/SKILL.md",
+      "sha256": "894ae86b4633023f4c475e0a00f69997727bad704e7437865b23309b98fa4345"
+    },
+    {
+      "published": "imSkills/ar/manage-cxv-projects/SKILL.md",
+      "source": "packages/content/imSkills/ar/manage-cxv-projects/SKILL.md",
+      "sha256": "56f753aaeacf7f9927de3c0f829b8c04b83015571dec69e850ddd99e18a1b604"
+    },
+    {
+      "published": "imSkills/scripts/cxv-projects.mjs",
+      "source": "packages/content/imSkills/scripts/cxv-projects.mjs",
+      "sha256": "ed763fb92448ebe00671082a1eb883f3bbeb701e254c99261cfcf0059a2cfe96"
+    },
+    {
+      "published": "imSkills/pt-BR/manage-cxv-projects/SKILL.md",
+      "source": "packages/content/imSkills/pt-BR/manage-cxv-projects/SKILL.md",
+      "sha256": "38eee56e9db0fb15df8616e1833c64a68f6ff396e7e19305f8b5c6fb7906d75e"
+    },
+    {
+      "published": "imSkills/de/manage-cxv-projects/SKILL.md",
+      "source": "packages/content/imSkills/de/manage-cxv-projects/SKILL.md",
+      "sha256": "2e6305a39a4164008e72ed7f836164eab1b1bc2bfce71eeb9e6c6060ee0bc007"
+    },
+    {
+      "published": "imSkills/ko/manage-cxv-projects/SKILL.md",
+      "source": "packages/content/imSkills/ko/manage-cxv-projects/SKILL.md",
+      "sha256": "af4af44b53da5e3201840c4dd709384a95e72b36269c83a33e134e4e5b9714e0"
+    },
+    {
+      "published": "imSkills/fr/manage-cxv-projects/SKILL.md",
+      "source": "packages/content/imSkills/fr/manage-cxv-projects/SKILL.md",
+      "sha256": "3b86d4a2a802ebf6b5280184ddfa63648441e72d7bc7292675f1032ffe41cf83"
+    },
+    {
+      "published": "imSkills/es/manage-cxv-projects/SKILL.md",
+      "source": "packages/content/imSkills/es/manage-cxv-projects/SKILL.md",
+      "sha256": "45f026029a667bb4997ef9c0de9c49d3129d049f57b65e6538c47cf28d8c00d7"
+    },
+    {
+      "published": "imSkills/en/manage-cxv-projects/SKILL.md",
+      "source": "packages/content/imSkills/en/manage-cxv-projects/SKILL.md",
+      "sha256": "a01d7e1dc4772db6d8f8b8773be5b58adbfabfb5eac5bc5d879778fde1261159"
+    },
+    {
+      "published": "imSkills/th/manage-cxv-projects/SKILL.md",
+      "source": "packages/content/imSkills/th/manage-cxv-projects/SKILL.md",
+      "sha256": "bba7e3ba5b572095c8cf0a3076d19e9f7fc7a84e3d9c062ca36ccea1db450769"
+    },
+    {
+      "published": "imSkills/tr/manage-cxv-projects/SKILL.md",
+      "source": "packages/content/imSkills/tr/manage-cxv-projects/SKILL.md",
+      "sha256": "ca7fb548a34f53d718321bbcb290cd35566271ccd9c25a7527428b81a0879f4d"
+    }
+  ],
+  "allSourceAndExistingAssembledBytesEqual": true,
+  "validation": {
+    "unchangedContentFiles": 310,
+    "assembledBytesIdentical": true,
+    "addedPublishedPaths": [
+      "server/_paths.js",
+      "server/raw-sidecar-worker.js"
+    ],
+    "removedPublishedPaths": [],
+    "stablePublishedPaths": 581
+  }
+}

@@ -1,8 +1,8 @@
-import { resolve, join } from 'node:path';
+import { resolve, join, win32, posix, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { existsSync, realpathSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
-import { execSync } from 'node:child_process';
+import { execSync, execFileSync } from 'node:child_process';
 import { threadId } from 'node:worker_threads';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -90,11 +90,75 @@ export function parseNpmRootOutput(raw) {
 }
 
 export function getGlobalNodeModulesDir() {
+  const { cmd, args, windowsVerbatimArguments } = buildNpmRootCommand();
   try {
-    return execSync('npm root -g', { encoding: 'utf-8' }).trim();
+    const out = execFileSync(cmd, args, {
+      encoding: 'utf-8',
+      windowsHide: true,
+      // npm on Windows (cmd.exe + Defender) is routinely slower than 2s; a
+      // premature timeout was itself a source of "claude not found".
+      timeout: 10000,
+      maxBuffer: 1024 * 1024,
+      stdio: ['ignore', 'pipe', 'ignore'],
+      windowsVerbatimArguments,
+    });
+    const dir = parseNpmRootOutput(out);
+    if (dir && existsSync(dir)) return dir;
+    return dir || inferGlobalNodeModulesDir();
   } catch {
-    return null;
+    // npm missing, not on PATH, or slower than the timeout — fall back to the
+    // well-known layouts so discovery still works without ever running npm.
+    return inferGlobalNodeModulesDir();
   }
+}
+
+// Ordered candidate list for the npm-free global-root fallback. Pure (no fs
+// access) and parameterized so tests can assert the win32 ordering off-Windows.
+export function globalNodeModulesCandidates(platform = process.platform, env = process.env, home = homedir()) {
+  // Use the target platform's separator even when tests run on another host.
+  const pj = platform === 'win32' ? win32.join : posix.join;
+  const candidates = [];
+  const prefix = env.NPM_CONFIG_PREFIX || env.npm_config_prefix;
+  if (prefix) {
+    // Windows installs land directly in <prefix>/node_modules; POSIX adds lib/.
+    candidates.push(pj(prefix, 'node_modules'), pj(prefix, 'lib', 'node_modules'));
+  }
+  if (platform === 'win32') {
+    // The default `npm i -g` target for the official Node installer.
+    if (env.APPDATA) candidates.push(pj(env.APPDATA, 'npm', 'node_modules'));
+    if (env.ProgramFiles) candidates.push(pj(env.ProgramFiles, 'nodejs', 'node_modules'));
+    if (env.LOCALAPPDATA) {
+      candidates.push(pj(env.LOCALAPPDATA, 'nvm', 'node_modules'));
+      candidates.push(pj(env.LOCALAPPDATA, 'Volta', 'tools', 'image', 'node_modules'));
+    }
+  } else {
+    candidates.push(
+      pj(home, '.npm-global', 'lib', 'node_modules'),
+      '/usr/local/lib/node_modules',
+      '/opt/homebrew/lib/node_modules',
+      pj(home, '.volta', 'tools', 'image', 'node_modules'),
+    );
+  }
+  // The dir holding cc-viewer itself IS a global node_modules when ccv was
+  // installed with `npm i -g` — a reliable last resort on any platform.
+  const packageParent = resolve(__dirname, '..');
+  if (basename(packageParent) === 'node_modules') candidates.push(packageParent);
+  return candidates.filter(Boolean);
+}
+
+// npm-free fallback for the global node_modules root. `npm root -g` can fail for
+// reasons that have nothing to do with whether Claude Code is installed (npm not
+// on a GUI process's PATH, a corporate shim that is slow to start, EINVAL as
+// above). These are the canonical global prefixes; the first one that exists wins.
+// L7: these are absolute machine paths that ignore PATH/HOME isolation exactly
+// like the raw NATIVE_CANDIDATES — blocked under test context, where `npm root -g`
+// (real or fixture) remains the only sanctioned seam.
+export function inferGlobalNodeModulesDir() {
+  if (process.env.NODE_TEST_CONTEXT || process.env.CXV_TEST === '1') return null;
+  for (const dir of globalNodeModulesCandidates()) {
+    if (existsSync(dir)) return dir;
+  }
+  return null;
 }
 
 export function resolveCliPath() {
@@ -176,6 +240,12 @@ export function resolveNpmCodexPath() {
   return null;
 }
 
+export function pickSpawnableLookupResult(rawOut, platform = process.platform) {
+  const lines = String(rawOut || '').split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+  if (platform === 'win32') return lines.find((l) => l.toLowerCase().endsWith('.exe')) || null;
+  return lines[0] || null;
+}
+
 export function resolveNativePath() {
   // 1. 尝试查找 native codex（继承当前 process.env PATH）
   // whence -p (zsh) / type -P (bash) 可绕过 shell function，直接返回二进制路径
@@ -183,16 +253,16 @@ export function resolveNativePath() {
   const nativeBypassCmds = [];
   if (nativeUserShell.includes('zsh')) nativeBypassCmds.push({ cmd: `whence -p ${BINARY_NAME}`, shell: nativeUserShell });
   if (existsSync('/bin/bash')) nativeBypassCmds.push({ cmd: `type -P ${BINARY_NAME}`, shell: '/bin/bash' });
-  const nativeFallbackCmds = [`which ${BINARY_NAME}`, `command -v ${BINARY_NAME}`].map(c => ({ cmd: c, shell: true }));
-  for (const { cmd, shell } of [...nativeBypassCmds, ...nativeFallbackCmds]) {
+  const nativeFallbackCmds = (process.platform === 'win32' ? [`where ${BINARY_NAME}`] : [`which ${BINARY_NAME}`, `command -v ${BINARY_NAME}`]).map(c => ({ cmd: c, shell: true }));
+  for (const { cmd, shell } of (process.platform === 'win32' ? nativeFallbackCmds : [...nativeBypassCmds, ...nativeFallbackCmds])) {
     try {
-      const result = execSync(cmd, { encoding: 'utf-8', shell, env: process.env }).trim();
-      // 排除 shell function 的输出（多行说明不是路径）
+      const raw = execSync(cmd, { encoding: 'utf-8', shell, env: process.env, windowsHide: true });
+      const result = process.platform === 'win32' ? pickSpawnableLookupResult(raw) : raw.trim();
       if (result && !result.includes('\n') && existsSync(result)) {
-        // 排除 npm 安装的符号链接（解析后指向 node_modules）
+        // JavaScript launchers need Node; native binaries can live in node_modules.
         try {
           const real = realpathSync(result);
-          if (real.includes('node_modules')) continue;
+          if (real.includes('node_modules') && /\.(?:js|cjs|mjs)$/i.test(real)) continue;
         } catch { }
         return result;
       }
@@ -203,13 +273,15 @@ export function resolveNativePath() {
 
   // 2. 检查常见 native 安装路径
   const home = homedir();
-  const candidates = NATIVE_CANDIDATES.map(p =>
+  const nativeCandidates = process.env.NODE_TEST_CONTEXT || process.env.CXV_TEST === '1'
+    ? NATIVE_CANDIDATES.filter(p => p.startsWith('~/.codex/')) : NATIVE_CANDIDATES;
+  const candidates = nativeCandidates.map(p =>
     p.startsWith('~') ? join(home, p.slice(2)) : p
   );
   for (const p of candidates) {
-    if (existsSync(p)) {
-      return p;
-    }
+    if (process.platform === 'win32') {
+      if (existsSync(p + '.exe')) return p + '.exe';
+    } else if (existsSync(p)) return p;
   }
 
   return null;

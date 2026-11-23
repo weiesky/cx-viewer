@@ -8,7 +8,7 @@ import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import resourcesPkg from '@opentelemetry/resources';
 import semConvPkg from '@opentelemetry/semantic-conventions';
 import otelApi from '@opentelemetry/api';
-import { getResponseTools } from './openai-body.js';
+import { getResponseTools } from "@cxv/core/openai-body";
 
 const { Resource } = resourcesPkg;
 const { SEMRESATTRS_SERVICE_NAME, SEMRESATTRS_SERVICE_VERSION, SEMRESATTRS_SERVICE_INSTANCE_ID } = semConvPkg;

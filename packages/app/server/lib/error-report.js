@@ -16,7 +16,7 @@ import {
   reportSwallowed as coreReport,
   MAX_REPORTS_PER_TAG,
   _resetForTest,
-} from '../../src/utils/errorReport.js';
+} from "@cxv/core/errorReport";
 
 export function reportSwallowed(tag, err, extra) {
   if (!process.env.CXV_DEBUG) return;

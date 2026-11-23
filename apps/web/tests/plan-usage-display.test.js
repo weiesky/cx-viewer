@@ -32,10 +32,10 @@ test('snapshot returns a stable null sentinel when a new source has no usage hea
   });
 });
 
-test('local logs show recorded usage but never show the live OAuth waiting placeholder', () => {
-  assert.equal(shouldDisplayPlanUsage({ planUsage: { windows: [] }, isLocalLog: true, authType: 'OAuth' }), true);
+test('only live recorded usage displays a footer pill', () => {
+  assert.equal(shouldDisplayPlanUsage({ planUsage: { windows: [] }, isLocalLog: true, authType: 'OAuth' }), false);
   assert.equal(shouldDisplayPlanUsage({ planUsage: null, isLocalLog: true, authType: 'OAuth' }), false);
-  assert.equal(shouldDisplayPlanUsage({ planUsage: null, isLocalLog: false, authType: 'OAuth' }), true);
+  assert.equal(shouldDisplayPlanUsage({ planUsage: null, isLocalLog: false, authType: 'OAuth' }), false);
   assert.equal(shouldDisplayPlanUsage({ planUsage: null, isLocalLog: false, authType: 'ApiKey' }), false);
 });
 

@@ -34,7 +34,7 @@
  */
 
 import { reportSwallowed } from './error-report.js';
-import { buildBracketPasteSubmitChunks as bracketPasteSubmit, sanitizeBracketPasteText } from '../../src/utils/ptyChunkBuilder.js';
+import { buildBracketPasteSubmitChunks as bracketPasteSubmit, sanitizeBracketPasteText } from "@cxv/core/ptyChunkBuilder";
 
 // Native text keeps LF/TAB but cannot contain terminal control bytes or paste delimiters.
 const sanitizeInbound = text => sanitizeBracketPasteText(String(text)).replace(/[\x00-\x08\x0b-\x1f\x7f-\x9f]/g, '');

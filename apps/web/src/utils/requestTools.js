@@ -1,7 +1,7 @@
-import { isMainAgent } from '../../../../packages/app/src/utils/contentFilter.js';
-import { getMainAgentSessionKey } from '../../../../packages/app/src/utils/clearCheckpoint.js';
+import { isMainAgent } from "@cxv/core/contentFilter";
+import { getMainAgentSessionKey } from "@cxv/core/clearCheckpoint";
 import { formatToolAsXml } from './toolsXmlFormatter.js';
-import { getResponseToolDeclaration } from '../../../../packages/app/lib/openai-body.js';
+import { getResponseToolDeclaration } from "@cxv/core/openai-body";
 
 function getEntryToolDeclaration(request) {
   const direct = getResponseToolDeclaration(request?.body);

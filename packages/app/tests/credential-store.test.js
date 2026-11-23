@@ -183,13 +183,24 @@ test('an atomic store write failure preserves the old ciphertext and key and rel
 });
 
 test('reads tolerate an atomic store replacement but validate the opened file permissions and link count', { skip: process.platform === 'win32' }, () => {
-  for (const replacement of ['private', 'opened-snapshot', 'public-mode', 'hard-link']) {
+  for (const replacement of ['private', 'opened-snapshot', 'public-mode', 'hard-link', 'stat-replaced']) {
     const { root, store, cleanup } = fixture();
-    const open = fs.openSync;
+    const open = fs.openSync, lstat = fs.lstatSync;
     try {
       store.set('lan-password', 'global', 'fixture');
       const bytes = readFileSync(store.file);
       let swapped = false;
+      fs.lstatSync = (path, ...args) => {
+        const stat = lstat(path, ...args);
+        if (path === store.file && replacement === 'stat-replaced' && !swapped) {
+          swapped = true;
+          const temporary = join(root, 'replacement');
+          writeFileSync(temporary, bytes, { mode: 0o600 });
+          renameSync(temporary, store.file);
+          stat.nlink = 0;
+        }
+        return stat;
+      };
       fs.openSync = (path, ...args) => {
         if (path === store.file && !swapped) {
           swapped = true;
@@ -203,9 +214,39 @@ test('reads tolerate an atomic store replacement but validate the opened file pe
         return open(path, ...args);
       };
       syncBuiltinESMExports();
-      if (replacement === 'private' || replacement === 'opened-snapshot') assert.equal(store.get('lan-password', 'global'), 'fixture');
+      if (replacement === 'private' || replacement === 'opened-snapshot' || replacement === 'stat-replaced') assert.equal(store.get('lan-password', 'global'), 'fixture');
       else assert.throws(() => store.get('lan-password', 'global'), { code: 'CREDENTIALS_UNREADABLE' });
       assert.equal(swapped, true);
-    } finally { fs.openSync = open; syncBuiltinESMExports(); cleanup(); }
+    } finally { fs.openSync = open; fs.lstatSync = lstat; syncBuiltinESMExports(); cleanup(); }
   }
+});
+
+test('a released zero-link lock is absent while a zero-link key remains unreadable', () => {
+  const { store, cleanup } = fixture();
+  const original = fs.lstatSync;
+  const lock = join(store.root, 'credentials.lock');
+  const removeDuringStat = (target, operation) => {
+    let removed = false;
+    fs.lstatSync = (path, ...args) => {
+      const stat = original(path, ...args);
+      if (path === target && stat && !removed) {
+        removed = true; rmSync(target); stat.nlink = 0;
+      }
+      return stat;
+    };
+    syncBuiltinESMExports();
+    try { operation(); assert.equal(removed, true); }
+    finally { fs.lstatSync = original; syncBuiltinESMExports(); }
+  };
+  try {
+    store.set('im-secret', 'fixture', 'before');
+    const key = readFileSync(store.keyPath);
+    writeFileSync(lock, JSON.stringify({ pid: process.pid }), { mode: 0o600 });
+    removeDuringStat(lock, () => store.set('im-secret', 'fixture', 'after'));
+    assert.equal(store.get('im-secret', 'fixture'), 'after');
+    assert.deepEqual(readFileSync(store.keyPath), key);
+    const ciphertext = readFileSync(store.file);
+    removeDuringStat(store.keyPath, () => assert.throws(() => store.get('im-secret', 'fixture'), { code: 'CREDENTIALS_UNREADABLE' }));
+    assert.deepEqual(readFileSync(store.file), ciphertext);
+  } finally { cleanup(); }
 });

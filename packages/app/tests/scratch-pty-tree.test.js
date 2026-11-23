@@ -4,6 +4,7 @@ import { mkdtempSync, writeFileSync, readFileSync, existsSync, rmSync } from 'no
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createProcessAdapter, killVerifiedTree } from '../lib/cxv-processes.js';
+import { waitForProcessExit } from './helpers/process-exit.js';
 const scratch = await import(process.env.B7_SCRATCH_MODULE || '../scratch-pty-manager.js');
 const nativePty = await import('node-pty');
 const adapter = createProcessAdapter();
@@ -39,9 +40,9 @@ child.once('message',()=>{writeFileSync(${JSON.stringify(file)},JSON.stringify({
   assert.equal(pids.bypass, null, 'actual shell must not inherit parent bypass');
   if (natural) { await until(() => a.exited); await a.kill(); }
   else await scratch.shutdownScratchPtys('a');
-  for (const pid of [a.proc.pid, pids.parent, pids.child]) assert.throws(() => process.kill(pid, 0), { code: 'ESRCH' });
+  for (const pid of [a.proc.pid, pids.parent, pids.child]) await waitForProcessExit(pid);
   assert.equal(b.exited, false); assert.ok(await adapter.inspect(b.proc.pid));
   const marker = `B7_SCRATCH_SURVIVOR_${natural ? 'N' : 'C'}`;
   b.write(`printf '${marker}\\n'\r`); await until(() => b.replay.includes(marker));
-  await scratch.shutdownScratchPtys('b'); assert.throws(() => process.kill(b.proc.pid, 0), { code: 'ESRCH' });
+  await scratch.shutdownScratchPtys('b'); await waitForProcessExit(b.proc.pid);
 });

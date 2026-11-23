@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { setLogDir } from '../findcx.js';
 import {
@@ -37,6 +38,7 @@ test('spawn uses detached worker cwd and supports injected fake spawn', () => {
     },
   });
   assert.equal(result.pid, 5151);
+  assert.equal(call.args[0], fileURLToPath(new URL('../cli.js', import.meta.url)));
   assert.deepEqual(call.args.slice(-3), ['--im', 'dingtalk', '--no-open']);
   assert.equal(call.options.detached, true);
   assert.equal(call.options.cwd, join(root, 'IM_dingtalk'));

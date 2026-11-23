@@ -4,12 +4,12 @@
  * `custom_tool_call`, `*_output`), while the historical renderer consumes
  * role messages containing text/thinking/tool_use/tool_result blocks.
  */
-import { getEntryUserId, getMainAgentSessionKey } from '../../../../packages/app/src/utils/clearCheckpoint.js';
+import { getEntryUserId, getMainAgentSessionKey } from "@cxv/core/clearCheckpoint";
 import { messageFingerprint } from './sessionMerge.js';
-import { normalizeCodexUserText } from '../../../../packages/app/src/utils/userPromptContent.js';
+import { normalizeCodexUserText } from "@cxv/core/userPromptContent";
 import { extractDirectContextCompaction, extractEntryContextCompaction } from './contextCompaction.js';
-import { hasOpenAiResponsesConversationTransport } from '../../../../packages/app/lib/openai-responses-url.js';
-import { isNativeTitleEntry } from '../../../../packages/app/lib/codex-thread-source.js';
+import { hasOpenAiResponsesConversationTransport } from "@cxv/core/openai-responses-url";
+import { isNativeTitleEntry } from "@cxv/core/codex-thread-source";
 
 const CODEX_RESPONSE_ITEM_TYPES = new Set([
   'compaction',

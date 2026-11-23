@@ -1,13 +1,13 @@
 import { closeSync, existsSync, openSync, readFileSync, readSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { applyWireCommit, checkpointWireArchiveState, createWireArchiveState, restoreWireArchiveState } from './reducer.js';
+import { applyWireCommit, checkpointWireArchiveState, createWireArchiveState, restoreWireArchiveState } from "@cxv/core/log-v2/reducer";
 import { partForSequence, readShardBaseline, readShardLayout, timelinePartDir, timelinePartPath } from './shards.js';
-import { validateRequestSummary } from './request-summary.js';
+import { validateRequestSummary } from "@cxv/core/log-v2/request-summary";
 import { validateSessionManifest, validateTimelineRecord } from './schema.js';
 import { readContentObjectSync, readJsonReferenceSync, scanJsonlRangeSync, scanJsonlSync, sha256, stableJsonStringify } from './storage.js';
 import { resolveV2SessionFile } from './materializer.js';
-import { buildRequestSummary } from './request-summary.js';
+import { buildRequestSummary } from "@cxv/core/log-v2/request-summary";
 import { threadStoreToken } from './identity.js';
 import {
   createWireCursor,
@@ -17,7 +17,7 @@ import {
   sameWireArchive,
   validateWireCheckpoint,
   wireObjectRef,
-} from './wire-schema.js';
+} from "@cxv/core/log-v2/wire-schema";
 
 const THREAD_TOKEN_PATTERN = /^t_[a-f0-9]{64}$/;
 const MAX_SUMMARY_INDEXES = 16;

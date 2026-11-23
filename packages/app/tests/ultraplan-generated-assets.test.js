@@ -4,6 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import { CONCEPTS_DIR } from '../server/_paths.js';
 import { ULTRAPLAN_VARIANTS } from '../src/utils/ultraplanTemplates.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -28,8 +29,8 @@ describe('generated UltraPlan assets', () => {
 
   for (const locale of LOCALES) {
     it(`${locale} docs exist and raw templates match executable prompts`, () => {
-      const ultraPath = join(ROOT, 'concepts', locale, 'UltraPlan.md');
-      const customPath = join(ROOT, 'concepts', locale, 'CustomUltraplanExpert.md');
+      const ultraPath = join(CONCEPTS_DIR, locale, 'UltraPlan.md');
+      const customPath = join(CONCEPTS_DIR, locale, 'CustomUltraplanExpert.md');
       assert.equal(existsSync(customPath), true);
       assert.ok(readFileSync(customPath, 'utf8').trim().length > 500);
       const md = readFileSync(ultraPath, 'utf8');

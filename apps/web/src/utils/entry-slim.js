@@ -24,9 +24,9 @@
 // internToolResultIfPooled 的命中信号是 lazy-clone 决策的关键：JS string === 是值比较，
 // 普通 internToolResult 返回的 ref 无法用于 ref-不变性判断。
 import { internToolResultIfPooled } from './readResultPool.js';
-import { classifySessionTransition, conversationIdsConflict, getEntryUserId, getMainAgentConversationId, isCompactContinuation, getMainAgentSessionKey, isPostClearCheckpoint } from '../../../../packages/app/src/utils/clearCheckpoint.js';
+import { classifySessionTransition, conversationIdsConflict, getEntryUserId, getMainAgentConversationId, isCompactContinuation, getMainAgentSessionKey, isPostClearCheckpoint } from "@cxv/core/clearCheckpoint";
 import { extractDirectContextCompactionRecord, extractDirectContextCompactionRecordFromHistory } from './contextCompaction.js';
-import { getResponseToolDeclaration } from '../../../../packages/app/lib/openai-body.js';
+import { getResponseToolDeclaration } from "@cxv/core/openai-body";
 
 const MAX_INTERN_POOL_BYTES = 16 * 1024 * 1024;
 const MAX_INTERN_VALUE_BYTES = 2 * 1024 * 1024;

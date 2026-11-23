@@ -1,0 +1,21 @@
+{
+  "fixture": {
+    "pid": 4663,
+    "port": 21140,
+    "root": "/tmp/cxv-b11-ui-rx6cz7"
+  },
+  "results": [
+    {
+      "engine": "chromium",
+      "diskAppendToDrawer": true,
+      "snapshots": 3,
+      "unexpectedPageErrors": []
+    },
+    {
+      "engine": "webkit",
+      "diskAppendToDrawer": true,
+      "snapshots": 3,
+      "unexpectedPageErrors": []
+    }
+  ]
+}

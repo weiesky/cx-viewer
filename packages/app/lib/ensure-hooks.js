@@ -42,7 +42,7 @@ export function ensureHooks() {
 
     // Permission approval hook → perm-bridge.js (matcher: ".*" = match all permission requests)
     // Guard: only execute when CXVIEWER_PORT is set (i.e. launched by cx-viewer)
-    const permBridgePath = resolve(rootDir, 'lib', 'perm-bridge.js');
+    const permBridgePath = resolve(rootDir, 'lib', 'ask', 'perm-bridge.js');
     const permCmd = `[ -n "$CXVIEWER_PORT" ] && node "${permBridgePath}" || true`;
     const permMatcher = '.*';
     // Clean up legacy PreToolUse entries written by older CX-Viewer versions.

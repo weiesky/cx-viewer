@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { HOOK_TIMEOUT_MS } from './constants.js';
 import { describeServerRequest } from './codex-server-request.js';
-import { codexRequestUserInputItemId, isCodexRequestUserInputMessage, normalizeCodexRequestUserInputAnswers, pickCodexAutoAnswers } from './codex-request-user-input.js';
-import { computeAskAutoAnswer, createAskAutoAnswerState, cancelAskAutoAnswerState, replayAskAutoAnswerFields } from './ask-auto-answer.js';
+import { codexRequestUserInputItemId, isCodexRequestUserInputMessage, normalizeCodexRequestUserInputAnswers, pickCodexAutoAnswers } from "./ask/codex-request-user-input.js";
+import { computeAskAutoAnswer, createAskAutoAnswerState, cancelAskAutoAnswerState, replayAskAutoAnswerFields } from "./ask/ask-auto-answer.js";
 
 const COMMAND = 'item/commandExecution/requestApproval';
 const FILE = 'item/fileChange/requestApproval';

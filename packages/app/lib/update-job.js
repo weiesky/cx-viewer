@@ -12,7 +12,7 @@ import { checkAndUpdate, detectHomebrewInstall, detectPnpmGlobalInstall, STABLE_
 import { hasOtherNormalInstance } from './update-instances.js';
 import { reportSwallowed } from '../server/lib/error-report.js';
 import { withFileLockAsync } from './async-file-lock.js';
-import { isProcessAlive as isPidAlive } from './dingtalk-im-lock.js';
+import { isProcessAlive as isPidAlive } from "./im/dingtalk-im-lock.js";
 
 const DOWNLOAD_TIMEOUT_MS = 10 * 60 * 1000;
 const INSTALL_TIMEOUT_MS = 15 * 60 * 1000;

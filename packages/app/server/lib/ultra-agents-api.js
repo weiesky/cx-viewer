@@ -1,9 +1,8 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join, resolve } from 'node:path';
 
-const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
-export const ULTRA_AGENTS_DIR = resolve(MODULE_DIR, '..', '..', 'ultraAgents');
+import { ULTRA_AGENTS_DIR } from '../_paths.js';
+export { ULTRA_AGENTS_DIR };
 export const MAX_ULTRA_AGENT_BYTES = 256 * 1024;
 export const MAX_ULTRA_AGENTS = 100;
 

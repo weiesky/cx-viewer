@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, realpathSync, rmSync, statSync } from 'node:
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { CODEX_REQUEST_USER_INPUT_METHODS } from './codex-request-user-input.js';
+import { CODEX_REQUEST_USER_INPUT_METHODS } from "./ask/codex-request-user-input.js";
 
 const cache = new Map();
 const promptCache = new Map();

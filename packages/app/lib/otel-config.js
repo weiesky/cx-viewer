@@ -1,4 +1,4 @@
-import { insertBeforeDashDash } from './cli-args.js';
+import { insertBeforeDashDash } from "@cxv/core/cli-args";
 
 export const LEGACY_OTEL_MARKER = '# >>> CX-Viewer OTel >>>';
 export const LEGACY_OTEL_MARKER_END = '# <<< CX-Viewer OTel <<<';

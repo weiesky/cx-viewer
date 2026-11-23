@@ -6,7 +6,7 @@
  * mode on the same data contract instead of adding a second frontend protocol.
  */
 
-import { parseSupportedToolResultImage } from './tool-result-image-protocol.js';
+import { parseSupportedToolResultImage } from "@cxv/core/tool-result-image-protocol";
 
 export const DEFAULT_CODEX_TOOLS = [
   { name: 'shell_command' },

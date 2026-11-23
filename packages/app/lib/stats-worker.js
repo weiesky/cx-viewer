@@ -4,7 +4,7 @@ import { parentPort } from 'node:worker_threads';
 
 import { listV2LocalLogs, readV2LogEntries } from './log-v2/materializer.js';
 import { atomicWriteJsonSync } from './log-v2/storage.js';
-import { getInputCacheUsage } from './token-usage.js';
+import { getInputCacheUsage } from "@cxv/core/token-usage";
 
 function cachePath(logDir, project) {
   return join(logDir, 'v2-stats', `${encodeURIComponent(project)}.json`);

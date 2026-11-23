@@ -4,7 +4,7 @@
 
 import { open, stat, unlink, readFile } from 'node:fs/promises';
 import { mkdirSync } from 'node:fs';
-import { isProcessAlive as isPidAlive } from './dingtalk-im-lock.js';
+import { isProcessAlive as isPidAlive } from "./im/dingtalk-im-lock.js";
 
 // 同进程内的 Promise 互斥锁（按 lockPath 分组）
 const _inProcessLocks = new Map();

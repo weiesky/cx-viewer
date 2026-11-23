@@ -21,7 +21,7 @@ try {
   if (!root) throw new Error('--root is required; no default configuration is selected');
   if (apply !== stopped) throw new Error('--apply and --confirm-stopped must be provided together');
   process.env.CXV_LOG_DIR = resolve(root);
-  const { inspectDingTalkCredentialMigration, migrateDingTalkCredentials } = await import('../lib/dingtalk-im-config.js');
+  const { inspectDingTalkCredentialMigration, migrateDingTalkCredentials } = await import("../lib/im/dingtalk-im-config.js");
   const result = apply ? migrateDingTalkCredentials({ confirmStopped: true }) : inspectDingTalkCredentialMigration();
   process.stdout.write(`${JSON.stringify({ mode: apply ? 'apply' : 'inspect', ...result })}\n`);
 } catch (error) {

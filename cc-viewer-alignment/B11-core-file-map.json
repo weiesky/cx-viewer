@@ -1,0 +1,1521 @@
+{
+  "sourceCommit": "ffb4e6b",
+  "files": [
+    {
+      "old": "packages/app/lib/approval-reviewer.js",
+      "source": "packages/core/src/approval-reviewer.js",
+      "beforeSha256": "9e640d8147c15777d3752a96cc501c89721579f57c70b8e73f10344269a012b7",
+      "coreSha256": "9e640d8147c15777d3752a96cc501c89721579f57c70b8e73f10344269a012b7",
+      "importSpecifierEdits": []
+    },
+    {
+      "old": "packages/app/lib/cli-args.js",
+      "source": "packages/core/src/cli-args.js",
+      "beforeSha256": "f987390a6138847acfc51cd9cd870968449e613c3937e38eb3e8e1d4ebe48fd2",
+      "coreSha256": "f987390a6138847acfc51cd9cd870968449e613c3937e38eb3e8e1d4ebe48fd2",
+      "importSpecifierEdits": []
+    },
+    {
+      "old": "packages/app/lib/codex-thread-source.js",
+      "source": "packages/core/src/codex-thread-source.js",
+      "beforeSha256": "57f708ce49bc183d93d2999fa1a49458a5061c0e8b9e694f4500ea887ebdb586",
+      "coreSha256": "57f708ce49bc183d93d2999fa1a49458a5061c0e8b9e694f4500ea887ebdb586",
+      "importSpecifierEdits": []
+    },
+    {
+      "old": "packages/app/lib/log-entry-order.js",
+      "source": "packages/core/src/log-entry-order.js",
+      "beforeSha256": "cb6bc27439fdcf9e238b47a2ab6dba6f0511f0609775152c3c3b54942331fc76",
+      "coreSha256": "cb6bc27439fdcf9e238b47a2ab6dba6f0511f0609775152c3c3b54942331fc76",
+      "importSpecifierEdits": []
+    },
+    {
+      "old": "packages/app/lib/log-v2/entry-codec.js",
+      "source": "packages/core/src/log-v2/entry-codec.js",
+      "beforeSha256": "504fa317772ad8030e5a431770a1976382b8e12a34813aa95eaeee73ea853aba",
+      "coreSha256": "504fa317772ad8030e5a431770a1976382b8e12a34813aa95eaeee73ea853aba",
+      "importSpecifierEdits": []
+    },
+    {
+      "old": "packages/app/lib/log-v2/reducer.js",
+      "source": "packages/core/src/log-v2/reducer.js",
+      "beforeSha256": "510589dfcb006abde3630c6d8f2db9b1de18ccbc1b1a01ba0bc79390eb79418e",
+      "coreSha256": "45b62a69697c4dfae704c0881b800dbd8718b6b18c66a823e67dc5709ff1226c",
+      "importSpecifierEdits": [
+        {
+          "start": 258,
+          "end": 276,
+          "before": "'./wire-schema.js'",
+          "after": "\"./wire-schema.js\""
+        },
+        {
+          "start": 57,
+          "end": 75,
+          "before": "'./entry-codec.js'",
+          "after": "\"./entry-codec.js\""
+        }
+      ]
+    },
+    {
+      "old": "packages/app/lib/log-v2/request-summary.js",
+      "source": "packages/core/src/log-v2/request-summary.js",
+      "beforeSha256": "69b60fa73ebd16f6913ef14d4595019d47c4c11072b54b224ffb6eb9693b23c5",
+      "coreSha256": "48c2b068b8b349a1169dbec3d1a32ddd5f6c6d4a346eb12ba5589f3571c632e9",
+      "importSpecifierEdits": [
+        {
+          "start": 32,
+          "end": 64,
+          "before": "'../../src/utils/requestType.js'",
+          "after": "\"../requestType.js\""
+        }
+      ]
+    },
+    {
+      "old": "packages/app/lib/log-v2/wire-schema.js",
+      "source": "packages/core/src/log-v2/wire-schema.js",
+      "beforeSha256": "97aea4506f4d60aac21b40d2ef06c4fb77e7b19605d3e8b9941937d320e079cf",
+      "coreSha256": "97aea4506f4d60aac21b40d2ef06c4fb77e7b19605d3e8b9941937d320e079cf",
+      "importSpecifierEdits": []
+    },
+    {
+      "old": "packages/app/lib/openai-body.js",
+      "source": "packages/core/src/openai-body.js",
+      "beforeSha256": "515e8df7ca952287d4277a67885d9958a2a09457a308b8fc0757518081f6fc89",
+      "coreSha256": "515e8df7ca952287d4277a67885d9958a2a09457a308b8fc0757518081f6fc89",
+      "importSpecifierEdits": []
+    },
+    {
+      "old": "packages/app/lib/openai-responses-url.js",
+      "source": "packages/core/src/openai-responses-url.js",
+      "beforeSha256": "d3dc6ca83e658fb17b9460920d4a6dc6d2f9c73dd64461b00ae7711ca8c8304f",
+      "coreSha256": "d3dc6ca83e658fb17b9460920d4a6dc6d2f9c73dd64461b00ae7711ca8c8304f",
+      "importSpecifierEdits": []
+    },
+    {
+      "old": "packages/app/lib/request-visibility.js",
+      "source": "packages/core/src/request-visibility.js",
+      "beforeSha256": "30a45c94241fbb3f93be7596f83bc48e828c9980467e00b05bc5ec60e0da02be",
+      "coreSha256": "c4e0bd186ef077c30f8587b351d52919d122974577f55e95508cc255ffda1c86",
+      "importSpecifierEdits": [
+        {
+          "start": 168,
+          "end": 199,
+          "before": "'../src/utils/modelIdentity.js'",
+          "after": "\"./modelIdentity.js\""
+        },
+        {
+          "start": 101,
+          "end": 128,
+          "before": "'./openai-responses-url.js'",
+          "after": "\"./openai-responses-url.js\""
+        },
+        {
+          "start": 29,
+          "end": 54,
+          "before": "'./log-v2/entry-codec.js'",
+          "after": "\"./log-v2/entry-codec.js\""
+        }
+      ]
+    },
+    {
+      "old": "packages/app/lib/token-usage.js",
+      "source": "packages/core/src/token-usage.js",
+      "beforeSha256": "9435981ce3b8986f112a7d2a650c8e0c679e42b31dd462e565beff20bedc3583",
+      "coreSha256": "9435981ce3b8986f112a7d2a650c8e0c679e42b31dd462e565beff20bedc3583",
+      "importSpecifierEdits": []
+    },
+    {
+      "old": "packages/app/lib/tool-result-image-protocol.js",
+      "source": "packages/core/src/tool-result-image-protocol.js",
+      "beforeSha256": "1923cee06862932ca03a9ab37019344b46b698f1af42c70926fc8a61382e8157",
+      "coreSha256": "1923cee06862932ca03a9ab37019344b46b698f1af42c70926fc8a61382e8157",
+      "importSpecifierEdits": []
+    },
+    {
+      "old": "packages/app/server/lib/approval-modal-prefs.js",
+      "source": "packages/core/src/approval-modal-prefs.js",
+      "beforeSha256": "ac6d1fcd341f697e4f081f0876b640b71af421b615e781b5349618b2555d30df",
+      "coreSha256": "d021de633408b1930ddd0b38ccac8aaa8811df6a5f297b0f307a6b2c1f588035",
+      "importSpecifierEdits": [
+        {
+          "start": 584,
+          "end": 608,
+          "before": "'./voice-pack-events.js'",
+          "after": "\"./voice-pack-events.js\""
+        }
+      ]
+    },
+    {
+      "old": "packages/app/server/lib/context-rules.js",
+      "source": "packages/core/src/context-rules.js",
+      "beforeSha256": "7e81146711d7675998be4397ebcf0dca3846b5653c4fbf3b036b9b342b547113",
+      "coreSha256": "7e81146711d7675998be4397ebcf0dca3846b5653c4fbf3b036b9b342b547113",
+      "importSpecifierEdits": []
+    },
+    {
+      "old": "packages/app/server/lib/delta-reconstructor.js",
+      "source": "packages/core/src/delta-reconstructor.js",
+      "beforeSha256": "e8c6cc39f933a74a1a5f8082ae72c9bc7a3ad19fdb72acb98ad6df208847d136",
+      "coreSha256": "e8c6cc39f933a74a1a5f8082ae72c9bc7a3ad19fdb72acb98ad6df208847d136",
+      "importSpecifierEdits": []
+    },
+    {
+      "old": "packages/app/server/lib/tools-xml-formatter.js",
+      "source": "packages/core/src/tools-xml-formatter.js",
+      "beforeSha256": "df3f7e28b82ec50a0eab55d3c6e0ccdd2d2eca00643234b99c82fad82b02e858",
+      "coreSha256": "df3f7e28b82ec50a0eab55d3c6e0ccdd2d2eca00643234b99c82fad82b02e858",
+      "importSpecifierEdits": []
+    },
+    {
+      "old": "packages/app/server/lib/voice-pack-events.js",
+      "source": "packages/core/src/voice-pack-events.js",
+      "beforeSha256": "40c73ab3008a57154782906b00e8e39175ca8309c908c53b34b4cf79cc3a73a2",
+      "coreSha256": "40c73ab3008a57154782906b00e8e39175ca8309c908c53b34b4cf79cc3a73a2",
+      "importSpecifierEdits": []
+    },
+    {
+      "old": "packages/app/src/utils/clearCheckpoint.js",
+      "source": "packages/core/src/clearCheckpoint.js",
+      "beforeSha256": "16ce5b027e71ae194c6a7421810983a3584cfa5681b95caa4e38edb18243aa65",
+      "coreSha256": "16ce5b027e71ae194c6a7421810983a3584cfa5681b95caa4e38edb18243aa65",
+      "importSpecifierEdits": []
+    },
+    {
+      "old": "packages/app/src/utils/contentFilter.js",
+      "source": "packages/core/src/contentFilter.js",
+      "beforeSha256": "fbb0177bcfe00eeda8f5af453fbc1abb2b7d3257ceb77a115899791f1611d9ad",
+      "coreSha256": "8282cbf15dc5d9bed0325c7c3917f079d9db713c2f84fc94b5347a039659e071",
+      "importSpecifierEdits": [
+        {
+          "start": 10443,
+          "end": 10465,
+          "before": "'./clearCheckpoint.js'",
+          "after": "\"./clearCheckpoint.js\""
+        },
+        {
+          "start": 1477,
+          "end": 1500,
+          "before": "'./teammateDetector.js'",
+          "after": "\"./teammateDetector.js\""
+        },
+        {
+          "start": 552,
+          "end": 577,
+          "before": "'./ultraplanTemplates.js'",
+          "after": "\"./ultraplanTemplates.js\""
+        },
+        {
+          "start": 491,
+          "end": 513,
+          "before": "'./clearCheckpoint.js'",
+          "after": "\"./clearCheckpoint.js\""
+        },
+        {
+          "start": 418,
+          "end": 452,
+          "before": "'../../lib/codex-thread-source.js'",
+          "after": "\"./codex-thread-source.js\""
+        },
+        {
+          "start": 346,
+          "end": 381,
+          "before": "'../../lib/openai-responses-url.js'",
+          "after": "\"./openai-responses-url.js\""
+        },
+        {
+          "start": 273,
+          "end": 299,
+          "before": "'../../lib/openai-body.js'",
+          "after": "\"./openai-body.js\""
+        }
+      ]
+    },
+    {
+      "old": "packages/app/src/utils/errorReport.js",
+      "source": "packages/core/src/errorReport.js",
+      "beforeSha256": "734fd43cb553c42df8029aea2a40ded27b59ff929c3985d5da9d2ee147c9fc72",
+      "coreSha256": "734fd43cb553c42df8029aea2a40ded27b59ff929c3985d5da9d2ee147c9fc72",
+      "importSpecifierEdits": []
+    },
+    {
+      "old": "packages/app/src/utils/modelIdentity.js",
+      "source": "packages/core/src/modelIdentity.js",
+      "beforeSha256": "dd8920649084788ca62d904ceb54f5308ff39e3aac3430dd4d8221c499f33ef6",
+      "coreSha256": "52f3c58bc50772c32ce9465a2d5e706c111d820075b6b8b623dc1d7c2122e4e4",
+      "importSpecifierEdits": [
+        {
+          "start": 67,
+          "end": 89,
+          "before": "'./clearCheckpoint.js'",
+          "after": "\"./clearCheckpoint.js\""
+        }
+      ]
+    },
+    {
+      "old": "packages/app/src/utils/ptyChunkBuilder.js",
+      "source": "packages/core/src/ptyChunkBuilder.js",
+      "beforeSha256": "41b59782d666fc28e02cda92553bda50fc4549a9de8d61248b3f7f9f452c1303",
+      "coreSha256": "41b59782d666fc28e02cda92553bda50fc4549a9de8d61248b3f7f9f452c1303",
+      "importSpecifierEdits": []
+    },
+    {
+      "old": "packages/app/src/utils/requestType.js",
+      "source": "packages/core/src/requestType.js",
+      "beforeSha256": "677dfd5ce0235e9311881d456eb766fd36a465156a941da79e799181311852c6",
+      "coreSha256": "1814f7559a9f7961303ad9bce42bd9fa3d741afc79a8966a4225dd786eed6445",
+      "importSpecifierEdits": [
+        {
+          "start": 1049,
+          "end": 1083,
+          "before": "'../../lib/codex-thread-source.js'",
+          "after": "\"./codex-thread-source.js\""
+        },
+        {
+          "start": 977,
+          "end": 1012,
+          "before": "'../../lib/openai-responses-url.js'",
+          "after": "\"./openai-responses-url.js\""
+        },
+        {
+          "start": 910,
+          "end": 930,
+          "before": "'./contentFilter.js'",
+          "after": "\"./contentFilter.js\""
+        },
+        {
+          "start": 759,
+          "end": 785,
+          "before": "'../../lib/openai-body.js'",
+          "after": "\"./openai-body.js\""
+        }
+      ]
+    },
+    {
+      "old": "packages/app/src/utils/teammateDetector.js",
+      "source": "packages/core/src/teammateDetector.js",
+      "beforeSha256": "8fd59734078b3d58eb4bbdd6bf6ce02fa84be86216d7d0e09686822e8d94ea59",
+      "coreSha256": "50e78b92976293d69455955d7892ef2738af2d7d69f0c57da1c45359ea06167b",
+      "importSpecifierEdits": [
+        {
+          "start": 511,
+          "end": 537,
+          "before": "'../../lib/openai-body.js'",
+          "after": "\"./openai-body.js\""
+        }
+      ]
+    },
+    {
+      "old": "packages/app/src/utils/ultraplanTemplates.js",
+      "source": "packages/core/src/ultraplanTemplates.js",
+      "beforeSha256": "e5f3f5045607425c9389365b0272422dc77d042961f09e9cc27e555ccb1cc2af",
+      "coreSha256": "e5f3f5045607425c9389365b0272422dc77d042961f09e9cc27e555ccb1cc2af",
+      "importSpecifierEdits": []
+    },
+    {
+      "old": "packages/app/src/utils/userImageRefs.js",
+      "source": "packages/core/src/userImageRefs.js",
+      "beforeSha256": "0319059cc99ab8b05fe262f762d59493e83b917e0528e9c589e5b9b5eec1bfe3",
+      "coreSha256": "0319059cc99ab8b05fe262f762d59493e83b917e0528e9c589e5b9b5eec1bfe3",
+      "importSpecifierEdits": []
+    },
+    {
+      "old": "packages/app/src/utils/userPromptContent.js",
+      "source": "packages/core/src/userPromptContent.js",
+      "beforeSha256": "890c7fdd6a9f900c3f7bbf91cc837e58154ee9fa74404347603c26f36ef3ac04",
+      "coreSha256": "d2768633be90fd3cf975b710265567b4283fe27f695dd0ae8acff7c10324ea46",
+      "importSpecifierEdits": [
+        {
+          "start": 84,
+          "end": 104,
+          "before": "'./contentFilter.js'",
+          "after": "\"./contentFilter.js\""
+        },
+        {
+          "start": 27,
+          "end": 47,
+          "before": "'./userImageRefs.js'",
+          "after": "\"./userImageRefs.js\""
+        }
+      ]
+    }
+  ],
+  "callers": [
+    {
+      "file": "packages/app/cli.js",
+      "importSpecifierEdits": [
+        {
+          "start": 940,
+          "end": 968,
+          "before": "'./lib/approval-reviewer.js'",
+          "after": "\"@cxv/core/approval-reviewer\""
+        },
+        {
+          "start": 823,
+          "end": 842,
+          "before": "'./lib/cli-args.js'",
+          "after": "\"@cxv/core/cli-args\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/appserver-bridge.js",
+      "importSpecifierEdits": [
+        {
+          "start": 1259,
+          "end": 1292,
+          "before": "'./tool-result-image-protocol.js'",
+          "after": "\"@cxv/core/tool-result-image-protocol\""
+        },
+        {
+          "start": 1187,
+          "end": 1211,
+          "before": "'./approval-reviewer.js'",
+          "after": "\"@cxv/core/approval-reviewer\""
+        },
+        {
+          "start": 1086,
+          "end": 1112,
+          "before": "'./codex-thread-source.js'",
+          "after": "\"@cxv/core/codex-thread-source\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/context-watcher.js",
+      "importSpecifierEdits": [
+        {
+          "start": 150,
+          "end": 182,
+          "before": "'../server/lib/context-rules.js'",
+          "after": "\"@cxv/core/context-rules\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/dingtalk-im-bridge.js",
+      "importSpecifierEdits": [
+        {
+          "start": 268,
+          "end": 301,
+          "before": "'../src/utils/ptyChunkBuilder.js'",
+          "after": "\"@cxv/core/ptyChunkBuilder\""
+        },
+        {
+          "start": 165,
+          "end": 183,
+          "before": "'./openai-body.js'",
+          "after": "\"@cxv/core/openai-body\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/interceptor-core.js",
+      "importSpecifierEdits": [
+        {
+          "start": 923,
+          "end": 941,
+          "before": "'./openai-body.js'",
+          "after": "\"@cxv/core/openai-body\""
+        },
+        {
+          "start": 799,
+          "end": 826,
+          "before": "'./openai-responses-url.js'",
+          "after": "\"@cxv/core/openai-responses-url\""
+        },
+        {
+          "start": 736,
+          "end": 754,
+          "before": "'./openai-body.js'",
+          "after": "\"@cxv/core/openai-body\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/log-v2/benchmark.js",
+      "importSpecifierEdits": [
+        {
+          "start": 645,
+          "end": 663,
+          "before": "'./wire-schema.js'",
+          "after": "\"@cxv/core/log-v2/wire-schema\""
+        },
+        {
+          "start": 574,
+          "end": 588,
+          "before": "'./reducer.js'",
+          "after": "\"@cxv/core/log-v2/reducer\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/log-v2/identity.js",
+      "importSpecifierEdits": [
+        {
+          "start": 148,
+          "end": 175,
+          "before": "'../codex-thread-source.js'",
+          "after": "\"@cxv/core/codex-thread-source\""
+        },
+        {
+          "start": 79,
+          "end": 107,
+          "before": "'../openai-responses-url.js'",
+          "after": "\"@cxv/core/openai-responses-url\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/log-v2/materializer.js",
+      "importSpecifierEdits": [
+        {
+          "start": 435,
+          "end": 458,
+          "before": "'../log-entry-order.js'",
+          "after": "\"@cxv/core/log-entry-order\""
+        },
+        {
+          "start": 381,
+          "end": 399,
+          "before": "'./entry-codec.js'",
+          "after": "\"@cxv/core/log-v2/entry-codec\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/log-v2/reader-worker.js",
+      "importSpecifierEdits": [
+        {
+          "start": 472,
+          "end": 486,
+          "before": "'./reducer.js'",
+          "after": "\"@cxv/core/log-v2/reducer\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/log-v2/session-summary.js",
+      "importSpecifierEdits": [
+        {
+          "start": 444,
+          "end": 462,
+          "before": "'./entry-codec.js'",
+          "after": "\"@cxv/core/log-v2/entry-codec\""
+        },
+        {
+          "start": 372,
+          "end": 410,
+          "before": "'../../src/utils/userPromptContent.js'",
+          "after": "\"@cxv/core/userPromptContent\""
+        },
+        {
+          "start": 226,
+          "end": 253,
+          "before": "'../codex-thread-source.js'",
+          "after": "\"@cxv/core/codex-thread-source\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/log-v2/shards.js",
+      "importSpecifierEdits": [
+        {
+          "start": 611,
+          "end": 625,
+          "before": "'./reducer.js'",
+          "after": "\"@cxv/core/log-v2/reducer\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/log-v2/timeline-watcher.js",
+      "importSpecifierEdits": [
+        {
+          "start": 166,
+          "end": 180,
+          "before": "'./reducer.js'",
+          "after": "\"@cxv/core/log-v2/reducer\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/log-v2/transport.js",
+      "importSpecifierEdits": [
+        {
+          "start": 986,
+          "end": 1004,
+          "before": "'./wire-schema.js'",
+          "after": "\"@cxv/core/log-v2/wire-schema\""
+        },
+        {
+          "start": 748,
+          "end": 770,
+          "before": "'./request-summary.js'",
+          "after": "\"@cxv/core/log-v2/request-summary\""
+        },
+        {
+          "start": 410,
+          "end": 432,
+          "before": "'./request-summary.js'",
+          "after": "\"@cxv/core/log-v2/request-summary\""
+        },
+        {
+          "start": 237,
+          "end": 251,
+          "before": "'./reducer.js'",
+          "after": "\"@cxv/core/log-v2/reducer\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/log-v2/writer.js",
+      "importSpecifierEdits": [
+        {
+          "start": 1677,
+          "end": 1699,
+          "before": "'./request-summary.js'",
+          "after": "\"@cxv/core/log-v2/request-summary\""
+        },
+        {
+          "start": 1113,
+          "end": 1131,
+          "before": "'./entry-codec.js'",
+          "after": "\"@cxv/core/log-v2/entry-codec\""
+        },
+        {
+          "start": 905,
+          "end": 919,
+          "before": "'./reducer.js'",
+          "after": "\"@cxv/core/log-v2/reducer\""
+        },
+        {
+          "start": 69,
+          "end": 96,
+          "before": "'../codex-thread-source.js'",
+          "after": "\"@cxv/core/codex-thread-source\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/main-agent-entry.js",
+      "importSpecifierEdits": [
+        {
+          "start": 192,
+          "end": 219,
+          "before": "'./openai-responses-url.js'",
+          "after": "\"@cxv/core/openai-responses-url\""
+        },
+        {
+          "start": 127,
+          "end": 145,
+          "before": "'./openai-body.js'",
+          "after": "\"@cxv/core/openai-body\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/otel-adapter.js",
+      "importSpecifierEdits": [
+        {
+          "start": 409,
+          "end": 427,
+          "before": "'./openai-body.js'",
+          "after": "\"@cxv/core/openai-body\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/otel-config.js",
+      "importSpecifierEdits": [
+        {
+          "start": 37,
+          "end": 52,
+          "before": "'./cli-args.js'",
+          "after": "\"@cxv/core/cli-args\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/pty-workspace-runtime.js",
+      "importSpecifierEdits": [
+        {
+          "start": 513,
+          "end": 528,
+          "before": "'./cli-args.js'",
+          "after": "\"@cxv/core/cli-args\""
+        },
+        {
+          "start": 181,
+          "end": 205,
+          "before": "'./approval-reviewer.js'",
+          "after": "\"@cxv/core/approval-reviewer\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/scheduled-task-executor.js",
+      "importSpecifierEdits": [
+        {
+          "start": 1140,
+          "end": 1176,
+          "before": "'../src/utils/ultraplanTemplates.js'",
+          "after": "\"@cxv/core/ultraplanTemplates\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/scheduled-task-store.js",
+      "importSpecifierEdits": [
+        {
+          "start": 2777,
+          "end": 2813,
+          "before": "'../src/utils/ultraplanTemplates.js'",
+          "after": "\"@cxv/core/ultraplanTemplates\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/sdk-adapter.js",
+      "importSpecifierEdits": [
+        {
+          "start": 375,
+          "end": 408,
+          "before": "'./tool-result-image-protocol.js'",
+          "after": "\"@cxv/core/tool-result-image-protocol\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/sdk-manager.js",
+      "importSpecifierEdits": [
+        {
+          "start": 600,
+          "end": 615,
+          "before": "'./cli-args.js'",
+          "after": "\"@cxv/core/cli-args\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/sdk-resume-history.js",
+      "importSpecifierEdits": [
+        {
+          "start": 307,
+          "end": 322,
+          "before": "'./cli-args.js'",
+          "after": "\"@cxv/core/cli-args\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/lib/stats-worker.js",
+      "importSpecifierEdits": [
+        {
+          "start": 318,
+          "end": 336,
+          "before": "'./token-usage.js'",
+          "after": "\"@cxv/core/token-usage\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/pty-manager.js",
+      "importSpecifierEdits": [
+        {
+          "start": 389,
+          "end": 408,
+          "before": "'./lib/cli-args.js'",
+          "after": "\"@cxv/core/cli-args\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/scripts/gen-default-voicepack.js",
+      "importSpecifierEdits": [
+        {
+          "start": 843,
+          "end": 879,
+          "before": "'../server/lib/voice-pack-events.js'",
+          "after": "\"@cxv/core/voice-pack-events\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/scripts/sync-ultraplan-presets.mjs",
+      "importSpecifierEdits": [
+        {
+          "start": 238,
+          "end": 274,
+          "before": "'../src/utils/ultraplanTemplates.js'",
+          "after": "\"@cxv/core/ultraplanTemplates\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/server/lib/error-report.js",
+      "importSpecifierEdits": [
+        {
+          "start": 843,
+          "end": 875,
+          "before": "'../../src/utils/errorReport.js'",
+          "after": "\"@cxv/core/errorReport\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/server/lib/log-v2-routes.js",
+      "importSpecifierEdits": [
+        {
+          "start": 530,
+          "end": 563,
+          "before": "'../../lib/log-v2/wire-schema.js'",
+          "after": "\"@cxv/core/log-v2/wire-schema\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/server/lib/pty-chat-queue.js",
+      "importSpecifierEdits": [
+        {
+          "start": 2389,
+          "end": 2425,
+          "before": "'../../src/utils/ptyChunkBuilder.js'",
+          "after": "\"@cxv/core/ptyChunkBuilder\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/server/lib/voice-pack-manager.js",
+      "importSpecifierEdits": [
+        {
+          "start": 2176,
+          "end": 2200,
+          "before": "'./voice-pack-events.js'",
+          "after": "\"@cxv/core/voice-pack-events\""
+        },
+        {
+          "start": 768,
+          "end": 792,
+          "before": "'./voice-pack-events.js'",
+          "after": "\"@cxv/core/voice-pack-events\""
+        }
+      ]
+    },
+    {
+      "file": "packages/app/server.js",
+      "importSpecifierEdits": [
+        {
+          "start": 8108,
+          "end": 8146,
+          "before": "'./server/lib/approval-modal-prefs.js'",
+          "after": "\"@cxv/core/approval-modal-prefs\""
+        },
+        {
+          "start": 6849,
+          "end": 6877,
+          "before": "'./lib/approval-reviewer.js'",
+          "after": "\"@cxv/core/approval-reviewer\""
+        },
+        {
+          "start": 5469,
+          "end": 5500,
+          "before": "'./server/lib/context-rules.js'",
+          "after": "\"@cxv/core/context-rules\""
+        },
+        {
+          "start": 5161,
+          "end": 5180,
+          "before": "'./lib/cli-args.js'",
+          "after": "\"@cxv/core/cli-args\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/App.jsx",
+      "importSpecifierEdits": [
+        {
+          "start": 1289,
+          "end": 1334,
+          "before": "'../../../packages/app/src/utils/requestType'",
+          "after": "\"@cxv/core/requestType\""
+        },
+        {
+          "start": 1208,
+          "end": 1255,
+          "before": "'../../../packages/app/src/utils/contentFilter'",
+          "after": "\"@cxv/core/contentFilter\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/AppBase.jsx",
+      "importSpecifierEdits": [
+        {
+          "start": 4113,
+          "end": 4159,
+          "before": "'../../../packages/app/lib/log-v2/wire-schema'",
+          "after": "\"@cxv/core/log-v2/wire-schema\""
+        },
+        {
+          "start": 3221,
+          "end": 3267,
+          "before": "'../../../packages/app/lib/log-entry-order.js'",
+          "after": "\"@cxv/core/log-entry-order\""
+        },
+        {
+          "start": 2120,
+          "end": 2175,
+          "before": "'../../../packages/app/server/lib/approval-modal-prefs'",
+          "after": "\"@cxv/core/approval-modal-prefs\""
+        },
+        {
+          "start": 2031,
+          "end": 2083,
+          "before": "'../../../packages/app/server/lib/voice-pack-events'",
+          "after": "\"@cxv/core/voice-pack-events\""
+        },
+        {
+          "start": 1353,
+          "end": 1400,
+          "before": "'../../../packages/app/src/utils/contentFilter'",
+          "after": "\"@cxv/core/contentFilter\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/Mobile.jsx",
+      "importSpecifierEdits": [
+        {
+          "start": 431,
+          "end": 478,
+          "before": "'../../../packages/app/src/utils/contentFilter'",
+          "after": "\"@cxv/core/contentFilter\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/components/chat/ChatMessage.jsx",
+      "importSpecifierEdits": [
+        {
+          "start": 1099,
+          "end": 1152,
+          "before": "'../../../../../packages/app/src/utils/userImageRefs'",
+          "after": "\"@cxv/core/userImageRefs\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/components/chat/ChatView.jsx",
+      "importSpecifierEdits": [
+        {
+          "start": 5043,
+          "end": 5101,
+          "before": "'../../../../../packages/app/src/utils/ultraplanTemplates'",
+          "after": "\"@cxv/core/ultraplanTemplates\""
+        },
+        {
+          "start": 2695,
+          "end": 2755,
+          "before": "'../../../../../packages/app/src/utils/userPromptContent.js'",
+          "after": "\"@cxv/core/userPromptContent\""
+        },
+        {
+          "start": 2275,
+          "end": 2330,
+          "before": "'../../../../../packages/app/src/utils/ptyChunkBuilder'",
+          "after": "\"@cxv/core/ptyChunkBuilder\""
+        },
+        {
+          "start": 1807,
+          "end": 1858,
+          "before": "'../../../../../packages/app/src/utils/requestType'",
+          "after": "\"@cxv/core/requestType\""
+        },
+        {
+          "start": 1681,
+          "end": 1734,
+          "before": "'../../../../../packages/app/src/utils/contentFilter'",
+          "after": "\"@cxv/core/contentFilter\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/components/chat/UserPromptsModal.jsx",
+      "importSpecifierEdits": [
+        {
+          "start": 227,
+          "end": 280,
+          "before": "'../../../../../packages/app/src/utils/contentFilter'",
+          "after": "\"@cxv/core/contentFilter\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/components/chat/controllers/askFlowController.js",
+      "importSpecifierEdits": [
+        {
+          "start": 1397,
+          "end": 1458,
+          "before": "'../../../../../../packages/app/src/utils/ptyChunkBuilder.js'",
+          "after": "\"@cxv/core/ptyChunkBuilder\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/components/chat/optimisticQueueMessage.js",
+      "importSpecifierEdits": [
+        {
+          "start": 56,
+          "end": 112,
+          "before": "'../../../../../packages/app/src/utils/contentFilter.js'",
+          "after": "\"@cxv/core/contentFilter\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/components/common/ScheduleTaskModal.jsx",
+      "importSpecifierEdits": [
+        {
+          "start": 640,
+          "end": 698,
+          "before": "'../../../../../packages/app/src/utils/ultraplanTemplates'",
+          "after": "\"@cxv/core/ultraplanTemplates\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/components/dashboard/AppHeader.jsx",
+      "importSpecifierEdits": [
+        {
+          "start": 1718,
+          "end": 1771,
+          "before": "'../../../../../packages/app/src/utils/contentFilter'",
+          "after": "\"@cxv/core/contentFilter\""
+        },
+        {
+          "start": 1628,
+          "end": 1679,
+          "before": "'../../../../../packages/app/src/utils/requestType'",
+          "after": "\"@cxv/core/requestType\""
+        },
+        {
+          "start": 1283,
+          "end": 1336,
+          "before": "'../../../../../packages/app/src/utils/contentFilter'",
+          "after": "\"@cxv/core/contentFilter\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/components/dashboard/CompactionPromptHistory.jsx",
+      "importSpecifierEdits": [
+        {
+          "start": 192,
+          "end": 245,
+          "before": "'../../../../../packages/app/src/utils/userImageRefs'",
+          "after": "\"@cxv/core/userImageRefs\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/components/dashboard/ContextTab.jsx",
+      "importSpecifierEdits": [
+        {
+          "start": 707,
+          "end": 755,
+          "before": "'../../../../../packages/app/lib/openai-body.js'",
+          "after": "\"@cxv/core/openai-body\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/components/dashboard/DetailPanel.jsx",
+      "importSpecifierEdits": [
+        {
+          "start": 942,
+          "end": 995,
+          "before": "'../../../../../packages/app/src/utils/contentFilter'",
+          "after": "\"@cxv/core/contentFilter\""
+        },
+        {
+          "start": 757,
+          "end": 808,
+          "before": "'../../../../../packages/app/src/utils/requestType'",
+          "after": "\"@cxv/core/requestType\""
+        },
+        {
+          "start": 675,
+          "end": 723,
+          "before": "'../../../../../packages/app/lib/token-usage.js'",
+          "after": "\"@cxv/core/token-usage\""
+        },
+        {
+          "start": 590,
+          "end": 638,
+          "before": "'../../../../../packages/app/lib/openai-body.js'",
+          "after": "\"@cxv/core/openai-body\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/components/dashboard/RequestList.jsx",
+      "importSpecifierEdits": [
+        {
+          "start": 313,
+          "end": 364,
+          "before": "'../../../../../packages/app/src/utils/requestType'",
+          "after": "\"@cxv/core/requestType\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/components/dashboard/WorkspaceList.jsx",
+      "importSpecifierEdits": [
+        {
+          "start": 411,
+          "end": 456,
+          "before": "'../../../../../packages/app/lib/cli-args.js'",
+          "after": "\"@cxv/core/cli-args\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/components/mobile/MobileStats.jsx",
+      "importSpecifierEdits": [
+        {
+          "start": 194,
+          "end": 245,
+          "before": "'../../../../../packages/app/src/utils/requestType'",
+          "after": "\"@cxv/core/requestType\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/components/settings/ImConversationModal.jsx",
+      "importSpecifierEdits": [
+        {
+          "start": 903,
+          "end": 966,
+          "before": "'../../../../../packages/app/server/lib/delta-reconstructor.js'",
+          "after": "\"@cxv/core/delta-reconstructor\""
+        },
+        {
+          "start": 481,
+          "end": 534,
+          "before": "'../../../../../packages/app/src/utils/contentFilter'",
+          "after": "\"@cxv/core/contentFilter\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/components/settings/VoicePackSettings.jsx",
+      "importSpecifierEdits": [
+        {
+          "start": 471,
+          "end": 529,
+          "before": "'../../../../../packages/app/server/lib/voice-pack-events'",
+          "after": "\"@cxv/core/voice-pack-events\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/components/terminal/ScratchTerminal.jsx",
+      "importSpecifierEdits": [
+        {
+          "start": 1250,
+          "end": 1305,
+          "before": "'../../../../../packages/app/src/utils/ptyChunkBuilder'",
+          "after": "\"@cxv/core/ptyChunkBuilder\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/components/terminal/TerminalPanel.jsx",
+      "importSpecifierEdits": [
+        {
+          "start": 1521,
+          "end": 1576,
+          "before": "'../../../../../packages/app/src/utils/ptyChunkBuilder'",
+          "after": "\"@cxv/core/ptyChunkBuilder\""
+        },
+        {
+          "start": 1313,
+          "end": 1371,
+          "before": "'../../../../../packages/app/src/utils/ultraplanTemplates'",
+          "after": "\"@cxv/core/ultraplanTemplates\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/utils/approvalReviewerOptions.js",
+      "importSpecifierEdits": [
+        {
+          "start": 160,
+          "end": 211,
+          "before": "'../../../../packages/app/lib/approval-reviewer.js'",
+          "after": "\"@cxv/core/approval-reviewer\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/utils/contextCompaction.js",
+      "importSpecifierEdits": [
+        {
+          "start": 449,
+          "end": 506,
+          "before": "'../../../../packages/app/src/utils/userPromptContent.js'",
+          "after": "\"@cxv/core/userPromptContent\""
+        },
+        {
+          "start": 301,
+          "end": 354,
+          "before": "'../../../../packages/app/src/utils/contentFilter.js'",
+          "after": "\"@cxv/core/contentFilter\""
+        },
+        {
+          "start": 216,
+          "end": 271,
+          "before": "'../../../../packages/app/src/utils/clearCheckpoint.js'",
+          "after": "\"@cxv/core/clearCheckpoint\""
+        },
+        {
+          "start": 38,
+          "end": 83,
+          "before": "'../../../../packages/app/lib/openai-body.js'",
+          "after": "\"@cxv/core/openai-body\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/utils/conversationEntryNormalize.js",
+      "importSpecifierEdits": [
+        {
+          "start": 830,
+          "end": 883,
+          "before": "'../../../../packages/app/lib/codex-thread-source.js'",
+          "after": "\"@cxv/core/codex-thread-source\""
+        },
+        {
+          "start": 739,
+          "end": 793,
+          "before": "'../../../../packages/app/lib/openai-responses-url.js'",
+          "after": "\"@cxv/core/openai-responses-url\""
+        },
+        {
+          "start": 520,
+          "end": 577,
+          "before": "'../../../../packages/app/src/utils/userPromptContent.js'",
+          "after": "\"@cxv/core/userPromptContent\""
+        },
+        {
+          "start": 368,
+          "end": 423,
+          "before": "'../../../../packages/app/src/utils/clearCheckpoint.js'",
+          "after": "\"@cxv/core/clearCheckpoint\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/utils/detailTabSelection.js",
+      "importSpecifierEdits": [
+        {
+          "start": 60,
+          "end": 111,
+          "before": "'../../../../packages/app/src/utils/requestType.js'",
+          "after": "\"@cxv/core/requestType\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/utils/entry-slim.js",
+      "importSpecifierEdits": [
+        {
+          "start": 1409,
+          "end": 1454,
+          "before": "'../../../../packages/app/lib/openai-body.js'",
+          "after": "\"@cxv/core/openai-body\""
+        },
+        {
+          "start": 1181,
+          "end": 1236,
+          "before": "'../../../../packages/app/src/utils/clearCheckpoint.js'",
+          "after": "\"@cxv/core/clearCheckpoint\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/utils/errorReport.js",
+      "importSpecifierEdits": [
+        {
+          "start": 14,
+          "end": 65,
+          "before": "'../../../../packages/app/src/utils/errorReport.js'",
+          "after": "\"@cxv/core/errorReport\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/utils/fileDragDrop.js",
+      "importSpecifierEdits": [
+        {
+          "start": 97,
+          "end": 152,
+          "before": "'../../../../packages/app/src/utils/ptyChunkBuilder.js'",
+          "after": "\"@cxv/core/ptyChunkBuilder\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/utils/helpers.js",
+      "importSpecifierEdits": [
+        {
+          "start": 1650,
+          "end": 1704,
+          "before": "'../../../../packages/app/server/lib/context-rules.js'",
+          "after": "\"@cxv/core/context-rules\""
+        },
+        {
+          "start": 1267,
+          "end": 1320,
+          "before": "'../../../../packages/app/src/utils/modelIdentity.js'",
+          "after": "\"@cxv/core/modelIdentity\""
+        },
+        {
+          "start": 994,
+          "end": 1047,
+          "before": "'../../../../packages/app/src/utils/modelIdentity.js'",
+          "after": "\"@cxv/core/modelIdentity\""
+        },
+        {
+          "start": 383,
+          "end": 435,
+          "before": "'../../../../packages/app/lib/request-visibility.js'",
+          "after": "\"@cxv/core/request-visibility\""
+        },
+        {
+          "start": 297,
+          "end": 342,
+          "before": "'../../../../packages/app/lib/token-usage.js'",
+          "after": "\"@cxv/core/token-usage\""
+        },
+        {
+          "start": 215,
+          "end": 260,
+          "before": "'../../../../packages/app/lib/openai-body.js'",
+          "after": "\"@cxv/core/openai-body\""
+        },
+        {
+          "start": 41,
+          "end": 94,
+          "before": "'../../../../packages/app/src/utils/contentFilter.js'",
+          "after": "\"@cxv/core/contentFilter\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/utils/identityHeal.js",
+      "importSpecifierEdits": [
+        {
+          "start": 63,
+          "end": 114,
+          "before": "'../../../../packages/app/src/utils/requestType.js'",
+          "after": "\"@cxv/core/requestType\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/utils/logV2Archive.js",
+      "importSpecifierEdits": [
+        {
+          "start": 583,
+          "end": 636,
+          "before": "'../../../../packages/app/lib/codex-thread-source.js'",
+          "after": "\"@cxv/core/codex-thread-source\""
+        },
+        {
+          "start": 492,
+          "end": 546,
+          "before": "'../../../../packages/app/lib/openai-responses-url.js'",
+          "after": "\"@cxv/core/openai-responses-url\""
+        },
+        {
+          "start": 389,
+          "end": 445,
+          "before": "'../../../../packages/app/lib/log-v2/request-summary.js'",
+          "after": "\"@cxv/core/log-v2/request-summary\""
+        },
+        {
+          "start": 301,
+          "end": 352,
+          "before": "'../../../../packages/app/src/utils/requestType.js'",
+          "after": "\"@cxv/core/requestType\""
+        },
+        {
+          "start": 79,
+          "end": 127,
+          "before": "'../../../../packages/app/lib/log-v2/reducer.js'",
+          "after": "\"@cxv/core/log-v2/reducer\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/utils/logV2ObjectStore.js",
+      "importSpecifierEdits": [
+        {
+          "start": 216,
+          "end": 268,
+          "before": "'../../../../packages/app/lib/log-v2/wire-schema.js'",
+          "after": "\"@cxv/core/log-v2/wire-schema\""
+        },
+        {
+          "start": 127,
+          "end": 179,
+          "before": "'../../../../packages/app/lib/log-v2/entry-codec.js'",
+          "after": "\"@cxv/core/log-v2/entry-codec\""
+        },
+        {
+          "start": 42,
+          "end": 90,
+          "before": "'../../../../packages/app/lib/log-v2/reducer.js'",
+          "after": "\"@cxv/core/log-v2/reducer\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/utils/logV2Transport.js",
+      "importSpecifierEdits": [
+        {
+          "start": 120,
+          "end": 172,
+          "before": "'../../../../packages/app/lib/log-v2/wire-schema.js'",
+          "after": "\"@cxv/core/log-v2/wire-schema\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/utils/requestTools.js",
+      "importSpecifierEdits": [
+        {
+          "start": 280,
+          "end": 325,
+          "before": "'../../../../packages/app/lib/openai-body.js'",
+          "after": "\"@cxv/core/openai-body\""
+        },
+        {
+          "start": 122,
+          "end": 177,
+          "before": "'../../../../packages/app/src/utils/clearCheckpoint.js'",
+          "after": "\"@cxv/core/clearCheckpoint\""
+        },
+        {
+          "start": 28,
+          "end": 81,
+          "before": "'../../../../packages/app/src/utils/contentFilter.js'",
+          "after": "\"@cxv/core/contentFilter\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/utils/sessionManager.js",
+      "importSpecifierEdits": [
+        {
+          "start": 385,
+          "end": 438,
+          "before": "'../../../../packages/app/src/utils/modelIdentity.js'",
+          "after": "\"@cxv/core/modelIdentity\""
+        },
+        {
+          "start": 290,
+          "end": 345,
+          "before": "'../../../../packages/app/src/utils/clearCheckpoint.js'",
+          "after": "\"@cxv/core/clearCheckpoint\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/utils/sessionMerge.js",
+      "importSpecifierEdits": [
+        {
+          "start": 319,
+          "end": 372,
+          "before": "'../../../../packages/app/src/utils/modelIdentity.js'",
+          "after": "\"@cxv/core/modelIdentity\""
+        },
+        {
+          "start": 224,
+          "end": 279,
+          "before": "'../../../../packages/app/src/utils/clearCheckpoint.js'",
+          "after": "\"@cxv/core/clearCheckpoint\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/utils/teamModalBuilder.js",
+      "importSpecifierEdits": [
+        {
+          "start": 371,
+          "end": 419,
+          "before": "'../../../../packages/app/src/utils/requestType'",
+          "after": "\"@cxv/core/requestType\""
+        },
+        {
+          "start": 193,
+          "end": 243,
+          "before": "'../../../../packages/app/src/utils/contentFilter'",
+          "after": "\"@cxv/core/contentFilter\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/utils/tokenUsage.js",
+      "importSpecifierEdits": [
+        {
+          "start": 78,
+          "end": 123,
+          "before": "'../../../../packages/app/lib/token-usage.js'",
+          "after": "\"@cxv/core/token-usage\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/utils/toolResultCore.js",
+      "importSpecifierEdits": [
+        {
+          "start": 373,
+          "end": 433,
+          "before": "'../../../../packages/app/lib/tool-result-image-protocol.js'",
+          "after": "\"@cxv/core/tool-result-image-protocol\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/utils/toolsXmlFormatter.js",
+      "importSpecifierEdits": [
+        {
+          "start": 200,
+          "end": 260,
+          "before": "'../../../../packages/app/server/lib/tools-xml-formatter.js'",
+          "after": "\"@cxv/core/tools-xml-formatter\""
+        }
+      ]
+    },
+    {
+      "file": "apps/web/src/utils/voicePackPlayer.js",
+      "importSpecifierEdits": [
+        {
+          "start": 993,
+          "end": 1051,
+          "before": "'../../../../packages/app/server/lib/voice-pack-events.js'",
+          "after": "\"@cxv/core/voice-pack-events\""
+        }
+      ]
+    }
+  ],
+  "behaviorBodyUnchanged": true,
+  "validation": {
+    "stablePublishedPaths": 610,
+    "addedCoreFiles": 29,
+    "removedPublishedPaths": [],
+    "behaviorBodyUnchanged": true
+  }
+}

@@ -11,3 +11,13 @@ onlyBuiltDependencies:
   - fsevents
   - node-pty
   - protobufjs
+# Carry the frozen baseline's fast-uri security pin into every build unit.
+overrides:
+  fast-uri: 4.1.2
+
+# Frozen upstream fix: certificate export and temporary keychain passwords differ.
+patchedDependencies:
+  app-builder-lib@26.15.3: patches/app-builder-lib@26.15.3.patch
+
+# Plain npm-compatible specs resolve private bundled workspace packages locally.
+linkWorkspacePackages: true

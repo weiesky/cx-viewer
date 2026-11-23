@@ -1,0 +1,9 @@
+{
+  "ownPid": 4663,
+  "ownPort": 21140,
+  "signal": "SIGTERM",
+  "scriptVerified": true,
+  "userProcessesTouched": false,
+  "ownPortConfirmedClosed": true,
+  "earlierOwnedFixtureAlsoStopped": 74119
+}

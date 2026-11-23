@@ -1,0 +1,210 @@
+{
+  "startCommit": "a3fbc0f06ff42119a33f24a252e36b621269316e",
+  "runtimeCodeCommit": "7ce46a0cab8aef91e115de665b6661e44e20714b",
+  "commits": [
+    {
+      "commit": "259df3a8fc5fee480f228f6e9cce447af2aa2047",
+      "tree": "75c8c904c95e8417edf90ba3196216bc9e512449",
+      "subject": "fix(discovery): use fixed npm argv and guarded installation fallback",
+      "iteration": "E1"
+    },
+    {
+      "commit": "1218d22408d9490e75cf8771c7dee06a7ddbefc2",
+      "tree": "12b0364fd0a9b4c6a788e2019805c4b786a8bf5d",
+      "subject": "fix(electron): fall back to bundled Node and settle failed tab launches",
+      "iteration": "E2"
+    },
+    {
+      "commit": "1c92a35542c0ff614b2b5ed0945c05073404077b",
+      "tree": "c4976cdc92813d188abc536427a88bd4cad86ff1",
+      "subject": "fix(discovery): filter Windows shims while preserving native Codex launchers",
+      "iteration": "E3"
+    },
+    {
+      "commit": "3e754712fefb690b6375478724bb31b6fbfb9f8b",
+      "tree": "e365d73038413016c57c6d71b4df0a7ba399709b",
+      "subject": "fix(package): accept npm 12 reports and reject ambiguous package lists",
+      "iteration": "E4"
+    },
+    {
+      "commit": "af5eb3d2522e37da90ea560d779287f08a4e40b3",
+      "tree": "e770e96418badb2c453e75a25c0ff39334e5375a",
+      "subject": "build(package): enforce the actual tarball layout contract",
+      "iteration": "E5"
+    },
+    {
+      "commit": "62cc7a342e324aa6522a652c4dbffbe020a56671",
+      "tree": "5dd9b30ebcbd5c877dae788f75b357525e2a9157",
+      "subject": "fix(im): reject non-object configuration before writes and process control",
+      "iteration": "E6"
+    },
+    {
+      "commit": "e364136b4626ff20a3a6261310326c89ad00ccfb",
+      "tree": "81172493e8b842b4878ca1688de385369ebf3d7d",
+      "subject": "fix(im): restore original reconnecting status and configuration wakeups",
+      "iteration": "E7"
+    },
+    {
+      "commit": "e7bc503149643e5f08303a5158dffb70a226c781",
+      "tree": "65c504a0579e101e2f6734dfcc45db380eec2d60",
+      "subject": "feat(im): restore original save and conversation worker controls",
+      "iteration": "E8"
+    },
+    {
+      "commit": "ccaf4bde1b3c1fb189c8c1ef2351dbaf0e0210b6",
+      "tree": "1802880b14774e8c44fbca759435d47af4164955",
+      "subject": "fix(im): mount the original conversation drawer from header actions",
+      "iteration": "E9"
+    },
+    {
+      "commit": "b7deaf417c752f7f27c9e24206d38d1882899e87",
+      "tree": "5a583d09c4f6e3acbc9e57d82fe381033f919935",
+      "subject": "fix(im): read independent worker conversations through native V2 archives",
+      "iteration": "E10"
+    },
+    {
+      "commit": "664cd75cae2c7278699ebabfe124fcfbc57c7c51",
+      "tree": "f620d104cb79cb76a211bbafb102d0b6db8d0713",
+      "subject": "fix(im): refresh the conversation drawer when native worker logs change",
+      "iteration": "E11"
+    },
+    {
+      "commit": "7868d63708b334f18d13f8350238b84ac56227bd",
+      "tree": "6f0d59f092147da75a134958ed9f0a9e2eb6fdf5",
+      "subject": "fix(web): align footer data gates and remove star-count requests",
+      "iteration": "E12"
+    },
+    {
+      "commit": "2105b01e9bd2e2c0ae3b2e8c23318491ebaf2d76",
+      "tree": "599354ac31e3f4ba0e580c26d3a32d3f70fdf2b6",
+      "subject": "fix(deps): carry the frozen fast-uri security pin into the workspace",
+      "iteration": "E13"
+    },
+    {
+      "commit": "d628715937d48d0410c81df981e5fdbffbf7866a",
+      "tree": "a6aedff924525e4bea9d11bcaa2f73650d6bfce4",
+      "subject": "fix(electron): use the temporary keychain password for signing ACLs",
+      "iteration": "E14"
+    },
+    {
+      "commit": "cc94f5a5d0d6b9a973f87f97c9ac4c60d2379dc7",
+      "tree": "66ad76aba90b54da9e7e2a567a0f7441521e74ee",
+      "subject": "ci: verify platform contracts and real tarballs before release",
+      "iteration": "E15"
+    },
+    {
+      "commit": "ab7211329c19123320cf6b0f76f0c23427f16b15",
+      "tree": "35eb29d13a4f8396c454479494702361b2c9f93e",
+      "subject": "test: isolate permission bridge fixtures from host bypass mode",
+      "iteration": "E16"
+    },
+    {
+      "commit": "bd735d8b7040b920f838eeea4af9b7edb2648e90",
+      "tree": "94cca9f72010c765b5d016b44d0bbb5b8303938e",
+      "subject": "build: reject published source drift before local tests",
+      "iteration": "E17"
+    },
+    {
+      "commit": "377f23b7bb5109218c4288bc1850c8f33b715bc8",
+      "tree": "45757172879f75a6ebc6f6a6f88fccae32b4d546",
+      "subject": "docs: adapt the frozen cloud contract to native configuration boundaries",
+      "iteration": "E18"
+    },
+    {
+      "commit": "72eb2ec01e3d727493fbaaa720b88227eadc68ea",
+      "tree": "fc0e9577009225b59b7690831a252657a68ee462",
+      "subject": "fix(im): describe the native sender allowlist boundary accurately",
+      "iteration": "E19"
+    },
+    {
+      "commit": "86c291a420e327ce3ff7a7a9e5b7de34298ddb1f",
+      "tree": "d00fb435be38b07278b1711c6f18e077e743ced9",
+      "subject": "fix(im): restore sender names without changing native turn correlation",
+      "iteration": "E20"
+    },
+    {
+      "commit": "270b17ffbd082d04414e16869758aec1ac802d30",
+      "tree": "851bdc76f7fb1c74a8388889e9410d37e9980229",
+      "subject": "test: verify B11 in clean production and minimum-Node runtimes",
+      "iteration": "E21"
+    },
+    {
+      "commit": "13a824ed1f52ba30be15d6df3bf062267a672e57",
+      "tree": "9042075eddc0fe334f6761dcad62eba7bad6ca20",
+      "subject": "chore: reconcile legacy build dependencies with the frozen security pin",
+      "iteration": "E22"
+    },
+    {
+      "commit": "7397fd218e18dce37ccea72dd433fa28bb026380",
+      "tree": "0a35f05ff38265d4e870909db59b00cde8442117",
+      "subject": "ci: select the publish tag without a separate OIDC metadata mutation",
+      "iteration": "E23"
+    },
+    {
+      "commit": "8c972fe82adf5b5449a2398da2d928b92aadecad",
+      "tree": "3531c24b393aa67e2713fb0dd90904f31da8588d",
+      "subject": "fix(im): share reconnecting badge decisions in the settings panel",
+      "iteration": "E24"
+    },
+    {
+      "commit": "da2515c601f251e3227dc11a3730a03428a29a63",
+      "tree": "13597d720c6dc9ba6d01630d20c5a431af538caa",
+      "subject": "fix(im): skip a busy sender-cache lock without delaying delivery",
+      "iteration": "E25"
+    },
+    {
+      "commit": "0821edca1dcfbdcfa5b255c7e72244dbadb6b810",
+      "tree": "16a50bc1588c6b67293fd0be87f0f1219c79d2bd",
+      "subject": "docs: record B11 validation and the remaining engineering choices",
+      "iteration": "E26"
+    },
+    {
+      "commit": "57a90c2d2b68c320af9bf42c1c2765a28827950c",
+      "tree": "bce49b4298153669b523575474e313c06f54f6a8",
+      "subject": "build: adopt Changesets for the single published native package",
+      "iteration": "E27"
+    },
+    {
+      "commit": "ffb4e6bd27b0bb7cf64581547842f43079b7074c",
+      "tree": "37eaef72ef9a698e2636252b386f9b99c8291f19",
+      "subject": "refactor(content): extract native assets with installed-path fallback",
+      "iteration": "E28"
+    },
+    {
+      "commit": "e6c0f9bc323ceb7daf603aa326acf205924084f3",
+      "tree": "5bea563fd23a270c5dea8c2227c337debe25e7b7",
+      "subject": "refactor(core): bundle native shared modules behind package imports",
+      "iteration": "E29"
+    },
+    {
+      "commit": "dafc6590ff2b30055de5bf558b43c5e69205e08e",
+      "tree": "ce0e1e3e171ad364f981141b1950fc3a9fd21e5c",
+      "subject": "refactor(server): group native IM approval and proxy helpers",
+      "iteration": "E30"
+    },
+    {
+      "commit": "7d1da800dbe845c131d5f16f5b4464b3f8a9ef32",
+      "tree": "c4b1f5fbc62131e372c1dcb62df90f339b80f880",
+      "subject": "refactor(log-v2): share archive scanning below summary and materializer",
+      "iteration": "E31"
+    },
+    {
+      "commit": "5892034f6211f1d8dc5292e05f2366f1e6dd1ccd",
+      "tree": "b7e50f04bcaed5c08b449cf7c911a46536bf5a92",
+      "subject": "build: enforce native package import boundaries with a shrinking exception list",
+      "iteration": "E32"
+    },
+    {
+      "commit": "7ce46a0cab8aef91e115de665b6661e44e20714b",
+      "tree": "d430c2d5538cc0dbbb934dfadfe4004ecb71a7d0",
+      "subject": "fix(electron): vendor private core files into the portable runtime stage",
+      "iteration": "E33"
+    }
+  ],
+  "note": "E34 records E1-E33 complete hashes/trees; its own hash is omitted. No B11 history rewrite, push or new PR performed.",
+  "nextDocumentationCommit": {
+    "iteration": "E34",
+    "subject": "docs: close B11 with final package and workspace validation",
+    "selfHashOmitted": true
+  }
+}

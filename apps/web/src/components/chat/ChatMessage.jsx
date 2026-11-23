@@ -15,7 +15,7 @@ import { parseImOrigin } from '../../utils/imOrigin';
 import { getTeammateAvatar } from '../../utils/teammateAvatars';
 import { renderAssistantText } from '../../utils/systemTags';
 import { apiUrl } from '../../utils/apiUrl';
-import { findUserImageRefs } from '../../../../../packages/app/src/utils/userImageRefs';
+import { findUserImageRefs } from "@cxv/core/userImageRefs";
 import { isMobile, isIOS, isPad } from '../../env';
 import AskQuestionForm from './AskQuestionForm';
 import { hasOptionDescription, resolveAskQuestions } from '../../utils/askOptionDesc';

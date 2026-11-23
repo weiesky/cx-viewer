@@ -58,7 +58,7 @@ const noProxy = process.env.NO_PROXY || process.env.no_proxy || '';
 process.env.NO_PROXY = process.env.no_proxy = noProxy ? `${noProxy},${loopback}` : loopback;
 
 const { startProxy, stopProxy } = await import('../proxy.js');
-const { setupProxyEnv } = await import('./proxy-env.js');
+const { setupProxyEnv } = await import("./proxy/proxy-env.js");
 const { planCodexAppLoggerProxyRefresh, restoreCodexAppLoggerRedirect } = await import('./codex-app-logger.js');
 let stopping = false;
 const stop = async () => {

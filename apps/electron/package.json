@@ -8,12 +8,12 @@
     "dev": "electron electron/main.js",
     "test": "CXV_TEST=1 CXV_LOG_DIR=tmp node --test",
     "build": "node scripts/assemble-app.mjs && electron-builder",
-    "sign": "./scripts/mac-sign.sh",
+    "sign": "node --test tests/mac-keychain.test.js && ./scripts/mac-sign.sh",
     "check-sign": "./scripts/check-sign-config.sh"
   },
   "devDependencies": {
     "electron": "^35.1.2",
-    "electron-builder": "^26.0.12",
+    "electron-builder": "26.15.3",
     "@electron/notarize": "^3.1.1"
   },
   "build": {

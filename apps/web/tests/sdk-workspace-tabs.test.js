@@ -62,6 +62,10 @@ export { default as ProxyChip } from './src/components/chat/ProxyChip.jsx';
 export { default as ProxyModal } from './src/components/settings/ProxyModal.jsx';
 export { default as PluginPanelModal } from './src/components/plugins/PluginPanelModal.jsx';
 export { default as PanelHost } from './src/components/plugins/PanelHost.jsx';
+export { IM_PLATFORMS } from './src/components/settings/imPlatforms.js';
+export { default as ImConversationModal } from './src/components/settings/ImConversationModal.jsx';
+export { default as ImPlatformSettings } from './src/components/settings/ImPlatformSettings.jsx';
+export { default as ImStatusChip } from './src/components/settings/ImStatusChip.jsx';
 export { default as UpdateModal } from './src/components/update/UpdateModal.jsx';
 export { installPanelRuntime } from './src/components/plugins/panelRuntime.js';`, resolveDir: web },
   bundle: true, platform: 'node', format: 'cjs', packages: 'external', outfile: output,
@@ -239,6 +243,7 @@ function fixture(t, { blocked = false, component = 'Component', props = {} } = {
   };
   const globals = {
     self: globalThis, localStorage: storage,
+    WebSocket: { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 },
     PopStateEvent: class { constructor(type) { this.type = type; } },
     navigator: { userAgent: 'Desktop', platform: 'Linux', maxTouchPoints: 1 },
     document: { hidden: false, documentElement: { style: { setProperty() {}, removeProperty() {} }, getAttribute() { return 'dark'; }, classList: { add() {} } },
@@ -2480,4 +2485,58 @@ test('guided update modal gates channels, byte progress and explicit restart con
       assert.ok(nodes.some(n => n.type === 'code' && n.props.children.includes(command)));
     }
   } finally { require('antd').Modal.confirm = original; }
+});
+
+test('IM chip keeps reconnecting distinct and re-arms after configuration changes',async t=>{
+ const states=[];const f=fixture(t,{component:'ImStatusChip',props:{descriptor:{id:'dingtalk',labelKey:'ui.im.dingtalk',fallback:'DingTalk',icon:()=>null,color:'blue',endpoints:{status:'/api/im/dingtalk/status'}},onStatus:(_id,state)=>states.push(state)}});
+ let payload={enabled:false,hasSecret:false,connection:{running:false,connected:false}};
+ globalThis.fetch=async()=>({ok:true,json:async()=>payload});
+ f.draw();await f.tick();assert.equal(f.timers.size,0);
+ payload={enabled:true,hasSecret:true,connection:{running:true,connected:true,connectionState:'reconnecting',lastError:'temporary disconnect'}};
+ f.windowEvents.get('cxv:im-config-changed')({detail:{id:'dingtalk'}});await f.tick();f.draw();await f.tick();
+ assert.equal(states.at(-1).state,'reconnecting');assert.equal(states.at(-1).connected,false);assert.match(f.tree.props.title,/Reconnecting/);
+ assert.equal(f.timers.size,1);f.cleanup();await f.tick();assert.equal(f.timers.size,0);assert.equal(f.windowEvents.has('cxv:im-config-changed'),false);
+});
+
+test('IM explicit Save persists edited fields without starting or stopping the worker',async t=>{
+ const descriptor=require(output).IM_PLATFORMS.find(p=>p.id==='dingtalk');
+ const f=fixture(t,{component:'ImPlatformSettings',props:{descriptor}}),posts=[];
+ require(output).setLang('en');
+ const message=require('antd').message;const originalSuccess=message.success;message.success=()=>{};t.after(()=>{message.success=originalSuccess;});
+ globalThis.fetch=async(url,options)=>{if(options?.method==='POST'){posts.push({url,body:JSON.parse(options.body)});return {ok:true,json:async()=>({ok:true})};}return {ok:true,json:async()=>({enabled:false,hasSecret:true,appKey:'fixture-key',allowStaffIds:['fixture-staff'],process:{state:'dead'},connection:{running:false,connected:false}})};};
+ const walk=node=>!node||typeof node!=='object'?[]:[node,...[node.props?.children,node.props?.title].flat(Infinity).flatMap(walk)];
+ f.draw();await f.tick();f.draw();
+ const input=walk(f.tree).find(n=>n.props?.value==='fixture-key'&&n.props.onChange);assert.ok(input);
+ input.props.onChange({target:{value:'edited-key'}});
+ const save=walk(f.tree).find(n=>n.props?.children==='Save'&&n.props.onClick);assert.ok(save);await save.props.onClick();
+ assert.equal(posts.length,1);assert.match(posts[0].url,/\/config/);assert.equal(posts[0].body.appKey,'edited-key');assert.equal(posts[0].body.enabled,false);assert.equal(posts[0].body.applyProcess,false);
+});
+
+test('IM conversation Stop requires confirmation and sends only the preserving enabled patch',async t=>{
+ const f=fixture(t,{component:'ImConversationModal',props:{open:true,platform:'dingtalk'}}),posts=[];
+ require(output).setLang('en');
+ globalThis.fetch=async(url,options)=>{if(options?.method==='POST'){posts.push({url,body:JSON.parse(options.body)});return {ok:true,json:async()=>({ok:true})};}return {ok:true,json:async()=>String(url).includes('/status')?{enabled:true,hasSecret:true,process:{state:'ready',port:7140},connection:{running:true,connected:true}}:String(url).includes('/senders')?{senders:{}}:{latest:null}};};
+ const walk=node=>!node||typeof node!=='object'?[]:[node,...[node.props?.children,node.props?.title].flat(Infinity).flatMap(walk)];
+ f.draw();await f.tick();f.draw();
+ const confirm=walk(f.tree).find(n=>typeof n.props?.onConfirm==='function');assert.ok(confirm);assert.equal(posts.length,0);
+ await confirm.props.onConfirm();assert.equal(posts.length,1);assert.match(posts[0].url,/dingtalk\/config/);assert.deepEqual(posts[0].body,{enabled:false,applyProcess:true});
+ f.draw();assert.ok(walk(f.tree).some(n=>n.props?.children==='Start'&&n.props.onClick));
+});
+
+test('native and web IM header actions preserve the original conversation/config split',t=>{
+ fixture(t);const {AppHeader}=require(output);const header=new AppHeader({preferences:{},viewMode:'chat'},{preferences:{}});
+ header.setState=patch=>Object.assign(header.state,typeof patch==='function'?patch(header.state):patch);
+ header._handleHeaderAction({type:'im',id:'dingtalk'});assert.equal(header.state.imRecordVisible,true);assert.equal(header.state.imRecordPlatform,'dingtalk');assert.equal(header.state.messagingModalVisible,false);
+ header._getMenuDescriptors().find(d=>d.key==='messaging').onClick();assert.equal(header.state.messagingModalVisible,true);assert.equal(header.state.messagingInitialTool,null);
+});
+
+test('IM settings uses the original reconnecting badge even with stale connected and error fields', async t => {
+ const descriptor=require(output).IM_PLATFORMS.find(p=>p.id==='dingtalk');
+ const f=fixture(t,{component:'ImPlatformSettings',props:{descriptor}});require(output).setLang('en');
+ globalThis.fetch=async()=>({ok:true,json:async()=>({enabled:true,hasSecret:true,process:{state:'ready',port:7151},connection:{running:true,connected:true,connectionState:'reconnecting',lastError:'temporary disconnect'}})});
+ const walk=node=>!node||typeof node!=='object'?[]:[node,...[node.props?.children].flat(Infinity).flatMap(walk)];
+ f.draw();await f.tick();f.draw();
+ const badge=walk(f.tree).find(n=>n.props?.color==='warning');assert.ok(badge);
+ assert.match([badge.props.children].flat(Infinity).join(''),/Reconnecting.*7151/);
+ assert.doesNotMatch([badge.props.children].flat(Infinity).join(''),/temporary disconnect|Connected/);
 });

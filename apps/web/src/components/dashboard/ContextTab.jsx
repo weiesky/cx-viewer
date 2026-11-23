@@ -8,7 +8,7 @@ import { buildContextItemRawText } from '../../utils/contextRaw';
 import { computeToolsDiff } from '../../utils/toolsDiff';
 import JsonViewer from '../viewers/JsonViewer';
 import ConceptHelp from '../common/ConceptHelp';
-import { getResponseInstructions, getResponseToolDeclaration, isResponseConfigInputItem } from '../../../../../packages/app/lib/openai-body.js';
+import { getResponseInstructions, getResponseToolDeclaration, isResponseConfigInputItem } from "@cxv/core/openai-body";
 
 import styles from './ContextTab.module.css';
 

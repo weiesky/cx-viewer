@@ -14,8 +14,8 @@ export function buildPlanUsageSnapshot(requests) {
   };
 }
 
-export function shouldDisplayPlanUsage({ planUsage = null, isLocalLog = false, authType = null } = {}) {
-  return !!planUsage || (!isLocalLog && authType === 'OAuth');
+export function shouldDisplayPlanUsage({ planUsage = null, isLocalLog = false } = {}) {
+  return !isLocalLog && !!planUsage;
 }
 
 export function transitionPlanUsage(current = {}, { sourceKey, requestsChanged = false, requests = [] } = {}) {

@@ -54,11 +54,12 @@ function makeHarness(overrides = {}) {
       messageId = `message-${Math.random()}`,
       text = 'hello',
       senderStaffId = 'staff-1',
+      senderName = null,
       conversationId = 'conversation-1',
     } = {}) {
       const raw = { headers: { messageId } };
       inbound?.({
-        messageId, text, senderStaffId, conversationId, conversationType: '1',
+        messageId, text, senderStaffId, senderName, conversationId, conversationType: '1',
         target: { conversationId, conversationType: '1', robotCode: 'robot-1', senderStaffId },
       }, raw);
     },
@@ -329,4 +330,19 @@ test('native web queue and IM own mutually exclusive writes across web dispatch 
     web.onTurnEnd(); await new Promise(resolve => setTimeout(resolve, 130));
     assert.equal(webWrites.length, 2); assert.equal(web.isDispatching(), true); finishWeb(true);
   } finally { web.stop(); await harness.bridge.stop(); }
+});
+
+test('sender profile metadata uses the native correlation nonce without changing injection or authorization', async () => {
+  const profiles = [];
+  const harness = makeHarness({ rememberSender: (nonce, name) => profiles.push({ nonce, name }) });
+  try {
+    await harness.bridge.start();
+    harness.receive({ messageId: 'unauthorized-profile', senderStaffId: 'intruder', senderName: 'Mallory' });
+    harness.receive({ messageId: 'named', senderName: 'Alice', text: 'hello' });
+    harness.receive({ messageId: 'named', senderName: 'Alice', text: 'hello' });
+    const prompt = injectedText(harness.calls.writes[0]);
+    const nonce = prompt.match(/^⟦im:dingtalk:([A-Za-z0-9_-]+)⟧ hello$/)[1];
+    assert.deepEqual(profiles, [{ nonce, name: 'Alice' }]);
+    assert.equal(harness.calls.writes.length, 1);
+  } finally { await harness.bridge.stop(); }
 });

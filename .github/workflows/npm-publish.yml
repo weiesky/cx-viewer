@@ -41,6 +41,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build assets needed by HTTP and package tests
+        run: pnpm run build
+
       - name: Test supported Node.js runtime
         run: pnpm test
 
@@ -104,5 +107,22 @@ jobs:
       # Provenance is generated automatically for trusted publishes.
       - name: Publish package
         if: steps.npm-version.outputs.published != 'true'
-        run: npm publish --access public
+        shell: bash
         working-directory: packages/app
+        run: |
+          package_name="$(node -p "require('./package.json').name")"
+          package_version="$(node -p "require('./package.json').version")"
+          # Keep the dist-tag on the publish itself: OIDC does not authorize
+          # a separate npm dist-tag mutation. Backports must not move latest.
+          highest="$(npm view "$package_name" versions --json 2>/dev/null \
+            | grep -oE '"[0-9]+\.[0-9]+\.[0-9]+"' | tr -d '"' | sort -V | tail -1 || true)"
+          newest="$package_version"
+          if [[ -n "$highest" ]]; then
+            newest="$(printf '%s\n%s\n' "$highest" "$package_version" | sort -V | tail -1)"
+          fi
+          channel=latest
+          if [[ "$newest" != "$package_version" ]]; then
+            channel=patch
+            echo "::warning::A newer stable version exists; preserving latest and publishing to patch."
+          fi
+          npm publish --access public --tag "$channel"

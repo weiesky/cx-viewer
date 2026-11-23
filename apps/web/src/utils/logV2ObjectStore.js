@@ -1,6 +1,6 @@
-import { materializeWireDescriptor } from '../../../../packages/app/lib/log-v2/reducer.js';
-import { assembleEntryParts } from '../../../../packages/app/lib/log-v2/entry-codec.js';
-import { LOG_V2_WIRE_LIMITS } from '../../../../packages/app/lib/log-v2/wire-schema.js';
+import { materializeWireDescriptor } from "@cxv/core/log-v2/reducer";
+import { assembleEntryParts } from "@cxv/core/log-v2/entry-codec";
+import { LOG_V2_WIRE_LIMITS } from "@cxv/core/log-v2/wire-schema";
 import { apiUrl } from './apiUrl.js';
 import { readNdjsonResponse } from './logV2Transport.js';
 import { loadV2CachedObjects, saveV2CachedObjects } from './logV2Cache.js';

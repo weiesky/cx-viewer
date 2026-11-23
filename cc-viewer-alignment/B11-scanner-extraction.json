@@ -1,0 +1,24 @@
+{
+  "sourceCommit": "dafc659",
+  "source": "packages/app/lib/log-v2/materializer.js",
+  "destination": "packages/app/lib/log-v2/archive-scanner.js",
+  "blocks": [
+    {
+      "name": "jsonReader",
+      "sha256": "b0848102fc86291c9fcb6c20d0fcd774e82f0f82178b70bde1b9252aff7405e7",
+      "adaptation": "readJson export/name becomes readArchiveJson"
+    },
+    {
+      "name": "recordMaterializer",
+      "sha256": "368b93fb4b4a7fa67967feb822e345ba1b4fbb75c156b99793f2c0a0e0f80d00",
+      "adaptation": "none"
+    },
+    {
+      "name": "scanner",
+      "sha256": "83f0f4adbc0196554e8bb3e96d199b47803f8adbff073834d338d9050bb325a5",
+      "adaptation": "readJson export/name becomes readArchiveJson"
+    }
+  ],
+  "oldScanExportPreserved": true,
+  "storageSemanticsUnchanged": true
+}

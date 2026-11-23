@@ -1,6 +1,6 @@
 # cc-viewer → cx-viewer 分批对齐规划
 
-2026-11-22 B8已完成并由[PR #9](https://github.com/weiesky/cx-viewer/pull/9)合并main（`6106d41`），37原始本地commit备份/映射保留，整合与merge tree精确一致，实际无PR checks。最终2232/2232、0skip/build/pack737，新生产安装685/685、全部737包/211Web字节、B1.2/隔离CLI通过；真实默认SDK双浏览器与native主/子分源分项验证通过。代理重试配置与统计明确排除，提示仅新会话、原生窗口/未知态及能力门保持。54候选按B8子项核销，混合B9–B11和未验环境单列。见[B8完成矩阵](./B8-completion-matrix.md)；[B9交接](./B9-handoff.md)与14候选已准备，本轮未开始B9。
+2026-11-23 B11本地实施与可用环境验收完成（第12/12工作包），34笔保留、尚未PR交付；用户选择的Changesets/core/content与边界/分组已落实。最终2820/0skip/build/626路径、全新1197与825包/211Web字节、桌面stage825/395链接/独立启动、实际Node20.12启动+46、双浏览器14配置30图通过。目标环境未验另列；用户实例未重启，无远端CI通过声明。见[B11完成矩阵](./B11-completion-matrix.md)。
 
 2026-11-18 GitHub 同步：已按用户请求将 main 6045b53 与 codex/pnpm-workspace 2c0edc8 原子推送到 origin 同名分支，远端完整 hash 已读回核对，上游跟踪已设置。未执行强推、分支合并或活动安装切换；未提交的 AGENTS.md 与 cc-viewer-alignment 文档仍保留本地。
 
@@ -47,11 +47,11 @@
 | B6 | 已完成并经PR #6合并main（第7/12工作包），9f3e2ce | 1986完整/525新安装/6场26图与10轮问答；见[B6完成矩阵](./B6-completion-matrix.md)。 |
 | B7 | 已完成（第8/12工作包），51笔已整合并由PR #8合并main | 2181/2181、build/pack723、新安装634/634；B7子项/混合边界及未验项见[B7完成矩阵](./B7-completion-matrix.md)。 |
 | B8 | 已完成，第9/12工作包，PR #9合并main | 54候选按B8子项核销，见[B8完成矩阵](./B8-completion-matrix.md)。 |
-| B9 | 本地完成、PR #11 OPEN未合并 | 见[B9完成矩阵](./B9-completion-matrix.md)。 |
-| B10 | 已启动，E1–E10服务/原UI通过 | 见[B10实施](./B10-implementation.md)。 |
-| B11 / 工程前置 | A1 6287d2a 已主线，A2 3b15a6d 已工作树提交并通过本地验证 | 继续在新结构实施 B1 余项及 B2–B10；全局实例未切换，B11 其他验收继续。 |
+| B9 | 已由PR #12与B10一起合并main d829772 | 原#11已关闭；原验证/备份保留，见[B9矩阵](./B9-completion-matrix.md)。 |
+| B10 | 已由PR #12合并main d829772，第11/12包 | 2713完整/1096安装，见[B10矩阵](./B10-completion-matrix.md)。 |
+| B11 | 本地实施/可用环境验收完成，第12/12包 | 2820/1197、825包字节、14配置30图；34笔保留，待PR交付与真实环境验收，见[B11矩阵](./B11-completion-matrix.md)。 |
 
-当前最新检查点为B8最终2232/2232、0skip、build/pack737；全新生产安装685/685、全部737包/211Web精确字节、B1.2与隔离CLI通过。真实SDK双引擎与native分源证据及未验范围见[B8完成矩阵](./B8-completion-matrix.md)。
+当前最新本地检查点为B11：2820/2820、0skip，严格六workspace/build/626路径；全新1197、全部825包/211Web字节与桌面/最低Node/双浏览器证据见[B11完成矩阵](./B11-completion-matrix.md)。B11尚未PR交付；其他包的真实环境未验边界保持。
 
 ### B0 — 台账校验与版本测试基线
 
@@ -182,9 +182,9 @@ B5安全复核：E7/E26/E33/E36/E39组合native凭据/历史/descriptor/alias/�
 
 ### B11 — 安全交互、IM、跨平台与工程收尾
 
-**当前状态：工程前置 A1/A2 已分别提交并完成本地验证。** A1 6287d2a 在主线，A2 3b15a6d 在独立工作树，当前全局运行目录未切换。后续在新结构继续 B1 余项及 B2–B10，见 [工程交接](./A1-A2-engineering.md)。B11 其他能力及最终跨平台验收仍按各自依赖执行；B1–B4 的整包验收依赖不再作为 pnpm/workspace 的前置。B0 的调研已转入 A1/A2 实施，用户已确认最小结构范围；Changesets 与进一步抽包范围另行确认，见 [pnpm 与 monorepo 专项](./B0-pnpm-monorepo.md)。
+**当前状态：2026-11-23本地实施与可用环境验收完成（第12/12工作包），B11 PR尚未创建/合并。** E1–E34小步提交保留；201候选按子项范围处置，5个用户选定工程候选已落地。最终2820/2820、0skip/build/626稳定路径/601源码门，新生产1197/1197、825包/211Web精确字节；双浏览器14配置30图，见[B11完成矩阵](./B11-completion-matrix.md)与[最终回执](./B11-validation-2026-11-23.json)。不将混合整条或未验平台标为通过。
 
-**pnpm 专项门槛与剩余验收**：A1 已在独立新依赖目录通过 frozen install、安装脚本许可、原生 PTY、全量、构建、npm 产物与生产安装；A2 已通过新布局全量、构建、npm 产物及 macOS unsigned 目录包 Resources/server 的实际 Node/HTTP/UI/PTY 与链接归属核验。发布仍使用单一 cx-viewer npm 包。当前全局实例未切换，Node 20/22 远端 CI、最低 runtime、GUI、Windows/Linux、签名/公证、全局升级仍待验收。A3 Changesets 和进一步 core/content 抽取分别决定，不能把工程子项本地通过当作 B11 整体验收。
+**pnpm专项门槛与后续交付**：六workspace冻结安装、Changesets隔离version、私有core真实bundle、Electron stage825文件/395链接与独立启动、实际Node20.12启动/46定向均通过。版本仍1.1.20，单npm发布包；后续B11 PR与真实目标环境验收。Windows/Linux、实际Electron GUI/签名/公证、最低Node完整套件及外部真实环境未验；用户实例未重启，无远端CI通过声明。
 
 **完整上游提交索引**：[B11 时间顺序索引](./cc-viewer-alignment-commit-index.md#b11)；[B0 交叉候选](./B0-cross-index.md#cross-b11)。逐项核对索引及交叉工作包中的修复、合并和后续替代记录。
 
@@ -201,8 +201,8 @@ B5安全复核：E7/E26/E33/E36/E39组合native凭据/历史/descriptor/alias/�
 ## 6. 当前未完成与需决策项
 
 - B0 已完结；原 15 条待归类项已由人工分流明确归属，见 [B0 交接](./B0-handoff.md)。337 条提交的功能对齐与环境验收继续由 B1–B11 逐项完成，不以累计本地提交数抵扣整条上游提交。
-- B2已用户验收，B3已完成并以7c3d849推送main；B4已完成并由PR #4合并main，B5/B6/B7已完成范围内迁移验收并经PR合并main，下一包B9（本轮未执行）；B1.2 本地实现与隔离安装验收已收尾，已确认不提供有损整库回退，真实用户/目标环境验收仍待；三类迁移、live 可读库的按配置恢复、可证明无损的 key 修复及损坏现场留存已实现，用户已选择 auth 恢复整份 preferences，真实用户迁移尚未执行。真实迁移前停用共享配置的进程、备份并验证可恢复；迁移完成仍停用时追加含新 key 的正常快照，迁移前快照不能保证包含新 key。
-- 工程前置 A1/A2 已分别提交 6287d2a/3b15a6d，并完成当前 macOS/Node 24 的源码/npm/桌面 Node payload 验证。当前全局实例未切换，后续开发使用新结构工作树；Changesets 和进一步 core/content 抽取分别确认。
+- B2已用户验收，B3已完成并以7c3d849推送main；B4已完成并由PR #4合并main，B5/B6/B7已完成范围内迁移验收并经PR合并main，B9/B10已完成并经PR #12合并，B11本地已完成、待PR交付/真实环境验收；B1.2 本地实现与隔离安装验收已收尾，已确认不提供有损整库回退，真实用户/目标环境验收仍待；三类迁移、live 可读库的按配置恢复、可证明无损的 key 修复及损坏现场留存已实现，用户已选择 auth 恢复整份 preferences，真实用户迁移尚未执行。真实迁移前停用共享配置的进程、备份并验证可恢复；迁移完成仍停用时追加含新 key 的正常快照，迁移前快照不能保证包含新 key。
+- 工程前置 A1/A2 已分别提交 6287d2a/3b15a6d，并完成当前 macOS/Node 24 的源码/npm/桌面 Node payload 验证。当前全局bin已指向本仓库packages/app/cli.js，7008/PID97674本轮只读为普通PTY，代理未重启；用户已选Changesets与core/content，E27–E33已实施并最终本地验证，见B11完成矩阵。
 - 自动审批、自动答题、定时任务及插件服务的权限语义仍须在对应工作包实施前明确。现有台账初筛标签保留历史线索，实施前仍需阅读完整 diff、后续修复和当前数据流。
 - 已通过的隔离测试不替代真实模型 CLI、GUI、移动端、Windows/Electron、跨平台、断电或持续高负载验证；失败记录及环境要求随工作包保留。
 

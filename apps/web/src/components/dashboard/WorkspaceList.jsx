@@ -3,7 +3,7 @@ import { Button, Input, Empty, Typography, Popconfirm, message, Modal } from 'an
 import { DeleteOutlined, PlusOutlined, ClockCircleOutlined, DatabaseOutlined, CloseOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { t } from '../../i18n';
 import { apiUrl } from '../../utils/apiUrl';
-import { buildWorkspaceCodexArgs } from '../../../../../packages/app/lib/cli-args.js';
+import { buildWorkspaceCodexArgs } from "@cxv/core/cli-args";
 import { formatSize } from '../../utils/formatters';
 import { renderMarkdown } from '../../utils/markdown';
 import DirBrowser from './DirBrowser';

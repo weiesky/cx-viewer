@@ -106,13 +106,34 @@ for (const p of extraPaths) {
 process.env.PATH = pathDirs.join(delimiter);
 
 // --- Resolve real Node.js path (Electron's process.execPath is the Electron binary) ---
-let _nodePath = process.execPath;
-if (process.versions.electron) {
+// Tab workers are forked with an explicit execPath. Historically that was whatever
+// `where node` / `which node` printed, falling back to the bare string 'node' —
+// but a packaged GUI app does not inherit the user's shell PATH, so on Windows the
+// lookup often finds nothing and fork() died with "spawn node ENOENT", leaving every
+// tab stuck at loading → 30s ready-timeout (issue #129).
+//
+// Electron's own binary is always present and can run a plain Node script when
+// ELECTRON_RUN_AS_NODE=1, so it is the correct last-resort execPath: no external
+// Node install required at all. node-pty's prebuilds are N-API (ABI-stable across
+// Node and Electron), so the worker loads them either way.
+function resolveNodeExecPath() {
+  if (!process.versions.electron) return process.execPath;
+  const isWin = process.platform === 'win32';
   try {
-    _nodePath = execSync(process.platform === 'win32' ? 'where node' : 'which node', { encoding: 'utf-8', windowsHide: true }).trim();
-    if (process.platform === 'win32') _nodePath = _nodePath.split('\n')[0].trim();
-  } catch { _nodePath = process.platform === 'win32' ? 'node' : '/usr/local/bin/node'; }
+    const out = execSync(isWin ? 'where node' : 'which node', { encoding: 'utf-8', windowsHide: true });
+    const lines = out.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    // Windows `where` lists every PATH match; only a real .exe is spawnable.
+    const hit = isWin ? lines.find(l => l.toLowerCase().endsWith('.exe')) : lines[0];
+    if (hit && existsSync(hit)) return hit;
+  } catch { /* node not on PATH — fall through to the Electron binary */ }
+  return null;
 }
+
+const _resolvedNode = resolveNodeExecPath();
+// null → run the worker under Electron's bundled Node (ELECTRON_RUN_AS_NODE).
+const _nodePath = _resolvedNode || process.execPath;
+const _forkUnderElectron = !_resolvedNode && !!process.versions.electron;
+if (_forkUnderElectron) devError('[Electron] No external Node found on PATH; running tab workers under the Electron binary (ELECTRON_RUN_AS_NODE)');
 
 const { resolveNpmCodexPath, resolveNativePath } = await import(pathToFileURL(runtimeFile('findcx.js')).href);
 let codexPath = resolveNpmCodexPath();
@@ -577,6 +598,8 @@ function createTab(projectPath, extraArgs = []) {
   delete childEnv.ANTHROPIC_BASE_URL;
   childEnv.CXV_PROJECT_DIR = realPath;
   childEnv.CXV_RUNTIME_ROOT = runtimeRoot;
+  if (_forkUnderElectron) childEnv.ELECTRON_RUN_AS_NODE = '1';
+  else delete childEnv.ELECTRON_RUN_AS_NODE;
 
   // worker stdio：默认 inherit（行为与原版一致，零 IO 开销）；
   // CXV_DEBUG_WORKER_LOGS=1 时切到 pipe + 写文件（便于排查打包后从 Finder 启动的问题）
@@ -635,6 +658,9 @@ function createTab(projectPath, extraArgs = []) {
   // fork 失败（execPath 不存在 / 权限）—— 之前完全无人接，主进程直接 crash。
   child.on('error', (err) => {
     appendDiag('tab:child-error', { tabId, project: tabs.get(tabId)?.projectName, err });
+    clearTimeout(timeout);
+    const tab = tabs.get(tabId);
+    if (tab && tab.status === 'loading') { tab.status = 'error'; broadcastTabs(); }
   });
 
   child.on('message', (msg) => {
@@ -707,14 +733,13 @@ function createTab(projectPath, extraArgs = []) {
     clearPendingForTab(tabId);
   });
 
-  // Send launch command
-  child.send({
-    type: 'launch',
-    path: realPath,
-    extraArgs,
-    codexPath,
-    isNpmVersion,
-  });
+  // A failed fork can leave a dead IPC channel; preserve the original spawn error.
+  try {
+    child.send({ type: 'launch', path: realPath, extraArgs, codexPath, isNpmVersion });
+  } catch (err) {
+    appendDiag('tab:child-send-failed', { tabId, project: projectName, err });
+  }
+
 }
 
 function switchTab(tabId) {

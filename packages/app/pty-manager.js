@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { BINARY_NAME, resolveNativePath } from './findcx.js';
-import { parseCodexInvocation, stripResumeInvocation } from './lib/cli-args.js';
+import { parseCodexInvocation, stripResumeInvocation } from "@cxv/core/cli-args";
 import { createProcessAdapter } from './lib/cxv-processes.js';
 import { stopOwnedProcessTree } from './lib/shutdown.js';
 import { TerminalScreenModel } from './lib/terminal-screen-model.js';

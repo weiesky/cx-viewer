@@ -1,6 +1,6 @@
 // Wire format 协议详见 docs/WIRE_FORMAT.md（服务端 entry 形态 / 关键字段 / 已知特殊窗口）
-import { conversationIdsConflict, getEntryUserId, getMainAgentConversationId, isCompactContinuation, isPostClearCheckpoint, getMainAgentSessionKey } from '../../../../packages/app/src/utils/clearCheckpoint.js';
-import { getEffectiveModelName } from '../../../../packages/app/src/utils/modelIdentity.js';
+import { conversationIdsConflict, getEntryUserId, getMainAgentConversationId, isCompactContinuation, isPostClearCheckpoint, getMainAgentSessionKey } from "@cxv/core/clearCheckpoint";
+import { getEffectiveModelName } from "@cxv/core/modelIdentity";
 
 /**
  * 计算消息的轻量内容指纹，用于「反向锚点」对齐：以 `newMessages[0]` 的 fp 为锚，

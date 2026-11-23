@@ -22,9 +22,13 @@ function identityKey(kind, ref) {
   return JSON.stringify([kind, ref]);
 }
 
-function privateStat(path, directory = false) {
+function privateStat(path, directory = false, allowRemoved = false) {
   const stat = lstatSync(path, { throwIfNoEntry: false });
   if (!stat) return null;
+  // A coordination lock can vanish, or an immutable store snapshot can be
+  // replaced, during lstat. Recheck the current path strictly when allowed;
+  // key reads and write preflights still reject zero-link files.
+  if (allowRemoved && stat.nlink === 0) return privateStat(path, directory);
   if (stat.isSymbolicLink() || (directory ? !stat.isDirectory() : !stat.isFile() || stat.nlink !== 1)
       || (process.platform !== 'win32' && (stat.mode & 0o077) !== 0)) {
     throw new Error('Unsafe credential path or permissions');
@@ -32,8 +36,8 @@ function privateStat(path, directory = false) {
   return stat;
 }
 
-function readPrivateFile(path, maxBytes) {
-  const before = privateStat(path);
+function readPrivateFile(path, maxBytes, allowReplaced = false) {
+  const before = privateStat(path, false, allowReplaced);
   if (!before) return null;
   const fd = openSync(path, constants.O_RDONLY | (constants.O_NOFOLLOW || 0));
   try {
@@ -91,7 +95,7 @@ export function createCredentialStore(directory) {
 
   function readData() {
     if (!privateStat(root, true)) return { version: 1, creds: {} };
-    const bytes = readPrivateFile(file, MAX_STORE_BYTES);
+    const bytes = readPrivateFile(file, MAX_STORE_BYTES, true);
     if (!bytes) return { version: 1, creds: {} };
     return parseData(bytes);
   }
@@ -118,7 +122,7 @@ export function createCredentialStore(directory) {
       if (!privateStat(root, true)) mkdirSync(root, { recursive: true, mode: 0o700 });
       privateStat(root, true);
       // Reject unsafe existing lock paths before the shared lock helper reads them.
-      privateStat(lockPath);
+      privateStat(lockPath, false, true);
       return withFileLockSync(lockPath, () => {
         const data = readData();
         const key = readKey(data, true);

@@ -3,7 +3,7 @@ import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { isProcessAlive as isPidAlive } from './dingtalk-im-lock.js';
+import { isProcessAlive as isPidAlive } from "./im/dingtalk-im-lock.js";
 import { UPDATE_STATE_FILE, RESTART_CONFIG_FILE, RESTART_READY_FILE } from './update-job.js';
 
 export const RESTART_HELPER_PATH = fileURLToPath(new URL('./restart-helper.js', import.meta.url));

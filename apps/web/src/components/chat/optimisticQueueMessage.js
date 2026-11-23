@@ -1,4 +1,4 @@
-import { classifyUserContent, extractDisplayText } from '../../../../../packages/app/src/utils/contentFilter.js';
+import { classifyUserContent, extractDisplayText } from "@cxv/core/contentFilter";
 
 function sameScope(pending, scope) {
   return pending.project === scope.project

@@ -1,0 +1,15 @@
+{
+  "node": "v20.12.0",
+  "privateRoot": "/tmp/cxv-b11-node-floor-1Xyh1z",
+  "isolatedServerBoot": true,
+  "port": 21240,
+  "cliMode": true,
+  "noModel": true,
+  "targetedInstalledTests": "46/46",
+  "skipped": 0,
+  "testLog": "/tmp/cxv-b11-structure-node-floor-tests.log",
+  "verifiedRuntimeCodeCommit": "7ce46a0",
+  "limits": [
+    "macOS current architecture only; not a full minimum-Node suite or other-OS run"
+  ]
+}

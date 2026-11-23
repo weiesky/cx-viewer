@@ -1,5 +1,5 @@
-import { getInputItemText, getInstructionsText, getResponseConversationItems, getResponseInstructions, getResponseTools } from './openai-body.js';
-import { isOpenAiResponsesMasterEntry } from './openai-responses-url.js';
+import { getInputItemText, getInstructionsText, getResponseConversationItems, getResponseInstructions, getResponseTools } from "@cxv/core/openai-body";
+import { isOpenAiResponsesMasterEntry } from "@cxv/core/openai-responses-url";
 
 const SUBAGENT_INSTRUCTIONS_RE = /command execution specialist|file search specialist|planning specialist|general-purpose agent|security monitor|performing a web search/i;
 const TEAMMATE_INSTRUCTIONS_RE = /running as an agent in a team|Agent Teammate Communication/i;

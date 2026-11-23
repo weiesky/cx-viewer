@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'alignment/**', 'fix/**', 'feat/**']
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20.x, 22.x, 24.x]
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm rebuild node-pty
+      - name: Check the Changesets release plan
+        if: matrix.node == '24.x'
+        run: pnpm changeset status --since=origin/main --output "$RUNNER_TEMP/cxv-changesets.json"
+      - run: pnpm run verify:boundaries
+      - run: pnpm run verify:mac-keychain
+      - run: pnpm run build
+      - run: pnpm run verify:tarball
+      - run: pnpm test
+
+  platform-contracts:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    env:
+      CXV_TEST: '1'
+      CXV_LOG_DIR: tmp
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24.x
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Verify discovery, package reports, and Electron launch contracts
+        run: node --test packages/app/tests/npm-root-discovery.test.js packages/app/tests/native-path-discovery.test.js packages/app/tests/npm-pack-json.test.js apps/electron/tests/electron-launch.test.js apps/electron/tests/mac-keychain.test.js

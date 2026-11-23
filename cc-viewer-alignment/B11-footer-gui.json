@@ -1,0 +1,19 @@
+{
+  "results": [
+    {
+      "engine": "chromium",
+      "noUsagePlaceholder": true,
+      "plainGitHub": true,
+      "noGeoOrStarsRequests": true
+    },
+    {
+      "engine": "webkit",
+      "noUsagePlaceholder": true,
+      "plainGitHub": true,
+      "noGeoOrStarsRequests": true
+    }
+  ],
+  "limitations": [
+    "official endpoint with actual subscription quota requires native traffic; not claimed here"
+  ]
+}

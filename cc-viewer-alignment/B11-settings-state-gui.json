@@ -1,0 +1,21 @@
+{
+  "results": [
+    {
+      "engine": "chromium",
+      "settingsReconnecting": true,
+      "drawerReconnecting": true,
+      "staleConnectedAndErrorNotMasking": true,
+      "unexpectedPageErrors": []
+    },
+    {
+      "engine": "webkit",
+      "settingsReconnecting": true,
+      "drawerReconnecting": true,
+      "staleConnectedAndErrorNotMasking": true,
+      "unexpectedPageErrors": []
+    }
+  ],
+  "limits": [
+    "connection state is controlled; no external DingTalk or model request"
+  ]
+}

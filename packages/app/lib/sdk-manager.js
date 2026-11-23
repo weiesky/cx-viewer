@@ -19,7 +19,7 @@ import {
 } from './sdk-adapter.js';
 import { createProxy } from '../proxy.js';
 import { readCodexGlobalConfig } from './codex-config.js';
-import { parseCodexInvocation, stripResumeInvocation } from './cli-args.js';
+import { parseCodexInvocation, stripResumeInvocation } from "@cxv/core/cli-args";
 import { createHash, randomUUID } from 'node:crypto';
 import { basename, resolve } from 'node:path';
 import { createSdkExecTransport } from './sdk-exec-transport.js';

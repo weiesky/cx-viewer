@@ -27,6 +27,8 @@
 .statusTag {
   display: inline-flex;
   align-items: center;
+  /* 「启动」按钮（仅 worker 已死时出现）与徽标之间留缝 */
+  gap: 8px;
   margin-left: auto;
 }
 .statusTag :global(.ant-tag) {

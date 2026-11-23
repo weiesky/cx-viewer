@@ -1,6 +1,6 @@
 # cc-viewer 逐提交对齐台账
 
-2026-11-23 B9/B10已通过[PR #12](https://github.com/weiesky/cx-viewer/pull/12)合并main（代码提交`d829772`，第11/12工作包完成）。当前分支26笔未合并提交（B9两笔+B10二十四笔）已备份并整合为`da60ff2`；原始/整合/远端/合并tree完全相同，252文件路径/状态/blob逐一核对。旧PR #11已关闭，由#12覆盖，无重复合并；实际无PR checks/分支Actions runs，不冒称远端CI。按本轮要求合并后才更新进度文档，见[整合与合并](./B9-B10-consolidation-and-merge-2026-11-23.md)及[完整原映射](./B9-B10-original-commits-2026-11-23.json)。最终2713/2713、0skip/build/pack773，新安装1096/1096、773包/211Web精确字节/B1.2/安装CLI通过；B10双浏览器14配置34图、13原组件/CSS/模板精确字节及原B9 native证据保持，本轮只整合历史与更新进度，产品内容未变。固定74cd752；B10 12候选按子项核销，B11目录/Activation/content与平台范围保留，下一步B11。后端HTTPS密码门、原生权限/reviewer、独立任务AppServer、常驻transport不变、Ask默认关、代理重试排除持续有效。自有fixture均退出，7008及其他用户实例未由代理停止/重启，正常重启才加载后端。真实全局升级/发布下载、Electron GUI/签名、其他OS/最低Node、真实DNS/LAN-TLS、外部模型、真机/触控/音频/IME/密码插件、长等待/睡眠及历史IM偶发未验，30分钟独立run上限保留。
+2026-11-23 B11本地实施与可用环境验收完成（第12/12工作包）。34笔小步提交保留，B11尚未创建PR/推送/合并；此前B9/B10的PR #12已完成。201候选按子项范围核销，用户选定Changesets/core/content及分组/边界门全部落实。最终2820/2820、0skip/build/626稳定路径/601源码门、新生产1197与825包/211Web字节、Electron stage825字节/395链接/独立启动、实际Node20.12启动+46、双浏览器14配置30图通过。Windows/Linux、实际Electron GUI/签名/公证及真实外部环境仍未验，无远端CI通过声明；7008/PID97674及其他用户实例未重启。详见[B11完成矩阵](./B11-completion-matrix.md)、[候选矩阵](./B11-candidate-matrix.md)与[最终回执](./B11-validation-2026-11-23.json)。
 
 2026-11-21 B6交付：原16笔完整备份并整为e885d8b，PR #6已合并main（9f3e2ce），精确head guard及合并tree已核；实际无PR CI检查。交付复建/pack720/新artifact-only字节通过，生产实现不变；原上游映射继续有效。普通PTY入口待纠偏及旧后端未重启保持，B7下一会话执行，见[整合记录](./B6-local-commit-consolidation-2026-11-21.md)及[B7交接](./B7-handoff.md)。
 
@@ -8531,6 +8531,7 @@
 
 <a id="commit-047db59b80"></a>
 ## [047db59b80](https://github.com/weiesky/cc-viewer/commit/047db59b80186ff7eb10150c54916f1bd03173f7) — refactor(monorepo): @ccv/core extraction + boundary gate + per-package test distribution
+- B11最终子项核销（2026-11-23）：E29 e6c0f9b抽原生core28模块/72caller与29文件私有bundle，E32 5892034硬边界，E33 7ce46a0实体化桌面core；安装28别名同实例、825字节/395桌面链接与独立启动通过。A2测试分配复用，新增core/content所有权契约；原路径薄兼容为原生适配。 见[B11完成矩阵](./B11-completion-matrix.md)，不将其他范围或未验平台计作通过。
 - 工程前置关联（2026-11-17）：3b15a6d 按本地边界分布单包测试、保留根跨包测试，最终全量 1102/1102；未抽取私有 core 包或实现上游完整分层边界门禁，不能标整条已完成。见 [新结构](./A1-A2-engineering.md)。
 - B0 本地关键代码对照：当前未按上游抽取私有 @ccv/core；迁移涉及包边界、测试分布和 bundledDependencies，归 B11，运行时解析及打包仍待专项实测。 [pnpm 专项](./B0-pnpm-monorepo.md)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-047db59b80)
@@ -9117,6 +9118,7 @@
 
 <a id="commit-729b886893"></a>
 ## [729b886893](https://github.com/weiesky/cc-viewer/commit/729b8868939392a255648582615f1474c44b6724) — refactor(boundaries): break static cycles + add import-boundary gate for packages/app
+- B11最终子项核销（2026-11-23）：E31 7d1da80共用scanner拆原生V2静态环，E32 5892034迁AST门/精确收缩例外；530源/14 R3-R5例外/0违规、26夹具，无静态/动态循环例外。 见[B11完成矩阵](./B11-completion-matrix.md)，不将其他范围或未验平台计作通过。
 - B0 本地关键代码对照：上游打破循环依赖并引入 acorn 导入边界门禁；当前单包 scripts 中未发现同名门禁，不能据此假定无循环；结合 B11 拆包评估真实依赖图及增量门禁。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-729b886893)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-729b886893)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-729b886893)
@@ -9163,6 +9165,7 @@
 
 <a id="commit-f9467bfc83"></a>
 ## [f9467bfc83](https://github.com/weiesky/cc-viewer/commit/f9467bfc838a6ef724c0f7144e0ef302e1256523) — refactor(server): group server/lib batch-1 into im/ ask/ proxy/ subdirectories
+- B11最终子项核销（2026-11-23）：E30 dafc659迁原生14实现/15caller到IM/Ask/proxy子目录，旧入口兼容、CLI锚点与hook自愈；143定向及最终2820/新包1197通过，不虚构无原生对应/已排除retry子项。 见[B11完成矩阵](./B11-completion-matrix.md)，不将其他范围或未验平台计作通过。
 - B0 本地关键代码对照：上游移动 IM、ask、proxy 模块并迁移 hook 路径；当前 lib 仍为单包平铺，目录移动须同时核验既有入口和旧 hook 自愈，归 B11。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-f9467bfc83)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-f9467bfc83)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-f9467bfc83)
@@ -9270,6 +9273,7 @@
 
 <a id="commit-20ccfb7304"></a>
 ## [20ccfb7304](https://github.com/weiesky/cc-viewer/commit/20ccfb7304d3d298be3b818bb406a35a6779527a) — refactor(content): extract bundled assets into packages/content (@ccv/content)
+- B11最终子项核销（2026-11-23）：E28 ffb4e6b抽私有content310资产、开发探测/安装回退/同路径组装，E30仅18份原hook文档路径变化；新生产资产字节/回退通过，无原生IM预设则不虚构。 见[B11完成矩阵](./B11-completion-matrix.md)，不将其他范围或未验平台计作通过。
 - 2026-11-23 B10最终核定：实际抽包/assembly probe diff已核；既有A2授权为最小workspace/单npm包，进一步content抽取另决，B10不重排。 仅B10子项，完整本地映射/验证见[B10完成矩阵](./B10-completion-matrix.md)与[候选索引](./B10-candidate-index.json)。
 - B0 本地关键代码对照：当前资源仍随根包组织，未抽取 @ccv/content；是否抽包须结合资源发现与发布产物核验，归 B11。 [pnpm 专项](./B0-pnpm-monorepo.md)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-20ccfb7304)
@@ -10670,6 +10674,7 @@
 
 <a id="commit-3b5103bb9e"></a>
 ## [3b5103bb9e](https://github.com/weiesky/cc-viewer/commit/3b5103bb9e16b9e833ad2dd68feca5db787c2c76) — ci(contract): add L4 tarball-layout gate (verify:tarball + committed baseline)
+- B11最终子项核销（2026-11-23）：E5 af5eb3d真实tarball合同、E17 bd735d8廉价源码漂移门，随E28-E32实际新增路径逐行审阅，最终626稳定路径/601源码门与825全文件字节通过。 见[B11完成矩阵](./B11-completion-matrix.md)，不将其他范围或未验平台计作通过。
 - 工程前置验证关联（2026-11-17）：3b15a6d 批次实际比较 A1/A2 npm 清单（1014→672，原运行代码/资产/文档前缀、9 个共享文件及入口保留），执行隔离生产安装与桌面 Node payload 验证。这是本轮验收证据，不等于已引入全部上游自动 tarball 门禁/CI。见 [证据](./A1-A2-engineering.md)。
 - B0 本地关键代码对照：当前 scripts/npm-pack-dry-run.mjs 提供产物预览校验，但尚无上游提交的固定 tarball 文件布局基线及差异门禁；归 B11 对照实现。 [pnpm 专项](./B0-pnpm-monorepo.md)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-3b5103bb9e)
@@ -10691,6 +10696,7 @@
 
 <a id="commit-7d83b5deff"></a>
 ## [7d83b5deff](https://github.com/weiesky/cc-viewer/commit/7d83b5deffb3d84a0f86ae4df3aaffba4c00d171) — chore(changesets): adopt @changesets/cli for cc-viewer versioning (stage A3)
+- B11最终子项核销（2026-11-23）：E27 57a90c2按用户选择引入Changesets3；六workspace实际status/隔离version只升cx-viewer至1.1.21、private不变，源版本仍1.1.20，无发布。 见[B11完成矩阵](./B11-completion-matrix.md)，不将其他范围或未验平台计作通过。
 - B0 本地关键代码对照：当前单包版本流程未引入 Changesets；这是上游独立 A3 版本管理步骤，归 B11，不能推定 pnpm 切换必需。 [pnpm 专项](./B0-pnpm-monorepo.md)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-7d83b5deff)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-7d83b5deff)
@@ -16872,3 +16878,139 @@ B9 E29（2026-11-23交付）：29笔原始提交完整备份至backup/b9-raw-202
 ### B9/B10 最终整合、PR #12合并与进度
 
 用户明确要求26笔当前未合并提交合为一笔、PR到main由代理合并、合并后更新文档。已备份并整合da60ff2，PR #12已合并main d829772，旧#11已关闭；原始/整合/远端/合并tree相同，252文件blob一致。仅历史与进度，原上游→本地hash映射保留于备份及[26笔原映射](./B9-B10-original-commits-2026-11-23.json)。2713/2713、0skip/build/pack773/新安装1096及原native/GUI证据适用相同代码；没有远端CI通过声明。合并后才更新AGENTS/矩阵/交接，详见[整合与合并](./B9-B10-consolidation-and-merge-2026-11-23.md)。
+
+### B11 E1 — npm安全发现
+
+6bd3b80e58e4c160697f296ed885b22a57f1b5a0 npm根子项→本笔 `fix(discovery): use fixed npm argv and guarded installation fallback`。复用B10 helper、14/14发现/真实CLI回归，Windows参数级而非平台实跑。201候选仍待审；见[B11实施](./B11-implementation.md)。
+
+### B11 E2 — Electron启动回退与失败显示
+
+6bd3b80e58e4c160697f296ed885b22a57f1b5a0 Electron子项→本笔 `fix(electron): fall back to bundled Node and settle failed tab launches`；E1 259df3a。执行实际函数7/7，非源码镜像；本机Electron二进制缺失，真实runtime/GUI未验。见[B11实施](./B11-implementation.md)。
+
+### B11 E3 — 原生Windows入口与Codex适配
+
+6bd3b80e58e4c160697f296ed885b22a57f1b5a0/ef64e1562197ff0589d6d136258c572b05b1f2a2→本笔 `fix(discovery): filter Windows shims while preserving native Codex launchers`；E2 1218d22。16/16，保留POSIX独立shebang与显式Node npm启动；不复制Claude版本选择链。Electron运行库下载ENETDOWN实机待，见[B11实施](./B11-implementation.md)。
+
+### B11 E4 — npm 12 pack JSON
+
+bacfe559fe773a39b8a26c81687baeecb749c147 parser子项→本笔 `fix(package): accept npm 12 reports and reject ambiguous package lists`；E3 1c92a35。6/6/build/实际pack774，通过；非npm12实机，CI/full contract随后。见[B11实施](./B11-implementation.md)。
+
+### B11 E5 — 完整产物路径契约
+
+3b5103bb9e16b9e833ad2dd68feca5db787c2c76/bb8095c7fb→本笔 `build(package): enforce the actual tarball layout contract`；E4 3e75471。575稳定路径与B10全包核对，实际正常pack/新增拒绝通过；未接远端CI。见[B11实施](./B11-implementation.md)。
+
+### B11 E6 — IM配置无效body写前拒绝
+
+01ff6d85e8aa565c81b6b3c3c92f7e24c06c53a7服务端子项→本笔 `fix(im): reject non-object configuration before writes and process control`；E5 af5eb3d。已有native锁内partial复用、19/19通过，UI下一笔。见[B11实施](./B11-implementation.md)。
+
+### B11 E7 — 原IM重连状态链
+
+05287627e54a54fb5426c1492d5b06c64a45ca9a/3734b75d8eb85e371ec1a2df721cc3502e2ee377补充冻结依赖→本笔 `fix(im): restore original reconnecting status and configuration wakeups`；E6 62cc7a3。Web804/0skip，helper/CSS原字节，GUI待；见[B11实施](./B11-implementation.md)。
+
+### B11 E8 — 原IM保存/对话启停组件
+
+01ff6d85e8aa565c81b6b3c3c92f7e24c06c53a7 UI子项→本笔 `feat(im): restore original save and conversation worker controls`；E7 e364136。Web806/build/0skip，原位置/CSS，保留native并发/日志/30秒门；Header挂载缺口与GUI下一笔，不冒认全链完成。见[B11实施](./B11-implementation.md)。
+
+### B11 E9 — 原Header IM记录入口
+
+补充冻结依赖0b3995a3e36d9aed7a9a5ba77b05fae74bdd3c5b及最终Header→本笔 `fix(im): mount the original conversation drawer from header actions`；E8 e7bc503。Web807/build/0skip，实际HTTP发现日志列表缺失，下一笔补native V2链；GUI未通过。见[B11实施](./B11-implementation.md)。
+
+### B11 E10 — IM native V2日志链
+
+冻结最终imLogs/ImConversationModal→本笔 `fix(im): read independent worker conversations through native V2 archives`；E9 ccaf4bd。后端13/Web807/build，双浏览器8配置22图，真实Save/日志及受控启停；Mobile原无入口保持。sender/自动通知待补，见[B11实施](./B11-implementation.md)。
+
+### B11 E11 — IM落盘自动刷新
+
+b1b6aaa9/eeb8a315补充冻结链到本笔 `664cd75`；E10 b7deaf4。后端14/Web807/build，真实双浏览器磁盘追加到抽屉2配置2图，其他OS未验，见[B11实施](./B11-implementation.md)。
+
+### B11 E12 — 原页脚数据门
+
+9eb178145bb218e0a84d806f350ac84f7287a537/cdabb274540ed25618c60d430f96866ad4309d4f到本笔 `fix(web): align footer data gates and remove star-count requests`；E11 664cd75。Web807/build与双浏览器无数据/无geo-star请求2配置2图通过，见[B11实施](./B11-implementation.md)。
+
+### B11 E13 — fast-uri冻结安全pin
+
+5c468c042e/cda9ed326d到本笔 `fix(deps): carry the frozen fast-uri security pin into the workspace`；9255663e33的adm-zip在本地不存在。锁由pnpm生成，全新冻结安装实际4.1.2/AJV URI引用通过；旧node_modules构建残留未清除，见[B11实施](./B11-implementation.md)。
+
+### B11 E14 — 临时keychain密码
+
+f20efc13710a4f855a659e03903d6122d03b7122到本笔 `fix(electron): use the temporary keychain password for signing ACLs`；E13 2105b01。原未修复2失败，修复后当前/新冻结安装2通过、Electron9/0skip；真实签名/公证未验。见[B11实施](./B11-implementation.md)。
+
+### B11 E15 — PR及发布产物门
+
+3b5103/bb8095/f20efc/62012025cb/f3db3ed9a2到本笔 `ci: verify platform contracts and real tarballs before release`；E14 d628715。本地build/576合同/YAML/17定向通过，首次全量1个宿主bypass污染夹具待修，未远端执行或发布。见[B11实施](./B11-implementation.md)。
+
+### B11 E16 — 权限夹具隔离
+
+原生本地回归修复，沿ea8c5e39e0测试隔离要求；本笔 `test: isolate permission bridge fixtures from host bypass mode`；E15 cc94f5a。宿主bypass=1下8/8，app1720/integration215，全量合计2751/0skip；生产权限逻辑未变，见[B11实施](./B11-implementation.md)。
+
+### B11 E17 — 本地产物源码漂移门
+
+71cee60794到本笔 `build: reject published source drift before local tests`；E16 ab72113。552源码路径及真实added/removed拒绝通过，baseline恢复；全量代码仍E16已验2751，见[B11实施](./B11-implementation.md)。
+
+### B11 E18 — 云同步边界文档
+
+b1fe5c09a6/964ce756b6/384dee8025/9adf4ef539及739f49a6de/565613bbea到本笔 `docs: adapt the frozen cloud contract to native configuration boundaries`；E17 bd735d8。无云实现；真实578包合同/554源码门，仅2文档新增，原生权限与凭据根不变，见[B11实施](./B11-implementation.md)。
+
+### B11 E19 — IM空白名单原生文案
+
+01ff6d85 UI必要适配纠偏到本笔 `fix(im): describe the native sender allowlist boundary accurately`；E18 377f23b。实际后端不绑定首群；18语单词条+fallback修正、Web807通过，权限未变。见[B11实施](./B11-implementation.md)。
+
+### B11 E20 — IM sender map原生适配
+
+ee5d9f2068ea184bf836d53d07efc9756aa225cc补充冻结依赖到本笔 `fix(im): restore sender names without changing native turn correlation`；E19 72eb2ec。35测试/build/579包合同/555源码门，双浏览器8配置22图实际map/API显示通过；native nonce/授权/终态不变，见[B11实施](./B11-implementation.md)。
+
+### B11 E21 — 安装与平台实测
+
+9600351738/6bcf5e5ab3产物子项及B11新链到本笔 `test: verify B11 in clean production and minimum-Node runtimes`；E20 86c291a。新安装1195/0skip、包778/Web211精确字节、Electron staging778字节与metadata一致、实际Node20.12启动+45项通过；各套件最新2755/0skip，Electron binary仍下载失败。见[B11实施](./B11-implementation.md)。
+
+### B11 E22 — 当前构建依赖pin一致
+
+5c468c042e/cda9ed326d冻结pin当前安装修复；本笔 `chore: reconcile legacy build dependencies with the frozen security pin`；E21 270b17f。39文件精确字节/实际AJV4.1.2/URI引用/keychain2通过，原版备份和用户进程保持，见[B11实施](./B11-implementation.md)。
+
+### B11 E23 — OIDC发布tag完整链
+
+3fa5717865/2049aef95e/5b544c6ee1/90b41358f9到本笔 `ci: select the publish tag without a separate OIDC metadata mutation`；E22 13a824e。实际YAML/bash五场受控npm通过，未发布；latest/patch不降级，查询失败不提前退出，见[B11实施](./B11-implementation.md)。
+
+### B11 E24 — 设置徽标共享helper接线
+
+05287627冻结最终caller到本笔 `fix(im): share reconnecting badge decisions in the settings panel`；E23 7397fd2。Web808/build，双浏览器设置/抽屉2配置4图通过，新Web产物待下一轮字节重验，见[B11实施](./B11-implementation.md)。
+
+### B11 E25 — 可选身份缓存不阻塞投递
+
+ee5d9f20非致命元数据语义的native锁适配到本笔 `fix(im): skip a busy sender-cache lock without delaying delivery`；E24 8c972fe。36项通过，真实有效锁/子进程期限/原字节与锁保持，最终产物重验随后。见[B11实施](./B11-implementation.md)。
+
+### B11 E26 — 当前包与候选范围交接
+
+201条第一父实际足迹/patch-id与分项范围见[B11候选矩阵](./B11-candidate-matrix.md)；本笔 `docs: record B11 validation and the remaining engineering choices`，E25 da2515c。最新2762/0skip、build/579路径/555源码、新安装1196及778包/211Web精确字节、Electron staging778字节、Node20.12 boot+46、双浏览器14配置30图。pack与源HTTP测试并发失败已保留，串行全app1725复验通过。5个结构候选待选择，B11未标完成；仅清自有夹具，7008只读不重启。见[B11实施](./B11-implementation.md)及[验证JSON](./B11-validation-2026-11-23.json)。
+
+### B11 E27 — 用户确认后的Changesets
+
+用户已选择Changesets与core/content；7d83b5deff/047配置子项到本笔 `build: adopt Changesets for the single published native package`；E26 0821edc。真实status/隔离version只升cx-viewer至1.1.21，源版本1.1.20、private版本不变，未发布。见[B11实施](./B11-implementation.md)。
+
+### B11 E28 — content私有源与组装回退
+
+20ccfb7304及冻结路径探测到本笔 `refactor(content): extract native assets with installed-path fallback`；E27 57a90c2。content7/app46/目录3通过，build/真实pack581/557源码门，310资产迁前/迁后/组装字节一致。完整server发布补齐已有Worker漏项；新安装运行待最终重验。见[B11实施](./B11-implementation.md)与[文件映射](./B11-content-file-map.json)。
+
+### B11 E29 — 私有core实际bundle
+
+047db59b80共享包/说明符子项到本笔 `refactor(core): bundle native shared modules behind package imports`；E28 ffb4e6b。28模块闭包函数体不变、72生产caller迁包名、28旧路径薄转导出。Web808/core28/app串行1721通过，六workspace冻结安装及独立生产安装809全字节/211Web、28别名同实例/内容回退通过；610/585门。完整新包runtime最终重验。见[B11实施](./B11-implementation.md)。
+
+### B11 E30 — 原生内部归组
+
+f9467bfc83到本笔 `refactor(server): group native IM approval and proxy helpers`；E29 e6c0f9b。14实现/15caller归组，旧路径兼容、CLI深度与18语言hook路径同步，143/143、build/真实pack624/599门；原生不存在或用户排除项不虚构，完整验收随后。见[B11实施](./B11-implementation.md)。
+
+### B11 E31 — 静态循环最小拆分
+
+047/729硬边界在native的scanner适配到本笔 `refactor(log-v2): share archive scanning below summary and materializer`；E30 dafc659。66项实际V2/CLI/HTTP通过，build/625/600门；函数体提取不改协议，530源初查无静态循环。见[B11实施](./B11-implementation.md)。
+
+### B11 E32 — AST导入硬边界
+
+729b886893与047最终gate到本笔 `build: enforce native package import boundaries with a shrinking exception list`；E31 7d1da80。530源/14精确R3-R5例外/0违规与静态环，26门夹具、integration246、build/真实pack626/601源码门通过；core Node/外部导入、自循环与绕包硬拦。5工程候选已实施，最终整体验收随后，见[B11实施](./B11-implementation.md)。
+
+### B11 E33 — 桌面私有core实体化
+
+047实际Electron组装子项到本笔 `fix(electron): vendor private core files into the portable runtime stage`；E32 5892034。真实stage逃逸检查先拦住core工作区链接，修正后825全文件字节/395链接边界、独立后端启动/HTTP/stop及Electron9通过。root完整2820保持，桌面实际GUI仍未验。见[B11实施](./B11-implementation.md)。
+
+### B11 E34 — 本地完成与最终新产物回执
+
+201候选按原生子项核销，用户选定的5个工程候选由E27–E33落实；本笔 `docs: close B11 with final package and workspace validation`，E33 7ce46a0。最终正常pnpm test2820/2820、0skip、严格六workspace/build/626稳定路径/601源码门；新生产1197与全部825包/211Web精确字节、安装28别名同实例/内容回退、桌面825字节/395链接/独立启动、实际Node20.12启动+46、双浏览器14配置30图通过。Changesets全部当前记录六workspace隔离演练通过，源版本1.1.20不改，未发布。原始失败/修正与未验范围完整保留，见[B11完成矩阵](./B11-completion-matrix.md)及[最终JSON](./B11-validation-2026-11-23.json)。34笔保留，B11未PR/推送/合并；用户7008/PID97674未重启，自有夹具已关闭。后续PR交付与真实目标环境验收，不把混合整条或未验平台算完成。

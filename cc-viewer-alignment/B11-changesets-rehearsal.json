@@ -1,0 +1,17 @@
+{
+  "fixture": "/tmp/cxv-b11-six-version-final-vi0o9abw",
+  "cli": "3.0.0",
+  "actualSourceStatusPlan": "/tmp/cxv-b11-structure-changesets-status.json",
+  "rehearsalAppVersion": "1.1.21",
+  "privateVersionsUnchanged": {
+    "package.json": "1.1.20",
+    "packages/core/package.json": "0.0.0",
+    "packages/content/package.json": "0.0.0",
+    "apps/web/package.json": "0.0.0",
+    "apps/electron/package.json": "1.1.20"
+  },
+  "changelogGenerated": true,
+  "actualAppVersionUnchanged": "1.1.20",
+  "allCurrentChangesetsIncluded": true,
+  "published": false
+}

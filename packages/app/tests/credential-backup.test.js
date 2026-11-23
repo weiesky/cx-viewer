@@ -253,3 +253,60 @@ test('separate processes capture authenticated snapshots while shared-store writ
   for (let i = 0; i < 10; i++) assert.equal(store.get('im-secret', 'concurrent-' + i), 'secret-' + i);
   assert.deepEqual(readFileSync(join(owner, sources[0])), readCredentialBackup(one.stdout, options).get(sources[0]));
 });
+
+test('released locks may disappear during validation while disappearing keys still fail closed', t => {
+  const { owner, store } = fixture(t);
+  store.set('im-secret', 'dingtalk', 'synthetic private value');
+  const key = readFileSync(store.keyPath), ciphertext = readFileSync(store.file);
+  const lock = join(store.root, 'credentials.lock');
+  const original = fs.openSync;
+  const withRemoval = (target, afterOpen, operation, replace = false) => {
+    let removed = false;
+    const release = () => {
+      rmSync(target); removed = true;
+      if (replace) writeFileSync(target, JSON.stringify({ pid: process.pid }), { mode: 0o600 });
+    };
+    fs.openSync = (path, flags, ...args) => {
+      if (path !== target || typeof flags !== 'number' || removed) return original(path, flags, ...args);
+      if (!afterOpen) release();
+      const fd = original(path, flags, ...args);
+      if (afterOpen) release();
+      return fd;
+    };
+    syncBuiltinESMExports();
+    try { operation(); assert.equal(removed, true); }
+    finally { fs.openSync = original; syncBuiltinESMExports(); }
+  };
+  for (const afterOpen of [false, true]) {
+    for (const operation of [() => readCredentialStoreFiles(owner), () => createCredentialDamageEvidence(owner, sources)]) {
+      writeFileSync(lock, JSON.stringify({ pid: process.pid }), { mode: 0o600 });
+      withRemoval(lock, afterOpen, operation);
+      assert.deepEqual(readFileSync(store.keyPath), key);
+      assert.deepEqual(readFileSync(store.file), ciphertext);
+    }
+    writeFileSync(lock, JSON.stringify({ pid: process.pid }), { mode: 0o600 });
+    withRemoval(lock, afterOpen, () => readCredentialStoreFiles(owner), true);
+    rmSync(lock);
+    withRemoval(store.keyPath, afterOpen, () => assert.throws(() => readCredentialStoreFiles(owner), failure));
+    writeFileSync(store.keyPath, key, { mode: 0o600 });
+    assert.deepEqual(readFileSync(store.file), ciphertext);
+  }
+  const originalStat = fs.lstatSync;
+  for (const target of [lock, store.keyPath]) {
+    if (target === lock) writeFileSync(lock, JSON.stringify({ pid: process.pid }), { mode: 0o600 });
+    let removed = false;
+    fs.lstatSync = (path, ...args) => {
+      const stat = originalStat(path, ...args);
+      if (path === target && stat && !removed) { removed = true; rmSync(target); stat.nlink = 0; }
+      return stat;
+    };
+    syncBuiltinESMExports();
+    try {
+      if (target === lock) readCredentialStoreFiles(owner);
+      else assert.throws(() => readCredentialStoreFiles(owner), failure);
+      assert.equal(removed, true);
+    } finally { fs.lstatSync = originalStat; syncBuiltinESMExports(); }
+    assert.deepEqual(readFileSync(store.file), ciphertext);
+  }
+
+});

@@ -11,12 +11,12 @@ import { formatTokenCount, computeTokenStats, computeToolUsageStats, computeSkil
 import { contextSeverityColor } from '../../utils/formatters';
 import { PLAN_AUTO_APPROVE_OPTIONS, autoApproveSelectOptions, askAutoAnswerSelectOptions, askAutoAnswerUiValue, askAutoAnswerPrefValue } from '../../utils/autoApproveOptions';
 import { APPROVALS_REVIEWER_DEFAULT, approvalReviewerSelectOptions } from '../../utils/approvalReviewerOptions';
-import { isMainAgent } from '../../../../../packages/app/src/utils/contentFilter';
+import { isMainAgent } from "@cxv/core/contentFilter";
 import { sortSkillsDefault } from '../../utils/skillsParser';
 import { handleSkillToggle, handleSkillDelete } from '../../utils/skillModalController';
 import { PINNED_KEY, togglePinned, normalizePinnedKeys, resolvePinnedKeys } from '../../utils/pinnedMenu';
-import { classifyRequest } from '../../../../../packages/app/src/utils/requestType';
-import { resolveTeammateNames } from '../../../../../packages/app/src/utils/contentFilter';
+import { classifyRequest } from "@cxv/core/requestType";
+import { resolveTeammateNames } from "@cxv/core/contentFilter";
 import { t, getLang, setLang, LANG_OPTIONS } from '../../i18n';
 import { apiUrl } from '../../utils/apiUrl';
 import * as SeqLoaders from '../../utils/seqResourceLoaders';
@@ -40,6 +40,7 @@ import SystemTextModal from '../settings/SystemTextModal';
 import VoicePackSettings from '../settings/VoicePackSettings';
 import ProjectAliasEditor from '../settings/ProjectAliasEditor';
 import MessagingModal from '../settings/MessagingModal';
+import ImConversationModal from '../settings/ImConversationModal';
 import ImStatusChip from '../settings/ImStatusChip';
 import { AVAILABLE_IM_PLATFORMS } from '../settings/imPlatforms';
 import { useProjectAlias } from '../../hooks/useProjectAlias';
@@ -116,7 +117,7 @@ class AppHeader extends React.Component {
 
   constructor(props, context) {
     super(props);
-    this.state = { settingsDrawerVisible: false, globalSettingsVisible: false, projectStatsVisible: false, projectStats: null, projectStatsLoading: false, localUrl: '', pluginModalVisible: false, processModalVisible: false, logoDropdownOpen: false, electronMenuOpen: false, electronMenuBar: null, proxyModalVisible: false, systemTextModalVisible: false, messagingModalVisible: false, messagingInitialTool: null, logDirDraft: null, qrPopoverOpen: false, electronQrOpen: false, electronQrAnchor: null, projectPrefsModalOpen: false, pluginPanels: [], activePluginPanel: null, pluginPanelAttempt: 0, _skillsModal: { open: false, loading: false, skills: [], error: null, toggling: new Set() },
+    this.state = { settingsDrawerVisible: false, globalSettingsVisible: false, projectStatsVisible: false, projectStats: null, projectStatsLoading: false, localUrl: '', pluginModalVisible: false, processModalVisible: false, logoDropdownOpen: false, electronMenuOpen: false, electronMenuBar: null, proxyModalVisible: false, systemTextModalVisible: false, messagingModalVisible: false, messagingInitialTool: null, imRecordVisible: false, imRecordPlatform: null, logDirDraft: null, qrPopoverOpen: false, electronQrOpen: false, electronQrAnchor: null, projectPrefsModalOpen: false, pluginPanels: [], activePluginPanel: null, pluginPanelAttempt: 0, _skillsModal: { open: false, loading: false, skills: [], error: null, toggling: new Set() },
       // 文件系统权威的 skill 列表（/api/skills 返回）；live-tail 下作为 popover chip 和管理弹窗的共享数据源。
       // null=未加载 / false=失败 / [] 或 Array=加载结果。workspace 切换由 componentDidUpdate + seq 控制。
       _fsSkills: null,
@@ -379,7 +380,7 @@ class AppHeader extends React.Component {
       case 'viewMode': if (onToggleViewMode) onToggleViewMode(); break;
       case 'approval': if (onApprovalReopen) onApprovalReopen(); break;
       case 'proxy': this.setState({ proxyModalVisible: true }); break;
-      case 'im': this.setState({ messagingModalVisible: true, messagingInitialTool: payload.id }); break;
+      case 'im': this.setState({ imRecordVisible: true, imRecordPlatform: payload.id }); break;
       case 'menuShortcut': { const d = this._getMenuDescriptors().find(x => x.key === payload.key); if (d && d.onClick) d.onClick(); break; }
       case 'qrOpen': this.setState((s) => ({
         electronQrOpen: !s.electronQrOpen,
@@ -1401,7 +1402,7 @@ class AppHeader extends React.Component {
           })()}
           {/* 日志模式下 IM 无法正常配置/使用，不暴露入口 */}
           {!isLocalLog && AVAILABLE_IM_PLATFORMS.map((p) => (
-            <ImStatusChip key={p.id} descriptor={p} onStatus={this._onImStatus} onClick={() => this.setState({ messagingModalVisible: true, messagingInitialTool: p.id })} />
+            <ImStatusChip key={p.id} descriptor={p} onStatus={this._onImStatus} onClick={() => this.setState({ imRecordVisible: true, imRecordPlatform: p.id })} />
           ))}
           {isElectronTab && (() => {
             // 锚点 right = 「图标右缘到窗口右缘的距离」÷ 本视图缩放系数(rightOffset 由 tab bar 点击时
@@ -1954,6 +1955,12 @@ class AppHeader extends React.Component {
           open={this.state.messagingModalVisible}
           initialTool={this.state.messagingInitialTool}
           onClose={() => this.setState({ messagingModalVisible: false })}
+        />
+        <ImConversationModal
+          open={this.state.imRecordVisible}
+          platform={this.state.imRecordPlatform}
+          onClose={() => this.setState({ imRecordVisible: false })}
+          onOpenConfig={(platform) => this.setState({ messagingModalVisible: true, messagingInitialTool: platform })}
         />
         {/* Skills Manager Modal — 从 AppHeader popover「已载入 Skill」→「管理」按钮打开 */}
         {this.renderSkillsManagerModal()}

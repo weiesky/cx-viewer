@@ -19,12 +19,12 @@ import {
   getResponseInputItems,
   hasResponseInputArray,
   textFromContent,
-} from './openai-body.js';
-import { isOpenAiResponsesMasterUrl } from './openai-responses-url.js';
+} from "@cxv/core/openai-body";
+import { isOpenAiResponsesMasterUrl } from "@cxv/core/openai-responses-url";
 
 const MAX_DECODED_REQUEST_BODY_BYTES = 32 * 1024 * 1024;
 
-export { getInstructionsText } from './openai-body.js';
+export { getInstructionsText } from "@cxv/core/openai-body";
 
 const SUBAGENT_INSTRUCTIONS_RE = /(?:command execution|file search|planning) specialist|general-purpose agent|subagent|sub-agent/i;
 const CODEX_TOOL_NAMES = new Set([

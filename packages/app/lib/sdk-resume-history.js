@@ -1,7 +1,7 @@
 import { discoverV2SessionArchives, resolveV2SessionFile, streamV2LogEntries, summarizeV2SessionArchive } from './log-v2/materializer.js';
 import { readSessionTimelineIdentity } from './log-v2/session-summary.js';
 import { isSdkResumeThreadId } from './sdk-adapter.js';
-import { parseCodexInvocation } from './cli-args.js';
+import { parseCodexInvocation } from "@cxv/core/cli-args";
 import { projectArchiveDirectoryName } from './log-v2/identity.js';
 
 function failure(message, code, status = 409) {

@@ -1,9 +1,9 @@
 import { resolve } from 'node:path';
 import { createProxy } from '../proxy.js';
-import { APPROVALS_REVIEWER_DEFAULT, isSupportedApprovalsReviewer, normalizeApprovalsReviewer } from './approval-reviewer.js';
+import { APPROVALS_REVIEWER_DEFAULT, isSupportedApprovalsReviewer, normalizeApprovalsReviewer } from "@cxv/core/approval-reviewer";
 import { createAppServerBridge } from './appserver-bridge.js';
 import { inspectCodexSystemPromptSupport } from './codex-appserver-capabilities.js';
-import { appendCxvFinalConfigArgs, getReasoningSummaryConfigArgs, getDefaultModeRequestUserInputConfigArgs, hasBypassPermissions, parseCodexInvocation } from './cli-args.js';
+import { appendCxvFinalConfigArgs, getReasoningSummaryConfigArgs, getDefaultModeRequestUserInputConfigArgs, hasBypassPermissions, parseCodexInvocation } from "@cxv/core/cli-args";
 import { appendOtelTraceExporterConfigArgsOnce, getOtelTraceExporterConfigArgs, OTEL_TRACE_HEADERS_ENV, withOtelTraceAuthHeader } from './otel-config.js';
 
 // The caller supplies already-selected launch args. This function never decides

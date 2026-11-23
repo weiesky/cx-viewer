@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { homedir } from 'node:os';
-import { nativeContextPercent, sumUsageInputTokens, sumUsageContextTokens } from '../server/lib/context-rules.js';
+import { nativeContextPercent, sumUsageInputTokens, sumUsageContextTokens } from "@cxv/core/context-rules";
 
 export const CONTEXT_WINDOW_FILE = join(homedir(), '.codex', 'context-window.json');
 

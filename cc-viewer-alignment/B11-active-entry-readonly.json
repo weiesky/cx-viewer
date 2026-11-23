@@ -1,0 +1,17 @@
+{
+  "port": 7008,
+  "readOnly": true,
+  "assistantStoppedOrRestarted": false,
+  "/api/cli-mode": {
+    "cliMode": true,
+    "sdkMode": false,
+    "ptyMode": true,
+    "ptyQueueAvailable": true
+  },
+  "/api/version-info": {
+    "version": "1.1.20"
+  },
+  "listenerPids": [
+    97674
+  ]
+}
