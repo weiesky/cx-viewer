@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 import { EventEmitter } from 'node:events';
 import { pipeline } from 'node:stream';
 import { reportSwallowed } from './server/lib/error-report.js';
+import { computeAskAutoAnswer, createAskAutoAnswerState, cancelAskAutoAnswerState, replayAskAutoAnswerFields } from './lib/ask-auto-answer.js';
 import { createStreamMuxServer } from './server/lib/ws-mux.js';
 import { createServer as createHttpsServer } from 'node:https';
 import { createConnection } from 'node:net';
@@ -43,9 +44,16 @@ import { probeFilesExist } from './lib/files-exists.js';
 import { ensureProjectIdForCwd, resolveProjectIdForCwd } from './lib/log-v2/project-id.js';
 import { t, detectLanguage } from './i18n.js';
 import { DEFAULT_START_PORT, DEFAULT_MAX_PORT, MAX_POST_BODY as _MAX_POST_BODY, MAX_UPLOAD_SIZE, SSE_HEARTBEAT_MS, HOOK_TIMEOUT_MS, EDITOR_SESSION_CLEANUP_MS, UPLOAD_DIR } from './lib/constants.js';
-import { checkAndUpdate } from './lib/updater.js';
-import { loadPlugins, runWaterfallHook, runParallelHook, getPluginsInfo, getPluginsDir } from './lib/plugin-loader.js';
-import { uploadPlugins, installPluginFromUrl } from './lib/plugin-manager.js';
+import { checkAndUpdate, detectHomebrewInstall, detectPnpmGlobalInstall } from './lib/updater.js';
+import { UpdateJob } from './lib/update-job.js';
+import { updateRoutes } from './lib/update-routes.js';
+import { loadPlugins, runWaterfallHook, runParallelHook, getPluginsInfo, getPluginsDir, getPluginEntries } from './lib/plugin-loader.js';
+import { uploadPlugins, installPluginFromUrl, deletePluginDir } from './lib/plugin-manager.js';
+import * as pluginRuntime from './lib/plugin-runtime.js';
+import { pluginServicesRoutes } from './lib/plugin-service-routes.js';
+import { buildPanelDescriptor } from './lib/plugin-panels.js';
+import { baseUrlAllowedHost, resolveBaseConfig, externalUrlFromConfig, resolveExternalScheme } from './lib/base-url.js';
+import { stripBasePath, validateBasePath } from './lib/base-path.js';
 import { getUserProfile } from './lib/user-profile.js';
 import { getGitDiffs, getUnpushedCommits, isValidCommitHash, isSafeRelativePath, PATH_TRAVERSAL, execFileAsync as gitExecFileAsync } from './lib/git-diff.js';
 import { getGitWorkingTreeLineStats } from './lib/git-change-stats.js';
@@ -106,6 +114,10 @@ import {
 } from './lib/auth.js';
 import { handleAuthRoute } from './lib/auth-routes.js';
 import { readPreferences, updatePreferences } from './lib/preferences.js';
+import { initScheduledTaskScheduler, startScheduledTaskScheduler, stopScheduledTaskScheduler, waitScheduledTaskRuns } from './lib/scheduled-task-scheduler.js';
+import { executeScheduledTask } from './lib/scheduled-task-executor.js';
+import { workspaceUploadPaths } from './lib/workspace-upload-paths.js';
+import { handleScheduledTaskRoute } from './lib/scheduled-task-routes.js';
 import { handleVoicePackRoute } from './lib/voice-pack-routes.js';
 import { getAppServerAgentLoopSnapshot } from './lib/appserver-bridge.js';
 import { reconcileVoicePackPrefs } from './server/lib/voice-pack-manager.js';
@@ -124,6 +136,7 @@ import { listSystemPromptPresets } from './lib/builtin-model-prompts.js';
 import { SYSTEM_PROMPT_VARIABLES_DOC } from './lib/system-prompt-render.js';
 import {
   buildCodexAutoResolutionAnswers,
+  pickCodexAutoAnswers,
   projectCodexAnswersForConversation,
 } from './lib/codex-request-user-input.js';
 import {
@@ -398,21 +411,25 @@ function removePendingCodexAsk(id) {
   if (!pending) return null;
   pendingCodexAsks.delete(key);
   if (pending.timer) clearTimeout(pending.timer);
+  if (pending.auto?.timer) clearTimeout(pending.auto.timer);
   return pending;
 }
 
-/** Claim an app-server request_user_input request only when a GUI is online. */
+/** Claim native questions for an online GUI or explicitly enabled server hosting. */
 export function offerCodexRequestUserInput(request) {
   if (!request?.uiId || !Array.isArray(request.questions) || request.questions.length === 0) return false;
   const scope = ptyScope(request);
   if (ptyWorkspaces && !scope) return false;
   const bridge = requestInputBridge(scope);
-  if (!bridge || openTerminalClients(scope).length === 0) return false;
+  const computed = computeAskAutoAnswer(scope?.cwd);
+  const autoAnswers = computed.enabled ? pickCodexAutoAnswers(request.questions) : null;
+  const hosting = computed.enabled && !!autoAnswers;
+  if (!bridge || (!hosting && openTerminalClients(scope).length === 0)) return false;
 
   const id = String(request.uiId);
   const timeoutMs = Number.isFinite(request.autoResolutionMs) && request.autoResolutionMs > 0
     ? request.autoResolutionMs
-    : null;
+    : hosting ? 24 * 60 * 60_000 : null;
   const pending = {
     id, scope, bridge,
     questions: request.questions,
@@ -422,11 +439,12 @@ export function offerCodexRequestUserInput(request) {
     createdAt: request.createdAt || Date.now(),
     timeoutMs,
     timer: null,
+    auto: null, autoCancelled: false,
   };
   if (timeoutMs) {
     pending.timer = setTimeout(() => {
       const current = pendingCodexAsks.get(id);
-      if (!current) return;
+      if (current !== pending) return;
       const codexAnswers = buildCodexAutoResolutionAnswers(current.questions);
       const answers = projectCodexAnswersForConversation(current.questions, codexAnswers);
       const resolved = current.bridge?.resolve?.(id, codexAnswers);
@@ -454,7 +472,16 @@ export function offerCodexRequestUserInput(request) {
     itemId: pending.itemId,
     startedAt: pending.createdAt,
     timeoutMs,
+    ...replayAskAutoAnswerFields(hosting ? computed : null, false),
   }, null, scope);
+  if (hosting) pending.auto = createAskAutoAnswerState(computed, () => {
+    if (pendingCodexAsks.get(id) !== pending || pending.autoCancelled) return;
+    if (pending.bridge?.resolve?.(id, autoAnswers) !== true) return;
+    removePendingCodexAsk(id);
+    broadcastCodexAskMessage({ type: 'ask-hook-resolved', id, reason: 'auto-answered',
+      itemId: pending.itemId, questions: pending.questions, codexAnswers: autoAnswers,
+      answers: projectCodexAnswersForConversation(pending.questions, autoAnswers), ...(scope || {}) }, null, scope);
+  });
   return true;
 }
 
@@ -484,6 +511,7 @@ export function setCodexRequestUserInputBridge(bridge) {
 function releaseCodexAsksToTuiWhenGuiDisconnects() {
   for (const [id, pending] of pendingCodexAsks) {
     if (openTerminalClients(pending.scope).length > 0) continue;
+    if (pending.auto && !pending.autoCancelled) continue;
     if (pending.bridge?.releaseToTui?.(id)) removePendingCodexAsk(id);
   }
 }
@@ -902,6 +930,51 @@ function ptyViewForUrl(parsedUrl) {
     ? parsedUrl.searchParams.get('instance') : undefined);
 }
 
+function scheduledTaskScope(task) {
+  if (isWorkspaceMode && !_workspaceLaunched) return null;
+  try {
+    if (isSdkMode) {
+      if (task.engine !== 'sdk') return null;
+      if (task.mode === 'spawn' && task.cwd === sdkBootCwd && sdkManager.getSdkSpawnConfig().available) return { cwd: task.cwd };
+      const scope = sdkManager.getSdkSessionInfo({ instanceKey: task.instanceKey });
+      return scope?.cwd === task.cwd ? scope : null;
+    }
+    if (task.engine !== 'pty' || task.mode !== 'inject') return null;
+    const scope = ptyWorkspaces?.info(task.instanceKey);
+    return scope?.running && scope.cwd === task.cwd ? scope : null;
+  } catch { return null; }
+}
+
+function initScheduledTasks() {
+  if (!isCliMode || process.env.CXV_IM_WORKER === '1' || process.env.CXV_IM_PLATFORM) return;
+  initScheduledTaskScheduler({
+    getRoot: () => LOG_DIR, getMode: () => ({ sdk: isSdkMode }),
+    getSpawnConfig: () => sdkManager?.getSdkSpawnConfig() || { available: false },
+    canExecute: task => !!scheduledTaskScope(task),
+    isReady: () => isSdkMode ? sdkManager.listSdkSessions().length > 0 : !!ptyWorkspaces?.list().some(scope => scope.running),
+    execute: (task, claim) => executeScheduledTask(task, claim, {
+      isSdkMode, samePath: (a, b) => a === b,
+      sdk: sdkManager && { ...sdkManager, getQueueSnapshot: sdkManager.getSdkQueueState },
+      pty: {
+        listLivePtys: () => (ptyWorkspaces?.list() || []).map(scope => ({ ...scope,
+          ptyKind: ptyWorkspaces.session(scope.instanceKey).getPtyState().kind })),
+        getPtyKindFor: anchor => { try { return ptyWorkspaces.session(anchor.instanceKey).getPtyState().kind; } catch { return null; } },
+      },
+      chatQueue: { enqueue: (text, anchor) => {
+        try {
+          const scope = ptyWorkspaces.info(anchor.instanceKey);
+          const owned = ptyQueueFor(scope);
+          return owned?.ready ? owned.queue.enqueue(text, { ...anchor, ...owned.anchor, strictAnchor: true }) : null;
+        } catch { return null; }
+      } },
+    }),
+    broadcast: (_project, data) => isSdkMode ? sendSdkEvent('scheduled_tasks', data)
+      : sendEventToClients(clients.filter(client => ptyScopeMatches(client, data)), 'scheduled_tasks', data),
+    report: reportSwallowed,
+  });
+  startScheduledTaskScheduler();
+}
+
 function sdkViewForUrl(parsedUrl) {
   if (!sdkManager) return null;
   // Unanchored legacy pages remain bound to the boot directory, never to a
@@ -1038,6 +1111,9 @@ export function setWorkspaceCodexPath(path, isNpm) {
   _workspaceIsNpmVersion = isNpm;
 }
 let _launchCallback = null;
+let _restartHandler = null;
+export function setRestartHandler(fn) { _restartHandler = fn; }
+const PROCESS_ID = `${process.pid}-${Date.now()}`;
 export function setLaunchCallback(fn) { _launchCallback = fn; }
 export function setWorkspaceLaunched(v) { _workspaceLaunched = v; }
 export async function initPostLaunch() {
@@ -1467,6 +1543,8 @@ function readOtelJsonBody(req, maxSize = OTEL_PAYLOAD_LIMITS.bodyBytes) {
 }
 
 let clients = [];
+const updateJob = new UpdateJob({ get currentPort() { return actualPort; } });
+updateJob.subscribe(state => sendEventToClients(clients, 'update_progress', state));
 onProxyProfileChange((data) => {
   const profile = data.profiles.find(item => item.id === data.active) || { id: 'max', name: 'Default' };
   const maskedProfile = profile.apiKey ? { ...profile, apiKey: _maskApiKey(profile.apiKey) } : profile;
@@ -1519,7 +1597,8 @@ async function refreshPluginRuntime() {
   await runParallelHook('serverStarted', {
     port: actualPort,
     host: HOST,
-    url: `${serverProtocol}://127.0.0.1:${actualPort}`,
+    url: `${serverProtocol}://127.0.0.1:${actualPort}${resolveBaseConfig().basePath}`,
+    basePath: resolveBaseConfig().basePath,
     ip: getLocalIp(),
     token: ACCESS_TOKEN,
     protocol: serverProtocol,
@@ -1528,8 +1607,22 @@ async function refreshPluginRuntime() {
   });
 }
 
-function getPublicAccessUrl(ip = getLocalIp()) {
-  return `${serverProtocol}://${ip}:${actualPort}?token=${ACCESS_TOKEN}`;
+function pluginsWithRuntime() {
+  return getPluginsInfo().map(plugin => plugin.type === 'service'
+    ? { ...plugin, serviceStatus: pluginRuntime.getRuntimePluginStatus(plugin.name) } : plugin);
+}
+
+async function reloadServicePlugins(options = {}) {
+  const result = await pluginRuntime.reloadRuntime(options);
+  if (!result.ok) throw Object.assign(new Error(result.error), { status: 503 });
+  await refreshPluginRuntime();
+  return result;
+}
+
+function getPublicAccessUrl(ip = getLocalIp(), req = null) {
+  const cfg = resolveBaseConfig();
+  return externalUrlFromConfig(cfg, { token: ACCESS_TOKEN, req })
+    || `${serverProtocol}://${ip}:${actualPort}${cfg.basePath}?token=${ACCESS_TOKEN}`;
 }
 
 function startStatsWorker() {
@@ -1672,9 +1765,57 @@ function targetPreviewToken(target, project, instance) {
   ])).digest('base64url');
 }
 
+function safeParseRequestUrl(req) {
+  try {
+    if (typeof req.headers.host !== 'string' || !req.headers.host) return null;
+    new URL(`http://${req.headers.host}/`);
+    const parsed = new URL(req.url, `${serverProtocol}://${req.headers.host}`);
+    parsed.pathname = stripBasePath(parsed.pathname, resolveBaseConfig().basePath);
+    return parsed;
+  } catch { return null; }
+}
+
+function isViewerOriginAllowed(req) {
+  const origin = typeof req.headers.origin === 'string' ? req.headers.origin : '';
+  const host = typeof req.headers.host === 'string' ? req.headers.host : '';
+  if (isSameOriginRequest(origin, host, serverProtocol)) return true;
+  // An explicitly configured public host may terminate TLS at its reverse proxy.
+  // This only validates browser origin; password login/cookies still use backend TLS.
+  const cfg = resolveBaseConfig();
+  try {
+    return !!cfg.host && new URL(`http://${host}`).hostname.toLowerCase() === cfg.host
+      && isSameOriginRequest(origin, host, resolveExternalScheme({ scheme: cfg.scheme, req }));
+  } catch { return false; }
+}
+
+function injectViewerBase(html, basePath) {
+  const href = basePath || '/';
+  const escaped = href.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  let injected = `<base href="${escaped}">`;
+  if (basePath) injected += `<script>window.__CXV_BASE_PATH__=${JSON.stringify(basePath).replace(/</g, '\\u003c')}</script>`;
+  return html.replace(/<head[^>]*>/i, match => match + injected);
+}
+
+function isHostAllowed(hostHeader) {
+  const allowed = process.env.CXV_ALLOWED_HOSTS
+    ? process.env.CXV_ALLOWED_HOSTS.split(',').map(host => host.trim()).filter(Boolean)
+    : ['localhost', '127.0.0.1', '::1', '[::1]', ...getAllLocalIps()];
+  const publicHost = baseUrlAllowedHost();
+  if (publicHost) allowed.push(publicHost);
+  if (allowed.includes('*')) return true;
+  const host = String(hostHeader || '').toLowerCase();
+  const bare = host.includes('::') && !host.includes(']') ? host : host.replace(/:\d+$/, '');
+  const unbracketed = bare.replace(/^\[|\]$/g, '');
+  return allowed.some(value => [bare, unbracketed, `[${unbracketed}]`].includes(value.toLowerCase()));
+}
+
 async function handleViewerRequest(req, res) {
-  const parsedUrl = new URL(req.url, `${serverProtocol}://${req.headers.host}`);
+  const parsedUrl = safeParseRequestUrl(req);
+  if (!parsedUrl) { sendJson(res, 400, { error: 'Bad Request: invalid Host header' }); return; }
   const url = parsedUrl.pathname;
+  if (!url.startsWith('/assets/') && url !== '/favicon.ico' && req.method !== 'OPTIONS' && !isHostAllowed(req.headers.host)) {
+    sendJson(res, 403, { error: 'host-not-allowed' }); return;
+  }
   const method = req.method;
   let isTargetPreviewResource = false;
   if ((method === 'GET' || method === 'HEAD') && url.startsWith('/api/file-raw/target/')) {
@@ -1703,7 +1844,7 @@ async function handleViewerRequest(req, res) {
 
   const requestOrigin = typeof req.headers.origin === 'string' ? req.headers.origin : '';
   const requestHost = typeof req.headers.host === 'string' ? req.headers.host : '';
-  const originAllowed = isSameOriginRequest(requestOrigin, requestHost, serverProtocol);
+  const originAllowed = isViewerOriginAllowed(req);
 
   // Browser API access is same-origin. Header-less CLI/native clients remain
   // compatible; a hostile Origin never gains CORS permission to localhost.
@@ -1726,7 +1867,7 @@ async function handleViewerRequest(req, res) {
   const remoteIp = req.socket.remoteAddress;
   const isLoopbackPeer = remoteIp === '127.0.0.1' || remoteIp === '::1' || remoteIp === '::ffff:127.0.0.1';
   const isLocal = isLoopbackPeer && isLoopbackHost(requestHost) && originAllowed;
-  const isStaticAsset = url.startsWith('/assets/') || url === '/favicon.ico';
+  const isStaticAsset = url.startsWith('/assets/') || url === '/favicon.ico' || url.startsWith('/plugin-panels/');
   const currentAuthConfig = getAuthConfig();
   const remotePasswordLogin = serverProtocol === 'https';
   const cookieToken = parseCookies(req.headers.cookie).cxv_auth;
@@ -1752,7 +1893,7 @@ async function handleViewerRequest(req, res) {
   if (authDecision.action === 'login-page') {
     const lang = localeFromAcceptLanguage(req.headers['accept-language']);
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
-    res.end(renderLoginPage({ lang }));
+    res.end(renderLoginPage({ lang, basePath: resolveBaseConfig().basePath }));
     return;
   }
   if (authDecision.action === 'unauthorized') {
@@ -1770,6 +1911,28 @@ async function handleViewerRequest(req, res) {
     res.end(JSON.stringify({ error: 'Secure transport required for password login', code: 'secure_transport_required' }));
     return;
   }
+
+  const pluginSurface = url === '/plugins' || url.startsWith('/plugins/');
+  const pluginWrite = (url === '/api/plugins' || url.startsWith('/api/plugins/'))
+    && method !== 'GET' && method !== 'HEAD';
+  if ((pluginSurface || pluginWrite || url === '/api/local-url') && !isTargetFileAdmin) {
+    sendJson(res, 403, { error: 'Forbidden: admin and same-origin required' });
+    return;
+  }
+  if ((pluginSurface || pluginWrite) && _viewerStopping) {
+    sendJson(res, 503, { error: 'server is stopping' });
+    return;
+  }
+  const updateRoute = updateRoutes.find(route => route.path === url && route.method === method);
+  if (updateRoute) {
+    await updateRoute.handler(req, res, parsedUrl, isTargetFileAdmin && originAllowed, {
+      updateJob, restartProcess: version => _restartHandler(version),
+      canRestartProcess: typeof _restartHandler === 'function', isRuntimeStopping: _viewerStopping,
+    });
+    return;
+  }
+  const serviceRoute = pluginServicesRoutes.find(route => route.predicate(url));
+  if (serviceRoute) { await serviceRoute.handler(req, res, parsedUrl); return; }
 
   if (await handleDingTalkImRoute(req, res, parsedUrl, {
     isLocal,
@@ -1853,6 +2016,13 @@ async function handleViewerRequest(req, res) {
   const requestProjectName = requestSdkView ? requestSdkView.projectName : _projectName;
   if (rawProject && rawProject !== requestProjectName) { sendJson(res, 400, { error: 'Project scope mismatch' }); return; }
 
+  try {
+    const hookResult = await runWaterfallHook('beforeRequest', { req, res, url, method, parsedUrl, handled: false });
+    if (hookResult.handled) return;
+  } catch (err) {
+    if (!res.headersSent) sendJson(res, 500, { error: 'Plugin error' });
+    return;
+  }
   const pluginRoute = pluginRoutes.find(route => route.method === method && route.path === url);
   if (pluginRoute) {
     try {
@@ -1867,6 +2037,15 @@ async function handleViewerRequest(req, res) {
     }
     return;
   }
+
+  if (await handleScheduledTaskRoute(req, res, parsedUrl, {
+    root: LOG_DIR, scope: requestSdkView,
+    resolveInstance: instanceKey => isSdkMode ? sdkManager.getSdkSessionInfo({ instanceKey }) : ptyWorkspaces?.info(instanceKey),
+    admin: isTargetFileAdmin, readBody: readStrictUtf8JsonBody, sendJson,
+    engine: isSdkMode ? 'sdk' : 'pty',
+    broadcast: data => isSdkMode ? sendSdkEvent('scheduled_tasks', data)
+      : sendEventToClients(clients.filter(client => ptyScopeMatches(client, data)), 'scheduled_tasks', data),
+  })) return;
 
   if (handleUltraAgentsRoute(req, res, parsedUrl)) return;
   if (await handleVoicePackRoute(req, res, parsedUrl, { isLocal, readUpload: readMultipartUpload })) return;
@@ -1995,24 +2174,24 @@ async function handleViewerRequest(req, res) {
         const closingBoundary = Buffer.from('\r\n--' + boundary);
         const bodyEnd = buf.indexOf(closingBoundary, bodyStart);
         const fileData = bodyEnd !== -1 ? buf.slice(bodyStart, bodyEnd) : buf.slice(bodyStart);
-        const uploadDir = UPLOAD_DIR;
+        const uploadPaths = workspaceUploadPaths(requestProjectDir, requestProjectName);
+        const uploadDir = uploadPaths.temporary;
         await fsPromises.mkdir(uploadDir, { recursive: true });
         // Unique filename: prepend timestamp to avoid silent overwrite
         const ts = Date.now();
         const dotIdx = originalName.lastIndexOf('.');
         const uniqueName = dotIdx > 0
-          ? `${originalName.slice(0, dotIdx)}-${ts}${originalName.slice(dotIdx)}`
-          : `${originalName}-${ts}`;
+          ? `${originalName.slice(0, dotIdx)}-${ts}-${randomBytes(8).toString('hex')}${originalName.slice(dotIdx)}`
+          : `${originalName}-${ts}-${randomBytes(8).toString('hex')}`;
         const savePath = join(uploadDir, uniqueName);
-        await fsPromises.writeFile(savePath, fileData);
+        await fsPromises.writeFile(savePath, fileData, { mode: 0o600, flag: 'wx' });
         // 持久化副本到 ~/.codex/cx-viewer/${project}/images/，避免 /tmp 清理后丢失
         let persistPath = null;
         try {
-          const pName = requestProjectName || 'default';
-          const persistDir = join(homedir(), '.codex', 'cx-viewer', pName, 'images');
+          const persistDir = uploadPaths.persistent;
           await fsPromises.mkdir(persistDir, { recursive: true });
           persistPath = join(persistDir, uniqueName);
-          await fsPromises.copyFile(savePath, persistPath);
+          await fsPromises.copyFile(savePath, persistPath, fsConstants.COPYFILE_EXCL);
         } catch { }
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true, path: savePath, persistPath }));
@@ -2121,6 +2300,7 @@ async function handleViewerRequest(req, res) {
 
   if (url === '/api/preferences' && method === 'GET') {
     let prefs = readPreferences();
+    delete prefs.scheduledTasks;
     if (!isLocal) {
       prefs = { ...prefs };
       delete prefs.auth;
@@ -2144,6 +2324,7 @@ async function handleViewerRequest(req, res) {
         // 认证配置只能通过本机专用的 /api/auth/config 修改。
         delete incoming.auth;
         delete incoming.authByProject;
+        delete incoming.scheduledTasks;
         if (Object.prototype.hasOwnProperty.call(incoming, 'approvalsReviewer')) {
           if (!isSupportedApprovalsReviewer(incoming.approvalsReviewer)) {
             sendJson(res, 400, { error: 'Unsupported approvalsReviewer' });
@@ -2202,6 +2383,7 @@ async function handleViewerRequest(req, res) {
           const timeout = setTimeout(() => { removeListener(); }, 5000);
           try { themeWrite('/theme\r'); } catch {}
         }
+        delete prefs.scheduledTasks;
         prefs.logDir = LOG_DIR;
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(reviewerState ? { ...prefs, ...reviewerState } : prefs));
@@ -2777,7 +2959,8 @@ async function handleViewerRequest(req, res) {
         const requested = Number(parsedUrl.searchParams.get('limit'));
         const limit = Number.isSafeInteger(requested) && requested > 0 ? Math.min(requested, 50) : 10;
         await flushLogV2Writes();
-        sendJson(res, 200, { items: listSdkResumeSessions(LOG_DIR, { ...projectContextForSdkView(view), cwd: view.cwd }, limit),
+        sendJson(res, 200, { items: listSdkResumeSessions(LOG_DIR, { ...projectContextForSdkView(view), cwd: view.cwd }, limit,
+          { sessionId: parsedUrl.searchParams.get('sessionId') }),
           instanceKey: view.instanceKey, currentSessionId: view.sessionId, busy: view.busy });
       } else {
         const body = await readJsonBody(req, 4096);
@@ -2971,7 +3154,10 @@ async function handleViewerRequest(req, res) {
     try {
       const pkg = JSON.parse(readFileSync(join(__dirname, 'package.json'), 'utf-8'));
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ version: pkg.version }));
+      res.end(JSON.stringify({ version: pkg.version,
+        installMethod: process.versions.electron || process.env.CXV_ELECTRON_TAB === '1' ? 'electron' : detectHomebrewInstall() ? 'brew' : detectPnpmGlobalInstall() ? 'pnpm' : 'npm',
+        processId: PROCESS_ID, canRestart: typeof _restartHandler === 'function',
+        instanceKind: process.env.CXV_IM_PLATFORM ? 'im' : isWorkspaceMode && !_workspaceLaunched ? 'workspace' : 'normal', instancePort: actualPort || null }));
     } catch {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Failed to read version' }));
@@ -3901,6 +4087,7 @@ async function handleViewerRequest(req, res) {
         itemId: pending.itemId,
         createdAt: pending.createdAt,
         timeoutMs: pending.timeoutMs,
+        ...replayAskAutoAnswerFields(pending.auto, pending.autoCancelled),
         source: 'codex-app-server',
       })),
     });
@@ -4206,39 +4393,35 @@ async function handleViewerRequest(req, res) {
     try {
       const access = fileBrowserAccess(parsedUrl, cwd, { isAdmin: isTargetFileAdmin || isTargetPreviewResource,
         codexMdEntries: discoverCodexMdEntries(req), editorSession: isEditorSession });
-      // 上传图片路径（/tmp/cx-viewer-uploads/ 或持久化目录）直接使用，跳过项目目录安全检查
-      const uploadPrefix = UPLOAD_DIR + '/';
-      const pName = requestProjectName || 'default';
-      const persistPrefix = join(homedir(), '.codex', 'cx-viewer', pName, 'images') + '/';
+      const uploadPaths = workspaceUploadPaths(cwd, requestProjectName);
+      const resolvedUpload = reqPath ? resolve(reqPath) : null;
+      const uploadParent = resolvedUpload ? dirname(resolvedUpload) : null;
+      if (!archive && !access.external && resolvedUpload && (
+        resolvedUpload.startsWith(uploadPaths.legacyTemporary + sep)
+          && ![uploadPaths.temporary, uploadPaths.legacyTemporary].includes(uploadParent)
+        || resolvedUpload.startsWith(uploadPaths.legacyPersistent + sep)
+          && ![uploadPaths.persistent, uploadPaths.legacyPersistent].includes(uploadParent))) {
+        sendJson(res, 403, { error: 'Attachment belongs to a different workspace' });
+        return;
+      }
       let targetFile;
       let constrainedImageRoot = null;
-      if (!archive && !access.external && reqPath && reqPath.startsWith(uploadPrefix)) {
-        targetFile = resolve(reqPath);
-        // 路径穿越防护：resolve 后必须仍在 upload 目录内
-        if (!targetFile.startsWith(uploadPrefix)) {
-          res.writeHead(403, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Path traversal denied' }));
-          return;
-        }
-        // /tmp 原文件不存在时，回退到持久化副本
+      // Only direct legacy leaves retain read compatibility. New scoped trees
+      // must match THIS exact cwd; no basename or sibling-hash search fallback.
+      if (!archive && !access.external && resolvedUpload
+          && [uploadPaths.temporary, uploadPaths.legacyTemporary].includes(uploadParent)) {
+        targetFile = resolvedUpload;
+        constrainedImageRoot = uploadParent;
         if (!existsSync(targetFile)) {
-          const fileName = targetFile.split('/').pop();
-          const persistFile = join(persistPrefix, fileName);
-          if (existsSync(persistFile)) {
-            targetFile = persistFile;
-            constrainedImageRoot = persistPrefix;
-          }
+          const candidates = [join(uploadPaths.persistent, basename(targetFile))];
+          if (uploadParent === uploadPaths.legacyTemporary) candidates.push(join(uploadPaths.legacyPersistent, basename(targetFile)));
+          const fallback = candidates.find(path => existsSync(path));
+          if (fallback) { targetFile = fallback; constrainedImageRoot = dirname(fallback); }
         }
-        if (!constrainedImageRoot) constrainedImageRoot = uploadPrefix;
-      } else if (!archive && !access.external && reqPath && reqPath.startsWith(persistPrefix)) {
-        targetFile = resolve(reqPath);
-        // 路径穿越防护：resolve 后必须仍在持久化目录内
-        if (!targetFile.startsWith(persistPrefix)) {
-          res.writeHead(403, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Path traversal denied' }));
-          return;
-        }
-        constrainedImageRoot = persistPrefix;
+      } else if (!archive && !access.external && resolvedUpload
+          && [uploadPaths.persistent, uploadPaths.legacyPersistent].includes(uploadParent)) {
+        targetFile = resolvedUpload;
+        constrainedImageRoot = uploadParent;
       } else {
         targetFile = resolveFilePath(access.root, reqPath, access.external);
         access.assertPath(targetFile);
@@ -4630,7 +4813,7 @@ async function handleViewerRequest(req, res) {
 
   // 插件管理 API
   if (url === '/api/plugins' && method === 'GET') {
-    const plugins = getPluginsInfo();
+    const plugins = pluginsWithRuntime();
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ plugins, pluginsDir: getPluginsDir() }));
     return;
@@ -4664,6 +4847,18 @@ async function handleViewerRequest(req, res) {
   }
 
   if (url === '/api/plugins' && method === 'DELETE') {
+    const dir = parsedUrl.searchParams.get('dir');
+    if (dir) {
+      const entry = getPluginEntries().find(item => item.source === 'user' && item.dir === dir);
+      const result = await pluginRuntime.unloadPlugin(entry?.name || dir, 'delete');
+      if (!result.ok) { sendJson(res, 503, { error: result.error }); return; }
+      try { deletePluginDir(getPluginsDir(), dir); }
+      catch (error) { sendJson(res, error.statusCode || 500, { error: error.message }); return; }
+      if (entry?.name) removeDisabledPluginNames([entry.name]);
+      await reloadServicePlugins();
+      sendJson(res, 200, { ok: true, plugins: pluginsWithRuntime(), pluginsDir: getPluginsDir() });
+      return;
+    }
     const file = parsedUrl.searchParams.get('file');
     if (!file || file.includes('..') || file.includes('/') || file.includes('\\')) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -4677,12 +4872,11 @@ async function handleViewerRequest(req, res) {
         res.end(JSON.stringify({ error: 'File not found' }));
         return;
       }
-      const targetPlugin = getPluginsInfo().find(p => p.file === file);
+      const targetPlugin = pluginsWithRuntime().find(p => p.file === file);
       unlinkSync(filePath);
       if (targetPlugin?.name) removeDisabledPluginNames([targetPlugin.name]);
-      await loadPlugins();
-      await refreshPluginRuntime();
-      const plugins = getPluginsInfo();
+      await reloadServicePlugins();
+      const plugins = pluginsWithRuntime();
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true, plugins, pluginsDir: getPluginsDir() }));
     } catch (err) {
@@ -4694,9 +4888,8 @@ async function handleViewerRequest(req, res) {
 
   if (url === '/api/plugins/reload' && method === 'POST') {
     try {
-      await loadPlugins();
-      await refreshPluginRuntime();
-      const plugins = getPluginsInfo();
+      await reloadServicePlugins({ reason: parsedUrl.searchParams.get('reason') });
+      const plugins = pluginsWithRuntime();
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true, plugins, pluginsDir: getPluginsDir() }));
     } catch (err) {
@@ -4713,15 +4906,13 @@ async function handleViewerRequest(req, res) {
       try {
         const { files: fileList } = JSON.parse(body);
         uploadPlugins(getPluginsDir(), fileList);
-        await loadPlugins();
-        await refreshPluginRuntime();
-        let plugins = getPluginsInfo();
+        await reloadServicePlugins();
+        let plugins = pluginsWithRuntime();
         const uploadedFiles = new Set((fileList || []).map(file => normalizePluginFilename(file?.name)));
         const uploadedNames = plugins.filter(plugin => uploadedFiles.has(plugin.file)).map(plugin => plugin.name);
         if (removeDisabledPluginNames(uploadedNames)) {
-          await loadPlugins();
-          await refreshPluginRuntime();
-          plugins = getPluginsInfo();
+          await reloadServicePlugins();
+          plugins = pluginsWithRuntime();
         }
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true, plugins, pluginsDir: getPluginsDir() }));
@@ -4742,14 +4933,12 @@ async function handleViewerRequest(req, res) {
         const { url: fileUrl } = JSON.parse(body);
         const extractScript = join(__dirname, 'lib', 'extract-plugin-name.mjs');
         const { filename } = await installPluginFromUrl(getPluginsDir(), fileUrl, extractScript);
-        await loadPlugins();
-        await refreshPluginRuntime();
-        let plugins = getPluginsInfo();
+        await reloadServicePlugins();
+        let plugins = pluginsWithRuntime();
         const installedNames = plugins.filter(plugin => plugin.file === filename).map(plugin => plugin.name);
         if (removeDisabledPluginNames(installedNames)) {
-          await loadPlugins();
-          await refreshPluginRuntime();
-          plugins = getPluginsInfo();
+          await reloadServicePlugins();
+          plugins = pluginsWithRuntime();
         }
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true, plugins, pluginsDir: getPluginsDir() }));
@@ -4762,24 +4951,40 @@ async function handleViewerRequest(req, res) {
     return;
   }
 
+  if (url === '/api/plugins/restart' && method === 'POST') {
+    const name = parsedUrl.searchParams.get('name');
+    if (!name) { sendJson(res, 400, { error: 'name is required' }); return; }
+    const result = await pluginRuntime.restartPlugin(name);
+    sendJson(res, result.ok ? 200 : 400, result);
+    return;
+  }
+  if (url === '/api/plugin-panels' && method === 'GET') {
+    const panels = getPluginEntries().filter(entry => entry.shape === 'dir' && entry.enabled && !entry.loadError && entry.panel)
+      .map(entry => buildPanelDescriptor(entry, { serviceStatus: pluginRuntime.getRuntimePluginStatus(entry.name) }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    res.setHeader('Cache-Control', 'no-store');
+    sendJson(res, 200, { ok: true, panels });
+    return;
+  }
+
   // 返回局域网访问地址
   if (url === '/api/local-url' && method === 'GET') {
     const localIp = getLocalIp();
-    const defaultUrl = getPublicAccessUrl(localIp);
+    const defaultUrl = getPublicAccessUrl(localIp, req);
     const hookResult = await runWaterfallHook('localUrl', {
       url: defaultUrl,
       ip: localIp,
       port: actualPort,
       token: ACCESS_TOKEN,
       protocol: serverProtocol,
-      httpUrl: serverProtocol === 'http' ? defaultUrl : null,
-      httpsUrl: serverProtocol === 'https' ? defaultUrl : null,
+      httpUrl: defaultUrl.startsWith('http:') ? defaultUrl : null,
+      httpsUrl: defaultUrl.startsWith('https:') ? defaultUrl : null,
     });
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       url: hookResult.url,
-      httpUrl: serverProtocol === 'http' ? defaultUrl : null,
-      httpsUrl: serverProtocol === 'https' ? defaultUrl : null,
+      httpUrl: defaultUrl.startsWith('http:') ? defaultUrl : null,
+      httpsUrl: defaultUrl.startsWith('https:') ? defaultUrl : null,
     }));
     return;
   }
@@ -5239,7 +5444,9 @@ async function handleViewerRequest(req, res) {
 
     try {
       if (existsSync(fullPath) && statSync(fullPath).isFile()) {
-        const content = readPublicFileSync(fullPath);
+        const content = filePath === '/index.html'
+          ? injectViewerBase(readPublicFileSync(fullPath, 'utf-8'), resolveBaseConfig().basePath)
+          : readPublicFileSync(fullPath);
         const ext = extname(filePath);
         const contentType = MIME_TYPES[ext] || 'application/octet-stream';
         res.writeHead(200, { 'Content-Type': contentType });
@@ -5257,7 +5464,7 @@ async function handleViewerRequest(req, res) {
     // SPA fallback: 非 API/非静态文件请求返回 index.html
     try {
       const indexPath = join(__dirname, 'dist', 'index.html');
-      const html = readPublicFileSync(indexPath, 'utf-8');
+      const html = injectViewerBase(readPublicFileSync(indexPath, 'utf-8'), resolveBaseConfig().basePath);
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       res.end(html);
     } catch (err) {
@@ -5278,8 +5485,19 @@ async function handleViewerRequest(req, res) {
   res.end('Not Found');
 }
 
+let _startingPromise = null;
+let _viewerStopping = false;
 export async function startViewer() {
+  if (_startingPromise) return _startingPromise;
+  _startingPromise = startViewerOnce();
+  try { return await _startingPromise; }
+  finally { _startingPromise = null; }
+}
+
+async function startViewerOnce() {
   if (_stoppingPromise) { await _stoppingPromise; _stoppingPromise = null; }
+  if (server?.listening) return server;
+  _viewerStopping = false;
   if (!isSdkMode) {
     _ptyAgentLoops.clear();
     for (const data of getAppServerAgentLoopSnapshot()) {
@@ -5376,13 +5594,19 @@ export async function startViewer() {
         currentServer.listen(port, HOST, async () => {
           server = currentServer;
           actualPort = port;
-          const url = `${serverProtocol}://127.0.0.1:${port}`;
+          const baseCfg = resolveBaseConfig();
+          const baseCheck = validateBasePath(process.env.CXV_BASE_PATH);
+          if (baseCfg.source !== 'baseUrl' && baseCheck.warning) console.warn(t(baseCheck.warning, { value: process.env.CXV_BASE_PATH }));
+          if (baseCfg.warning) console.warn(t(baseCfg.warning, { value: baseCfg.warningValue }));
+          const url = `${serverProtocol}://127.0.0.1:${port}${baseCfg.basePath}`;
+          const externalUrl = externalUrlFromConfig(baseCfg, { token: ACCESS_TOKEN });
           if (!isCliMode) {
             console.error(t('server.started'));
-            console.error(t('server.startedLocal', { protocol: serverProtocol, port }));
+            console.error(t('server.startedLocal', { protocol: serverProtocol, port, basePath: baseCfg.basePath }));
+            if (externalUrl) console.error(t('server.startedExternal', { url: externalUrl }));
             const _ips = getAllLocalIps();
             for (const _ip of _ips) {
-              console.error(t('server.startedNetwork', { protocol: serverProtocol, ip: _ip, port, token: ACCESS_TOKEN }));
+              console.error(t('server.startedNetwork', { protocol: serverProtocol, ip: _ip, port, basePath: baseCfg.basePath, token: ACCESS_TOKEN }));
             }
           }
           // v2.0.69 之前的版本会清空控制台，自动打开浏览器确保用户能看到界面
@@ -5392,8 +5616,11 @@ export async function startViewer() {
               const ccVer = JSON.parse(readFileSync(ccPkgPath, 'utf-8')).version;
               const [maj, min, pat] = ccVer.split('.').map(Number);
               if (maj < 2 || (maj === 2 && min === 0 && pat < 69)) {
-                const cmd = platform() === 'darwin' ? 'open' : platform() === 'win32' ? 'start' : 'xdg-open';
-                execAsync(`${cmd} ${url}`, { timeout: 5000 }).catch(() => {});
+                const openUrl = externalUrl || url;
+                const child = platform() === 'win32'
+                  ? spawn('cmd.exe', ['/c', 'start', '""', openUrl], { stdio: 'ignore', detached: true, windowsHide: true })
+                  : spawn(platform() === 'darwin' ? 'open' : 'xdg-open', [openUrl], { stdio: 'ignore', detached: true });
+                child.on('error', () => {}); child.unref();
               }
             } catch { }
           }
@@ -5407,6 +5634,15 @@ export async function startViewer() {
           if (isCliMode && process.env.CXV_IM_WORKER !== '1') {
             await setupTerminalWebSocket(currentServer);
           }
+          if (process.env.CXV_IM_WORKER !== '1') {
+            setupPluginWebSocket(currentServer);
+            try {
+              await pluginRuntime.onServerStarted({ logDir: LOG_DIR, port, host: HOST,
+                protocol: serverProtocol, basePath: baseCfg.basePath, token: ACCESS_TOKEN, httpServer: currentServer,
+                isStopping: () => _viewerStopping });
+            } catch (error) { reportSwallowed('plugins.startup', error); }
+          }
+          initScheduledTasks();
           // 通知插件服务器已启动
           refreshPluginRuntime()
             .catch(err => console.error('[CX Viewer] Plugin serverStarted hook error:', err.message));
@@ -5428,15 +5664,14 @@ export async function startViewer() {
 }
 
 function authorizeViewerWebSocket(req, socket) {
-  let wsUrl;
-  try { wsUrl = new URL(req.url, `${serverProtocol}://${req.headers.host}`); }
-  catch { socket.destroy(); return null; }
+  const wsUrl = safeParseRequestUrl(req);
+  if (!wsUrl || !isHostAllowed(req.headers.host)) { socket.destroy(); return null; }
   const pathname = wsUrl.pathname;
   const remoteIp = req.socket.remoteAddress;
   const isLoopbackPeer = remoteIp === '127.0.0.1' || remoteIp === '::1' || remoteIp === '::ffff:127.0.0.1';
   const wsOrigin = typeof req.headers.origin === 'string' ? req.headers.origin : '';
   const wsHost = typeof req.headers.host === 'string' ? req.headers.host : '';
-  const wsSameOrigin = !!wsOrigin && isSameOriginRequest(wsOrigin, wsHost, serverProtocol);
+  const wsSameOrigin = !!wsOrigin && isViewerOriginAllowed(req);
   if (wsOrigin && !wsSameOrigin) {
     socket.destroy();
     return;
@@ -5468,6 +5703,21 @@ function authorizeViewerWebSocket(req, socket) {
   return { wsUrl, pathname };
 }
 
+function setupPluginWebSocket(httpServer) {
+  httpServer.on('upgrade', (req, socket, head) => {
+    let pathname;
+    try { pathname = safeParseRequestUrl(req)?.pathname; if (!pathname) throw new Error('invalid URL'); }
+    catch { socket.destroy(); return; }
+    if (pathname !== '/plugins' && !pathname.startsWith('/plugins/')) {
+      if (!['/ws/mux', '/ws/terminal', '/ws/terminal-scratch'].includes(pathname)) socket.destroy();
+      return;
+    }
+    const authorized = authorizeViewerWebSocket(req, socket);
+    if (!authorized || req.headers['sec-fetch-site'] === 'cross-site') { socket.destroy(); return; }
+    if (!pluginRuntime.tryProxyUpgrade(req, socket, head, authorized.wsUrl)) socket.destroy();
+  });
+}
+
 async function setupDialogueWebSocket(httpServer) {
   const { WebSocketServer } = await import('ws');
   const mux = createStreamMuxServer({
@@ -5493,7 +5743,7 @@ async function setupDialogueWebSocket(httpServer) {
   dialogueMux = mux;
   httpServer.on('upgrade', (req, socket, head) => {
     let pathname;
-    try { pathname = new URL(req.url, `${serverProtocol}://${req.headers.host}`).pathname; }
+    try { pathname = safeParseRequestUrl(req)?.pathname; if (!pathname) throw new Error('invalid URL'); }
     catch { socket.destroy(); return; }
     if (pathname !== '/ws/mux') {
       if (httpServer.listenerCount('upgrade') === 1) socket.destroy();
@@ -5569,7 +5819,7 @@ async function setupTerminalWebSocket(httpServer) {
       const authorized = authorizeViewerWebSocket(req, socket);
       if (!authorized) return;
       const { wsUrl, pathname } = authorized;
-      if (pathname === '/ws/mux') return; // handled by the authenticated dialogue listener
+      if (pathname === '/ws/mux' || pathname.startsWith('/plugins/')) return; // handled by authenticated sibling listeners
       if (isSdkMode && (pathname === '/ws/terminal' || pathname === '/ws/terminal-scratch')) {
         try { req.cxvSdkSession = sdkViewForUrl(wsUrl); }
         catch { socket.destroy(); return; }
@@ -5994,9 +6244,11 @@ async function setupTerminalWebSocket(httpServer) {
             }
             requestId = msg.requestId;
           }
-          if (isSdkMode && (msg.type.startsWith('sdk-') || msg.type === 'perm-hook-answer')) {
+          if (isSdkMode && (msg.type.startsWith('sdk-') || msg.type === 'perm-hook-answer' || msg.type === 'ask-auto-cancel')) {
             const anchor = sdkActionAnchor(ws, msg);
-            if (msg.type === 'sdk-user-message') {
+            if (msg.type === 'ask-auto-cancel') {
+              sdkManager.cancelAskHosting(msg.id, anchor);
+            } else if (msg.type === 'sdk-user-message') {
               if (typeof msg.text !== 'string' || !msg.text.trim()) throw new Error('SDK message text is required');
               await (_sdkSendUserMessage || sdkManager.sendUserMessage)(msg.text, anchor, {
                 requestId,
@@ -6152,6 +6404,12 @@ async function setupTerminalWebSocket(httpServer) {
               if (cancelSequence) sequentialCancels.add(cancelSequence);
             } catch {
               finishSequence(false);
+            }
+          } else if (msg.type === 'ask-auto-cancel') {
+            const id = typeof msg.id === 'string' ? msg.id : '';
+            const pending = pendingCodexAsks.get(id);
+            if (pending?.auto && ptyScopeMatches(ws, pending.scope) && cancelAskAutoAnswerState(pending)) {
+              broadcastCodexAskMessage({ type: 'ask-auto-cancel', id, ...(pending.scope || {}) }, null, pending.scope);
             }
           } else if (msg.type === 'ask-cancel') {
             const askId = msg.id != null ? String(msg.id) : '';
@@ -6434,9 +6692,19 @@ export function stopViewer({ deadlineAt = Date.now() + SHUTDOWN_DEADLINE_MS } = 
   return _stoppingPromise;
 }
 async function _doStop(deadlineAt) {
+  _viewerStopping = true;
+  try { await pluginRuntime.onServerStopping(); }
+  catch (error) { reportSwallowed('plugins.shutdown', error); }
+  stopScheduledTaskScheduler();
+  if (sdkManager) {
+    try { await waitWithTimeout(() => sdkManager.stopEphemeralSessions(), Math.max(0, deadlineAt - Date.now()), 'scheduled task shutdown'); }
+    catch (error) { reportSwallowed('scheduled-tasks.shutdown', error); }
+  }
   for (const timer of _ptyLoopEndTimers.values()) clearTimeout(timer);
   _ptyLoopEndTimers.clear(); _ptyAgentLoops.clear();
   const remaining = () => Math.max(0, deadlineAt - Date.now());
+  try { await waitWithTimeout(() => waitScheduledTaskRuns(), remaining(), 'scheduled task results'); }
+  catch (error) { reportSwallowed('scheduled-tasks.results-shutdown', error); }
   if (_dingtalkImBridge) {
     try { await _dingtalkImBridge.stop(); } catch {}
     _dingtalkImBridge = null;
@@ -6449,10 +6717,7 @@ async function _doStop(deadlineAt) {
   } catch {}
   try { await waitWithTimeout(() => runParallelHook('serverStopping'), Math.min(3000, remaining()), 'serverStopping hooks'); } catch { }
   pluginRoutes = [];
-  for (const pending of pendingCodexAsks.values()) {
-    if (pending.timer) clearTimeout(pending.timer);
-  }
-  pendingCodexAsks.clear();
+  for (const id of pendingCodexAsks.keys()) removePendingCodexAsk(id);
   stopPtyQueues();
   clearEditorSessions();
   const scratchShutdown = shutdownScratchPtys();
@@ -6656,9 +6921,9 @@ if (!isWorkspaceMode) {
       // 延迟 3 秒异步检查更新
       setTimeout(() => {
         checkAndUpdate().then(result => {
-          if (result.status === 'updated') {
+          if (result.status === 'available') {
             clients.forEach(client => {
-              try { client.write(`event: update_completed\ndata: ${JSON.stringify({ version: result.remoteVersion })}\n\n`); } catch { }
+              try { client.write(`event: update_available\ndata: ${JSON.stringify({ version: result.remoteVersion })}\n\n`); } catch { }
             });
           } else if (result.status === 'major_available') {
             clients.forEach(client => {

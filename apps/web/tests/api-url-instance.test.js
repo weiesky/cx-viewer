@@ -59,3 +59,13 @@ test('native guidance and skill target parameters preserve identity, viewed inst
     assert.equal(mod.withTargetParams('/api/files', null), '/api/files');
   },
 ));
+
+
+test('foreign or malformed injected base paths cannot receive viewer credentials', async () => fixture(
+  'https://viewer.example/?instance=a&token=private', mod => {
+    for (const bad of ['//evil.example/', '/\\evil.example/', 'https://evil.example/', '/bad\u0000path/', '/bad path/', '/path?x=1']) {
+      window.__CXV_BASE_PATH__ = bad;
+      assert.equal(mod.apiUrl('/api/cli-mode'), '/api/cli-mode?instance=a&token=private', JSON.stringify(bad));
+    }
+  },
+));

@@ -4,6 +4,7 @@ import { t } from '../../i18n';
 import { optionAriaLabel, hasOptionDescription } from '../../utils/askOptionDesc';
 import { hasActiveTextSelection } from './selectionQuote';
 import AskTimeoutCountdown from './AskTimeoutCountdown';
+import AskAutoHostCountdown from './AskAutoHostCountdown';
 import styles from './ChatMessage.module.css';
 
 function guardWhileSelecting(fn) {
@@ -229,6 +230,10 @@ export default class AskQuestionForm extends React.Component {
                       otherText: { ...prev.otherText, [qi]: e.target.value },
                     }))}
                     autoFocus
+                    autoComplete="off"
+                    data-1p-ignore
+                    data-lpignore="true"
+                    data-form-type="other"
                   />
                 </div>
               )}
@@ -253,6 +258,8 @@ export default class AskQuestionForm extends React.Component {
           );
         })}
         <AskTimeoutCountdown startedAt={this.props.startedAt} timeoutMs={this.props.timeoutMs} />
+        <AskAutoHostCountdown autoAnswerAt={this.props.autoAnswerAt} autoCancelled={this.props.autoCancelled}
+          onCancelHosting={this.props.onCancelAutoHosting} />
         <div className={styles.askSubmitRow}>
           {this.props.onCancel && (
             <button

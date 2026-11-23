@@ -427,7 +427,8 @@ const LOGIN_COPY = {
   },
 };
 
-export function renderLoginPage({ lang = 'en' } = {}) {
+export function renderLoginPage({ lang = 'en', basePath = '' } = {}) {
+  const loginUrl = JSON.stringify(`${basePath || '/'}api/auth/login`).replace(/</g, '\\u003c');
   const copy = LOGIN_COPY[lang] || LOGIN_COPY.en;
   const title = escapeHtml(copy.title);
   const placeholder = escapeHtml(copy.placeholder);
@@ -452,6 +453,6 @@ export function renderLoginPage({ lang = 'en' } = {}) {
 <script>
   const form=document.getElementById('form'),password=document.getElementById('password'),submit=document.getElementById('submit'),error=document.getElementById('error');
   document.getElementById('toggle').onclick=()=>{password.type=password.type==='password'?'text':'password';password.focus()};
-  form.onsubmit=async event=>{event.preventDefault();submit.disabled=true;error.style.display='none';try{const response=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:password.value})});if(response.ok){location.reload();return}}catch{}error.style.display='block';submit.disabled=false;password.select()};
+  form.onsubmit=async event=>{event.preventDefault();submit.disabled=true;error.style.display='none';try{const response=await fetch(${loginUrl},{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:password.value})});if(response.ok){location.reload();return}}catch{}error.style.display='block';submit.disabled=false;password.select()};
 </script></body></html>`;
 }

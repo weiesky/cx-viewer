@@ -491,7 +491,7 @@
     if (Array.isArray(m.pins)) {
       m.pins.forEach((p) => {
         if (!p || !p.key) return; // 容错：非法条目不中断整簇渲染
-        const path = MENU_ICON[p.key];
+        const path = MENU_ICON[p.key] || (p.key.startsWith('plugin-panel:') ? MENU_ICON['plugin-management'] : null);
         if (!path) return;
         const svg = '<svg width="16" height="16" viewBox="' + MENU_ICON_VB + '" fill="currentColor" aria-hidden="true"><path d="' + path + '"/></svg>';
         leftCluster.appendChild(hBtn(svg, p.name || p.key, 'menuShortcut', { payload: { key: p.key } }));

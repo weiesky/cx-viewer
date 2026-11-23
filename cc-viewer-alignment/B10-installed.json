@@ -1,0 +1,26 @@
+{
+  "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-installed-runtime-fs0t0s2n",
+  "files": 773,
+  "source_bytes_match": true,
+  "all_pack_files_compared": 773,
+  "all_pack_file_bytes_match": true,
+  "web_asset_files": 211,
+  "runtime_tests": "1096/1096",
+  "b12_regression": "passed",
+  "installed_cli_relative_cd_boot": "passed",
+  "uses_fake_codex": true,
+  "uses_real_model_network": false,
+  "testCheckpoint": "2713/2713",
+  "build": "passed",
+  "pack": "773 files",
+  "web": "211 exact-byte files",
+  "logs": {
+    "full": "/tmp/cxv-b10-all-final.log",
+    "build": "/tmp/cxv-b10-final-build.log",
+    "pack": "/tmp/cxv-b10-final-pack.log",
+    "installedFirst": "/tmp/cxv-b10-final-installed.log",
+    "installedResume": "/tmp/cxv-b10-final-installed-resume.log"
+  },
+  "virtualHostFixtureFix": "B1.2 probe explicitly allows viewer.invalid; production allowlist unchanged",
+  "reuse": "Resumed only after all 773 package bytes and all copied runtime test bytes matched; 1096/1096 previous runtime result retained; B1.2 and installed CLI rerun passed"
+}

@@ -9,8 +9,8 @@ async function request(instanceKey, path, options) {
   return data;
 }
 
-export function loadSdkResumeSessions(instanceKey, signal, limit = 50) {
-  return request(instanceKey, `/api/resume-sessions?limit=${limit}`, { signal });
+export function loadSdkResumeSessions(instanceKey, signal, limit = 50, sessionId = null) {
+  return request(instanceKey, `/api/resume-sessions?limit=${limit}${sessionId !== null ? `&sessionId=${encodeURIComponent(sessionId)}` : ''}`, { signal });
 }
 
 export function restoreSdkResumeSession(instanceKey, file) {

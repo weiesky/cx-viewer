@@ -1,6 +1,6 @@
 # cc-viewer 逐提交对齐台账
 
-2026-11-22 B7已完成（第8/12工作包），固定上游74cd752d99caf122e750216d2af3bb9f467c4de1。E1–E47及E19a/E31a/E31b/E40a共51笔已备份并整为5b1c397，经[PR #8](https://github.com/weiesky/cx-viewer/pull/8)合并main（89a8d9d）；合并tree与原51笔精确相同，实际无PR CI。74去重候选按B7子项核销，另补窄split/只读扩窗源码scope；混合提示资产/平台等仍按B8–B11独立推进。最终2181/2181、0skip、build/pack723；真实生产新安装634/634、全部723包文件与211Web精确字节、B1.2及隔离CLI通过。普通“＋”、原输入/导航/Skills、队列/editor/minimal/HUD及精确owner/进程树均有分项证据；0.169实际模型计划producer未验，受控协议通过不冒充模型执行。新PTY权限遵循已选弹窗，技能使用$name，合成会话codex://app-server/turn；exec/显式AppServer渐进及353K不变。活动7008旧后端未重启；IM偶发、物理设备/音频/IME、外部模型、真实LAN/TLS、其他OS/最低Node未验保持。合并后才更新本地进度；下一会话执行B8，本轮不启动。见[B7完成矩阵](./B7-completion-matrix.md)和[B8交接](./B8-handoff.md)。
+2026-11-23 B10本地实施与验收完成（第11/12工作包），分支alignment/b10-services-reverse-proxy，24笔独立提交，未推送/建B10 PR/合并。12候选按B10子项核销，B11剩余保留；2713/2713、0skip/build/pack773，新安装1096/1096及773包/211Web精确字节、B1.2/CLI通过；双浏览器14配置34图核看。B9 PR #11仍OPEN，无远端CI通过声明；用户7008未由本轮重启，正常重启才加载后端。见[B10完成矩阵](./B10-completion-matrix.md)、[实施](./B10-implementation.md)及[B11交接](./B11-handoff.md)。
 
 2026-11-21 B6交付：原16笔完整备份并整为e885d8b，PR #6已合并main（9f3e2ce），精确head guard及合并tree已核；实际无PR CI检查。交付复建/pack720/新artifact-only字节通过，生产实现不变；原上游映射继续有效。普通PTY入口待纠偏及旧后端未重启保持，B7下一会话执行，见[整合记录](./B6-local-commit-consolidation-2026-11-21.md)及[B7交接](./B7-handoff.md)。
 
@@ -171,6 +171,7 @@
 
 <a id="commit-1b3c2268e3"></a>
 ## [1b3c2268e3](https://github.com/weiesky/cc-viewer/commit/1b3c2268e3bd0e73ffef043bf450662d01a28371) — feat(web): 「添加到对话」覆盖代码 diff、工具参数区与 AskUserQuestion 卡片
+- B9 (2026-11-23): B9 Ask引用边界沿B7保持，E20倒计时在quotable外、E21不覆盖守卫；其他引用子项仍沿B7; local: excluded by native policy or previously mapped. [B9 scope audit](./B9-candidate-matrix.md).
 - B0 本地关键代码对照：上游扩展选区引用至 diff、工具参数和问答卡片，并避免选字触发选择；本地 ChatMessage.jsx、DiffView.jsx、AskQuestionForm.jsx 已有各自组件，需实现跨区域规则、键盘和多选区测试，归 B6/B7。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-1b3c2268e3)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-1b3c2268e3)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-1b3c2268e3)
@@ -403,6 +404,7 @@
 
 <a id="commit-00fdfade79"></a>
 ## [00fdfade79](https://github.com/weiesky/cc-viewer/commit/00fdfade7948cd895e2f714f71626f2f9e3678bd) — chore: release 1.9.27
+- B9 (2026-11-23): B9发布候选核销：不迁上游版本号；native同tick终态E20/E22，精确owner路由；Git拖拽沿B7; local: excluded by native policy or previously mapped. [B9 scope audit](./B9-candidate-matrix.md).
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-00fdfade79)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-00fdfade79)
 
@@ -875,6 +877,7 @@
 
 <a id="commit-5a7904990b"></a>
 ## [5a7904990b](https://github.com/weiesky/cc-viewer/commit/5a7904990b61c0c750c41460a216498ddb67dc22) — Merge pull request #171 from weiesky/feat/guided-npm-updates
+- 2026-11-23 B10最终核定：PR171第一父diff已核，按6e3/17ba分项迁入，无重复搬运或新增merge-only功能。 仅B10子项，完整本地映射/验证见[B10完成矩阵](./B10-completion-matrix.md)与[候选索引](./B10-candidate-index.json)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-5a7904990b)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-5a7904990b)
 
@@ -919,6 +922,7 @@
 
 <a id="commit-17ba9be7b5"></a>
 ## [17ba9be7b5](https://github.com/weiesky/cc-viewer/commit/17ba9be7b5f4cceb9c5c9371683b05fb258220c7) — fix: harden guided updates and restart recovery
+- 2026-11-23 B10最终核定：更新hardening/失败旧CLI恢复/状态poll/Electron渠道完成；他OS/Electron GUI待，非文件系统rollback保证。 仅B10子项，完整本地映射/验证见[B10完成矩阵](./B10-completion-matrix.md)与[候选索引](./B10-candidate-index.json)。
 - B0 本地关键代码对照：上游 guided update 覆盖进程恢复、restart helper 与 UI，实际改多个包；本地 lib/updater.js 具有 npm 更新但未见同名 UI。须隔离安装验证执行方式、失败恢复、活动实例和用户数据，归 B10/B11。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-17ba9be7b5)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-17ba9be7b5)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-17ba9be7b5)
@@ -956,6 +960,7 @@
 
 <a id="commit-6e3c93cd7c"></a>
 ## [6e3c93cd7c](https://github.com/weiesky/cc-viewer/commit/6e3c93cd7ca52fc096df431957b3df7724f06605) — feat: add guided npm updates with restart
+- 2026-11-23 B10最终核定：checker只报告、下载校验/锁/安装root/重启readiness/native清理/原UI/文档完成；无真实全局替换，发布B11。 仅B10子项，完整本地映射/验证见[B10完成矩阵](./B10-completion-matrix.md)与[候选索引](./B10-candidate-index.json)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-6e3c93cd7c)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-6e3c93cd7c)
 
@@ -1410,6 +1415,7 @@
 
 <a id="commit-6081b5d01a"></a>
 ## [6081b5d01a](https://github.com/weiesky/cc-viewer/commit/6081b5d01a1ae5a12063cfdc15959c392c5f37ba) — feat(ask): AskUserQuestion auto-answer (问答题自动托管) — server-side hosting
+- B9 (2026-11-23): B9 native范围完成：E16–E20/E25/E26 default-off Ask托管/取消/replay/原UI；无producer的exec常驻/Claude legacy不伪造; local: `9da6264` / `a79f24b` / `7b1b96f` / `9904c92` / `68465c1` / `cb5b5f2` / `bf35be4` / `96fe83a` / `f3ad7be`. [B9 scope audit](./B9-candidate-matrix.md).
 - B0 本地关键代码对照：上游默认关闭的服务端 Ask 自动回答可根据 Recommended 或首选项在无浏览器时提交；本地 server.js 的 offerCodexRequestUserInput 有协议超时自动处理，lib/codex-request-user-input.js 构造答案。需区分协议超时与用户授权的定时托管，验证并发抢答、取消、无选项及审计，归 B11；不能默认启用。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-6081b5d01a)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-6081b5d01a)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-6081b5d01a)
@@ -1497,8 +1503,17 @@
   - `history.md` → 无直接路径匹配
   - `packages/app/server/system-prompt-templates/presets/kimi-k3.md` → 无直接路径匹配
 
+2026-11-23 B9 E4：原始任务/模板快照/附件纯组装23/23通过；E3 `fd58be8`历史完成；原弹窗/快速时间/上传/实际执行继续，不整条核销，见[B9实施](./B9-implementation.md)。
+
+2026-11-23 B9 E11：原embedded面板/空模板/18语言/时间描述及实例订阅729/729/build，CSS源hash精确；原modal/快速时间入口与GUI继续。E10 `6f8aab4`，见[B9实施](./B9-implementation.md)。
+
+2026-11-23 B9 E12：原860px任务modal/once快捷时间/CSS逐字与native scope，Web731/build；入口/上传与深历史/GUI继续，不整条核销。E11a `da87a45`，见[B9实施](./B9-implementation.md)。
+
+2026-11-23 B9 E13：native持久附件按精确cwd子目录/独占随机名，同名隔离真实HTTP34/34；E12 `50055dd`。原菜单入口/深历史/GUI继续，见[B9实施](./B9-implementation.md)。
+
 <a id="commit-2914d6479d"></a>
 ## [2914d6479d](https://github.com/weiesky/cc-viewer/commit/2914d6479d2845e0b193ba1c09aa6667c66850a6) — feat(web): quick-fill time buttons for one-time scheduled tasks (#169)
+- B9 (2026-11-23): B9子项完成：E4/E11–E13原none/嵌入模板附件/once五快捷，E26实际GUI；其他混合项沿B4/B6/B8; local: `74e0997` / `0aa73e2` / `423b381` / `9524474` / `50055dd` / `a8f1a31` / `4292dcb` / `f3ad7be`. [B9 scope audit](./B9-candidate-matrix.md).
 - 2026-11-20 B4.3：任务快照/HUD子项本地61c3d78/fab7d5f；活跃代理数据源已完成AppServer兼容评估，无生产切换或实际子Agent生命周期结论，见[方案与边界](./B4-appserver-proposal.md)。
 - 2026-11-20 B4.2：任务HUD组件/CSS与SDK快照子项已迁入，全量1417/1417、隔离Safari刷新/切换/停止通过；其余混合子项仍待，见[B4实施](./B4-implementation.md)。
 - 2026-11-20 B4.1：Codex SDK任务快照及重连子项已实施，29/29通过；尚无HUD/活跃Agent/其他混合子项结论，见[B4实施](./B4-implementation.md)。
@@ -1616,6 +1631,7 @@
 
 <a id="commit-4391792212"></a>
 ## [4391792212](https://github.com/weiesky/cc-viewer/commit/439179221296fcc2ca1beb0ffce69c13a336b56f) — review(3-commit CR): harden shard cursor/seeding + base-url parsing, dedupe shard cut resolution, translate new comments
+- 2026-11-23 B10最终核定：URL反斜杠/C0/query-only与编码前缀完成；shard等见B3，其他混合范围不计B10完成。 仅B10子项，完整本地映射/验证见[B10完成矩阵](./B10-completion-matrix.md)与[候选索引](./B10-candidate-index.json)。
 - 2026-11-20 B3当前结论：分片后续修复已完成：持久promptCount重开、已交付窗口游标、manifest唯一切点、异步prepend归属/gate/ack、空片历史入口与附件尾部值守卫（e8ed8a7）。URL base等其他混合子项仍属B10/B11，不整条勾选。 最终验证及边界见[B3完成矩阵](./B3-completion-matrix.md)与[分片实施](./B3-sharding.md)。
 - B0 本地关键代码对照：复审同时覆盖附件 stable-id、日志 shard cursor/重启 seed、view 切换状态及 base-url 反斜杠/C0 导致的跨域 token 风险。本地 ChatView.jsx 有附件、log-v2 有 cursor、apiUrl.js 有路径前缀；必须分别验证，不照搬上游 shard 结构，归 B3/B7/B10。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-4391792212)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-4391792212)
@@ -1684,6 +1700,7 @@
 
 <a id="commit-57c732d037"></a>
 ## [57c732d037](https://github.com/weiesky/cc-viewer/commit/57c732d0371bc34417e75a6bd106e1a3fde90f99) — feat(server): add CCV_BASE_URL for cloud reverse-proxy deployment
+- 2026-11-23 B10最终核定：base URL/path/公开Host/HTTP-SSE-WS/CLI/分享QR/HTML/编码Cookie完成；用户选后端TLS密码门保持。 仅B10子项，完整本地映射/验证见[B10完成矩阵](./B10-completion-matrix.md)与[候选索引](./B10-candidate-index.json)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-57c732d037)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-57c732d037)
 
@@ -1813,8 +1830,11 @@
   - `packages/app/test/v2-shard-routes.test.js` → 无直接路径匹配
   - `scripts/tarball-baseline.json` → 无直接路径匹配
 
+2026-11-23 B9 E6：采用后续轮询/清理最终测试与调度循环12/12，原生接线继续；E5 `afca0b6`。见[B9实施](./B9-implementation.md)。
+
 <a id="commit-7a0ba39edf"></a>
 ## [7a0ba39edf](https://github.com/weiesky/cc-viewer/commit/7a0ba39edf6a0b54ca7a425e0f08ab410e515407) — test(app): deflake git + scheduled-task tests — poll async launch, retry rmSync cleanup
+- B9 (2026-11-23): B9测试子项完成：E3/E5/E6原最终task条件轮询/rm重试；git外包不重复搬; local: `a6a6d4f`. [B9 scope audit](./B9-candidate-matrix.md).
 - B0 本地关键代码对照：上游测试以 polling 等异步启动并为 rmSync 增加重试；本地隔离全量测试通过，但曾观察并行临时目录 ENOTEMPTY，需定位具体所有权及子进程退出后验证，不把重试当作资源泄漏修复，归 B11。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-7a0ba39edf)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-7a0ba39edf)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-7a0ba39edf)
@@ -2712,6 +2732,7 @@
 
 <a id="commit-082673509e"></a>
 ## [082673509e](https://github.com/weiesky/cc-viewer/commit/082673509ec6407bb835fa8992440eb13a6cf1c2) — Revert "perf(web): incremental scan in ToolFileChangeController.check (#164)"
+- 2026-11-23 B10最终核定：git diff --quiet 08809f6e69^ 082673509e返回0；最终存活重提分别核销。 仅B10子项，完整本地映射/验证见[B10完成矩阵](./B10-completion-matrix.md)与[候选索引](./B10-candidate-index.json)。
 - B0 本地关键代码对照：此提交完整回退 08809f6e69 的全部混合改动，并非只撤销增量扫描；单独核对后续分拆恢复和未恢复项，不能重复应用，归 B2/B3/B4/B5/B7/B10/B11。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-082673509e)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-082673509e)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-082673509e)
@@ -2791,6 +2812,7 @@
 
 <a id="commit-08809f6e69"></a>
 ## [08809f6e69](https://github.com/weiesky/cc-viewer/commit/08809f6e69315476690c62bbe238bd5c199b338d) — perf(web): incremental scan in ToolFileChangeController.check (#164)
+- 2026-11-23 B10最终核定：与082回退净tree等于088第一父7039ade；最终重提ef5 agent-loop已按B8/B10叶子处理，不搬混合旧树。 仅B10子项，完整本地映射/验证见[B10完成矩阵](./B10-completion-matrix.md)与[候选索引](./B10-candidate-index.json)。
 - B0 本地关键代码对照：大型 squash 含首轮 SDK 丢结果、Ask 最小化、错误恢复、文件树、Git 样式、agent-loop、历史恢复和增量扫描；随后被 082673509e 全量回退，部分由 7641f518/ef5fc8b1/bd32d028/0cbb5452/c29af25e 重引。以最终树逐功能核验，归 B2/B3/B4/B5/B7/B10/B11，不直接移植回退补丁。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-08809f6e69)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-08809f6e69)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-08809f6e69)
@@ -2890,6 +2912,7 @@
 
 <a id="commit-77b61bd571"></a>
 ## [77b61bd571](https://github.com/weiesky/cc-viewer/commit/77b61bd571c5a31c1d071025b8254a3c4c3a9593) — fix(server+web): resilient sends, approval-hook timeout, SSE slow reconnect, off-mode stream idle watchdog
+- 2026-11-23 B10最终核定：15秒approval hook helper迁入，原生Codex不调用Claude resolver；B8慢恢复/发送回执复用，proxy retry/off watchdog按用户排除，发布B11。 仅B10子项，完整本地映射/验证见[B10完成矩阵](./B10-completion-matrix.md)与[候选索引](./B10-candidate-index.json)。
 - B0 本地关键代码对照：混合稳健发送、hook timeout、SSE 慢重连、代理 idle watchdog 和 plugin-loader 修复；本地 AppBase.jsx 有重连退避，不能等同上游。分别测试断线队列、审批过期、slow stream 和插件异常，归 B3/B8/B10/B11。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-77b61bd571)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-77b61bd571)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-77b61bd571)
@@ -2974,6 +2997,7 @@
 
 <a id="commit-208f134827"></a>
 ## [208f134827](https://github.com/weiesky/cc-viewer/commit/208f1348279758d95b72798442105c3236fa1dd3) — fix(server+web): fork review fixes for 1.9.17 — new-file save 403, plan modal reopen, fallback countdown
+- B9 (2026-11-23): B9子项核销：B4 minimization已在288faea；B5 missing-leaf已完成并回归；无native SDK Plan审批producer，不合成countdown; local: excluded by native policy or previously mapped. [B9 scope audit](./B9-candidate-matrix.md).
 - B0 本地关键代码对照：混合目标浏览器新文件保存 403、Plan modal 重新打开和 fallback countdown 修复；本地文件 API 与 SDK inline approval 不完全相同，分归 B5/B11 并测试新文件父目录授权、已关闭请求与倒计时取消。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-208f134827)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-208f134827)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-208f134827)
@@ -3259,6 +3283,7 @@
 
 <a id="commit-aaa3a59444"></a>
 ## [aaa3a59444](https://github.com/weiesky/cc-viewer/commit/aaa3a59444884254cf8d5cf93ce032b35ef8aa24) — docs: changelog for server-side approval countdown and UltraReview template
+- B9 (2026-11-23): B9文档候选核销：权限自动放行按用户选择排除，Ask另E16–E20完成，UltraReview沿B8；不照抄不实changelog; local: excluded by native policy or previously mapped. [B9 scope audit](./B9-candidate-matrix.md).
 - B0 本地关键代码对照：只补上游审批倒计时和 UltraReview 变更日志；功能分别由 5e50112388、134a0de7ac 核查，不搬运为本地发布记录，归 B11。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-aaa3a59444)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-aaa3a59444)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-aaa3a59444)
@@ -3273,6 +3298,7 @@
 
 <a id="commit-134a0de7ac"></a>
 ## [134a0de7ac](https://github.com/weiesky/cc-viewer/commit/134a0de7ac166db5f9375d9f2c60bcd97248852b) — docs(ultraplan): rewrite UltraReview team workflow to named Agent teammates
+- B9 (2026-11-23): B9混入权限countdown字符串按native选择排除；UltraReview实际模板/18语言已由B8 E1/E10完成; local: excluded by native policy or previously mapped. [B9 scope audit](./B9-candidate-matrix.md).
 - B0 本地关键代码对照：上游把 UltraReview TeamCreate/TeamDelete 依赖改为具名代理并同步多语言；本地 ultraAgents/code-expert.json 已描述工具发现、代理和通知退出，但审查优先级不同；需按现有 Codex 工具可用性与用户策略核对，归 B11。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-134a0de7ac)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-134a0de7ac)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-134a0de7ac)
@@ -3737,10 +3763,13 @@
   - `packages/app/test/branch-server.test.js` → 无直接路径匹配
   - `packages/app/test/sdk-manager-query.test.js` → 无直接路径匹配
 
+2026-11-23 B9 E7：executor精确instance-only修复及Codex必要适配25/25；实际native/server/UI待，E6 `a6a6d4f`。见[B9实施](./B9-implementation.md)。
+
 <a id="commit-5ee6739cba"></a>
 - 2026-11-20 B4 E51源码/协议范围核定：实际diff及固定最终PlanApprovalForm/target helper、后续fallback倒计时已核。Claude canUseTool ExitPlanMode与Codex原生plan通知不同；实际0.169 experimental全11种ServerRequest无计划审批，保持E41只读与通道守卫。通用隔离/重连/最小化/终态复用B2/E5/E35–41既验；自动策略B9、元数据等B11单列，不伪造UI或勾整条。仅审计/实际schema生成，无新运行时或重跑声明，见[B4.54](./B4-implementation.md#b454-e51-计划审批协议与候选范围核定源码审计无运行时变动)。
 
 ## [5ee6739cba](https://github.com/weiesky/cc-viewer/commit/5ee6739cbaba22a6a6d341c020bb7d54c493e5d0) — feat: merge SDK context usage into blood bars
+- B9 (2026-11-23): B9 executor子项完成：E7精确instance/E10接线/E22实际native；其他混合项沿B8/B11单独核销; local: `0aa73e2`. [B9 scope audit](./B9-candidate-matrix.md).
 - 2026-11-21 B4 E60：已选原Context分类入口/居中不可用态，Codex无真实分类producer、现有用量条保持；相关Provider/fetch/timer/palette不新增空实现。55组件+7用量/1579完整/构建，新安装702文件/204Web精确字节/290运行时、B1.2/CLI通过；GUI待、其他混合范围不整体勾选。具体源码阅读/适配边界见[B4.63](./B4-implementation.md)及[B4分类回执](./B4-context-unavailable-2026-11-21.json)。
 - B0 本地关键代码对照：上游把 SDK 用量并入多处血条及详情；本地 appserver-bridge.js 捕获 modelContextWindow，helpers.js 使用固定 353K 合约。须按实际 Codex usage 明确数值优先级、断线和多会话归属，归 B2/B8。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-5ee6739cba)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-5ee6739cba)
@@ -4030,8 +4059,15 @@
   - `packages/app/CHANGELOG.md` → 无直接路径匹配
   - `packages/app/package.json` → 本地候选：`package.json`
 
+2026-11-23 B9 E2：通用偏好剥离任务/私有文件与残留保护，复用本地strict偏好IO，30/30通过；定义/历史存储及UI继续，见[B9实施](./B9-implementation.md)。E1本地`01c36c5`仅时间算法。
+
+2026-11-23 B9 E3：独立历史/20条/幂等与真实双进程追加11/11通过，定义/claim/原UI继续；E2 `52be9a0`，本笔见[B9实施](./B9-implementation.md)。
+
+2026-11-23 B9 E9：原REST合同按本地精确视图/auth/body复用，41/41隔离HTTP/存储通过；生命周期/UI待，E8 `150d393`。见[B9实施](./B9-implementation.md)。
+
 <a id="commit-451ef48d6a"></a>
 ## [451ef48d6a](https://github.com/weiesky/cc-viewer/commit/451ef48d6a7dc73347d49e3d2d13cf8fafccad8f) — feat(server+web): scheduled tasks — storage in preferences.json + run history split + modal UX polish
+- B9 (2026-11-23): B9完成：E2/E3/E5 preferences/runs私有拆分、E12原modal布局、E14/E22精确历史实际恢复; local: `01c36c5` / `52be9a0` / `fd58be8` / `afca0b6` / `a6a6d4f` / `423b381` / `50055dd` / `83c6e73` / `cb5b5f2` / `4292dcb` / `f3ad7be`. [B9 scope audit](./B9-candidate-matrix.md).
 - B0 本地关键代码对照：上游定时任务涉及配置与运行历史拆分、严格写入、私有文件访问控制、旧版只读迁移、幂等认领和重启恢复，还包括 modal；本地未发现同名 scheduler。若实现须分开持久化与执行、拒绝重复触发及凭据泄漏，归 B1/B9。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-451ef48d6a)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-451ef48d6a)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-451ef48d6a)
@@ -4073,8 +4109,21 @@
   - `packages/app/test/scheduled-task-store.test.js` → 无直接路径匹配
   - `scripts/tarball-baseline.json` → 无直接路径匹配
 
+2026-11-23 B9 E1：cron/schedule-model 逐字迁入、24/24 与隔离 DST 通过；仅算法子项，后台/存储/UI/真实执行继续。上游完整 hash 与本地独立 subject 见 [B9 实施](./B9-implementation.md#e1--cron-与结构化时间模型)。
+
+2026-11-23 B9 E5：定义/锁认领/七天补跑/暂停/终态CAS与崩溃恢复，49/49含真实双进程通过；只核存储子项，原生执行/API/UI继续。E4 `74e0997`，见[B9实施](./B9-implementation.md)。
+
+2026-11-23 B9 E8：隔离native SDK factory/审批所属/默认受限权限/进程退出26/26，真实Codex及server/UI待；E7 `0aa73e2`。见[B9实施](./B9-implementation.md)。
+
+2026-11-23 B9 E10：server/native queue接线及HTTP/WS/SSE协议fixture16项，完整2350/2350、0skip；原UI/实际Codex/托管待。E9 `423b381`，见[B9实施](./B9-implementation.md)。
+
+2026-11-23 B9 E11a：纠正本地关闭等待误插位置，26/26行为回归；E11 `9524474`。上游合同不变，见[B9实施](./B9-implementation.md)。
+
+2026-11-23 B9 E14：原Open session以精确native SID→archive→原确认适配，App9/Web733/0skip；菜单入口/GUI继续。E13 `a8f1a31`，见[B9实施](./B9-implementation.md)。
+
 <a id="commit-177b85df2c"></a>
 ## [177b85df2c](https://github.com/weiesky/cc-viewer/commit/177b85df2cab3358dfec08cfc5591da29e27a8d1) — feat(server+web): add scheduled tasks ("设置定时任务")
+- B9 (2026-11-23): B9独立范围完成：E1–E27定时全链/原UI/native验证，E25独立AppServer为用户明确适配；其他语言README源不存在不新造; local: `01c36c5` / `52be9a0` / `afca0b6` / `a6a6d4f` / `0aa73e2` / `150d393` / `423b381` / `6f8aab4` / `9524474` / `da87a45` / `50055dd` / `2035c7e` / `83c6e73` / `cb5b5f2` / `bf35be4` / `4292dcb` / `96fe83a` / `f3ad7be` / `232350b`. [B9 scope audit](./B9-candidate-matrix.md).
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-177b85df2c)
 - B0 status: Adapt in B9 after scheduling and authorization design: no product scheduler found.
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-177b85df2c)
@@ -4296,6 +4345,7 @@
 
 <a id="commit-58493d1c85"></a>
 ## [58493d1c85](https://github.com/weiesky/cc-viewer/commit/58493d1c859f0875395b34bf2e21ebe7a01ee5db) — feat(plugins): directory service plugins with same-port proxy + remote React panels
+- 2026-11-23 B10最终核定：目录服务/面板/认证/生命周期/文档与Electron pin完成；files-fs复用已有更严格parsedUrl与native文件门；发布元数据B11。 仅B10子项，完整本地映射/验证见[B10完成矩阵](./B10-completion-matrix.md)与[候选索引](./B10-candidate-index.json)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-58493d1c85)
 - B0 status: Adapt in B10 after service and permission design: local JS hook plugins exist.
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-58493d1c85)
@@ -4680,6 +4730,7 @@
 - 2026-11-20 B4 E52：实际SDK manager/server/AppBase/projectKey/CLI差异核定技能拉取与scope/replay边界，固定最终与84e65缓存/活性区别已读；67祖先/merge combined无新增resolution。B4复用B2/E5/E29/E40/E46既有实例/重连/真实探测，技能metadata与菜单留B7/B8，Codex真实skills/list存在但未迁。不以审计等于整条实现；无运行时或重跑声明，见[B4.55](./B4-implementation.md#b455-e52-斜杠菜单混合提交的sdk生命周期归属源码审计无运行时变动)。
 
 ## [3d4f098f08](https://github.com/weiesky/cc-viewer/commit/3d4f098f08211b53f5d5f58d4c17b603027f3899) — fix(web): stop askUserQuestion 'Other' input from triggering browser password save (#155)
+- B9 (2026-11-23): B9完成：E21原Other四个autofill标记；真实密码管理器行为未验; local: `671c4f1`. [B9 scope audit](./B9-candidate-matrix.md).
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-3d4f098f08)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-3d4f098f08)
 
@@ -7834,6 +7885,7 @@
 
 <a id="commit-51c974e441"></a>
 ## [51c974e441](https://github.com/weiesky/cc-viewer/commit/51c974e4415828296a8f91b469f54379b055c073) — feat(permission): default auto-approve to a 3s countdown
+- B9 (2026-11-23): 按用户保留原生权限/reviewer选择排除三秒默认/权限倒计时放行，非实现完成; local: excluded by native policy or previously mapped. [B9 scope audit](./B9-candidate-matrix.md).
 - B0 本地关键代码对照：上游将新用户权限自动审批默认改为 3 秒且保留既有设置；本地存在审批偏好及倒计时选项，但不能静默更改授权默认值，归 B11，须单独评估用户安全预期与已有配置迁移。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-51c974e441)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-51c974e441)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-51c974e441)
@@ -8261,6 +8313,7 @@
 
 <a id="commit-93a17ea623"></a>
 ## [93a17ea623](https://github.com/weiesky/cc-viewer/commit/93a17ea62361d6e90b7c89e9d317496353cd95d3) — chore(tarball): add approval-policy.js + launch-config.js to the tarball baseline
+- B9 (2026-11-23): B9产物子项完成：E23/E26 native package.files与747包/211Web精确字节；非Claude模块复制; local: `bf35be4`. [B9 scope audit](./B9-candidate-matrix.md).
 - B0 本地关键代码对照：上游 tarball 基线追加两个模块；本地无对应固定清单，已有 scripts/npm-pack-dry-run.mjs，需结合本地运行时模块建立自身产物契约，归 B11。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-93a17ea623)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-93a17ea623)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-93a17ea623)
@@ -9217,6 +9270,7 @@
 
 <a id="commit-20ccfb7304"></a>
 ## [20ccfb7304](https://github.com/weiesky/cc-viewer/commit/20ccfb7304d3d298be3b818bb406a35a6779527a) — refactor(content): extract bundled assets into packages/content (@ccv/content)
+- 2026-11-23 B10最终核定：实际抽包/assembly probe diff已核；既有A2授权为最小workspace/单npm包，进一步content抽取另决，B10不重排。 仅B10子项，完整本地映射/验证见[B10完成矩阵](./B10-completion-matrix.md)与[候选索引](./B10-candidate-index.json)。
 - B0 本地关键代码对照：当前资源仍随根包组织，未抽取 @ccv/content；是否抽包须结合资源发现与发布产物核验，归 B11。 [pnpm 专项](./B0-pnpm-monorepo.md)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-20ccfb7304)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-20ccfb7304)
@@ -13915,6 +13969,7 @@
 
 <a id="commit-a97d0f8adf"></a>
 ## [a97d0f8adf](https://github.com/weiesky/cc-viewer/commit/a97d0f8adfc9a44887c9b05fc1f857f87e15cf94) — docs(concepts): "Activation" sections for gated tools in all 18 locales
+- 2026-11-23 B10最终核定：Claude工具Activation/provider/feature gates，B0已归B11；不复制Claude环境开关。 仅B10子项，完整本地映射/验证见[B10完成矩阵](./B10-completion-matrix.md)与[候选索引](./B10-candidate-index.json)。
 - B0 本地关键代码对照：上游受限工具 Activation 说明针对 Claude 的可用条件；本地 concepts 工具文档须按 Codex 实际工具注册与启用条件核实，不机械移植，归 B11。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-a97d0f8adf)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-a97d0f8adf)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-a97d0f8adf)
@@ -14488,6 +14543,7 @@
 
 <a id="commit-6680d041d4"></a>
 ## [6680d041d4](https://github.com/weiesky/cc-viewer/commit/6680d041d4d3cd902f9d3773a1c9d3f774146964) — feat(tools): sync tool catalog to Claude Code 2.1.233 — 21 new tools, MCP & Extensions category
+- 2026-11-23 B10最终核定：Claude 2.1.233目录/18语言工具文档；B0已归B11，保留本地Codex工具目录，不作B10整条完成。 仅B10子项，完整本地映射/验证见[B10完成矩阵](./B10-completion-matrix.md)与[候选索引](./B10-candidate-index.json)。
 - B0 本地关键代码对照：上游目录和 18 语言概念文档针对 Claude Code 2.1.233；本地 src/utils/toolCatalog.js 与 concepts/{zh,en} 已有 Codex 工具目录和 MCP 文档，不能原样覆盖，需依据 Codex 协议逐项核对并保留本地已修正内容，归 B11。 [文件与测试证据](./B0-commit-file-evidence.md#evidence-6680d041d4)。
 - [B0 upstream full commit message](./B0-upstream-messages.md#message-6680d041d4)
 - [B0 file and test evidence](./B0-commit-file-evidence.md#evidence-6680d041d4)
@@ -16676,3 +16732,139 @@ d5e66ec1d8 headless子项 → 本笔feat(cli): apply managed prompts to fresh he
 ### B8最终交付与B9准备（合并后更新）
 
 E1–E34按独立子项记录；37原始本地commit已备份/映射（含B7本地完成文档、已撤回E5–E7和元数据），整合e2ee6e3经[PR #9](https://github.com/weiesky/cx-viewer/pull/9)合并main `6106d41c5da0509595ed1d5a108bec6ab6d09513`，4个tree精确一致；实际无PR checks，不声称CI通过。最终2232/2232、0skip/build/pack737，新生产安装685/685及737包/211Web字节、B1.2/隔离CLI与真实SDK/native分项通过。54候选仅按B8职责闭合，代理重试配置/统计用户排除，混合B9–B11保留；见[B8完成矩阵](./B8-completion-matrix.md)。B9交接/14候选只准备，尚未执行，权限默认值未改。
+
+B9 E15（177b85/451ef48，固定74cd752）：原Upload后定时行、共享modal、精确instance SSE通知。Web735/735/build通过，GUI待验；本地本地 `83c6e73`（`feat(schedule): connect original menus and scoped run notifications`）。
+
+B9 E16（6081b5，固定74cd752）：原默认关托管模型/18语言picker、native问题ID/数组及prototype边界；39/39，执行桥/UI待迁。本地 `9da6264`（`feat(ask): migrate opt-in hosting model and native answer selection`）。
+
+B9 E17（6081b5）：native SDK所有权后托管、default off、单题取消/replay/手动先赢，临时session所属WS；15/15含真实协议进程/HTTP/WS。本地 `a79f24b`（`feat(ask): host native SDK questions with scoped cancellation`）。
+
+B9 E18（6081b5）：PTY原生relay显式启用离线托管、精确owner取消/replay、保留Codex协议期限；25/25真实HTTP/WS及PTY路由。本地 `7b1b96f`（`feat(ask): host native PTY questions without changing protocol deadlines`）。
+
+B9 E19（6081b5）：原Ask第三行/设置Select/18语言，default null，0明确启用，reviewer保留；Web742/build通过，倒计时UI待迁。本地 `9904c92`（`feat(ask): add original opt-in hosting controls`）。
+
+B9 E20（6081b5）：原countdown/CSS、server权威期限、native queued request取消与重连/cache/fallback；Web757/build通过。本地 `68465c1`（`feat(ask): render original hosting countdown and native cancel flow`）。
+
+B9 E21（3d4f098）：Other Input原四个密码管理器opt-out，保留1b3引用守卫；Web758通过，实际第三方密码管理器待真机。本地 `671c4f1`（`fix(ask): preserve upstream Other input autofill hints`）。
+
+B9 E22（177b85/451ef48/6081b5）：实际Codex0.169 exec/AppServer12本机请求，HTTP定时inject/spawn/精确archive实际resume、native Ask立即与取消手动；完整2443/2443/build通过，GUI/安装待验。本地 `cb5b5f2`（`test(schedule): verify actual native execution and archive restoration`）。
+
+B9 E23（93a17包子项）：npm pack747→新生产安装859/859，全部747包/211Web精确字节、B1.2/隔离CLI通过；native lib由既有files覆盖。本地 `bf35be4`（`test(schedule): verify fresh production install and packaged runtime`）。
+
+B9 E24（177b85/451ef48/2914d647）：README Features原位置定时功能说明，native精确workspace/权限适配，其他语言README源不存在不新造；后续产物再核字节。本地 `4292dcb`（`docs(schedule): describe aligned native scheduling behavior`）。
+
+B9 E25（177b85/6081b5必要native适配）：实际rollout发现exec强制never，用户明确选独立任务固定AppServer/常驻不变。27定向及12实际Codex请求核原生on-request/workspace-write/network=false与精确resume/Ask；旧E22不含权限实证，最终回执已修正。本地 `96fe83a`（`fix(schedule): preserve native approvals through isolated AppServer runs`）。
+
+B9 E26（177b85/2914d647/451ef48/6081b5）：双浏览器SDK/普通PTY/手机6配置16图，原菜单/CSS、实际附件/once/运行历史/暂停/discard/Ask托管取消手动；普通PTY GUI只证队列接受。E25后2443/2443/build/新安装859和747包/211Web字节全部复验。本地 `f3ad7be`（`test(schedule): verify original menus and hosting in both browsers`）。
+
+B9 E27（177b85）：实际CLI/node-pty/Codex正常权限，经隔离生成hook review后，Run now原队列→精确末条prompt模型请求1次，SID不变，native rollout on-request/workspace-write；两主请求+两标题请求，外部模型无。本地 `232350b`（`test(schedule): verify actual native PTY task delivery`）。
+
+B9 E29（2026-11-23交付）：29笔原始提交完整备份至backup/b9-raw-20261123与已验bundle，整合0a162b4；原/整合/远端tree均77d5d480b9368998f7d00597fed5e34a3a3e8c4d。已创建[PR #11](https://github.com/weiesky/cx-viewer/pull/11)到main，创建时逐页核120远端路径/状态/blob一致，实际无PR checks/分支Actions runs。按用户要求PR创建后才追加本进度更新；PR仍OPEN、未合并，B10未启动。原上游→本地hash映射保留并补整合关系，见[B9整合记录](./B9-local-commit-consolidation-2026-11-23.md)。
+
+
+### B10 E1 — 目录插件manifest（2026-11-23）
+
+58493d1c859f0875395b34bf2e21ebe7a01ee5db的manifest子项→本笔 `feat(plugins): migrate directory service manifest validation`。实际diff/最终全文件/loader与路由链已读，迁原路径/指纹校验，error reporter路径与CXV保留变量最小适配；8/8、0skip。无服务启动/界面验收，B10进行中；见[B10实施](./B10-implementation.md)。
+
+
+### B10 E2 — 目录扫描与既有hook兼容
+
+58493d1c859f0875395b34bf2e21ebe7a01ee5db loader子项及77b61bd571/ef5fc8b168最终修复→本笔 `feat(plugins): load directory plugins alongside legacy hooks`；E1 `9e19ba4`。保留本地voiceInput/capabilities/mtime热重载，迁目录优先级/禁用/代次和dispatcher；19/19、0skip，无服务启动或UI声明，见[B10实施](./B10-implementation.md)。
+
+
+### B10 E3 — 服务子进程/host SDK
+
+58493d1c859f0875395b34bf2e21ebe7a01ee5db子进程子项→本笔 `feat(plugins): migrate supervised service child processes`；E2 48f0f90。21/21含真实host子进程，保留CCV插件协议，CXV内部标记/测试guard/保留变量适配；未启用用户插件/未接主server，见[B10实施](./B10-implementation.md)。
+
+
+### B10 E4 — HTTP/WS流式代理
+
+58493d1c859f0875395b34bf2e21ebe7a01ee5db proxy子项→本笔 `feat(plugins): migrate streaming HTTP and WebSocket proxy`；E3 ce970ae。10/10实际HTTP/SSE/POST/WS与原始握手，CXV认证边界适配并复用header重写封住非101cookie旁路。路由未接线/未验真实TLS，见[B10实施](./B10-implementation.md)。
+
+
+### B10 E5 — 公开URL/path工具
+
+57c732d0371bc34417e75a6bd106e1a3fde90f99/439179221296fcc2ca1beb0ffce69c13a336b56f URL工具子项→本笔 `feat(proxy): migrate public base URL and encoded path utilities`；E4 469ec8a。50/50纯工具、0skip，CXV环境名适配与旧path防跨源保护，server/CLI/QR/登录接线待迁，见[B10实施](./B10-implementation.md)。
+
+
+### B10 E6 — 生命周期与真实detached服务
+
+58493d1c859f0875395b34bf2e21ebe7a01ee5db runtime、ef5fc8b168/57c732d037后续子项→本笔 `feat(plugins): migrate service lifecycle orchestration`；E5 4987837。23/23+1/1真实detached HTTP/WS/崩溃/重启/reload/停止，4自有PID/锁配置清理通过。主server/面板待接，见[B10实施](./B10-implementation.md)。
+
+
+### B10 E7 — 面板资源/目录删除
+
+58493d1c859f0875395b34bf2e21ebe7a01ee5db panel静态与目录删除子项→本笔 `feat(plugins): migrate panel assets and validated directory deletion`；E6 2efb987。21/21、0skip，原静态边界/描述符/目录安全删除迁入，主server与React面板待接线；见[B10实施](./B10-implementation.md)。
+
+
+### B10 E8 — 主server服务接线
+
+58493d1c859f0875395b34bf2e21ebe7a01ee5db主server/routes子项→本笔 `feat(plugins): connect service lifecycle and authenticated server routes`；E7 2aa0c34。实际服务15/认证21/SDK-target-voice26全0skip；首轮全量1617/1625的8个虚拟Host fixture失败保留，显式白名单后定向复验。私有runtime配置继承B1/B5防泄漏；保持原生审批。base URL运行链/UI/更新待，见[B10实施](./B10-implementation.md)。
+
+
+### B10 E9 — React面板运行时/加载协议
+
+58493d1c859f0875395b34bf2e21ebe7a01ee5db panel runtime/loader/utils子项→本笔 `feat(plugins): migrate remote React panel runtime and loader`；E8 df7893c。25/25受控脚本/DOM与缓存、0skip，保留CCV共享依赖/同步握手/取消协议；原UI宿主与浏览器待，见[B10实施](./B10-implementation.md)。
+
+
+### B10 E10 — 原面板UI/菜单与实际GUI
+
+58493d1c859f0875395b34bf2e21ebe7a01ee5db UI子项→本笔 `feat(plugins): connect original remote panels and management UI`；E9 108487c。7原组件/CSS精确字节，Web785/785/build，双浏览器6配置10图/同名精确instance/服务Ping/错误重试/样式释放通过；自有fixture正常退出。用户明确保留后端HTTPS密码策略，后续baseURL不新增转发头登录信任。见[B10实施](./B10-implementation.md)与[GUI](./B10-gui.json)。
+
+
+### B10 E11 — baseURL运行链
+
+57c732d0371bc34417e75a6bd106e1a3fde90f99/439179221296fcc2ca1beb0ffce69c13a336b56f server/auth/misc/i18n子项→本笔 `feat(proxy): connect runtime base paths and public access URLs`；E10 5841ccb。92/92+前缀38/38、Web786/build/0skip，真实prefixed子服务HTTP/WS/SSE/cookie/callParent、token插值/HTML脚本边界通过；按用户选择保持后端TLS密码门。CLI与实际TLS浏览器待；见[B10实施](./B10-implementation.md)。
+
+
+### B10 E12 — CLI公开URL/打开
+
+57c732d0371bc34417e75a6bd106e1a3fde90f99 CLI子项→本笔 `feat(proxy): align CLI public URLs and browser opening`；E11 0c247bb。11/11隔离CLI/signal回归，公网prefix/token/picker捕获通过，三入口复用spawn argv，不改native参数/transport。实际TLS浏览器与更新后续；见[B10实施](./B10-implementation.md)。
+
+### B10 E13 — 只读更新检查
+
+6e3c93cd7ca52fc096df431957b3df7724f06605/17ba9be7b5f4cceb9c5c9371683b05fb258220c7 checker子项→本笔 `feat(update): make release checks report availability without installing`；E12 570da90。5/5隔离测试，无真实安装。见[B10实施](./B10-implementation.md)。
+
+### B10 E14 — TLS终止代理浏览器验收
+
+57c732d0371bc34417e75a6bd106e1a3fde90f99/439179221296fcc2ca1beb0ffce69c13a336b56f→本笔 `test(proxy): verify encoded public paths through TLS termination`；E13 ffc4067。双浏览器4配置8图、真实HTTPS→HTTP/wss/插件通过，后端TLS密码门保持；fixture已停，非LAN证据。见[回执](./B10-proxy-gui.json)。
+
+### B10 E15 — 引导更新作业核心
+
+6e3c93cd7ca52fc096df431957b3df7724f06605/17ba9be7b5f4cceb9c5c9371683b05fb258220c7→本笔 `feat(update): migrate verified staging and guarded npm installation`；E14 3f562ca。31/31含真实offline npm私有prefix，无真实全局安装。碰撞文件与活owner数据保护最小修正，server/UI后续；见[B10实施](./B10-implementation.md)。
+
+### B10 E16 — 引导更新API/重启助手
+
+6e3c93cd7ca52fc096df431957b3df7724f06605/17ba9be7b5f4cceb9c5c9371683b05fb258220c7→本笔 `feat(update): connect guarded routes and native restart cleanup`；E15 d962e7d。27/27加真实认证22/22、0skip，保留native signal退出，未替换真实全局包；原UI下一笔。见[B10实施](./B10-implementation.md)。
+
+### B10 E17 — 原版引导更新UI
+
+6e3c93cd7ca52fc096df431957b3df7724f06605/17ba9be7b5f4cceb9c5c9371683b05fb258220c7→本笔 `feat(update): migrate original guided update modal and recovery UI`；E16 7649484。Web790/build、双浏览器4配置16图通过；API状态夹具与后端真实offline安装证据分别记录。全量helper夹具竞争下一笔修正。见[B10实施](./B10-implementation.md)与[GUI](./B10-update-gui.json)。
+
+### B10 E18 — helper测试竞争修正
+
+17ba9be7b5f4cceb9c5c9371683b05fb258220c7测试子项→本笔 `test(update): spawn readiness fixture after restart config is written`；E17 6691512。6/6，未改生产门。见[B10实施](./B10-implementation.md)。
+
+### B10 E19 — Electron更新身份/插件pin
+
+58493d1c859f0875395b34bf2e21ebe7a01ee5db/17ba9be7b5f4cceb9c5c9371683b05fb258220c7→本笔 `fix(electron): identify managed tabs and retain dynamic plugin pins`；E18 a974111。Node语法/PTY6项通过，Electron GUI待。见[B10实施](./B10-implementation.md)。
+
+### B10 E20 — 孤儿清理身份门
+
+58493d1c859f0875395b34bf2e21ebe7a01ee5db清理子项→本笔 `fix(plugins): verify full service identity before orphan signals`；E19 4883317。19/19含真实HTTP健康错配/零信号，通过。见[B10实施](./B10-implementation.md)。
+
+### B10 E21 — beforeRequest主调用链补齐
+
+58493d1c859f0875395b34bf2e21ebe7a01ee5db→本笔 `fix(plugins): dispatch request hooks after native authentication and scope checks`；E20 b363407。真实服务集成17/17通过，原生审批不变；见[B10实施](./B10-implementation.md)。
+
+### B10 E22 — 插件/反代文档与模板
+
+58493d1c859f0875395b34bf2e21ebe7a01ee5db/57c732d0371bc34417e75a6bd106e1a3fde90f99/6e3c93cd7ca52fc096df431957b3df7724f06605文档子项→本笔 `docs(plugins): ship native service and reverse proxy guidance`；E21 fb59b22。4个原模板字节相同，真实esbuild/build通过，密码门及native适配均明确；见[B10实施](./B10-implementation.md)。
+
+### B10 E23 — 最终生产安装验收
+
+58493d1c859f0875395b34bf2e21ebe7a01ee5db/57c732d0371bc34417e75a6bd106e1a3fde90f99/6e3c93cd7ca52fc096df431957b3df7724f06605/17ba9be7b5f4cceb9c5c9371683b05fb258220c7产物子项→本笔 `test(alignment): verify packaged B10 runtime and fresh production installation`；E22 55f75e4。2713/2713、0skip/build/pack773，新安装1096/1096及773包/211Web精确字节、B1.2/CLI通过；Host夹具失败与修正保留。见[安装](./B10-installed.json)与[实施](./B10-implementation.md)。
+
+### B10 E24 — 源码核销与完成交接
+
+本笔 `docs(alignment): close B10 subscope audit and hand off remaining B11 work`；E23 4059848。12候选按范围核销，13原组件/CSS/模板精确字节，B11待办不抵扣完成；最终2713/2713、0skip/build/pack773、新安装1096/1096及773包/211Web。仅文档/证据，不重复同内容测试；见[B10矩阵](./B10-completion-matrix.md)。

@@ -571,6 +571,7 @@ function createTab(projectPath, extraArgs = []) {
   delete childEnv.CXV_PROXY_PORT;
   delete childEnv.CXV_PROXY_MODE;
   delete childEnv.CXV_ELECTRON_MULTITAB;
+  childEnv.CXV_ELECTRON_TAB = '1';
   if (isStaleLocalCodexBaseUrl(childEnv.OPENAI_BASE_URL)) delete childEnv.OPENAI_BASE_URL;
   // Legacy cc-viewer env may still be present in a user's shell; keep clearing it.
   delete childEnv.ANTHROPIC_BASE_URL;

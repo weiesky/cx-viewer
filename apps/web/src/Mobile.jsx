@@ -9,7 +9,7 @@ import { handleSkillToggle, handleSkillDelete } from './utils/skillModalControll
 import { getDisplayedSessionModelName, computeContextPercent, sumUsageContextTokens } from './utils/helpers';
 import { getLatestSessionByActivity } from './utils/sessionManager';
 import { contextSeverityColor } from './utils/formatters';
-import { PLAN_AUTO_APPROVE_OPTIONS, autoApproveSelectOptions } from './utils/autoApproveOptions';
+import { PLAN_AUTO_APPROVE_OPTIONS, autoApproveSelectOptions, askAutoAnswerSelectOptions, askAutoAnswerUiValue, askAutoAnswerPrefValue } from './utils/autoApproveOptions';
 import { approvalReviewerSelectOptions } from './utils/approvalReviewerOptions';
 import ChatView from './components/chat/ChatView';
 import { ResumeSessionsList } from './components/chat/ResumeSessionsPopover';
@@ -27,6 +27,9 @@ import MemoryDetailModal from './components/common/MemoryDetailModal';
 import SkillsManagerModal from './components/settings/SkillsManagerModal';
 import ProjectPrefsManagerModal from './components/settings/ProjectPrefsManagerModal';
 import PluginModal from './components/settings/PluginModal';
+import PluginPanelModal from './components/plugins/PluginPanelModal';
+import { PanelIcon } from './components/plugins/panelIcons';
+import { fetchPluginPanels, invalidatePluginPanels, panelTitle } from './utils/pluginPanels';
 import ProcessModal from './components/settings/ProcessModal';
 import ProxyModal from './components/settings/ProxyModal';
 import OpenFolderIcon from './components/common/OpenFolderIcon';
@@ -82,6 +85,7 @@ class Mobile extends AppBase {
       pluginModalVisible: false,
       processModalVisible: false,
       proxyModalVisible: false,
+      pluginPanels: [], activePluginPanel: null, pluginPanelAttempt: 0,
       // 与 AppHeader._skillsModal 同结构；toggling 用 Set 跟踪正在切换的 skill key。
       _skillsModal: { open: false, loading: false, skills: [], error: null, toggling: new Set() },
     });
@@ -92,6 +96,21 @@ class Mobile extends AppBase {
     this._codexMdSeq = 0;
     this._codexMdDetailSeq = 0;
   }
+
+  _refreshPluginPanels = async (force = false) => {
+    const { panels } = await fetchPluginPanels({ force });
+    if (panels) this.setState({ pluginPanels: panels });
+  };
+
+  _handlePluginModalClose = () => {
+    this.setState({ pluginModalVisible: false });
+    invalidatePluginPanels();
+    this._refreshPluginPanels(true);
+  };
+
+  // Stable close handler: PluginPanelModal's focus/Escape effects must not re-run on
+  // parent re-renders (streaming updates) — an inline arrow would be a new identity each time.
+  _handlePluginPanelClose = () => this.setState({ activePluginPanel: null });
 
   // 关掉所有移动端互斥 overlay。每次打开任一 overlay 时先调用此方法，
   // 避免 9+ 处 setState 漏键导致两个 overlay 叠加（review 反馈：closeAll helper 比逐处加 key 安全）。
@@ -118,6 +137,7 @@ class Mobile extends AppBase {
       pluginModalVisible: false,
       processModalVisible: false,
       proxyModalVisible: false,
+      activePluginPanel: null,
     };
   }
 
@@ -250,6 +270,7 @@ class Mobile extends AppBase {
 
   componentDidMount() {
     super.componentDidMount();
+    this._refreshPluginPanels();
     // 检测项目是否有 git（优先多仓库 API，回退旧 API）
     const gitStatusUrl = apiUrl('/api/git-status');
     fetch(apiUrl('/api/git-repos')).then(r => r.ok ? r.json() : Promise.reject()).then(data => {
@@ -485,7 +506,11 @@ class Mobile extends AppBase {
           <div className={styles.mobileCLIHeaderLeft}>
             <button
               className={styles.mobileMenuBtn}
-              onClick={() => this.setState(prev => ({ mobileMenuVisible: !prev.mobileMenuVisible }))}
+              onClick={() => {
+                const opening = !this.state.mobileMenuVisible;
+                this.setState(prev => ({ mobileMenuVisible: !prev.mobileMenuVisible }));
+                if (opening) this._refreshPluginPanels();
+              }}
               aria-label={t('ui.mobileMenu')}
               aria-expanded={this.state.mobileMenuVisible}
               aria-haspopup="menu"
@@ -644,6 +669,17 @@ class Mobile extends AppBase {
                   </svg>
                   {t('ui.pluginManagement')}
                 </button>
+                {/* 4.x remote plugin panels - dynamic items; desktopOnly panels are hidden on mobile */}
+                {this.state.pluginPanels.filter(p => p.entryUrl && !p.desktopOnly).map(p => (
+                  <button
+                    key={`plugin-panel:${p.name}`}
+                    className={styles.mobileMenuItem}
+                    onClick={() => { this.setState({ ...this._closeAllMobileOverlays(), activePluginPanel: p, pluginPanelAttempt: 0 }); }}
+                  >
+                    <PanelIcon name={p.icon} style={{ fontSize: 16 }} />
+                    {panelTitle(p)}
+                  </button>
+                ))}
                 {/* 4. CXV 进程管理 */}
                 <button
                   className={styles.mobileMenuItem}
@@ -756,7 +792,7 @@ class Mobile extends AppBase {
                     onApprovalsReviewerChange={this.handleApprovalsReviewerChange}
                     onApprovalsReviewerSynced={this.handleApprovalsReviewerSynced}
                     planAutoApproveSeconds={this.state.approvalPrefs?.planAutoApproveSeconds}
-                    onPlanAutoApproveChange={this.handlePlanAutoApproveChange}
+                    onPlanAutoApproveChange={this.handlePlanAutoApproveChange} askAutoAnswerMinutes={this.state.approvalPrefs?.askAutoAnswerMinutes} onAskAutoAnswerChange={this.handleAskAutoAnswerChange}
                     ownTabId={this.state.ownTabId}
                     projectName={this.state.projectName}
                     suppressInlineApprovalPanels={true}
@@ -785,7 +821,7 @@ class Mobile extends AppBase {
                 approvalsReviewer={this.state.approvalsReviewer}
                 onApprovalsReviewerChange={this.handleApprovalsReviewerChange}
                 planAutoApproveSeconds={this.state.approvalPrefs?.planAutoApproveSeconds}
-                onPlanAutoApproveChange={this.handlePlanAutoApproveChange}
+                onPlanAutoApproveChange={this.handlePlanAutoApproveChange} askAutoAnswerMinutes={this.state.approvalPrefs?.askAutoAnswerMinutes} onAskAutoAnswerChange={this.handleAskAutoAnswerChange}
               />
             </div>
           )}
@@ -875,7 +911,18 @@ class Mobile extends AppBase {
               Mobile 继承直接读到。 */}
           <PluginModal
             open={this.state.pluginModalVisible}
-            onClose={() => this.setState({ pluginModalVisible: false })}
+            onClose={this._handlePluginModalClose}
+          />
+          <PluginPanelModal
+            panel={this.state.activePluginPanel}
+            open={!!this.state.activePluginPanel}
+            onClose={this._handlePluginPanelClose}
+            attempt={this.state.pluginPanelAttempt}
+            onRetry={() => this.setState(s => ({ pluginPanelAttempt: s.pluginPanelAttempt + 1 }))}
+            theme={this.state.themeColor}
+            lang={getLang()}
+            project={this.state.projectName || null}
+            instance={new URLSearchParams(window.location.search).get('instance')}
           />
           <ProcessModal
             open={this.state.processModalVisible}
@@ -994,6 +1041,23 @@ class Mobile extends AppBase {
                       value={this.state.approvalPrefs.planAutoApproveSeconds || 0}
                       onChange={(value) => this.handleApprovalPrefsChange({ planAutoApproveSeconds: value })}
                       options={autoApproveSelectOptions(PLAN_AUTO_APPROVE_OPTIONS, t)}
+                      style={{ width: 100 }}
+                    />
+                  </div>
+                )}
+                {this.state.approvalPrefs && (
+                  <div className={styles.mobileSettingsRow}>
+                    <span className={styles.mobileSettingsLabel}>
+                      {t('ui.askAutoAnswer.setting')}
+                      <Tooltip title={t('ui.askAutoAnswer.help')} trigger="click" overlayInnerStyle={{ whiteSpace: 'pre-line' }}>
+                        <QuestionCircleOutlined className={styles.mobileSettingsHelpIcon} />
+                      </Tooltip>
+                    </span>
+                    <Select
+                      size="small"
+                      value={askAutoAnswerUiValue(this.state.approvalPrefs.askAutoAnswerMinutes)}
+                      onChange={(value) => this.handleApprovalPrefsChange({ askAutoAnswerMinutes: askAutoAnswerPrefValue(value) })}
+                      options={askAutoAnswerSelectOptions(t)}
                       style={{ width: 100 }}
                     />
                   </div>

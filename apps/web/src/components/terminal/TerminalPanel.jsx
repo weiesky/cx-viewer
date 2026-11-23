@@ -39,9 +39,10 @@ import ScratchTerminal from './ScratchTerminal';
 import { darkTerminalTheme, lightTerminalTheme, terminalFontFamily } from './terminalThemes';
 import { resizeImageIfNeeded } from '../../utils/imageResize';
 import UltraplanPanel, { readUltraplanPopoverSize, ultraplanOverlayInnerStyle } from './UltraplanPanel';
-import { AgentTeamIcon, UploadIcon, TrashIcon, SPARKLE_MASK_STYLE, ULTRAPLAN_MASK_STYLE } from '../common/quickMenuIcons';
+import { AgentTeamIcon, UploadIcon, TrashIcon, ScheduleIcon, SPARKLE_MASK_STYLE, ULTRAPLAN_MASK_STYLE } from '../common/quickMenuIcons';
 import ResumeSessionsRow from '../common/ResumeSessionsRow';
 import QuickAutoApproveRows from '../common/QuickAutoApproveRows';
+import ScheduleTaskModal from '../common/ScheduleTaskModal';
 import { createQuickMenuHoverIntent } from '../../utils/quickMenuHoverIntent';
 import chrome from '../common/sharedChrome.module.css';
 
@@ -257,6 +258,7 @@ class TerminalPanel extends React.Component {
       customUltraplanEditOpen: false,
       customUltraplanEditing: null,
       presetModalVisible: false,
+      scheduleModalVisible: false,
       presetItems: [],
       presetSelected: new Set(),
       presetAddVisible: false,
@@ -1767,6 +1769,14 @@ class TerminalPanel extends React.Component {
                     <span className={chrome.quickMenuRowIcon}><UploadIcon /></span>
                     <span className={chrome.quickMenuLabel}>{t('ui.terminal.upload')}</span>
                   </button>
+                  {this.props.projectName && (
+                    <button className={chrome.quickMenuRow}
+                      onClick={() => this.setState({ quickSettingsOpen: false, quickSettingsExpanded: null, scheduleModalVisible: true })}
+                      onMouseEnter={() => { this._qmHover.cancel(); if (this.state.quickSettingsExpanded) this.setState({ quickSettingsExpanded: null }); }}>
+                      <span className={chrome.quickMenuRowIcon}><ScheduleIcon /></span>
+                      <span className={chrome.quickMenuLabel}>{t('ui.schedule.menuItem')}</span>
+                    </button>
+                  )}
                   <QuickAutoApproveRows
                     middle={this.props.onResumeSession && <ResumeSessionsRow
                       expanded={this.state.quickSettingsExpanded === 'history'}
@@ -1780,7 +1790,7 @@ class TerminalPanel extends React.Component {
                     approvalsReviewer={this.props.approvalsReviewer}
                     planAutoApproveSeconds={this.props.planAutoApproveSeconds}
                     onApprovalsReviewerChange={this.props.onApprovalsReviewerChange}
-                    onPlanAutoApproveChange={this.props.onPlanAutoApproveChange}
+                    onPlanAutoApproveChange={this.props.onPlanAutoApproveChange} askAutoAnswerMinutes={this.props.askAutoAnswerMinutes} onAskAutoAnswerChange={this.props.onAskAutoAnswerChange}
                     expandedKey={this.state.quickSettingsExpanded}
                     onToggle={(k) => this.setState({ quickSettingsExpanded: k })}
                     onHoverEnter={this._qmHover.enter}
@@ -1972,7 +1982,8 @@ class TerminalPanel extends React.Component {
         <Modal
           title={t('ui.terminal.presetShortcuts')}
           open={this.state.presetModalVisible}
-          onCancel={() => this.setState({ presetModalVisible: false, presetSelected: new Set() })}
+          onCancel={() => this.setState({ presetModalVisible: false,
+      scheduleModalVisible: false, presetSelected: new Set() })}
           footer={null}
           width={800}
           styles={{ content: { background: 'var(--bg-elevated)', border: '1px solid var(--border-light)' }, header: { background: 'var(--bg-elevated)', borderBottom: 'none' } }}
@@ -2061,6 +2072,15 @@ class TerminalPanel extends React.Component {
             />
           </div>
         </Modal>
+        <ScheduleTaskModal
+          key={this.props.resumeInstanceKey || 'bound'}
+          open={this.state.scheduleModalVisible}
+          onClose={() => this.setState({ scheduleModalVisible: false })}
+          project={this.props.projectName || null}
+          instance={this.props.resumeInstanceKey || null}
+          serverTimezone={this.props.serverTimezone || null}
+          onResumeSession={this.props.onResumeSession}
+        />
         <CustomUltraplanEditModal
           open={this.state.customUltraplanEditOpen}
           initial={this.state.customUltraplanEditing}

@@ -1,0 +1,56 @@
+{
+  "isolatedProtocolFixture": true,
+  "actualModel": false,
+  "checks": [
+    {
+      "engine": "chromium",
+      "version": "159.0.8154.6",
+      "layout": {
+        "flex": "row",
+        "listWidth": "260px",
+        "gap": "16px"
+      },
+      "mobile": {
+        "flex": "column",
+        "horizontalOverflow": false
+      },
+      "screenshots": [
+        "chromium-empty.png",
+        "chromium-once.png",
+        "chromium-history.png",
+        "chromium-sibling-empty.png",
+        "chromium-ask-hosted.png",
+        "chromium-phone.png"
+      ],
+      "createSaveRunPauseDiscard": true,
+      "exactSiblingScope": true,
+      "nativeAskCancelThenManual": true,
+      "pageErrors": []
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "layout": {
+        "flex": "row",
+        "listWidth": "260px",
+        "gap": "16px"
+      },
+      "mobile": {
+        "flex": "column",
+        "horizontalOverflow": false
+      },
+      "screenshots": [
+        "webkit-empty.png",
+        "webkit-once.png",
+        "webkit-history.png",
+        "webkit-sibling-empty.png",
+        "webkit-ask-hosted.png",
+        "webkit-phone.png"
+      ],
+      "createSaveRunPauseDiscard": true,
+      "exactSiblingScope": true,
+      "nativeAskCancelThenManual": true,
+      "pageErrors": []
+    }
+  ]
+}

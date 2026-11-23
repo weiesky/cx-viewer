@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { spawn } from 'node:child_process';
 import { t } from './i18n.js';
+import { resolveBaseConfig, externalUrlFromConfig } from './lib/base-url.js';
 import { INJECT_IMPORT, LOG_DIR, resolveCliPath, resolveNativePath, resolveNpmCodexPath } from './findcx.js';
 import { appendCxvFinalConfigArgs, buildPtyWorkspaceLaunchArgs, getDefaultModeRequestUserInputConfigArgs, normalizeCodexArgs, hasBypassPermissions, getReasoningSummaryConfigArgs, parseCodexInvocation, extractSdkTransportOptions, insertBeforeDashDash } from './lib/cli-args.js';
 import { ensureHooks } from './lib/ensure-hooks.js';
@@ -30,6 +31,26 @@ registerSignalShutdown(async (context) => {
   shutdownStarted = true;
   await activeShutdownCleanup(context);
 });
+
+function openViewerBrowser(url) {
+  if (process.env.CXV_NO_OPEN === '1') return;
+  try {
+    const child = process.platform === 'win32'
+      ? spawn('cmd.exe', ['/c', 'start', '""', url], { stdio: 'ignore', detached: true, windowsHide: true })
+      : spawn(process.platform === 'darwin' ? 'open' : 'xdg-open', [url], { stdio: 'ignore', detached: true });
+    child.on('error', () => {}); child.unref();
+  } catch { /* Browser opening is best effort. */ }
+}
+
+function registerUpdateRestart(serverMod) {
+  if (process.env.CXV_IM_WORKER === '1') return;
+  serverMod.setRestartHandler(async version => {
+    const { launchRestart } = await import('./lib/restart.js');
+    await launchRestart({ ...cxvLaunch, version });
+    // Reuse the native deadline and full PTY/SDK/plugin cleanup only after readiness.
+    setTimeout(() => process.kill(process.pid, 'SIGTERM'), 100).unref();
+  });
+}
 
 function setActiveShutdownCleanup(cleanup) {
   activeShutdownCleanup = typeof cleanup === 'function' ? cleanup : async () => {};
@@ -384,6 +405,7 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
   serverMod.setWorkspaceCodexArgs(extraCodexArgs);
   serverMod.setWorkspaceCodexPath(codexPath, isNpmVersion);
   await serverMod.startViewer();
+  registerUpdateRestart(serverMod);
   if (shutdownStarted) { await serverMod.stopViewer(); return; }
 
   const port = serverMod.getPort();
@@ -598,22 +620,17 @@ async function runCliMode(extraCodexArgs = [], cwd, launchInvocation = parseCode
     process.exit(1);
   }
 
-  // 4. 自动打开浏览器
-  const url = `${protocol}://127.0.0.1:${port}`;
-  if (!options.noOpen) {
-    try {
-      const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
-      const { execSync } = await import('node:child_process');
-      execSync(`${cmd} ${url}`, { stdio: 'ignore', timeout: 5000 });
-    } catch {}
-  }
-
+  // 4. 自动打开浏览器（公开URL有host时使用同一外部入口）
+  const cfg = resolveBaseConfig();
+  const url = `${protocol}://127.0.0.1:${port}${cfg.basePath}`;
+  const _token = serverMod.getAccessToken();
+  const externalUrl = externalUrlFromConfig(cfg, { token: _token });
+  if (!options.noOpen) openViewerBrowser(externalUrl || url);
   console.log(`CX Viewer:`);
   console.log(`  ➜ Local:   ${url}`);
-  const _lanIps = serverMod.getAllLocalIps();
-  const _token = serverMod.getAccessToken();
-  for (const _ip of _lanIps) {
-    console.log(`  ➜ Network: ${protocol}://${_ip}:${port}?token=${_token}`);
+  if (externalUrl) console.log(t('server.startedExternal', { url: externalUrl }));
+  for (const _ip of serverMod.getAllLocalIps()) {
+    console.log(`  ➜ Network: ${protocol}://${_ip}:${port}${cfg.basePath}?token=${_token}`);
   }
 
 }
@@ -765,6 +782,7 @@ async function runSdkMode(extraCodexArgs = [], cwd, transport = 'exec') {
   if (shutdownStarted) { sdkManager.stopSession(); return; }
 
   await serverMod.startViewer();
+  registerUpdateRestart(serverMod);
   if (shutdownStarted) { await activeShutdownCleanup(); return; }
   serverMod.setWorkspaceLaunched(true);
   serverMod.initPostLaunch();
@@ -775,21 +793,20 @@ async function runSdkMode(extraCodexArgs = [], cwd, transport = 'exec') {
   serverMod.setSdkSendUserMessage(sdkManager.sendUserMessage);
   serverMod.setSdkInterruptTurn(sdkManager.interruptTurn);
 
-  // 自动打开浏览器
+  // 自动打开浏览器，picker query保留在实际打开的公网/本地链接上。
   const protocol = serverMod.getProtocol();
-  const url = `${protocol}://127.0.0.1:${port}${resume?.selector === 'picker' ? '?resume=1' : ''}`;
-  try {
-    const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
-    const { execSync } = await import('node:child_process');
-    execSync(`${cmd} "${url}"`, { stdio: 'ignore', timeout: 5000 });
-  } catch {}
-
+  const cfg = resolveBaseConfig();
+  const picker = resume?.selector === 'picker';
+  const url = `${protocol}://127.0.0.1:${port}${cfg.basePath}${picker ? '?resume=1' : ''}`;
+  const _token = serverMod.getAccessToken();
+  const externalUrl = externalUrlFromConfig(cfg, { token: _token });
+  const openUrl = externalUrl ? `${externalUrl}${picker ? '&resume=1' : ''}` : url;
+  openViewerBrowser(openUrl);
   console.log(`CX Viewer (SDK mode):`);
   console.log(`  ➜ Local:   ${url}`);
-  const _lanIps = serverMod.getAllLocalIps();
-  const _token = serverMod.getAccessToken();
-  for (const _ip of _lanIps) {
-    console.log(`  ➜ Network: ${protocol}://${_ip}:${port}?token=${_token}${resume?.selector === 'picker' ? '&resume=1' : ''}`);
+  if (externalUrl) console.log(t('server.startedExternal', { url: openUrl }));
+  for (const _ip of serverMod.getAllLocalIps()) {
+    console.log(`  ➜ Network: ${protocol}://${_ip}:${port}${cfg.basePath}?token=${_token}${picker ? '&resume=1' : ''}`);
   }
 
   if (initialPrompt && resume?.selector !== 'picker') {
@@ -830,6 +847,7 @@ async function runCliModeWorkspaceSelector(extraCodexArgs = []) {
 
   // 工作区模式下 server.js 跳过了自动启动，需要手动调用
   await serverMod.startViewer();
+  registerUpdateRestart(serverMod);
   if (shutdownStarted) { await serverMod.stopViewer(); return; }
 
   const port = serverMod.getPort();
@@ -840,19 +858,16 @@ async function runCliModeWorkspaceSelector(extraCodexArgs = []) {
 
   // 自动打开浏览器
   const wsProtocol = serverMod.getProtocol();
-  const url = `${wsProtocol}://127.0.0.1:${port}`;
-  try {
-    const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
-    const { execSync } = await import('node:child_process');
-    execSync(`${cmd} ${url}`, { stdio: 'ignore', timeout: 5000 });
-  } catch {}
-
+  const cfg = resolveBaseConfig();
+  const url = `${wsProtocol}://127.0.0.1:${port}${cfg.basePath}`;
+  const _token = serverMod.getAccessToken();
+  const externalUrl = externalUrlFromConfig(cfg, { token: _token });
+  openViewerBrowser(externalUrl || url);
   console.log(`CX Viewer (Workspace):`);
   console.log(`  ➜ Local:   ${url}`);
-  const _lanIps = serverMod.getAllLocalIps();
-  const _token = serverMod.getAccessToken();
-  for (const _ip of _lanIps) {
-    console.log(`  ➜ Network: ${wsProtocol}://${_ip}:${port}?token=${_token}`);
+  if (externalUrl) console.log(t('server.startedExternal', { url: externalUrl }));
+  for (const _ip of serverMod.getAllLocalIps()) {
+    console.log(`  ➜ Network: ${wsProtocol}://${_ip}:${port}${cfg.basePath}?token=${_token}`);
   }
 
   // 注册退出处理
@@ -863,6 +878,7 @@ async function runCliModeWorkspaceSelector(extraCodexArgs = []) {
 // === 主逻辑 ===
 
 const args = process.argv.slice(2);
+const cxvLaunch = { args: [...args], cwd: process.cwd(), cliPath: fileURLToPath(import.meta.url) };
 let sdkTransportOptions;
 try { sdkTransportOptions = extractSdkTransportOptions(args); }
 catch (error) { console.error(error.message); process.exit(1); }

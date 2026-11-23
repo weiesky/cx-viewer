@@ -89,7 +89,7 @@ export class UltraplanController {
     // 如果当前选中的就是被删的，回退到首个可见专家（无可见则 codeExpert）
     if (st.ultraplanVariant === 'custom:' + id) {
       const visible = visibleExpertKeys(next, st.ultraplanExpertOrder, st.ultraplanExpertHidden);
-      this.host.setState({ ultraplanVariant: visible[0] || 'codeExpert' });
+      this.host.setState({ ultraplanVariant: this.host.fallbackVariant || visible[0] || 'codeExpert' });
     }
     this.host.closeEditor();
   };

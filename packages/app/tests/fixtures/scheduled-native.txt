@@ -1,0 +1,17 @@
+import{createInterface}from'node:readline';import{randomUUID}from'node:crypto';import{appendFileSync}from'node:fs';
+const send=f=>process.stdout.write(JSON.stringify(f)+'\n');let threadId,turnId;
+const finish=()=>{send({method:'item/completed',params:{threadId,turnId,item:{id:'answer',type:'agentMessage',text:'fixture reply'}}});send({method:'turn/completed',params:{threadId,turn:{id:turnId,status:'completed'}}});};
+for await(const line of createInterface({input:process.stdin})){const f=JSON.parse(line),p=f.params||{};
+ appendFileSync('calls.jsonl',JSON.stringify({pid:process.pid,...f})+'\n');
+ if(!f.method){if(['approval','ask'].includes(f.id)&&f.result)finish();continue;}
+ if(f.method==='initialize'){send({id:f.id,result:{}});continue;}
+ if(f.method==='initialized')continue;
+ if(f.method==='thread/start'){threadId=randomUUID();send({id:f.id,result:{thread:{id:threadId}}});continue;}
+ if(f.method==='turn/interrupt'){send({id:f.id,result:{}});send({method:'turn/completed',params:{threadId,turn:{id:turnId,status:'interrupted'}}});continue;}
+ if(f.method!=='turn/start'){send({id:f.id,error:{code:-32601,message:'unsupported'}});continue;}
+ turnId=randomUUID();const text=p.input[0].text;send({id:f.id,result:{turn:{id:turnId}}});send({method:'turn/started',params:{threadId,turn:{id:turnId,status:'inProgress'}}});
+ if(text==='approval'){send({id:'approval',method:'item/commandExecution/requestApproval',params:{threadId,turnId,itemId:'command',command:'echo fixture',availableDecisions:['accept','decline']}});continue;}
+ if(text==='ask'){send({id:'ask',method:'item/tool/requestUserInput',params:{threadId,turnId,itemId:'question',questions:[{id:'choice',question:'Choose?',options:[{label:'First'},{label:'Second (Recommended)'}]}]}});continue;}
+ if(text==='hold')continue;
+ if(text==='fail'){send({method:'turn/completed',params:{threadId,turn:{id:turnId,status:'failed',error:{message:'fixture failure'}}}});continue;}
+ finish();}

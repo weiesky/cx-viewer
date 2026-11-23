@@ -41,7 +41,9 @@ export default { name: 'isolated PTY loop observer', hooks: {
  onAgentLoopStart(data) { record('start', data); }, onAgentLoopEnd(data) { record('end', data); }
 } };`);
   manager = await import('../server/lib/voice-pack-manager.js');
-  server = await import('../server.js'); await server.startViewer(); port = server.getPort();
+  server = await import('../server.js');
+  process.env.CXV_ALLOWED_HOSTS = ['localhost', '127.0.0.1', '::1', '[::1]', 'shared.invalid', ...server.getAllLocalIps()].join(',');
+  await server.startViewer(); port = server.getPort();
 });
 
 async function events() {

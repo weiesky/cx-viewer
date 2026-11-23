@@ -1,0 +1,87 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "exactFiles": [
+    {
+      "path": "apps/web/src/components/plugins/PanelHost.jsx",
+      "upstreamPath": "apps/web/src/components/plugins/PanelHost.jsx",
+      "exactBytes": true,
+      "sha256": "ffe29f3cec9686e380d8912a31c63a76aab2122ffff6e35af0b6a087af24bf20"
+    },
+    {
+      "path": "apps/web/src/components/plugins/PanelHost.module.css",
+      "upstreamPath": "apps/web/src/components/plugins/PanelHost.module.css",
+      "exactBytes": true,
+      "sha256": "a96d153a42db125398856bf1435c6df81813c17690e257cf68004cda878a5b66"
+    },
+    {
+      "path": "apps/web/src/components/plugins/PluginPanelModal.jsx",
+      "upstreamPath": "apps/web/src/components/plugins/PluginPanelModal.jsx",
+      "exactBytes": true,
+      "sha256": "74e5fe8def2694ed8ffac308e20dae2b8fba2616581fb6d9aa33905270f5953d"
+    },
+    {
+      "path": "apps/web/src/components/plugins/panelIcons.jsx",
+      "upstreamPath": "apps/web/src/components/plugins/panelIcons.jsx",
+      "exactBytes": true,
+      "sha256": "cd4c58b247299bb8e4a0c8abd3a40c42651b0994dcebc2f30fa87ef41c8ec80b"
+    },
+    {
+      "path": "apps/web/src/components/settings/PluginModal.jsx",
+      "upstreamPath": "apps/web/src/components/settings/PluginModal.jsx",
+      "exactBytes": true,
+      "sha256": "3ca72d5b953ac2b006d51f1074d59062c5b7e8587c5f8d610348cb69af539149"
+    },
+    {
+      "path": "apps/web/src/components/settings/PluginModal.module.css",
+      "upstreamPath": "apps/web/src/components/settings/PluginModal.module.css",
+      "exactBytes": true,
+      "sha256": "ebcc434a226d0fa03c84f9ed6bc7a3beae0e01478c01e1437398b2fe67208025"
+    },
+    {
+      "path": "apps/web/src/components/mobile/MobileDrawerCloseButton.jsx",
+      "upstreamPath": "apps/web/src/components/mobile/MobileDrawerCloseButton.jsx",
+      "exactBytes": true,
+      "sha256": "aca332b9b159cdad4374923483f52cb43c3ca82e185f57d33d9536e92d0acd7e"
+    },
+    {
+      "path": "apps/web/src/components/update/UpdateModal.module.css",
+      "upstreamPath": "apps/web/src/components/update/UpdateModal.module.css",
+      "exactBytes": true,
+      "sha256": "379b5181afba27f4e075a8f9f7d0d5a275d152570445849fafbd50e34cd3688a"
+    },
+    {
+      "path": "apps/web/src/utils/updateProgress.js",
+      "upstreamPath": "apps/web/src/utils/updateProgress.js",
+      "exactBytes": true,
+      "sha256": "36fe9449b5c5580b8de7c3b1eb11d181790febea4bcb2976348db9e15c275268"
+    },
+    {
+      "path": "docs/plugin-templates/panel/plugin.json.example",
+      "upstreamPath": "docs/plugin-templates/panel/plugin.json.example",
+      "exactBytes": true,
+      "sha256": "a120eb299c4426d713c93d9cae5b02588572af6de9f432ade847da454c06217a"
+    },
+    {
+      "path": "docs/plugin-templates/panel/package.json",
+      "upstreamPath": "docs/plugin-templates/panel/package.json",
+      "exactBytes": true,
+      "sha256": "a78f329e8178cf84e807aa3d2b9247abe93ff908ccbdaed39291b9ba2dc70dca"
+    },
+    {
+      "path": "docs/plugin-templates/panel/build.mjs",
+      "upstreamPath": "docs/plugin-templates/panel/build.mjs",
+      "exactBytes": true,
+      "sha256": "05b4d4d074b1cbab58fe0943cacc581f52f483a6885c329eac3fefbb7169fcd8"
+    },
+    {
+      "path": "docs/plugin-templates/panel/src/Panel.jsx",
+      "upstreamPath": "docs/plugin-templates/panel/src/Panel.jsx",
+      "exactBytes": true,
+      "sha256": "40c94183338aa73ac4e46a79b4ea20b417992f26d459d71ed6576880f70ecd49"
+    }
+  ],
+  "updateModalOnlyAdaptation": "cc-viewer -> cx-viewer",
+  "updateModalAdaptedBytesMatch": true,
+  "revertNetTreeEqual": true,
+  "candidateSubscopeAudit": "B10-candidate-index.json"
+}

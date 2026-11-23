@@ -32,6 +32,12 @@ try {
 
 const files = new Set((report?.[0]?.files || []).map((entry) => entry.path));
 const required = [
+  'lib/plugin-host.mjs', 'lib/plugin-runtime.js', 'lib/plugin-proxy.js',
+  'lib/plugin-manifest.js', 'lib/plugin-panels.js', 'lib/plugin-service-manager.js',
+  'lib/base-url.js', 'lib/base-path.js', 'lib/update-job.js', 'lib/update-routes.js',
+  'lib/restart.js', 'lib/restart-helper.js', 'lib/async-file-lock.js',
+  'docs/plugin-services.md', 'docs/plugin-services.zh.md', 'docs/base-url.md',
+  'docs/plugin-templates/panel/build.mjs', 'docs/plugin-templates/panel/src/Panel.jsx',
   'ultraAgents/README.md',
   'ultraAgents/manifest.json',
   'ultraAgents/code-expert.json',

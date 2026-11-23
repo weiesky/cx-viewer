@@ -445,13 +445,45 @@ test('native SDK questions keep card identity separate from RPC identity and pre
   controller.handleWsMessage({ type: 'sdk-ask-pending', id: 'native_nonce', itemId: 'card', questions, startedAt: 1, timeoutMs: 2 });
   controller.handleWsMessage({ type: 'sdk-ask-pending', id: 'native_nonce', itemId: 'card', questions });
   assert.equal(host.state().askQueue.length, 0);
-  assert.deepEqual(host.state().askMetaMap.card, { startedAt: 1, timeoutMs: 2 });
+  assert.deepEqual(host.state().askMetaMap.card, { requestId: 'native_nonce', startedAt: 1, timeoutMs: 2,
+    autoAnswerAt: null, autoAnswerSeconds: null, autoCancelled: false });
   controller.handleAskQuestionSubmit([{ questionIndex: 0, type: 'multi', selectedIndices: [0, 1] }], 'card', questions, 'native_nonce');
   assert.deepEqual(sent, [{ type: 'sdk-ask-answer', id: 'native_nonce', answers: { choice: { answers: ['A', 'B'] } } }]);
   assert.equal(host.state().pendingAsk, null);
   assert.deepEqual(host.state().askMetaMap, {});
   assert.deepEqual(host.state().localAskAnswers.card, { Choose: 'A, B' });
 });
+
+for (const type of ['ask-hook-pending', 'sdk-ask-pending']) {
+  test(`${type} hosting cancellation targets a queued card's native request and survives offline replay`, async () => {
+    const host = batchedControllerHost(), sent = []; let online = false, failSend = true;
+    Object.assign(host, { ws: () => ({ readyState: online ? 1 : 3, send(value) {
+      if (failSend) throw new Error('offline'); sent.push(JSON.parse(value));
+    } }), isUnmounted: () => false, fetchPendingAsks: async () => ({ pendingAsks: [] }) });
+    const controller = new AskFlowController(host);
+    const pending = id => ({ type, id, itemId: `card-${id}`, questions: [{ id: 'q', question: 'Pick' }],
+      startedAt: 100, timeoutMs: 86400000, autoAnswerAt: 600100, autoAnswerSeconds: 600, autoCancelled: false });
+    controller.handleWsMessage(pending('head')); controller.handleWsMessage(pending('queued')); host.flush();
+    controller.handleAskAutoCancel('card-queued'); host.flush();
+    assert.equal(host.state().pendingAsk.id, 'head'); assert.equal(host.state().askQueue.length, 1);
+    assert.equal(host.state().askMetaMap['card-head'].autoCancelled, false);
+    assert.equal(host.state().askMetaMap['card-queued'].autoCancelled, true);
+    assert.equal(host.state().askMetaMap.queued.autoAnswerAt, null);
+    online = true; controller.onWsOpen(); assert.deepEqual(sent, []);
+    failSend = false; controller.onWsOpen();
+    assert.deepEqual(sent, [{ type: 'ask-auto-cancel', id: 'queued' }]);
+    controller.handleWsMessage(pending('queued')); host.flush();
+    assert.equal(host.state().askMetaMap['card-queued'].autoCancelled, true, 'stale replay cannot re-arm locally');
+    controller.handleWsMessage({ type: 'ask-auto-cancel', id: 'head' }); host.flush();
+    assert.equal(host.state().askMetaMap['card-head'].autoCancelled, true);
+    controller.handleWsMessage({ type: 'sdk-ask-resolved', id: 'queued' }); host.flush();
+    assert.equal(controller._askAutoCancelled.has('queued'), false);
+    controller.handleWsMessage(pending('queued')); host.flush();
+    assert.equal(host.state().askMetaMap.queued.autoCancelled, false, 'a resolved ID reuse gets a fresh deadline');
+    controller.dispose(); assert.equal(controller._askAutoCancelled.size, 0);
+    await Promise.resolve();
+  });
+}
 
 test('an inline native form can answer before pending delivery and cancellation retries the same nonce after reconnect', async () => {
   const questions = [{ id: 'choice', question: 'Choose', options: [{ label: 'A' }] }], sent = [];

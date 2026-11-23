@@ -1,0 +1,140 @@
+{
+  "baseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "fixture": {
+    "root": "/tmp/cxv-b10-ui-9NzcYS",
+    "pid": 56243,
+    "port": 21040,
+    "stopped": true
+  },
+  "results": [
+    {
+      "engine": "chromium",
+      "configuration": "desktop-a-light",
+      "instance": "cxv-88bc2e1de0630e396081bac4180fbca5",
+      "shape": {
+        "width": 1100,
+        "height": 393.84375
+      },
+      "lifecycle": {
+        "mounts": 3,
+        "closes": 3
+      },
+      "proxy": {
+        "base": "/session/{token}/",
+        "echo": "echo:tls-prefix",
+        "auth": {
+          "secureTransport": false,
+          "remotePasswordLoginAvailable": false
+        }
+      },
+      "unexpectedPageErrors": []
+    },
+    {
+      "engine": "chromium",
+      "configuration": "phone-a-light",
+      "instance": "cxv-88bc2e1de0630e396081bac4180fbca5",
+      "shape": {
+        "width": 390,
+        "height": 797
+      },
+      "lifecycle": {
+        "mounts": 1,
+        "closes": 1
+      },
+      "proxy": {
+        "base": "/session/{token}/",
+        "echo": "echo:tls-prefix",
+        "auth": {
+          "secureTransport": false,
+          "remotePasswordLoginAvailable": false
+        }
+      },
+      "unexpectedPageErrors": []
+    },
+    {
+      "engine": "webkit",
+      "configuration": "desktop-a-light",
+      "instance": "cxv-88bc2e1de0630e396081bac4180fbca5",
+      "shape": {
+        "width": 1100,
+        "height": 393.84375
+      },
+      "lifecycle": {
+        "mounts": 3,
+        "closes": 3
+      },
+      "proxy": {
+        "base": "/session/{token}/",
+        "echo": "echo:tls-prefix",
+        "auth": {
+          "secureTransport": false,
+          "remotePasswordLoginAvailable": false
+        }
+      },
+      "unexpectedPageErrors": []
+    },
+    {
+      "engine": "webkit",
+      "configuration": "phone-a-light",
+      "instance": "cxv-88bc2e1de0630e396081bac4180fbca5",
+      "shape": {
+        "width": 390,
+        "height": 797
+      },
+      "lifecycle": {
+        "mounts": 1,
+        "closes": 1
+      },
+      "proxy": {
+        "base": "/session/{token}/",
+        "echo": "echo:tls-prefix",
+        "auth": {
+          "secureTransport": false,
+          "remotePasswordLoginAvailable": false
+        }
+      },
+      "unexpectedPageErrors": []
+    }
+  ],
+  "limitations": [
+    "simulated mobile viewport/touch; no physical device",
+    "no external models",
+    "controlled loopback TLS proxy only; no LAN or external deployment",
+    "guided update not included"
+  ],
+  "screenshots": [
+    {
+      "file": "B10-proxy-gui/chromium-desktop-a-light.png",
+      "sha256": "a6bb2041448a993dd805d423ed6dbec621ebc5bf69b705d0da44d57ef1134ccc"
+    },
+    {
+      "file": "B10-proxy-gui/chromium-management.png",
+      "sha256": "2f815d636e6be7265258a4a64dde6d74e66f56449195955f90b247f22b6ff804"
+    },
+    {
+      "file": "B10-proxy-gui/chromium-phone-a-light.png",
+      "sha256": "122745eb38ffe7bc5c8c9e73250dc0e421c838d12e7acde86d9c1851598cf264"
+    },
+    {
+      "file": "B10-proxy-gui/chromium-render-error.png",
+      "sha256": "ca8d5889c8bd805bc4a409bc0025cc3f565e4c62698931e1db79dc4146c9ad0f"
+    },
+    {
+      "file": "B10-proxy-gui/webkit-desktop-a-light.png",
+      "sha256": "fa3d8afeacdfca9c6bc888ead3453d6f2006f2ea2053b013650336fad3b4cf19"
+    },
+    {
+      "file": "B10-proxy-gui/webkit-management.png",
+      "sha256": "948c54fcbefa1c4fc06c161501fbe247b6f0e751d79fcda0e339f60b670a2925"
+    },
+    {
+      "file": "B10-proxy-gui/webkit-phone-a-light.png",
+      "sha256": "ece41004a74fcb0512f888f28178c20bca2d867a2bc9e35294e4be727dded67e"
+    },
+    {
+      "file": "B10-proxy-gui/webkit-render-error.png",
+      "sha256": "fd6a0116339aa6ca5800fd428f31bc01377b7fcc42533f77f5554aa57df84f09"
+    }
+  ],
+  "inspection": "All eight screenshots inspected together; original desktop width, mobile fullscreen, management and expected error/retry present."
+}

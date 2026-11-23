@@ -50,6 +50,7 @@ before(async () => {
   auth.saveAuthConfig({ enabled: true, password: 'BOOT1' }, { scope: 'project', projectDir: a });
   auth.saveAuthConfig({ enabled: true, password: 'OTHER2' }, { scope: 'project', projectDir: b });
   server = await import('../server.js');
+  process.env.CXV_ALLOWED_HOSTS = ['localhost', '127.0.0.1', '::1', '[::1]', 'viewer.example', ...server.getAllLocalIps()].join(',');
   sdk = await import('../lib/sdk-manager.js');
   sdk.initSdkSession(a, 'one');
   await server.startViewer();

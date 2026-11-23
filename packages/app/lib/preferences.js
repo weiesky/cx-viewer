@@ -19,9 +19,11 @@ import { getPreferencesPath } from './config-paths.js';
 import { fsyncDirectorySync } from './log-v2/storage.js';
 export { getPreferencesPath } from './config-paths.js';
 
-export function readPreferences({ strict = false } = {}) {
+export function readPreferences({ strict = false, file = getPreferencesPath() } = {}) {
   try {
-    const bytes = readFileSync(getPreferencesPath());
+    const stat = lstatSync(file, { throwIfNoEntry: false });
+    if (stat && (!stat.isFile() || stat.nlink !== 1)) throw new Error('Unsafe preferences file');
+    const bytes = readFileSync(file);
     const value = JSON.parse(strict ? new TextDecoder('utf-8', { fatal: true }).decode(bytes) : bytes.toString('utf8'));
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
       throw new TypeError('Preferences must contain a JSON object');
@@ -31,7 +33,7 @@ export function readPreferences({ strict = false } = {}) {
     if (!strict) return {};
     // Only an absent path may be initialized; a dangling symlink is unreadable.
     if (cause.code === 'ENOENT') {
-      try { if (!lstatSync(getPreferencesPath(), { throwIfNoEntry: false })) return {}; } catch {}
+      try { if (!lstatSync(file, { throwIfNoEntry: false })) return {}; } catch {}
     }
     throw Object.assign(new Error('Preferences are unreadable; restore preferences.json before saving', { cause }), {
       code: 'PREFERENCES_UNREADABLE', status: 409,
@@ -39,8 +41,9 @@ export function readPreferences({ strict = false } = {}) {
   }
 }
 
-export function writePreferences(value, { durable = false } = {}) {
-  const path = getPreferencesPath();
+export function writePreferences(value, { durable = false, file: path = getPreferencesPath() } = {}) {
+  const stat = lstatSync(path, { throwIfNoEntry: false });
+  if (stat && (!stat.isFile() || stat.nlink !== 1)) throw Object.assign(new Error('Unsafe preferences file'), { code: 'PREFERENCES_UNREADABLE', status: 409 });
   mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
   const tmp = `${path}.tmp-${process.pid}-${randomBytes(4).toString('hex')}`;
   let created = false;
@@ -60,8 +63,8 @@ export function writePreferences(value, { durable = false } = {}) {
   }
 }
 
-export function withPreferencesLock(operation) {
-  const lockPath = `${getPreferencesPath()}.lock`;
+export function withPreferencesLock(operation, { file = getPreferencesPath() } = {}) {
+  const lockPath = `${file}.lock`;
   mkdirSync(dirname(lockPath), { recursive: true, mode: 0o700 });
   const deadline = Date.now() + 2000;
   let fd;
@@ -93,11 +96,11 @@ export function withPreferencesLock(operation) {
   }
 }
 
-export function updatePreferences(updater) {
+export function updatePreferences(updater, { file = getPreferencesPath(), durable = false } = {}) {
   return withPreferencesLock(() => {
-    const current = readPreferences({ strict: true });
+    const current = readPreferences({ strict: true, file });
     const next = updater(current) || current;
-    writePreferences(next);
+    writePreferences(next, { file, durable });
     return next;
-  });
+  }, { file });
 }

@@ -1,0 +1,25 @@
+{
+  "base": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-installed-runtime-01318ekn",
+  "files": 747,
+  "source_bytes_match": true,
+  "all_pack_files_compared": 747,
+  "all_pack_file_bytes_match": true,
+  "web_asset_files": 211,
+  "runtime_tests": "859/859",
+  "b12_regression": "passed",
+  "installed_cli_relative_cd_boot": "passed",
+  "uses_fake_codex": true,
+  "uses_real_model_network": false,
+  "testCheckpoint": "2443/2443",
+  "build": "passed",
+  "pack": "747 files",
+  "web": "211 exact-byte files",
+  "newScheduledAndAskSuites": 16,
+  "afterIndependentAppServerDecision": true,
+  "readmeBytesReverified": true,
+  "logs": {
+    "full": "/tmp/cxv-b9-e25-full-test.log",
+    "build": "/tmp/cxv-b9-e25-build.log",
+    "installed": "/tmp/cxv-b9-final-installed-after-policy.log"
+  }
+}

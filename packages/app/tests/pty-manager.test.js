@@ -29,9 +29,13 @@ function fakePty() {
 async function setup(args = []) {
   _resetPtyManagerForTests();
   process.env.HTTPS_PROXY = 'http://proxy.invalid';
+  process.env.CXV_ELECTRON_TAB = '1';
   const fake = fakePty();
   _setPtyImportForTests(() => fake.module);
   const proc = await spawnCodex(null, process.cwd(), args, '/bin/codex-fake', false, 7008);
+  assert.equal(fake.calls[0].opts.env.CXV_ELECTRON_TAB, undefined);
+  assert.equal(process.env.CXV_ELECTRON_TAB, '1');
+  delete process.env.CXV_ELECTRON_TAB;
   return { ...fake, proc };
 }
 
