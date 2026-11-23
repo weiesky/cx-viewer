@@ -1,0 +1,29 @@
+packages/app/server.js
+  s_d7280c55e1029f::t_9e5b7511cc9165 66-67,282-292,1953,6710-6711
+apps/web/src/AppBase.jsx
+  s_d7280c55e1029f::t_9e5b7511cc9165 1852-1854
+packages/app/lib/dingtalk-im-routes.js
+  s_d7280c55e1029f::t_9e5b7511cc9165 233,306
+packages/app/lib/dingtalk-im-log-watcher.js
+  s_d7280c55e1029f::t_9e5b7511cc9165 1-3,5-30,39-42,45-61
+  s_d7280c55e1029f::t_24ac08a5458271 43-44
+  s_d7280c55e1029f::t_0fa8141173f3dc 4,31-38
+packages/app/tests/dingtalk-im-log-watcher.test.js
+  s_d7280c55e1029f::t_0b063a51fee3d0 1-44
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "63b50b87e43651296273f9e76cf2012b8e502ad7",
+  "prompts": {},
+  "sessions": {
+    "s_d7280c55e1029f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a204a6-35f5-7a91-8f49-0742da1c75f9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
