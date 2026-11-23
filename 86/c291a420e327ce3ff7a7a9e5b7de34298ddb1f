@@ -1,0 +1,42 @@
+cc-viewer-alignment/B11-gui.json
+  s_d7280c55e1029f::t_b077835fbcd9fa 4-5,12,15,25,28,38,41,57,60,70,73,83,86
+packages/app/lib/dingtalk-im-bridge.js
+  s_d7280c55e1029f::t_c882fe0f4c7e2b 9,127,263,322
+packages/app/lib/dingtalk-im-routes.js
+  s_d7280c55e1029f::t_c882fe0f4c7e2b 8,41,234,307-309
+  s_d7280c55e1029f::t_9c38efcc71ade5 310-312
+packages/app/lib/adapters/dingtalk-adapter.js
+  s_d7280c55e1029f::t_c882fe0f4c7e2b 53
+packages/app/lib/dingtalk-im-senders.js
+  s_d7280c55e1029f::t_c882fe0f4c7e2b 1-47
+packages/app/tests/dingtalk-im-routes.test.js
+  s_d7280c55e1029f::t_c882fe0f4c7e2b 91
+AGENTS.md
+  s_d7280c55e1029f::t_e457f6f760868d 26
+cc-viewer-alignment/B11-implementation.md
+  s_d7280c55e1029f::t_e290b4b58a67a8 118-123
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_d7280c55e1029f::t_3c92eca87643f1 16951-16954
+packages/app/tests/dingtalk-adapter.test.js
+  s_d7280c55e1029f::t_ec2b31ee214e2e 43,52
+packages/app/tests/dingtalk-im-bridge.test.js
+  s_d7280c55e1029f::t_551fb74698d03f 57,62,334-348
+packages/app/tests/dingtalk-im-senders.test.js
+  s_d7280c55e1029f::t_582033fa0b6488 1-50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "86c291a420e327ce3ff7a7a9e5b7de34298ddb1f",
+  "prompts": {},
+  "sessions": {
+    "s_d7280c55e1029f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a204a6-35f5-7a91-8f49-0742da1c75f9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
