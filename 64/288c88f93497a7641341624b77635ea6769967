@@ -1,0 +1,59 @@
+cc-viewer-alignment/B11-node-floor.json
+  s_d7280c55e1029f::t_46a51f097da57c 3
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_d7280c55e1029f::t_bd01ce145f46ae 3,8534,9121,9168,9276,10677,10699
+  s_d7280c55e1029f::t_19b727b15f98a7 17013-17016
+cc-viewer-alignment/B11-implementation.md
+  s_d7280c55e1029f::t_19b727b15f98a7 214-223
+cc-viewer-alignment/B11-live-gui.json
+  s_d7280c55e1029f::t_9eebdbd30a0806 3,5
+cc-viewer-alignment/B11-changesets-rehearsal.json
+  s_d7280c55e1029f::t_3ca70fff5e2ec7 2,4,8-9
+  s_d7280c55e1029f::t_febbcc122b5572 15
+cc-viewer-alignment/B11-validation-2026-11-23.json
+  s_d7280c55e1029f::t_bd01ce145f46ae 95-98
+  s_d7280c55e1029f::t_7fcce2e0d14135 3,5,10,14-15,17-19,22-24,26,28-31,36-42,47,52-55,58-72,83-94
+cc-viewer-alignment/B11-candidate-matrix.md
+  s_d7280c55e1029f::t_bd01ce145f46ae 5
+  s_d7280c55e1029f::t_7fcce2e0d14135 97
+cc-viewer-alignment/B11-candidate-index.json
+  s_d7280c55e1029f::t_7fcce2e0d14135 8279-8280,12650
+cc-viewer-alignment/B11-fixture-cleanup.json
+  s_d7280c55e1029f::t_fb3ca341dd5882 2,7-8
+cc-viewer-alignment/B11-gui.json
+  s_d7280c55e1029f::t_9eebdbd30a0806 4-5,12,25,38,57,70,83
+cc-viewer-alignment/README.md
+  s_d7280c55e1029f::t_7fcce2e0d14135 5,32,34
+cc-viewer-alignment/A1-A2-engineering.md
+  s_d7280c55e1029f::t_7fcce2e0d14135 3-4
+AGENTS.md
+  s_d7280c55e1029f::t_bd01ce145f46ae 26
+cc-viewer-alignment/B11-completion-matrix.md
+  s_d7280c55e1029f::t_bd01ce145f46ae 1-29
+cc-viewer-alignment/B11-validation-E26-2026-11-23.json
+  s_d7280c55e1029f::t_7fcce2e0d14135 1-66
+cc-viewer-alignment/B11-local-commits-2026-11-23.json
+  s_d7280c55e1029f::t_bd01ce145f46ae 204
+  s_d7280c55e1029f::t_2f3a78d603c06c 3,8-9,14-15,20-21,26-27,32-33,38-39,44-45,50-51,56-57,62-63,68-69,74-75,80-81,86-87,92-93,98-99,104-105,110-111,116-117,122-123,128-129,134-135,140-141,146-147,152-201,205-209
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_d7280c55e1029f::t_bd01ce145f46ae 3,50-52,54
+  s_d7280c55e1029f::t_7fcce2e0d14135 185,187,204-205
+cc-viewer-alignment/B11-installed.json
+  s_d7280c55e1029f::t_a6674ea86c2d86 2-3,5,8,12-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "64288c88f93497a7641341624b77635ea6769967",
+  "prompts": {},
+  "sessions": {
+    "s_d7280c55e1029f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a204a6-35f5-7a91-8f49-0742da1c75f9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
