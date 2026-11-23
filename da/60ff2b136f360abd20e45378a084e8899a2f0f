@@ -1,0 +1,677 @@
+apps/web/src/components/common/ScheduleTaskModal.jsx
+  s_b808e5a13726e4::t_40920a05954f5f 574
+  s_b808e5a13726e4::t_5fdfdcd4074ff6 1-573,575-822
+packages/app/lib/base-path.js
+  s_d7280c55e1029f::t_c85459e5a7c1f4 1-105
+apps/web/src/components/update/UpdateModal.module.css
+  s_d7280c55e1029f::t_a13b4c97d27fd6 1-3
+packages/app/tests/plugin-runtime-real.test.js
+  s_d7280c55e1029f::t_93cebfdfeec9a9 1-99
+cc-viewer-alignment/B10-gui.json
+  s_d7280c55e1029f::t_64d6597ae0daf1 10,23-24,37-38,51-52,65-66,79-80,93-94,99-148
+  s_d7280c55e1029f::t_8d21e9ce7a6f4d 1-5,8-9,11-22,25-36,39-50,53-64,67-78,81-92,95-98,149-150
+  s_d7280c55e1029f::t_e4bbc76c74b96a 6-7
+cc-viewer-alignment/B9-original-commits-2026-11-23.json
+  s_b808e5a13726e4::t_0d87d1dca0bc04 6,227-253
+  s_b808e5a13726e4::t_46394154ca2c3d 1-5,7-226,254
+packages/app/tests/pty-manager.test.js
+  s_d7280c55e1029f::t_7f9ceb1279587c 36-38
+  s_d7280c55e1029f::t_90dfd26969d0ef 32
+cc-viewer-alignment/README.md
+  s_b808e5a13726e4::t_387a9f02f4dc4b 34
+  s_b808e5a13726e4::t_32f83cc97b075a 30
+  s_d7280c55e1029f::t_8195702d0bbd3e 5,31
+packages/app/lib/update-routes.js
+  s_d7280c55e1029f::t_04b49a544890d6 1-57
+cc-viewer-alignment/B9-cleanup.json
+  s_b808e5a13726e4::t_e56e96483ed22c 1-10
+packages/app/tests/credential-search-boundary.test.js
+  s_d7280c55e1029f::t_04b49a544890d6 20
+cc-viewer-alignment/probes/b9-schedule-gui.mjs
+  s_b808e5a13726e4::t_8486ffaf64a70d 14
+  s_b808e5a13726e4::t_c03ffbe9ed0893 1-13,15-99
+packages/app/tests/plugin-mount-prefixes.test.js
+  s_d7280c55e1029f::t_859c776b81b4bc 1-39
+packages/app/lib/restart-helper.js
+  s_d7280c55e1029f::t_04b49a544890d6 1-60
+cc-viewer-alignment/B10-implementation.md
+  s_d7280c55e1029f::t_c7886493e34f82 31-36
+  s_d7280c55e1029f::t_85eb0519aecd08 19-24
+  s_d7280c55e1029f::t_096b1e8ead2d14 146-152
+  s_d7280c55e1029f::t_47e0a562f064c2 57-62
+  s_d7280c55e1029f::t_2687d8aab5bf84 99-105
+  s_d7280c55e1029f::t_8852b012f71586 89-93
+  s_d7280c55e1029f::t_00c404f68f91b1 129-133
+  s_d7280c55e1029f::t_0fc67a352efc86 25-30
+  s_d7280c55e1029f::t_aeffc07d18934c 75-82
+  s_d7280c55e1029f::t_5efa3188fb91bc 120-123
+  s_d7280c55e1029f::t_8195702d0bbd3e 153-158
+  s_d7280c55e1029f::t_0294409487e1ad 113-119
+  s_d7280c55e1029f::t_551f19a8ae4ecd 37-42
+  s_d7280c55e1029f::t_566f4a5e78747b 49-56
+  s_d7280c55e1029f::t_e47fd780bbaea7 134-139
+  s_d7280c55e1029f::t_72b89b16aa4c78 83-88
+  s_d7280c55e1029f::t_0c6216cb355a4b 94-98
+  s_d7280c55e1029f::t_ccb53ce3bbfeb2 106-112
+  s_d7280c55e1029f::t_d9ea61d1adebab 140-145
+  s_d7280c55e1029f::t_0430008f0071fb 43-48
+  s_d7280c55e1029f::t_c57b4ccf815163 13-18
+  s_d7280c55e1029f::t_c6a22345381e7e 124-128
+  s_d7280c55e1029f::t_cca91ae293ee9e 1-12
+  s_d7280c55e1029f::t_b844204ec10634 63-74
+apps/web/src/utils/pluginPanels.js
+  s_d7280c55e1029f::t_f5a23e462576ce 1-94
+cc-viewer-alignment/B9-final-2026-11-23.json
+  s_b808e5a13726e4::t_46394154ca2c3d 1-43,45-54,78
+  s_b808e5a13726e4::t_0d87d1dca0bc04 44,55-77
+packages/app/pty-manager.js
+  s_d7280c55e1029f::t_90dfd26969d0ef 369
+apps/electron/electron/tab-bar.html
+  s_d7280c55e1029f::t_90dfd26969d0ef 494
+apps/web/src/components/approval/ApprovalModal.jsx
+  s_b808e5a13726e4::t_760ed907eeda30 295-298
+docs/base-url.md
+  s_d7280c55e1029f::t_52a1c7852cfa9d 1-120
+apps/web/src/components/plugins/panelRuntime.js
+  s_d7280c55e1029f::t_34b5417c2a1abb 1-104
+apps/web/src/components/common/quickMenuIcons.jsx
+  s_b808e5a13726e4::t_56123f1ea297fc 111-113
+  s_b808e5a13726e4::t_24449d56177836 114-123
+packages/app/lib/sdk-resume-history.js
+  s_b808e5a13726e4::t_40920a05954f5f 47-50,54-55
+apps/web/src/components/chat/ChatMessage.jsx
+  s_b808e5a13726e4::t_c6afa0aa003ec8 185,824-828
+cc-viewer-alignment/B10-update-gui.json
+  s_d7280c55e1029f::t_f7c4f5895862c0 6-7
+  s_d7280c55e1029f::t_c942daa20fa4d0 1-5,8-117
+packages/app/lib/restart.js
+  s_d7280c55e1029f::t_04b49a544890d6 1-83
+packages/app/lib/update-instances.js
+  s_d7280c55e1029f::t_0343f170618efc 1-42
+apps/web/src/components/settings/PluginModal.module.css
+  s_d7280c55e1029f::t_e7f1cd3d466784 58-61
+apps/web/src/components/plugins/PanelHost.jsx
+  s_d7280c55e1029f::t_197f4a0fa9146e 1-166
+apps/web/src/components/settings/PluginModal.jsx
+  s_d7280c55e1029f::t_3e410b48404171 6,97,109-110,116-117,120-121,135-147,305,314,317-331,339-347,358,380
+packages/app/tests/restart-helper.test.js
+  s_d7280c55e1029f::t_d01e2eda9f75e1 19-21,23
+  s_d7280c55e1029f::t_04b49a544890d6 1-18,22,24-87
+packages/app/plugins/README.md
+  s_d7280c55e1029f::t_1a7ece1a222b1f 8-16
+apps/web/tests/ask-flow-controller.test.js
+  s_b808e5a13726e4::t_d74bab6faa5ee7 448-449,457-486
+  s_b808e5a13726e4::t_345abe98e26731 487
+cc-viewer-alignment/B9-native-scheduled.json
+  s_b808e5a13726e4::t_5c4763f110c56f 1-48
+packages/app/lib/sdk-manager.js
+  s_b808e5a13726e4::t_adc61d3ce1a89e 318
+  s_b808e5a13726e4::t_3893dcb5b0c25a 55,156-160,162-164,240-243,298-317,321-326,328-367,1263,1325,1338,1356
+  s_b808e5a13726e4::t_49a5499f468a75 319-320
+  s_b808e5a13726e4::t_97029f829fc9e2 327
+  s_b808e5a13726e4::t_b545f75a4e242e 244,293
+  s_b808e5a13726e4::t_c98adfa33c1671 288-292
+  s_b808e5a13726e4::t_4fa125187f79a1 245-248,1349
+apps/web/src/utils/autoApproveOptions.js
+  s_b808e5a13726e4::t_ba27e8599cb1d9 24-49
+packages/app/tests/update-job.test.js
+  s_d7280c55e1029f::t_0343f170618efc 1-207
+  s_d7280c55e1029f::t_b559f6858e02c3 208-245
+cc-viewer-alignment/B10-completion-matrix.md
+  s_d7280c55e1029f::t_8195702d0bbd3e 3-4
+  s_d7280c55e1029f::t_16727d56db913b 1-2,5-30
+cc-viewer-alignment/B9-candidate-matrix.md
+  s_b808e5a13726e4::t_20f9b98e717592 1-22
+docs/plugins.md
+  s_d7280c55e1029f::t_502c94a0f8e79d 1-28
+apps/web/src/Mobile.jsx
+  s_b808e5a13726e4::t_419b01aaed68bb 12,795,824,1045-1061
+  s_d7280c55e1029f::t_e9bfa2b563ce12 30-32,88,100-114,140,273,509-513,672-682,914-925
+cc-viewer-alignment/B9-completion-matrix.md
+  s_b808e5a13726e4::t_20f9b98e717592 1-2,4-27
+  s_b808e5a13726e4::t_2e8578ad4b865e 3
+cc-viewer-alignment/B9-installed.json
+  s_b808e5a13726e4::t_d95c75a23deb0f 2,17-24
+  s_b808e5a13726e4::t_bd2b076b81989d 1,3-16,25
+packages/app/server.js
+  s_b808e5a13726e4::t_d428bba941d549 120,2041-2048
+  s_b808e5a13726e4::t_aaf3b96bcdaae2 139
+  s_d7280c55e1029f::t_ed16a2b272397e 5639-5640,5642-5643
+  s_b808e5a13726e4::t_40920a05954f5f 2962-2963
+  s_b808e5a13726e4::t_c98adfa33c1671 118,933-977,5645,6698-6702
+  s_b808e5a13726e4::t_0d3f616b109af4 5,414,418,424-427,432,442,447,475,477-484,514,4090,6408-6413,6720
+  s_d7280c55e1029f::t_44777e942167a0 55-56,1622-1625,1772-1774,1778-1798,1847,1896,4973,4980-4981,4986-4987,5447-5449,5467,5597-5602,5605-5606,5609,5619-5623,5641,5674,5709,5746
+  s_b808e5a13726e4::t_ec5c99ebef30c9 4399-4406
+  s_b808e5a13726e4::t_5d2dbb20f42b0a 6706-6707
+  s_b808e5a13726e4::t_f956b4881428ca 119,2177-2178,2184-2185,2187,2191,2194,4396-4398,4409-4414,4416-4419,4421-4424
+  s_b808e5a13726e4::t_17bc2bb19f7e82 2303,2327,2386
+  s_b808e5a13726e4::t_bf52fa33767533 117
+  s_b808e5a13726e4::t_cae22c602f0fea 2049
+  s_d7280c55e1029f::t_59c4e3b0440c85 1768-1771,1775-1777,1799-1811,1813-1814,1816-1818,5667-5668
+  s_d7280c55e1029f::t_1f7fda10d2ea51 5644
+  s_b808e5a13726e4::t_4fa125187f79a1 6247,6249-6251
+  s_d7280c55e1029f::t_ba915821f92bc7 1600-1601
+  s_d7280c55e1029f::t_0ae5dda4dbd735 50-54,1610-1621,1870,1915-1925,1934-1936,4816,4850-4861,4875,4878-4879,4891-4892,4909-4910,4914-4915,4936-4937,4940-4941,4954-4969,5488-5489,5491-5497,5499-5500,5637-5638,5706-5708,5710-5720,5822,6695-6697
+  s_d7280c55e1029f::t_04b49a544890d6 47-49,1114-1116,1546-1547,1926-1933,3157-3160,6924,6926
+  s_d7280c55e1029f::t_6b36fe48f8965f 2019-2025
+packages/app/tests/plugin-host.test.js
+  s_d7280c55e1029f::t_df71b19366db12 1-116
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_b808e5a13726e4::t_9febf36ea6f84e 446
+  s_d7280c55e1029f::t_3d8abdcb63c447 62-64,66,2421-2460
+  s_b808e5a13726e4::t_19a04d5a34fb00 56-57,420-444
+  s_b808e5a13726e4::t_c61b9e475435bd 398-404,406-419
+  s_b808e5a13726e4::t_27995c57e588ba 2350
+  s_d7280c55e1029f::t_8e19ff1f698897 65,2461-2483
+  s_b808e5a13726e4::t_6784358d5d88f6 53,348-385,387-388,391-396
+  s_b808e5a13726e4::t_35a87dff455a59 2400-2420
+  s_b808e5a13726e4::t_dde6eda3e76ee9 445,459-474
+  s_b808e5a13726e4::t_5738b8cf0e520f 447-458
+  s_b808e5a13726e4::t_35d50a1cedadce 386,389-390,397
+  s_b808e5a13726e4::t_2b32099ac2b94f 28,2351-2399
+  s_b808e5a13726e4::t_9cfb9994d24b97 405
+  s_b808e5a13726e4::t_5af56fc46e35fc 29,286,2325-2349
+cc-viewer-alignment/probes/b9-native-pty-scheduled.mjs
+  s_b808e5a13726e4::t_53f32a0058e2d8 1,3-12,45-48,57-58
+  s_b808e5a13726e4::t_89637953d6611b 2,49-56
+  s_b808e5a13726e4::t_8da77e764a4220 13-44
+docs/plugin-templates/panel/plugin.json.example
+  s_76602f25d7665d::t_51526f20251a9a 1-12
+cc-viewer-alignment/probes/b9-pty-schedule-gui.mjs
+  s_b808e5a13726e4::t_984ef414b4d75f 1-43
+apps/web/src/components/terminal/UltraplanPanel.module.css
+  s_b808e5a13726e4::t_5af56fc46e35fc 384-394,552-578,580
+  s_b808e5a13726e4::t_0862b7dfd954f3 579,581
+apps/web/tests/plugin-panels-util.test.js
+  s_d7280c55e1029f::t_818d1436110c92 1-124
+apps/web/src/components/terminal/TerminalPanel.jsx
+  s_b808e5a13726e4::t_53341c62367890 42,45,261,1772-1779,1985-1986,2075-2083
+  s_b808e5a13726e4::t_5fefc700c084bb 1793
+packages/app/tests/plugin-spawn-test-guard.test.js
+  s_d7280c55e1029f::t_df71b19366db12 1-26
+packages/app/tests/ask-auto-answer.test.js
+  s_b808e5a13726e4::t_71a1469ca4e0f2 1-199
+apps/web/src/utils/deadlineCountdown.js
+  s_b808e5a13726e4::t_01a6fadd1c9a63 1-86
+packages/app/tests/scheduled-task-pty-runtime.test.js
+  s_b808e5a13726e4::t_f7350caf473bef 1-42,44-53
+  s_b808e5a13726e4::t_75a2e69bf9a8f1 43
+apps/web/tests/panel-loader.test.js
+  s_d7280c55e1029f::t_31681c99ebee66 1-310
+packages/app/tests/scheduled-attachments.test.js
+  s_b808e5a13726e4::t_22b4bc7f11c326 1-41
+apps/web/src/components/plugins/PluginPanelModal.jsx
+  s_d7280c55e1029f::t_b21529b3071394 1-150
+packages/app/tests/voice-pack-api.test.js
+  s_d7280c55e1029f::t_341679660ce449 44-46
+cc-viewer-alignment/B10-installed.json
+  s_d7280c55e1029f::t_7b573f28e779ef 1-26
+packages/app/lib/scheduled-task-runs-store.js
+  s_b808e5a13726e4::t_f727259f254de2 13,15,18
+  s_b808e5a13726e4::t_cca59150a56c71 1-12,14,16-17,19-121
+packages/app/lib/plugin-panels.js
+  s_d7280c55e1029f::t_1f97a4922585c6 1-183
+apps/web/src/components/mobile/MobileDrawerCloseButton.jsx
+  s_d7280c55e1029f::t_a46e77ccbf95cc 8,14
+apps/web/package.json
+  s_b808e5a13726e4::t_dd2ba7dd204703 43
+apps/web/tests/ask-auto-answer-options.test.js
+  s_b808e5a13726e4::t_2f1914106e8d95 1-48
+packages/app/lib/same-origin.js
+  s_d7280c55e1029f::t_0ae5dda4dbd735 1-32
+apps/web/src/components/chat/ChatMessage.module.css
+  s_b808e5a13726e4::t_f4e71939bc0f11 930-954
+apps/web/src/components/common/QuickAutoApproveRows.jsx
+  s_b808e5a13726e4::t_82da9fb99372fb 2-3,6-7,14,34-38,52-62
+apps/electron/electron/main.js
+  s_d7280c55e1029f::t_90dfd26969d0ef 574
+apps/web/src/utils/panelLoader.js
+  s_d7280c55e1029f::t_c8f4ad081e8909 1-148
+apps/web/tests/update-modal.test.js
+  s_d7280c55e1029f::t_0245bf8767c67b 1-34
+docs/plugin-services.zh.md
+  s_d7280c55e1029f::t_add9afb2932b67 1-272
+apps/web/src/components/settings/PreferencesForm.jsx
+  s_b808e5a13726e4::t_4e574c7a3216c5 5,14,20,46-54
+apps/web/src/i18n.js
+  s_d7280c55e1029f::t_30c646dedffe59 4-63
+  s_b808e5a13726e4::t_dca25141f12166 504-571
+  s_d7280c55e1029f::t_7c921c7fbe9e11 64-503
+  s_b808e5a13726e4::t_5af56fc46e35fc 594-2773
+  s_b808e5a13726e4::t_4a24360a7670cc 572-593
+cc-viewer-alignment/B10-proxy-gui.json
+  s_d7280c55e1029f::t_9b24ca0e538982 1-8,10-29,32-51,54-73,76-95,98-102,137-140
+  s_d7280c55e1029f::t_e9e61e620ce2ca 9,30-31,52-53,74-75,96-97,103-136
+packages/app/tests/auth-server.test.js
+  s_d7280c55e1029f::t_ed16a2b272397e 55
+  s_d7280c55e1029f::t_d52fe6949be18c 75-91
+cc-viewer-alignment/B9-local-commit-consolidation-2026-11-23.md
+  s_b808e5a13726e4::t_2e8578ad4b865e 1-15
+packages/app/tests/plugin-manifest.test.js
+  s_d7280c55e1029f::t_0ff138ea9c84bf 1-180
+packages/app/tests/plugin-service-manager.test.js
+  s_d7280c55e1029f::t_a1325eb6236c0b 6,405-422
+  s_d7280c55e1029f::t_7379ac919a1bfe 423
+  s_d7280c55e1029f::t_df71b19366db12 1-5,7-404
+packages/app/lib/plugin-loader.js
+  s_d7280c55e1029f::t_a61f81d86c0cdb 3-4,6-15,24-27,33,38-44,46-61,105,110,113-117,119-123,125-132,134-166,168-170,175-178,180-185,187,189-190,192-260,262-284,286,288-292,294-304,306-357,360-367,372,374,376-379,384-404,434-452,457-458,460-468,471-475,477-493,496-506,508-534,536
+packages/app/tests/scheduled-prompt.test.js
+  s_b808e5a13726e4::t_e38c836ffe0d90 1-27
+apps/web/src/components/terminal/UltraplanPanel.jsx
+  s_b808e5a13726e4::t_5af56fc46e35fc 6-14,81,87-94,171-187,189,214,216,218-227,233,242,274-275,278-281,283,328-330,336
+packages/app/tests/target-files.test.js
+  s_d7280c55e1029f::t_341679660ce449 36
+packages/app/src/utils/ask-auto-answer.js
+  s_b808e5a13726e4::t_71a1469ca4e0f2 1-122
+apps/web/src/components/chat/AskAutoHostCountdown.jsx
+  s_b808e5a13726e4::t_1d3dc1a840ab5d 1-50
+apps/web/src/components/chat/ChatInputBar.jsx
+  s_b808e5a13726e4::t_b49fe4104d53c7 65,641
+  s_b808e5a13726e4::t_53341c62367890 11,625-632,712-716
+apps/web/src/components/common/ScheduleTaskModal.module.css
+  s_b808e5a13726e4::t_ecef23b0b2bc84 1-254
+packages/app/lib/plugin-manifest.js
+  s_d7280c55e1029f::t_0ff138ea9c84bf 1-329
+packages/app/lib/cron.js
+  s_b808e5a13726e4::t_8cc3e233343006 1-181
+cc-viewer-alignment/B9-gui.json
+  s_b808e5a13726e4::t_a83096b307f648 1-56
+cc-viewer-alignment/B9-implementation.md
+  s_b808e5a13726e4::t_a2869c7628b703 29-34
+  s_b808e5a13726e4::t_0c757e51deb4d2 104-108
+  s_b808e5a13726e4::t_8cb9501eb0ceb1 144-148
+  s_b808e5a13726e4::t_248f561bf04651 138-142
+  s_b808e5a13726e4::t_f35560fbd1d028 116-120
+  s_b808e5a13726e4::t_46394154ca2c3d 103,115,121,127,133,137,143,149,153,161,169,175
+  s_b808e5a13726e4::t_7421a0cdbe0a52 162-168
+  s_b808e5a13726e4::t_d5f920fbadd2f1 128-132
+  s_b808e5a13726e4::t_db9cab41c3fcaf 154-160
+  s_b808e5a13726e4::t_27a3d24a02a071 59-66
+  s_b808e5a13726e4::t_3469971e8fbc24 41-46
+  s_b808e5a13726e4::t_b30242a71e766c 73-79
+  s_b808e5a13726e4::t_14b5c9c0bed887 182-189
+  s_b808e5a13726e4::t_101695171a3e83 67-72
+  s_b808e5a13726e4::t_40099d91651c13 91-96
+  s_b808e5a13726e4::t_a45a4be5af6e68 47-52
+  s_b808e5a13726e4::t_e160411c9e7d76 17-22
+  s_b808e5a13726e4::t_f1c021fa87817d 53-58
+  s_b808e5a13726e4::t_33bce65aefb75b 150-152
+  s_b808e5a13726e4::t_de8cf564e6e35a 97-102
+  s_b808e5a13726e4::t_f76dac53a75523 176-181
+  s_b808e5a13726e4::t_ceb5b3df44c306 134-136
+  s_b808e5a13726e4::t_3616fbab03077b 80-84
+  s_b808e5a13726e4::t_fd710fd24cdc79 11-16
+  s_b808e5a13726e4::t_f3206cd1fe02fc 109-114
+  s_b808e5a13726e4::t_674f958cd8bfbc 85-90
+  s_b808e5a13726e4::t_82c91e45b21f6c 170-174
+  s_b808e5a13726e4::t_45978481408ce8 122-126
+  s_b808e5a13726e4::t_888eb4c3e40c8f 23-28
+  s_b808e5a13726e4::t_9cbc70814683d1 1-10
+  s_b808e5a13726e4::t_b04eeae3d065bd 35-40
+cc-viewer-alignment/B11-handoff.md
+  s_d7280c55e1029f::t_8195702d0bbd3e 1-11
+apps/web/vite.config.js
+  s_d7280c55e1029f::t_4f2408551f5e83 103-104
+apps/web/src/utils/apiUrl.js
+  s_d7280c55e1029f::t_44777e942167a0 9-14
+cc-viewer-alignment/B9-candidate-index.json
+  s_b808e5a13726e4::t_0d87d1dca0bc04 4
+  s_b808e5a13726e4::t_46394154ca2c3d 9,14,19,24,29,34,39,44,49,54,59,64,69,74
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_d7280c55e1029f::t_3c5b937f198935 50,174
+  s_d7280c55e1029f::t_8195702d0bbd3e 163,173
+  s_d7280c55e1029f::t_6fc7cb123689d3 51
+cc-viewer-alignment/probes/b12-installed-acceptance.py
+  s_d7280c55e1029f::t_7243859fa8ed45 144
+apps/web/tests/scheduled-task-events.test.js
+  s_b808e5a13726e4::t_d9297bfd3d980b 1-16
+packages/app/tests/plugin-runtime.test.js
+  s_d7280c55e1029f::t_859c776b81b4bc 1-525
+apps/web/src/components/update/UpdateModal.jsx
+  s_d7280c55e1029f::t_c21a186e8c9bf0 1-53
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_b808e5a13726e4::t_7c1669a2a74497 16753
+  s_b808e5a13726e4::t_96e60437115481 16743
+  s_d7280c55e1029f::t_f3f92c2e21d678 16763-16767
+  s_d7280c55e1029f::t_79da4ff4682576 16803-16807
+  s_b808e5a13726e4::t_8822a290b6fd97 1508-1509
+  s_b808e5a13726e4::t_e13a7b5ecf094b 1510-1511
+  s_b808e5a13726e4::t_fbba499b4c1353 16747
+  s_b808e5a13726e4::t_f119ff21e2b03f 4114-4115
+  s_b808e5a13726e4::t_b383f2e26aeb44 1512-1513
+  s_d7280c55e1029f::t_032d5f2b797672 16839-16842
+  s_d7280c55e1029f::t_1e123a51b272f6 16823-16826
+  s_d7280c55e1029f::t_2cdd8b2c06c127 16843-16846
+  s_b808e5a13726e4::t_8e4ec24a1eb03d 16739
+  s_b808e5a13726e4::t_40099d91651c13 4122-4123
+  s_d7280c55e1029f::t_aa0606f63cea83 16851-16854
+  s_b808e5a13726e4::t_2738504eea3a48 4120-4121
+  s_b808e5a13726e4::t_a474290e544564 4118-4119
+  s_b808e5a13726e4::t_3ae141f6a25242 16745
+  s_b808e5a13726e4::t_05cae29bcca94f 1833-1834
+  s_d7280c55e1029f::t_9139f771cbc9eb 16827-16830
+  s_b808e5a13726e4::t_c6c91c3328ea2f 16749
+  s_d7280c55e1029f::t_f24e638511102c 16835-16838
+  s_b808e5a13726e4::t_f1235e6fca99c4 16751
+  s_d7280c55e1029f::t_aeffc07d18934c 16813-16817
+  s_b808e5a13726e4::t_32e37bc30ee6a6 174,407,1418,1516,1837,3000,3286,3301,3772,4070,4126,4733,7888,8316
+  s_b808e5a13726e4::t_0f6d0dd2535ef1 4116-4117
+  s_b808e5a13726e4::t_039f0707ccf516 4062-4063
+  s_b808e5a13726e4::t_2a8c419103afbd 1506-1507
+  s_b808e5a13726e4::t_f9af6fe74fb85d 16755
+  s_b808e5a13726e4::t_6c948b03c6ceb7 4066-4067
+  s_b808e5a13726e4::t_14b5c9c0bed887 16761-16762
+  s_d7280c55e1029f::t_504afbbc661ae2 16773-16777
+  s_d7280c55e1029f::t_97a1bf0ca0c654 16788-16792
+  s_d7280c55e1029f::t_46c3a565d9446a 16768-16772
+  s_d7280c55e1029f::t_cccf3809fa82d3 16808-16812
+  s_d7280c55e1029f::t_efc0db2fe9e73d 16818-16822
+  s_b808e5a13726e4::t_5f48bb33eda56a 4064-4065
+  s_d7280c55e1029f::t_0cdfe861337ad1 16831-16834
+  s_b808e5a13726e4::t_88d62bfb62ba53 3766-3767
+  s_b808e5a13726e4::t_8d641557130a0c 16735
+  s_b808e5a13726e4::t_46394154ca2c3d 16736,16738,16740,16742,16744,16746,16748,16750,16752,16754,16756,16758,16760
+  s_b808e5a13726e4::t_15eb51e4a13516 16759
+  s_d7280c55e1029f::t_0430008f0071fb 16793-16797
+  s_d7280c55e1029f::t_e55e9efc68fc34 16847-16850
+  s_b808e5a13726e4::t_c0941dd37b27c5 16757
+  s_b808e5a13726e4::t_eb5ff99423bd8a 16737
+  s_d7280c55e1029f::t_a31faa134f2c69 16855-16858
+  s_d7280c55e1029f::t_9fd5df9f8c78aa 16859-16862
+  s_d7280c55e1029f::t_2bea4b05dd2fc4 16783-16787
+  s_d7280c55e1029f::t_0a50563867272e 16863-16866
+  s_d7280c55e1029f::t_80bf46800c3aa9 16798-16802
+  s_b808e5a13726e4::t_e1ec594304a7fd 16741
+  s_d7280c55e1029f::t_8195702d0bbd3e 3,880,925,963,1634,1703,2735,2815,2915,4348,9273,13972,14546,16867-16870
+  s_b808e5a13726e4::t_ece7cb9e93781f 4112-4113
+  s_d7280c55e1029f::t_2d721e00eb761e 16778-16782
+apps/web/src/utils/scheduledTaskEvents.js
+  s_b808e5a13726e4::t_4a24360a7670cc 18-20,25
+  s_b808e5a13726e4::t_5af56fc46e35fc 1-17,21-24,26-35
+packages/app/lib/base-url.js
+  s_d7280c55e1029f::t_c85459e5a7c1f4 1-209
+cc-viewer-alignment/B9-E12-source.json
+  s_b808e5a13726e4::t_1e8de7af7907b8 1-5
+packages/app/lib/scheduled-task-store.js
+  s_b808e5a13726e4::t_d428bba941d549 353
+  s_b808e5a13726e4::t_662523d20d9572 429
+  s_b808e5a13726e4::t_59ffc1256f7ca9 1-352,354-428,430-634
+packages/app/tests/codex-ask-server.test.js
+  s_b808e5a13726e4::t_225904e6fdcf66 247
+  s_b808e5a13726e4::t_aaf3b96bcdaae2 18,72,208-246
+apps/web/src/utils/scheduleDescription.js
+  s_b808e5a13726e4::t_4a24360a7670cc 95-96
+  s_b808e5a13726e4::t_5af56fc46e35fc 1-94,97-129
+packages/app/lib/preferences.js
+  s_b808e5a13726e4::t_17bc2bb19f7e82 22,24-26,36,44-46,66-67,99,101,103,105
+apps/web/src/components/dashboard/AppHeader.jsx
+  s_b808e5a13726e4::t_6441d21eb0cec4 12,1636-1650
+  s_d7280c55e1029f::t_60e81cb873c759 34-36,119,177-180,184,420,1090-1104,1326,1336,1923-1934
+packages/app/tests/async-file-lock.test.js
+  s_d7280c55e1029f::t_0343f170618efc 1-105
+packages/app/tests/sdk-appserver-approvals.test.js
+  s_b808e5a13726e4::t_a7244af6b5bf12 3,99-146
+  s_b808e5a13726e4::t_c9b4245e375bfb 147
+packages/app/lib/plugin-proxy.js
+  s_d7280c55e1029f::t_3635ca51bd47a0 1-408
+README.md
+  s_b808e5a13726e4::t_bdf324f91299ea 166-173
+  s_d7280c55e1029f::t_85c2dc44d02b0a 261,368-371
+apps/web/src/components/plugins/panelIcons.jsx
+  s_d7280c55e1029f::t_939d9a51101524 1-23
+packages/app/tests/sdk-cli-resume.test.js
+  s_d7280c55e1029f::t_53bd593a984b37 56,62,270-283
+  s_d7280c55e1029f::t_36f4d5fb0ff89f 284
+cc-viewer-alignment/B9-native-pty.json
+  s_b808e5a13726e4::t_470f171a9c40e3 1-7,9-11,19
+  s_b808e5a13726e4::t_89637953d6611b 12-13
+  s_b808e5a13726e4::t_8da77e764a4220 8,14-18
+apps/web/src/App.module.css
+  s_d7280c55e1029f::t_77299ba660f680 1042-1051
+packages/app/lib/ask-auto-answer.js
+  s_b808e5a13726e4::t_71a1469ca4e0f2 1-19,21-153
+  s_b808e5a13726e4::t_a99794e0e297a1 20
+packages/app/lib/scheduled-task-executor.js
+  s_b808e5a13726e4::t_8e962028b222e1 1-130
+packages/app/tests/base-url-lib.test.js
+  s_d7280c55e1029f::t_ba915821f92bc7 297-309
+  s_d7280c55e1029f::t_c85459e5a7c1f4 1-296
+AGENTS.md
+  s_d7280c55e1029f::t_8195702d0bbd3e 26,28
+  s_b808e5a13726e4::t_32f83cc97b075a 31
+cc-viewer-alignment/B9-E11-source.json
+  s_b808e5a13726e4::t_4248ccefbb2ade 1-15
+packages/app/tests/schedule-model.test.js
+  s_b808e5a13726e4::t_8cc3e233343006 1-95
+packages/app/tests/sdk-workspace-auth.test.js
+  s_d7280c55e1029f::t_59a863e14085ba 53
+packages/app/lib/auth.js
+  s_d7280c55e1029f::t_44777e942167a0 430-431,456
+packages/app/tests/plugin-manager-dir.test.js
+  s_d7280c55e1029f::t_1f97a4922585c6 1-70
+packages/app/tests/scheduled-task-scheduler.test.js
+  s_b808e5a13726e4::t_5d2dbb20f42b0a 245-262
+  s_b808e5a13726e4::t_212ba7bfa90b34 210-244
+  s_b808e5a13726e4::t_07818c8121a923 1-209
+apps/web/src/utils/sdkResumeApi.js
+  s_b808e5a13726e4::t_40920a05954f5f 12-13
+packages/app/tests/fixtures/scheduled-native.txt
+  s_b808e5a13726e4::t_f048cec13dd506 6,14
+  s_b808e5a13726e4::t_a0a5059001122a 1-5,7-13,15-17
+docs/base-url.zh.md
+  s_d7280c55e1029f::t_260cc6e41627f4 1-118
+apps/web/tests/api-url-instance.test.js
+  s_d7280c55e1029f::t_ba915821f92bc7 62-71
+packages/app/lib/codex-request-user-input.js
+  s_b808e5a13726e4::t_e4944d2ca5c065 1-2,43-54
+  s_b808e5a13726e4::t_b7a0ef32453a90 55-56
+apps/web/tests/deadline-countdown.test.js
+  s_b808e5a13726e4::t_89f554c96c140a 1-144
+docs/plugin-services.md
+  s_d7280c55e1029f::t_34425833f9a3fa 1-320
+docs/plugin-templates/panel/src/Panel.jsx
+  s_76602f25d7665d::t_c68c592e116ece 1-49
+packages/app/cli.js
+  s_d7280c55e1029f::t_53bd593a984b37 12,35-44,623-628,631-633,796,798-804,807-809,861-865,868-870
+  s_d7280c55e1029f::t_04b49a544890d6 45-54,408,785,850,881
+apps/web/tests/sdk-resume-api.test.js
+  s_b808e5a13726e4::t_40920a05954f5f 48-59
+packages/app/tests/sdk-scheduled-session.test.js
+  s_b808e5a13726e4::t_9f95c0bf489d9a 1-10,12,14-57,59-62,71-72,74-78,96-97
+  s_b808e5a13726e4::t_016424e5af5cba 58
+  s_b808e5a13726e4::t_49a5499f468a75 79-95
+  s_b808e5a13726e4::t_a0a5059001122a 13
+  s_b808e5a13726e4::t_f048cec13dd506 11,63-70,73
+cc-viewer-alignment/probes/b9-ui-fixture.mjs
+  s_b808e5a13726e4::t_d4b66c61a83ac0 1-28
+packages/app/findcx.js
+  s_d7280c55e1029f::t_0343f170618efc 72-91
+apps/web/src/utils/updateProgress.js
+  s_d7280c55e1029f::t_8f0ef682feb4cd 1-9
+apps/web/src/components/plugins/PanelHost.module.css
+  s_d7280c55e1029f::t_3dfa805a501d3b 1-34
+packages/app/tests/plugin-proxy.test.js
+  s_d7280c55e1029f::t_3635ca51bd47a0 1-77,79-91,93-98,101-347,379-380
+  s_d7280c55e1029f::t_5720bb31643440 78,92,99-100,348-378
+docs/plugin-templates/panel/build.mjs
+  s_76602f25d7665d::t_9750f00afe0c93 1-84
+cc-viewer-alignment/B10-candidate-index.json
+  s_d7280c55e1029f::t_1e1be305fb476a 483-485,1055-1057,2452-2454,2531-2547,2570-2574,2648-2650,2724-2726,2813-2821,2862-2867,2902-2911,2945-2953,2994-2996,2998-2999
+  s_d7280c55e1029f::t_0ff138ea9c84bf 1-482,486-1054,1058-2451,2455-2530,2548-2569,2575-2647,2651-2723,2727-2812,2822-2861,2868-2901,2912-2944,2954-2993,2997,3000
+packages/app/tests/scheduled-task-executor.test.js
+  s_b808e5a13726e4::t_8e962028b222e1 1-185
+  s_b808e5a13726e4::t_95e7940538bfa7 186-233
+apps/web/src/components/chat/ChatView.jsx
+  s_b808e5a13726e4::t_c7901cbc2490cd 1038-1039,1044-1046,2090,2304,2447-2448,2465-2466,2534-2535,3424
+  s_b808e5a13726e4::t_c451c24f13d190 806,5287,5381
+  s_b808e5a13726e4::t_53341c62367890 60,357,4923-4932,5224-5225,5392-5400
+apps/web/src/components/chat/AskQuestionForm.jsx
+  s_b808e5a13726e4::t_5738b8cf0e520f 233-236
+  s_b808e5a13726e4::t_1fb60f60569be0 7,261-262
+packages/app/lib/plugin-runtime.js
+  s_d7280c55e1029f::t_859c776b81b4bc 1-804
+packages/app/src/utils/ultraplanTemplates.js
+  s_b808e5a13726e4::t_a987dd60198e19 265
+  s_b808e5a13726e4::t_e38c836ffe0d90 210,228-264
+packages/app/scripts/npm-pack-dry-run.mjs
+  s_d7280c55e1029f::t_086691d026ae4d 35-40
+apps/web/src/utils/ultraplanController.js
+  s_b808e5a13726e4::t_5af56fc46e35fc 92
+cc-viewer-alignment/probes/b3-installed-check.py
+  s_d7280c55e1029f::t_7243859fa8ed45 6-7,9,27-29,48-49,54
+  s_d7280c55e1029f::t_bf36781660c763 1
+  s_b808e5a13726e4::t_58638bfd095dfe 47,52-53
+packages/app/tests/updater.test.js
+  s_d7280c55e1029f::t_9b2ed1d73dc8b2 1-51
+packages/app/lib/plugin-service-routes.js
+  s_d7280c55e1029f::t_0ae5dda4dbd735 1-104
+packages/app/tests/ask-auto-answer-picker.test.js
+  s_b808e5a13726e4::t_30f11571f1c7d6 11-24
+  s_b808e5a13726e4::t_71a1469ca4e0f2 1-10,25-158
+packages/app/tests/api-base-url.test.js
+  s_d7280c55e1029f::t_ba915821f92bc7 1-54,56-287,289-298,319
+  s_d7280c55e1029f::t_8fdd8e56608ffd 299-318
+  s_d7280c55e1029f::t_f8946041216ac3 55,288
+packages/app/tests/scheduled-task-runtime.test.js
+  s_b808e5a13726e4::t_1633f530d02585 15,76-91
+  s_b808e5a13726e4::t_a0a5059001122a 1-14,16-75,92-108
+apps/web/tests/schedule-description.test.js
+  s_b808e5a13726e4::t_5af56fc46e35fc 1-80
+apps/web/tests/schedule-i18n.test.js
+  s_b808e5a13726e4::t_5af56fc46e35fc 1-55
+packages/app/tests/update-routes.test.js
+  s_d7280c55e1029f::t_04b49a544890d6 1-74
+packages/app/tests/plugin-panels.test.js
+  s_d7280c55e1029f::t_1f97a4922585c6 1-196
+packages/app/lib/workspace-upload-paths.js
+  s_b808e5a13726e4::t_f956b4881428ca 1-13
+packages/app/tests/base-path-lib.test.js
+  s_d7280c55e1029f::t_c85459e5a7c1f4 1-124
+packages/app/tests/scheduled-task-security.test.js
+  s_b808e5a13726e4::t_393da09038ced4 1-62
+apps/web/src/components/chat/controllers/askFlowController.js
+  s_b808e5a13726e4::t_3c8ae1aa46891a 143-144,148-157,160,707-732,862,908,959-962,1008,1018-1019,1062
+cc-viewer-alignment/probes/b9-pty-ui-fixture.mjs
+  s_b808e5a13726e4::t_cee1d33fb1311c 1-15
+packages/app/tests/scheduled-task-store.test.js
+  s_b808e5a13726e4::t_59ffc1256f7ca9 1-507
+  s_b808e5a13726e4::t_dc0b6785118ab8 508-562
+apps/web/src/AppBase.jsx
+  s_b808e5a13726e4::t_53341c62367890 22-23,1629-1649,1852
+  s_d7280c55e1029f::t_cec7f8ac6880d1 1
+  s_b808e5a13726e4::t_88efb289afb1e6 14,191,375-376,2604-2607
+  s_d7280c55e1029f::t_eb0524e3f21b03 1702-1714
+packages/app/lib/sdk-appserver-approvals.js
+  s_b808e5a13726e4::t_4fa125187f79a1 4-5,16,24,81-91,94-95,100-102,112-120
+  s_b808e5a13726e4::t_f048cec13dd506 67
+cc-viewer-alignment/B9-pty-gui.json
+  s_b808e5a13726e4::t_a0fe14c12d4040 1-32
+packages/app/lib/plugin-host.mjs
+  s_d7280c55e1029f::t_ba915821f92bc7 51
+  s_d7280c55e1029f::t_df71b19366db12 1-50,52-198
+packages/app/tests/plugin-service-integration.test.js
+  s_d7280c55e1029f::t_114a499a8770ea 185
+  s_d7280c55e1029f::t_6b36fe48f8965f 40-44,184,186-187
+  s_d7280c55e1029f::t_8fdd8e56608ffd 26-27,55,57,59-62,64-65,113,208-215,237,245,266,292
+  s_d7280c55e1029f::t_5c5611d44c2f85 1-25,28-39,45-54,56,58,63,66-112,114-183,190-207,216-236,238-244,246-265,267-291,293-387
+  s_d7280c55e1029f::t_e03e8cc39a3209 188-189
+packages/app/lib/update-job.js
+  s_d7280c55e1029f::t_0343f170618efc 1-83,85-88,90-116,118-190,194-265
+  s_d7280c55e1029f::t_b559f6858e02c3 84,89,117,191-193
+packages/app/lib/plugin-manager.js
+  s_d7280c55e1029f::t_bf6c62e888cb06 162
+  s_d7280c55e1029f::t_1f97a4922585c6 1-2,5,120-161
+packages/app/lib/schedule-model.js
+  s_b808e5a13726e4::t_8cc3e233343006 1-149
+cc-viewer-alignment/B10-source-audit.json
+  s_d7280c55e1029f::t_1e1be305fb476a 1-87
+cc-viewer-alignment/probes/b9-native-scheduled.mjs
+  s_b808e5a13726e4::t_ccb4475fd83c75 54-82,89-92
+  s_b808e5a13726e4::t_8486ffaf64a70d 5,83-88,93
+  s_b808e5a13726e4::t_c69f16379a4e4b 1-4,6-53,94-123
+packages/app/lib/scheduled-task-routes.js
+  s_b808e5a13726e4::t_d428bba941d549 1-98
+packages/app/tests/plugin-loader-service.test.js
+  s_d7280c55e1029f::t_a61f81d86c0cdb 1-217
+apps/web/src/App.jsx
+  s_d7280c55e1029f::t_e32ddf49295e20 22-24,41-44,70-86,89-134,523,536,539-549
+  s_b808e5a13726e4::t_df6b21f23bd7bb 501
+packages/app/lib/async-file-lock.js
+  s_d7280c55e1029f::t_0343f170618efc 1-138
+cc-viewer-alignment/B10-cleanup.json
+  s_d7280c55e1029f::t_2aa857d6a74ba7 1-29
+cc-viewer-alignment/B9-handoff.md
+  s_b808e5a13726e4::t_387a9f02f4dc4b 4
+  s_b808e5a13726e4::t_2e8578ad4b865e 3
+packages/app/lib/credential-file-policy.js
+  s_d7280c55e1029f::t_0ae5dda4dbd735 112
+  s_d7280c55e1029f::t_0343f170618efc 110-111
+  s_b808e5a13726e4::t_17bc2bb19f7e82 6,105-109,113-116,118
+packages/app/tests/pty-workspace-routing.test.js
+  s_b808e5a13726e4::t_07a9e432603da6 167-192
+packages/app/tests/update-instances.test.js
+  s_d7280c55e1029f::t_0343f170618efc 1-30
+  s_d7280c55e1029f::t_b559f6858e02c3 31-37
+packages/app/lib/plugin-service-manager.js
+  s_d7280c55e1029f::t_df71b19366db12 1-399,404-466
+  s_d7280c55e1029f::t_a1325eb6236c0b 400-403
+docs/plugin-templates/panel/package.json
+  s_76602f25d7665d::t_517d6d13754bb3 1-16
+docs/plugins.zh.md
+  s_d7280c55e1029f::t_208b7a7d66b4b8 1-13
+packages/app/tests/cron.test.js
+  s_b808e5a13726e4::t_8cc3e233343006 1-124
+packages/app/lib/updater.js
+  s_d7280c55e1029f::t_9b2ed1d73dc8b2 1,6-21,23-36,38-39,41,43-44,52-53,74-75,85-97,101-104,107,110-111,113-121,123
+cc-viewer-alignment/probes/b9-native-pty-fixture.mjs
+  s_b808e5a13726e4::t_33e012f28c1d79 1-13
+packages/app/tests/sdk-resume-history.test.js
+  s_b808e5a13726e4::t_40920a05954f5f 9,101-114
+  s_b808e5a13726e4::t_0f1ec015a8cfb1 115
+packages/app/tests/scheduled-task-runs-store.test.js
+  s_b808e5a13726e4::t_cca59150a56c71 1-4,7-87,118
+  s_b808e5a13726e4::t_f727259f254de2 5-6,88-117
+pnpm-lock.yaml
+  s_b808e5a13726e4::t_78fafeb034fdc1 167-169
+cc-viewer-alignment/B9-source-audit.json
+  s_b808e5a13726e4::t_e265de53ac7cb1 1-441
+packages/app/lib/scheduled-task-scheduler.js
+  s_b808e5a13726e4::t_bf52fa33767533 33,146,153-160,246
+  s_b808e5a13726e4::t_07818c8121a923 1-32,34-145,147-152,161-245,247-273
+packages/app/tests/scheduled-task-api.test.js
+  s_b808e5a13726e4::t_a497399341aa8e 1-70
+packages/app/i18n.js
+  s_d7280c55e1029f::t_44777e942167a0 5-104,491-508,511-528,1771-1773
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "da60ff2b136f360abd20e45378a084e8899a2f0f",
+  "prompts": {},
+  "sessions": {
+    "s_76602f25d7665d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fd8a-1491-7fe1-bb6a-5fdda24477cc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    },
+    "s_b808e5a13726e4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a203fe-9d11-73a0-a439-ec8c7212a4f4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    },
+    "s_d7280c55e1029f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a204a6-35f5-7a91-8f49-0742da1c75f9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
