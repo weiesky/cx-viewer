@@ -1,0 +1,735 @@
+{
+  "base": "cb40a553061970abd878a87f1e1c38c07a4fe0a3",
+  "rawHead": "d52763c108970e8371873c18f1afaa908d053317",
+  "rawTree": "ddf805a5f45624dd4af1812bb775d5eea92d2b68",
+  "backupBranch": "backup/b9-b10-before-consolidation-20261123",
+  "bundle": "/Users/sky/.codex/backups/cx-viewer/B9-B10-20261123/raw-before-consolidation.bundle",
+  "bundleSHA256": "e7274a47f3863d8c77e95e44159834ce176bdb47feda6ac4a5bb99e4d7575601",
+  "commits": [
+    {
+      "hash": "0a162b4e323b52f52bf665d5ebfcc179599168ac",
+      "parents": [
+        "cb40a553061970abd878a87f1e1c38c07a4fe0a3"
+      ],
+      "tree": "77d5d480b9368998f7d00597fed5e34a3a3e8c4d",
+      "subject": "feat(alignment): deliver B9 scheduling and opt-in Ask hosting",
+      "body": "feat(alignment): deliver B9 scheduling and opt-in Ask hosting\n\nAlign the fixed cc-viewer baseline 74cd752 with native scheduled tasks,\nprivate definitions and run history, exact workspace dispatch, original UI,\nattachments, archive restoration, and optional server-side Ask hosting.\n\nIndependent tasks use AppServer to preserve native on-request approvals;\nresident transports and native approval reviewer behavior remain unchanged.\nAsk hosting is off by default.\n\nConsolidate 29 local implementation, verification, and audit commits.\nThe raw history is retained in backup/b9-raw-20261123 and a verified bundle.\nThe consolidated tree must equal original head 8dd6ebe exactly.\n\nValidation: 2443/2443 tests; build and pack747; fresh production install\n859/859 with exact package/Web bytes; actual native SDK/PTY probes and\nChromium/WebKit verification. Environment limitations remain documented.",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T02:45:59+08:00",
+      "changedPaths": [
+        "M\tAGENTS.md",
+        "M\tREADME.md",
+        "M\tapps/web/package.json",
+        "M\tapps/web/src/App.jsx",
+        "M\tapps/web/src/AppBase.jsx",
+        "M\tapps/web/src/Mobile.jsx",
+        "M\tapps/web/src/components/approval/ApprovalModal.jsx",
+        "A\tapps/web/src/components/chat/AskAutoHostCountdown.jsx",
+        "M\tapps/web/src/components/chat/AskQuestionForm.jsx",
+        "M\tapps/web/src/components/chat/ChatInputBar.jsx",
+        "M\tapps/web/src/components/chat/ChatMessage.jsx",
+        "M\tapps/web/src/components/chat/ChatMessage.module.css",
+        "M\tapps/web/src/components/chat/ChatView.jsx",
+        "M\tapps/web/src/components/chat/controllers/askFlowController.js",
+        "M\tapps/web/src/components/common/QuickAutoApproveRows.jsx",
+        "A\tapps/web/src/components/common/ScheduleTaskModal.jsx",
+        "A\tapps/web/src/components/common/ScheduleTaskModal.module.css",
+        "M\tapps/web/src/components/common/quickMenuIcons.jsx",
+        "M\tapps/web/src/components/dashboard/AppHeader.jsx",
+        "M\tapps/web/src/components/settings/PreferencesForm.jsx",
+        "M\tapps/web/src/components/terminal/TerminalPanel.jsx",
+        "M\tapps/web/src/components/terminal/UltraplanPanel.jsx",
+        "M\tapps/web/src/components/terminal/UltraplanPanel.module.css",
+        "M\tapps/web/src/i18n.js",
+        "M\tapps/web/src/utils/autoApproveOptions.js",
+        "A\tapps/web/src/utils/deadlineCountdown.js",
+        "A\tapps/web/src/utils/scheduleDescription.js",
+        "A\tapps/web/src/utils/scheduledTaskEvents.js",
+        "M\tapps/web/src/utils/sdkResumeApi.js",
+        "M\tapps/web/src/utils/ultraplanController.js",
+        "A\tapps/web/tests/ask-auto-answer-options.test.js",
+        "M\tapps/web/tests/ask-flow-controller.test.js",
+        "A\tapps/web/tests/deadline-countdown.test.js",
+        "A\tapps/web/tests/schedule-description.test.js",
+        "A\tapps/web/tests/schedule-i18n.test.js",
+        "A\tapps/web/tests/scheduled-task-events.test.js",
+        "M\tapps/web/tests/sdk-resume-api.test.js",
+        "M\tapps/web/tests/sdk-workspace-tabs.test.js",
+        "A\tcc-viewer-alignment/B9-E11-source.json",
+        "A\tcc-viewer-alignment/B9-E12-source.json",
+        "M\tcc-viewer-alignment/B9-candidate-index.json",
+        "A\tcc-viewer-alignment/B9-candidate-matrix.md",
+        "A\tcc-viewer-alignment/B9-cleanup.json",
+        "A\tcc-viewer-alignment/B9-completion-matrix.md",
+        "A\tcc-viewer-alignment/B9-final-2026-11-23.json",
+        "A\tcc-viewer-alignment/B9-gui.json",
+        "A\tcc-viewer-alignment/B9-gui/chromium-ask-hosted.png",
+        "A\tcc-viewer-alignment/B9-gui/chromium-empty.png",
+        "A\tcc-viewer-alignment/B9-gui/chromium-history.png",
+        "A\tcc-viewer-alignment/B9-gui/chromium-once.png",
+        "A\tcc-viewer-alignment/B9-gui/chromium-phone.png",
+        "A\tcc-viewer-alignment/B9-gui/chromium-pty-history.png",
+        "A\tcc-viewer-alignment/B9-gui/chromium-pty-toolbar.png",
+        "A\tcc-viewer-alignment/B9-gui/chromium-sibling-empty.png",
+        "A\tcc-viewer-alignment/B9-gui/webkit-ask-hosted.png",
+        "A\tcc-viewer-alignment/B9-gui/webkit-empty.png",
+        "A\tcc-viewer-alignment/B9-gui/webkit-history.png",
+        "A\tcc-viewer-alignment/B9-gui/webkit-once.png",
+        "A\tcc-viewer-alignment/B9-gui/webkit-phone.png",
+        "A\tcc-viewer-alignment/B9-gui/webkit-pty-history.png",
+        "A\tcc-viewer-alignment/B9-gui/webkit-pty-toolbar.png",
+        "A\tcc-viewer-alignment/B9-gui/webkit-sibling-empty.png",
+        "M\tcc-viewer-alignment/B9-handoff.md",
+        "A\tcc-viewer-alignment/B9-implementation.md",
+        "A\tcc-viewer-alignment/B9-installed.json",
+        "A\tcc-viewer-alignment/B9-native-pty.json",
+        "A\tcc-viewer-alignment/B9-native-scheduled.json",
+        "A\tcc-viewer-alignment/B9-original-commits-2026-11-23.json",
+        "A\tcc-viewer-alignment/B9-pty-gui.json",
+        "A\tcc-viewer-alignment/B9-source-audit.json",
+        "M\tcc-viewer-alignment/README.md",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-commit-ledger.md",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-plan.md",
+        "M\tcc-viewer-alignment/probes/b3-installed-check.py",
+        "A\tcc-viewer-alignment/probes/b9-native-pty-fixture.mjs",
+        "A\tcc-viewer-alignment/probes/b9-native-pty-scheduled.mjs",
+        "A\tcc-viewer-alignment/probes/b9-native-scheduled.mjs",
+        "A\tcc-viewer-alignment/probes/b9-pty-schedule-gui.mjs",
+        "A\tcc-viewer-alignment/probes/b9-pty-ui-fixture.mjs",
+        "A\tcc-viewer-alignment/probes/b9-schedule-gui.mjs",
+        "A\tcc-viewer-alignment/probes/b9-ui-fixture.mjs",
+        "A\tpackages/app/lib/ask-auto-answer.js",
+        "M\tpackages/app/lib/codex-request-user-input.js",
+        "M\tpackages/app/lib/credential-file-policy.js",
+        "A\tpackages/app/lib/cron.js",
+        "M\tpackages/app/lib/preferences.js",
+        "A\tpackages/app/lib/schedule-model.js",
+        "A\tpackages/app/lib/scheduled-task-executor.js",
+        "A\tpackages/app/lib/scheduled-task-routes.js",
+        "A\tpackages/app/lib/scheduled-task-runs-store.js",
+        "A\tpackages/app/lib/scheduled-task-scheduler.js",
+        "A\tpackages/app/lib/scheduled-task-store.js",
+        "M\tpackages/app/lib/sdk-appserver-approvals.js",
+        "M\tpackages/app/lib/sdk-manager.js",
+        "M\tpackages/app/lib/sdk-resume-history.js",
+        "A\tpackages/app/lib/workspace-upload-paths.js",
+        "M\tpackages/app/server.js",
+        "A\tpackages/app/src/utils/ask-auto-answer.js",
+        "M\tpackages/app/src/utils/ultraplanTemplates.js",
+        "A\tpackages/app/tests/ask-auto-answer-picker.test.js",
+        "A\tpackages/app/tests/ask-auto-answer.test.js",
+        "M\tpackages/app/tests/codex-ask-server.test.js",
+        "A\tpackages/app/tests/cron.test.js",
+        "A\tpackages/app/tests/fixtures/scheduled-native.txt",
+        "M\tpackages/app/tests/pty-workspace-routing.test.js",
+        "A\tpackages/app/tests/schedule-model.test.js",
+        "A\tpackages/app/tests/scheduled-attachments.test.js",
+        "A\tpackages/app/tests/scheduled-prompt.test.js",
+        "A\tpackages/app/tests/scheduled-task-api.test.js",
+        "A\tpackages/app/tests/scheduled-task-executor.test.js",
+        "A\tpackages/app/tests/scheduled-task-pty-runtime.test.js",
+        "A\tpackages/app/tests/scheduled-task-runs-store.test.js",
+        "A\tpackages/app/tests/scheduled-task-runtime.test.js",
+        "A\tpackages/app/tests/scheduled-task-scheduler.test.js",
+        "A\tpackages/app/tests/scheduled-task-security.test.js",
+        "A\tpackages/app/tests/scheduled-task-store.test.js",
+        "M\tpackages/app/tests/sdk-appserver-approvals.test.js",
+        "M\tpackages/app/tests/sdk-resume-history.test.js",
+        "A\tpackages/app/tests/sdk-scheduled-session.test.js",
+        "M\tpnpm-lock.yaml"
+      ]
+    },
+    {
+      "hash": "231a8a72f665c752bebf89a7f097fb4800f9aeb5",
+      "parents": [
+        "0a162b4e323b52f52bf665d5ebfcc179599168ac"
+      ],
+      "tree": "2d257d1a55acefdcf2653e048426be171f774889",
+      "subject": "docs(alignment): record B9 PR and post-submission progress",
+      "body": "docs(alignment): record B9 PR and post-submission progress",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T02:49:10+08:00",
+      "changedPaths": [
+        "M\tAGENTS.md",
+        "M\tcc-viewer-alignment/B9-candidate-index.json",
+        "M\tcc-viewer-alignment/B9-completion-matrix.md",
+        "M\tcc-viewer-alignment/B9-final-2026-11-23.json",
+        "M\tcc-viewer-alignment/B9-handoff.md",
+        "M\tcc-viewer-alignment/B9-implementation.md",
+        "A\tcc-viewer-alignment/B9-local-commit-consolidation-2026-11-23.md",
+        "M\tcc-viewer-alignment/B9-original-commits-2026-11-23.json",
+        "M\tcc-viewer-alignment/README.md",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-commit-ledger.md",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-plan.md"
+      ]
+    },
+    {
+      "hash": "9e19ba4f765d5f2f57d4ed6ada0a28afd4014f95",
+      "parents": [
+        "231a8a72f665c752bebf89a7f097fb4800f9aeb5"
+      ],
+      "tree": "c7d9d205125bcf077c9e77fbbd512d872d405be6",
+      "subject": "feat(plugins): migrate directory service manifest validation",
+      "body": "feat(plugins): migrate directory service manifest validation",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T03:07:52+08:00",
+      "changedPaths": [
+        "M\tAGENTS.md",
+        "A\tcc-viewer-alignment/B10-candidate-index.json",
+        "A\tcc-viewer-alignment/B10-implementation.md",
+        "M\tcc-viewer-alignment/README.md",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-commit-ledger.md",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-plan.md",
+        "A\tpackages/app/lib/plugin-manifest.js",
+        "A\tpackages/app/tests/plugin-manifest.test.js"
+      ]
+    },
+    {
+      "hash": "48f0f90c33dcf8f37c4ad61e712ce2922a3a4144",
+      "parents": [
+        "9e19ba4f765d5f2f57d4ed6ada0a28afd4014f95"
+      ],
+      "tree": "45b0da34d86e374d930d4d5bc34fc943d522d4db",
+      "subject": "feat(plugins): load directory plugins alongside legacy hooks",
+      "body": "feat(plugins): load directory plugins alongside legacy hooks",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T03:08:40+08:00",
+      "changedPaths": [
+        "M\tAGENTS.md",
+        "M\tcc-viewer-alignment/B10-implementation.md",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-commit-ledger.md",
+        "M\tpackages/app/lib/plugin-loader.js",
+        "A\tpackages/app/tests/plugin-loader-service.test.js"
+      ]
+    },
+    {
+      "hash": "ce970ae5ec5dbd0c593e439d710e4d82b8ff0f42",
+      "parents": [
+        "48f0f90c33dcf8f37c4ad61e712ce2922a3a4144"
+      ],
+      "tree": "ac0d71b2f1e13c03a38058a88a2d2fedd92b08d6",
+      "subject": "feat(plugins): migrate supervised service child processes",
+      "body": "feat(plugins): migrate supervised service child processes",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T03:09:26+08:00",
+      "changedPaths": [
+        "M\tAGENTS.md",
+        "M\tcc-viewer-alignment/B10-implementation.md",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-commit-ledger.md",
+        "A\tpackages/app/lib/plugin-host.mjs",
+        "A\tpackages/app/lib/plugin-service-manager.js",
+        "A\tpackages/app/tests/plugin-host.test.js",
+        "A\tpackages/app/tests/plugin-service-manager.test.js",
+        "A\tpackages/app/tests/plugin-spawn-test-guard.test.js"
+      ]
+    },
+    {
+      "hash": "469ec8a4a4f711cf8e8098dc48a5eb741c709e98",
+      "parents": [
+        "ce970ae5ec5dbd0c593e439d710e4d82b8ff0f42"
+      ],
+      "tree": "56cff167aad7638a9b147918ddeac61ee955275d",
+      "subject": "feat(plugins): migrate streaming HTTP and WebSocket proxy",
+      "body": "feat(plugins): migrate streaming HTTP and WebSocket proxy",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T03:10:35+08:00",
+      "changedPaths": [
+        "M\tAGENTS.md",
+        "M\tcc-viewer-alignment/B10-implementation.md",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-commit-ledger.md",
+        "A\tpackages/app/lib/plugin-proxy.js",
+        "A\tpackages/app/tests/plugin-proxy.test.js"
+      ]
+    },
+    {
+      "hash": "4987837d6e87773661e9ae504b058ab00a074ec4",
+      "parents": [
+        "469ec8a4a4f711cf8e8098dc48a5eb741c709e98"
+      ],
+      "tree": "2dd1623f7217d438250575d8c821784c8cec2876",
+      "subject": "feat(proxy): migrate public base URL and encoded path utilities",
+      "body": "feat(proxy): migrate public base URL and encoded path utilities",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T03:11:26+08:00",
+      "changedPaths": [
+        "M\tAGENTS.md",
+        "M\tcc-viewer-alignment/B10-implementation.md",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-commit-ledger.md",
+        "A\tpackages/app/lib/base-path.js",
+        "A\tpackages/app/lib/base-url.js",
+        "A\tpackages/app/tests/base-path-lib.test.js",
+        "A\tpackages/app/tests/base-url-lib.test.js"
+      ]
+    },
+    {
+      "hash": "2efb9870db9fe7d6b10521d2d55601c9577eef1b",
+      "parents": [
+        "4987837d6e87773661e9ae504b058ab00a074ec4"
+      ],
+      "tree": "5b3899fc7f9bde4a9d7bfe5576d6aa784d3d5bfb",
+      "subject": "feat(plugins): migrate service lifecycle orchestration",
+      "body": "feat(plugins): migrate service lifecycle orchestration",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T03:12:29+08:00",
+      "changedPaths": [
+        "M\tAGENTS.md",
+        "M\tcc-viewer-alignment/B10-implementation.md",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-commit-ledger.md",
+        "A\tpackages/app/lib/plugin-runtime.js",
+        "A\tpackages/app/tests/plugin-mount-prefixes.test.js",
+        "A\tpackages/app/tests/plugin-runtime-real.test.js",
+        "A\tpackages/app/tests/plugin-runtime.test.js"
+      ]
+    },
+    {
+      "hash": "2aa0c34feafaf7f4662b4552a3845926a60e82b3",
+      "parents": [
+        "2efb9870db9fe7d6b10521d2d55601c9577eef1b"
+      ],
+      "tree": "e2f4ef0e36d9902dc40836b0c3195e1f5c8ff2e7",
+      "subject": "feat(plugins): migrate panel assets and validated directory deletion",
+      "body": "feat(plugins): migrate panel assets and validated directory deletion",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T03:13:29+08:00",
+      "changedPaths": [
+        "M\tAGENTS.md",
+        "M\tcc-viewer-alignment/B10-implementation.md",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-commit-ledger.md",
+        "M\tpackages/app/lib/plugin-manager.js",
+        "A\tpackages/app/lib/plugin-panels.js",
+        "A\tpackages/app/tests/plugin-manager-dir.test.js",
+        "A\tpackages/app/tests/plugin-panels.test.js"
+      ]
+    },
+    {
+      "hash": "df7893c9c149a6a76b3d527c13acf5cff998db55",
+      "parents": [
+        "2aa0c34feafaf7f4662b4552a3845926a60e82b3"
+      ],
+      "tree": "4f56a8f1a40b2e5fc2cb5a5f559d35e97efffb33",
+      "subject": "feat(plugins): connect service lifecycle and authenticated server routes",
+      "body": "feat(plugins): connect service lifecycle and authenticated server routes",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T03:19:10+08:00",
+      "changedPaths": [
+        "M\tAGENTS.md",
+        "M\tcc-viewer-alignment/B10-implementation.md",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-commit-ledger.md",
+        "M\tpackages/app/lib/credential-file-policy.js",
+        "A\tpackages/app/lib/plugin-service-routes.js",
+        "A\tpackages/app/lib/same-origin.js",
+        "M\tpackages/app/server.js",
+        "M\tpackages/app/tests/auth-server.test.js",
+        "A\tpackages/app/tests/plugin-service-integration.test.js",
+        "M\tpackages/app/tests/sdk-workspace-auth.test.js",
+        "M\tpackages/app/tests/target-files.test.js",
+        "M\tpackages/app/tests/voice-pack-api.test.js"
+      ]
+    },
+    {
+      "hash": "108487c3851da664e02ef59901a172d2453070a7",
+      "parents": [
+        "df7893c9c149a6a76b3d527c13acf5cff998db55"
+      ],
+      "tree": "faf79bc144ce81dd56691bf11cfc4c52392c5975",
+      "subject": "feat(plugins): migrate remote React panel runtime and loader",
+      "body": "feat(plugins): migrate remote React panel runtime and loader",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T03:20:22+08:00",
+      "changedPaths": [
+        "M\tAGENTS.md",
+        "A\tapps/web/src/components/plugins/panelRuntime.js",
+        "A\tapps/web/src/utils/panelLoader.js",
+        "A\tapps/web/src/utils/pluginPanels.js",
+        "A\tapps/web/tests/panel-loader.test.js",
+        "A\tapps/web/tests/plugin-panels-util.test.js",
+        "M\tcc-viewer-alignment/B10-implementation.md",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-commit-ledger.md"
+      ]
+    },
+    {
+      "hash": "5841ccb71c23b2ce67ea11180aa6246bd6faa349",
+      "parents": [
+        "108487c3851da664e02ef59901a172d2453070a7"
+      ],
+      "tree": "c64bc312b7425ffc4c7ebbb38423867172088dd8",
+      "subject": "feat(plugins): connect original remote panels and management UI",
+      "body": "feat(plugins): connect original remote panels and management UI",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T10:14:43+08:00",
+      "changedPaths": [
+        "M\tAGENTS.md",
+        "M\tapps/web/src/App.module.css",
+        "M\tapps/web/src/AppBase.jsx",
+        "M\tapps/web/src/Mobile.jsx",
+        "M\tapps/web/src/components/dashboard/AppHeader.jsx",
+        "M\tapps/web/src/components/mobile/MobileDrawerCloseButton.jsx",
+        "A\tapps/web/src/components/plugins/PanelHost.jsx",
+        "A\tapps/web/src/components/plugins/PanelHost.module.css",
+        "A\tapps/web/src/components/plugins/PluginPanelModal.jsx",
+        "A\tapps/web/src/components/plugins/panelIcons.jsx",
+        "M\tapps/web/src/components/settings/PluginModal.jsx",
+        "M\tapps/web/src/components/settings/PluginModal.module.css",
+        "M\tapps/web/src/i18n.js",
+        "M\tapps/web/tests/sdk-workspace-tabs.test.js",
+        "M\tapps/web/vite.config.js",
+        "A\tcc-viewer-alignment/B10-gui.json",
+        "A\tcc-viewer-alignment/B10-gui/chromium-desktop-a-light.png",
+        "A\tcc-viewer-alignment/B10-gui/chromium-desktop-b-dark.png",
+        "A\tcc-viewer-alignment/B10-gui/chromium-management.png",
+        "A\tcc-viewer-alignment/B10-gui/chromium-phone-a-light.png",
+        "A\tcc-viewer-alignment/B10-gui/chromium-render-error.png",
+        "A\tcc-viewer-alignment/B10-gui/webkit-desktop-a-light.png",
+        "A\tcc-viewer-alignment/B10-gui/webkit-desktop-b-dark.png",
+        "A\tcc-viewer-alignment/B10-gui/webkit-management.png",
+        "A\tcc-viewer-alignment/B10-gui/webkit-phone-a-light.png",
+        "A\tcc-viewer-alignment/B10-gui/webkit-render-error.png",
+        "M\tcc-viewer-alignment/B10-implementation.md",
+        "M\tcc-viewer-alignment/README.md",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-commit-ledger.md",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-plan.md"
+      ]
+    },
+    {
+      "hash": "0c247bb393ae2730d2531dc62377a47982d862ad",
+      "parents": [
+        "5841ccb71c23b2ce67ea11180aa6246bd6faa349"
+      ],
+      "tree": "50480cff184a77ff698c5c57009580452e7c9d5e",
+      "subject": "feat(proxy): connect runtime base paths and public access URLs",
+      "body": "feat(proxy): connect runtime base paths and public access URLs",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T10:21:53+08:00",
+      "changedPaths": [
+        "M\tAGENTS.md",
+        "M\tapps/web/src/utils/apiUrl.js",
+        "M\tapps/web/tests/api-url-instance.test.js",
+        "M\tcc-viewer-alignment/B10-implementation.md",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-commit-ledger.md",
+        "M\tpackages/app/i18n.js",
+        "M\tpackages/app/lib/auth.js",
+        "M\tpackages/app/lib/plugin-host.mjs",
+        "M\tpackages/app/server.js",
+        "A\tpackages/app/tests/api-base-url.test.js",
+        "M\tpackages/app/tests/base-url-lib.test.js",
+        "M\tpackages/app/tests/plugin-service-integration.test.js"
+      ]
+    },
+    {
+      "hash": "570da90141bc2f983a4f461600bdd3f07c2b5597",
+      "parents": [
+        "0c247bb393ae2730d2531dc62377a47982d862ad"
+      ],
+      "tree": "9c45a7fdff0247510e59c3bdd70b0493ef85e32c",
+      "subject": "feat(proxy): align CLI public URLs and browser opening",
+      "body": "feat(proxy): align CLI public URLs and browser opening",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T10:24:07+08:00",
+      "changedPaths": [
+        "M\tAGENTS.md",
+        "M\tcc-viewer-alignment/B10-implementation.md",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-commit-ledger.md",
+        "M\tpackages/app/cli.js",
+        "M\tpackages/app/tests/sdk-cli-resume.test.js"
+      ]
+    },
+    {
+      "hash": "ffc40679f0f5fa4e1ea451925d97f063886f63bc",
+      "parents": [
+        "570da90141bc2f983a4f461600bdd3f07c2b5597"
+      ],
+      "tree": "2e69290fefd2c62d76976c3bdd3ad645dcda9c5b",
+      "subject": "feat(update): make release checks report availability without installing",
+      "body": "feat(update): make release checks report availability without installing",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T10:29:03+08:00",
+      "changedPaths": [
+        "M\tAGENTS.md",
+        "M\tcc-viewer-alignment/B10-implementation.md",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-commit-ledger.md",
+        "M\tpackages/app/lib/updater.js",
+        "A\tpackages/app/tests/updater.test.js"
+      ]
+    },
+    {
+      "hash": "3f562ca9df79e78cfb98060253b4fb45724a32c9",
+      "parents": [
+        "ffc40679f0f5fa4e1ea451925d97f063886f63bc"
+      ],
+      "tree": "eca4c686a01b54460cee4bbfd09f08fd56b0bd49",
+      "subject": "test(proxy): verify encoded public paths through TLS termination",
+      "body": "test(proxy): verify encoded public paths through TLS termination",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T10:29:17+08:00",
+      "changedPaths": [
+        "M\tAGENTS.md",
+        "M\tcc-viewer-alignment/B10-implementation.md",
+        "A\tcc-viewer-alignment/B10-proxy-gui.json",
+        "A\tcc-viewer-alignment/B10-proxy-gui/chromium-desktop-a-light.png",
+        "A\tcc-viewer-alignment/B10-proxy-gui/chromium-management.png",
+        "A\tcc-viewer-alignment/B10-proxy-gui/chromium-phone-a-light.png",
+        "A\tcc-viewer-alignment/B10-proxy-gui/chromium-render-error.png",
+        "A\tcc-viewer-alignment/B10-proxy-gui/webkit-desktop-a-light.png",
+        "A\tcc-viewer-alignment/B10-proxy-gui/webkit-management.png",
+        "A\tcc-viewer-alignment/B10-proxy-gui/webkit-phone-a-light.png",
+        "A\tcc-viewer-alignment/B10-proxy-gui/webkit-render-error.png",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-commit-ledger.md"
+      ]
+    },
+    {
+      "hash": "d962e7dcb74ece7c83f8cdfd33651712c89f9753",
+      "parents": [
+        "3f562ca9df79e78cfb98060253b4fb45724a32c9"
+      ],
+      "tree": "0507d156ee18da4460b295ad5bb4dce0d3842dc5",
+      "subject": "feat(update): migrate verified staging and guarded npm installation",
+      "body": "feat(update): migrate verified staging and guarded npm installation",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T10:31:56+08:00",
+      "changedPaths": [
+        "M\tAGENTS.md",
+        "M\tcc-viewer-alignment/B10-implementation.md",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-commit-ledger.md",
+        "M\tpackages/app/findcx.js",
+        "A\tpackages/app/lib/async-file-lock.js",
+        "M\tpackages/app/lib/credential-file-policy.js",
+        "A\tpackages/app/lib/update-instances.js",
+        "A\tpackages/app/lib/update-job.js",
+        "A\tpackages/app/tests/async-file-lock.test.js",
+        "A\tpackages/app/tests/update-instances.test.js",
+        "A\tpackages/app/tests/update-job.test.js"
+      ]
+    },
+    {
+      "hash": "7649484060b12d12f67c9d83d6aa0b88731c6f8c",
+      "parents": [
+        "d962e7dcb74ece7c83f8cdfd33651712c89f9753"
+      ],
+      "tree": "13e503879ca3a819922f8186ae86adfb3cc77fdc",
+      "subject": "feat(update): connect guarded routes and native restart cleanup",
+      "body": "feat(update): connect guarded routes and native restart cleanup",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T10:35:06+08:00",
+      "changedPaths": [
+        "M\tAGENTS.md",
+        "M\tcc-viewer-alignment/B10-implementation.md",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-commit-ledger.md",
+        "M\tpackages/app/cli.js",
+        "A\tpackages/app/lib/restart-helper.js",
+        "A\tpackages/app/lib/restart.js",
+        "A\tpackages/app/lib/update-routes.js",
+        "M\tpackages/app/server.js",
+        "M\tpackages/app/tests/auth-server.test.js",
+        "M\tpackages/app/tests/credential-search-boundary.test.js",
+        "A\tpackages/app/tests/restart-helper.test.js",
+        "A\tpackages/app/tests/update-routes.test.js"
+      ]
+    },
+    {
+      "hash": "669151216037bf4f356dd28e992970bb61993d72",
+      "parents": [
+        "7649484060b12d12f67c9d83d6aa0b88731c6f8c"
+      ],
+      "tree": "19767e090192cc8d4fe0bd3eb28983b403454f88",
+      "subject": "feat(update): migrate original guided update modal and recovery UI",
+      "body": "feat(update): migrate original guided update modal and recovery UI",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T10:38:47+08:00",
+      "changedPaths": [
+        "M\tAGENTS.md",
+        "M\tapps/web/src/App.jsx",
+        "M\tapps/web/src/AppBase.jsx",
+        "A\tapps/web/src/components/update/UpdateModal.jsx",
+        "A\tapps/web/src/components/update/UpdateModal.module.css",
+        "M\tapps/web/src/i18n.js",
+        "A\tapps/web/src/utils/updateProgress.js",
+        "M\tapps/web/tests/sdk-workspace-tabs.test.js",
+        "A\tapps/web/tests/update-modal.test.js",
+        "M\tcc-viewer-alignment/B10-implementation.md",
+        "A\tcc-viewer-alignment/B10-update-gui.json",
+        "A\tcc-viewer-alignment/B10-update-gui/chromium-dark-confirmation.png",
+        "A\tcc-viewer-alignment/B10-update-gui/chromium-dark-downloading.png",
+        "A\tcc-viewer-alignment/B10-update-gui/chromium-dark-manual.png",
+        "A\tcc-viewer-alignment/B10-update-gui/chromium-dark-restart-rejected.png",
+        "A\tcc-viewer-alignment/B10-update-gui/chromium-light-confirmation.png",
+        "A\tcc-viewer-alignment/B10-update-gui/chromium-light-downloading.png",
+        "A\tcc-viewer-alignment/B10-update-gui/chromium-light-manual.png",
+        "A\tcc-viewer-alignment/B10-update-gui/chromium-light-restart-rejected.png",
+        "A\tcc-viewer-alignment/B10-update-gui/webkit-dark-confirmation.png",
+        "A\tcc-viewer-alignment/B10-update-gui/webkit-dark-downloading.png",
+        "A\tcc-viewer-alignment/B10-update-gui/webkit-dark-manual.png",
+        "A\tcc-viewer-alignment/B10-update-gui/webkit-dark-restart-rejected.png",
+        "A\tcc-viewer-alignment/B10-update-gui/webkit-light-confirmation.png",
+        "A\tcc-viewer-alignment/B10-update-gui/webkit-light-downloading.png",
+        "A\tcc-viewer-alignment/B10-update-gui/webkit-light-manual.png",
+        "A\tcc-viewer-alignment/B10-update-gui/webkit-light-restart-rejected.png",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-commit-ledger.md"
+      ]
+    },
+    {
+      "hash": "a974111cac4e90943b046898e55799bf4cbd478e",
+      "parents": [
+        "669151216037bf4f356dd28e992970bb61993d72"
+      ],
+      "tree": "72c96b90ec0707cc1011f07e73a48b41e328d22c",
+      "subject": "test(update): spawn readiness fixture after restart config is written",
+      "body": "test(update): spawn readiness fixture after restart config is written",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T10:39:08+08:00",
+      "changedPaths": [
+        "M\tAGENTS.md",
+        "M\tcc-viewer-alignment/B10-implementation.md",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-commit-ledger.md",
+        "M\tpackages/app/tests/restart-helper.test.js"
+      ]
+    },
+    {
+      "hash": "48833173fa8367e60c050f31478a147389c13cdd",
+      "parents": [
+        "a974111cac4e90943b046898e55799bf4cbd478e"
+      ],
+      "tree": "fe6678808b377ca2939d22b32fe12d7a01cd4d6c",
+      "subject": "fix(electron): identify managed tabs and retain dynamic plugin pins",
+      "body": "fix(electron): identify managed tabs and retain dynamic plugin pins",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T10:39:57+08:00",
+      "changedPaths": [
+        "M\tAGENTS.md",
+        "M\tapps/electron/electron/main.js",
+        "M\tapps/electron/electron/tab-bar.html",
+        "M\tcc-viewer-alignment/B10-implementation.md",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-commit-ledger.md",
+        "M\tpackages/app/pty-manager.js",
+        "M\tpackages/app/tests/pty-manager.test.js"
+      ]
+    },
+    {
+      "hash": "b3634072da4724553130e3d9fe603ab581e96e0a",
+      "parents": [
+        "48833173fa8367e60c050f31478a147389c13cdd"
+      ],
+      "tree": "9d038e6d31397c73c037081f0daed8b6fb320b08",
+      "subject": "fix(plugins): verify full service identity before orphan signals",
+      "body": "fix(plugins): verify full service identity before orphan signals",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T10:41:14+08:00",
+      "changedPaths": [
+        "M\tAGENTS.md",
+        "M\tcc-viewer-alignment/B10-implementation.md",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-commit-ledger.md",
+        "M\tpackages/app/lib/plugin-service-manager.js",
+        "M\tpackages/app/tests/plugin-service-manager.test.js"
+      ]
+    },
+    {
+      "hash": "fb59b220e0b94ab2442d49de19c8389fe2cf8ffc",
+      "parents": [
+        "b3634072da4724553130e3d9fe603ab581e96e0a"
+      ],
+      "tree": "7595bfe963e846815e04fa68f129f79a49f3e895",
+      "subject": "fix(plugins): dispatch request hooks after native authentication and scope checks",
+      "body": "fix(plugins): dispatch request hooks after native authentication and scope checks",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T10:43:23+08:00",
+      "changedPaths": [
+        "M\tAGENTS.md",
+        "M\tcc-viewer-alignment/B10-implementation.md",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-commit-ledger.md",
+        "M\tpackages/app/server.js",
+        "M\tpackages/app/tests/plugin-service-integration.test.js"
+      ]
+    },
+    {
+      "hash": "55f75e4780ce5ed2b570786f3051868f72364436",
+      "parents": [
+        "fb59b220e0b94ab2442d49de19c8389fe2cf8ffc"
+      ],
+      "tree": "c6187a7833ee61541bacb06651bcfdbc68f7612b",
+      "subject": "docs(plugins): ship native service and reverse proxy guidance",
+      "body": "docs(plugins): ship native service and reverse proxy guidance",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T10:44:40+08:00",
+      "changedPaths": [
+        "M\tAGENTS.md",
+        "M\tREADME.md",
+        "M\tcc-viewer-alignment/B10-implementation.md",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-commit-ledger.md",
+        "A\tdocs/base-url.md",
+        "A\tdocs/base-url.zh.md",
+        "A\tdocs/plugin-services.md",
+        "A\tdocs/plugin-services.zh.md",
+        "A\tdocs/plugin-templates/panel/build.mjs",
+        "A\tdocs/plugin-templates/panel/package.json",
+        "A\tdocs/plugin-templates/panel/plugin.json.example",
+        "A\tdocs/plugin-templates/panel/src/Panel.jsx",
+        "A\tdocs/plugins.md",
+        "A\tdocs/plugins.zh.md",
+        "M\tpackages/app/plugins/README.md"
+      ]
+    },
+    {
+      "hash": "40598482e72ed176f29498ccb551aadc17f89f85",
+      "parents": [
+        "55f75e4780ce5ed2b570786f3051868f72364436"
+      ],
+      "tree": "e3735d846a170a8f0a4eb515d3af5e6647853e00",
+      "subject": "test(alignment): verify packaged B10 runtime and fresh production installation",
+      "body": "test(alignment): verify packaged B10 runtime and fresh production installation",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T10:50:26+08:00",
+      "changedPaths": [
+        "M\tAGENTS.md",
+        "A\tcc-viewer-alignment/B10-cleanup.json",
+        "M\tcc-viewer-alignment/B10-gui.json",
+        "M\tcc-viewer-alignment/B10-implementation.md",
+        "A\tcc-viewer-alignment/B10-installed.json",
+        "M\tcc-viewer-alignment/B10-update-gui.json",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-commit-ledger.md",
+        "M\tcc-viewer-alignment/probes/b12-installed-acceptance.py",
+        "M\tcc-viewer-alignment/probes/b3-installed-check.py",
+        "M\tpackages/app/scripts/npm-pack-dry-run.mjs"
+      ]
+    },
+    {
+      "hash": "d52763c108970e8371873c18f1afaa908d053317",
+      "parents": [
+        "40598482e72ed176f29498ccb551aadc17f89f85"
+      ],
+      "tree": "ddf805a5f45624dd4af1812bb775d5eea92d2b68",
+      "subject": "docs(alignment): close B10 subscope audit and hand off remaining B11 work",
+      "body": "docs(alignment): close B10 subscope audit and hand off remaining B11 work",
+      "author": "weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "authorDate": "2026-11-23T10:51:39+08:00",
+      "changedPaths": [
+        "M\tAGENTS.md",
+        "M\tcc-viewer-alignment/B10-candidate-index.json",
+        "A\tcc-viewer-alignment/B10-completion-matrix.md",
+        "M\tcc-viewer-alignment/B10-implementation.md",
+        "A\tcc-viewer-alignment/B10-source-audit.json",
+        "A\tcc-viewer-alignment/B11-handoff.md",
+        "M\tcc-viewer-alignment/README.md",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-commit-ledger.md",
+        "M\tcc-viewer-alignment/cc-viewer-alignment-plan.md"
+      ]
+    }
+  ],
+  "consolidatedHead": "da60ff2b136f360abd20e45378a084e8899a2f0f",
+  "consolidatedTree": "ddf805a5f45624dd4af1812bb775d5eea92d2b68",
+  "mergedPR": {
+    "number": 12,
+    "url": "https://github.com/weiesky/cx-viewer/pull/12",
+    "state": "MERGED",
+    "mergedAt": "2026-11-23T03:28:35Z",
+    "mergeCommit": "d82977282112b8c063b5d6da9d62412b065da5b8"
+  },
+  "mergeTree": "ddf805a5f45624dd4af1812bb775d5eea92d2b68",
+  "allRemoteFilesMatched": 252,
+  "prChecks": [],
+  "branchActionsRuns": [],
+  "supersededPR": {
+    "number": 11,
+    "state": "CLOSED"
+  },
+  "gitSync": "Git smart-HTTP fetch stalled; imported the GitHub verified signed commit only after git hash-object exactly matched its remote SHA, then checked remote main and fast-forwarded. All tree objects were already local.",
+  "whitespaceCheck": "Full historical diff reports one existing extra blank EOF line in packages/app/tests/plugin-manifest.test.js:180; preserved unchanged for history-only consolidation."
+}

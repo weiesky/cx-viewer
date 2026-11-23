@@ -54,6 +54,21 @@
     "30-minute independent-run limit retained"
   ],
   "delivery": {
+    "pr": "https://github.com/weiesky/cx-viewer/pull/12",
+    "state": "MERGED",
+    "mergedCommit": "d82977282112b8c063b5d6da9d62412b065da5b8",
+    "consolidatedCommit": "da60ff2b136f360abd20e45378a084e8899a2f0f",
+    "originalCommitCount": 26,
+    "originalTree": "ddf805a5f45624dd4af1812bb775d5eea92d2b68",
+    "mergedTree": "ddf805a5f45624dd4af1812bb775d5eea92d2b68",
+    "remoteFilesCompared": 252,
+    "allRemoteBlobIdsMatch": true,
+    "statusCheckRollup": [],
+    "supersededPR11": "CLOSED",
+    "progressUpdatedAfterMerge": true,
+    "productCodeChangedThisTurn": false
+  },
+  "previousPR11Delivery": {
     "pr": "https://github.com/weiesky/cx-viewer/pull/11",
     "prNumber": 11,
     "state": "OPEN",

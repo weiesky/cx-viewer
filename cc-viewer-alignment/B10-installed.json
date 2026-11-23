@@ -22,5 +22,20 @@
     "installedResume": "/tmp/cxv-b10-final-installed-resume.log"
   },
   "virtualHostFixtureFix": "B1.2 probe explicitly allows viewer.invalid; production allowlist unchanged",
-  "reuse": "Resumed only after all 773 package bytes and all copied runtime test bytes matched; 1096/1096 previous runtime result retained; B1.2 and installed CLI rerun passed"
+  "reuse": "Resumed only after all 773 package bytes and all copied runtime test bytes matched; 1096/1096 previous runtime result retained; B1.2 and installed CLI rerun passed",
+  "delivery": {
+    "pr": "https://github.com/weiesky/cx-viewer/pull/12",
+    "state": "MERGED",
+    "mergedCommit": "d82977282112b8c063b5d6da9d62412b065da5b8",
+    "consolidatedCommit": "da60ff2b136f360abd20e45378a084e8899a2f0f",
+    "originalCommitCount": 26,
+    "originalTree": "ddf805a5f45624dd4af1812bb775d5eea92d2b68",
+    "mergedTree": "ddf805a5f45624dd4af1812bb775d5eea92d2b68",
+    "remoteFilesCompared": 252,
+    "allRemoteBlobIdsMatch": true,
+    "statusCheckRollup": [],
+    "supersededPR11": "CLOSED",
+    "progressUpdatedAfterMerge": true,
+    "productCodeChangedThisTurn": false
+  }
 }

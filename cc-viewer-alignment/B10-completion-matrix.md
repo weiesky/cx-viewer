@@ -1,8 +1,8 @@
 # B10 完成矩阵：服务插件、反向代理与引导更新
 
-**状态：2026-11-23本地实施与验收完成（第11/12工作包）。** 最终2713/2713、0skip/build/pack773，新生产安装1096/1096、773包/211Web精确字节、B1.2与安装CLI通过，见[安装回执](./B10-installed.json)。
+**状态：2026-11-23已通过PR #12合并main d829772（第11/12工作包）。** 最终2713/2713、0skip/build/pack773，新生产安装1096/1096、773包/211Web精确字节、B1.2与安装CLI通过，见[安装回执](./B10-installed.json)。
 
-固定上游 `74cd752d99caf122e750216d2af3bb9f467c4de1`；分支 `alignment/b10-services-reverse-proxy`，基于 B9 `231a8a7`。这是 B10 子项核销，不表示混合上游提交全部完成，也不抵扣 B11。
+固定上游 `74cd752d99caf122e750216d2af3bb9f467c4de1`；原分支 `alignment/b10-services-reverse-proxy` 基于 B9 `231a8a7`；本轮26笔合为da60ff2后合并，详见[整合与合并](./B9-B10-consolidation-and-merge-2026-11-23.md)。这是 B10 子项核销，不表示混合上游提交全部完成，也不抵扣 B11。
 
 | 候选 | B10 结论与本地映射 | 保留范围 |
 | --- | --- | --- |
@@ -27,4 +27,4 @@
 
 用户选择保持：原生权限/reviewer、独立任务 AppServer、常驻 transport 不变、Ask 托管默认关、排除代理重试配置/统计；公开反代不信任转发头启用 HTTP 后端的远程密码登录。
 
-未验：真实全局升级/实际发布 registry 下载及失败部分写入、Electron GUI/签名发布、Windows/Linux/最低 Node、真实 DNS/LAN-TLS、外部模型、物理手机/触控/IME/音频/密码插件、长等待/睡眠与历史 IM 偶发。B9 PR #11 仍 OPEN，B10 未推送、未建 PR、未合并；用户7008及其他实例未由本轮停止或重启，正常重启后才加载新后端。
+未验：真实全局升级/实际发布 registry 下载及失败部分写入、Electron GUI/签名发布、Windows/Linux/最低 Node、真实 DNS/LAN-TLS、外部模型、物理手机/触控/IME/音频/密码插件、长等待/睡眠与历史 IM 偶发。B9/B10由[PR #12](https://github.com/weiesky/cx-viewer/pull/12)合并main d829772，旧#11已关闭；用户7008及其他实例未由本轮停止或重启，正常重启后才加载新后端。

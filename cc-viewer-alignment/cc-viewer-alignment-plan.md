@@ -160,7 +160,7 @@ B5安全复核：E7/E26/E33/E36/E39组合native凭据/历史/descriptor/alias/�
 
 ### B9 — 定时任务与授权
 
-**当前状态：2026-11-23本地实施/验收完成，已提交[PR #11](https://github.com/weiesky/cx-viewer/pull/11)，尚未合并。** 29笔原始提交已备份并整合为 `0a162b4`，原/整合/远端内容一致；实际没有PR checks，不冒称远端CI通过。14候选按B9子项核销，2443/2443、0skip/build/pack747、新生产安装859/859及747包/211Web精确字节通过；实际native SDK/PTY、双浏览器6配置16图通过。保留native权限/reviewer，用户明确选择独立任务用AppServer、常驻transport不变；问答托管可选默认关闭。见[B9完成矩阵](./B9-completion-matrix.md)、[整合记录](./B9-local-commit-consolidation-2026-11-23.md)与[B9实施](./B9-implementation.md)。未验环境继续单列；B10已完成本地实施与验收。
+**当前状态：2026-11-23已与B10一起通过[PR #12](https://github.com/weiesky/cx-viewer/pull/12)合并main `d829772`。** 旧PR #11已关闭，内容由#12覆盖。原29笔实现备份/映射保留，本轮26笔未合并提交整合为da60ff2后合并，原/整合/合并tree一致。B9调度/原生审批/独立AppServer/Ask默认关及原native证据不变，最终全量2713/2713、新安装1096/1096包含B9回归；详见[B9矩阵](./B9-completion-matrix.md)与[整合记录](./B9-B10-consolidation-and-merge-2026-11-23.md)。
 
 **完整上游提交索引**：[B9 时间顺序索引](./cc-viewer-alignment-commit-index.md#b9)；[B0 交叉候选](./B0-cross-index.md#cross-b9)。逐项核对索引及交叉工作包中的修复、合并和后续替代记录。
 
@@ -170,7 +170,7 @@ B5安全复核：E7/E26/E33/E36/E39组合native凭据/历史/descriptor/alias/�
 
 ### B10 — 服务插件与反向代理
 
-**当前状态：2026-11-23本地实施与验收完成。** E1–E24按原源码小步提交；目录服务/面板、baseURL/编码前缀/TLS终止代理、引导更新与native恢复完成。2713/2713、0skip/build/pack773，新生产安装1096/1096及773包/211Web精确字节通过，双浏览器14配置34图核看。未推送/建B10 PR/合并；12候选只核销B10子项，B11目录/Activation/content与平台范围保留。见[B10完成矩阵](./B10-completion-matrix.md)、[B10实施](./B10-implementation.md)及[源码证据](./B10-source-audit.json)。
+**当前状态：2026-11-23通过[PR #12](https://github.com/weiesky/cx-viewer/pull/12)合并main `d829772`，第11/12工作包完成。** B9/B10当前26笔整合为da60ff2，完整tree/252文件一致；合并后才更新进度。2713/2713、0skip/build/pack773，新生产安装1096/1096及773包/211Web精确字节，双浏览器14配置34图核看；未重启用户实例，无远端CI通过声明。12候选仅核销B10子项，B11目录/Activation/content与平台范围保留；见[B10矩阵](./B10-completion-matrix.md)与[整合记录](./B9-B10-consolidation-and-merge-2026-11-23.md)。
 
 **完整上游提交索引**：[B10 时间顺序索引](./cc-viewer-alignment-commit-index.md#b10)；[B0 交叉候选](./B0-cross-index.md#cross-b10)。逐项核对索引及交叉工作包中的修复、合并和后续替代记录。
 

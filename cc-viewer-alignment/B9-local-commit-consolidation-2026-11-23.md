@@ -1,6 +1,8 @@
 # B9 本地提交整合与 PR（2026-11-23）
 
-按用户本轮要求，先整合本地提交并创建面向 main 的 PR，PR 创建完成后才更新进度文档。本轮未合并 PR，B10 未启动。
+> 此文保留首次B9整合与PR创建的历史。最新B9/B10已由PR #12合并main d829772，旧#11关闭，见[最新合并记录](./B9-B10-consolidation-and-merge-2026-11-23.md)。
+
+按用户当时要求，先整合本地提交并创建面向 main 的 PR，PR 创建完成后才更新进度文档。本轮未合并 PR，B10 未启动。
 
 - 原始29笔提交：`cb40a553061970abd878a87f1e1c38c07a4fe0a3..8dd6ebe2f399e74b735b185f3f6c146fbbf41281`，包含28笔实施/验证及最后的核销元数据提交。
 - 完整备份分支：`backup/b9-raw-20261123`；已创建并通过 `git bundle verify` 的完整备份：`/Users/sky/.codex/backups/cx-viewer/B9-20261123/raw-before-consolidation.bundle`。

@@ -1,6 +1,6 @@
 # B11 交接（B10之后）
 
-B10本地完成，基于B9 `231a8a7`，B9 PR #11仍OPEN，B10未推送或建PR。先保留当前24笔独立提交与所有原映射，审阅交付时不得把B9混作B10新增。固定上游74cd752不变。
+B9/B10已由[PR #12](https://github.com/weiesky/cx-viewer/pull/12)合并main `d829772`，旧#11关闭。原26笔已备份并合为da60ff2，原始/整合/远端/合并tree完全一致；上游映射/备份保留，详见[整合与合并](./B9-B10-consolidation-and-merge-2026-11-23.md)。本轮合并后才更新文档，产品代码未变。固定上游74cd752；下一工作包B11。
 
 B10带回B11的三项：`6680d041d4` Claude目录与 `a97d0f8adf` Activation文档须按Codex实际工具/启用条件核查，不照搬Claude开关；`20ccfb7304` content进一步抽包沿A2既有范围另决，单npm包目前仍完整。12候选详细映射见[B10矩阵](./B10-completion-matrix.md)。B11其余42主候选及交叉候选仍从B0原索引逐条核实，不能据此三项收窄B11。
 

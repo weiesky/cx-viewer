@@ -1,6 +1,6 @@
 # cc-viewer 逐提交对齐台账
 
-2026-11-23 B10本地实施与验收完成（第11/12工作包），分支alignment/b10-services-reverse-proxy，24笔独立提交，未推送/建B10 PR/合并。12候选按B10子项核销，B11剩余保留；2713/2713、0skip/build/pack773，新安装1096/1096及773包/211Web精确字节、B1.2/CLI通过；双浏览器14配置34图核看。B9 PR #11仍OPEN，无远端CI通过声明；用户7008未由本轮重启，正常重启才加载后端。见[B10完成矩阵](./B10-completion-matrix.md)、[实施](./B10-implementation.md)及[B11交接](./B11-handoff.md)。
+2026-11-23 B9/B10已通过[PR #12](https://github.com/weiesky/cx-viewer/pull/12)合并main（代码提交`d829772`，第11/12工作包完成）。当前分支26笔未合并提交（B9两笔+B10二十四笔）已备份并整合为`da60ff2`；原始/整合/远端/合并tree完全相同，252文件路径/状态/blob逐一核对。旧PR #11已关闭，由#12覆盖，无重复合并；实际无PR checks/分支Actions runs，不冒称远端CI。按本轮要求合并后才更新进度文档，见[整合与合并](./B9-B10-consolidation-and-merge-2026-11-23.md)及[完整原映射](./B9-B10-original-commits-2026-11-23.json)。最终2713/2713、0skip/build/pack773，新安装1096/1096、773包/211Web精确字节/B1.2/安装CLI通过；B10双浏览器14配置34图、13原组件/CSS/模板精确字节及原B9 native证据保持，本轮只整合历史与更新进度，产品内容未变。固定74cd752；B10 12候选按子项核销，B11目录/Activation/content与平台范围保留，下一步B11。后端HTTPS密码门、原生权限/reviewer、独立任务AppServer、常驻transport不变、Ask默认关、代理重试排除持续有效。自有fixture均退出，7008及其他用户实例未由代理停止/重启，正常重启才加载后端。真实全局升级/发布下载、Electron GUI/签名、其他OS/最低Node、真实DNS/LAN-TLS、外部模型、真机/触控/音频/IME/密码插件、长等待/睡眠及历史IM偶发未验，30分钟独立run上限保留。
 
 2026-11-21 B6交付：原16笔完整备份并整为e885d8b，PR #6已合并main（9f3e2ce），精确head guard及合并tree已核；实际无PR CI检查。交付复建/pack720/新artifact-only字节通过，生产实现不变；原上游映射继续有效。普通PTY入口待纠偏及旧后端未重启保持，B7下一会话执行，见[整合记录](./B6-local-commit-consolidation-2026-11-21.md)及[B7交接](./B7-handoff.md)。
 
@@ -16868,3 +16868,7 @@ B9 E29（2026-11-23交付）：29笔原始提交完整备份至backup/b9-raw-202
 ### B10 E24 — 源码核销与完成交接
 
 本笔 `docs(alignment): close B10 subscope audit and hand off remaining B11 work`；E23 4059848。12候选按范围核销，13原组件/CSS/模板精确字节，B11待办不抵扣完成；最终2713/2713、0skip/build/pack773、新安装1096/1096及773包/211Web。仅文档/证据，不重复同内容测试；见[B10矩阵](./B10-completion-matrix.md)。
+
+### B9/B10 最终整合、PR #12合并与进度
+
+用户明确要求26笔当前未合并提交合为一笔、PR到main由代理合并、合并后更新文档。已备份并整合da60ff2，PR #12已合并main d829772，旧#11已关闭；原始/整合/远端/合并tree相同，252文件blob一致。仅历史与进度，原上游→本地hash映射保留于备份及[26笔原映射](./B9-B10-original-commits-2026-11-23.json)。2713/2713、0skip/build/pack773/新安装1096及原native/GUI证据适用相同代码；没有远端CI通过声明。合并后才更新AGENTS/矩阵/交接，详见[整合与合并](./B9-B10-consolidation-and-merge-2026-11-23.md)。
