@@ -1,0 +1,41 @@
+packages/app/cli.js
+  s_d7280c55e1029f::t_04b49a544890d6 45-54,408,785,850,881
+packages/app/lib/restart-helper.js
+  s_d7280c55e1029f::t_04b49a544890d6 1-60
+packages/app/tests/update-routes.test.js
+  s_d7280c55e1029f::t_04b49a544890d6 1-74
+packages/app/lib/update-routes.js
+  s_d7280c55e1029f::t_04b49a544890d6 1-57
+packages/app/lib/restart.js
+  s_d7280c55e1029f::t_04b49a544890d6 1-83
+packages/app/tests/auth-server.test.js
+  s_d7280c55e1029f::t_d52fe6949be18c 75-91
+packages/app/tests/credential-search-boundary.test.js
+  s_d7280c55e1029f::t_04b49a544890d6 20
+packages/app/server.js
+  s_d7280c55e1029f::t_04b49a544890d6 47-49,1114-1116,1546-1547,1926-1933,3150-3153,6917,6919
+packages/app/tests/restart-helper.test.js
+  s_d7280c55e1029f::t_04b49a544890d6 1-86
+AGENTS.md
+  s_d7280c55e1029f::t_bd253029b336db 26
+cc-viewer-alignment/B10-implementation.md
+  s_d7280c55e1029f::t_ccb53ce3bbfeb2 106-112
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_d7280c55e1029f::t_f24e638511102c 16823-16826
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "7649484060b12d12f67c9d83d6aa0b88731c6f8c",
+  "prompts": {},
+  "sessions": {
+    "s_d7280c55e1029f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a204a6-35f5-7a91-8f49-0742da1c75f9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
