@@ -7,7 +7,7 @@ import { DISPLAY_SCALE_PRESETS } from '../../utils/displayScaleHelper';
 import { hasNativeZoom, isMac } from '../../env';
 import { MessageOutlined, FileTextOutlined, CommentOutlined, DashboardOutlined, SettingOutlined, BarChartOutlined, CodeOutlined, CopyOutlined, ApiOutlined, SwapOutlined, QuestionCircleOutlined, PushpinOutlined, PushpinFilled } from '@ant-design/icons';
 import { QRCodeCanvas } from 'qrcode.react';
-import { formatTokenCount, computeTokenStats, computeToolUsageStats, computeSkillUsageStats, computeContextPercent, sumUsageContextTokens } from '../../utils/helpers';
+import { formatTokenCount, computeTokenStats, computeToolUsageStats, computeSkillUsageStats, computeContextPercent, contextUsageForView, sumUsageContextTokens } from '../../utils/helpers';
 import { contextSeverityColor } from '../../utils/formatters';
 import { PLAN_AUTO_APPROVE_OPTIONS, autoApproveSelectOptions, askAutoAnswerSelectOptions, askAutoAnswerUiValue, askAutoAnswerPrefValue } from '../../utils/autoApproveOptions';
 import { APPROVALS_REVIEWER_DEFAULT, approvalReviewerSelectOptions } from '../../utils/approvalReviewerOptions';
@@ -1240,17 +1240,15 @@ class AppHeader extends React.Component {
 
     const { requests = [], toolRequests, contextCompactionRequests, contextCompactionAnchorEpoch, isLocalLog, localLogFile, projectName, contextWindow, contextBarOptimistic, contextBarLocked, contextCompactionExcludedEpoch } = this.props;
 
-    // 计算上下文使用率:原始占用比(used / 窗口全量),与 Codex /context 口径一致。
-    // 分子 sumUsageContextTokens = input + output；含末轮 output 是因为它已进入下一轮上下文。
+    // Codex 原生口径：末次上下文用量与有效窗口，百分比扣除固定基线。
+    // 当前用量含末轮 output；exec 的累计消耗不作为上下文占用。
     // 百分比与 popover 显示的 token 数同源。
     // 反向找最后一条带 usage 的 MainAgent 一次，contextPercent 与 contextTokens 共用。
-    let lastTotalTokens = 0, lastMainAgent = null;
+    let lastMainAgent = null;
     if (!isLocalLog && requests.length > 0) {
       for (let i = requests.length - 1; i >= 0; i--) {
         if (isMainAgent(requests[i]) && requests[i].response?.body?.usage) {
           lastMainAgent = requests[i];
-          const u = lastMainAgent.response.body.usage;
-          lastTotalTokens = sumUsageContextTokens(u);
           break;
         }
       }
@@ -1272,7 +1270,8 @@ class AppHeader extends React.Component {
       if (contextBarOptimistic) contextPercent = OPTIMISTIC_CLEAR_PERCENT;
     }
     const ctxColor = contextSeverityColor(contextPercent);
-    const contextTokens = contextBarLocked ? 0 : lastTotalTokens;
+    const contextTokens = contextBarLocked || isLocalLog ? 0
+      : sumUsageContextTokens(contextUsageForView({ contextWindow, lastMainAgent }));
 
     return createPortal(
       <LiveTagPopover

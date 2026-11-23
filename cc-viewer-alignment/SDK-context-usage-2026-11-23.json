@@ -1,0 +1,135 @@
+{
+  "date": "2026-11-23",
+  "task": "SDK exec native context usage",
+  "status": "local-validation-complete",
+  "codexCli": "0.169.0",
+  "sdk": "0.142.5",
+  "nativeExec": [
+    {
+      "status": 200,
+      "threadId": "01a208d2-905b-7bc3-bd28-5a904d231222",
+      "contextCallbacks": 1,
+      "contextUsage": {
+        "input_tokens": 20372,
+        "output_tokens": 5,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 20377,
+        "input_tokens_details": {
+          "cached_tokens": 13312,
+          "cache_write_tokens": 0
+        }
+      },
+      "accountingUsage": {
+        "input_tokens": 20372,
+        "output_tokens": 5,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 20377,
+        "input_tokens_details": {
+          "cached_tokens": 13312,
+          "cache_write_tokens": 0
+        }
+      },
+      "window": 475000,
+      "usedPercent": 2,
+      "displayTokens": 20377,
+      "coldReplayPercent": 2
+    },
+    {
+      "status": 200,
+      "threadId": "01a208d2-905b-7bc3-bd28-5a904d231222",
+      "contextCallbacks": 1,
+      "contextUsage": {
+        "input_tokens": 24254,
+        "output_tokens": 5,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 24259,
+        "input_tokens_details": {
+          "cached_tokens": 20224,
+          "cache_write_tokens": 0
+        }
+      },
+      "accountingUsage": {
+        "input_tokens": 44626,
+        "output_tokens": 10,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 44636,
+        "input_tokens_details": {
+          "cached_tokens": 33536,
+          "cache_write_tokens": 0
+        }
+      },
+      "window": 475000,
+      "usedPercent": 3,
+      "displayTokens": 24259,
+      "coldReplayPercent": 3
+    }
+  ],
+  "sseAndCanonicalColdReplay": {
+    "passed": true,
+    "isolatedWorkspaces": 2,
+    "samples": [
+      {
+        "used": 54985,
+        "window": 475000,
+        "percent": 9
+      },
+      {
+        "used": 171029,
+        "window": 475000,
+        "percent": 34
+      }
+    ],
+    "foreignScopeRejected": true,
+    "reconnectReplayPassed": true
+  },
+  "gui": {
+    "browser": "native Google Chrome",
+    "isolatedFixture": true,
+    "actualModel": false,
+    "bar": "55.0K (9%)",
+    "popover": "55.0K (9%)",
+    "afterRefreshPassed": true,
+    "activeUserInstanceTested": false
+  },
+  "checks": {
+    "targeted": 11,
+    "web": 809,
+    "ordinaryModeEnvironmentRecheck": 76,
+    "boundaries": {
+      "files": 531,
+      "violations": 0
+    },
+    "publishedSourceFiles": 602,
+    "tarballStableFiles": 627,
+    "buildPassed": true,
+    "fullRegression": {
+      "passed": 2833,
+      "failed": 0,
+      "skipped": 0,
+      "groups": [
+        9,
+        7,
+        28,
+        809,
+        1734,
+        246
+      ],
+      "exitCode": 0,
+      "environment": "Child test processes remove inherited CXV_* SDK/runtime markers and OPENAI_BASE_URL/CODEX_THREAD_ID, with CXV_TEST=1, CXV_LOG_DIR=tmp, CXV_BYPASS_PERMISSIONS=0; the user process environment is unchanged."
+    }
+  },
+  "initialAttempts": {
+    "nativeManager": "Initial macOS path-alias check returned unknown; canonical cwd validation was added and real two-turn validation passed.",
+    "fullRegression": "Inherited CXV_SDK_MODE=1 routed ordinary-mode tests into SDK endpoints: 23 failures. The affected 76 tests passed from packages/app with isolated runtime markers; final full isolated regression passed 2833/2833.",
+    "testCwd": "An intermediate ordinary-mode recheck from repository root had one static-fixture failure; rerun from packages/app passed 76/76."
+  },
+  "activeInstancesRestarted": false,
+  "userHistoryRewritten": false,
+  "published": false,
+  "limitations": [
+    "Legacy local JSONL is supported; native directory/paginated history returns unknown.",
+    "Older archives without context_usage stay unknown until a fresh measured turn.",
+    "Measurements are refreshed at SDK event boundaries, not on every streamed output token.",
+    "Windows and active-user-instance GUI not validated."
+  ]
+}

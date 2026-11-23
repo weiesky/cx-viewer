@@ -271,7 +271,16 @@ if(mode==='partial-eof'){
  process.exit(0);
 }
 emit({type:'error',message:'Reconnecting... 1/5 (local temporary failure)'});
-if(mode==='recover'){
+if(mode==='warnings'){
+ for(const id of ['notice-1','notice-2']){
+  emit({type:'item.started',item:{id,type:'error',message:'ignored legacy config'}});
+  emit({type:'item.completed',item:{id,type:'error',message:'ignored legacy config'}});
+ }
+ emit({type:'item.completed',item:{id:'notice-3',type:'error',message:'hook timeout limited'}});
+ await new Promise(resolve=>setTimeout(resolve,150));
+ emit({type:'item.completed',item:{id:'answer',type:'agent_message',text:'successful answer'}});
+ emit({type:'turn.completed',usage:{input_tokens:1,output_tokens:1}});
+}else if(mode==='recover'){
  emit({type:'item.completed',item:{id:'answer',type:'agent_message',text:'recovered answer'}});
  emit({type:'turn.completed',usage:{input_tokens:1,output_tokens:1}});
 }else if(mode==='fail')emit({type:'turn.failed',error:{message:'final failure'}});
@@ -282,13 +291,15 @@ else if(mode==='exit')process.exitCode=7;
     process.env.CODEX_HOME = root;
     for (const [mode, status, content] of [
       ['recover', 200, 'recovered answer'], ['fail', 500, 'final failure'],
+      ['warnings', 200, 'successful answer'],
       ['error-only', 500, 'Reconnecting...'], ['exit', 500, 'Reconnecting...'],
       ['silent-eof', 500, 'session ended before the turn completed'],
       ['partial-eof', 500, 'session ended before the turn completed'],
     ]) {
-      const entries = [], statuses = [], frames = [];
+      const entries = [], statuses = [], frames = [], progress = [];
       const view = initSdkSession(root, 'stream-errors', { codexPath: executable,
         onEntry: entry => entries.push(entry), onStreamingStatus: state => statuses.push(state),
+        onStreamProgress: state => progress.push(state),
         broadcastWs: frame => frames.push(frame) });
       await sendUserMessage(mode);
       const rows = entries.filter(entry => entry.mainAgent);
@@ -304,6 +315,18 @@ else if(mode==='exit')process.exitCode=7;
         assert.ok(errors[0].message.includes(content));
       }
       if (mode === 'recover') assert.ok(!JSON.stringify(rows[0].response).includes('Reconnecting'));
+      if (mode === 'warnings') {
+        const expected = ['Warning: ignored legacy config', 'Warning: hook timeout limited'];
+        assert.deepEqual(rows[0].response.body.content.slice(0, -1).map(block => block.text), expected);
+        assert.ok(progress.length > 0);
+        for (const state of progress) {
+          assert.deepEqual(state.content.filter(block => block.text?.startsWith('Warning:')).map(block => block.text), expected);
+        }
+        assert.equal(errors.length, 0, 'non-fatal diagnostics cannot become query failures');
+        await sendUserMessage(mode);
+        assert.deepEqual(entries.at(-1).response.body.content.slice(0, -1).map(block => block.text), expected,
+          'each turn retains its own diagnostics');
+      }
       if (mode === 'partial-eof') {
         const partial = rows[0].body.input.find(message => message.role === 'assistant'
           && message.content.some(block => block.text === 'partial answer before exit'));

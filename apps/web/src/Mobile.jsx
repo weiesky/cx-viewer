@@ -6,7 +6,7 @@ import { isIOS, isPad, setViewMode } from './env';
 import { isMainAgent } from "@cxv/core/contentFilter";
 import { sortSkillsDefault } from './utils/skillsParser';
 import { handleSkillToggle, handleSkillDelete } from './utils/skillModalController';
-import { getDisplayedSessionModelName, computeContextPercent, sumUsageContextTokens } from './utils/helpers';
+import { getDisplayedSessionModelName, computeContextPercent, contextUsageForView, sumUsageContextTokens } from './utils/helpers';
 import { getLatestSessionByActivity } from './utils/sessionManager';
 import { contextSeverityColor } from './utils/formatters';
 import { PLAN_AUTO_APPROVE_OPTIONS, autoApproveSelectOptions, askAutoAnswerSelectOptions, askAutoAnswerUiValue, askAutoAnswerPrefValue } from './utils/autoApproveOptions';
@@ -455,15 +455,13 @@ class Mobile extends AppBase {
         for (let i = filteredRequests.length - 1; i >= 0; i--) {
           if (isMainAgent(filteredRequests[i]) && filteredRequests[i].response?.body?.usage) {
             lastMainAgent = filteredRequests[i];
-            const u = lastMainAgent.response.body.usage;
-            // 原始占用比口径(对齐 /context):分子含末轮 output,与桌面端 AppHeader 同源
-            mobileContextTokens = sumUsageContextTokens(u);
             break;
           }
         }
       }
       // Native per-turn window math shared with the desktop header via
       // utils/helpers.computeContextPercent.
+      mobileContextTokens = sumUsageContextTokens(contextUsageForView({ contextWindow, lastMainAgent }));
       mobileContextPercent = computeContextPercent({
         contextWindow,
         lastMainAgent,

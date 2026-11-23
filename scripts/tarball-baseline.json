@@ -498,6 +498,7 @@
   "lib/sdk-appserver-agents.js",
   "lib/sdk-appserver-approvals.js",
   "lib/sdk-appserver-transport.js",
+  "lib/sdk-exec-context.js",
   "lib/sdk-exec-launcher.sh",
   "lib/sdk-exec-runner.mjs",
   "lib/sdk-exec-transport.js",

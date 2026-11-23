@@ -31,6 +31,7 @@ export {
 // 保证 native 窗口、百分比和 usage 分子与服务端 SSE 同源。
 export {
   nativeContextWindow,
+  contextUsageForView,
   computeContextPercent,
   formatContextUsage,
   getModelMaxTokens,

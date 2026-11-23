@@ -122,8 +122,17 @@ async function ready(cwd) {
 before(async () => {
   const codexPath = join(root, 'fake-codex.mjs');
   writeFileSync(codexPath, `#!/usr/bin/env node
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { createInterface } from 'node:readline';
+if(process.argv.includes('app-server')) {
+ for await(const line of createInterface({input:process.stdin})) {
+  const f=JSON.parse(line); if(f.id==null)continue;
+  const result=f.method==='thread/read'?{thread:{id:f.params.threadId,cwd:process.cwd(),path:join(process.env.CODEX_HOME,'sessions',f.params.threadId+'.jsonl')}}:{};
+  process.stdout.write(JSON.stringify({id:f.id,result})+'\\n');
+ }
+ process.exit(0);
+}
 let input = ''; for await (const chunk of process.stdin) input += chunk;
 const cwd = process.env.CXV_PROJECT_DIR;
 process.stdout.write(JSON.stringify({ type: 'item.updated', item: {
@@ -135,6 +144,13 @@ const resumeIndex = process.argv.indexOf('resume');
 const threadId = resumeIndex >= 0 ? process.argv[resumeIndex + 1]
   : existsSync(join(cwd, 'next-thread')) ? readFileSync(join(cwd, 'next-thread'), 'utf8')
   : 'thread_' + Buffer.from(cwd).toString('hex');
+const timestamp=new Date().toISOString(), total=cwd.includes('context-d')?171029:54985;
+mkdirSync(join(process.env.CODEX_HOME,'sessions'),{recursive:true});
+writeFileSync(join(process.env.CODEX_HOME,'sessions',threadId+'.jsonl'),[
+ {type:'session_meta',payload:{id:threadId,cwd,source:'exec'}},
+ {timestamp,type:'event_msg',payload:{type:'task_started',turn_id:'native-'+threadId}},
+ {timestamp,type:'event_msg',payload:{type:'token_count',info:{last_token_usage:{input_tokens:total-100,output_tokens:100,total_tokens:total},total_token_usage:{total_tokens:4140366},model_context_window:475000}}}
+].map(JSON.stringify).join('\\n')+'\\n');
 for (const event of [
  { type: 'thread.started', thread_id: threadId },
  { type: 'item.completed', item: { id: 'answer', type: 'agent_message', text: input } },
@@ -149,6 +165,7 @@ for (const event of [
   (await import('../interceptor.js')).initForWorkspace(a);
   const options = { codexPath, onEntry: server.pushSdkEntry,
     onStreamingStatus: server.setSdkStreamingState, onStreamProgress: server.sendSdkStreamProgress,
+    onContextUsage: server.setSdkContextUsage,
     onAgentLoopStart: server.broadcastAgentLoopStart, onAgentLoopEnd: server.broadcastAgentLoopEnd,
     broadcastWs: server.broadcastWsMessage };
   sdk.setSdkLaunchConfig(options);
@@ -841,5 +858,47 @@ send({ type: 'turn.completed', usage: {} });
     response?.end(); sdk.closeSdkSession(view); await pending?.catch(() => {});
     upstream.closeAllConnections(); await new Promise(resolve => upstream.close(resolve));
     if (previous === undefined) delete process.env.CXV_ORIGINAL_BASE_URL; else process.env.CXV_ORIGINAL_BASE_URL = previous;
+  }
+});
+
+test('owned SDK context reaches only its SSE view, replays on reconnect and survives canonical cold loading', async () => {
+  const { LogV2Writer } = await import('../lib/log-v2/writer.js');
+  const { resolveIngestionSourceIdentity } = await import('../lib/log-v2/identity.js');
+  const { readV2LogEntries } = await import('../lib/log-v2/materializer.js');
+  const { computeContextPercent, contextUsageForView, sumUsageContextTokens } = await import('@cxv/core/context-rules');
+  const views = [], channels = [], captured = [];
+  try {
+    for (const name of ['context-c', 'context-d']) {
+      const cwd = join(root, name); mkdirSync(cwd); writeFileSync(join(cwd, 'release'), 'yes');
+      const options = { codexPath: join(root, 'fake-codex.mjs'),
+        onEntry: entry => { captured.push(entry); server.pushSdkEntry(entry); },
+        onContextUsage: server.setSdkContextUsage };
+      views.push(sdk.initSdkSession(cwd, name, options));
+      channels.push(await openSse(views.at(-1).instanceKey));
+    }
+    await Promise.all(views.map(view => sdk.sendUserMessage('context fixture', view)));
+    for (let index = 0; index < views.length; index++) {
+      const view = views[index], total = index ? 171029 : 54985, percent = index ? 34 : 9;
+      const live = (await channels[index].receive('context_window', frame => frame.data.source === 'codex-rollout')).data;
+      assert.equal(live.instanceKey, view.instanceKey); assert.equal(live.current_usage.total_tokens, total);
+      const reconnected = await openSse(view.instanceKey);
+      const replay = (await reconnected.receive('context_window')).data;
+      assert.equal(replay.current_usage.total_tokens, total); assert.equal(replay.used_percentage, percent);
+      assert.equal(channels[index].messages.some(frame => frame.type === 'context_window'
+        && frame.data.instanceKey !== view.instanceKey), false);
+      const entry = captured.find(row => row.body.metadata.instance_key === view.instanceKey);
+      assert.equal(entry.response.body.usage.total_tokens, 2, 'accounting is not overwritten by context');
+      const logDir = join(root, 'context-cold-' + index);
+      const writer = LogV2Writer.open({ rootDir: logDir, canonicalCwd: view.cwd, projectId: 'context',
+        sessionId: entry.body.metadata.thread_id, rootThreadId: entry.body.metadata.thread_id, source: 'sdk', durability: 'buffered' });
+      writer.append(entry, resolveIngestionSourceIdentity(entry, { source: 'sdk' }));
+      const file = (await import('node:path')).relative(logDir, join(writer.sessionDir, 'timeline.jsonl'));
+      const cold = readV2LogEntries(logDir, file).find(row => row.mainAgent);
+      assert.equal(computeContextPercent({ lastMainAgent: cold }), percent);
+      assert.equal(sumUsageContextTokens(contextUsageForView({ lastMainAgent: cold })), total);
+    }
+  } finally {
+    for (const channel of channels) channel.close();
+    for (const view of views) sdk.closeSdkSession(view);
   }
 });

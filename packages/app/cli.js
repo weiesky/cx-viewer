@@ -765,6 +765,7 @@ async function runSdkMode(extraCodexArgs = [], cwd, transport = 'exec') {
     transport,
     onEntry: (entry) => serverMod.pushSdkEntry(entry),
     onStreamingStatus: (data) => serverMod.setSdkStreamingState(data),
+    onContextUsage: (data) => serverMod.setSdkContextUsage(data),
     onStreamProgress: (data) => serverMod.sendSdkStreamProgress(data),
     onAgentLoopStart: (data) => serverMod.broadcastAgentLoopStart(data),
     onAgentLoopEnd: (data) => serverMod.broadcastAgentLoopEnd(data),
