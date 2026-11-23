@@ -1,0 +1,46 @@
+cc-viewer-alignment/B11-candidate-matrix.md
+  s_d7280c55e1029f::t_46415fe35327e1 5,7,9,11-15,17,92-94,96-97
+tests/boundary-checker.test.js
+  s_d7280c55e1029f::t_7b7f4b99757adf 18,79,99,169,184-403
+  s_d7280c55e1029f::t_9d16e23e75222f 1-17,19-78,80-98,100-168,170-183
+scripts/tarball-baseline.json
+  s_d7280c55e1029f::t_20602cc5d6a57f 318
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_d7280c55e1029f::t_46415fe35327e1 185,187,205
+cc-viewer-alignment/B11-candidate-index.json
+  s_d7280c55e1029f::t_46415fe35327e1 5065,5070-5071,5120,5125-5126,5147,5152-5153,7679,7684-7685,8274,8279-8280,12620,12649-12650
+cc-viewer-alignment/README.md
+  s_d7280c55e1029f::t_46415fe35327e1 5,32
+cc-viewer-alignment/B11-implementation.md
+  s_d7280c55e1029f::t_197151bd0d7ee0 202-207
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_d7280c55e1029f::t_197151bd0d7ee0 16999-17002
+.github/workflows/ci.yml
+  s_d7280c55e1029f::t_83626c8d162e41 35
+AGENTS.md
+  s_d7280c55e1029f::t_70d036d7e4b48f 26
+docs/refactor/package-boundaries.zh.md
+  s_d7280c55e1029f::t_f5827d1aa1d3d0 1-25
+package.json
+  s_d7280c55e1029f::t_207439e4bbbaa5 28-30,49-51
+scripts/boundary-allowlist.json
+  s_d7280c55e1029f::t_a462ed9e3e2b98 1-100
+scripts/verify-boundaries.mjs
+  s_d7280c55e1029f::t_bfe228f9edb4ca 1-471
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "5892034f6211f1d8dc5292e05f2366f1e6dd1ccd",
+  "prompts": {},
+  "sessions": {
+    "s_d7280c55e1029f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a204a6-35f5-7a91-8f49-0742da1c75f9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
