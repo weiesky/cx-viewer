@@ -1,0 +1,25 @@
+AGENTS.md
+  s_d7280c55e1029f::t_474a66b812a215 26
+cc-viewer-alignment/B11-implementation.md
+  s_d7280c55e1029f::t_d465a93e16b9f8 78-83
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_d7280c55e1029f::t_640cf5bae22d27 16923-16926
+pnpm-workspace.yaml
+  s_d7280c55e1029f::t_f62c7da5dee3f7 14-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "2105b01e9bd2e2c0ae3b2e8c23318491ebaf2d76",
+  "prompts": {},
+  "sessions": {
+    "s_d7280c55e1029f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a204a6-35f5-7a91-8f49-0742da1c75f9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
