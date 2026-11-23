@@ -1,0 +1,32 @@
+packages/app/pty-manager.js
+  s_d7280c55e1029f::t_90dfd26969d0ef 369
+apps/electron/electron/main.js
+  s_d7280c55e1029f::t_90dfd26969d0ef 574
+apps/electron/electron/tab-bar.html
+  s_d7280c55e1029f::t_90dfd26969d0ef 494
+packages/app/tests/pty-manager.test.js
+  s_d7280c55e1029f::t_90dfd26969d0ef 32
+  s_d7280c55e1029f::t_7f9ceb1279587c 36-38
+AGENTS.md
+  s_d7280c55e1029f::t_415d6386c3c356 26
+cc-viewer-alignment/B10-implementation.md
+  s_d7280c55e1029f::t_c6a22345381e7e 124-128
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_d7280c55e1029f::t_e55e9efc68fc34 16835-16838
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "48833173fa8367e60c050f31478a147389c13cdd",
+  "prompts": {},
+  "sessions": {
+    "s_d7280c55e1029f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a204a6-35f5-7a91-8f49-0742da1c75f9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
