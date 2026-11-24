@@ -1,0 +1,38 @@
+AGENTS.md
+  s_d6042f5915fb8f::t_98af94c14d392c 26
+cc-viewer-alignment/SDK-context-jump-2026-11-24.md
+  s_d6042f5915fb8f::t_cecfbdf2a5124b 1-25,27-28
+  s_d6042f5915fb8f::t_7a724b2297b737 26
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_d6042f5915fb8f::t_98af94c14d392c 17037-17044
+packages/app/server.js
+  s_d6042f5915fb8f::t_71938c69ca9c5f 1576-1580
+packages/app/tests/sdk-workspace-connections.test.js
+  s_d6042f5915fb8f::t_9a50c3ce209c5a 889-893
+.changeset/sdk-context-snapshot-order.md
+  s_d6042f5915fb8f::t_cecfbdf2a5124b 1-5
+cc-viewer-alignment/SDK-context-jump-2026-11-24.json
+  s_d6042f5915fb8f::t_5bfb5e4465ef14 1-151
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_d6042f5915fb8f::t_1a5a8faaf12882 1228-1237,1248-1249,1251-1254,1256-1265,1267-1268
+  s_d6042f5915fb8f::t_c709625a7a72a1 1238-1247,1250,1255,1266
+apps/web/src/AppBase.jsx
+  s_d6042f5915fb8f::t_9a50c3ce209c5a 1821-1824
+  s_d6042f5915fb8f::t_71938c69ca9c5f 1794-1795,1797-1798,1802-1806,1811-1820,1825
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "e9f0017b27075bf8e2bf212e5ba6bde5614373fb",
+  "prompts": {},
+  "sessions": {
+    "s_d6042f5915fb8f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20b97-d6ee-7740-b019-fad55b2eaa2a",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
