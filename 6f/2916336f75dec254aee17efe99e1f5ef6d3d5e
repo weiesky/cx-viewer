@@ -1,0 +1,55 @@
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_ae2f56ae6ae11b::t_1fdb1f0536ef68 3-4
+cc-viewer-alignment/SDK-live-tools-CR-2026-11-24.md
+  s_ae2f56ae6ae11b::t_1fdb1f0536ef68 3-4
+cc-viewer-alignment/SDK-model-switch-2026-11-24.json
+  s_ae2f56ae6ae11b::t_1fdb1f0536ef68 390-398
+cc-viewer-alignment/PR15-delivery-2026-11-24.md
+  s_ae2f56ae6ae11b::t_1fdb1f0536ef68 1-52
+cc-viewer-alignment/SDK-context-jump-2026-11-24.json
+  s_ae2f56ae6ae11b::t_1fdb1f0536ef68 150-159
+cc-viewer-alignment/SDK-plan-usage-2026-11-24.md
+  s_ae2f56ae6ae11b::t_1fdb1f0536ef68 3-4
+cc-viewer-alignment/SDK-model-switch-2026-11-24.md
+  s_ae2f56ae6ae11b::t_1fdb1f0536ef68 3-4
+cc-viewer-alignment/SDK-plan-usage-2026-11-24.json
+  s_ae2f56ae6ae11b::t_1fdb1f0536ef68 93-102
+cc-viewer-alignment/SDK-live-tools-2026-11-24.md
+  s_ae2f56ae6ae11b::t_1fdb1f0536ef68 3-4
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_ae2f56ae6ae11b::t_1fdb1f0536ef68 3
+cc-viewer-alignment/PR15-delivery-2026-11-24.json
+  s_ae2f56ae6ae11b::t_1fdb1f0536ef68 1-257
+cc-viewer-alignment/B12-completion-matrix.md
+  s_ae2f56ae6ae11b::t_1fdb1f0536ef68 3-4
+cc-viewer-alignment/SDK-live-tools-CR-2026-11-24.json
+  s_ae2f56ae6ae11b::t_1fdb1f0536ef68 227-236
+cc-viewer-alignment/SDK-context-jump-2026-11-24.md
+  s_ae2f56ae6ae11b::t_1fdb1f0536ef68 3-4
+cc-viewer-alignment/SDK-live-tools-2026-11-24.json
+  s_ae2f56ae6ae11b::t_1fdb1f0536ef68 241-250
+AGENTS.md
+  s_ae2f56ae6ae11b::t_1fdb1f0536ef68 26,31
+cc-viewer-alignment/README.md
+  s_ae2f56ae6ae11b::t_1fdb1f0536ef68 5,7
+cc-viewer-alignment/B12-implementation.md
+  s_ae2f56ae6ae11b::t_1fdb1f0536ef68 3-4
+cc-viewer-alignment/B12-validation-2026-11-24.json
+  s_ae2f56ae6ae11b::t_1fdb1f0536ef68 147-155
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "6f2916336f75dec254aee17efe99e1f5ef6d3d5e",
+  "prompts": {},
+  "sessions": {
+    "s_ae2f56ae6ae11b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20bec-c330-7481-89ea-5a753a0e854e",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
