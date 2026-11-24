@@ -1,0 +1,37 @@
+AGENTS.md
+  s_ae2f56ae6ae11b::t_2765ed0b6c8a18 26,28
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_ae2f56ae6ae11b::t_2765ed0b6c8a18 3-4
+cc-viewer-alignment/upstream-delta-ledger-2026-11-24.md
+  s_ae2f56ae6ae11b::t_89ed54fe5a8c98 1-10,36-51,53-54
+  s_ae2f56ae6ae11b::t_dc7f20a66c9607 52
+  s_ae2f56ae6ae11b::t_0ffc562775b627 11-35
+cc-viewer-alignment/migration-code-first.md
+  s_ae2f56ae6ae11b::t_2765ed0b6c8a18 12
+cc-viewer-alignment/upstream-delta-plan-2026-11-24.md
+  s_ae2f56ae6ae11b::t_dc7f20a66c9607 116
+  s_ae2f56ae6ae11b::t_89ed54fe5a8c98 1-115,117-118
+cc-viewer-alignment/README.md
+  s_ae2f56ae6ae11b::t_2765ed0b6c8a18 5-7,36
+cc-viewer-alignment/upstream-delta-2026-11-24.json
+  s_ae2f56ae6ae11b::t_2158e24cc2658b 1-4032,4045
+  s_ae2f56ae6ae11b::t_dc7f20a66c9607 4033-4044
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_ae2f56ae6ae11b::t_2765ed0b6c8a18 3-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "5496ad5bf91c6275b0420dea1a86f6f897e58be5",
+  "prompts": {},
+  "sessions": {
+    "s_ae2f56ae6ae11b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20bec-c330-7481-89ea-5a753a0e854e",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
