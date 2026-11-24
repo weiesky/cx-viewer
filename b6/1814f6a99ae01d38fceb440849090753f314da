@@ -1,0 +1,39 @@
+packages/app/tests/sdk-plan-usage.test.js
+  s_8273a977056532::t_c5abef2f791ff8 57
+  s_8273a977056532::t_157dc11b73b9bf 1-56,58-112
+packages/app/lib/sdk-manager.js
+  s_8273a977056532::t_ada574ea7c8a71 31,155-158,403,502-525,1450-1451,1498
+.changeset/sdk-plan-usage.md
+  s_8273a977056532::t_ada574ea7c8a71 1-5
+scripts/tarball-baseline.json
+  s_8273a977056532::t_625ad3aa2d41d3 507
+packages/app/server.js
+  s_8273a977056532::t_ada574ea7c8a71 3005,3007-3016
+  s_8273a977056532::t_55d75140c0db19 3006
+packages/app/lib/sdk-plan-usage.js
+  s_8273a977056532::t_20367c838d07c8 1-59
+apps/web/src/components/dashboard/SdkPlanUsagePill.jsx
+  s_8273a977056532::t_ada574ea7c8a71 1-29
+apps/web/src/App.jsx
+  s_8273a977056532::t_76a782e4b4059e 507
+  s_8273a977056532::t_ada574ea7c8a71 16,508
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_8273a977056532::t_55d75140c0db19 62
+  s_8273a977056532::t_c3b0447aed713e 327-362
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "b61814f6a99ae01d38fceb440849090753f314da",
+  "prompts": {},
+  "sessions": {
+    "s_8273a977056532": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20bc9-b701-7621-ad49-28e61d1af7af",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
