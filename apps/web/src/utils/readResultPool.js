@@ -4,7 +4,7 @@
  * 1.6.237 后实测：同一 .jsx 文件被 87 个 SubAgent / 父 user message 各持一份完整副本（30MB+ 重复）。
  * 对 tool_result 的 resultText 做 content-addressed dedup，让相同内容共享同一字符串引用。
  * hash 仅用 length + 前 64 / 后 64 字符避免大字符串 O(n) hash；当 length > 512
- * 再加采中段 64 字符（共三段 192 字节），令仅中段不同的长串也能区分；碰撞概率极低。
+ * 再加采中段 64 字符（共三段 192 字节）。签名只定位候选，完整字符串相等才复用。
  *
  * 抽到独立模块（无外部依赖）便于 node --test 直接 import，避免被
  * toolResultBuilder.js 的传递依赖（./helpers 无 .js 后缀）污染。
@@ -22,7 +22,7 @@ let _poolEvictions = 0;
 // sig 增加 mid-slice（当 length > 512）。input raw payload 的 tool_result block.content
 // 也接入此 pool（含 shell/log 类
 // 长度+前后缀重合的结构化输出），暴露面变大。length+first 64+last 64 在该场景对碰撞抗性
-// 不足，加 mid-64 后要求"长度+三段共 192 字节"全匹配才视为同串。
+// 不足，加 mid-64 缩小候选范围；命中后仍比较完整内容，避免过程预览污染正式结果。
 function _readResultSig(s) {
   if (s.length > _SIG_MID_THRESHOLD) {
     const midIdx = Math.floor(s.length / 2);
@@ -42,7 +42,7 @@ export function internReadResult(s) {
   if (typeof s !== 'string' || s.length < _MIN_DEDUP_LEN) return s;
   const sig = _readResultSig(s);
   const pooled = _readResultPool.get(sig);
-  if (pooled !== undefined) return pooled;
+  if (pooled === s) return pooled;
   if (_readResultPool.size >= _MAX_READ_POOL_SIZE) {
     _readResultPool.delete(_readResultPool.keys().next().value);
     _poolEvictions++;
@@ -94,7 +94,7 @@ export function internToolResultIfPooled(s) {
   if (typeof s !== 'string' || s.length < _MIN_DEDUP_LEN) return null;
   const sig = _readResultSig(s);
   const pooled = _readResultPool.get(sig);
-  if (pooled !== undefined) return pooled;
+  if (pooled === s) return pooled;
   if (_readResultPool.size >= _MAX_READ_POOL_SIZE) {
     _readResultPool.delete(_readResultPool.keys().next().value);
     _poolEvictions++;
