@@ -90,7 +90,9 @@ export async function downloadRelease({ release, directory, fetchImpl = fetch, o
     output = handle.createWriteStream();
     output.on('error', (err) => { outputError = err; });
     const streamDone = finishedImpl(output).catch((err) => { outputError ??= err; });
-    const response = await fetchImpl(url, { signal: controller.signal, redirect: 'error' });
+    // Registry tarballs may redirect to a CDN; the final bytes must still pass
+    // the registry digest check below before an update can be staged.
+    const response = await fetchImpl(url, { signal: controller.signal, redirect: 'follow' });
     if (!response.ok || !response.body) throw new Error(`Download failed: HTTP ${response.status}`);
     const total = Number(response.headers.get('content-length')) || null;
     let downloaded = 0;
