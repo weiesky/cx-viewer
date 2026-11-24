@@ -1,6 +1,19 @@
 // 客户端专用的i18n文件
 
 const i18nData = {
+  "ui.sdkModels.select": {"zh": "选择模型", "en": "Select model", "zh-TW": "选择模型"},
+  "ui.sdkModels.effort": {"zh": "思考强度", "en": "Reasoning effort", "zh-TW": "思考强度"},
+  "ui.sdkModels.busy": {"zh": "当前回复或待发队列结束后可切换", "en": "Available after the current reply and queue finish", "zh-TW": "当前回复或待发队列结束后可切换"},
+  "ui.sdkModels.retry": {"zh": "重试", "en": "Retry", "zh-TW": "重试"},
+  "ui.sdkModels.effort.none": {"zh": "无", "en": "None", "zh-TW": "无"},
+  "ui.sdkModels.effort.minimal": {"zh": "最低", "en": "Minimal", "zh-TW": "最低"},
+  "ui.sdkModels.effort.low": {"zh": "低", "en": "Low", "zh-TW": "低"},
+  "ui.sdkModels.effort.medium": {"zh": "中", "en": "Medium", "zh-TW": "中"},
+  "ui.sdkModels.effort.high": {"zh": "高", "en": "High", "zh-TW": "高"},
+  "ui.sdkModels.effort.xhigh": {"zh": "很高", "en": "Extra high", "zh-TW": "很高"},
+  "ui.sdkModels.effort.max": {"zh": "最高", "en": "Max", "zh-TW": "最高"},
+  "ui.sdkModels.effort.ultra": {"zh": "极高", "en": "Ultra", "zh-TW": "极高"},
+
   "ui.im.stopConfirm": { "zh": "确认停止？将停止该平台的 IM 服务，重启后不再自动启动。", "en": "Stop? This stops the platform's IM service and it won't auto-start on next launch.", "zh-TW": "確認停止？將停止該平台的 IM 服務，重啟後不再自動啟動。", "ko": "중지하시겠습니까? 이 플랫폼의 IM 서비스가 중지되며, 재시작 후 자동으로 시작되지 않습니다.", "ja": "停止しますか？このプラットフォームの IM サービスを停止し、次回起動時に自動開始されません。", "de": "Stoppen? Der IM-Dienst dieser Plattform wird gestoppt und beim nächsten Start nicht automatisch gestartet.", "es": "¿Detener? Se detendrá el servicio IM de esta plataforma y no se iniciará automáticamente en el próximo arranque.", "fr": "Arrêter ? Le service IM de cette plateforme sera arrêté et ne redémarrera pas automatiquement au prochain lancement.", "it": "Arrestare? Il servizio IM di questa piattaforma verrà arrestato e non si avvierà automaticamente al prossimo avvio.", "da": "Stop? Platformens IM-tjeneste stoppes og starter ikke automatisk ved næste opstart.", "pl": "Zatrzymać? Usługa IM tej platformy zostanie zatrzymana i nie uruchomi się automatycznie przy następnym starcie.", "ru": "Остановить? IM-сервис этой платформы будет остановлен и не запустится автоматически при следующем запуске.", "ar": "إيقاف؟ سيتم إيقاف خدمة IM لهذه المنصة ولن تبدأ تلقائيًا عند التشغيل التالي.", "no": "Stopp? Plattformens IM-tjeneste stoppes og starter ikke automatisk ved neste oppstart.", "pt-BR": "Parar? O serviço IM desta plataforma será interrompido e não iniciará automaticamente na próxima inicialização.", "th": "หยุด? บริการ IM ของแพลตฟอร์มนี้จะหยุดและจะไม่เริ่มอัตโนมัติในการเปิดครั้งถัดไป", "tr": "Durdurulsun mu? Bu platformun IM hizmeti durdurulur ve bir sonraki başlatmada otomatik başlamaz.", "uk": "Зупинити? IM-сервіс цієї платформи буде зупинено і не запуститься автоматично при наступному запуску." },
   "ui.im.stopFailed": { "zh": "停止失败", "en": "Stop failed", "zh-TW": "停止失敗", "ko": "중지 실패", "ja": "停止に失敗しました", "de": "Stoppen fehlgeschlagen", "es": "Error al detener", "fr": "Échec de l'arrêt", "it": "Arresto non riuscito", "da": "Stop mislykkedes", "pl": "Zatrzymanie nie powiodło się", "ru": "Не удалось остановить", "ar": "فشل الإيقاف", "no": "Stopp mislyktes", "pt-BR": "Falha ao parar", "th": "หยุดไม่สำเร็จ", "tr": "Durdurma başarısız", "uk": "Не вдалося зупинити" },
   "ui.im.statusReconnecting": { "zh": "重连中…", "en": "Reconnecting…", "zh-TW": "重新連線中…", "ko": "재연결 중…", "ja": "再接続中…", "de": "Verbinde erneut…", "es": "Reconectando…", "fr": "Reconnexion…", "it": "Riconnessione…", "da": "Genopretter forbindelse…", "pl": "Ponowne łączenie…", "ru": "Переподключение…", "ar": "جارٍ إعادة الاتصال…", "no": "Kobler til på nytt…", "pt-BR": "Reconectando…", "th": "กำลังเชื่อมต่อใหม่…", "tr": "Yeniden bağlanılıyor…", "uk": "Повторне підключення…" },

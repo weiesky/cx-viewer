@@ -503,6 +503,7 @@
   "lib/sdk-exec-runner.mjs",
   "lib/sdk-exec-transport.js",
   "lib/sdk-manager.js",
+  "lib/sdk-model-catalog.js",
   "lib/sdk-resume-history.js",
   "lib/search-candidates.js",
   "lib/search-worker.js",

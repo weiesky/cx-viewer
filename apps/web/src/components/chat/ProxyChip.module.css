@@ -25,8 +25,7 @@
   border-color: var(--text-disabled);
 }
 
-/* SDK-mode launch-model chip: same pill geometry as .proxyChip (it fills the same slot as a
-   hot-switch fallback) but read-only — no pointer cursor / hover affordance. */
+/* Preserve the original SDK pill geometry in its existing composer slot. */
 .sdkChip {
   border-radius: 12px;
   background: var(--border-secondary);
@@ -40,3 +39,13 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.sdkChipInteractive { cursor: pointer; }
+.sdkChipInteractive:hover, .sdkChipInteractive:focus-visible {
+  color: var(--text-secondary);
+  border-color: var(--text-disabled);
+}
+.modelPicker { width: min(280px, calc(100vw - 64px)); }
+.modelSelect { width: 100%; }
+.effortControl { margin: 12px 8px 0; font-size: 12px; }
+.modelHint { margin-top: 8px; color: var(--text-tertiary); font-size: 12px; }

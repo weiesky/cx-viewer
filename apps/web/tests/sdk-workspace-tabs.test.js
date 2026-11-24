@@ -58,6 +58,7 @@ export { default as AskQuestionForm } from './src/components/chat/AskQuestionFor
 export { default as PreferencesForm } from './src/components/settings/PreferencesForm.jsx';
 export { default as DetailPanel } from './src/components/dashboard/DetailPanel.jsx';
 export { default as ContextTab } from './src/components/dashboard/ContextTab.jsx';
+export { default as SdkModelPicker } from './src/components/chat/SdkModelPicker.jsx';
 export { default as ProxyChip } from './src/components/chat/ProxyChip.jsx';
 export { default as ProxyModal } from './src/components/settings/ProxyModal.jsx';
 export { default as PluginPanelModal } from './src/components/plugins/PluginPanelModal.jsx';
@@ -1224,7 +1225,46 @@ test('SDK model snapshot survives idle/reconnect, rejects a sibling or retired s
   assert.equal(app.state.sdkModel, null);
 });
 
-test('final input-bar chip prefers the active profile, stays read-only for SDK model, and uses existing modal callbacks', t => {
+test('native model picker handles keyboard opening, busy gating, errors and stale workspace responses', async t => {
+  const f = fixture(t), { SdkModelPicker } = require(output), sent = [];
+  const data = { instanceKey: 'a', revision: '1:0', model: 'alpha', reasoningEffort: 'low', busy: false,
+    models: [{ model: 'alpha', displayName: 'Alpha', supportedReasoningEfforts: [{ reasoningEffort: 'low' }, { reasoningEffort: 'ultra' }] },
+      { model: 'beta', displayName: 'Beta', supportedReasoningEfforts: [{ reasoningEffort: 'medium' }] }] };
+  let respond = async () => ({ ok: true, json: async () => data });
+  t.mock.method(globalThis, 'fetch', async (url, options) => { sent.push({ url, options }); return respond(); });
+  const picker = new SdkModelPicker({ sdkModel: 'alpha', reasoningEffort: 'low', busy: false });
+  picker.setState = patch => Object.assign(picker.state, typeof patch === 'function' ? patch(picker.state) : patch);
+  picker.componentDidMount(); t.after(() => picker.componentWillUnmount());
+  const key = f.event(); key.key = 'Enter'; picker.render().props.children.props.onKeyDown(key);
+  await f.tick(); assert.equal(picker.state.open, true); assert.equal(picker.state.data.model, 'alpha');
+  assert.equal(picker.render().props.children.props.role, 'button');
+  const content = picker.render().props.content;
+  const select = content.props.children[0].props.children[0];
+  assert.deepEqual(select.props.options.map(o => o.value), ['alpha', 'beta']);
+  picker.props = { ...picker.props, busy: true }; picker.select('beta');
+  assert.equal(sent.length, 1, 'busy input cannot submit a switch');
+  picker.props = { ...picker.props, busy: false };
+  respond = async () => ({ ok: false, json: async () => ({ error: 'stale selection' }) });
+  picker.select('beta'); await f.tick();
+  assert.equal(picker.state.error, 'stale selection'); assert.equal(picker.state.data.model, 'alpha');
+  assert.deepEqual(JSON.parse(sent.at(-1).options.body), { instanceKey: 'a', model: 'beta', revision: '1:0' });
+  respond = () => new Promise(resolve => { respond.release = resolve; });
+  const pending = picker.load(); window.location.search = '?instance=b';
+  respond.release({ ok: true, json: async () => ({ ...data, model: 'wrong-workspace' }) });
+  await pending; assert.equal(picker.state.data.model, 'alpha', 'late response does not alter another view');
+});
+
+test('model picker reflects model/effort changes received from another client while closed', t => {
+  fixture(t); const { SdkModelPicker } = require(output);
+  const picker = new SdkModelPicker({ sdkModel: 'alpha', reasoningEffort: 'low' });
+  picker.state.data = { model: 'alpha', reasoningEffort: 'low' };
+  picker.setState = patch => Object.assign(picker.state, typeof patch === 'function' ? patch(picker.state) : patch);
+  const previous = picker.props; picker.props = { sdkModel: 'beta', reasoningEffort: 'high' };
+  picker.componentDidUpdate(previous);
+  assert.equal(picker.state.data.model, 'beta'); assert.equal(picker.state.data.reasoningEffort, 'high');
+});
+
+test('final input-bar chip prefers the active profile, opens the native SDK model picker, and uses existing modal callbacks', t => {
   const f = fixture(t), React = require('react');
   const chat = new f.ChatView({ cliMode: true, sdkMode: true, terminalVisible: true,
     mainAgentSessions: [], requests: [], sdkModel: 'fixture-A', activeProxyId: 'max',
@@ -1240,9 +1280,8 @@ test('final input-bar chip prefers the active profile, stays read-only for SDK m
   };
   const input = () => find(chat.render(), node => node.type?.name === 'ChatInputBar');
   const sdk = f.ProxyChip(input().props.proxyChip.props);
-  assert.equal(sdk.props.children, 'fixture-A');
-  assert.equal(sdk.props.onClick, undefined);
-  assert.equal(sdk.props.role, undefined);
+  assert.equal(sdk.type.name, 'SdkModelPicker');
+  assert.equal(sdk.props.sdkModel, 'fixture-A');
   const changed = { ...chat.props, activeProxyId: 'fixture' };
   assert.equal(chat.shouldComponentUpdate(changed, chat.state), true);
   chat.props = changed;
@@ -1259,7 +1298,7 @@ test('final input-bar chip prefers the active profile, stays read-only for SDK m
   delete window.tabBridge;
   chat.props = { ...chat.props, isLocalLog: true };
   assert.equal(input().props.proxyChip, null, 'history cannot expose a live model');
-  assert.equal(f.ProxyChip({ sdkMode: true, sdkModel: null, activeProxyId: 'max' }), null);
+  assert.equal(f.ProxyChip({ sdkMode: true, sdkModel: null, activeProxyId: 'max' }).type.name, 'SdkModelPicker');
 });
 
 

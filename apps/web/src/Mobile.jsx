@@ -767,7 +767,7 @@ class Mobile extends AppBase {
                     sdkMode={this.state.sdkMode}
                     ptyQueueAvailable={!mobileIsLocalLog && this.state.ptyQueueAvailable}
                     sdkResumeId={this.state.sdkResumeId}
-                    sdkModel={this.state.sdkModel}
+                    sdkModel={this.state.sdkModel} sdkReasoningEffort={this.state.sdkReasoningEffort}
                     proxyProfiles={this.state.proxyProfiles}
                     activeProxyId={this.state.activeProxyId} proxyRoles={this.state.proxyRoles} proxyOfficialDefault={this.state.proxyOfficialDefault} proxyRoleRouting={this.state.proxyRoleRouting}
                     defaultConfig={this.state.defaultConfig}

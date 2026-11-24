@@ -779,6 +779,7 @@ class ChatView extends React.Component {
       nextProps.sdkMode !== this.props.sdkMode ||
       nextProps.sdkResumeId !== this.props.sdkResumeId ||
       nextProps.sdkModel !== this.props.sdkModel ||
+      nextProps.sdkReasoningEffort !== this.props.sdkReasoningEffort ||
       nextProps.proxyProfiles !== this.props.proxyProfiles ||
       nextProps.activeProxyId !== this.props.activeProxyId ||
       nextProps.proxyRoles !== this.props.proxyRoles ||
@@ -4548,6 +4549,8 @@ class ChatView extends React.Component {
         activeProxyId={this.props.activeProxyId} proxyRoles={this.props.proxyRoles} proxyOfficialDefault={this.props.proxyOfficialDefault} proxyRoleRouting={this.props.proxyRoleRouting}
         sdkMode={this.props.sdkMode}
         sdkModel={this.props.sdkModel}
+        sdkReasoningEffort={this.props.sdkReasoningEffort}
+        sdkBusy={this.props.isStreaming || this.state.sdkQueuedInputs.length > 0}
         onOpenProxyModal={() => this.setState({ proxyModalVisible: true })}
       />
     ) : null;

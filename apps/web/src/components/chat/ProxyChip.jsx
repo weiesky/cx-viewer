@@ -5,6 +5,7 @@ import { SwapOutlined } from '@ant-design/icons';
 import { t } from '../../i18n';
 import { shouldRenderSdkModelChip } from '../../utils/sdkModelChip';
 import styles from './ProxyChip.module.css';
+import SdkModelPicker from './SdkModelPicker';
 
 /**
  * Proxy hot-switch chip, rendered in the chat input bar (right of the Enter hint).
@@ -14,7 +15,7 @@ import styles from './ProxyChip.module.css';
  * `onOpenProxyModal` so the owning ChatView can mount the ProxyModal next to the input bar.
  *
  * Visibility follows the upstream main/role assignment rules; in SDK mode
- * only, a read-only launch-model chip fills the slot (shouldRenderSdkModelChip). Returns
+ * only, the native model picker fills the slot (shouldRenderSdkModelChip). Returns
  * null when neither applies (official Default, or non-SDK PTY with no profile).
  */
 export default function ProxyChip({
@@ -25,6 +26,8 @@ export default function ProxyChip({
   proxyRoleRouting,
   sdkMode,
   sdkModel,
+  sdkReasoningEffort,
+  sdkBusy,
   onOpenProxyModal,
 }) {
   const { visible: proxyChipVisible, mainLabel, title } = getProxyChipView({
@@ -32,13 +35,10 @@ export default function ProxyChip({
   });
 
   if (!proxyChipVisible) {
-    // SDK launch-model chip only fills this slot when the proxy chip renders nothing
-    // (official Default / dormant). Read-only — unrelated to the proxy editor.
+    // Explicit proxy rewrites retain their editor; native selection fills Default.
     if (!shouldRenderSdkModelChip({ sdkMode, sdkModel, proxyChipVisible })) return null;
     return (
-      <Tag className={styles.sdkChip} title={t('ui.sdkModel', { model: sdkModel })}>
-        {sdkModel}
-      </Tag>
+      <SdkModelPicker sdkModel={sdkModel} reasoningEffort={sdkReasoningEffort} busy={sdkBusy} />
     );
   }
 

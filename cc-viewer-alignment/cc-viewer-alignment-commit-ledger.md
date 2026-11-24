@@ -17026,3 +17026,11 @@ f9467bfc83到本笔 `refactor(server): group native IM approval and proxy helper
 既有201候选的E1–E34上游/本地映射保留；本笔为交付与CI后续，不新增上游候选。原始34笔末端64288c8已备份及bundle验证，首轮精确整合d09bcdd保持原tree。实际远端CI的18条路径修正折入最终单笔539822e（锁释放/零链接/不可变库替换严格重读、目标路径、detached基线与进程/浏览器/stdout夹具），原始与最终tree不同；最终远端/本地/merge tree一致。
 
 [PR #13](https://github.com/weiesky/cx-viewer/pull/13)在最终10/10检查成功后于2026-11-23T07:19:32Z合并main 3a4bf40，之后才更新本进度。最终2823/2823、0skip/build/pack626/601源码门，新生产1237及825包/211Web字节、stage825/395链接/独立启动、实际Node20.12启动+93通过；211Web与E34字节相同，沿用14配置30图。Ubuntu Node20/22/24全套和macOS/Windows定向合同已远端通过，不抵扣Windows完整运行、Electron GUI/签名/公证及真实外部环境余项。7008/PID97674与其他用户实例未重启，版本仍1.1.20、未发布。见[整合记录](./B11-consolidation-and-merge-2026-11-23.md)、[完整原始映射](./B11-original-commits-2026-11-23.json)和[最终JSON](./B11-validation-2026-11-23.json)。
+
+
+## 2026-11-24：B11后SDK原生模型切换（用户新要求）
+
+- 上游原入口依据：`133bc219df78920cdc3a5cb56f48cbe067e467e5`、`c66b5fe2ed6e855f0610127eba3de96ac821adea` 实际diff/ProxyChip组件与CSS；固定快照仍为`74cd752d99caf122e750216d2af3bb9f467c4de1`。原基线为只读模型fallback，本轮按用户三张截图要求扩展，不新增B0核销。
+- 本地实现：分支`feature/sdk-model-switch-2026-11-24`的独立实现提交，主题`feat(sdk): switch native models and reasoning effort in the composer`。保留原slot/几何/端门控/显式代理profile编辑器，新增原生目录读取、exec同线程resumeThread/AppServer turn model/effort、精确实例与revision校验、忙碌拒绝、SSE重连回放。
+- 验证：最终2842/2842、0skip、build、533边界/603源码/628稳定tarball通过；真实Codex0.169+SDK0.142.5+Chrome，Astra/high→Sol/high实际loopback请求、同会话历史与刷新通过。初跑PID0故障和探针失败保留，未改既有测试掩盖失败。
+- 当前包为B11后SDK维护；下一步正常重启后的活动实例验收。未重启用户实例/未改旧归档/未发布npm；Windows/Electron/WebKit/真机未验。完整证据见[实施](./SDK-model-switch-2026-11-24.md)与[回执](./SDK-model-switch-2026-11-24.json)。

@@ -135,7 +135,7 @@ class AppBase extends React.Component {
       cliMode: false,
       sdkMode: false,
       ptyMode: false, ptyQueueAvailable: false,
-      sdkModel: null,
+      sdkModel: null, sdkReasoningEffort: null,
       sdkResumeId: null,
       workspaceMode: false,
       newProjectOpen: false,
@@ -1763,7 +1763,7 @@ class AppBase extends React.Component {
             isStreaming: false,
             // workspace 切换 = cwd 切换 → codex 的 lastModelUsage 也要重查；
             // 后端在 workspace_started 一并塞了新 cwd 对应的 hint，没有就清空。
-            sdkModel: null,
+            sdkModel: null, sdkReasoningEffort: null,
             codexProjectModel: (typeof data.codexProjectModel === 'string' && data.codexProjectModel) ? data.codexProjectModel : null,
           });
           if (isMobile) clearEntries();
@@ -1780,7 +1780,7 @@ class AppBase extends React.Component {
         this._currentSessionId = null; // 同 workspace_started：清旧会话 id，避免 lazy-lock 误锁
         this.setState({
           workspaceMode: true,
-          sdkModel: null,
+          sdkModel: null, sdkReasoningEffort: null,
           requests: [],
           mainAgentSessions: [],
           projectName: '',
@@ -1866,7 +1866,8 @@ class AppBase extends React.Component {
             if (voiceInstance && data.instanceKey !== voiceInstance) return;
             if (!this._isLocalLog) {
               const model = typeof data.model === 'string' ? data.model.trim() : '';
-              this.setState({ sdkModel: model && model.length <= 256 ? model : null });
+              this.setState({ sdkModel: model && model.length <= 256 ? model : null,
+                sdkReasoningEffort: typeof data.reasoningEffort === 'string' && data.reasoningEffort.length <= 64 ? data.reasoningEffort : null });
             }
           }
           if (data.active) {
@@ -2388,7 +2389,7 @@ class AppBase extends React.Component {
     // Keep the mounted chat and its unsent draft while replacing the archive.
     this.setState({ pinnedSessionTs: null, streamingLatest: null, isStreaming: false,
       contextWindow: null, contextBarLocked: false, contextBarOptimistic: false,
-      sdkModel: null, workspaceMode: false, cliMode: true, sdkMode: true, sdkResumeId: data.resumeId, viewMode: 'chat' }, () => this._resetV2Communication());
+      sdkModel: null, sdkReasoningEffort: null, workspaceMode: false, cliMode: true, sdkMode: true, sdkResumeId: data.resumeId, viewMode: 'chat' }, () => this._resetV2Communication());
   };
 
   handleWorkspaceLaunch = ({ projectName, sdkMode, ptyMode, instanceKey }) => {

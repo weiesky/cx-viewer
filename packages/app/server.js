@@ -2997,6 +2997,26 @@ async function handleViewerRequest(req, res) {
     return;
   }
 
+  if ((url === '/api/sdk-models' && method === 'GET') || (url === '/api/sdk-model' && method === 'POST')) {
+    try {
+      if (!isSdkMode || !requestSdkView?.instanceKey) throw Object.assign(new Error('SDK workspace is unavailable'), { status: 409 });
+      const anchor = { instanceKey: requestSdkView.instanceKey };
+      let result;
+      if (method === 'GET') result = await sdkManager.listSdkModels(anchor);
+      else {
+        const body = await readJsonBody(req, 4096);
+        if (!body || body.instanceKey !== anchor.instanceKey) {
+          throw Object.assign(new Error('Model selection belongs to a different workspace'), { status: 409, code: 'SDK_SCOPE_MISMATCH' });
+        }
+        result = await sdkManager.setSdkModel(body, anchor);
+      }
+      sendJson(res, 200, result);
+    } catch (error) {
+      sendJson(res, error.status || (error instanceof TypeError ? 400 : 502), { error: error.message, code: error.code });
+    }
+    return;
+  }
+
   if (url === '/api/sdk-mcp-server-status' && method === 'GET') {
     const result = isSdkMode && requestSdkView
       ? await sdkManager.fetchMcpStatus({ instanceKey: requestSdkView.instanceKey })
