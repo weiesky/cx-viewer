@@ -1,0 +1,228 @@
+{
+  "date": "2026-11-24",
+  "task": "Fix two CR findings in SDK live tool previews",
+  "baseCommit": "f805768",
+  "branch": "fix/sdk-live-tool-progress",
+  "fixes": [
+    {
+      "commit": "7af2d75",
+      "finding": "Sampled signature collisions reused stale progress/canonical text",
+      "resolution": "Both shared pool lookup paths compare complete strings before reuse",
+      "regression": {
+        "file": "apps/web/tests/tool-result-core.test.js",
+        "before": {
+          "passed": 5,
+          "failed": 1
+        },
+        "after": {
+          "passed": 6,
+          "failed": 0
+        },
+        "logs": [
+          "/tmp/cxv-live-cr-pool-red.log",
+          "/tmp/cxv-live-cr-pool.log"
+        ]
+      }
+    },
+    {
+      "commit": "5ab4adc",
+      "finding": "Long live output was clipped from the head by existing renderers",
+      "resolution": "Transient previewTail flag selects tail in full cards and compact popovers; canonical data and defaults remain intact",
+      "regression": {
+        "file": "apps/web/tests/sdk-workspace-tabs.test.js",
+        "red": "long live shell output: full shows the previous tail failed",
+        "after": {
+          "passed": 5,
+          "failed": 0
+        },
+        "logs": [
+          "/tmp/cxv-live-cr-tail-red.log",
+          "/tmp/cxv-live-cr-web-target.log"
+        ]
+      }
+    }
+  ],
+  "fullTests": {
+    "passed": 2868,
+    "failed": 0,
+    "skipped": 0,
+    "groups": [
+      9,
+      7,
+      28,
+      818,
+      1760,
+      246
+    ],
+    "exitCode": 0,
+    "log": "/tmp/cxv-live-cr-full.log"
+  },
+  "build": {
+    "passed": true,
+    "log": "/tmp/cxv-live-cr-build.log"
+  },
+  "boundaries": {
+    "files": 536,
+    "violations": 0
+  },
+  "sourcePaths": 605,
+  "stableTarballPaths": 630,
+  "tarballLog": "/tmp/cxv-live-cr-tarball.log",
+  "browser": {
+    "root": "/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-sdk-live-gui-nbNI49",
+    "port": 64725,
+    "results": [
+      {
+        "engine": "chromium",
+        "version": "159.0.8154.6",
+        "mode": "desktop",
+        "emulated": false,
+        "steps": 3,
+        "controlledExecProtocol": true,
+        "crFollowup": true,
+        "compact": false,
+        "longOutputTail": true,
+        "equalLengthUpdatesWithMatchingSampledSignature": true,
+        "actualSdkControlStreamV2AndBuiltUi": true,
+        "httpSseReplay": true,
+        "runningOutput": true,
+        "completedAndFailed": true,
+        "reloadMidCommand": true,
+        "canonicalReplacementWithoutDuplicates": true,
+        "stopViaWs": true,
+        "siblingIsolation": true,
+        "pageErrors": [],
+        "websocketPaths": [
+          "/ws/terminal",
+          "/ws/mux",
+          "/ws/terminal",
+          "/ws/mux",
+          "/ws/terminal",
+          "/ws/mux",
+          "/ws/terminal"
+        ]
+      },
+      {
+        "engine": "chromium",
+        "version": "159.0.8154.6",
+        "mode": "phone",
+        "emulated": true,
+        "steps": 3,
+        "controlledExecProtocol": true,
+        "crFollowup": true,
+        "compact": true,
+        "longOutputTail": true,
+        "equalLengthUpdatesWithMatchingSampledSignature": true,
+        "actualSdkControlStreamV2AndBuiltUi": true,
+        "httpSseReplay": true,
+        "runningOutput": true,
+        "completedAndFailed": true,
+        "reloadMidCommand": true,
+        "canonicalReplacementWithoutDuplicates": true,
+        "stopViaWs": true,
+        "siblingIsolation": true,
+        "pageErrors": [],
+        "websocketPaths": [
+          "/ws/terminal",
+          "/ws/mux",
+          "/ws/terminal",
+          "/ws/mux",
+          "/ws/terminal",
+          "/ws/mux",
+          "/ws/terminal"
+        ]
+      },
+      {
+        "engine": "webkit",
+        "version": "27.2",
+        "mode": "desktop",
+        "emulated": false,
+        "steps": 3,
+        "controlledExecProtocol": true,
+        "crFollowup": true,
+        "compact": false,
+        "longOutputTail": true,
+        "equalLengthUpdatesWithMatchingSampledSignature": true,
+        "actualSdkControlStreamV2AndBuiltUi": true,
+        "httpSseReplay": true,
+        "runningOutput": true,
+        "completedAndFailed": true,
+        "reloadMidCommand": true,
+        "canonicalReplacementWithoutDuplicates": true,
+        "stopViaWs": true,
+        "siblingIsolation": true,
+        "pageErrors": [],
+        "websocketPaths": [
+          "/ws/terminal",
+          "/ws/mux",
+          "/ws/terminal",
+          "/ws/mux",
+          "/ws/terminal",
+          "/ws/mux",
+          "/ws/terminal"
+        ]
+      },
+      {
+        "engine": "webkit",
+        "version": "27.2",
+        "mode": "phone",
+        "emulated": true,
+        "steps": 3,
+        "controlledExecProtocol": true,
+        "crFollowup": true,
+        "compact": true,
+        "longOutputTail": true,
+        "equalLengthUpdatesWithMatchingSampledSignature": true,
+        "actualSdkControlStreamV2AndBuiltUi": true,
+        "httpSseReplay": true,
+        "runningOutput": true,
+        "completedAndFailed": true,
+        "reloadMidCommand": true,
+        "canonicalReplacementWithoutDuplicates": true,
+        "stopViaWs": true,
+        "siblingIsolation": true,
+        "pageErrors": [],
+        "websocketPaths": [
+          "/ws/terminal",
+          "/ws/mux",
+          "/ws/terminal",
+          "/ws/mux",
+          "/ws/terminal",
+          "/ws/mux",
+          "/ws/terminal"
+        ]
+      }
+    ]
+  },
+  "guiLog": "/tmp/cxv-live-cr-gui.log",
+  "limitations": [
+    "Controlled exec protocol; actual built UI/SDK manager/server/V2 and browser control streams.",
+    "Phone viewports are emulated; Windows/Electron GUI/physical devices/active-user GUI not tested.",
+    "Prior native CLI evidence is unchanged; no native CLI/external model requests repeated this round.",
+    "Existing scroll containers and user scroll behavior retained; screenshots scroll to the retained tail."
+  ],
+  "runtime": {
+    "ownedGuiPort": 64725,
+    "ownedGuiPortClosed": true,
+    "userInstancesRestarted": false,
+    "userInstancesStopped": false,
+    "globalCodexConfigurationChanged": false,
+    "oldArchivesChanged": false,
+    "requiresNormalRestartAndPageRefresh": true
+  },
+  "delivery": {
+    "separateLocalFixCommits": true,
+    "pr": false,
+    "pushed": false,
+    "published": false,
+    "versionCommandRun": false,
+    "version": "1.1.20"
+  },
+  "alignment": {
+    "newClosure": false,
+    "B12": "complete",
+    "next": "B13",
+    "frozenUpstream": "d3c1f7f"
+  },
+  "retainedWarning": "Stats worker exited with code 1 on owned stopViewer shutdown."
+}
