@@ -224,5 +224,14 @@
     "next": "B13",
     "frozenUpstream": "d3c1f7f"
   },
-  "retainedWarning": "Stats worker exited with code 1 on owned stopViewer shutdown."
+  "retainedWarning": "Stats worker exited with code 1 on owned stopViewer shutdown.",
+  "githubDelivery": {
+    "pr": 15,
+    "url": "https://github.com/weiesky/cx-viewer/pull/15",
+    "mergedAt": "2026-11-24T07:33:56Z",
+    "mergeCommit": "8a63f943b2c78cbd0dcc3548523a6ee7e8c65e0d",
+    "verifiedHead": "394b974570ef21db2923a566dda10acc8ecf03d0",
+    "ciSuccessBeforeMerge": 10,
+    "record": "PR15-delivery-2026-11-24.json"
+  }
 }

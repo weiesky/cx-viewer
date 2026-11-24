@@ -1,5 +1,7 @@
 # B12 更新下载与重启交接
 
+交付更新：已于2026-11-24通过[PR #15](https://github.com/weiesky/cx-viewer/pull/15)合并main `8a63f94`，原实现提交保留，10/10远端CI成功；见[合并回执](./PR15-delivery-2026-11-24.md)。以下保留原实施/验收时点记录，当前GitHub交付状态以合并回执为准。
+
 2026-11-24启动，分支`alignment/b12-update-restart`，功能起点`4cb1a4c`；第二轮规划先独立提交`5496ad5`。固定上游`d3c1f7fbf47c0424226acbe064ab4135e7ebe3cd`，研究副本`/tmp/cxv-cc-viewer-delta-20261124`。本包只处理`06be1ce6`与`03aad20b`行为子项，不运行version、不更改上游发布号、不停止用户实例。
 
 ## E1：下载跟随重定向

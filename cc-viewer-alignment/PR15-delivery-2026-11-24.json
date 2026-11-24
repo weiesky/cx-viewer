@@ -1,0 +1,257 @@
+{
+  "pr": {
+    "baseRefName": "main",
+    "headRefOid": "394b974570ef21db2923a566dda10acc8ecf03d0",
+    "mergeCommit": {
+      "oid": "8a63f943b2c78cbd0dcc3548523a6ee7e8c65e0d"
+    },
+    "mergedAt": "2026-11-24T07:33:56Z",
+    "mergedBy": {
+      "id": "MDQ6VXNlcjMzNjU2NTA=",
+      "is_bot": false,
+      "login": "weiesky",
+      "name": "chao wang"
+    },
+    "number": 15,
+    "state": "MERGED",
+    "url": "https://github.com/weiesky/cx-viewer/pull/15"
+  },
+  "base": "9059a2812b20861fefd37d03afa06688f86e058f",
+  "head": "394b974570ef21db2923a566dda10acc8ecf03d0",
+  "mergedCommit": "8a63f943b2c78cbd0dcc3548523a6ee7e8c65e0d",
+  "tree": "e590a4c60ff66b5ac4927a6e47126752946f7b87",
+  "mergedTreeMatchesVerifiedHead": true,
+  "mergeParents": [
+    "9059a2812b20861fefd37d03afa06688f86e058f",
+    "394b974570ef21db2923a566dda10acc8ecf03d0"
+  ],
+  "preservesOriginalCommits": true,
+  "originalCommits": [
+    {
+      "hash": "8227874d9b686365322d6628682024f0389e8e73",
+      "tree": "ce29926394f727afb87c6f2f733152e44b03377c",
+      "parents": "9059a2812b20861fefd37d03afa06688f86e058f",
+      "subject": "feat(sdk): switch native models and reasoning effort in the composer"
+    },
+    {
+      "hash": "e9f0017b27075bf8e2bf212e5ba6bde5614373fb",
+      "tree": "c3b1640b4f008c700a8a5b75ca3653aed2c53474",
+      "parents": "8227874d9b686365322d6628682024f0389e8e73",
+      "subject": "fix(sdk): reject stale context snapshots and competing archive events"
+    },
+    {
+      "hash": "b61814f6a99ae01d38fceb440849090753f314da",
+      "tree": "1b54a10cd30976e1c4a53e74d87f4d42c9203182",
+      "parents": "e9f0017b27075bf8e2bf212e5ba6bde5614373fb",
+      "subject": "feat(sdk): show native plan usage in the footer"
+    },
+    {
+      "hash": "4cb1a4c9c0650114cf9c70571c4b2150bf062945",
+      "tree": "4a2851956109880050379c8fadb07190c6e8656a",
+      "parents": "b61814f6a99ae01d38fceb440849090753f314da",
+      "subject": "docs: record native SDK footer usage validation"
+    },
+    {
+      "hash": "5496ad5bf91c6275b0420dea1a86f6f897e58be5",
+      "tree": "6b7acbeb2896098483a47fdc18049cc7a83a6d24",
+      "parents": "4cb1a4c9c0650114cf9c70571c4b2150bf062945",
+      "subject": "docs(alignment): freeze second-round upstream delta and B12-B20 plan"
+    },
+    {
+      "hash": "9943faf81dbe470f6fbd6c02cc87980cb35faf92",
+      "tree": "1e6ed47e4dd5d80b87b098700447ba7d9f1b64f0",
+      "parents": "5496ad5bf91c6275b0420dea1a86f6f897e58be5",
+      "subject": "fix(updater): follow verified release tarball redirects"
+    },
+    {
+      "hash": "f014bf9a30de22ee5a259c72d727e001a0100e1b",
+      "tree": "82f09506b6d0cc0a645a73a02a71c2bb37b149eb",
+      "parents": "9943faf81dbe470f6fbd6c02cc87980cb35faf92",
+      "subject": "fix(updater): preserve access tokens through private restart handoffs"
+    },
+    {
+      "hash": "8c51a76ef5c0763915d63678b71bfb6be4c51d89",
+      "tree": "3be0523284a1945081893fe14fbb09bb7ac60b96",
+      "parents": "f014bf9a30de22ee5a259c72d727e001a0100e1b",
+      "subject": "docs(alignment): record B12 completion and real installed restart evidence"
+    },
+    {
+      "hash": "817e698cc6b1f9353de55e21c7b423ced9e2d0c4",
+      "tree": "a488e1dda4b09a0b12cb404737855c12b169366c",
+      "parents": "8c51a76ef5c0763915d63678b71bfb6be4c51d89",
+      "subject": "fix(sdk): show live shell progress before canonical conversation entries"
+    },
+    {
+      "hash": "f80576839a9668764c77d66d12da76ade63dca98",
+      "tree": "6da74f425b74ef399c3c3be486743ccfa649d7c3",
+      "parents": "817e698cc6b1f9353de55e21c7b423ced9e2d0c4",
+      "subject": "docs: record SDK live tool progress validation and handoff"
+    },
+    {
+      "hash": "7af2d75065e9449905e2d1c4acbc40278e8757c9",
+      "tree": "fac7ad386abc15bceb0770909ddb69ed1a0cc3fb",
+      "parents": "f80576839a9668764c77d66d12da76ade63dca98",
+      "subject": "fix(chat): verify exact tool result text before pool reuse"
+    },
+    {
+      "hash": "5ab4adc0f3fae6a87c8903a6e040473bb595a7f1",
+      "tree": "54d458b91ea0559ba244de40ce519a80880bd4e1",
+      "parents": "7af2d75065e9449905e2d1c4acbc40278e8757c9",
+      "subject": "fix(chat): retain the latest output in live tool previews"
+    },
+    {
+      "hash": "394b974570ef21db2923a566dda10acc8ecf03d0",
+      "tree": "e590a4c60ff66b5ac4927a6e47126752946f7b87",
+      "parents": "5ab4adc0f3fae6a87c8903a6e040473bb595a7f1",
+      "subject": "docs: close SDK live output review findings with validation"
+    }
+  ],
+  "checksBeforeMerge": [
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-24T07:32:58Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45348396023/job/138288490334",
+      "name": "test (20.x)",
+      "startedAt": "2026-11-24T07:29:36Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-24T07:32:00Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45348365461/job/138288385960",
+      "name": "test (20.x)",
+      "startedAt": "2026-11-24T07:29:21Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-24T07:32:41Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45348396023/job/138288490309",
+      "name": "test (22.x)",
+      "startedAt": "2026-11-24T07:29:36Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-24T07:32:06Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45348365461/job/138288386039",
+      "name": "test (22.x)",
+      "startedAt": "2026-11-24T07:29:21Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-24T07:32:05Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45348396023/job/138288490207",
+      "name": "test (24.x)",
+      "startedAt": "2026-11-24T07:29:36Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-24T07:32:22Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45348365461/job/138288386023",
+      "name": "test (24.x)",
+      "startedAt": "2026-11-24T07:29:21Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-24T07:30:16Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45348396023/job/138288490538",
+      "name": "platform-contracts (macos-latest)",
+      "startedAt": "2026-11-24T07:29:36Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-24T07:30:03Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45348365461/job/138288386115",
+      "name": "platform-contracts (macos-latest)",
+      "startedAt": "2026-11-24T07:29:21Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-24T07:30:29Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45348396023/job/138288490380",
+      "name": "platform-contracts (windows-latest)",
+      "startedAt": "2026-11-24T07:29:36Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-24T07:30:15Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/weiesky/cx-viewer/actions/runs/45348365461/job/138288385637",
+      "name": "platform-contracts (windows-latest)",
+      "startedAt": "2026-11-24T07:29:21Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    }
+  ],
+  "ciRuns": [
+    {
+      "id": 45348365461,
+      "event": "push",
+      "url": "https://github.com/weiesky/cx-viewer/actions/runs/45348365461"
+    },
+    {
+      "id": 45348396023,
+      "event": "pull_request",
+      "url": "https://github.com/weiesky/cx-viewer/actions/runs/45348396023"
+    }
+  ],
+  "localValidation": {
+    "tests": 2868,
+    "failed": 0,
+    "skipped": 0,
+    "build": true,
+    "boundaryFiles": 536,
+    "publishedSourcePaths": 605,
+    "stableTarballPaths": 630,
+    "changesetStatusPassed": true,
+    "reference": "SDK-live-tools-CR-2026-11-24.json"
+  },
+  "scope": "SDK model/context/plan usage, B12 download/restart fixes, live shell progress and two CR fixes; 13 original commits",
+  "deliveryMethod": "Merge commit with exact head guard; no history rewrite or admin override",
+  "postMergeDocumentation": "Updated only after the MERGED receipt; a separate documentation commit follows",
+  "runtime": {
+    "userInstancesRestarted": false,
+    "userInstancesStopped": false,
+    "globalCodexConfigurationChanged": false,
+    "existingArchivesChanged": false,
+    "requiresNormalBackendRestartAndRefresh": true
+  },
+  "release": {
+    "version": "1.1.20",
+    "versionCommandRun": false,
+    "tagCreated": false,
+    "npmPublished": false
+  },
+  "nextPackage": "B13",
+  "frozenUpstream": "d3c1f7f",
+  "limitations": [
+    "Platform contracts are not complete Windows runtime validation.",
+    "Active-user GUI, Electron GUI and physical devices remain unverified.",
+    "Prior B12/SDK installation and native CLI receipts retain their original scope and were not rerun during PR delivery."
+  ]
+}

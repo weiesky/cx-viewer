@@ -1,6 +1,6 @@
 # cc-viewer → cx-viewer 分批对齐规划
 
-当前进度：2026-11-24 B12已完成本地对齐与隔离验收：`06be1ce6 → 9943faf`下载重定向，`03aad20b → f014bf9`私有访问token交接及原生安全适配。全量2862/2862、0skip/build/536边界/605源码/630稳定tarball，新生产829全文件字节/82定向与真实SDK CLI自有prefix成功更新、损坏包恢复通过；见[B12矩阵](./B12-completion-matrix.md)、[实施](./B12-implementation.md)与[回执](./B12-validation-2026-11-24.json)。下一包B13；D1/D2沿既有选择，旧环境未验边界不核销。未PR/推送/发布/version或重启用户实例。 第二轮整体仍按[增量计划](./upstream-delta-plan-2026-11-24.md)逐笔推进；本页B0–B11保持旧快照核销范围。
+当前进度：2026-11-24 已通过[PR #15](https://github.com/weiesky/cx-viewer/pull/15)合并main `8a63f94`：SDK维护/B12/实时工具与CR两项修复共13笔原提交保留，10/10 CI成功，merge tree与验证head一致；见[合并回执](./PR15-delivery-2026-11-24.md)。B12已完成本地对齐与隔离验收：`06be1ce6 → 9943faf`下载重定向，`03aad20b → f014bf9`私有访问token交接及原生安全适配。全量2862/2862、0skip/build/536边界/605源码/630稳定tarball，新生产829全文件字节/82定向与真实SDK CLI自有prefix成功更新、损坏包恢复通过；见[B12矩阵](./B12-completion-matrix.md)、[实施](./B12-implementation.md)与[回执](./B12-validation-2026-11-24.json)。下一包B13；D1/D2沿既有选择，旧环境未验边界不核销。已PR合并；未发布/version或重启用户实例。 第二轮整体仍按[增量计划](./upstream-delta-plan-2026-11-24.md)逐笔推进；本页B0–B11保持旧快照核销范围。
 
 以下为第一轮固定范围与交付记录。
 

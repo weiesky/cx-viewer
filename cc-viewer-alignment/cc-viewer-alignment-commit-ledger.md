@@ -1,5 +1,7 @@
 # cc-viewer 逐提交对齐台账
 
+2026-11-24 GitHub交付：用户明确授权PR到main并自行合并。[PR #15](https://github.com/weiesky/cx-viewer/pull/15)已于2026-11-24T07:33:56Z合并main `8a63f94`；13笔提交原样保留，精确head `394b974`，merge父提交/文件树与预期一致。push/PR两轮Node20/22/24全套及macOS/Windows合同10/10 SUCCESS，未admin override；本地main已同步，合并后更新文档。包括SDK模型/上下文/套餐、B12及实时工具/CR修复，原逐笔上游映射保持。未发布/version/tag或重启用户实例，下一包B13；见[交付记录](./PR15-delivery-2026-11-24.md)与[机器回执](./PR15-delivery-2026-11-24.json)。
+
 2026-11-24 SDK实时工具CR两项P2修复（独立维护，非迁移）：`7af2d75` 两个共享字符串池入口增加完整相等校验，防等长签名碰撞导致预览/正式结果错值；`5ab4adc` 仅过程层标记previewTail，完整卡片/简洁弹层保留最新尾部，正式结果默认方式保持。先红后绿回归及全量2868/2868、0skip/build/536边界/605源码/630稳定包门通过，双浏览器4场12图覆盖长输出/等长更新及重连/替换/Stop/隔离。未PR/推送/发布/version或重启用户实例，旧归档及全局配置未改。原817e698/f805768与B12核销保持、下一包B13；见[修复验收](./SDK-live-tools-CR-2026-11-24.md)与[回执](./SDK-live-tools-CR-2026-11-24.json)。
 
 2026-11-24 SDK连续shell对话实时进度（独立维护，非新增迁移）：`817e698`复用当前item表和原卡片显示调用/状态/可用输出，修复同时间戳TOOL误判、首轮空面板、Ask部分记录重复、旧帧/实例隔离及重连回放；正式MainAgent原子替换，规范日志不写过程快照。全量2866/2866、0skip/build/536边界/605源码/630稳定包门通过；Chromium/WebKit桌面/手机模拟4场12图、真实HTTP SSE与WS mux、Stop及刷新通过；真实Codex0.169.0 exec/AppServer共6次shell/8次loopback响应、0外部模型请求通过。固定d3c1f7f对应过滤代码已复核，不核销B13；B12完成与下一包B13保持。未PR/推送/发布/version、未停止用户实例或改全局Codex配置/旧归档；活动后端需正常重启，目标环境余项见[实施记录](./SDK-live-tools-2026-11-24.md)与[回执](./SDK-live-tools-2026-11-24.json)。首次测试环境/fixture失败保留，未混记通过。
