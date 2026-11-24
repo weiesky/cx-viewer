@@ -1,0 +1,25 @@
+cc-viewer-alignment/SDK-plan-usage-2026-11-24.md
+  s_8273a977056532::t_d5a44d60f200d7 1-30
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_8273a977056532::t_d5a44d60f200d7 17045-17052
+cc-viewer-alignment/SDK-plan-usage-2026-11-24.json
+  s_8273a977056532::t_d5a44d60f200d7 1-94
+AGENTS.md
+  s_8273a977056532::t_d5a44d60f200d7 26,28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "4cb1a4c9c0650114cf9c70571c4b2150bf062945",
+  "prompts": {},
+  "sessions": {
+    "s_8273a977056532": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20bc9-b701-7621-ad49-28e61d1af7af",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
