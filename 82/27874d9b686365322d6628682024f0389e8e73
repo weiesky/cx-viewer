@@ -1,0 +1,72 @@
+apps/web/src/components/chat/ChatView.jsx
+  s_d6042f5915fb8f::t_f569862abda8d5 782,4552-4553
+apps/web/src/components/chat/ProxyChip.module.css
+  s_d6042f5915fb8f::t_c80b242ad02b31 28
+  s_d6042f5915fb8f::t_f569862abda8d5 42-51
+apps/web/src/components/chat/ProxyChip.jsx
+  s_d6042f5915fb8f::t_f569862abda8d5 8,29-30,41
+  s_d6042f5915fb8f::t_c80b242ad02b31 18,38
+apps/web/src/AppBase.jsx
+  s_d6042f5915fb8f::t_27c23fc670bb5e 138,1766,1783,1869-1870,2392
+scripts/tarball-baseline.json
+  s_d6042f5915fb8f::t_27c23fc670bb5e 506
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_d6042f5915fb8f::t_0cb81bf970aba9 61,1228-1267,1283-1284,1301
+.changeset/sdk-native-model-switch.md
+  s_d6042f5915fb8f::t_c51900d1829792 1-5
+cc-viewer-alignment/SDK-model-switch-2026-11-24.json
+  s_d6042f5915fb8f::t_c51900d1829792 1-387
+  s_d6042f5915fb8f::t_c8ceeeccf10993 388-391
+apps/web/src/utils/sdkModelChip.js
+  s_d6042f5915fb8f::t_f569862abda8d5 1,8-22
+  s_d6042f5915fb8f::t_c80b242ad02b31 2-7
+packages/app/lib/sdk-manager.js
+  s_d6042f5915fb8f::t_c80b242ad02b31 509-511
+  s_d6042f5915fb8f::t_b0015217908a04 531-532,1420
+  s_d6042f5915fb8f::t_ddc2125ac13bd5 30,150-157,397-398,487-508,512-530,533-548,603,1287,1418-1419,1466
+packages/app/tests/sdk-model-switch.test.js
+  s_d6042f5915fb8f::t_9f742efce7c11b 121-127
+  s_d6042f5915fb8f::t_92e15f27d88ca2 38
+  s_d6042f5915fb8f::t_f1e05e5a4b505d 20
+  s_d6042f5915fb8f::t_79c9cf87671605 1-19,21-37,39-120,128-139
+packages/app/server.js
+  s_d6042f5915fb8f::t_ddc2125ac13bd5 3000-3019
+cc-viewer-alignment/SDK-model-switch-2026-11-24.md
+  s_d6042f5915fb8f::t_11dbac603e3175 1-25
+apps/web/src/i18n.js
+  s_d6042f5915fb8f::t_27c23fc670bb5e 4-16
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_d6042f5915fb8f::t_8a40076b3d2c82 17029-17036
+packages/app/lib/sdk-model-catalog.js
+  s_d6042f5915fb8f::t_1fa8d29a73ea5a 1-64
+apps/web/src/components/chat/SdkModelPicker.jsx
+  s_d6042f5915fb8f::t_f569862abda8d5 1-18,23-66,69-102
+  s_d6042f5915fb8f::t_9f742efce7c11b 67-68
+  s_d6042f5915fb8f::t_c80b242ad02b31 19-22
+AGENTS.md
+  s_d6042f5915fb8f::t_8a40076b3d2c82 26
+packages/app/lib/sdk-appserver-transport.js
+  s_d6042f5915fb8f::t_1fa8d29a73ea5a 119,358-361,447-448
+packages/app/lib/sdk-exec-transport.js
+  s_d6042f5915fb8f::t_1fa8d29a73ea5a 39-44
+apps/web/src/Mobile.jsx
+  s_d6042f5915fb8f::t_27c23fc670bb5e 770
+apps/web/src/App.jsx
+  s_d6042f5915fb8f::t_27c23fc670bb5e 501
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "8227874d9b686365322d6628682024f0389e8e73",
+  "prompts": {},
+  "sessions": {
+    "s_d6042f5915fb8f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20b97-d6ee-7740-b019-fad55b2eaa2a",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
