@@ -26,3 +26,17 @@
 当前环境扩大定向首次78/82：从仓库根直接跑app测试，继承宿主SDK模式且cwd不匹配app fixture，造成既有auth-server 4项失败（WS/两项文件状态/static fixture）；没有据此改产品。按实际workspace cwd并清除继承CXV/CODEX/OTEL、独立HOME/CODEX_HOME后82/82、0skip通过，日志`/tmp/cxv-b12-target.log`。覆盖真实helper成功与安装失败恢复、文件读入后安装前即删除、有效/非法env、后续子进程无env、手动轮换、OTEL不同值、搜索/替换保护、TLS/认证HTTP与CLI三入口接线。
 
 初次真实pack因app源码更新时间超过旧dist而被既有组装门拒绝；按要求执行正常`pnpm run build`后通过，再以真实tarball再生成baseline；逐行核对仅新增`lib/access-token.js`，稳定路径630、源码605。AST边界536/0违规；未更改依赖、版本或前端/CSS。最终全量、真实生产新安装与实例化验收继续。
+
+本地独立实现提交`f014bf9`。
+
+## 最终全量、生产包与真实更新验收
+
+受控`pnpm test`六组9/7/28/814/1758/246，合计2862/2862、0skip/0fail，日志`/tmp/cxv-b12-full.log`。正常build、pack预览829文件、真实verify:tarball630稳定路径通过；上述检查合起来覆盖release:check各步骤，没有为汇总重复运行无变化套件。
+
+全新临时npm global prefix实际安装829个发布文件，与原始tarball逐字节一致；复制定向用例到仅用于验证的安装目录后，生产依赖下82/82、0skip通过。首次安装下载约94MiB Codex平台依赖较慢但正常完成，非环境失败。包与日志位置见机器回执。
+
+追加独立探针`probes/b12-update-runtime.mjs`：只接受带cxv-b12-production标记的临时prefix；真实下载整个合成新版本tarball、真实SDK CLI入口、实际HTTP重启路由、真实helper与npm安装。更新1.1.20→合成1.1.21后，同端口新processId、旧URL token返回200、匿名远程403，现有`restartPollDecision`判reload。随后手动启动已轮换token，再用损坏暂存tarball触发真实helper摘要拒绝；原版本1.1.21恢复、旧token200/匿名403、前端函数判restored，错误回执无token。两次handoff文件删除，暂存包清理；自有服务端口60996关闭，0模型请求。没有浏览器GUI/活动实例结论。
+
+探针初次相对import多退一级，启动前即失败；修正工具路径后整个运行通过，未改产品。真实大tarball触发未改动WriteStream背压分支的MaxListeners告警，下载/验证/清理均成功；保留后续线索，不标本包已修复。
+
+完成边界见[B12矩阵](./B12-completion-matrix.md)与[最终回执](./B12-validation-2026-11-24.json)。本轮未PR/推送/发布、未运行version、未重启用户实例；下一包B13。

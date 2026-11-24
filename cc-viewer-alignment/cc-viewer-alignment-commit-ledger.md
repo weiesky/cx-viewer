@@ -1,5 +1,7 @@
 # cc-viewer 逐提交对齐台账
 
+2026-11-24 B12交付：2026-11-24 B12已完成本地对齐与隔离验收：`06be1ce6 → 9943faf`下载重定向，`03aad20b → f014bf9`私有访问token交接及原生安全适配。全量2862/2862、0skip/build/536边界/605源码/630稳定tarball，新生产829全文件字节/82定向与真实SDK CLI自有prefix成功更新、损坏包恢复通过；见[B12矩阵](./B12-completion-matrix.md)、[实施](./B12-implementation.md)与[回执](./B12-validation-2026-11-24.json)。下一包B13；D1/D2沿既有选择，旧环境未验边界不核销。未PR/推送/发布/version或重启用户实例。 上游1.9.33只登记元数据，不改本地1.1.20；`03aad20b`只核销B12行为子项。
+
 2026-11-24第二轮增量调查：用户要求查看最后一轮之后的新更新，已固定旧74cd752（1.9.29，不含）→d3c1f7f（源码1.9.35，含），25笔/17笔含功能修复/123净变更文件；完整映射候选、父提交、PR177–179及merge-tree证据见[新25笔台账](./upstream-delta-ledger-2026-11-24.md)与[机器索引](./upstream-delta-2026-11-24.json)，执行包见[B12–B20计划](./upstream-delta-plan-2026-11-24.md)。本轮只完成调查与规划，本地实现commit为空，产品测试/构建/GUI未运行；不把既有测试定义或旧通过数当本轮结果。此前SDK模型/上下文/套餐维护独立保留，不重复迁移。审批默认值/同cwd多SDK会话沿既有选择，列D1/D2待决策。旧337笔台账及B0–B11核销仍按原固定快照保留。
 
 2026-11-23 SDK修复交付：用户明确授权PR到main并自行合并。两项修复整为实现 `4a56de77fdea9584f7c1acb29aff008d45adfdf2`，经[PR #14](https://github.com/weiesky/cx-viewer/pull/14)于2026-11-23T14:56:09Z squash合并main `fcbaf59d2306105544a713cbfbbd17af934b87a0`；merge tree与已验证实现tree相同，精确head guard，无admin override。合并时9项远端成功/1项重复PR macOS仍无runner排队；相同head的Ubuntu Node20/22/24全套与macOS/Windows定向五类均成功，不把排队标通过。本地main已同步，合并后更新本轮文档。未发布npm、未重启活动实例、未改用户历史；原目录/分页/Windows完整运行/活动GUI未验边界保留。逐项检查与本地2833/2833证据见[回执](./SDK-context-usage-2026-11-23.json)。

@@ -1,6 +1,6 @@
 # cc-viewer 第二轮增量对齐计划（2026-11-24）
 
-本轮完成上游更新调查和可执行计划；**尚未实施本轮新增功能**。按用户“最后一轮对齐之后”的要求，以旧上游固定快照为下界，不能用本地B11完成日期筛掉11月17日至22日的新增改动。旧B0–B11的已交付、必要适配与未验收事项保留。
+11月24日调查已完成，用户随后明确启动B12；**B12现已完成本地实现与隔离验收，下一包B13**，见[完成矩阵](./B12-completion-matrix.md)和[回执](./B12-validation-2026-11-24.json)。按用户“最后一轮对齐之后”的要求，以旧上游固定快照为下界，不能用本地B11完成日期筛掉11月17日至22日的新增改动。旧B0–B11的已交付、必要适配与未验收事项保留。
 
 ## 固定范围与调查结论
 
@@ -17,7 +17,7 @@
 
 直接来源：[固定比较范围](https://github.com/weiesky/cc-viewer/compare/74cd752d99caf122e750216d2af3bb9f467c4de1...d3c1f7fbf47c0424226acbe064ab4135e7ebe3cd)、[PR #177](https://github.com/weiesky/cc-viewer/pull/177)、[PR #178](https://github.com/weiesky/cc-viewer/pull/178)、[PR #179](https://github.com/weiesky/cc-viewer/pull/179)。逐笔处置见[25笔增量台账](./upstream-delta-ledger-2026-11-24.md)，完整hash、双时间、消息、父提交、逐文件候选与PR正文见[机器索引](./upstream-delta-2026-11-24.json)。
 
-本轮已读取行为提交diff、关键最终源码和本地链路：更新下载/重启、复制按钮、memory scope、定时导航及其调用、审批默认值、文件浏览器导航工具/API、原生代理快照、Git分支、workspaceLaunch/菜单和同cwd实例改动。**这是范围调查，不替代每笔实施前对完整组件、CSS、调用链、测试及后续修复的再次定位与阅读。** 尚无本轮产品测试、构建、安装或GUI通过结论。
+本轮已读取行为提交diff、关键最终源码和本地链路：更新下载/重启、复制按钮、memory scope、定时导航及其调用、审批默认值、文件浏览器导航工具/API、原生代理快照、Git分支、workspaceLaunch/菜单和同cwd实例改动。**这是范围调查，不替代每笔实施前对完整组件、CSS、调用链、测试及后续修复的再次定位与阅读。** 调查阶段无产品测试结论；后续B12已完成2862全量、build、真实生产安装及CLI更新链路验证。其余包与浏览器/活动GUI仍未据此核销。
 
 ## 执行边界
 
@@ -33,7 +33,7 @@
 
 | 包 | 上游依据 | 本轮要对齐的结果 | 当前状态 |
 | --- | --- | --- | --- |
-| B12 更新下载与重启 | `06be1ce6`、`03aad20b`（#178） | release tarball允许重定向并保持摘要验证；仅自更新重启交接当前访问token，页面恢复连接 | 已确认本地缺口，待实施 |
+| B12 更新下载与重启 | `06be1ce6`、`03aad20b`（#178） | release tarball允许重定向并保持摘要验证；仅自更新重启交接当前访问token，页面恢复连接 | 已实施9943faf/f014bf9并通过隔离验收 |
 | B13 原界面细节与复制 | `f8d06c72`、`2476d7b5`、`72f0393c`、`db741d5e`；`a87b61f5`/`73b9a1d1`的UI子项 | 输入区按钮顺序/22px头像、Markdown复制、暗色菜单对比度、快捷图标/透明代理chip/移动专家编辑器 | 待分笔迁移 |
 | B14 记忆目录浏览 | `bdf4257f`、`495931df` | 原记忆文件夹图标打开应用内浏览器，根目录锚定记忆目录 | 需Codex目录与访问策略适配 |
 | B15 定时任务导航 | `a87b61f5`、`73b9a1d1` | 左侧原时钟入口、待执行列表/倒计时、点击定位任务，保留草稿与SSE更新 | UI待迁；默认值D1单列 |
@@ -45,8 +45,8 @@
 
 ### B12：先修可独立复现的更新问题
 
-1. 下载：本地`packages/app/lib/update-job.js:downloadRelease`仍为`redirect:'error'`，与上游改前一致。复用原fetch改动，保留URL校验、超时、进度、摘要验证、失败清理与原安装保护。隔离HTTP fixture验证30x到真实tarball、错误摘要/重定向失败；不执行真实更新。
-2. 重启：读完整`launchRestart → restart-helper → restartFromHelper → cli → server ACCESS_TOKEN`。本地`getAccessToken`已存在，但cli未传入、服务端每次随机。采用上游严格32位小写hex、0600交接文件、helper读入即删、错误脱敏、子进程env读即删；仅内部交接使用CXV命名。保留TLS密码门与手动启动token轮换，不转交OTEL token或其他凭据。
+1. 下载：本地`packages/app/lib/update-job.js:downloadRelease`改前为`redirect:'error'`；E1已提交9943faf并通过真实重定向验证。复用原fetch改动，保留URL校验、超时、进度、摘要验证、失败清理与原安装保护。隔离HTTP fixture验证30x到真实tarball、错误摘要/重定向失败；不执行真实更新。
+2. 重启：读完整`launchRestart → restart-helper → restartFromHelper → cli → server ACCESS_TOKEN`。改前本地`getAccessToken`已存在，但cli未传入、服务端每次随机；E2已提交f014bf9。采用上游严格32位小写hex、0600交接文件、helper读入即删、错误脱敏、子进程env读即删；仅内部交接使用CXV命名。保留TLS密码门与手动启动token轮换，不转交OTEL token或其他凭据。
 3. 验收：真实隔离helper启动/安装失败恢复、旧页面token恢复、非法token回退随机、env不进入后续Codex/shell、文件权限与清理、日志无token。对应现有`update-job.test.js`、`restart-helper.test.js`、`update-routes.test.js`及最小必要集成用例。
 
 ### B13：按原组件逐笔迁移
@@ -113,6 +113,6 @@ GUI覆盖按相关批次桌面/phone/pad、明暗、至少可用目标浏览器�
 
 ## 本轮检查与下一步
 
-已验证：上游远端HEAD与fetch结果、基线祖先关系、25笔集合/分类/123文件统计、PR合并关系及merge tree。文档检查已通过：25条唯一commit与Git集合一致、台账25行、分类/统计一致、1777处本地文档链接可解析，`git diff --check`通过；机器索引记录回执。未运行产品测试或构建，未提交/推送/发布。
+已验证：上游远端HEAD与fetch结果、基线祖先关系、25笔集合/分类/123文件统计、PR合并关系及merge tree。文档检查已通过：25条唯一commit与Git集合一致、台账25行、分类/统计一致、1777处本地文档链接可解析，`git diff --check`通过；机器索引记录回执。调查检查点见5496ad5；B12后续已有两笔实现提交、2862/2862全量、build与生产安装/真实更新链路回执，未推送/发布。
 
-下一步按B12开始逐笔实施；每笔先完成源码阅读、隔离复现、必要适配、功能/视觉验证和单独提交，再回填台账。D1/D2保持明确待决策，不阻塞独立工作。
+B12已完成本地对齐及隔离验收，下一步按B13开始逐笔实施；每笔先完成源码阅读、隔离复现、必要适配、功能/视觉验证和单独提交，再回填台账。D1/D2保持明确待决策，不阻塞独立工作。

@@ -4,14 +4,14 @@
 
 共25笔：17笔含功能/修复、5笔纯发布、1笔changeset、1笔merge、1笔图表；净变更123文件、+8819/-585。完整双时间、父提交、消息、逐文件候选见[机器索引](./upstream-delta-2026-11-24.json)，执行顺序与验收见[续对齐计划](./upstream-delta-plan-2026-11-24.md)。
 
-**状态边界：本轮完成调查与计划，尚未实施新增功能。** “部分已有”来自本地源码及既有测试定义，仍需本轮实际验证。元数据已登记不等于关联功能完成。
+**状态边界：B12行为子项已完成本地实现及隔离验收，其余新功能仍按计划推进。** B12映射与未验边界见[完成矩阵](./B12-completion-matrix.md)。 “部分已有”来自本地源码及既有测试定义，仍需本轮实际验证。元数据已登记不等于关联功能完成。
 
 | 上游提交 | 时间（+08:00） | 工作包 | 内容及本地处置 |
 | --- | --- | --- | --- |
 | [f8d06c72](https://github.com/weiesky/cc-viewer/commit/f8d06c72695f1b8d160c361eb488d30e61062933) | 11-17 11:25 | B13 | 输入区清空/提示导航顺序、头像22px；待迁。 |
 | [2476d7b5](https://github.com/weiesky/cc-viewer/commit/2476d7b5696821d5a9ba3e23b3fe9eddc95e9c04) | 11-17 14:24 | B13 | 文档Markdown复制组件；与72f0393c合看最终代码，待迁。 |
 | [bdf4257f](https://github.com/weiesky/cc-viewer/commit/bdf4257f55068693dff10012291abf8a75fe5b4c) | 11-17 14:24 | B14 | 记忆文件夹改应用内浏览器；Codex目录/访问策略需适配。 |
-| [06be1ce6](https://github.com/weiesky/cc-viewer/commit/06be1ce62ee4ada15bc7805fe92b22dcf2f7451b) | 11-17 16:15 | B12 | 更新tarball下载跟随重定向；本地仍error，待迁。 |
+| [06be1ce6](https://github.com/weiesky/cc-viewer/commit/06be1ce62ee4ada15bc7805fe92b22dcf2f7451b) | 11-17 16:15 | B12 | 更新tarball下载跟随重定向；已实现`9943faf`，2862全量/真实包与真实重定向验收通过。 |
 | [495931df](https://github.com/weiesky/cc-viewer/commit/495931dfb0f081032b0137bfed27f5932c17e917) | 11-17 17:50 | B14 | 记忆根锚定与首次创建；Claude路径不照搬，待适配。 |
 | [72f0393c](https://github.com/weiesky/cc-viewer/commit/72f0393c89f4d448e47fd754e582eaaac8a75739) | 11-17 17:50 | B13 | 复制按钮LAN HTTP回退、反馈生命周期、18语；最终有效版本，待迁。 |
 | [fd4426eb](https://github.com/weiesky/cc-viewer/commit/fd4426eba0d29f9ac93cdbd834bec298a3a53168) | 11-17 17:54 | B20 | 1.9.30发布；元数据登记，不搬版本号。 |
@@ -20,7 +20,7 @@
 | [268a9628](https://github.com/weiesky/cc-viewer/commit/268a962865a9b854865dae882dabd4d1600da4c4) | 11-18 13:00 | B20 | 1.9.31发布；元数据登记。 |
 | [2c322981](https://github.com/weiesky/cc-viewer/commit/2c3229811204e2e11a5982e6b96eaf6663cfc7c5) | 11-18 22:55 | B16 | #177：浏览器历史/地址/列表/排序/过滤、服务端受保护解析；待迁。 |
 | [b65f667d](https://github.com/weiesky/cc-viewer/commit/b65f667d9379deb416c287125f36e09d264eaec2) | 11-18 22:56 | B20 | 1.9.32发布；元数据登记。 |
-| [03aad20b](https://github.com/weiesky/cc-viewer/commit/03aad20b929d67d566fa884fdc78391148627fae) | 11-19 01:46 | B12/B20 | #178：自更新重启访问token交接；待迁；同笔含1.9.33元数据。 |
+| [03aad20b](https://github.com/weiesky/cc-viewer/commit/03aad20b929d67d566fa884fdc78391148627fae) | 11-19 01:46 | B12/B20 | #178：B12行为子项已适配`f014bf9`，真实成功/失败恢复通过；密码会话仍需重登；1.9.33元数据只登记。 |
 | [cb7d59e1](https://github.com/weiesky/cc-viewer/commit/cb7d59e1f528426b4ba20c1f09c358fff50eb936) | 11-20 10:17 | B17 | SDK代理面板刷新恢复/水合守卫/箭头尺寸；原生重连部分已有，先验证缺口。 |
 | [8dddb8a1](https://github.com/weiesky/cc-viewer/commit/8dddb8a11591ee1a55330946c8aa51f9ba4d463e) | 11-20 11:06 | B18 | Git单/多仓库当前分支显示；本地数据已有，UI/未知三态待迁。 |
 | [db741d5e](https://github.com/weiesky/cc-viewer/commit/db741d5edc3b195c6edae15027e750a6afb7a5ec) | 11-20 11:44 | B13 | 暗色Dropdown选中项白字token；待迁。 |

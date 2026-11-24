@@ -257,9 +257,9 @@
       "workPackages": [
         "B12"
       ],
-      "status": "planned",
-      "localImplementation": null,
-      "runtimeValidation": "not-run-planning-only",
+      "status": "implemented-adapted-B12-scope",
+      "localImplementation": "9943faf81dbe470f6fbd6c02cc87980cb35faf92",
+      "runtimeValidation": "B12-validation-2026-11-24.json",
       "files": [
         {
           "upstream": ".changeset/update-job-redirect-follow.md",
@@ -297,7 +297,8 @@
             }
           ]
         }
-      ]
+      ],
+      "scopeNotes": "B12 behavior only. Upstream release/version metadata remains separately recorded in B20; active GUI and target-environment limits are not closed."
     },
     {
       "sha": "495931dfb0f081032b0137bfed27f5932c17e917",
@@ -1197,9 +1198,9 @@
         "B12",
         "B20"
       ],
-      "status": "planned",
-      "localImplementation": null,
-      "runtimeValidation": "not-run-planning-only",
+      "status": "implemented-adapted-B12-scope",
+      "localImplementation": "f014bf9a30de22ee5a259c72d727e001a0100e1b",
+      "runtimeValidation": "B12-validation-2026-11-24.json",
       "files": [
         {
           "upstream": "history.md",
@@ -1327,7 +1328,8 @@
             }
           ]
         }
-      ]
+      ],
+      "scopeNotes": "B12 behavior only. Upstream release/version metadata remains separately recorded in B20; active GUI and target-environment limits are not closed."
     },
     {
       "sha": "cb7d59e1f528426b4ba20c1f09c358fff50eb936",
@@ -4026,7 +4028,7 @@
   ],
   "limitations": [
     "Path candidates are navigation hints, not implementation or validation evidence.",
-    "Planning only; historical passing tests were not rerun in this investigation.",
+    "Runtime evidence is per commit and scope: B12 validated in B12-validation-2026-11-24.json; other packages remain planned or pending.",
     "The original B0-B11 baseline and dispositions remain separately frozen.",
     "Approval defaults and same-cwd SDK siblings require a new decision to replace previous choices.",
     "PR179 only fixes WS control frames; SSE cold-load/history remains an upstream follow-up."
@@ -4040,6 +4042,13 @@
     "mergeTreeMatches": true,
     "trackedProductFilesChanged": [],
     "diffCheck": "passed",
-    "runtimeTests": "not-run-documentation-only"
+    "runtimeTests": "not-run-documentation-only",
+    "checkpoint": "5496ad5 planning checkpoint, before B12 code changes"
+  },
+  "b12Completion": {
+    "record": "B12-completion-matrix.md",
+    "evidence": "B12-validation-2026-11-24.json",
+    "next": "B13",
+    "localOnly": true
   }
 }
