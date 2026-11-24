@@ -1,0 +1,43 @@
+cc-viewer-alignment/upstream-delta-2026-11-24.json
+  s_ae2f56ae6ae11b::t_ce1248ae3cfcb4 260-262,300-301,1201-1203,1331-1332,4031,4045-4052
+cc-viewer-alignment/upstream-delta-plan-2026-11-24.md
+  s_ae2f56ae6ae11b::t_ce1248ae3cfcb4 3,20,36,48-49,116,118
+cc-viewer-alignment/B12-completion-matrix.md
+  s_ae2f56ae6ae11b::t_9ef57dc562a262 1-27
+cc-viewer-alignment/probes/b12-update-runtime.mjs
+  s_ae2f56ae6ae11b::t_f62fc0781b3b1a 12
+  s_ae2f56ae6ae11b::t_5a27381021d1b6 1-11,13-206
+cc-viewer-alignment/B12-implementation.md
+  s_ae2f56ae6ae11b::t_9ef57dc562a262 29-42
+cc-viewer-alignment/README.md
+  s_ae2f56ae6ae11b::t_ce1248ae3cfcb4 5
+cc-viewer-alignment/B12-validation-2026-11-24.json
+  s_ae2f56ae6ae11b::t_ce1248ae3cfcb4 136
+  s_ae2f56ae6ae11b::t_88fc8ba7b8a4df 4,56-108,123-124,137-138
+  s_ae2f56ae6ae11b::t_f4a2adcc94ed2f 139-147
+  s_ae2f56ae6ae11b::t_9ca6fe77862f4e 1-3,5-55,109-122,125-135,148
+AGENTS.md
+  s_ae2f56ae6ae11b::t_ce1248ae3cfcb4 26
+cc-viewer-alignment/cc-viewer-alignment-plan.md
+  s_ae2f56ae6ae11b::t_ce1248ae3cfcb4 3
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_ae2f56ae6ae11b::t_ce1248ae3cfcb4 3-4
+cc-viewer-alignment/upstream-delta-ledger-2026-11-24.md
+  s_ae2f56ae6ae11b::t_ce1248ae3cfcb4 7,14,23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "8c51a76ef5c0763915d63678b71bfb6be4c51d89",
+  "prompts": {},
+  "sessions": {
+    "s_ae2f56ae6ae11b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20bec-c330-7481-89ea-5a753a0e854e",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
