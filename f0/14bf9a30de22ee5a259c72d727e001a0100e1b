@@ -1,0 +1,47 @@
+packages/app/tests/restart-helper.test.js
+  s_ae2f56ae6ae11b::t_c2e0aaa282207e 3-4,17-18,26,32-34,42-61,73-87,128-168
+packages/app/tests/access-token.test.js
+  s_ae2f56ae6ae11b::t_c2e0aaa282207e 1-25
+cc-viewer-alignment/B12-implementation.md
+  s_ae2f56ae6ae11b::t_c5623351c9602a 14,25-28
+  s_ae2f56ae6ae11b::t_531245c56802e4 7-8,16,19-24
+packages/app/server.js
+  s_ae2f56ae6ae11b::t_b17e7086dac270 50,1221-1224
+packages/app/tests/cli-shutdown-registration.test.js
+  s_ae2f56ae6ae11b::t_c2e0aaa282207e 18,20,23
+  s_ae2f56ae6ae11b::t_531245c56802e4 19,21-22
+packages/app/lib/credential-file-policy.js
+  s_ae2f56ae6ae11b::t_c2e0aaa282207e 107-111
+.changeset/b12-restart-access-token.md
+  s_ae2f56ae6ae11b::t_b17e7086dac270 1-5
+packages/app/tests/credential-search-boundary.test.js
+  s_ae2f56ae6ae11b::t_3493534528dc91 12,22-24
+packages/app/cli.js
+  s_ae2f56ae6ae11b::t_b17e7086dac270 49
+packages/app/tests/server-access-token-env.test.js
+  s_ae2f56ae6ae11b::t_73314598e6d82a 1-60
+packages/app/lib/access-token.js
+  s_ae2f56ae6ae11b::t_b17e7086dac270 1-18
+packages/app/lib/restart.js
+  s_ae2f56ae6ae11b::t_b17e7086dac270 4,8-9,13,18-19,21-23,81-84
+packages/app/lib/restart-helper.js
+  s_ae2f56ae6ae11b::t_b17e7086dac270 2,11-15,19-23,59
+scripts/tarball-baseline.json
+  s_ae2f56ae6ae11b::t_b7b535480d4e72 351
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f014bf9a30de22ee5a259c72d727e001a0100e1b",
+  "prompts": {},
+  "sessions": {
+    "s_ae2f56ae6ae11b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20bec-c330-7481-89ea-5a753a0e854e",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
