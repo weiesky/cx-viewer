@@ -9,6 +9,7 @@ const root = mkdtempSync(join(tmpdir(), 'cxv-credential-search-'));
 const project = join(root, 'project');
 mkdirSync(project);
 process.env.CXV_LOG_DIR = join(project, 'state[1]');
+process.env.CODEX_HOME = join(project, 'codex-owner');
 process.env.CXV_PROXY_PROFILE_PATH = join(project, 'profile[1].json');
 const { CREDENTIAL_PATHS } = await import('../lib/credential-file-policy.js');
 const { runNodeScan } = await import('../lib/search-worker.js');
@@ -18,6 +19,9 @@ const marker = 'BOUNDARY_NEEDLE';
 const backup = join(CREDENTIAL_PATHS.backupRoot, 'first', 'preferences.json');
 const privateFiles = [CREDENTIAL_PATHS.keyPath, CREDENTIAL_PATHS.file, backup,
   ...[ 'update-state.json', 'restart-config.json', 'restart-ready.json', 'cx-viewer-fixture.tgz' ].map(name => join(process.env.CXV_LOG_DIR, name)),
+  // Update handoffs are owned by CODEX_HOME even when viewer logs are elsewhere.
+  ...['restart-config.json', 'restart-config.json.cxv-fixture.tmp', 'update-state.json']
+    .map(name => join(process.env.CODEX_HOME, 'cx-viewer', name)),
   join(process.env.CXV_LOG_DIR, 'preferences.json'), join(process.env.CXV_LOG_DIR, 'im/dingtalk/config.json'),
   process.env.CXV_PROXY_PROFILE_PATH, `${process.env.CXV_PROXY_PROFILE_PATH}.bak`];
 for (const path of privateFiles) {

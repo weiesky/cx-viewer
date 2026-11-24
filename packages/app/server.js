@@ -47,6 +47,7 @@ import { t, detectLanguage } from './i18n.js';
 import { DEFAULT_START_PORT, DEFAULT_MAX_PORT, MAX_POST_BODY as _MAX_POST_BODY, MAX_UPLOAD_SIZE, SSE_HEARTBEAT_MS, HOOK_TIMEOUT_MS, EDITOR_SESSION_CLEANUP_MS, UPLOAD_DIR } from './lib/constants.js';
 import { checkAndUpdate, detectHomebrewInstall, detectPnpmGlobalInstall } from './lib/updater.js';
 import { UpdateJob } from './lib/update-job.js';
+import { takeInheritedAccessToken } from './lib/access-token.js';
 import { updateRoutes } from './lib/update-routes.js';
 import { loadPlugins, runWaterfallHook, runParallelHook, getPluginsInfo, getPluginsDir, getPluginEntries } from './lib/plugin-loader.js';
 import { uploadPlugins, installPluginFromUrl, deletePluginDir } from './lib/plugin-manager.js';
@@ -1217,8 +1218,10 @@ const START_PORT = parseInt(process.env.CXV_START_PORT) || DEFAULT_START_PORT;
 const MAX_PORT = parseInt(process.env.CXV_MAX_PORT) || DEFAULT_MAX_PORT;
 const HOST = process.env.CXV_IM_WORKER === '1' ? '127.0.0.1' : '0.0.0.0';
 
-// 局域网访问 token（本地 127.0.0.1 免验证）
-const ACCESS_TOKEN = randomBytes(16).toString('hex');
+// Only an in-app self-update inherits the previous LAN URL token. Consume the
+// internal env handoff before later child spawns; manual starts still rotate.
+// Independent password sessions remain in memory and require a new login.
+const ACCESS_TOKEN = takeInheritedAccessToken() || randomBytes(16).toString('hex');
 // OTLP is a log-writing endpoint, so it must remain authenticated even on
 // loopback. The token is injected only into Codex child processes.
 const OTEL_ACCESS_TOKEN = randomBytes(32).toString('hex');

@@ -348,6 +348,7 @@
   "imSkills/zh-TW/manage-cxv-projects/SKILL.md",
   "imSkills/zh/manage-cxv-projects/SKILL.md",
   "interceptor.js",
+  "lib/access-token.js",
   "lib/adapters/dingtalk-adapter.js",
   "lib/approval-reviewer.js",
   "lib/appserver-bridge.js",
