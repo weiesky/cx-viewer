@@ -1,0 +1,151 @@
+{
+  "date": "2026-11-24",
+  "task": "SDK context snapshot oscillation",
+  "baseCommit": "8227874",
+  "branch": "feature/sdk-model-switch-2026-11-24",
+  "commitSubject": "fix(sdk): reject stale context snapshots and competing archive events",
+  "scope": "Native maintenance, no new upstream migration or layout change",
+  "activeReadOnly": {
+    "port": 7008,
+    "pid": 47168,
+    "transport": "exec",
+    "nativeSamples": [
+      {
+        "timestamp": "2026-11-24T03:27:33.943Z",
+        "turnId": "01a20b97-fe70-7141-af8b-8359b92819ec",
+        "info": {
+          "total_token_usage": {
+            "input_tokens": 21366,
+            "cached_input_tokens": 7936,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 14,
+            "reasoning_output_tokens": 0,
+            "total_tokens": 21380
+          },
+          "last_token_usage": {
+            "input_tokens": 21366,
+            "cached_input_tokens": 7936,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 14,
+            "reasoning_output_tokens": 0,
+            "total_tokens": 21380
+          },
+          "last_usage_includes_reasoning": true,
+          "model_context_window": 258400
+        }
+      },
+      {
+        "timestamp": "2026-11-24T03:47:21.409Z",
+        "turnId": "01a20ba2-46ee-7312-8256-77eb20804797",
+        "info": {
+          "total_token_usage": {
+            "input_tokens": 9123066,
+            "cached_input_tokens": 8752640,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 35064,
+            "reasoning_output_tokens": 9850,
+            "total_tokens": 9158130
+          },
+          "last_token_usage": {
+            "input_tokens": 224008,
+            "cached_input_tokens": 223872,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 195,
+            "reasoning_output_tokens": 62,
+            "total_tokens": 224203
+          },
+          "last_usage_includes_reasoning": true,
+          "model_context_window": 258400
+        }
+      }
+    ],
+    "nativePath": "/Users/sky/.codex/sessions/2026/11/24/rollout-2026-11-24T11-27-15-01a20b97-d6ee-7740-b019-fad55b2eaa2a.jsonl",
+    "captureNotes": "Short SSE/browser observations did not recapture a full spontaneous oscillation. Exact source event order for the user screenshots was not captured. The actual listener defect was reproduced separately using equivalent event payloads.",
+    "archiveFirstReply": {
+      "seq": 1,
+      "usage": 21380,
+      "window": 258400
+    }
+  },
+  "reproduction": {
+    "test": "SDK context cannot oscillate from a live 86% measurement back to a stale 4% snapshot",
+    "beforeFix": "Failed: 21380 !== 224203",
+    "log": "/tmp/cxv-context-jump-repro.log",
+    "pipeline": "Actual AppBase control listener and AppHeader portal rendering"
+  },
+  "implementation": [
+    "Remove competing exec SDK context broadcast from the archive commit listener; keep canonical context_usage for cold reads",
+    "Bind context listener to control source and URL instance; reject retired source, navigation and sibling frames",
+    "Require native scope and valid measurement/turn timestamps; preserve native snapshots over generic or older measurements",
+    "Allow newer measurements with reduced usage; accepted updates alone clear the optimistic timer"
+  ],
+  "validation": {
+    "targeted": {
+      "passed": 152,
+      "log": "/tmp/cxv-context-jump-targeted.log"
+    },
+    "httpSse": {
+      "passed": 1,
+      "log": "/tmp/cxv-context-jump-sse-test.log",
+      "assertion": "After durable commit barrier, no generic competing context event in either instance stream"
+    },
+    "full": {
+      "passed": 2843,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "counts": [
+        9,
+        7,
+        28,
+        812,
+        1741,
+        246
+      ],
+      "log": "/tmp/cxv-context-jump-full.log"
+    },
+    "build": {
+      "result": "passed",
+      "log": "/tmp/cxv-context-jump-build.log"
+    },
+    "boundaries": {
+      "files": 533,
+      "violations": 0
+    },
+    "sourcePaths": 603,
+    "tarballPaths": 628,
+    "tarballLog": "/tmp/cxv-context-jump-tarball.log",
+    "gui": {
+      "values": [
+        "21.4K (4%)",
+        "224.2K (86%)",
+        "227.9K (88%)",
+        "25.0K (5%)"
+      ],
+      "errors": [],
+      "browser": "Installed Google Chrome via Playwright",
+      "fixture": "Isolated temporary HOME, fake Codex and real server/SSE/new built frontend",
+      "sequence": "initial 4%; live 86%; untyped old 4% rejected; older native 4% rejected; live 88%; newer genuine reduction 5% accepted",
+      "log": "/tmp/cxv-context-jump-gui-test-final.log",
+      "initialProbeFailure": "Timed replay began before the browser control SSE was ready; it missed the initial 86% and saw initial unknown. Corrected fixture synchronization, without changing production code, then reran successfully.",
+      "screenshots": [
+        "cc-viewer-alignment/evidence/SDK-context-jump-2026-11-24/native-86.png",
+        "cc-viewer-alignment/evidence/SDK-context-jump-2026-11-24/native-88.png",
+        "cc-viewer-alignment/evidence/SDK-context-jump-2026-11-24/newer-reduction-5.png"
+      ]
+    }
+  },
+  "deployment": {
+    "npmPublished": false,
+    "versionChanged": false,
+    "activeInstancesRestarted": false,
+    "existingArchivesChanged": false,
+    "globalCodexConfigChanged": false
+  },
+  "unverified": [
+    "Active-instance GUI with the fixed backend after a normal restart",
+    "Windows",
+    "Electron",
+    "physical touch device"
+  ]
+}

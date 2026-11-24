@@ -53,6 +53,19 @@ export const MAX_SESSIONS = (isMobile && !isPad) ? 30 : 100;
 export const OPTIMISTIC_CLEAR_PERCENT = 5;
 const LOG_PAGE_SIZE = 50;
 
+function isStreamFinalEntry(entry, progress) {
+  return entry && !entry.inProgress && isMainAgent(entry) && entry.timestamp === progress.timestamp
+    && (!progress.url || !entry.url || entry.url === progress.url);
+}
+
+function isOlderStreamProgress(next, current) {
+  if (!current) return false;
+  if (Number.isFinite(next.turnStartedAt) && Number.isFinite(current.turnStartedAt)
+      && next.turnStartedAt < current.turnStartedAt) return true;
+  return next.requestId && next.requestId === current.requestId
+    && Number.isFinite(next.sequence) && Number.isFinite(current.sequence) && next.sequence < current.sequence;
+}
+
 // AntD 主题配置：模块顶层冻结常量。
 // 旧实现是 getter 每次 render 返回新字面量，导致 antd cssinjs useTheme cache 永远 miss、
 // flattenToken 反复跑。顶层常量保证主题不变时引用稳定。
@@ -135,7 +148,7 @@ class AppBase extends React.Component {
       cliMode: false,
       sdkMode: false,
       ptyMode: false, ptyQueueAvailable: false,
-      sdkModel: null,
+      sdkModel: null, sdkReasoningEffort: null,
       sdkResumeId: null,
       workspaceMode: false,
       newProjectOpen: false,
@@ -690,7 +703,7 @@ class AppBase extends React.Component {
       this.setState(prev => ({
         ...newState,
         ...(prev.streamingLatest && Array.isArray(newState.requests) && newState.requests.some(r =>
-          r && r.timestamp === prev.streamingLatest.timestamp && !r.inProgress
+          isStreamFinalEntry(r, prev.streamingLatest)
         ) ? { streamingLatest: null } : {}),
       }), () => {
         if (this._ingestToken !== myToken) { resolve(false); return; }
@@ -1656,15 +1669,17 @@ class AppBase extends React.Component {
       // 并标记为低优先级渲染，避免阻塞用户输入。最终 chunk 经 entry path 交付而非
       // stream-progress，所以丢掉 trailing stream-progress 是安全的。
       this.eventSource.addEventListener('stream-progress', (event) => {
+        if (this._unmounted) return;
         this._resetSSETimeout();
         try {
           const data = JSON.parse(event.data);
+          const viewedInstance = new URLSearchParams(window.location.search).get('instance');
+          if (viewedInstance !== null && data.instanceKey && data.instanceKey !== viewedInstance) return;
           // 防 stale：若 requests 中已有同 timestamp 的完成条目，说明最终 entry 已到达，
           // 此 chunk 是乱序/延迟到达的旧包，直接丢弃以免复活已清除的 overlay
-          const existingFinal = this.state.requests.find(r =>
-            r && r.timestamp === data.timestamp && !r.inProgress
-          );
+          const existingFinal = this.state.requests.find(r => isStreamFinalEntry(r, data));
           if (existingFinal) return;
+          if (isOlderStreamProgress(data, this._pendingStreamingLatest || this.state.streamingLatest)) return;
           // streamingLatest 生命周期只由两种信号终结（不再用短 timeout 兜底）：
           // 1) 正常：最终 entry 到达时 _flushPendingEntries 原子清除
           // 2) 异常：SSE 连接真死 (_reconnectSSE)
@@ -1674,6 +1689,10 @@ class AppBase extends React.Component {
             url: data.url,
             content: data.content || [],
             model: data.model,
+            toolProgress: Array.isArray(data.toolProgress) ? data.toolProgress : [],
+            requestId: data.requestId,
+            turnStartedAt: data.turnStartedAt,
+            sequence: data.sequence,
             updatedAt: Date.now(),
           };
           if (this._streamingRaf) return;
@@ -1685,9 +1704,8 @@ class AppBase extends React.Component {
             React.startTransition(() => {
               // The canonical final entry can commit between receipt and this
               // deferred paint (or while React rebases the transition).
-              this.setState(prev => prev.requests.some(r =>
-                r && r.timestamp === pending.timestamp && !r.inProgress
-              ) ? null : { streamingLatest: pending });
+              this.setState(prev => this._unmounted || prev.requests.some(r => isStreamFinalEntry(r, pending))
+                || isOlderStreamProgress(pending, prev.streamingLatest) ? null : { streamingLatest: pending });
             });
           });
         } catch (e) { reportSwallowed('sse.stream-progress', e); }
@@ -1763,7 +1781,7 @@ class AppBase extends React.Component {
             isStreaming: false,
             // workspace 切换 = cwd 切换 → codex 的 lastModelUsage 也要重查；
             // 后端在 workspace_started 一并塞了新 cwd 对应的 hint，没有就清空。
-            sdkModel: null,
+            sdkModel: null, sdkReasoningEffort: null,
             codexProjectModel: (typeof data.codexProjectModel === 'string' && data.codexProjectModel) ? data.codexProjectModel : null,
           });
           if (isMobile) clearEntries();
@@ -1780,7 +1798,7 @@ class AppBase extends React.Component {
         this._currentSessionId = null; // 同 workspace_started：清旧会话 id，避免 lazy-lock 误锁
         this.setState({
           workspaceMode: true,
-          sdkModel: null,
+          sdkModel: null, sdkReasoningEffort: null,
           requests: [],
           mainAgentSessions: [],
           projectName: '',
@@ -1791,16 +1809,38 @@ class AppBase extends React.Component {
           isStreaming: false,
         });
       });
+      const contextSource = this.eventSource;
+      const contextInstance = new URLSearchParams(window.location.search).get('instance');
       this.eventSource.addEventListener('context_window', (event) => {
+        if (this._unmounted || this._isLocalLog || this.eventSource !== contextSource
+          || new URLSearchParams(window.location.search).get('instance') !== contextInstance) return;
         this._resetSSETimeout();
         try {
           const data = JSON.parse(event.data);
+          if (!data || typeof data !== 'object' || Array.isArray(data)
+            || (contextInstance && data.instanceKey && data.instanceKey !== contextInstance)) return;
+          const native = data.source === 'codex-rollout';
+          if (native && (!data.instanceKey || !data.cwd || !data.sessionId
+            || !Number.isFinite(Date.parse(data.timestamp)) || !Number.isFinite(Date.parse(data.turn_timestamp)))) return;
           // 收到新的 context_window 测量 → 同步解锁血条。
           // 兜底场景：onUserMessageSent / load_end fallback 都没触发解锁时
           //（WS 抖动、非增量 load、纯外部输入），SSE 推送的真实测量值就是
           //「会话已推进」的最强信号，避免 lock 永久卡 0%。
-          this.setState({ contextWindow: data, contextBarOptimistic: false, contextBarLocked: false });
-          if (this._clearOptimisticTimer) { clearTimeout(this._clearOptimisticTimer); this._clearOptimisticTimer = null; }
+          this.setState(previous => {
+            const owned = previous.contextWindow;
+            if (owned?.source === 'codex-rollout') {
+              // A generic archive notification cannot replace the live native
+              // measurement and force rendering back to the last completed turn.
+              // Compare time, never token count: real compaction may reduce it.
+              if (!native || data.instanceKey !== owned.instanceKey || data.cwd !== owned.cwd
+                || data.sessionId !== owned.sessionId || Date.parse(data.timestamp) < Date.parse(owned.timestamp)) return null;
+            }
+            return { contextWindow: data, contextBarOptimistic: false, contextBarLocked: false };
+          }, () => {
+            if (this.state.contextWindow === data && this._clearOptimisticTimer) {
+              clearTimeout(this._clearOptimisticTimer); this._clearOptimisticTimer = null;
+            }
+          });
         } catch (e) { reportSwallowed('sse.context_window', e); }
       });
       this.eventSource.addEventListener('workflow_update', (event) => {
@@ -1866,7 +1906,8 @@ class AppBase extends React.Component {
             if (voiceInstance && data.instanceKey !== voiceInstance) return;
             if (!this._isLocalLog) {
               const model = typeof data.model === 'string' ? data.model.trim() : '';
-              this.setState({ sdkModel: model && model.length <= 256 ? model : null });
+              this.setState({ sdkModel: model && model.length <= 256 ? model : null,
+                sdkReasoningEffort: typeof data.reasoningEffort === 'string' && data.reasoningEffort.length <= 64 ? data.reasoningEffort : null });
             }
           }
           if (data.active) {
@@ -2066,8 +2107,7 @@ class AppBase extends React.Component {
         }
 
         // Live overlay 原子清除：最终 entry（非 inProgress）到达且 timestamp 匹配 → 同 setState 清除 overlay
-        if (!entry.inProgress && isMainAgent(entry) && prev.streamingLatest
-            && prev.streamingLatest.timestamp === entry.timestamp) {
+        if (prev.streamingLatest && isStreamFinalEntry(entry, prev.streamingLatest)) {
           shouldClearStreaming = true;
         }
 
@@ -2388,7 +2428,7 @@ class AppBase extends React.Component {
     // Keep the mounted chat and its unsent draft while replacing the archive.
     this.setState({ pinnedSessionTs: null, streamingLatest: null, isStreaming: false,
       contextWindow: null, contextBarLocked: false, contextBarOptimistic: false,
-      sdkModel: null, workspaceMode: false, cliMode: true, sdkMode: true, sdkResumeId: data.resumeId, viewMode: 'chat' }, () => this._resetV2Communication());
+      sdkModel: null, sdkReasoningEffort: null, workspaceMode: false, cliMode: true, sdkMode: true, sdkResumeId: data.resumeId, viewMode: 'chat' }, () => this._resetV2Communication());
   };
 
   handleWorkspaceLaunch = ({ projectName, sdkMode, ptyMode, instanceKey }) => {

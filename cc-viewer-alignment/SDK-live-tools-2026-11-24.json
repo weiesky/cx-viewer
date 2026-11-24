@@ -1,0 +1,242 @@
+{
+  "date": "2026-11-24",
+  "task": "SDK live shell conversation progress",
+  "implementationCommit": "817e698",
+  "baseCommit": "8c51a76",
+  "branch": "fix/sdk-live-tool-progress",
+  "upstream": {
+    "reference": "d3c1f7fbf47c0424226acbe064ab4135e7ebe3cd",
+    "mode": "Independent user-reported SDK maintenance; no new upstream alignment closure",
+    "nextPackage": "B13"
+  },
+  "validation": {
+    "fullTests": {
+      "groups": [
+        9,
+        7,
+        28,
+        816,
+        1760,
+        246
+      ],
+      "passed": 2866,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0,
+      "log": "/tmp/cxv-live-tools-full.log",
+      "firstRun": {
+        "failure": "Root CXV_LOG_DIR override disagreed with existing content test default registry root",
+        "log": "/tmp/cxv-live-tools-full-first.log",
+        "productChangeForFailure": false
+      }
+    },
+    "webTargeted": {
+      "passed": 4,
+      "log": "/tmp/cxv-live-tools-web-target.log",
+      "includesAdditionalCompactIsolationAndOldTurnAssertions": true
+    },
+    "backendTargeted": {
+      "passed": 2,
+      "file": "packages/app/tests/sdk-live-tools.test.js"
+    },
+    "build": {
+      "passed": true,
+      "log": "/tmp/cxv-live-tools-build.log"
+    },
+    "boundaries": {
+      "files": 536,
+      "violations": 0
+    },
+    "sourcePaths": 605,
+    "stableTarballPaths": 630,
+    "tarballLog": "/tmp/cxv-live-tools-tarball.log",
+    "gui": {
+      "root": "/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-sdk-live-gui-o4ucmH",
+      "port": 62697,
+      "results": [
+        {
+          "engine": "chromium",
+          "version": "159.0.8154.6",
+          "mode": "desktop",
+          "emulated": false,
+          "steps": 3,
+          "controlledExecProtocol": true,
+          "actualSdkControlStreamV2AndBuiltUi": true,
+          "httpSseReplay": true,
+          "runningOutput": true,
+          "completedAndFailed": true,
+          "reloadMidCommand": true,
+          "canonicalReplacementWithoutDuplicates": true,
+          "stopViaWs": true,
+          "siblingIsolation": true,
+          "pageErrors": [],
+          "websocketPaths": [
+            "/ws/terminal",
+            "/ws/mux",
+            "/ws/terminal",
+            "/ws/mux",
+            "/ws/terminal",
+            "/ws/mux",
+            "/ws/terminal"
+          ]
+        },
+        {
+          "engine": "chromium",
+          "version": "159.0.8154.6",
+          "mode": "phone",
+          "emulated": true,
+          "steps": 3,
+          "controlledExecProtocol": true,
+          "actualSdkControlStreamV2AndBuiltUi": true,
+          "httpSseReplay": true,
+          "runningOutput": true,
+          "completedAndFailed": true,
+          "reloadMidCommand": true,
+          "canonicalReplacementWithoutDuplicates": true,
+          "stopViaWs": true,
+          "siblingIsolation": true,
+          "pageErrors": [],
+          "websocketPaths": [
+            "/ws/terminal",
+            "/ws/mux",
+            "/ws/terminal",
+            "/ws/mux",
+            "/ws/terminal",
+            "/ws/mux",
+            "/ws/terminal"
+          ]
+        },
+        {
+          "engine": "webkit",
+          "version": "27.2",
+          "mode": "desktop",
+          "emulated": false,
+          "steps": 3,
+          "controlledExecProtocol": true,
+          "actualSdkControlStreamV2AndBuiltUi": true,
+          "httpSseReplay": true,
+          "runningOutput": true,
+          "completedAndFailed": true,
+          "reloadMidCommand": true,
+          "canonicalReplacementWithoutDuplicates": true,
+          "stopViaWs": true,
+          "siblingIsolation": true,
+          "pageErrors": [],
+          "websocketPaths": [
+            "/ws/terminal",
+            "/ws/mux",
+            "/ws/terminal",
+            "/ws/mux",
+            "/ws/terminal",
+            "/ws/mux",
+            "/ws/terminal"
+          ]
+        },
+        {
+          "engine": "webkit",
+          "version": "27.2",
+          "mode": "phone",
+          "emulated": true,
+          "steps": 3,
+          "controlledExecProtocol": true,
+          "actualSdkControlStreamV2AndBuiltUi": true,
+          "httpSseReplay": true,
+          "runningOutput": true,
+          "completedAndFailed": true,
+          "reloadMidCommand": true,
+          "canonicalReplacementWithoutDuplicates": true,
+          "stopViaWs": true,
+          "siblingIsolation": true,
+          "pageErrors": [],
+          "websocketPaths": [
+            "/ws/terminal",
+            "/ws/mux",
+            "/ws/terminal",
+            "/ws/mux",
+            "/ws/terminal",
+            "/ws/mux",
+            "/ws/terminal"
+          ]
+        }
+      ]
+    },
+    "native": {
+      "root": "/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-sdk-live-native-t789uS",
+      "version": "codex-cli 0.169.0",
+      "results": [
+        {
+          "transport": "exec",
+          "actualNativeCodex": true,
+          "officialSdk": true,
+          "syntheticLoopbackResponses": true,
+          "externalModel": false,
+          "realShellCalls": 3,
+          "requests": 4,
+          "toolNames": [
+            "exec_command",
+            "exec_command",
+            "exec_command"
+          ],
+          "progressFrames": 9,
+          "eachStartVisibleBeforeFinal": true,
+          "completedAndFailed": true,
+          "finalOnlyOnce": true
+        },
+        {
+          "transport": "appserver",
+          "actualNativeCodex": true,
+          "officialSdk": true,
+          "syntheticLoopbackResponses": true,
+          "externalModel": false,
+          "realShellCalls": 3,
+          "requests": 4,
+          "toolNames": [
+            "exec_command",
+            "exec_command",
+            "exec_command"
+          ],
+          "progressFrames": 9,
+          "eachStartVisibleBeforeFinal": true,
+          "completedAndFailed": true,
+          "finalOnlyOnce": true
+        }
+      ]
+    }
+  },
+  "previewLimits": {
+    "perToolJavaScriptCharacters": 16384,
+    "perFrameOutputJavaScriptCharacters": 131072,
+    "policy": "Tail preview, latest calls first; canonical raw results unchanged"
+  },
+  "runtime": {
+    "userInstancesRestarted": false,
+    "userInstancesStopped": false,
+    "globalCodexConfigurationChanged": false,
+    "existingArchivesChanged": false,
+    "ownedGuiPort": 62697,
+    "ownedGuiPortClosed": true,
+    "requiresNormalBackendRestart": true
+  },
+  "delivery": {
+    "localCommit": true,
+    "pushed": false,
+    "pr": false,
+    "published": false,
+    "versionCommandRun": false,
+    "actualAppVersion": "1.1.20"
+  },
+  "limitations": [
+    "Windows, Electron GUI, physical devices, active-user GUI and external-model networks not verified.",
+    "Only output actually supplied by SDK events is previewed; no synthetic stdout."
+  ],
+  "probes": [
+    "cc-viewer-alignment/probes/sdk-live-tools-gui.mjs",
+    "cc-viewer-alignment/probes/sdk-live-tools-native.mjs"
+  ],
+  "initialHarnessFailures": [
+    "Missing Playwright browser cache path; resolved with existing isolated browser installation.",
+    "GUI fake exec waited on process.cwd rather than SDK --cd; corrected fixture only.",
+    "Native fixture CODEX_HOME did not yet exist; created its owned directory."
+  ],
+  "retainedExistingWarning": "Stats worker exited with code 1 during owned stopViewer shutdown."
+}

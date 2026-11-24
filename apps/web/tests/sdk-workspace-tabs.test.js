@@ -58,6 +58,8 @@ export { default as AskQuestionForm } from './src/components/chat/AskQuestionFor
 export { default as PreferencesForm } from './src/components/settings/PreferencesForm.jsx';
 export { default as DetailPanel } from './src/components/dashboard/DetailPanel.jsx';
 export { default as ContextTab } from './src/components/dashboard/ContextTab.jsx';
+export { default as SdkModelPicker } from './src/components/chat/SdkModelPicker.jsx';
+export { default as SdkPlanUsagePill } from './src/components/dashboard/SdkPlanUsagePill.jsx';
 export { default as ProxyChip } from './src/components/chat/ProxyChip.jsx';
 export { default as ProxyModal } from './src/components/settings/ProxyModal.jsx';
 export { default as PluginPanelModal } from './src/components/plugins/PluginPanelModal.jsx';
@@ -321,6 +323,42 @@ function fixture(t, { blocked = false, component = 'Component', props = {} } = {
   return { draw, reload, tick, event, cleanup, moveFile: components.moveFile, canDropMoveOn: components.canDropMoveOn, importFiles: components.importFiles, expandEntries: components.expandEntries, fileMenu: components.createFileMenuHandler, menuItems: components.buildFileContextMenuItems, AppBase, ChatView: components.ChatView, DetailPanel: components.DetailPanel, ProxyChip: components.ProxyChip, values, windowEvents, documentEvents, timers, requests, focused, navigations,
     get tree() { return tree; }, set live(rows) { live = rows; }, set listed(rows) { listed = rows; }, set history(data) { history = data; } };
 }
+
+test('SDK footer loads native quota independently of request rows, refreshes, and clears unavailable quota', async t => {
+  const f = fixture(t, { component: 'SdkPlanUsagePill' }), timers = new Map(), requests = [];
+  let planUsage = { windows: [{ id: 'codex:primary', utilization: 0.23 }] }, fail = false;
+  t.mock.method(globalThis, 'setTimeout', (fn, delay) => { timers.set(1, { fn, delay }); return 1; });
+  t.mock.method(globalThis, 'clearTimeout', id => timers.delete(id));
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    requests.push({ url, options });
+    return { ok: !fail, json: async () => ({ instanceKey: 'a', planUsage }) };
+  });
+  f.draw(); await f.tick(); f.draw();
+  assert.equal(f.tree.props.planUsage.windows[0].utilization, 0.23);
+  assert.match(requests[0].url, /sdk-plan-usage\?instance=a/);
+  assert.equal(requests[0].options.cache, 'no-store');
+  assert.equal(timers.get(1).delay, 60000);
+  planUsage = { windows: [{ id: 'codex:primary', utilization: 0.31 }] };
+  await timers.get(1).fn(); f.draw();
+  assert.equal(f.tree.props.planUsage.windows[0].utilization, 0.31);
+  fail = true; await timers.get(1).fn(); f.draw();
+  assert.equal(f.tree.props.planUsage, null);
+  f.cleanup(); assert.equal(timers.size, 0); assert.equal(requests[0].options.signal.aborted, true);
+});
+
+test('SDK footer discards quota arriving after workspace switch or unmount', async t => {
+  const f = fixture(t, { component: 'SdkPlanUsagePill' });
+  let resolve;
+  t.mock.method(globalThis, 'fetch', () => new Promise(r => { resolve = r; }));
+  f.draw();
+  window.location.search = '?instance=b';
+  resolve({ ok: true, json: async () => ({ instanceKey: 'a', planUsage: { windows: [{ utilization: 0.99 }] } }) });
+  await f.tick(); f.draw(); assert.equal(f.tree.props.planUsage, null);
+  f.cleanup();
+  window.location.search = '?instance=a'; f.reload(); f.cleanup();
+  resolve({ ok: true, json: async () => ({ instanceKey: 'a', planUsage: { windows: [{ utilization: 0.99 }] } }) });
+  await f.tick(); f.draw(); assert.equal(f.tree.props.planUsage, null);
+});
 
 function voiceFixture(t) {
   const f = fixture(t), exports = require(output), plays = [], sources = [];
@@ -966,6 +1004,102 @@ test('a cold V2 baseline clears an already-painted final overlay while preservin
   assert.equal(app.state.streamingLatest, live, 'an unrelated final baseline cannot erase a running turn');
 });
 
+test('SDK shell-only progress uses existing tool cards and results before any canonical MainAgent entry', t => {
+  const f = fixture(t), exports = require(output);
+  const tool = { type: 'tool_use', id: 'live-shell', name: 'shell_command', input: { command: 'printf live' } };
+  const progress = { timestamp: 'live-turn', requestId: 'owned-request', content: [tool],
+    toolProgress: [{ id: tool.id, status: 'in_progress', output: 'first line' }] };
+  const props = { cliMode: true, sdkMode: true, requests: [], mainAgentSessions: [],
+    streamingLatest: progress, showFullToolContent: true, isStreaming: true };
+  const view = new f.ChatView(props);
+  const messages = () => {
+    const tree = view.render();
+    return descendants(view._virtuosoFooter || tree, node => node.type?.name === 'ChatMessage' && node.props.toolStatusMap);
+  };
+  let cards = messages();
+  assert.equal(cards.length, 1, 'tool-only progress must not be discarded by the text/thinking filter');
+  assert.deepEqual(cards[0].props.content, [tool]);
+  assert.equal(cards[0].props.toolStatusMap[tool.id], 'in_progress');
+  assert.equal(cards[0].props.toolResultMap[tool.id].resultText, 'first line');
+  const card = new exports.ChatMessage(cards[0].props);
+  assert.equal(descendants(card.renderToolCall(tool), node => node.props?.role === 'status').length, 1);
+  card.props = { ...card.props, showFullToolContent: false };
+  const compact = card.renderAssistantContent(card.props.content, card.props.toolResultMap);
+  assert.equal(compact.flatMap(node => descendants(node, node => node.props?.role === 'status')).length, 1,
+    'compact tool pills retain the same live status without overriding the display preference');
+  view.props = { ...props, streamingLatest: { ...progress,
+    toolProgress: [{ id: tool.id, status: 'failed', output: 'exit failed', exitCode: 1 }] } };
+  cards = messages();
+  assert.equal(cards[0].props.toolStatusMap[tool.id], 'failed');
+  assert.equal(cards[0].props.toolResultMap[tool.id].resultText, 'exit failed');
+  view.props = { ...props, requests: [{ timestamp: progress.timestamp, mainAgent: true, inProgress: true,
+    body: { input: [{ role: 'assistant', content: [tool] }] } }] };
+  assert.equal(messages().length, 0, 'an Ask partial transcript already owns its completed shell cards');
+  view.props = props;
+  view.state.stopOptimistic = true;
+  assert.equal(messages().length, 0, 'optimistic Stop hides the live process immediately');
+  view.state.stopOptimistic = false; view.props = { ...props, sessionUpperBoundTs: 1 };
+  assert.equal(messages().length, 0, 'a pinned historical view never receives current live tools');
+});
+
+test('long live shell output shows each new tail in full cards and compact popovers', t => {
+  let resultElement;
+  const f = fixture(t, { component: () => resultElement.type(resultElement.props) });
+  const { ChatMessage } = require(output);
+  const tool = { type: 'tool_use', id: 'long-shell', name: 'shell_command', input: { command: 'printf log' } };
+  const render = text => {
+    const view = new f.ChatView({ cliMode: true, sdkMode: true, requests: [], mainAgentSessions: [],
+      streamingLatest: { timestamp: 'long-turn', content: [tool], toolProgress: [{ id: tool.id, status: 'in_progress', output: text }] },
+      showFullToolContent: true, collapseToolResults: false });
+    const tree = view.render();
+    const bubble = descendants(view._virtuosoFooter || tree, node => node.props?.toolStatusMap)[0];
+    const message = new ChatMessage(bubble.props), result = bubble.props.toolResultMap[tool.id];
+    resultElement = message.renderToolResult(result); f.draw();
+    const full = descendants(f.tree, node => node.type === 'pre')[0].props.dangerouslySetInnerHTML.__html;
+    const compact = message._renderSimplifiedToolPill(tool, result).props.content();
+    const texts = descendants(compact, node => typeof node.props?.children === 'string').map(node => node.props.children);
+    return { full, compact: texts.join('\n'), result, message };
+  };
+  for (const prefix of ['stable output\n'.repeat(600), 'x'.repeat(9000)]) {
+    const before = render(prefix + 'LATEST_OUTPUT_ONE');
+    const after = render(prefix + 'LATEST_OUTPUT_TWO');
+    for (const key of ['full', 'compact']) {
+      assert.ok(before[key].includes('LATEST_OUTPUT_ONE'), key + ' shows the previous tail');
+      assert.ok(after[key].includes('LATEST_OUTPUT_TWO'), key + ' updates the latest tail');
+      assert.notEqual(before[key], after[key]);
+    }
+    assert.equal(after.result.resultText, prefix + 'LATEST_OUTPUT_TWO', 'rendering does not rewrite the result');
+    // Canonical results keep the existing head preview after the live layer is replaced.
+    resultElement = after.message.renderToolResult({ ...after.result, previewTail: undefined }); f.draw();
+    assert.ok(!descendants(f.tree, node => node.type === 'pre')[0].props.dangerouslySetInnerHTML.__html.includes('LATEST_OUTPUT_TWO'));
+  }
+});
+
+test('tool progress survives same-timestamp TOOL rows, rejects older frames and is replaced only by its MainAgent final', t => {
+  const { app, row, raf } = coldIngestFixture(t), handlers = new Map();
+  app._streamTransport = { open: () => ({ close() {}, addEventListener: (name, fn) => handlers.set(name, fn) }) };
+  app._armSSETimeout = app._resetSSETimeout = () => {};
+  app._initControlSSE();
+  const frame = (sequence, status) => ({ timestamp: 'held', requestId: 'owned', sequence,
+    content: [{ type: 'tool_use', id: 'shell', name: 'shell_command', input: { command: 'pwd' } }],
+    toolProgress: [{ id: 'shell', status, output: String(sequence) }] });
+  const emit = data => { handlers.get('stream-progress')({ data: JSON.stringify(data) }); if (app._streamingRaf) raf.get(app._streamingRaf)(); };
+  app.state.requests = [{ timestamp: 'held', mainAgent: false, method: 'TOOL', _sdkSource: true }];
+  emit(frame(2, 'completed'));
+  assert.equal(app.state.streamingLatest?.toolProgress[0].status, 'completed');
+  emit(frame(1, 'in_progress'));
+  assert.equal(app.state.streamingLatest?.toolProgress[0].status, 'completed', 'a delayed running frame cannot downgrade a completed tool');
+  emit({ ...frame(3, 'failed'), instanceKey: 'foreign-instance' });
+  assert.equal(app.state.streamingLatest?.toolProgress[0].status, 'completed', 'a sibling workspace cannot replace this process');
+  app.state.streamingLatest = { ...app.state.streamingLatest, turnStartedAt: 200 };
+  emit({ ...frame(4, 'failed'), requestId: 'older-turn', turnStartedAt: 100 });
+  assert.equal(app.state.streamingLatest?.toolProgress[0].status, 'completed', 'an older turn cannot replace a newer live process');
+  app.handleEntryObject(row('held')); app._flushPendingEntries();
+  assert.equal(app.state.streamingLatest, null);
+  emit(frame(3, 'completed'));
+  assert.equal(app.state.streamingLatest, null, 'a late snapshot cannot revive the finalized process');
+});
+
 function historyFixture(t) {
   const fixture = coldIngestFixture(t), { app, row } = fixture;
   const older = row('older'), current = row('current');
@@ -1224,7 +1358,87 @@ test('SDK model snapshot survives idle/reconnect, rejects a sibling or retired s
   assert.equal(app.state.sdkModel, null);
 });
 
-test('final input-bar chip prefers the active profile, stays read-only for SDK model, and uses existing modal callbacks', t => {
+test('SDK context cannot oscillate from a live 86% measurement back to a stale 4% snapshot', t => {
+  const f = voiceFixture(t), app = f.app;
+  app.setState = (patch, done) => { Object.assign(app.state, typeof patch === 'function' ? patch(app.state) : patch); done?.(); };
+  app.state.sdkMode = true;
+  const measurement = (total, timestamp = '2026-11-24T03:47:21.409Z') => ({
+    source: 'codex-rollout', instanceKey: 'a', cwd: '/project', sessionId: 'root', turnId: 'current',
+    turn_timestamp: '2026-11-24T03:38:23.427Z', timestamp,
+    current_usage: { total_tokens: total }, context_window_size: 258400,
+  });
+  const current = measurement(224203);
+  const header = new (require(output).AppHeader)({ contextBarSlot: { nodeType: 1 }, requests: [{
+    _sdkSource: true, mainAgent: true, timestamp: '2026-11-24T03:27:09.927Z',
+    body: { metadata: { transport: 'exec', thread_id: 'root', cwd: '/project', instance_key: 'a' } },
+    response: { body: { usage: { total_tokens: 21380 }, context_usage: { total_tokens: 21380 }, context_window: 258400 } },
+  }] });
+  const displayed = () => {
+    header.props = { ...header.props, contextWindow: app.state.contextWindow };
+    return header.renderContextBarPortal().children.props;
+  };
+  assert.equal(displayed().contextPercent, 4);
+  f.emit('context_window', current);
+  assert.equal(app.state.contextWindow.current_usage.total_tokens, 224203);
+  assert.equal(displayed().contextPercent, 86);
+  // A commit event has no measurement identity/time. It must not retire the
+  // owned native snapshot and make the display fall back to the first reply.
+  f.emit('context_window', { instanceKey: 'a', cwd: '/project', current_usage: { total_tokens: 21380 }, context_window_size: 258400 });
+  assert.equal(app.state.contextWindow.current_usage.total_tokens, 224203);
+  assert.equal(displayed().contextPercent, 86);
+  f.emit('context_window', measurement(21380, '2026-11-24T03:27:33.943Z'));
+  assert.equal(app.state.contextWindow.current_usage.total_tokens, 224203);
+  f.emit('context_window', { ...measurement(230000), instanceKey: 'b' });
+  assert.equal(app.state.contextWindow.current_usage.total_tokens, 224203);
+  app._initControlSSE();
+  f.emit('context_window', measurement(21380), 0);
+  assert.equal(app.state.contextWindow.current_usage.total_tokens, 224203, 'retired connection cannot overwrite state');
+  // A genuine newer reduction (including native compaction) must still work.
+  f.emit('context_window', measurement(25000, '2026-11-24T03:48:00.000Z'));
+  assert.equal(app.state.contextWindow.current_usage.total_tokens, 25000);
+  assert.equal(displayed().contextTokens, 25000);
+});
+
+test('native model picker handles keyboard opening, busy gating, errors and stale workspace responses', async t => {
+  const f = fixture(t), { SdkModelPicker } = require(output), sent = [];
+  const data = { instanceKey: 'a', revision: '1:0', model: 'alpha', reasoningEffort: 'low', busy: false,
+    models: [{ model: 'alpha', displayName: 'Alpha', supportedReasoningEfforts: [{ reasoningEffort: 'low' }, { reasoningEffort: 'ultra' }] },
+      { model: 'beta', displayName: 'Beta', supportedReasoningEfforts: [{ reasoningEffort: 'medium' }] }] };
+  let respond = async () => ({ ok: true, json: async () => data });
+  t.mock.method(globalThis, 'fetch', async (url, options) => { sent.push({ url, options }); return respond(); });
+  const picker = new SdkModelPicker({ sdkModel: 'alpha', reasoningEffort: 'low', busy: false });
+  picker.setState = patch => Object.assign(picker.state, typeof patch === 'function' ? patch(picker.state) : patch);
+  picker.componentDidMount(); t.after(() => picker.componentWillUnmount());
+  const key = f.event(); key.key = 'Enter'; picker.render().props.children.props.onKeyDown(key);
+  await f.tick(); assert.equal(picker.state.open, true); assert.equal(picker.state.data.model, 'alpha');
+  assert.equal(picker.render().props.children.props.role, 'button');
+  const content = picker.render().props.content;
+  const select = content.props.children[0].props.children[0];
+  assert.deepEqual(select.props.options.map(o => o.value), ['alpha', 'beta']);
+  picker.props = { ...picker.props, busy: true }; picker.select('beta');
+  assert.equal(sent.length, 1, 'busy input cannot submit a switch');
+  picker.props = { ...picker.props, busy: false };
+  respond = async () => ({ ok: false, json: async () => ({ error: 'stale selection' }) });
+  picker.select('beta'); await f.tick();
+  assert.equal(picker.state.error, 'stale selection'); assert.equal(picker.state.data.model, 'alpha');
+  assert.deepEqual(JSON.parse(sent.at(-1).options.body), { instanceKey: 'a', model: 'beta', revision: '1:0' });
+  respond = () => new Promise(resolve => { respond.release = resolve; });
+  const pending = picker.load(); window.location.search = '?instance=b';
+  respond.release({ ok: true, json: async () => ({ ...data, model: 'wrong-workspace' }) });
+  await pending; assert.equal(picker.state.data.model, 'alpha', 'late response does not alter another view');
+});
+
+test('model picker reflects model/effort changes received from another client while closed', t => {
+  fixture(t); const { SdkModelPicker } = require(output);
+  const picker = new SdkModelPicker({ sdkModel: 'alpha', reasoningEffort: 'low' });
+  picker.state.data = { model: 'alpha', reasoningEffort: 'low' };
+  picker.setState = patch => Object.assign(picker.state, typeof patch === 'function' ? patch(picker.state) : patch);
+  const previous = picker.props; picker.props = { sdkModel: 'beta', reasoningEffort: 'high' };
+  picker.componentDidUpdate(previous);
+  assert.equal(picker.state.data.model, 'beta'); assert.equal(picker.state.data.reasoningEffort, 'high');
+});
+
+test('final input-bar chip prefers the active profile, opens the native SDK model picker, and uses existing modal callbacks', t => {
   const f = fixture(t), React = require('react');
   const chat = new f.ChatView({ cliMode: true, sdkMode: true, terminalVisible: true,
     mainAgentSessions: [], requests: [], sdkModel: 'fixture-A', activeProxyId: 'max',
@@ -1240,9 +1454,8 @@ test('final input-bar chip prefers the active profile, stays read-only for SDK m
   };
   const input = () => find(chat.render(), node => node.type?.name === 'ChatInputBar');
   const sdk = f.ProxyChip(input().props.proxyChip.props);
-  assert.equal(sdk.props.children, 'fixture-A');
-  assert.equal(sdk.props.onClick, undefined);
-  assert.equal(sdk.props.role, undefined);
+  assert.equal(sdk.type.name, 'SdkModelPicker');
+  assert.equal(sdk.props.sdkModel, 'fixture-A');
   const changed = { ...chat.props, activeProxyId: 'fixture' };
   assert.equal(chat.shouldComponentUpdate(changed, chat.state), true);
   chat.props = changed;
@@ -1259,7 +1472,7 @@ test('final input-bar chip prefers the active profile, stays read-only for SDK m
   delete window.tabBridge;
   chat.props = { ...chat.props, isLocalLog: true };
   assert.equal(input().props.proxyChip, null, 'history cannot expose a live model');
-  assert.equal(f.ProxyChip({ sdkMode: true, sdkModel: null, activeProxyId: 'max' }), null);
+  assert.equal(f.ProxyChip({ sdkMode: true, sdkModel: null, activeProxyId: 'max' }).type.name, 'SdkModelPicker');
 });
 
 

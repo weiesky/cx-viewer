@@ -1,0 +1,94 @@
+{
+  "date": "2026-11-24",
+  "task": "SDK footer plan usage",
+  "baseCommit": "e9f0017",
+  "implementationCommit": "b61814f6a99ae01d38fceb440849090753f314da",
+  "branch": "feature/sdk-model-switch-2026-11-24",
+  "upstream": {
+    "fixedSnapshot": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+    "footerCommit": "9eb178145bb218e0a84d806f350ac84f7287a537",
+    "mode": "Native data-source adaptation, no new B0 closure"
+  },
+  "validation": {
+    "fullTests": {
+      "passed": 2850,
+      "failed": 0,
+      "skipped": 0,
+      "groups": [
+        9,
+        7,
+        28,
+        814,
+        1746,
+        246
+      ],
+      "exitCode": 0,
+      "log": "/tmp/cxv-plan-usage-full.log"
+    },
+    "targeted": {
+      "backend": 12,
+      "web": 155,
+      "logs": [
+        "/tmp/cxv-plan-usage-target.log",
+        "/tmp/cxv-plan-usage-web.log"
+      ]
+    },
+    "build": {
+      "passed": true,
+      "log": "/tmp/cxv-plan-usage-build.log"
+    },
+    "boundaries": {
+      "files": 535,
+      "violations": 0
+    },
+    "sourcePaths": 604,
+    "tarballStablePaths": 629,
+    "tarballLog": "/tmp/cxv-plan-usage-tarball-final.log",
+    "browser": {
+      "native": true,
+      "simulatedResponse": false,
+      "planUsage": {
+        "source": "codex",
+        "windows": [
+          {
+            "id": "codex:primary",
+            "label": "Codex primary",
+            "slot": "primary",
+            "utilization": 0.85,
+            "windowMinutes": 10080,
+            "resetAt": 1795799789000
+          }
+        ],
+        "planType": "prolite"
+      },
+      "footer": "周 85%",
+      "calls": [
+        "http://127.0.0.1:20980/api/sdk-plan-usage?instance=cxv-291851ba36d25829b2b1a6a1d2cd1e6e",
+        "http://127.0.0.1:20980/api/sdk-plan-usage?instance=cxv-291851ba36d25829b2b1a6a1d2cd1e6e"
+      ],
+      "pageErrors": [],
+      "noThreadCreated": true
+    }
+  },
+  "activeReadOnly": {
+    "port": 7008,
+    "pid": 14189,
+    "sdkMode": true,
+    "quotaEndpoint": "SPA HTML fallback, native quota route not loaded",
+    "restartedByAgent": false,
+    "guiVerified": false
+  },
+  "limitations": [
+    "Active service requires a normal restart to load the backend.",
+    "Windows, Electron GUI, WebKit and physical devices not verified."
+  ],
+  "notes": [
+    "First targeted run had an incorrect sandbox serialization assertion; corrected the assertion to the actual profile/config contract.",
+    "First full run stopped at the source-path gate before tests: reviewed addition of lib/sdk-plan-usage.js and regenerated the tarball baseline; final run passed.",
+    "Temporary git index contention resolved with bounded retries; no lock was deleted."
+  ],
+  "changedGlobalCodexConfig": false,
+  "changedExistingArchives": false,
+  "published": false,
+  "versionCommandRun": false
+}

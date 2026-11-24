@@ -1,5 +1,13 @@
 # cc-viewer 逐提交对齐台账
 
+2026-11-24 SDK实时工具CR两项P2修复（独立维护，非迁移）：`7af2d75` 两个共享字符串池入口增加完整相等校验，防等长签名碰撞导致预览/正式结果错值；`5ab4adc` 仅过程层标记previewTail，完整卡片/简洁弹层保留最新尾部，正式结果默认方式保持。先红后绿回归及全量2868/2868、0skip/build/536边界/605源码/630稳定包门通过，双浏览器4场12图覆盖长输出/等长更新及重连/替换/Stop/隔离。未PR/推送/发布/version或重启用户实例，旧归档及全局配置未改。原817e698/f805768与B12核销保持、下一包B13；见[修复验收](./SDK-live-tools-CR-2026-11-24.md)与[回执](./SDK-live-tools-CR-2026-11-24.json)。
+
+2026-11-24 SDK连续shell对话实时进度（独立维护，非新增迁移）：`817e698`复用当前item表和原卡片显示调用/状态/可用输出，修复同时间戳TOOL误判、首轮空面板、Ask部分记录重复、旧帧/实例隔离及重连回放；正式MainAgent原子替换，规范日志不写过程快照。全量2866/2866、0skip/build/536边界/605源码/630稳定包门通过；Chromium/WebKit桌面/手机模拟4场12图、真实HTTP SSE与WS mux、Stop及刷新通过；真实Codex0.169.0 exec/AppServer共6次shell/8次loopback响应、0外部模型请求通过。固定d3c1f7f对应过滤代码已复核，不核销B13；B12完成与下一包B13保持。未PR/推送/发布/version、未停止用户实例或改全局Codex配置/旧归档；活动后端需正常重启，目标环境余项见[实施记录](./SDK-live-tools-2026-11-24.md)与[回执](./SDK-live-tools-2026-11-24.json)。首次测试环境/fixture失败保留，未混记通过。
+
+2026-11-24 B12交付：2026-11-24 B12已完成本地对齐与隔离验收：`06be1ce6 → 9943faf`下载重定向，`03aad20b → f014bf9`私有访问token交接及原生安全适配。全量2862/2862、0skip/build/536边界/605源码/630稳定tarball，新生产829全文件字节/82定向与真实SDK CLI自有prefix成功更新、损坏包恢复通过；见[B12矩阵](./B12-completion-matrix.md)、[实施](./B12-implementation.md)与[回执](./B12-validation-2026-11-24.json)。下一包B13；D1/D2沿既有选择，旧环境未验边界不核销。未PR/推送/发布/version或重启用户实例。 上游1.9.33只登记元数据，不改本地1.1.20；`03aad20b`只核销B12行为子项。
+
+2026-11-24第二轮增量调查：用户要求查看最后一轮之后的新更新，已固定旧74cd752（1.9.29，不含）→d3c1f7f（源码1.9.35，含），25笔/17笔含功能修复/123净变更文件；完整映射候选、父提交、PR177–179及merge-tree证据见[新25笔台账](./upstream-delta-ledger-2026-11-24.md)与[机器索引](./upstream-delta-2026-11-24.json)，执行包见[B12–B20计划](./upstream-delta-plan-2026-11-24.md)。本轮只完成调查与规划，本地实现commit为空，产品测试/构建/GUI未运行；不把既有测试定义或旧通过数当本轮结果。此前SDK模型/上下文/套餐维护独立保留，不重复迁移。审批默认值/同cwd多SDK会话沿既有选择，列D1/D2待决策。旧337笔台账及B0–B11核销仍按原固定快照保留。
+
 2026-11-23 SDK修复交付：用户明确授权PR到main并自行合并。两项修复整为实现 `4a56de77fdea9584f7c1acb29aff008d45adfdf2`，经[PR #14](https://github.com/weiesky/cx-viewer/pull/14)于2026-11-23T14:56:09Z squash合并main `fcbaf59d2306105544a713cbfbbd17af934b87a0`；merge tree与已验证实现tree相同，精确head guard，无admin override。合并时9项远端成功/1项重复PR macOS仍无runner排队；相同head的Ubuntu Node20/22/24全套与macOS/Windows定向五类均成功，不把排队标通过。本地main已同步，合并后更新本轮文档。未发布npm、未重启活动实例、未改用户历史；原目录/分页/Windows完整运行/活动GUI未验边界保留。逐项检查与本地2833/2833证据见[回执](./SDK-context-usage-2026-11-23.json)。
 
 2026-11-23 SDK上下文维护（不新增上游迁移）：复核固定74cd752d中的Claude getContextUsage控制面/血条调用链及efc7f8ea实际adapter diff，完成Codex exec的精确线程原生last/window采集、累计记账分离、SSE隔离/重连及规范冷加载。真实同线程两轮2%/3%、独立Chrome血条/弹层9%与刷新通过，最终隔离全量2833/2833、0skip/build/531边界/602源码/627包门通过；首跑环境污染失败与复跑保留。代码/changeset/文档在工作区，未提交/PR/推送/发布；活动实例未重启、用户历史未改，目录/分页历史/Windows/活动GUI未验。上游依据、本地路径及完整验证见[本轮记录](./SDK-context-usage-2026-11-23.md)与[机器回执](./SDK-context-usage-2026-11-23.json)。
@@ -17026,3 +17034,27 @@ f9467bfc83到本笔 `refactor(server): group native IM approval and proxy helper
 既有201候选的E1–E34上游/本地映射保留；本笔为交付与CI后续，不新增上游候选。原始34笔末端64288c8已备份及bundle验证，首轮精确整合d09bcdd保持原tree。实际远端CI的18条路径修正折入最终单笔539822e（锁释放/零链接/不可变库替换严格重读、目标路径、detached基线与进程/浏览器/stdout夹具），原始与最终tree不同；最终远端/本地/merge tree一致。
 
 [PR #13](https://github.com/weiesky/cx-viewer/pull/13)在最终10/10检查成功后于2026-11-23T07:19:32Z合并main 3a4bf40，之后才更新本进度。最终2823/2823、0skip/build/pack626/601源码门，新生产1237及825包/211Web字节、stage825/395链接/独立启动、实际Node20.12启动+93通过；211Web与E34字节相同，沿用14配置30图。Ubuntu Node20/22/24全套和macOS/Windows定向合同已远端通过，不抵扣Windows完整运行、Electron GUI/签名/公证及真实外部环境余项。7008/PID97674与其他用户实例未重启，版本仍1.1.20、未发布。见[整合记录](./B11-consolidation-and-merge-2026-11-23.md)、[完整原始映射](./B11-original-commits-2026-11-23.json)和[最终JSON](./B11-validation-2026-11-23.json)。
+
+
+## 2026-11-24：B11后SDK原生模型切换（用户新要求）
+
+- 上游原入口依据：`133bc219df78920cdc3a5cb56f48cbe067e467e5`、`c66b5fe2ed6e855f0610127eba3de96ac821adea` 实际diff/ProxyChip组件与CSS；固定快照仍为`74cd752d99caf122e750216d2af3bb9f467c4de1`。原基线为只读模型fallback，本轮按用户三张截图要求扩展，不新增B0核销。
+- 本地实现：分支`feature/sdk-model-switch-2026-11-24`的独立实现提交，主题`feat(sdk): switch native models and reasoning effort in the composer`。保留原slot/几何/端门控/显式代理profile编辑器，新增原生目录读取、exec同线程resumeThread/AppServer turn model/effort、精确实例与revision校验、忙碌拒绝、SSE重连回放。
+- 验证：最终2842/2842、0skip、build、533边界/603源码/628稳定tarball通过；真实Codex0.169+SDK0.142.5+Chrome，Astra/high→Sol/high实际loopback请求、同会话历史与刷新通过。初跑PID0故障和探针失败保留，未改既有测试掩盖失败。
+- 当前包为B11后SDK维护；下一步正常重启后的活动实例验收。未重启用户实例/未改旧归档/未发布npm；Windows/Electron/WebKit/真机未验。完整证据见[实施](./SDK-model-switch-2026-11-24.md)与[回执](./SDK-model-switch-2026-11-24.json)。
+
+
+## 2026-11-24：B11后SDK血条回跳修复
+
+- 上游固定基线仍为`74cd752d99caf122e750216d2af3bb9f467c4de1`；本轮为既有Codex SDK上下文适配的数据所有权修复，不迁移新B0项，不改原DOM/CSS/百分比口径。前一独立模型切换提交为8227874。
+- 本地实现提交主题：`fix(sdk): reject stale context snapshots and competing archive events`。SDK exec原生manager保持实时/重连事实源；归档保留冷加载数据但不再推第二份竞争事件；AppBase按control source、精确实例/cwd/session与测量时间拒绝旧事件，允许真实更新后的低用量。
+- 修复前实际AppBase/AppHeader断言复现224,203被旧21,380覆盖；定向152、真实HTTP/SSE归档隔离与最终2843/2843、0skip/build/533边界/603源码/628稳定tarball通过。只读活动原生记录对上4%与86%；短时活动采样未捕到完整自然回跳顺序，不作过度结论。独立Chrome重放见[实施](./SDK-context-jump-2026-11-24.md)与[回执](./SDK-context-jump-2026-11-24.json)。
+- 当前为B11后SDK维护；下一步正常重启后的活动验收。用户实例未重启，已有历史/全局配置未改，未发布npm；Windows/Electron/真机及活动修复后GUI未验。
+
+
+## 2026-11-24：B11后SDK左下角套餐用量
+
+- 上游依据：`9eb178145bb218e0a84d806f350ac84f7287a537` 实际 diff 与固定 `74cd752d99caf122e750216d2af3bb9f467c4de1` 的完整 UsageWindowPill/CSS/footer/header 解析调用链；本轮为 SDK 原生数据源适配，不新增 B0 核销。
+- 本地独立实现 `b61814f6a99ae01d38fceb440849090753f314da`：原 footer/CSS/详情不变，原生只读 account/rateLimits/read → 白名单 quota → 精确实例 API；manager 缓存/并发/代次隔离，前端定时读取、错误清空与卸载取消。exec/AppServer 均适用，无线程创建/模型输入/传输切换。
+- 最终隔离全量2850/2850、0skip/build/535边界/604源码/629稳定tarball通过；真实账户到Chrome显示周85%/Pro Lite/重置倒计时，刷新与无pageerror通过；既有CSS未改。首次路径门/断言修正如实保留。
+- 当前包为B11后SDK套餐用量维护；下一步正常重启后活动GUI。7008/PID14189只读确认SDK，但新接口仍SPA fallback；未重启用户实例/未改旧归档与全局配置/未发布npm或运行version，Windows/Electron/WebKit/真机未验。见[实施](./SDK-plan-usage-2026-11-24.md)与[回执](./SDK-plan-usage-2026-11-24.json)。

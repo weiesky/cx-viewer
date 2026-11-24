@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { restartFromHelper, waitForExit } from './restart.js';
@@ -8,10 +8,19 @@ import { installStagedUpdate, readRestartConfig, RESTART_READY_FILE } from './up
 export async function runRestartHelper({ stateFile = process.argv[2], configFile = process.argv[3], config, install = installStagedUpdate, restart = restartFromHelper, log = console.error } = {}) {
   let staged;
   try {
-    config ||= readRestartConfig(configFile);
+    // JSON parser diagnostics can quote input containing the live access token.
+    if (!config) {
+      try { config = readRestartConfig(configFile); }
+      catch { throw new Error('Invalid restart config'); }
+    }
     if (!Number.isInteger(config.pid) || config.pid <= 0 || !Array.isArray(config.args) || typeof config.cwd !== 'string' || typeof config.cliPath !== 'string' || !/^\d+\.\d+\.\d+$/.test(config.version)) throw new Error('Invalid arguments');
     staged = JSON.parse(readFileSync(stateFile, 'utf8'));
     if (staged.version !== config.version) throw new Error('Staged update does not match the requested version');
+    // Keep the handoff in memory only during install and failure restoration.
+    if (configFile) {
+      try { rmSync(configFile, { force: true }); }
+      catch (err) { log(`[CX Viewer] Failed to remove restart config (holds the access token): ${err.message}`); }
+    }
     mkdirSync(dirname(RESTART_READY_FILE), { recursive: true, mode: 0o700 });
     writeFileSync(RESTART_READY_FILE, JSON.stringify({ token: config.token }), { mode: 0o600 });
     await waitForExit(config.pid);
@@ -47,7 +56,7 @@ export async function runRestartHelper({ stateFile = process.argv[2], configFile
   } finally {
     if (configFile) {
       const { rm } = await import('node:fs/promises');
-      await rm(configFile, { force: true }).catch(() => {});
+      await rm(configFile, { force: true }).catch(err => log(`[CX Viewer] Failed to clean up restart config: ${err.message}`));
     }
   }
 }

@@ -1,0 +1,148 @@
+{
+  "date": "2026-11-24",
+  "package": "B12",
+  "status": "complete-local-implementation-and-isolated-acceptance",
+  "branch": "alignment/b12-update-restart",
+  "base": "4cb1a4c",
+  "planCommit": "5496ad5bf91c6275b0420dea1a86f6f897e58be5",
+  "fixedUpstream": "d3c1f7fbf47c0424226acbe064ab4135e7ebe3cd",
+  "mappings": [
+    {
+      "upstream": "06be1ce62ee4ada15bc7805fe92b22dcf2f7451b",
+      "local": "9943faf81dbe470f6fbd6c02cc87980cb35faf92",
+      "scope": "download redirect behavior; retain registry metadata, digest, timeout and cleanup checks"
+    },
+    {
+      "upstream": "03aad20b929d67d566fa884fdc78391148627fae",
+      "local": "f014bf9a30de22ee5a259c72d727e001a0100e1b",
+      "scope": "private access-token self-update handoff, native common CLI handler and actual config-owner file protection; upstream release version excluded"
+    }
+  ],
+  "validation": {
+    "fullTests": {
+      "passed": 2862,
+      "failed": 0,
+      "skipped": 0,
+      "groups": [
+        9,
+        7,
+        28,
+        814,
+        1758,
+        246
+      ],
+      "exitCode": 0,
+      "log": "/tmp/cxv-b12-full.log",
+      "environment": "CXV/CODEX/OTEL inherited flags cleared; isolated HOME/CODEX_HOME; actual workspace cwd"
+    },
+    "targeted": {
+      "passed": 82,
+      "failed": 0,
+      "skipped": 0,
+      "log": "/tmp/cxv-b12-target.log"
+    },
+    "build": {
+      "passed": true,
+      "command": "pnpm run build"
+    },
+    "boundaries": {
+      "files": 536,
+      "violations": 0
+    },
+    "sourcePaths": 605,
+    "tarballStablePaths": 630,
+    "packPreviewFiles": 829,
+    "tarballContractPassed": true,
+    "installed": {
+      "package": "/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b12-production-zf26i1o1/prefix/lib/node_modules/cx-viewer",
+      "verifiedPublishedFiles": 829,
+      "archiveSha512": "dead283c21151458c73ec7246c216d22aee02628f54c5fe3d8d6b1140ed9100822c43587931090bae5b0cbc543f625ae9cdf9bbabb71aa3dbc6743ac004ccab2",
+      "targetedPassed": 82,
+      "failed": 0,
+      "skipped": 0,
+      "log": "/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b12-production-zf26i1o1/installed-tests.log",
+      "npmInstall": "passed",
+      "runtime": {
+        "installedPackage": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b12-production-zf26i1o1/prefix/lib/node_modules/cx-viewer",
+        "npmPrefix": "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b12-production-zf26i1o1/prefix",
+        "port": 60996,
+        "syntheticTargetOnly": "1.1.21",
+        "repositoryVersionUnchanged": "1.1.20",
+        "realRedirectedTarball": true,
+        "realCliRestartHandler": true,
+        "realNpmInstallInOwnedPrefix": true,
+        "history": [
+          {
+            "beforeVersion": "1.1.20",
+            "afterVersion": "1.1.21",
+            "processChanged": true,
+            "oldTokenHttp": 200,
+            "anonymousRemoteHttp": 403,
+            "recoveryDecision": "reload",
+            "configErased": true
+          },
+          {
+            "beforeVersion": "1.1.21",
+            "afterVersion": "1.1.21",
+            "processChanged": true,
+            "oldTokenHttp": 200,
+            "anonymousRemoteHttp": 403,
+            "recoveryDecision": "restored",
+            "configErased": true
+          }
+        ],
+        "manualLaunchRotated": true,
+        "corruptStageRestoredWithoutInstall": true,
+        "modelTurns": 0,
+        "childHandoffAbsent": true,
+        "activeUserInstancesTouched": false,
+        "guiVerified": false,
+        "privateLogFiles": [
+          "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b12-production-zf26i1o1/runtime-0.log",
+          "/private/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-b12-production-zf26i1o1/runtime-1.log"
+        ],
+        "ownedPortClosed": true
+      }
+    },
+    "runtimeProbe": "cc-viewer-alignment/probes/b12-update-runtime.mjs",
+    "ownedPortClosed": true
+  },
+  "adaptations": [
+    "Native CLI shares one handler across SDK, PTY and workspace modes.",
+    "Password sessions remain independent in-memory revision/generation records; URL-token inheritance does not preserve a password login.",
+    "Reuse existing atomicWriteFile with forced 0600 for handoffs; do not follow a stale target symlink.",
+    "Protect actual CODEX_HOME/cx-viewer handoff and atomic temp paths even when CXV_LOG_DIR points elsewhere.",
+    "CXV env namespace; no global Codex configuration changes."
+  ],
+  "firstFailures": [
+    "E1 real 302 chain failed with unexpected redirect before changing redirect:error.",
+    "E2 isolated server produced a fresh random token before handoff consumption was implemented.",
+    "Actual config-owner search fixture exposed handoff paths before adding CODEX_HOME/cx-viewer to existing protection.",
+    "New CLI source contract initially counted only two launch modes; corrected to actual three shared registrations.",
+    "Running app tests from repository root with inherited SDK flags caused four pre-existing auth fixture failures; controlled package cwd passed 82/82.",
+    "First pack was rejected by the stale-dist guard; normal build then real pack regenerated baseline with exactly lib/access-token.js added.",
+    "The standalone runtime probe initially used one extra parent in its updateProgress import; it failed before spawning anything, then passed after the probe path was corrected."
+  ],
+  "limitations": [
+    "No activity on user processes, active GUI or true global npm installation.",
+    "Remote password login must be repeated after process replacement; no password-session persistence added.",
+    "Windows, Electron GUI, WebKit and physical devices not verified in this package.",
+    "Runtime validation uses synthetic newer package versions only inside an owned temporary prefix."
+  ],
+  "published": false,
+  "versionCommandRun": false,
+  "changedGlobalCodexConfig": false,
+  "changedExistingArchives": false,
+  "checkedAt": "2026-11-24T05:41:41.723222+00:00",
+  "observedFollowups": [
+    "Large real tarball downloads emit existing WriteStream MaxListeners warnings from the unchanged drain/close Promise.race branch; both downloads, digest validation and cleanup succeeded. Not fixed by this scoped alignment."
+  ],
+  "documentValidation": {
+    "localLinksResolved": 1785,
+    "upstreamRows": 25,
+    "scopedImplementationMappings": 2,
+    "repositoryProductDiffAfterImplementationCommit": "none",
+    "diffCheck": "passed",
+    "checkedAt": "2026-11-24T05:42:16.206649+00:00"
+  }
+}

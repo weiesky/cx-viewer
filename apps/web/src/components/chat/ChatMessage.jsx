@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { Collapse, Typography, Radio, Checkbox, Input, Button, Tooltip, Popover, message } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
+import { SearchOutlined, LoadingOutlined } from '@ant-design/icons';
 import { escapeHtml, truncateText, getSvgAvatar } from '../../utils/helpers';
 import { formatHms, formatMonthDayTime } from '../../utils/formatters';
 import { compactResultPreview, hasInlineToolResultImage } from '../../utils/toolResultCore.js';
@@ -165,6 +165,7 @@ class ChatMessage extends React.Component {
       p.showTrailingCursor !== n.showTrailingCursor ||
       p.showThinkingSummaries !== n.showThinkingSummaries ||
       p.toolResultMap !== n.toolResultMap || p.readContentMap !== n.readContentMap ||
+      p.toolStatusMap !== n.toolStatusMap ||
       p.editSnapshotMap !== n.editSnapshotMap || p.askAnswerMap !== n.askAnswerMap ||
       p.planApprovalMap !== n.planApprovalMap || p.latestPlanContent !== n.latestPlanContent ||
       p.ptyPrompt !== n.ptyPrompt || p.cliMode !== n.cliMode ||
@@ -335,10 +336,21 @@ class ChatMessage extends React.Component {
   _toolBox(tu, label, children) {
     return (
       <div key={tu.id} className={styles.toolBox}>
-        <Text strong className={styles.toolLabel}>{label}</Text>
+        <Text strong className={styles.toolLabel}>{label}{this._renderToolStatus(tu.id)}</Text>
         {children}
       </div>
     );
+  }
+
+  _renderToolStatus(id) {
+    const status = this.props.toolStatusMap?.[id];
+    if (!['in_progress', 'completed', 'failed'].includes(status)) return null;
+    const label = t(status === 'in_progress' ? 'ui.workflow.status.running' : `ui.workflow.status.${status}`);
+    return <span className={styles.liveToolStatus} data-status={status} role="status">
+      {status === 'in_progress' ? <LoadingOutlined spin aria-hidden="true" />
+        : <span aria-hidden="true">{status === 'failed' ? '✗' : '✓'}</span>}
+      {label}
+    </span>;
   }
 
   _toolCodePre(text) {
@@ -404,6 +416,7 @@ class ChatMessage extends React.Component {
         <div key={tu.id} className={styles.toolBox}>
           <Text strong className={styles.toolLabel}>
             shell_command{desc ? <span className={styles.descSpan}> — {desc}</span> : ''}
+            {this._renderToolStatus(tu.id)}
           </Text>
           <Collapse
             ghost
@@ -1034,7 +1047,7 @@ class ChatMessage extends React.Component {
     // 用函数式 content 让 AntD 在 hover 触发前不构造预览(大 base64 图场景下显著省 CPU);
     // destroyTooltipOnHide 配合 hover 关闭后释放 DOM,避免 detached node 持有图片字节。
     const renderContent = () => {
-      const preview = compactResultPreview(tr);
+      const preview = compactResultPreview(tr, { tail: tr?.previewTail });
       // Base64 图片已经在消息流内联展示；Popover 只保留调用参数和伴随文本，
       // 避免同一大图被再次挂载、解码。远程图片仍维持原有按需预览行为。
       const previewImages = hasInlineToolResultImage(tr) ? [] : (preview?.images || []);
@@ -1078,7 +1091,7 @@ class ChatMessage extends React.Component {
         mouseEnterDelay={0.5}
         {...((isMobile && !isPad) ? { trigger: 'click', ...(!isIOS && { getPopupContainer: (node) => node.parentElement }) } : {})}
       >
-        <span className={styles.simplifiedToolTag}>{tu.name}</span>
+        <span className={styles.simplifiedToolTag}>{tu.name}{this._renderToolStatus(tu.id)}</span>
       </Popover>
     );
   }
@@ -1086,7 +1099,7 @@ class ChatMessage extends React.Component {
   renderToolResult(tr) {
     if (!tr) return null;
     return (
-      <ToolResultView toolName={tr.toolName} toolInput={tr.toolInput} resultText={tr.resultText} images={tr.images} workflow={tr.workflow} defaultCollapsed={this.props.collapseToolResults} />
+      <ToolResultView toolName={tr.toolName} toolInput={tr.toolInput} resultText={tr.resultText} images={tr.images} workflow={tr.workflow} defaultCollapsed={this.props.collapseToolResults} previewTail={tr.previewTail} />
     );
   }
 

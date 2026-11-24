@@ -15,3 +15,9 @@ test('CLI cleanup keeps proxy shutdown in function scope', () => {
   assert.match(source, /stopProxyFn = stopProxy/);
   assert.match(source, /try \{ stopProxyFn\(\); \} catch \{\}/);
 });
+
+test('the shared SDK, PTY and workspace restart handler forwards the live access token', () => {
+  assert.match(source, /launchRestart\(\{ \.\.\.cxvLaunch, version, accessToken: serverMod\.getAccessToken\(\) \}\)/);
+  assert.equal((source.match(/registerUpdateRestart\(serverMod\)/g) || []).length, 4,
+    'one shared declaration and all three launch modes must register the handler');
+});

@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { _resetReadPoolForTest, internToolResultIfPooled } from '../src/utils/readResultPool.js';
+import { internInputToolResultBlocks } from '../src/utils/entry-slim.js';
 
 import {
   MAX_TOOL_RESULT_IMAGE_BASE64_CHARS,
@@ -12,6 +14,24 @@ import {
 const dataBlock = (mime, chars) => ({
   type: 'input_image',
   image_url: `data:${mime};base64,${'a'.repeat(chars)}`,
+});
+
+test('sample-colliding progress and final results preserve their exact text', t => {
+  _resetReadPoolForTest();
+  t.after(_resetReadPoolForTest);
+  const tool = { name: 'shell_command', input: { command: 'print status' } };
+  for (const [length, offset] of [[400, 100], [16384, 3000]]) {
+    const old = 'x'.repeat(offset) + 'old-status' + 'x'.repeat(length - offset - 10);
+    const next = 'x'.repeat(offset) + 'new-status' + 'x'.repeat(length - offset - 10);
+    assert.equal(buildSingleToolResultCore({ content: old }, tool).resultText, old);
+    assert.equal(buildSingleToolResultCore({ content: next }, tool).resultText, next);
+    assert.equal(internToolResultIfPooled(next), next, 'identical content still reuses the pool');
+    const input = [{ role: 'user', content: [{ type: 'tool_result', tool_use_id: 'shell', content: old }] }];
+    const final = internInputToolResultBlocks(input);
+    assert.equal(final[0].content[0].content, old, 'a colliding preview cannot replace the canonical result');
+    assert.equal(input[0].content[0].content, old);
+    assert.equal(buildSingleToolResultCore({ content: next }, tool).resultText, next);
+  }
 });
 
 test('extracts the real image-generation payload scale and preserves mixed output order semantics', () => {

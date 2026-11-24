@@ -33,7 +33,7 @@ import { opensInFileViewer, getPreviewKind } from '../../utils/previewKind.js';
 import { isImageFile } from '../../utils/commandValidator';
 import { projectUserPromptItem } from "@cxv/core/userPromptContent";
 import { loadExpandedPaths, saveExpandedPaths } from '../../utils/fileExpandedPathsStorage';
-import { createEmptyToolState, appendToolResultMap, cachedBuildToolResultMap, getToolResultCache, setToolResultCache, buildSubAgentResultMap, createEmptyGlobalIndexState, appendToGlobalToolResultIndex } from '../../utils/toolResultBuilder';
+import { createEmptyToolState, appendToolResultMap, cachedBuildToolResultMap, getToolResultCache, setToolResultCache, buildSubAgentResultMap, createEmptyGlobalIndexState, appendToGlobalToolResultIndex, buildSingleToolResult } from '../../utils/toolResultBuilder';
 import { refreshCachedItemProp } from '../../utils/refreshCachedItemProp';
 import { ASK_TOOL_NAMES, CODEX_PLAN_TOOL_NAME, PLAN_TOOL_NAMES, isPlanToolName } from '../../utils/toolNameAliases.js';
 import { refreshResolvedModelInfo, healUnresolvedTeammateEntries, needsFullReqRescan } from '../../utils/identityHeal';
@@ -779,6 +779,7 @@ class ChatView extends React.Component {
       nextProps.sdkMode !== this.props.sdkMode ||
       nextProps.sdkResumeId !== this.props.sdkResumeId ||
       nextProps.sdkModel !== this.props.sdkModel ||
+      nextProps.sdkReasoningEffort !== this.props.sdkReasoningEffort ||
       nextProps.proxyProfiles !== this.props.proxyProfiles ||
       nextProps.activeProxyId !== this.props.activeProxyId ||
       nextProps.proxyRoles !== this.props.proxyRoles ||
@@ -4548,6 +4549,8 @@ class ChatView extends React.Component {
         activeProxyId={this.props.activeProxyId} proxyRoles={this.props.proxyRoles} proxyOfficialDefault={this.props.proxyOfficialDefault} proxyRoleRouting={this.props.proxyRoleRouting}
         sdkMode={this.props.sdkMode}
         sdkModel={this.props.sdkModel}
+        sdkReasoningEffort={this.props.sdkReasoningEffort}
+        sdkBusy={this.props.isStreaming || this.state.sdkQueuedInputs.length > 0}
         onOpenProxyModal={() => this.setState({ proxyModalVisible: true })}
       />
     ) : null;
@@ -4641,7 +4644,8 @@ class ChatView extends React.Component {
     const _isFiltering = _selSize > 0 && _selSize < collectedRoles.length;
 
     // Live streaming overlay: 实时打字机效果，独立于 mainAgentSessions / dedup 路径
-    // 仅显示 text + thinking blocks；工具交互仍由正常消息气泡在会话落地后渲染。
+    // SDK shell progress reuses the existing tool cards until the canonical
+    // MainAgent entry atomically replaces this transient overlay.
     // roleFilter 反选 assistant 时跳过 overlay 以遵从过滤语义（否则一边过滤一边仍实时输出自相矛盾）。
     let streamingLiveItem = null;
     const _assistantFilteredOut = _isFiltering && !this.state.roleFilterSelected.has('assistant');
@@ -4651,19 +4655,44 @@ class ChatView extends React.Component {
     // 不应把它的实时浮层叠在 pin 会话底部（会显示用户根本没看的会话内容）。
     if (this.props.streamingLatest && !_assistantFilteredOut && !this.state.stopOptimistic && this.props.sessionUpperBoundTs == null) {
       const sl = this.props.streamingLatest;
+      const shellProgress = new Map((Array.isArray(sl.toolProgress) ? sl.toolProgress : [])
+        .filter(step => step && typeof step.id === 'string' && ['in_progress', 'completed', 'failed'].includes(step.status))
+        .map(step => [step.id, step]));
+      // Native Ask can publish an in-progress MainAgent transcript. Its tools
+      // already have normal cards, so only show the remaining live calls here.
+      const projectedTools = new Set();
+      for (const entry of this.props.requests || []) {
+        if (!entry.inProgress || entry.timestamp !== sl.timestamp || !isMainAgent(entry)) continue;
+        for (const message of entry.body?.input || []) {
+          for (const block of Array.isArray(message.content) ? message.content : []) {
+            if (block.type === 'tool_use') projectedTools.add(block.id);
+          }
+        }
+      }
       const liveBlocks = (sl.content || []).filter(b =>
         b.type === 'text' || b.type === 'thinking'
+        || (b.type === 'tool_use' && b.name === 'shell_command' && shellProgress.has(b.id) && !projectedTools.has(b.id))
       );
       const hasVisibleContent = liveBlocks.some(b => {
         if (b.type === 'text') return typeof b.text === 'string' && b.text.trim().length > 0;
         if (b.type === 'thinking') return typeof b.thinking === 'string' && b.thinking.trim().length > 0;
-        return false;
+        return b.type === 'tool_use';
       });
       if (hasVisibleContent) {
         // SDK stream-progress carries the active model explicitly. Prefer it
         // so a session/model transition cannot flash the previous session's
         // avatar; older producers fall back only to the displayed session.
         const streamingModelInfo = getModelInfo(sl.model || displayedSessionModelName);
+        const liveResults = Object.create(null), liveStatuses = Object.create(null);
+        for (const block of liveBlocks) {
+          const step = shellProgress.get(block.id);
+          if (!step) continue;
+          liveStatuses[block.id] = step.status;
+          if (typeof step.output === 'string' && (step.output || step.outputTruncated)) {
+            liveResults[block.id] = { ...buildSingleToolResult({ type: 'tool_result', tool_use_id: block.id,
+              content: `${step.outputTruncated ? '…\n' : ''}${step.output}`, is_error: step.status === 'failed' }, block), previewTail: true };
+          }
+        }
         streamingLiveItem = (
           <ChatMessage
             key="streaming-live-msg"
@@ -4675,7 +4704,8 @@ class ChatView extends React.Component {
             expandThinking={this.props.expandThinking}
             showFullToolContent={this.props.showFullToolContent} minimalChat={this.props.minimalChat}
             showTrailingCursor={true}
-            toolResultMap={EMPTY_MAP}
+            toolResultMap={liveResults}
+            toolStatusMap={liveStatuses}
             isHistoryLog={this._getIsHistoryLog()}
           />
         );
@@ -4823,6 +4853,7 @@ class ChatView extends React.Component {
           ) : null}
           {pendingBubbles}{optimisticQueueBubbles}
           {this._renderSdkErrors(true)}
+          {streamingLiveItem}
           <div className={styles.inputStackSpacer} aria-hidden="true" />
         </div>
         {activeAgentsBar}

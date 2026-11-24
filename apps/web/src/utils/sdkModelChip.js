@@ -1,21 +1,23 @@
-/**
- * Pure guard for the SDK-mode model chip (input-bar ProxyChip). Extracted for testability.
- *
- * The SDK session's launch model is displayed in the SAME input-bar slot as the proxy
- * hot-switch chip, strictly as a fallback: the proxy chip — when it renders — already
- * surfaces the effective (post-rewrite) model, and per product direction hot-switching
- * takes priority. So the SDK chip shows only when the proxy chip would render NOTHING
- * (official Default / dormant / no role assignment — the case where the launch model is
- * the only model signal) AND we're in SDK mode with a known launch model.
- *
- * @param {object} args
- * @param {boolean} args.sdkMode          — whether the session runs through the Agent SDK.
- * @param {string|null} args.sdkModel     — the SDK session's launch model (from sdk-init).
- * @param {boolean} args.proxyChipVisible — whether the proxy hot-switch chip is rendering.
- * @returns {boolean} true to render the SDK model chip.
- */
-export function shouldRenderSdkModelChip({ sdkMode, sdkModel, proxyChipVisible }) {
-  if (!sdkMode) return false;
-  if (!sdkModel) return false;
-  return !proxyChipVisible;
+import { apiUrl } from './apiUrl.js';
+
+// Keep the existing proxy editor for explicit profile rewrites. Native SDK
+// selection fills its composer slot, including a previously unknown default.
+export function shouldRenderSdkModelChip({ sdkMode, proxyChipVisible }) {
+  return !!sdkMode && !proxyChipVisible;
+}
+
+export async function requestSdkModels({ instanceKey, selection, signal } = {}) {
+  const expected = instanceKey || new URLSearchParams(window.location.search).get('instance');
+  const path = selection ? '/api/sdk-model' : '/api/sdk-models';
+  const response = await fetch(apiUrl(`${path}${expected ? `?instance=${encodeURIComponent(expected)}` : ''}`), {
+    signal, ...(selection ? { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...selection, instanceKey: expected }) } : {}),
+  });
+  const data = await response.json();
+  if (!response.ok) throw Object.assign(new Error(data.error || 'Could not load Codex models'), { code: data.code });
+  if (typeof data.instanceKey !== 'string' || !data.instanceKey || (expected && data.instanceKey !== expected)) {
+    throw new Error('Model selection belongs to a different workspace');
+  }
+  if (!Array.isArray(data.models) || typeof data.revision !== 'string') throw new Error('Invalid Codex model list');
+  return data;
 }

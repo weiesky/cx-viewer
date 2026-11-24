@@ -36,6 +36,12 @@ export function createSdkExecTransport({ Codex, cwd, instanceKey, codexPath, cod
   let thread = null;
   return {
     get threadId() { return thread?.id || null; },
+    setModel(model, reasoningEffort) {
+      threadOptions = { ...threadOptions, model, modelReasoningEffort: reasoningEffort };
+      // The public SDK captures options on Thread construction. Resume the same
+      // native thread with fresh options; never replay its accumulated messages.
+      if (thread) thread = thread.id ? codex.resumeThread(thread.id, threadOptions) : null;
+    },
     async runStreamed(text, { signal, threadId }) {
       if (!thread) thread = threadId
         ? codex.resumeThread(threadId, threadOptions)

@@ -46,7 +46,7 @@ function registerUpdateRestart(serverMod) {
   if (process.env.CXV_IM_WORKER === '1') return;
   serverMod.setRestartHandler(async version => {
     const { launchRestart } = await import('./lib/restart.js');
-    await launchRestart({ ...cxvLaunch, version });
+    await launchRestart({ ...cxvLaunch, version, accessToken: serverMod.getAccessToken() });
     // Reuse the native deadline and full PTY/SDK/plugin cleanup only after readiness.
     setTimeout(() => process.kill(process.pid, 'SIGTERM'), 100).unref();
   });

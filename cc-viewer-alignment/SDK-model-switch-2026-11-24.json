@@ -1,0 +1,391 @@
+{
+  "date": "2026-11-24",
+  "task": "Native Codex SDK model and reasoning-effort selection",
+  "baseCommit": "9059a28",
+  "upstreamBaseline": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "upstreamSlotCommits": [
+    "133bc219df78920cdc3a5cb56f48cbe067e467e5",
+    "c66b5fe2ed6e855f0610127eba3de96ac821adea"
+  ],
+  "scope": "User-requested native capability, not a newly reconciled B0 commit",
+  "implementation": {
+    "branch": "feature/sdk-model-switch-2026-11-24",
+    "commitSubject": "feat(sdk): switch native models and reasoning effort in the composer",
+    "remotePushed": false
+  },
+  "tests": {
+    "finalFull": {
+      "passed": 2842,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "suites": [
+        9,
+        7,
+        28,
+        811,
+        1741,
+        246
+      ],
+      "log": "/tmp/cxv-model-switch-full-final.log"
+    },
+    "targeted": {
+      "passed": 172,
+      "log": "/tmp/cxv-model-switch-targeted.log",
+      "note": "Then added concurrent-write test; included in final full run"
+    },
+    "initialFull": {
+      "appPassed": 1739,
+      "appFailed": 1,
+      "test": "logger-bootstrap: headless shutdown stops its owned configuration probe before native exec can start",
+      "failure": "PID 0 is still running (empty probe.pid read race)",
+      "log": "/tmp/cxv-model-switch-full.log"
+    },
+    "bootstrapCleanRetry": {
+      "passed": 3,
+      "log": "/tmp/cxv-model-switch-bootstrap-clean.log",
+      "cwd": "packages/app"
+    },
+    "build": "passed",
+    "boundaries": {
+      "files": 533,
+      "violations": 0
+    },
+    "sourcePaths": 603,
+    "tarballPaths": 628
+  },
+  "nativeGui": {
+    "browser": "Google Chrome via Playwright",
+    "codex": "0.169.0",
+    "sdk": "0.142.5",
+    "transport": "exec",
+    "upstream": "synthetic loopback Responses; no external inference",
+    "catalog": [
+      {
+        "model": "gpt-6.1-sol",
+        "displayName": "GPT-6.1-Sol",
+        "description": "Latest workhorse model for coding and everyday work.",
+        "isDefault": true,
+        "supportedReasoningEfforts": [
+          {
+            "reasoningEffort": "low",
+            "description": "Fast responses with lighter reasoning"
+          },
+          {
+            "reasoningEffort": "medium",
+            "description": "Balances speed and reasoning depth for everyday tasks"
+          },
+          {
+            "reasoningEffort": "high",
+            "description": "Greater reasoning depth for complex problems"
+          },
+          {
+            "reasoningEffort": "xhigh",
+            "description": "Extra high reasoning depth for complex problems"
+          },
+          {
+            "reasoningEffort": "max",
+            "description": "Maximum reasoning depth for the hardest problems"
+          },
+          {
+            "reasoningEffort": "ultra",
+            "description": "Maximum reasoning with automatic task delegation"
+          }
+        ],
+        "defaultReasoningEffort": "low"
+      },
+      {
+        "model": "gpt-6-astra",
+        "displayName": "GPT-6-Astra",
+        "description": "Frontier intelligence for the most demanding work.",
+        "isDefault": false,
+        "supportedReasoningEfforts": [
+          {
+            "reasoningEffort": "low",
+            "description": "Fast responses with lighter reasoning"
+          },
+          {
+            "reasoningEffort": "medium",
+            "description": "Balances speed and reasoning depth for everyday tasks"
+          },
+          {
+            "reasoningEffort": "high",
+            "description": "Greater reasoning depth for complex problems"
+          },
+          {
+            "reasoningEffort": "xhigh",
+            "description": "Extra high reasoning depth for complex problems"
+          },
+          {
+            "reasoningEffort": "max",
+            "description": "Maximum reasoning depth for the hardest problems"
+          },
+          {
+            "reasoningEffort": "ultra",
+            "description": "Maximum reasoning with automatic task delegation"
+          }
+        ],
+        "defaultReasoningEffort": "low"
+      },
+      {
+        "model": "gpt-6-sol",
+        "displayName": "GPT-6-Sol",
+        "description": "Previous generation workhorse model.",
+        "isDefault": false,
+        "supportedReasoningEfforts": [
+          {
+            "reasoningEffort": "low",
+            "description": "Fast responses with lighter reasoning"
+          },
+          {
+            "reasoningEffort": "medium",
+            "description": "Balances speed and reasoning depth for everyday tasks"
+          },
+          {
+            "reasoningEffort": "high",
+            "description": "Greater reasoning depth for complex problems"
+          },
+          {
+            "reasoningEffort": "xhigh",
+            "description": "Extra high reasoning depth for complex problems"
+          },
+          {
+            "reasoningEffort": "max",
+            "description": "Maximum reasoning depth for the hardest problems"
+          },
+          {
+            "reasoningEffort": "ultra",
+            "description": "Maximum reasoning with automatic task delegation"
+          }
+        ],
+        "defaultReasoningEffort": "medium"
+      },
+      {
+        "model": "gpt-6-luna",
+        "displayName": "GPT-6-Luna",
+        "description": "Fast and affordable model for easier tasks.",
+        "isDefault": false,
+        "supportedReasoningEfforts": [
+          {
+            "reasoningEffort": "low",
+            "description": "Fast responses with lighter reasoning"
+          },
+          {
+            "reasoningEffort": "medium",
+            "description": "Balances speed and reasoning depth for everyday tasks"
+          },
+          {
+            "reasoningEffort": "high",
+            "description": "Greater reasoning depth for complex problems"
+          },
+          {
+            "reasoningEffort": "xhigh",
+            "description": "Extra high reasoning depth for complex problems"
+          },
+          {
+            "reasoningEffort": "max",
+            "description": "Maximum reasoning depth for the hardest problems"
+          }
+        ],
+        "defaultReasoningEffort": "medium"
+      },
+      {
+        "model": "gpt-5.6-sol",
+        "displayName": "GPT-5.6-Sol",
+        "description": "Older generation workhorse model.",
+        "isDefault": false,
+        "supportedReasoningEfforts": [
+          {
+            "reasoningEffort": "low",
+            "description": "Fast responses with lighter reasoning"
+          },
+          {
+            "reasoningEffort": "medium",
+            "description": "Balances speed and reasoning depth for everyday tasks"
+          },
+          {
+            "reasoningEffort": "high",
+            "description": "Greater reasoning depth for complex problems"
+          },
+          {
+            "reasoningEffort": "xhigh",
+            "description": "Extra high reasoning depth for complex problems"
+          },
+          {
+            "reasoningEffort": "max",
+            "description": "Maximum reasoning depth for the hardest problems"
+          },
+          {
+            "reasoningEffort": "ultra",
+            "description": "Maximum reasoning with automatic task delegation"
+          }
+        ],
+        "defaultReasoningEffort": "low"
+      },
+      {
+        "model": "gpt-6.1-terra",
+        "displayName": "GPT-6.1 Terra",
+        "description": "GPT-6.1 Terra Codex model.",
+        "isDefault": false,
+        "supportedReasoningEfforts": [
+          {
+            "reasoningEffort": "low",
+            "description": "Fast responses with lighter reasoning"
+          },
+          {
+            "reasoningEffort": "medium",
+            "description": "Balances speed and reasoning depth for everyday tasks"
+          },
+          {
+            "reasoningEffort": "high",
+            "description": "Greater reasoning depth for complex problems"
+          },
+          {
+            "reasoningEffort": "xhigh",
+            "description": "Extra high reasoning depth for complex problems"
+          },
+          {
+            "reasoningEffort": "max",
+            "description": "Maximum reasoning depth for the hardest problems"
+          },
+          {
+            "reasoningEffort": "ultra",
+            "description": "Maximum reasoning with automatic task delegation"
+          }
+        ],
+        "defaultReasoningEffort": "low"
+      },
+      {
+        "model": "gpt-5.6-terra",
+        "displayName": "GPT-5.6-Terra",
+        "description": "Older balanced model for straightforward work.",
+        "isDefault": false,
+        "supportedReasoningEfforts": [
+          {
+            "reasoningEffort": "low",
+            "description": "Fast responses with lighter reasoning"
+          },
+          {
+            "reasoningEffort": "medium",
+            "description": "Balances speed and reasoning depth for everyday tasks"
+          },
+          {
+            "reasoningEffort": "high",
+            "description": "Greater reasoning depth for complex problems"
+          },
+          {
+            "reasoningEffort": "xhigh",
+            "description": "Extra high reasoning depth for complex problems"
+          },
+          {
+            "reasoningEffort": "max",
+            "description": "Maximum reasoning depth for the hardest problems"
+          },
+          {
+            "reasoningEffort": "ultra",
+            "description": "Maximum reasoning with automatic task delegation"
+          }
+        ],
+        "defaultReasoningEffort": "medium"
+      },
+      {
+        "model": "gpt-5.6-luna",
+        "displayName": "GPT-5.6-Luna",
+        "description": "Older fast and efficient model.",
+        "isDefault": false,
+        "supportedReasoningEfforts": [
+          {
+            "reasoningEffort": "low",
+            "description": "Fast responses with lighter reasoning"
+          },
+          {
+            "reasoningEffort": "medium",
+            "description": "Balances speed and reasoning depth for everyday tasks"
+          },
+          {
+            "reasoningEffort": "high",
+            "description": "Greater reasoning depth for complex problems"
+          },
+          {
+            "reasoningEffort": "xhigh",
+            "description": "Extra high reasoning depth for complex problems"
+          },
+          {
+            "reasoningEffort": "max",
+            "description": "Maximum reasoning depth for the hardest problems"
+          }
+        ],
+        "defaultReasoningEffort": "medium"
+      },
+      {
+        "model": "gpt-5.5",
+        "displayName": "GPT-5.5",
+        "description": "Legacy coding model.",
+        "isDefault": false,
+        "supportedReasoningEfforts": [
+          {
+            "reasoningEffort": "low",
+            "description": "Fast responses with lighter reasoning"
+          },
+          {
+            "reasoningEffort": "medium",
+            "description": "Balances speed and reasoning depth for everyday tasks"
+          },
+          {
+            "reasoningEffort": "high",
+            "description": "Greater reasoning depth for complex problems"
+          },
+          {
+            "reasoningEffort": "xhigh",
+            "description": "Extra high reasoning depth for complex problems"
+          }
+        ],
+        "defaultReasoningEffort": "medium"
+      }
+    ],
+    "requests": [
+      {
+        "path": "/v1/responses",
+        "model": "gpt-6-astra",
+        "effort": "xhigh"
+      },
+      {
+        "path": "/v1/responses",
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      {
+        "path": "/v1/responses",
+        "model": "gpt-6-sol",
+        "effort": "high"
+      }
+    ],
+    "verified": [
+      "model picker opens",
+      "catalog choices come from running Codex executable",
+      "model and effort can be selected",
+      "next request uses selected model and high effort",
+      "native thread continues with history",
+      "refresh preserves model and effort",
+      "no browser page errors"
+    ],
+    "screenshots": [
+      "cc-viewer-alignment/evidence/SDK-model-switch-2026-11-24/chromium-model-list.png",
+      "cc-viewer-alignment/evidence/SDK-model-switch-2026-11-24/chromium-effort.png",
+      "cc-viewer-alignment/evidence/SDK-model-switch-2026-11-24/chromium-refreshed.png"
+    ],
+    "ultraNote": "First exploratory selection was ultra; Codex natively resolves its wire effort through model multi_agent_reasoning_effort (observed xhigh). Subsequent high selections were observed as high on the wire."
+  },
+  "limitations": [
+    "active user instance not restarted or GUI-tested",
+    "WebKit runtime unavailable; Chromium GUI only",
+    "Windows and Electron GUI not tested",
+    "existing phone/Electron chip visibility and explicit proxy-profile rewrite editor retained",
+    "selection belongs to the resident workspace, does not modify global Codex config or archival history"
+  ],
+  "deployment": {
+    "npmPublished": false,
+    "versionChanged": false,
+    "activeProcessesRestarted": false
+  }
+}

@@ -116,6 +116,7 @@ export function createSdkAppServerTransport({ cwd, instanceKey, codexPath, codex
   const threadMetadata = new Map(), pendingServerRequests = new Set();
   const threadParams = appServerThreadParams(cwd, codexOptions, threadOptions);
   const explicitConfig = appServerThreadParams(cwd, {}, threadOptions).config;
+  let modelOverride = null;
   if (threadOptions.additionalDirectories?.length) {
     explicitConfig.sandbox_workspace_write.writable_roots = threadParams.config.sandbox_workspace_write.writable_roots;
   }
@@ -354,6 +355,10 @@ export function createSdkAppServerTransport({ cwd, instanceKey, codexPath, codex
 
   return {
     get threadId() { return nativeThreadId; },
+    setModel(model, reasoningEffort) {
+      modelOverride = { model, effort: reasoningEffort };
+      threadParams.model = model;
+    },
     async ownsThread(threadId) {
       const owned = client, seen = new Set();
       const prove = async id => {
@@ -439,7 +444,8 @@ export function createSdkAppServerTransport({ cwd, instanceKey, codexPath, codex
       }, 5000); };
       signal?.addEventListener('abort', run.abort, { once: true });
       push(run, { type: 'thread.started', thread_id: nativeThreadId });
-      void owned.request('turn/start', { threadId: nativeThreadId, input: [{ type: 'text', text }] })
+      void owned.request('turn/start', { threadId: nativeThreadId, input: [{ type: 'text', text }],
+        ...(modelOverride || {}) })
         .then(result => {
           if (run.done) return;
           if (!result.turn?.id) throw new Error('App Server did not return a turn id');

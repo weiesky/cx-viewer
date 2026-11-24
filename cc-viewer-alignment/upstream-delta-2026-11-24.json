@@ -1,0 +1,4054 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-11-24T05:07:47.582176+00:00",
+  "upstreamRepo": "https://github.com/weiesky/cc-viewer",
+  "base": "74cd752d99caf122e750216d2af3bb9f467c4de1",
+  "baseVersion": "1.9.29",
+  "tip": "d3c1f7fbf47c0424226acbe064ab4135e7ebe3cd",
+  "tipVersion": "1.9.35",
+  "localHead": "4cb1a4c9c0650114cf9c70571c4b2150bf062945",
+  "localBranch": "feature/sdk-model-switch-2026-11-24",
+  "ancestorCheck": true,
+  "sourceWorktree": "/tmp/cxv-cc-viewer-delta-20261124",
+  "baselineWorktree": "/tmp/cxv-cc-viewer-research-20261122",
+  "counts": {
+    "total": 25,
+    "byKind": {
+      "behavior": 17,
+      "release": 5,
+      "changeset": 1,
+      "merge": 1,
+      "chart": 1
+    },
+    "netFiles": 123,
+    "insertions": 8819,
+    "deletions": 585
+  },
+  "prs": [
+    {
+      "number": 177,
+      "title": "feat(web+server): file browser modal navigation & view enhancements",
+      "state": "closed",
+      "merged_at": "2026-11-18T14:55:11Z",
+      "merge_commit_sha": "2c3229811204e2e11a5982e6b96eaf6663cfc7c5",
+      "html_url": "https://github.com/weiesky/cc-viewer/pull/177",
+      "body": "参考 [dsh-workspace-explorer](https://github.com/tm5452/dsh-workspace-explorer) 的交互能力，为 cc-viewer 的 FileBrowserModal 完成「导航与视图增强」三个阶段。\n\n## 交付功能\n\n### P1: 前进/后退历史 + 地址栏\n- Alt+←/→、Cmd/Ctrl+[/] 快捷键，工具栏 ◀ ▶ 按钮\n- 双击面包屑空白 / Ctrl/Cmd+L 进入地址栏编辑\n- 支持相对路径（目录探测→文件定位+预览）和绝对路径（服务端 realpath + containment 校验）\n\n### P2: 列表/网格视图切换 + 服务端排序\n- 网格/列表切换按钮，每目录 prefs（sessionStorage）记忆视图和排序\n- 服务端 `/api/files` 和 `/api/target-files` 加 `?sort=name|size|mtime&order=asc|desc` 和 `size`/`mtimeMs` 字段（不传保持现有行为向后兼容）\n- 列表视图列头可点击排序\n\n### P3: 当前目录文件名过滤\n- 工具栏输入框即时过滤\n- 纯前端 `matchesFilter` + `splitMatch` 高亮\n- 导航时清空、排序/刷新保留\n\n## 服务端改动\n\n- `/api/files` 和 `/api/target-files`: 新增 `size`/`mtimeMs` 字段 + `?sort=&order=` 参数\n- `/api/resolve-path` 和 `/api/target-resolve-path`: 新增 `absolutePath` 分支（admin + same-origin 门禁，realpath + containment 校验）\n\n## UI 细节\n\n- 上一级按钮用 corner-left-up L 形图标，挪到工具栏最左\n- 刷新按钮统一改用 `ReloadOutlined`（与其他弹窗一致）\n- antd Modal header `marginBottom: 0` 修复 treePane border-right 与 header borderBottom 连接\n- body `borderRadius: '0 0 8px 8px'` 修复 treePane/gridPane 直角溢出 modal-content 圆角\n\n## Code Review 修复（5 人 review team）\n\n- **安全**: `/api/resolve-path` absolutePath 加 admin + same-origin 门禁\n- **OS 兼容**: macOS APFS 大小写用 `realpathSync.native`\n- **正确性**: historyStateRef 用 commitHistory 统一同步、项目模式 in-flight 请求加 requestScope 守卫、地址栏 fresh fetch + notFound 提示\n- **数据一致性**: name desc 时目录也反序、fileBrowserPrefs `__proto__` 用 Object.create(null)、dirCacheKey 用 NUL 分隔符\n- **错误处理**: 地址栏第三个 catch 补 reportSwallowed\n- **测试质量**: formatMtime 字面量期望 + 边界用例、prefs `__proto__` 用例\n\n## 验证\n\n- ✅ verify:boundaries (527 files, 0 violations)\n- ✅ test:web (5261 pass / 0 fail)\n- ✅ test:cli (13377 pass / 0 fail)\n- ✅ build\n- ✅ verify:tarball-drift (1613 files match baseline)\n\n## Changeset\n\n`.changeset/file-browser-modal-nav-views.md` 声明 `\"cc-viewer\": patch`（符合只升第三位的规则）。\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)"
+    },
+    {
+      "number": 178,
+      "title": "fix(server): preserve ACCESS_TOKEN across self-update restart",
+      "state": "closed",
+      "merged_at": "2026-11-18T17:46:25Z",
+      "merge_commit_sha": "03aad20b929d67d566fa884fdc78391148627fae",
+      "html_url": "https://github.com/weiesky/cc-viewer/pull/178",
+      "body": "## 问题\n版本自更新（\"立即重启并更新\"）后，界面卡在\"正在重启，等待新版本恢复…\"，手动刷新后 502。\n\n**根因**：`ACCESS_TOKEN` 是 `server.js` 模块级 `randomBytes(16)`，每次进程启动重新生成，且无持久化机制。自更新重启 = 旧进程退出 → helper `npm install -g` → 新进程启动，新进程 token 全新。已打开页面的 `?token=` URL、`/api/version-info` 恢复轮询、`ccv_auth` cookie 在新进程全部被拒 → 轮询卡住、刷新 401/502。\n\n## 方案\n自更新重启时把当前 `ACCESS_TOKEN` 经现有重启交接管道传给新进程：\n- `cli.js` 两处 restart handler 传 `accessToken: serverMod.getAccessToken()`；\n- `launchRestart` 校验后写入 `restart-config.json`(0600)；\n- helper 读入内存即删该文件（失败记日志），`restartFromHelper` 注入 `CCV_ACCESS_TOKEN` env;\n- 新进程 `server.js` 启动时 `takeInheritedAccessToken()` 读即删、严格 32-hex 校验、缺失/非法回退随机。\n\n仅跨自更新重启保留，不写 `preferences.json`，手动重启仍轮换。新进程对旧页面而言 token 不变，轮询恢复后无感 reload。\n\n## 改动\n- 新增 `lib/access-token.js`（契约：env 名 / `isValidAccessToken` / `takeInheritedAccessToken`)\n- `server.js` / `lib/restart.js` / `lib/restart-helper.js` / `cli.js` / `lib/auth.js`(注释)\n- 测试：新增 `access-token.test.js`、`server-access-token-env.test.js`，扩展 `restart-helper.test.js`、`cli.test.js`（源码契约守卫）\n\n## 验证\n- `pnpm run build` ✓ / `verify:boundaries` 0 违规 ✓ / `verify:tarball-drift` ✓\n- 相关测试 **91/91 通过**(access-token / restart-helper / server-access-token-env / cli / update-job / update-routes)\n- 经 5 角色 cross-review（正确性/安全/兼容/测试/规范），修复了 2 个 HIGH（测试真空断言）+ P1/P2 测试加固 + 安全/文档项\n\n## 已知限制（已写入 CHANGELOG）\n- 装本特性的那次更新由旧代码编排，token 保留从**第二次**自更新起生效。\n- env 方式下 token 在新进程 exec 环境块中对同用户进程可见；同用户本有 loopback 全权，不越权。token 跨多次自更新有效直至手动重启。"
+    },
+    {
+      "number": 179,
+      "title": "fix(server): same-cwd SDK twin [对话] panel no longer cross-talks during the bound-view hydration window",
+      "state": "closed",
+      "merged_at": "2026-11-22T04:19:00Z",
+      "merge_commit_sha": "f0c23018c37a89dbeafa65fe35e0364ed217698e",
+      "html_url": "https://github.com/weiesky/cc-viewer/pull/179",
+      "body": "## What\nA bound-project client's `/ws/terminal` connection stamps `_ccvViewInstance` from `?instance=`, which is empty until the header's first `/api/live-processes` poll hydrates `boundInstance`. During that cold-mount window the broadcast filter's \"exclude only the differently-stamped\" rule delivered BOTH same-cwd twins' control frames (modal/queue/spinner/system rows) to the bound view.\n\n## Fix\nThe bound identity is a deterministic function of the cwd, so the server now coheres the stamp at connect/attach time to the bound cwd's primary instanceKey (`_cohereAttachInstance`, applied at the initial upgrade and all three attach re-stamp sites) instead of waiting for the client to hydrate.\n\n**Narrowing-only:** explicit instanceKey never overridden, non-bound project untouched, PTY mode gated out, single-instance cwd resolves to its only session.\n\n- Adds `sdk-manager.resolveBoundPrimaryInstanceKey` (deterministic-boot-first, NOT the active sibling) as the single source of truth — `resume.js` `currentInstanceKey` now delegates to it.\n- Registered from `cli.js` via `setSdkResolveBoundPrimaryInstanceKey`.\n\n## Scope note\nThis fixes the WS live-push (control-frame) path. The SSE cold-load/history plane (bound view locking primary) is tracked as a follow-up.\n\n## Tests\n`ws-instance-isolation.test.js` (resolver + cohere gating + cohered-stamp narrowing), `sdk-multi-session-route.test.js` (`currentInstanceKey` delegation). Full `test:cli` green."
+    }
+  ],
+  "openPullRequests": [
+    {
+      "number": 128,
+      "title": "fix(system-prompt): harden spawn-time rendering pipeline with try-catch fallbacks",
+      "updated_at": "2026-09-15T14:08:11Z",
+      "html_url": "https://github.com/weiesky/cc-viewer/pull/128"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "f8d06c72695f1b8d160c361eb488d30e61062933",
+      "short": "f8d06c72",
+      "authorDate": "2026-11-17T11:25:56+08:00",
+      "commitDate": "2026-11-17T11:25:56+08:00",
+      "parents": [
+        "74cd752d99caf122e750216d2af3bb9f467c4de1"
+      ],
+      "subject": "feat(web): swap composer clear/prompt-nav order and enlarge prompt-nav avatar to 22px",
+      "message": "feat(web): swap composer clear/prompt-nav order and enlarge prompt-nav avatar to 22px",
+      "url": "https://github.com/weiesky/cc-viewer/commit/f8d06c72695f1b8d160c361eb488d30e61062933",
+      "kind": "behavior",
+      "workPackages": [
+        "B13"
+      ],
+      "status": "planned",
+      "localImplementation": null,
+      "runtimeValidation": "not-run-planning-only",
+      "files": [
+        {
+          "upstream": "apps/web/src/components/chat/ChatInputBar.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/chat/ChatInputBar.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/chat/ChatInputBar.module.css",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/chat/ChatInputBar.module.css",
+              "exists": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sha": "2476d7b5696821d5a9ba3e23b3fe9eddc95e9c04",
+      "short": "2476d7b5",
+      "authorDate": "2026-11-17T14:24:15+08:00",
+      "commitDate": "2026-11-17T14:24:15+08:00",
+      "parents": [
+        "f8d06c72695f1b8d160c361eb488d30e61062933"
+      ],
+      "subject": "feat(web): add CopyMarkdownButton and wire it into doc modals",
+      "message": "feat(web): add CopyMarkdownButton and wire it into doc modals",
+      "url": "https://github.com/weiesky/cc-viewer/commit/2476d7b5696821d5a9ba3e23b3fe9eddc95e9c04",
+      "kind": "behavior",
+      "workPackages": [
+        "B13"
+      ],
+      "status": "planned",
+      "localImplementation": null,
+      "runtimeValidation": "not-run-planning-only",
+      "files": [
+        {
+          "upstream": "apps/web/src/components/common/ConceptHelp.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/common/ConceptHelp.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/common/ConceptHelp.module.css",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/common/ConceptHelp.module.css",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/common/CopyMarkdownButton.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/common/CopyMarkdownButton.jsx",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/common/CopyMarkdownButton.module.css",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/common/CopyMarkdownButton.module.css",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/settings/SystemTextModal.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/settings/SystemTextModal.jsx",
+              "exists": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sha": "bdf4257f55068693dff10012291abf8a75fe5b4c",
+      "short": "bdf4257f",
+      "authorDate": "2026-11-17T14:24:46+08:00",
+      "commitDate": "2026-11-17T14:24:46+08:00",
+      "parents": [
+        "2476d7b5696821d5a9ba3e23b3fe9eddc95e9c04"
+      ],
+      "subject": "feat(web): open persistent-memory folder in in-app file browser",
+      "message": "feat(web): open persistent-memory folder in in-app file browser",
+      "url": "https://github.com/weiesky/cc-viewer/commit/bdf4257f55068693dff10012291abf8a75fe5b4c",
+      "kind": "behavior",
+      "workPackages": [
+        "B14"
+      ],
+      "status": "planned",
+      "localImplementation": null,
+      "runtimeValidation": "not-run-planning-only",
+      "files": [
+        {
+          "upstream": "apps/web/src/Mobile.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/Mobile.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/dashboard/AppHeader.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/dashboard/AppHeader.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/dashboard/CachePopoverContent.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/dashboard/CachePopoverContent.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/dashboard/LiveTagPopover.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/dashboard/LiveTagPopover.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/files/FileBrowserModal.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/files/FileBrowserModal.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/lib/target-scope.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/lib/target-scope.js",
+              "exists": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sha": "06be1ce62ee4ada15bc7805fe92b22dcf2f7451b",
+      "short": "06be1ce6",
+      "authorDate": "2026-11-17T16:15:59+08:00",
+      "commitDate": "2026-11-17T16:15:59+08:00",
+      "parents": [
+        "bdf4257f55068693dff10012291abf8a75fe5b4c"
+      ],
+      "subject": "fix(server): follow redirects when downloading release tarball",
+      "message": "fix(server): follow redirects when downloading release tarball",
+      "url": "https://github.com/weiesky/cc-viewer/commit/06be1ce62ee4ada15bc7805fe92b22dcf2f7451b",
+      "kind": "behavior",
+      "workPackages": [
+        "B12"
+      ],
+      "status": "implemented-adapted-B12-scope",
+      "localImplementation": "9943faf81dbe470f6fbd6c02cc87980cb35faf92",
+      "runtimeValidation": "B12-validation-2026-11-24.json",
+      "files": [
+        {
+          "upstream": ".changeset/update-job-redirect-follow.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/update-job-redirect-follow.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "history.md",
+          "localCandidates": [
+            {
+              "path": "history.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/lib/update-job.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/lib/update-job.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/update-job.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/update-job.test.js",
+              "exists": true
+            }
+          ]
+        }
+      ],
+      "scopeNotes": "B12 behavior only. Upstream release/version metadata remains separately recorded in B20; active GUI and target-environment limits are not closed."
+    },
+    {
+      "sha": "495931dfb0f081032b0137bfed27f5932c17e917",
+      "short": "495931df",
+      "authorDate": "2026-11-17T17:50:42+08:00",
+      "commitDate": "2026-11-17T17:50:42+08:00",
+      "parents": [
+        "06be1ce62ee4ada15bc7805fe92b22dcf2f7451b"
+      ],
+      "subject": "fix(server): root the memory target at the memory dir and auto-create it",
+      "message": "fix(server): root the memory target at the memory dir and auto-create it",
+      "url": "https://github.com/weiesky/cc-viewer/commit/495931dfb0f081032b0137bfed27f5932c17e917",
+      "kind": "behavior",
+      "workPackages": [
+        "B14"
+      ],
+      "status": "planned",
+      "localImplementation": null,
+      "runtimeValidation": "not-run-planning-only",
+      "files": [
+        {
+          "upstream": ".changeset/memory-folder-in-app-browser.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/memory-folder-in-app-browser.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/utils/apiUrl.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/utils/apiUrl.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/external-folder-targets.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/external-folder-targets.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "history.md",
+          "localCandidates": [
+            {
+              "path": "history.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/lib/memory-scope.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/lib/codex-memory.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/lib/target-scope.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/lib/target-scope.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/api-target-files.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/api-target-files.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/memory-scope.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/memory-scope.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "scripts/tarball-baseline.json",
+          "localCandidates": [
+            {
+              "path": "scripts/tarball-baseline.json",
+              "exists": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sha": "72f0393c89f4d448e47fd754e582eaaac8a75739",
+      "short": "72f0393c",
+      "authorDate": "2026-11-17T17:50:59+08:00",
+      "commitDate": "2026-11-17T17:50:59+08:00",
+      "parents": [
+        "495931dfb0f081032b0137bfed27f5932c17e917"
+      ],
+      "subject": "fix(web): harden CopyMarkdownButton for LAN HTTP and refresh feedback lifecycle",
+      "message": "fix(web): harden CopyMarkdownButton for LAN HTTP and refresh feedback lifecycle",
+      "url": "https://github.com/weiesky/cc-viewer/commit/72f0393c89f4d448e47fd754e582eaaac8a75739",
+      "kind": "behavior",
+      "workPackages": [
+        "B13"
+      ],
+      "status": "planned",
+      "localImplementation": null,
+      "runtimeValidation": "not-run-planning-only",
+      "files": [
+        {
+          "upstream": ".changeset/copy-markdown-button.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/copy-markdown-button.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": ".changeset/update-job-redirect-follow.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/update-job-redirect-follow.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/common/CopyMarkdownButton.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/common/CopyMarkdownButton.jsx",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/common/CopyMarkdownButton.module.css",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/common/CopyMarkdownButton.module.css",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/i18n.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/i18n.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/copy-markdown-button.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/copy-markdown-button.test.js",
+              "exists": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sha": "fd4426eba0d29f9ac93cdbd834bec298a3a53168",
+      "short": "fd4426eb",
+      "authorDate": "2026-11-17T17:54:56+08:00",
+      "commitDate": "2026-11-17T17:54:56+08:00",
+      "parents": [
+        "72f0393c89f4d448e47fd754e582eaaac8a75739"
+      ],
+      "subject": "chore(release): 1.9.30",
+      "message": "chore(release): 1.9.30",
+      "url": "https://github.com/weiesky/cc-viewer/commit/fd4426eba0d29f9ac93cdbd834bec298a3a53168",
+      "kind": "release",
+      "workPackages": [
+        "B20"
+      ],
+      "status": "metadata-recorded",
+      "localImplementation": null,
+      "runtimeValidation": "not-run-planning-only",
+      "files": [
+        {
+          "upstream": ".changeset/copy-markdown-button.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/copy-markdown-button.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": ".changeset/memory-folder-in-app-browser.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/memory-folder-in-app-browser.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": ".changeset/update-job-redirect-follow.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/update-job-redirect-follow.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/CHANGELOG.md",
+          "localCandidates": [
+            {
+              "path": "packages/app/CHANGELOG.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/package.json",
+          "localCandidates": [
+            {
+              "path": "packages/app/package.json",
+              "exists": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sha": "a87b61f572f7e38442094afc38e09fefac159c21",
+      "short": "a87b61f5",
+      "authorDate": "2026-11-18T12:13:35+08:00",
+      "commitDate": "2026-11-18T12:13:35+08:00",
+      "parents": [
+        "fd4426eba0d29f9ac93cdbd834bec298a3a53168"
+      ],
+      "subject": "feat(web): scheduled-task sidebar, UI polish & approval defaults",
+      "message": "feat(web): scheduled-task sidebar, UI polish & approval defaults\n\nSidebar: add a clock icon to the nav rail showing pending scheduled\ntasks with live countdown in a hover popover; clicking a row opens\nScheduleTaskModal auto-focused on that task.\n\nUI polish:\n- Remove horizontal bleed from embedded ultraplan input box in the\n  schedule-task modal (margin: 0 in embedded mode)\n- Replace AgentTeam icon with Zap for quick-commands menu\n- Rename askAutoAnswer instant label to \"模型自主决策\" / \"Model decides\"\n- Simplify askAutoAnswer setting label to \"问答题托管\" / \"Question hosting\"\n- Hide doc panel entirely on mobile in CustomUltraplanEditModal\n- Hide proxy chip background until hover (transparent default)\n\nDefaults: permission auto-approve → instant (-1), plan auto-approve →\n60s countdown, ask hosting → 5 minutes. Ask hosting tiers: add 1-min\nand 5-min options, remove 20-min and 30-min options.",
+      "url": "https://github.com/weiesky/cc-viewer/commit/a87b61f572f7e38442094afc38e09fefac159c21",
+      "kind": "behavior",
+      "workPackages": [
+        "B13",
+        "B15",
+        "D1"
+      ],
+      "status": "planned",
+      "localImplementation": null,
+      "runtimeValidation": "not-run-planning-only",
+      "files": [
+        {
+          "upstream": "apps/web/src/AppBase.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/AppBase.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/chat/ChatInputBar.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/chat/ChatInputBar.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/chat/ChatView.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/chat/ChatView.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/chat/ProxyChip.module.css",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/chat/ProxyChip.module.css",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/common/ScheduleTaskModal.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/common/ScheduleTaskModal.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/common/quickMenuIcons.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/common/quickMenuIcons.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/dashboard/ScheduleNavButton.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/dashboard/ScheduleNavButton.jsx",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/dashboard/ScheduleNavButton.module.css",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/dashboard/ScheduleNavButton.module.css",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/terminal/CustomUltraplanEditModal.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/terminal/CustomUltraplanEditModal.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/terminal/TerminalPanel.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/terminal/TerminalPanel.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/terminal/UltraplanPanel.module.css",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/terminal/UltraplanPanel.module.css",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/i18n.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/i18n.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/utils/autoApproveOptions.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/utils/autoApproveOptions.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/utils/scheduleNav.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/utils/scheduleNav.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/ask-auto-answer-menu.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/ask-auto-answer-menu.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/auto-approve-options.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/auto-approve-options.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/schedule-nav-button.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/schedule-nav-button.test.js",
+              "exists": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sha": "73b9a1d18ceaeb23b6b03a9089fb6008819bab5c",
+      "short": "73b9a1d1",
+      "authorDate": "2026-11-18T12:33:53+08:00",
+      "commitDate": "2026-11-18T12:33:53+08:00",
+      "parents": [
+        "a87b61f572f7e38442094afc38e09fefac159c21"
+      ],
+      "subject": "fix(web): address code review findings (6-reviewer cross-audit)",
+      "message": "fix(web): address code review findings (6-reviewer cross-audit)\n\nP0: Korean i18n mixed Chinese characters → proper Korean translation.\n\nP1: Mobile permission default aligned to instant (-1), matching AppBase.\nP1: hasOverdue memo now depends on tick so overdue tasks are detected\n    as wall-clock time passes, not just at fetch time.\nP1: Added changeset (patch) and history.md entries.\n\nP2: Removed .sdkChip:hover (read-only chip must not look clickable).\nP2: aria-haspopup corrected from \"menu\" to \"dialog\" per project precedent.\nP2: Countdown color improved for WCAG AA contrast (--text-tertiary).\nP2: eslint-disable-next-line moved to correct position in ScheduleTaskModal.\nP2: ScheduleTaskModal list row reuses taskPreview() instead of inline copy.\nP2: Removed dead AgentTeamIcon export from quickMenuIcons.",
+      "url": "https://github.com/weiesky/cc-viewer/commit/73b9a1d18ceaeb23b6b03a9089fb6008819bab5c",
+      "kind": "behavior",
+      "workPackages": [
+        "B13",
+        "B15",
+        "D1"
+      ],
+      "status": "planned",
+      "localImplementation": null,
+      "runtimeValidation": "not-run-planning-only",
+      "files": [
+        {
+          "upstream": ".changeset/schedule-nav-sidebar.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/schedule-nav-sidebar.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/Mobile.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/Mobile.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/chat/ProxyChip.module.css",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/chat/ProxyChip.module.css",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/common/ScheduleTaskModal.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/common/ScheduleTaskModal.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/common/quickMenuIcons.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/common/quickMenuIcons.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/dashboard/ScheduleNavButton.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/dashboard/ScheduleNavButton.jsx",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/dashboard/ScheduleNavButton.module.css",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/dashboard/ScheduleNavButton.module.css",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/terminal/TerminalPanel.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/terminal/TerminalPanel.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/i18n.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/i18n.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/schedule-nav-button.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/schedule-nav-button.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "history.md",
+          "localCandidates": [
+            {
+              "path": "history.md",
+              "exists": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sha": "268a962865a9b854865dae882dabd4d1600da4c4",
+      "short": "268a9628",
+      "authorDate": "2026-11-18T13:00:06+08:00",
+      "commitDate": "2026-11-18T13:00:06+08:00",
+      "parents": [
+        "73b9a1d18ceaeb23b6b03a9089fb6008819bab5c"
+      ],
+      "subject": "chore(release): 1.9.31",
+      "message": "chore(release): 1.9.31",
+      "url": "https://github.com/weiesky/cc-viewer/commit/268a962865a9b854865dae882dabd4d1600da4c4",
+      "kind": "release",
+      "workPackages": [
+        "B20"
+      ],
+      "status": "metadata-recorded",
+      "localImplementation": null,
+      "runtimeValidation": "not-run-planning-only",
+      "files": [
+        {
+          "upstream": ".changeset/schedule-nav-sidebar.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/schedule-nav-sidebar.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/CHANGELOG.md",
+          "localCandidates": [
+            {
+              "path": "packages/app/CHANGELOG.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/package.json",
+          "localCandidates": [
+            {
+              "path": "packages/app/package.json",
+              "exists": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sha": "2c3229811204e2e11a5982e6b96eaf6663cfc7c5",
+      "short": "2c322981",
+      "authorDate": "2026-11-18T22:55:11+08:00",
+      "commitDate": "2026-11-18T22:55:11+08:00",
+      "parents": [
+        "268a962865a9b854865dae882dabd4d1600da4c4"
+      ],
+      "subject": "feat(web+server): file browser modal navigation & view enhancements (#177)",
+      "message": "feat(web+server): file browser modal navigation & view enhancements (#177)\n\nAdd back/forward history (Alt+←/→, Cmd/Ctrl+[/]), address bar (double-click\nbreadcrumb blank area or Ctrl/Cmd+L; supports relative and absolute paths,\nfile paths locate and preview), list/grid view toggle with per-directory\npreference memory, server-driven sorting by name/size/modified-time, and a\ncurrent-folder filename filter with inline highlighting.\n\nServer changes:\n- /api/files and /api/target-files: add size/mtimeMs fields and\n  ?sort=name|size|mtime&order=asc|desc parameters (backward compatible —\n  omitted params preserve the historical name/asc behavior).\n- /api/resolve-path and /api/target-resolve-path: add absolutePath branch\n  (admin + same-origin gate, realpath + containment validation).\n\nUI refinements:\n- Up button uses corner-left-up L-shape icon, moved to the leftmost slot.\n- Refresh button unified to ReloadOutlined (matching other modals).\n- antd Modal header marginBottom: 0 so the tree pane's border-right and\n  the header's borderBottom meet precisely.\n- body borderRadius '0 0 8px 8px' so square corners don't overflow the\n  outer modal-content rounded corners.\n\nCode review fixes (from 5-reviewer team):\n- Address bar third catch now reports via reportSwallowed.\n- /api/resolve-path absolutePath branch gates admin + same-origin (was a\n  host-filesystem existence oracle).\n- macOS case-insensitive FS: use realpathSync.native so containment\n  checks accept legitimately-cased in-root paths.\n- name desc now reverses directory order too (matching file managers).\n- historyStateRef synchronized via commitHistory helper everywhere.\n- Project-mode in-flight requests guarded against view-scope switches.\n- Address-bar file locate uses fresh fetch and reports notFound on miss.\n- fileBrowserPrefs uses Object.create(null) so '__proto__' directories work.\n- dirCacheKey uses NUL separator (cannot collide with any real path).\n- formatMtime test pins a literal expected string instead of self-proof.\n\nCo-authored-by: weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "url": "https://github.com/weiesky/cc-viewer/commit/2c3229811204e2e11a5982e6b96eaf6663cfc7c5",
+      "kind": "behavior",
+      "workPackages": [
+        "B16"
+      ],
+      "status": "planned",
+      "localImplementation": null,
+      "runtimeValidation": "not-run-planning-only",
+      "files": [
+        {
+          "upstream": ".changeset/file-browser-modal-nav-views.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/file-browser-modal-nav-views.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/files/FileBrowserModal.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/files/FileBrowserModal.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/files/FileBrowserModal.module.css",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/files/FileBrowserModal.module.css",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/i18n.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/i18n.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/utils/fileBrowserFilter.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/utils/fileBrowserFilter.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/utils/fileBrowserHistory.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/utils/fileBrowserHistory.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/utils/fileBrowserPrefs.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/utils/fileBrowserPrefs.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/utils/formatters.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/utils/formatters.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/external-folder-targets.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/external-folder-targets.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/file-browser-modal.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/file-browser-modal.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/fileBrowserFilter.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/fileBrowserFilter.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/fileBrowserHistory.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/fileBrowserHistory.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/fileBrowserPrefs.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/fileBrowserPrefs.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/formatters-gap.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/formatters-gap.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "history.md",
+          "localCandidates": [
+            {
+              "path": "history.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/lib/file-sort.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/lib/file-sort.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/routes/files-content.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/lib/target-files.js",
+              "exists": true
+            },
+            {
+              "path": "packages/app/server.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/routes/files-fs.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/server.js",
+              "exists": true
+            },
+            {
+              "path": "packages/app/lib/file-api.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/routes/target-files-fs.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/lib/target-files-fs.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/api-files-fs.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/api-files-fs.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/api-target-files-fs.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/api-target-files-fs.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/api-target-files.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/api-target-files.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/file-sort-lib.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/file-sort-lib.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "scripts/tarball-baseline.json",
+          "localCandidates": [
+            {
+              "path": "scripts/tarball-baseline.json",
+              "exists": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sha": "b65f667d9379deb416c287125f36e09d264eaec2",
+      "short": "b65f667d",
+      "authorDate": "2026-11-18T22:56:48+08:00",
+      "commitDate": "2026-11-18T22:56:48+08:00",
+      "parents": [
+        "2c3229811204e2e11a5982e6b96eaf6663cfc7c5"
+      ],
+      "subject": "chore(release): 1.9.32",
+      "message": "chore(release): 1.9.32",
+      "url": "https://github.com/weiesky/cc-viewer/commit/b65f667d9379deb416c287125f36e09d264eaec2",
+      "kind": "release",
+      "workPackages": [
+        "B20"
+      ],
+      "status": "metadata-recorded",
+      "localImplementation": null,
+      "runtimeValidation": "not-run-planning-only",
+      "files": [
+        {
+          "upstream": ".changeset/file-browser-modal-nav-views.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/file-browser-modal-nav-views.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/CHANGELOG.md",
+          "localCandidates": [
+            {
+              "path": "packages/app/CHANGELOG.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/package.json",
+          "localCandidates": [
+            {
+              "path": "packages/app/package.json",
+              "exists": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sha": "03aad20b929d67d566fa884fdc78391148627fae",
+      "short": "03aad20b",
+      "authorDate": "2026-11-19T01:46:25+08:00",
+      "commitDate": "2026-11-19T01:46:25+08:00",
+      "parents": [
+        "b65f667d9379deb416c287125f36e09d264eaec2"
+      ],
+      "subject": "fix(server): preserve ACCESS_TOKEN across self-update restart (#178)",
+      "message": "fix(server): preserve ACCESS_TOKEN across self-update restart (#178)\n\n* fix(server): preserve ACCESS_TOKEN across self-update restart\n\nHand the current LAN ACCESS_TOKEN to the replacement process via the\nrestart handoff (restart-config.json 0600 -> CCV_ACCESS_TOKEN env), so an\nalready-open page's ?token= URL, /api/version-info recovery poll, and\nccv_auth cookie keep working across an in-app update instead of 401/502.\n\nserver.js adopts the token only in the exact randomBytes(16) hex shape,\nstrips the env key at module load, and falls back to a fresh random token\notherwise. The restart helper erases the config the moment it is read into\nmemory. Token is never persisted; still rotates on a manual restart.\n\n* chore(release): 1.9.33\n\n---------\n\nCo-authored-by: weiesky.wangc <weiesky.wangc@antgroup.com>",
+      "url": "https://github.com/weiesky/cc-viewer/commit/03aad20b929d67d566fa884fdc78391148627fae",
+      "kind": "behavior",
+      "workPackages": [
+        "B12",
+        "B20"
+      ],
+      "status": "implemented-adapted-B12-scope",
+      "localImplementation": "f014bf9a30de22ee5a259c72d727e001a0100e1b",
+      "runtimeValidation": "B12-validation-2026-11-24.json",
+      "files": [
+        {
+          "upstream": "history.md",
+          "localCandidates": [
+            {
+              "path": "history.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/CHANGELOG.md",
+          "localCandidates": [
+            {
+              "path": "packages/app/CHANGELOG.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/cli.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/cli.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/package.json",
+          "localCandidates": [
+            {
+              "path": "packages/app/package.json",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/lib/access-token.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/lib/access-token.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/lib/auth.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/lib/auth.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/lib/restart-helper.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/lib/restart-helper.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/lib/restart.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/lib/restart.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/server.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/server.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/access-token.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/access-token.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/cli.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/cli.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/restart-helper.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/restart-helper.test.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/server-access-token-env.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/server-access-token-env.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "scripts/tarball-baseline.json",
+          "localCandidates": [
+            {
+              "path": "scripts/tarball-baseline.json",
+              "exists": true
+            }
+          ]
+        }
+      ],
+      "scopeNotes": "B12 behavior only. Upstream release/version metadata remains separately recorded in B20; active GUI and target-environment limits are not closed."
+    },
+    {
+      "sha": "cb7d59e1f528426b4ba20c1f09c358fff50eb936",
+      "short": "cb7d59e1",
+      "authorDate": "2026-11-19T15:01:00+08:00",
+      "commitDate": "2026-11-20T10:17:13+08:00",
+      "parents": [
+        "03aad20b929d67d566fa884fdc78391148627fae"
+      ],
+      "subject": "feat(web): persist SDK active-agents panel across browser refresh",
+      "message": "feat(web): persist SDK active-agents panel across browser refresh\n\nPersist the SDK-mode active-agents (subAgent/teammate) panel to localStorage\nkeyed by sessionId (LRU cap 10, TTL 24h) and restore it seed-only on refresh,\nreconciling with the authoritative server snapshot.\n\n- restoreFromStorage seeds the panel; an empty same-session snapshot keeps the\n  restored rows instead of blanking the panel (refresh-survival semantics)\n- seed publishes skip persistence to avoid an empty-snapshot echo destroying\n  the checkpoint the next refresh needs\n- boot first-activation preserves the tracker (no longer treated as a view\n  switch), fixing the replay-then-reset ordering that wiped the restored panel\n- close the sdkMode hydration window: gate the boot hook-path clearTaskStore /\n  empty SSE task_update on the tracker's actual state (hasSdkState) instead of\n  the async sdkMode flag, and let a sdkMode-flip re-restore republish a retained\n  unverified seed, so the panel is not blanked while /api/cli-mode is in flight\n- _cancelPersist cancels the debounced write on clear/reset so a trailing\n  persist cannot resurrect a just-deleted checkpoint\n- remove dead mount-time restore call and unused clearAllPersistedSnapshots\n- ActiveAgentsBar chevron sizing; slow-upstream-replay test race hardening\n\nCoverage: sdkTaskTracker-persist.test.js, chat-active-agents-wiring.test.js\n\nAlso backfill history.md version attribution (1.9.25-1.9.33) for entries that\nwere left under Unreleased by past releases.",
+      "url": "https://github.com/weiesky/cc-viewer/commit/cb7d59e1f528426b4ba20c1f09c358fff50eb936",
+      "kind": "behavior",
+      "workPackages": [
+        "B17"
+      ],
+      "status": "partly-existing-pending-validation",
+      "localImplementation": null,
+      "runtimeValidation": "not-run-planning-only",
+      "files": [
+        {
+          "upstream": ".changeset/active-agents-refresh-persist.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/active-agents-refresh-persist.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/AppBase.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/AppBase.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/chat/ActiveAgentsBar.module.css",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/chat/ActiveAgentsBar.module.css",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/chat/ChatView.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/chat/ChatView.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/utils/sdkTaskTracker.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/chat/ChatView.jsx",
+              "exists": true
+            },
+            {
+              "path": "packages/app/lib/sdk-appserver-agents.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/utils/taskStore.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/terminal/TerminalWsContext.jsx",
+              "exists": true
+            },
+            {
+              "path": "apps/web/src/components/chat/ChatView.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/chat-active-agents-wiring.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/chat-active-agents-wiring.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/sdkTaskTracker-persist.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/sdkTaskTracker-persist.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "history.md",
+          "localCandidates": [
+            {
+              "path": "history.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/slow-upstream-replay.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/slow-upstream-replay.test.js",
+              "exists": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sha": "8dddb8a11591ee1a55330946c8aa51f9ba4d463e",
+      "short": "8dddb8a1",
+      "authorDate": "2026-11-20T11:06:46+08:00",
+      "commitDate": "2026-11-20T11:06:46+08:00",
+      "parents": [
+        "cb7d59e1f528426b4ba20c1f09c358fff50eb936"
+      ],
+      "subject": "feat(web): show current branch in the Git Changes panel",
+      "message": "feat(web): show current branch in the Git Changes panel\n\nSingle-repo: a branch row at the top of the panel with the name in a\npill chip (ProxyChip-style geometry, ready for a future switch action).\nMulti-repo: the same chip inside each repo header. Explicit null from\nthe server (detached/unborn HEAD) shows a localized fallback label;\nunknown states (old server without the branch field, failed unpushed\nrequest) render no chip instead of a misleading label.",
+      "url": "https://github.com/weiesky/cc-viewer/commit/8dddb8a11591ee1a55330946c8aa51f9ba4d463e",
+      "kind": "behavior",
+      "workPackages": [
+        "B18"
+      ],
+      "status": "planned",
+      "localImplementation": null,
+      "runtimeValidation": "not-run-planning-only",
+      "files": [
+        {
+          "upstream": ".changeset/git-panel-current-branch.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/git-panel-current-branch.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/git/GitChanges.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/git/GitChanges.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/git/GitChanges.module.css",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/git/GitChanges.module.css",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/i18n.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/i18n.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/utils/gitApi.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/utils/gitApi.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/git-api.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/git-api.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/git-changes-branch.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/git-changes-branch.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/new-ui-i18n.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/new-ui-i18n.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "history.md",
+          "localCandidates": [
+            {
+              "path": "history.md",
+              "exists": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sha": "db741d5edc3b195c6edae15027e750a6afb7a5ec",
+      "short": "db741d5e",
+      "authorDate": "2026-11-20T11:44:06+08:00",
+      "commitDate": "2026-11-20T11:44:06+08:00",
+      "parents": [
+        "8dddb8a11591ee1a55330946c8aa51f9ba4d463e"
+      ],
+      "subject": "Fix low-contrast selected item in dark-mode dropdown menus",
+      "message": "Fix low-contrast selected item in dark-mode dropdown menus\n\nIn dark mode, antd Dropdown renders selected menu items with\ncolorPrimary (#1668dc) text on the dark-blue controlItemBgActive,\nwhich is barely legible on the elevated dropdown background. Override\nthe Dropdown component token to white selected text.",
+      "url": "https://github.com/weiesky/cc-viewer/commit/db741d5edc3b195c6edae15027e750a6afb7a5ec",
+      "kind": "behavior",
+      "workPackages": [
+        "B13"
+      ],
+      "status": "planned",
+      "localImplementation": null,
+      "runtimeValidation": "not-run-planning-only",
+      "files": [
+        {
+          "upstream": "apps/web/src/AppBase.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/AppBase.jsx",
+              "exists": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sha": "e7313de790c5d16c9d37ef3521c1e56b27fb5912",
+      "short": "e7313de7",
+      "authorDate": "2026-11-20T12:42:09+08:00",
+      "commitDate": "2026-11-20T12:42:09+08:00",
+      "parents": [
+        "db741d5edc3b195c6edae15027e750a6afb7a5ec"
+      ],
+      "subject": "chore(changeset): add changeset for dark dropdown contrast fix",
+      "message": "chore(changeset): add changeset for dark dropdown contrast fix",
+      "url": "https://github.com/weiesky/cc-viewer/commit/e7313de790c5d16c9d37ef3521c1e56b27fb5912",
+      "kind": "changeset",
+      "workPackages": [
+        "B20"
+      ],
+      "status": "metadata-recorded",
+      "localImplementation": null,
+      "runtimeValidation": "not-run-planning-only",
+      "files": [
+        {
+          "upstream": ".changeset/dark-dropdown-selected-contrast.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/dark-dropdown-selected-contrast.md",
+              "exists": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sha": "a702649653bff7b5ecd07babc49918604db4ccae",
+      "short": "a7026496",
+      "authorDate": "2026-11-20T12:42:26+08:00",
+      "commitDate": "2026-11-20T12:42:26+08:00",
+      "parents": [
+        "e7313de790c5d16c9d37ef3521c1e56b27fb5912"
+      ],
+      "subject": "chore(release): 1.9.34",
+      "message": "chore(release): 1.9.34",
+      "url": "https://github.com/weiesky/cc-viewer/commit/a702649653bff7b5ecd07babc49918604db4ccae",
+      "kind": "release",
+      "workPackages": [
+        "B20"
+      ],
+      "status": "metadata-recorded",
+      "localImplementation": null,
+      "runtimeValidation": "not-run-planning-only",
+      "files": [
+        {
+          "upstream": ".changeset/active-agents-refresh-persist.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/active-agents-refresh-persist.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": ".changeset/dark-dropdown-selected-contrast.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/dark-dropdown-selected-contrast.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": ".changeset/git-panel-current-branch.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/git-panel-current-branch.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/CHANGELOG.md",
+          "localCandidates": [
+            {
+              "path": "packages/app/CHANGELOG.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/package.json",
+          "localCandidates": [
+            {
+              "path": "packages/app/package.json",
+              "exists": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sha": "b8d5924bc016f299dbfa13ef9cffb45e9111348c",
+      "short": "b8d5924b",
+      "authorDate": "2026-11-21T10:50:49+08:00",
+      "commitDate": "2026-11-22T01:51:05+08:00",
+      "parents": [
+        "a702649653bff7b5ecd07babc49918604db4ccae"
+      ],
+      "subject": "feat(web): drop \"Copy Relative Path\" from context menus; type-aware \"Copy Path\" label",
+      "message": "feat(web): drop \"Copy Relative Path\" from context menus; type-aware \"Copy Path\" label\n\nFile explorer and Git changes context menus no longer offer \"Copy Relative\nPath\". The remaining copy action keeps copying the absolute path (via\nresolve-path) and its label is now type-aware: \"Copy File Path\" on file\nnodes, \"Copy Folder Path\" on folder nodes and the project-root container.\nRemoves the ui.contextMenu.copyPath / copyRelativePath keys in favor of\ncopyFilePath / copyDirPath (18 locales each).\n\nCoverage: file-context-menu.test.js, new-ui-i18n.test.js.",
+      "url": "https://github.com/weiesky/cc-viewer/commit/b8d5924bc016f299dbfa13ef9cffb45e9111348c",
+      "kind": "behavior",
+      "workPackages": [
+        "B19"
+      ],
+      "status": "planned",
+      "localImplementation": null,
+      "runtimeValidation": "not-run-planning-only",
+      "files": [
+        {
+          "upstream": ".changeset/context-menu-copy-path-simplify.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/context-menu-copy-path-simplify.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": ".changeset/file-explorer-new-workspace.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/file-explorer-new-workspace.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/electron/electron/main.js",
+          "localCandidates": [
+            {
+              "path": "apps/electron/electron/main.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/electron/electron/tab-content-preload.js",
+          "localCandidates": [
+            {
+              "path": "apps/electron/electron/tab-content-preload.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/electron/electron/tab-worker.js",
+          "localCandidates": [
+            {
+              "path": "apps/electron/electron/tab-worker.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/App.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/App.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/Mobile.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/Mobile.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/chat/ChatView.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/chat/ChatView.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/dashboard/WorkspaceList.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/dashboard/WorkspaceList.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/files/FileExplorer.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/files/FileExplorer.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/files/fileContextMenu.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/files/fileContextMenu.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/files/fileContextMenuActions.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/files/fileContextMenuActions.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/git/GitChanges.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/git/GitChanges.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/i18n.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/i18n.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/utils/workspaceLaunch.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/utils/workspaceLaunch.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/file-browser-modal.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/file-browser-modal.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/file-context-menu-actions.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/file-context-menu-actions.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/file-context-menu.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/file-context-menu.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/new-ui-i18n.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/new-ui-i18n.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/workspace-launch.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/workspace-launch.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "history.md",
+          "localCandidates": [
+            {
+              "path": "history.md",
+              "exists": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sha": "4a5ea59ba68ccc38acded6e064437a91ca1b5c6b",
+      "short": "4a5ea59b",
+      "authorDate": "2026-11-22T01:52:14+08:00",
+      "commitDate": "2026-11-22T01:52:14+08:00",
+      "parents": [
+        "b8d5924bc016f299dbfa13ef9cffb45e9111348c"
+      ],
+      "subject": "feat(web): \"New Workspace (Session)\" on a folder + same-cwd twin hardening",
+      "message": "feat(web): \"New Workspace (Session)\" on a folder + same-cwd twin hardening\n\nRight-clicking a folder in the file explorer (sidebar + FileBrowserModal) offers\n\"New Workspace (Session)\": it launches a fresh session rooted there — no -c —\nwith the picker semantics for other folders (reuse-or-spawn, -c iff logs exist).\nOn the CURRENT project root it spawns a same-cwd twin instance; Electron opens a\nsecond tab, web/CLI pins the view to the new instance. The file browser modal\ncloses after a successful launch.\n\nSame-cwd twin hardening (review + write-side isolation): the launch surface is\nvalidated and the new instance's view switches to its EMPTY session (not the old\ntwin's), with the write side routing each twin's log by instance so the two\nconcurrent sessions never interleave.\n\nSquashes: 267c7207, a0a4d155, 66bbb00d, 2a65efbb (current-root fresh instance),\n5cc38f04, 789e19d7, 2ebdd190 (menu entry + modal + close-on-launch).",
+      "url": "https://github.com/weiesky/cc-viewer/commit/4a5ea59ba68ccc38acded6e064437a91ca1b5c6b",
+      "kind": "behavior",
+      "workPackages": [
+        "B19",
+        "D2"
+      ],
+      "status": "planned",
+      "localImplementation": null,
+      "runtimeValidation": "not-run-planning-only",
+      "files": [
+        {
+          "upstream": ".changeset/force-new-fresh-empty-view.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/force-new-fresh-empty-view.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": ".changeset/modal-new-workspace.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/modal-new-workspace.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": ".changeset/new-session-on-current-root.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/new-session-on-current-root.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": ".changeset/same-cwd-twin-write-isolation.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/same-cwd-twin-write-isolation.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/electron/electron/main.js",
+          "localCandidates": [
+            {
+              "path": "apps/electron/electron/main.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/electron/electron/tab-content-preload.js",
+          "localCandidates": [
+            {
+              "path": "apps/electron/electron/tab-content-preload.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/electron/electron/tab-worker.js",
+          "localCandidates": [
+            {
+              "path": "apps/electron/electron/tab-worker.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/electron/electron/workspace-preload.js",
+          "localCandidates": [
+            {
+              "path": "apps/electron/electron/workspace-preload.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/App.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/App.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/AppBase.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/AppBase.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/dashboard/AppHeader.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/dashboard/AppHeader.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/files/FileBrowserModal.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/files/FileBrowserModal.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/files/FileExplorer.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/files/FileExplorer.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/files/fileContextMenu.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/files/fileContextMenu.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/files/fileContextMenuActions.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/files/fileContextMenuActions.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/i18n.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/i18n.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/utils/workspaceLaunch.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/utils/workspaceLaunch.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/file-browser-modal.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/file-browser-modal.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/file-context-menu-actions.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/file-context-menu-actions.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/force-new-view-blank.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/force-new-view-blank.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/resume-history-i18n.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/resume-history-i18n.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/resume-history-menu.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/resume-history-menu.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/view-cache-restore.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/view-cache-restore.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/workspace-launch.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/workspace-launch.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "history.md",
+          "localCandidates": [
+            {
+              "path": "history.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/interceptor.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/interceptor.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/lib/continuation-args.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/lib/continuation-args.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/lib/sdk-manager.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/lib/sdk-manager.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/lib/session-start-bridge.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/lib/session-start-bridge.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/lib/v2/session-select.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/lib/log-v2/session-summary.js",
+              "exists": true
+            },
+            {
+              "path": "packages/app/server.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/lib/v2/v2-writer.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/lib/log-v2/sink.js",
+              "exists": false
+            },
+            {
+              "path": "packages/app/lib/sdk-manager.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/pty-manager.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/pty-manager.js",
+              "exists": true
+            },
+            {
+              "path": "packages/app/lib/pty-workspaces.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/routes/events.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/server.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/routes/resume.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/server.js",
+              "exists": true
+            },
+            {
+              "path": "packages/app/lib/sdk-manager.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/routes/workspaces.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/server.js",
+              "exists": true
+            },
+            {
+              "path": "packages/app/lib/sdk-manager.js",
+              "exists": true
+            },
+            {
+              "path": "packages/app/lib/pty-workspaces.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/server.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/server.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/api-workspaces.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/api-workspaces.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/branch-routes-workspaces.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/branch-routes-workspaces.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/events-instance-live-empty.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/events-instance-live-empty.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/interceptor-continuation-sync.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/interceptor-continuation-sync.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/pty-manager-instance.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/pty-manager-instance.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/resume-route.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/resume-route.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/sdk-force-new.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/sdk-force-new.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/session-start-bridge.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/session-start-bridge.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/v2-core.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/v2-core.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/v2-resume-switch.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/v2-resume-switch.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/v2-retire-instance.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/v2-retire-instance.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/v2-session-select.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/v2-session-select.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "scripts/tarball-baseline.json",
+          "localCandidates": [
+            {
+              "path": "scripts/tarball-baseline.json",
+              "exists": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sha": "6f904397ada3021bb05ff5232002022df1dc5e6e",
+      "short": "6f904397",
+      "authorDate": "2026-11-22T01:47:39+08:00",
+      "commitDate": "2026-11-22T01:52:48+08:00",
+      "parents": [
+        "4a5ea59ba68ccc38acded6e064437a91ca1b5c6b"
+      ],
+      "subject": "feat(server): SDK mode — same-cwd \"New Workspace (Session)\" is a sibling (workspace +1), not a replace",
+      "message": "feat(server): SDK mode — same-cwd \"New Workspace (Session)\" is a sibling (workspace +1), not a replace\n\nRe-key the SDK session registry from cwd to instanceKey so one cwd can host\nseveral concurrent sessions. A forceNew launch appends a fresh random-key\nsibling (createSdkSession) and keeps the existing session(s) alive; the two\nsurface as switchable header tabs. A plain launch resolves the cwd's primary\n(active → deterministic boot → latest) instead of spawning a sibling.\n\nSafety/isolation: resume twin-ownership guard now sees SDK liveness, tracks each\nconversation's active owner (in-memory uuid→instance + the SDK session's own\ngeneration-scoped sessionId), resolves a sole-live bare caller, refuses\nambiguous/other-owned resumes (409), and reserves an in-flight uuid against\nconcurrent double-resume. Close retires a random fresh key / releases a\ndeterministic key (releaseInstance) and no longer reaps a surviving same-cwd\nsibling's scope/scratch. The +1 launch skips the project-level writer reset\n(preserveLiveTwin, gated on exact cwd) and tags workspace_started sibling:true\nwith no global empty reload. An ambiguous same-cwd action anchor (send/Stop)\nfalls back to the cwd primary.\n\nCoverage: sdk-multi-session-route.test.js (new), sdk-force-new.test.js\n(rewritten), resume-route.test.js (+ guard tri-state), v2-retire-instance.test.js\n(+ releaseInstance).",
+      "url": "https://github.com/weiesky/cc-viewer/commit/6f904397ada3021bb05ff5232002022df1dc5e6e",
+      "kind": "behavior",
+      "workPackages": [
+        "B19",
+        "D2"
+      ],
+      "status": "decision-dependent",
+      "localImplementation": null,
+      "runtimeValidation": "not-run-planning-only",
+      "files": [
+        {
+          "upstream": ".changeset/force-new-fresh-empty-view.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/force-new-fresh-empty-view.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": ".changeset/new-session-on-current-root.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/new-session-on-current-root.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": ".changeset/sdk-same-cwd-sibling-sessions.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/sdk-same-cwd-sibling-sessions.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/AppBase.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/AppBase.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "history.md",
+          "localCandidates": [
+            {
+              "path": "history.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/interceptor.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/interceptor.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/lib/scheduled-task-executor.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/lib/scheduled-task-executor.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/lib/sdk-manager.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/lib/sdk-manager.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/lib/v2/v2-writer.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/lib/log-v2/sink.js",
+              "exists": false
+            },
+            {
+              "path": "packages/app/lib/sdk-manager.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/routes/resume.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/server.js",
+              "exists": true
+            },
+            {
+              "path": "packages/app/lib/sdk-manager.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/routes/workspaces.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/server.js",
+              "exists": true
+            },
+            {
+              "path": "packages/app/lib/sdk-manager.js",
+              "exists": true
+            },
+            {
+              "path": "packages/app/lib/pty-workspaces.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/resume-route.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/resume-route.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/sdk-force-new.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/sdk-force-new.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/sdk-multi-session-route.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/sdk-multi-session-route.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/v2-retire-instance.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/v2-retire-instance.test.js",
+              "exists": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sha": "0980726597e37f3b35eddf2db4a159f8a2543e24",
+      "short": "09807265",
+      "authorDate": "2026-11-22T12:17:43+08:00",
+      "commitDate": "2026-11-22T12:17:43+08:00",
+      "parents": [
+        "6f904397ada3021bb05ff5232002022df1dc5e6e"
+      ],
+      "subject": "fix(server): same-cwd SDK twin [对话] panel no longer cross-talks during the bound-view hydration window",
+      "message": "fix(server): same-cwd SDK twin [对话] panel no longer cross-talks during the bound-view hydration window\n\nA bound-project client's /ws/terminal connection stamps _ccvViewInstance from\n?instance=, empty until the header's first /api/live-processes poll hydrates\nboundInstance — during that window the broadcast filter's \"exclude only the\ndifferently-stamped\" rule delivered BOTH same-cwd twins' control frames\n(modal/queue/spinner/system rows) to the bound view. The bound identity is a\ndeterministic function of the cwd, so the server now coheres the stamp at\nconnect/attach time to the bound cwd's primary instanceKey\n(_cohereAttachInstance, applied at the initial upgrade and all three attach\nre-stamp sites) instead of waiting for the client to hydrate. Narrowing-only:\nexplicit instanceKey never overridden, non-bound project untouched, PTY mode\ngated out, single-instance cwd resolves to its only session (no twin frames to\ndrop). Adds sdk-manager.resolveBoundPrimaryInstanceKey (deterministic-boot-first,\nNOT the active sibling) as the single source of truth — resume.js\ncurrentInstanceKey now delegates to it. Registered from cli.js.\n\nCoverage: ws-instance-isolation.test.js (resolver + cohere gating + cohered-stamp\nnarrowing), sdk-multi-session-route.test.js (currentInstanceKey delegation).",
+      "url": "https://github.com/weiesky/cc-viewer/commit/0980726597e37f3b35eddf2db4a159f8a2543e24",
+      "kind": "behavior",
+      "workPackages": [
+        "B19",
+        "D2"
+      ],
+      "status": "decision-dependent",
+      "localImplementation": null,
+      "runtimeValidation": "not-run-planning-only",
+      "files": [
+        {
+          "upstream": ".changeset/sdk-twin-attach-instance-cohere.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/sdk-twin-attach-instance-cohere.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "history.md",
+          "localCandidates": [
+            {
+              "path": "history.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/cli.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/cli.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/lib/sdk-manager.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/lib/sdk-manager.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/routes/resume.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/server.js",
+              "exists": true
+            },
+            {
+              "path": "packages/app/lib/sdk-manager.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/server.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/server.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/sdk-multi-session-route.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/sdk-multi-session-route.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/ws-instance-isolation.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/ws-instance-isolation.test.js",
+              "exists": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sha": "f0c23018c37a89dbeafa65fe35e0364ed217698e",
+      "short": "f0c23018",
+      "authorDate": "2026-11-22T12:19:00+08:00",
+      "commitDate": "2026-11-22T12:19:00+08:00",
+      "parents": [
+        "a702649653bff7b5ecd07babc49918604db4ccae",
+        "0980726597e37f3b35eddf2db4a159f8a2543e24"
+      ],
+      "subject": "Merge pull request #179 from weiesky/fix/sdk-twin-attach-instance-cohere",
+      "message": "Merge pull request #179 from weiesky/fix/sdk-twin-attach-instance-cohere\n\nfix(server): same-cwd SDK twin [对话] panel no longer cross-talks during the bound-view hydration window",
+      "url": "https://github.com/weiesky/cc-viewer/commit/f0c23018c37a89dbeafa65fe35e0364ed217698e",
+      "kind": "merge",
+      "workPackages": [
+        "B19",
+        "D2"
+      ],
+      "status": "metadata-recorded",
+      "localImplementation": null,
+      "runtimeValidation": "not-run-planning-only",
+      "files": [
+        {
+          "upstream": ".changeset/context-menu-copy-path-simplify.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/context-menu-copy-path-simplify.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": ".changeset/file-explorer-new-workspace.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/file-explorer-new-workspace.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": ".changeset/force-new-fresh-empty-view.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/force-new-fresh-empty-view.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": ".changeset/modal-new-workspace.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/modal-new-workspace.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": ".changeset/new-session-on-current-root.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/new-session-on-current-root.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": ".changeset/same-cwd-twin-write-isolation.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/same-cwd-twin-write-isolation.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": ".changeset/sdk-same-cwd-sibling-sessions.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/sdk-same-cwd-sibling-sessions.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": ".changeset/sdk-twin-attach-instance-cohere.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/sdk-twin-attach-instance-cohere.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/electron/electron/main.js",
+          "localCandidates": [
+            {
+              "path": "apps/electron/electron/main.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/electron/electron/tab-content-preload.js",
+          "localCandidates": [
+            {
+              "path": "apps/electron/electron/tab-content-preload.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/electron/electron/tab-worker.js",
+          "localCandidates": [
+            {
+              "path": "apps/electron/electron/tab-worker.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/electron/electron/workspace-preload.js",
+          "localCandidates": [
+            {
+              "path": "apps/electron/electron/workspace-preload.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/App.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/App.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/AppBase.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/AppBase.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/Mobile.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/Mobile.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/chat/ChatView.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/chat/ChatView.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/dashboard/AppHeader.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/dashboard/AppHeader.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/dashboard/WorkspaceList.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/dashboard/WorkspaceList.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/files/FileBrowserModal.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/files/FileBrowserModal.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/files/FileExplorer.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/files/FileExplorer.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/files/fileContextMenu.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/files/fileContextMenu.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/files/fileContextMenuActions.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/files/fileContextMenuActions.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/components/git/GitChanges.jsx",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/components/git/GitChanges.jsx",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/i18n.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/i18n.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/src/utils/workspaceLaunch.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/src/utils/workspaceLaunch.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/file-browser-modal.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/file-browser-modal.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/file-context-menu-actions.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/file-context-menu-actions.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/file-context-menu.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/file-context-menu.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/force-new-view-blank.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/force-new-view-blank.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/new-ui-i18n.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/new-ui-i18n.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/resume-history-i18n.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/resume-history-i18n.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/resume-history-menu.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/resume-history-menu.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/view-cache-restore.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/view-cache-restore.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "apps/web/test/workspace-launch.test.js",
+          "localCandidates": [
+            {
+              "path": "apps/web/tests/workspace-launch.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "history.md",
+          "localCandidates": [
+            {
+              "path": "history.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/cli.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/cli.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/interceptor.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/interceptor.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/lib/continuation-args.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/lib/continuation-args.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/lib/scheduled-task-executor.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/lib/scheduled-task-executor.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/lib/sdk-manager.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/lib/sdk-manager.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/lib/session-start-bridge.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/lib/session-start-bridge.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/lib/v2/session-select.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/lib/log-v2/session-summary.js",
+              "exists": true
+            },
+            {
+              "path": "packages/app/server.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/lib/v2/v2-writer.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/lib/log-v2/sink.js",
+              "exists": false
+            },
+            {
+              "path": "packages/app/lib/sdk-manager.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/pty-manager.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/pty-manager.js",
+              "exists": true
+            },
+            {
+              "path": "packages/app/lib/pty-workspaces.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/routes/events.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/server.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/routes/resume.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/server.js",
+              "exists": true
+            },
+            {
+              "path": "packages/app/lib/sdk-manager.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/routes/workspaces.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/server.js",
+              "exists": true
+            },
+            {
+              "path": "packages/app/lib/sdk-manager.js",
+              "exists": true
+            },
+            {
+              "path": "packages/app/lib/pty-workspaces.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/server/server.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/server.js",
+              "exists": true
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/api-workspaces.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/api-workspaces.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/branch-routes-workspaces.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/branch-routes-workspaces.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/events-instance-live-empty.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/events-instance-live-empty.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/interceptor-continuation-sync.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/interceptor-continuation-sync.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/pty-manager-instance.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/pty-manager-instance.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/resume-route.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/resume-route.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/sdk-force-new.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/sdk-force-new.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/sdk-multi-session-route.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/sdk-multi-session-route.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/session-start-bridge.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/session-start-bridge.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/v2-core.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/v2-core.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/v2-resume-switch.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/v2-resume-switch.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/v2-retire-instance.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/v2-retire-instance.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/v2-session-select.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/v2-session-select.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/test/ws-instance-isolation.test.js",
+          "localCandidates": [
+            {
+              "path": "packages/app/tests/ws-instance-isolation.test.js",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "scripts/tarball-baseline.json",
+          "localCandidates": [
+            {
+              "path": "scripts/tarball-baseline.json",
+              "exists": true
+            }
+          ]
+        }
+      ],
+      "introducedCommits": [
+        "0980726597e37f3b35eddf2db4a159f8a2543e24",
+        "6f904397ada3021bb05ff5232002022df1dc5e6e",
+        "4a5ea59ba68ccc38acded6e064437a91ca1b5c6b",
+        "b8d5924bc016f299dbfa13ef9cffb45e9111348c"
+      ],
+      "automaticMergeTreeMatches": true
+    },
+    {
+      "sha": "16bf86e2e92ea7766b35f814a04854e1b95fecf3",
+      "short": "16bf86e2",
+      "authorDate": "2026-11-22T12:21:03+08:00",
+      "commitDate": "2026-11-22T12:21:03+08:00",
+      "parents": [
+        "f0c23018c37a89dbeafa65fe35e0364ed217698e"
+      ],
+      "subject": "chore(release): 1.9.35",
+      "message": "chore(release): 1.9.35",
+      "url": "https://github.com/weiesky/cc-viewer/commit/16bf86e2e92ea7766b35f814a04854e1b95fecf3",
+      "kind": "release",
+      "workPackages": [
+        "B20"
+      ],
+      "status": "metadata-recorded",
+      "localImplementation": null,
+      "runtimeValidation": "not-run-planning-only",
+      "files": [
+        {
+          "upstream": ".changeset/context-menu-copy-path-simplify.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/context-menu-copy-path-simplify.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": ".changeset/file-explorer-new-workspace.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/file-explorer-new-workspace.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": ".changeset/force-new-fresh-empty-view.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/force-new-fresh-empty-view.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": ".changeset/modal-new-workspace.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/modal-new-workspace.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": ".changeset/new-session-on-current-root.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/new-session-on-current-root.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": ".changeset/same-cwd-twin-write-isolation.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/same-cwd-twin-write-isolation.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": ".changeset/sdk-same-cwd-sibling-sessions.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/sdk-same-cwd-sibling-sessions.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": ".changeset/sdk-twin-attach-instance-cohere.md",
+          "localCandidates": [
+            {
+              "path": ".changeset/sdk-twin-attach-instance-cohere.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/CHANGELOG.md",
+          "localCandidates": [
+            {
+              "path": "packages/app/CHANGELOG.md",
+              "exists": false
+            }
+          ]
+        },
+        {
+          "upstream": "packages/app/package.json",
+          "localCandidates": [
+            {
+              "path": "packages/app/package.json",
+              "exists": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sha": "d3c1f7fbf47c0424226acbe064ab4135e7ebe3cd",
+      "short": "d3c1f7fb",
+      "authorDate": "2026-11-23T12:33:38+00:00",
+      "commitDate": "2026-11-23T12:33:38+00:00",
+      "parents": [
+        "16bf86e2e92ea7766b35f814a04854e1b95fecf3"
+      ],
+      "subject": "chore(star-history): refresh chart [skip ci]",
+      "message": "chore(star-history): refresh chart [skip ci]",
+      "url": "https://github.com/weiesky/cc-viewer/commit/d3c1f7fbf47c0424226acbe064ab4135e7ebe3cd",
+      "kind": "chart",
+      "workPackages": [
+        "B20"
+      ],
+      "status": "metadata-recorded",
+      "localImplementation": null,
+      "runtimeValidation": "not-run-planning-only",
+      "files": [
+        {
+          "upstream": "docs/star-history.svg",
+          "localCandidates": [
+            {
+              "path": "docs/star-history.svg",
+              "exists": false
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "netDiff": [
+    {
+      "path": "apps/electron/electron/main.js",
+      "added": 34,
+      "deleted": 8
+    },
+    {
+      "path": "apps/electron/electron/tab-content-preload.js",
+      "added": 6,
+      "deleted": 0
+    },
+    {
+      "path": "apps/electron/electron/tab-worker.js",
+      "added": 12,
+      "deleted": 0
+    },
+    {
+      "path": "apps/electron/electron/workspace-preload.js",
+      "added": 2,
+      "deleted": 2
+    },
+    {
+      "path": "apps/web/src/App.jsx",
+      "added": 2,
+      "deleted": 1
+    },
+    {
+      "path": "apps/web/src/AppBase.jsx",
+      "added": 122,
+      "deleted": 14
+    },
+    {
+      "path": "apps/web/src/Mobile.jsx",
+      "added": 7,
+      "deleted": 1
+    },
+    {
+      "path": "apps/web/src/components/chat/ActiveAgentsBar.module.css",
+      "added": 6,
+      "deleted": 4
+    },
+    {
+      "path": "apps/web/src/components/chat/ChatInputBar.jsx",
+      "added": 26,
+      "deleted": 26
+    },
+    {
+      "path": "apps/web/src/components/chat/ChatInputBar.module.css",
+      "added": 4,
+      "deleted": 4
+    },
+    {
+      "path": "apps/web/src/components/chat/ChatView.jsx",
+      "added": 26,
+      "deleted": 2
+    },
+    {
+      "path": "apps/web/src/components/chat/ProxyChip.module.css",
+      "added": 7,
+      "deleted": 6
+    },
+    {
+      "path": "apps/web/src/components/common/ConceptHelp.jsx",
+      "added": 13,
+      "deleted": 1
+    },
+    {
+      "path": "apps/web/src/components/common/ConceptHelp.module.css",
+      "added": 8,
+      "deleted": 0
+    },
+    {
+      "path": "apps/web/src/components/common/CopyMarkdownButton.jsx",
+      "added": 75,
+      "deleted": 0
+    },
+    {
+      "path": "apps/web/src/components/common/CopyMarkdownButton.module.css",
+      "added": 41,
+      "deleted": 0
+    },
+    {
+      "path": "apps/web/src/components/common/ScheduleTaskModal.jsx",
+      "added": 46,
+      "deleted": 2
+    },
+    {
+      "path": "apps/web/src/components/common/quickMenuIcons.jsx",
+      "added": 3,
+      "deleted": 5
+    },
+    {
+      "path": "apps/web/src/components/dashboard/AppHeader.jsx",
+      "added": 7,
+      "deleted": 0
+    },
+    {
+      "path": "apps/web/src/components/dashboard/CachePopoverContent.jsx",
+      "added": 6,
+      "deleted": 1
+    },
+    {
+      "path": "apps/web/src/components/dashboard/LiveTagPopover.jsx",
+      "added": 2,
+      "deleted": 0
+    },
+    {
+      "path": "apps/web/src/components/dashboard/ScheduleNavButton.jsx",
+      "added": 168,
+      "deleted": 0
+    },
+    {
+      "path": "apps/web/src/components/dashboard/ScheduleNavButton.module.css",
+      "added": 95,
+      "deleted": 0
+    },
+    {
+      "path": "apps/web/src/components/dashboard/WorkspaceList.jsx",
+      "added": 13,
+      "deleted": 23
+    },
+    {
+      "path": "apps/web/src/components/files/FileBrowserModal.jsx",
+      "added": 764,
+      "deleted": 68
+    },
+    {
+      "path": "apps/web/src/components/files/FileBrowserModal.module.css",
+      "added": 292,
+      "deleted": 0
+    },
+    {
+      "path": "apps/web/src/components/files/FileExplorer.jsx",
+      "added": 15,
+      "deleted": 12
+    },
+    {
+      "path": "apps/web/src/components/files/fileContextMenu.js",
+      "added": 14,
+      "deleted": 6
+    },
+    {
+      "path": "apps/web/src/components/files/fileContextMenuActions.jsx",
+      "added": 77,
+      "deleted": 5
+    },
+    {
+      "path": "apps/web/src/components/git/GitChanges.jsx",
+      "added": 47,
+      "deleted": 5
+    },
+    {
+      "path": "apps/web/src/components/git/GitChanges.module.css",
+      "added": 45,
+      "deleted": 0
+    },
+    {
+      "path": "apps/web/src/components/settings/SystemTextModal.jsx",
+      "added": 13,
+      "deleted": 2
+    },
+    {
+      "path": "apps/web/src/components/terminal/CustomUltraplanEditModal.jsx",
+      "added": 34,
+      "deleted": 26
+    },
+    {
+      "path": "apps/web/src/components/terminal/TerminalPanel.jsx",
+      "added": 4,
+      "deleted": 4
+    },
+    {
+      "path": "apps/web/src/components/terminal/UltraplanPanel.module.css",
+      "added": 2,
+      "deleted": 0
+    },
+    {
+      "path": "apps/web/src/i18n.js",
+      "added": 525,
+      "deleted": 69
+    },
+    {
+      "path": "apps/web/src/utils/apiUrl.js",
+      "added": 1,
+      "deleted": 0
+    },
+    {
+      "path": "apps/web/src/utils/autoApproveOptions.js",
+      "added": 2,
+      "deleted": 2
+    },
+    {
+      "path": "apps/web/src/utils/fileBrowserFilter.js",
+      "added": 54,
+      "deleted": 0
+    },
+    {
+      "path": "apps/web/src/utils/fileBrowserHistory.js",
+      "added": 107,
+      "deleted": 0
+    },
+    {
+      "path": "apps/web/src/utils/fileBrowserPrefs.js",
+      "added": 103,
+      "deleted": 0
+    },
+    {
+      "path": "apps/web/src/utils/formatters.js",
+      "added": 13,
+      "deleted": 0
+    },
+    {
+      "path": "apps/web/src/utils/gitApi.js",
+      "added": 5,
+      "deleted": 1
+    },
+    {
+      "path": "apps/web/src/utils/scheduleNav.js",
+      "added": 37,
+      "deleted": 0
+    },
+    {
+      "path": "apps/web/src/utils/sdkTaskTracker.js",
+      "added": 168,
+      "deleted": 4
+    },
+    {
+      "path": "apps/web/src/utils/taskStore.js",
+      "added": 130,
+      "deleted": 0
+    },
+    {
+      "path": "apps/web/src/utils/workspaceLaunch.js",
+      "added": 51,
+      "deleted": 0
+    },
+    {
+      "path": "apps/web/test/ask-auto-answer-menu.test.js",
+      "added": 3,
+      "deleted": 3
+    },
+    {
+      "path": "apps/web/test/auto-approve-options.test.js",
+      "added": 6,
+      "deleted": 4
+    },
+    {
+      "path": "apps/web/test/chat-active-agents-wiring.test.js",
+      "added": 17,
+      "deleted": 0
+    },
+    {
+      "path": "apps/web/test/copy-markdown-button.test.js",
+      "added": 49,
+      "deleted": 0
+    },
+    {
+      "path": "apps/web/test/external-folder-targets.test.js",
+      "added": 55,
+      "deleted": 1
+    },
+    {
+      "path": "apps/web/test/file-browser-modal.test.js",
+      "added": 175,
+      "deleted": 9
+    },
+    {
+      "path": "apps/web/test/file-context-menu-actions.test.js",
+      "added": 200,
+      "deleted": 2
+    },
+    {
+      "path": "apps/web/test/file-context-menu.test.js",
+      "added": 45,
+      "deleted": 6
+    },
+    {
+      "path": "apps/web/test/fileBrowserFilter.test.js",
+      "added": 91,
+      "deleted": 0
+    },
+    {
+      "path": "apps/web/test/fileBrowserHistory.test.js",
+      "added": 134,
+      "deleted": 0
+    },
+    {
+      "path": "apps/web/test/fileBrowserPrefs.test.js",
+      "added": 126,
+      "deleted": 0
+    },
+    {
+      "path": "apps/web/test/force-new-view-blank.test.js",
+      "added": 167,
+      "deleted": 0
+    },
+    {
+      "path": "apps/web/test/formatters-gap.test.js",
+      "added": 22,
+      "deleted": 1
+    },
+    {
+      "path": "apps/web/test/git-api.test.js",
+      "added": 1,
+      "deleted": 1
+    },
+    {
+      "path": "apps/web/test/git-changes-branch.test.js",
+      "added": 58,
+      "deleted": 0
+    },
+    {
+      "path": "apps/web/test/new-ui-i18n.test.js",
+      "added": 11,
+      "deleted": 0
+    },
+    {
+      "path": "apps/web/test/resume-history-i18n.test.js",
+      "added": 1,
+      "deleted": 0
+    },
+    {
+      "path": "apps/web/test/resume-history-menu.test.js",
+      "added": 1,
+      "deleted": 1
+    },
+    {
+      "path": "apps/web/test/schedule-nav-button.test.js",
+      "added": 284,
+      "deleted": 0
+    },
+    {
+      "path": "apps/web/test/sdkTaskTracker-persist.test.js",
+      "added": 230,
+      "deleted": 0
+    },
+    {
+      "path": "apps/web/test/view-cache-restore.test.js",
+      "added": 1,
+      "deleted": 1
+    },
+    {
+      "path": "apps/web/test/workspace-launch.test.js",
+      "added": 119,
+      "deleted": 0
+    },
+    {
+      "path": "docs/star-history.svg",
+      "added": 4,
+      "deleted": 4
+    },
+    {
+      "path": "history.md",
+      "added": 56,
+      "deleted": 0
+    },
+    {
+      "path": "packages/app/CHANGELOG.md",
+      "added": 61,
+      "deleted": 0
+    },
+    {
+      "path": "packages/app/cli.js",
+      "added": 5,
+      "deleted": 2
+    },
+    {
+      "path": "packages/app/package.json",
+      "added": 1,
+      "deleted": 1
+    },
+    {
+      "path": "packages/app/server/interceptor.js",
+      "added": 53,
+      "deleted": 6
+    },
+    {
+      "path": "packages/app/server/lib/access-token.js",
+      "added": 29,
+      "deleted": 0
+    },
+    {
+      "path": "packages/app/server/lib/auth.js",
+      "added": 2,
+      "deleted": 1
+    },
+    {
+      "path": "packages/app/server/lib/continuation-args.js",
+      "added": 25,
+      "deleted": 0
+    },
+    {
+      "path": "packages/app/server/lib/file-sort.js",
+      "added": 68,
+      "deleted": 0
+    },
+    {
+      "path": "packages/app/server/lib/memory-scope.js",
+      "added": 20,
+      "deleted": 0
+    },
+    {
+      "path": "packages/app/server/lib/restart-helper.js",
+      "added": 17,
+      "deleted": 3
+    },
+    {
+      "path": "packages/app/server/lib/restart.js",
+      "added": 14,
+      "deleted": 3
+    },
+    {
+      "path": "packages/app/server/lib/scheduled-task-executor.js",
+      "added": 6,
+      "deleted": 3
+    },
+    {
+      "path": "packages/app/server/lib/sdk-manager.js",
+      "added": 284,
+      "deleted": 84
+    },
+    {
+      "path": "packages/app/server/lib/session-start-bridge.js",
+      "added": 7,
+      "deleted": 1
+    },
+    {
+      "path": "packages/app/server/lib/target-scope.js",
+      "added": 25,
+      "deleted": 0
+    },
+    {
+      "path": "packages/app/server/lib/update-job.js",
+      "added": 5,
+      "deleted": 1
+    },
+    {
+      "path": "packages/app/server/lib/v2/session-select.js",
+      "added": 18,
+      "deleted": 2
+    },
+    {
+      "path": "packages/app/server/lib/v2/v2-writer.js",
+      "added": 249,
+      "deleted": 21
+    },
+    {
+      "path": "packages/app/server/pty-manager.js",
+      "added": 58,
+      "deleted": 12
+    },
+    {
+      "path": "packages/app/server/routes/events.js",
+      "added": 16,
+      "deleted": 4
+    },
+    {
+      "path": "packages/app/server/routes/files-content.js",
+      "added": 24,
+      "deleted": 9
+    },
+    {
+      "path": "packages/app/server/routes/files-fs.js",
+      "added": 85,
+      "deleted": 15
+    },
+    {
+      "path": "packages/app/server/routes/resume.js",
+      "added": 271,
+      "deleted": 27
+    },
+    {
+      "path": "packages/app/server/routes/target-files-fs.js",
+      "added": 30,
+      "deleted": 0
+    },
+    {
+      "path": "packages/app/server/routes/workspaces.js",
+      "added": 112,
+      "deleted": 29
+    },
+    {
+      "path": "packages/app/server/server.js",
+      "added": 64,
+      "deleted": 8
+    },
+    {
+      "path": "packages/app/test/access-token.test.js",
+      "added": 72,
+      "deleted": 0
+    },
+    {
+      "path": "packages/app/test/api-files-fs.test.js",
+      "added": 118,
+      "deleted": 0
+    },
+    {
+      "path": "packages/app/test/api-target-files-fs.test.js",
+      "added": 52,
+      "deleted": 0
+    },
+    {
+      "path": "packages/app/test/api-target-files.test.js",
+      "added": 79,
+      "deleted": 1
+    },
+    {
+      "path": "packages/app/test/api-workspaces.test.js",
+      "added": 70,
+      "deleted": 0
+    },
+    {
+      "path": "packages/app/test/branch-routes-workspaces.test.js",
+      "added": 72,
+      "deleted": 1
+    },
+    {
+      "path": "packages/app/test/cli.test.js",
+      "added": 23,
+      "deleted": 0
+    },
+    {
+      "path": "packages/app/test/events-instance-live-empty.test.js",
+      "added": 109,
+      "deleted": 1
+    },
+    {
+      "path": "packages/app/test/file-sort-lib.test.js",
+      "added": 68,
+      "deleted": 0
+    },
+    {
+      "path": "packages/app/test/interceptor-continuation-sync.test.js",
+      "added": 2,
+      "deleted": 2
+    },
+    {
+      "path": "packages/app/test/memory-scope.test.js",
+      "added": 55,
+      "deleted": 0
+    },
+    {
+      "path": "packages/app/test/pty-manager-instance.test.js",
+      "added": 67,
+      "deleted": 0
+    },
+    {
+      "path": "packages/app/test/restart-helper.test.js",
+      "added": 113,
+      "deleted": 8
+    },
+    {
+      "path": "packages/app/test/resume-route.test.js",
+      "added": 155,
+      "deleted": 0
+    },
+    {
+      "path": "packages/app/test/sdk-force-new.test.js",
+      "added": 268,
+      "deleted": 0
+    },
+    {
+      "path": "packages/app/test/sdk-multi-session-route.test.js",
+      "added": 198,
+      "deleted": 0
+    },
+    {
+      "path": "packages/app/test/server-access-token-env.test.js",
+      "added": 75,
+      "deleted": 0
+    },
+    {
+      "path": "packages/app/test/session-start-bridge.test.js",
+      "added": 31,
+      "deleted": 0
+    },
+    {
+      "path": "packages/app/test/slow-upstream-replay.test.js",
+      "added": 11,
+      "deleted": 0
+    },
+    {
+      "path": "packages/app/test/update-job.test.js",
+      "added": 13,
+      "deleted": 0
+    },
+    {
+      "path": "packages/app/test/v2-core.test.js",
+      "added": 71,
+      "deleted": 0
+    },
+    {
+      "path": "packages/app/test/v2-resume-switch.test.js",
+      "added": 69,
+      "deleted": 1
+    },
+    {
+      "path": "packages/app/test/v2-retire-instance.test.js",
+      "added": 162,
+      "deleted": 0
+    },
+    {
+      "path": "packages/app/test/v2-session-select.test.js",
+      "added": 52,
+      "deleted": 0
+    },
+    {
+      "path": "packages/app/test/ws-instance-isolation.test.js",
+      "added": 171,
+      "deleted": 2
+    },
+    {
+      "path": "scripts/tarball-baseline.json",
+      "added": 4,
+      "deleted": 0
+    }
+  ],
+  "limitations": [
+    "Path candidates are navigation hints, not implementation or validation evidence.",
+    "Runtime evidence is per commit and scope: B12 validated in B12-validation-2026-11-24.json; other packages remain planned or pending.",
+    "The original B0-B11 baseline and dispositions remain separately frozen.",
+    "Approval defaults and same-cwd SDK siblings require a new decision to replace previous choices.",
+    "PR179 only fixes WS control frames; SSE cold-load/history remains an upstream follow-up."
+  ],
+  "documentValidation": {
+    "checkedAt": "2026-11-24T05:11:31.819569+00:00",
+    "uniqueCommits": 25,
+    "ledgerRows": 25,
+    "localLinksResolved": 1777,
+    "classificationMatchesGit": true,
+    "mergeTreeMatches": true,
+    "trackedProductFilesChanged": [],
+    "diffCheck": "passed",
+    "runtimeTests": "not-run-documentation-only",
+    "checkpoint": "5496ad5 planning checkpoint, before B12 code changes"
+  },
+  "b12Completion": {
+    "record": "B12-completion-matrix.md",
+    "evidence": "B12-validation-2026-11-24.json",
+    "next": "B13",
+    "localOnly": true
+  }
+}

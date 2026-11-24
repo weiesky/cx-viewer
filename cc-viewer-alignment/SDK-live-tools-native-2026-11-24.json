@@ -1,0 +1,42 @@
+{
+  "root": "/var/folders/zp/vk_f0h8548b7tsnvgl258fdc0000gn/T/cxv-sdk-live-native-t789uS",
+  "version": "codex-cli 0.169.0",
+  "results": [
+    {
+      "transport": "exec",
+      "actualNativeCodex": true,
+      "officialSdk": true,
+      "syntheticLoopbackResponses": true,
+      "externalModel": false,
+      "realShellCalls": 3,
+      "requests": 4,
+      "toolNames": [
+        "exec_command",
+        "exec_command",
+        "exec_command"
+      ],
+      "progressFrames": 9,
+      "eachStartVisibleBeforeFinal": true,
+      "completedAndFailed": true,
+      "finalOnlyOnce": true
+    },
+    {
+      "transport": "appserver",
+      "actualNativeCodex": true,
+      "officialSdk": true,
+      "syntheticLoopbackResponses": true,
+      "externalModel": false,
+      "realShellCalls": 3,
+      "requests": 4,
+      "toolNames": [
+        "exec_command",
+        "exec_command",
+        "exec_command"
+      ],
+      "progressFrames": 9,
+      "eachStartVisibleBeforeFinal": true,
+      "completedAndFailed": true,
+      "finalOnlyOnce": true
+    }
+  ]
+}

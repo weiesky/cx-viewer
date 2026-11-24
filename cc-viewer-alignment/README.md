@@ -2,7 +2,11 @@
 
 **迁移约束：优先参考 PR 的实际代码，禁止根据文档自由改版。** B2已按上游组件/CSS/交互纠偏并经用户验收收口；B4及后续工作包继续遵守该规则，运行性测试不能单独代表视觉对齐。必读[源码优先迁移规范与已确认偏差](./migration-code-first.md)。
 
-当前进度：2026-11-23 B11已通过[PR #13](https://github.com/weiesky/cx-viewer/pull/13)合并main `3a4bf40`（第12/12工作包），34笔原始提交备份后整合为1笔 `539822e`，合并后更新本轮文档。201候选按子项核销，Changesets/core/content与边界门已落实。最终本地2823/2823、0skip/build/626稳定路径/601源码门，新生产1237/1237及825包/211Web精确字节，桌面stage825字节/395链接/独立启动，实际Node20.12启动+93、双浏览器14配置30图通过。PR的10项远端检查全成功：Ubuntu Node20/22/24全套及macOS/Windows定向合同；Windows完整运行、Electron GUI/签名/公证和真实外部环境仍未验。7008/PID97674及其他用户实例未停止/重启，正常重启才加载后端。下一步补齐目标环境验收；见[B11完成矩阵](./B11-completion-matrix.md)、[整合与合并记录](./B11-consolidation-and-merge-2026-11-23.md)与[最终回执](./B11-validation-2026-11-23.json)。
+当前进度：2026-11-24 SDK实时工具CR两项P2已修复：`7af2d75` 完整字符串校验避免碰撞错值，`5ab4adc` 过程结果展示最新尾部。全量2868/2868、0skip/build/536边界/605源码/630稳定包门，双浏览器完整卡片/简洁弹层4场12图通过。见[修复与验收](./SDK-live-tools-CR-2026-11-24.md)和[回执](./SDK-live-tools-CR-2026-11-24.json)。原 `817e698` 机制保持，活动后端未重启，正常重启并刷新后生效；下一包仍B13。
+
+B12已完成本地对齐与隔离验收：`06be1ce6 → 9943faf`下载重定向，`03aad20b → f014bf9`私有访问token交接及原生安全适配。全量2862/2862、0skip/build/536边界/605源码/630稳定tarball，新生产829全文件字节/82定向与真实SDK CLI自有prefix成功更新、损坏包恢复通过；见[B12矩阵](./B12-completion-matrix.md)、[实施](./B12-implementation.md)与[回执](./B12-validation-2026-11-24.json)。下一包B13；D1/D2沿既有选择，旧环境未验边界不核销。未PR/推送/发布/version或重启用户实例。
+
+第一轮交付记录：2026-11-23 B11已通过[PR #13](https://github.com/weiesky/cx-viewer/pull/13)合并main `3a4bf40`（第12/12工作包），34笔原始提交备份后整合为1笔 `539822e`，合并后更新本轮文档。201候选按子项核销，Changesets/core/content与边界门已落实。最终本地2823/2823、0skip/build/626稳定路径/601源码门，新生产1237/1237及825包/211Web精确字节，桌面stage825字节/395链接/独立启动，实际Node20.12启动+93、双浏览器14配置30图通过。PR的10项远端检查全成功：Ubuntu Node20/22/24全套及macOS/Windows定向合同；Windows完整运行、Electron GUI/签名/公证和真实外部环境仍未验。当时7008/PID97674及其他用户实例未停止/重启，正常重启才加载后端。目标环境余项见[B11完成矩阵](./B11-completion-matrix.md)、[整合与合并记录](./B11-consolidation-and-merge-2026-11-23.md)与[最终回执](./B11-validation-2026-11-23.json)。
 
 2026-11-22 普通CLI/PTY“＋”已由B7 E1–E13接齐并经真实双工作区GUI验证；历史缺口记录保留。B8 E16只读确认7008已具ptyMode/队列能力，普通PTY模式；本轮SDK修复是否加载仍须其对应进程正常重启核对，未停止用户实例。见[B7完成矩阵](./B7-completion-matrix.md)。
 
@@ -31,7 +35,7 @@
 | B10 | 已由[PR #12](https://github.com/weiesky/cx-viewer/pull/12)合并main d829772；2713项/pack773/新安装1096，见[B10矩阵](./B10-completion-matrix.md)。 |
 | B11 | 已由PR #13合并main 3a4bf40（第12/12包），34→1并保留备份；2823/1237、825包字节、14配置30图、远端10检查成功；目标环境余项见[B11完成矩阵](./B11-completion-matrix.md)。 |
 
-当前以[B11实施](./B11-implementation.md)与[范围矩阵](./B11-candidate-matrix.md)为准；B11是最近已合并交付包，B7/B8/B9历史交接保留当时起点。
+第一轮最近整包交付以[B11实施](./B11-implementation.md)与[范围矩阵](./B11-candidate-matrix.md)为准；新增范围按[第二轮计划](./upstream-delta-plan-2026-11-24.md)推进，B7/B8/B9历史交接保留当时起点。
 
 pnpm/workspace 已按用户选择前置实施，先稳定结构，再继续功能对齐；见 [提交、边界与验收](./A1-A2-engineering.md)。
 

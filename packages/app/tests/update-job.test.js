@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { Writable } from 'node:stream';
 import { createHash, randomUUID } from 'node:crypto';
+import { createServer } from 'node:http';
 const isolatedConfig = await mkdtemp(join(tmpdir(), 'cxv-update-config-'));
 process.env.CODEX_HOME = isolatedConfig;
 after(() => rm(isolatedConfig, { recursive: true, force: true }));
@@ -51,6 +52,36 @@ describe('update-job release verification', () => {
     assert.deepEqual((await readdir(dir)).filter(name => name.endsWith('.tgz')), [file.split('/').at(-1)]);
     const noLength = await downloadRelease({ release: release(content), directory: dir, fetchImpl: async () => response(content, false) });
     assert.equal(await readFile(noLength, 'utf8'), content.toString());
+  });
+  it('downloads through real redirects while retaining integrity, timeout and cleanup checks', async (t) => {
+    const content = Buffer.from('package-via-registry-cdn');
+    const server = createServer((req, res) => {
+      if (req.url === '/registry') { res.writeHead(302, { Location: '/cdn' }); res.end(); }
+      else if (req.url === '/cdn') { res.writeHead(307, { Location: '/package.tgz' }); res.end(); }
+      else if (req.url === '/loop') { res.writeHead(302, { Location: '/loop' }); res.end(); }
+      else if (req.url === '/slow') { /* The download's AbortSignal must end this request. */ }
+      else { res.writeHead(200, { 'Content-Length': content.length }); res.end(content); }
+    });
+    t.after(() => { server.closeAllConnections(); return new Promise(resolve => server.close(resolve)); });
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    const base = `http://127.0.0.1:${server.address().port}`;
+    const dir = await temp(t);
+    // Keep production metadata validation intact; only substitute the network
+    // destination so redirects are exercised without contacting a registry.
+    const localFetch = path => (url, options) => {
+      assert.equal(url, TARBALL_URL);
+      return fetch(base + path, options);
+    };
+    const file = await downloadRelease({ release: release(content), directory: dir, fetchImpl: localFetch('/registry') });
+    assert.deepEqual(await readFile(file), content);
+    await rm(file);
+    await assert.rejects(() => downloadRelease({ release: release(Buffer.from('wrong digest')), directory: dir,
+      fetchImpl: localFetch('/registry') }), { code: 'integrity_mismatch' });
+    await assert.rejects(() => downloadRelease({ release: release(content), directory: dir,
+      fetchImpl: localFetch('/loop') }), /fetch failed/);
+    await assert.rejects(() => downloadRelease({ release: release(content), directory: dir,
+      fetchImpl: localFetch('/slow'), timeoutMs: 500 }), { name: 'AbortError' });
+    assert.deepEqual(await readdir(dir), [], 'failed downloads must not leave partial packages');
   });
   it('returns a bounded error when the package file cannot be opened', async (t) => {
     const dir = await temp(t);

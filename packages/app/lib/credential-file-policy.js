@@ -104,7 +104,11 @@ function nativePrivatePaths() {
 const initialConfigPaths = [getPreferencesPath(), getDingTalkImConfigPath(), PROFILE_PATH, `${PROFILE_PATH}.bak`];
 function scheduledPrivatePaths() {
   const paths = [];
-  for (const dir of new Set([dirname(initialConfigPaths[0]), dirname(getPreferencesPath())])) {
+  // Update/restart state lives under CODEX_HOME, independently of CXV_LOG_DIR.
+  // Include both frozen and current config owners so a log-directory override
+  // cannot expose the short-lived access-token handoff (or its atomic temp).
+  for (const dir of new Set([dirname(initialConfigPaths[0]), dirname(getPreferencesPath()),
+    ...initialNativeDirs.map(root => join(root, 'cx-viewer')), join(getCodexConfigDir(), 'cx-viewer')])) {
     let entries = [];
     try { entries = readdirSync(dir); } catch (error) { if (error.code !== 'ENOENT') throw error; }
     const names = new Set(['preferences.json', 'scheduled-tasks.json', 'scheduled-task-runs.json', 'update-state.json', 'restart-config.json', 'restart-ready.json', 'update-install.lock',

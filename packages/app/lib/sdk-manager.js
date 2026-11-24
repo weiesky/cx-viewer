@@ -27,6 +27,8 @@ import { createSdkExecTransport } from './sdk-exec-transport.js';
 import { createSdkAppServerTransport } from './sdk-appserver-transport.js';
 import { createSdkAppServerApprovals } from './sdk-appserver-approvals.js';
 import { createSdkAppServerAgents } from './sdk-appserver-agents.js';
+import { readSdkModelCatalog } from './sdk-model-catalog.js';
+import { readSdkPlanUsage } from './sdk-plan-usage.js';
 
 let _Codex = null;
 let _sdkImportError = null;
@@ -144,6 +146,22 @@ export function getSdkSessionInfo(anchor) {
 
 export function getSdkStreamingState(anchor) {
   return sessionForAnchor(anchor)?.getStreamingState() || null;
+}
+
+export function getSdkStreamProgress(anchor) {
+  return sessionForAnchor(anchor)?.getStreamProgress() || null;
+}
+
+export function listSdkModels(anchor) {
+  return sessionForAnchor(anchor)?.listModels();
+}
+
+export function getSdkPlanUsage(anchor) {
+  return sessionForAnchor(anchor)?.getPlanUsage();
+}
+
+export function setSdkModel(selection, anchor) {
+  return sessionForAnchor(anchor)?.setModel(selection);
 }
 
 export function getSdkQueueState(anchor) {
@@ -385,6 +403,9 @@ function createSdkSession(instanceKey) {
   let _codexPath = null;
   let _codexOptions = {};
   let _threadOptions = {};
+  let _modelCatalog = null, _modelCatalogPending = null, _modelCatalogAbort = null;
+  let _planUsage = null, _planUsagePending = null, _planUsageAbort = null;
+  let _modelSelectionRevision = 0, _reasoningEffort = null;
   let _initialPrompt = null;
 
   let _accumulatedMessages = [];
@@ -473,6 +494,92 @@ function createSdkSession(instanceKey) {
     return _initialPrompt;
   }
 
+  function modelState() {
+    const model = _model || _modelCatalog?.configuredModel || _modelCatalog?.models.find(m => m.isDefault)?.model || null;
+    const entry = _modelCatalog?.models.find(m => m.model === model);
+    return { instanceKey, model, reasoningEffort: _reasoningEffort
+      || _modelCatalog?.configuredReasoningEffort || entry?.defaultReasoningEffort || null,
+    busy: _queryBusy || !!_dispatchingQueueItem || _messageQueue.length > 0,
+    revision: `${_sessionGeneration}:${_modelSelectionRevision}` };
+  }
+
+  async function getPlanUsage() {
+    const generation = _sessionGeneration;
+    if (!_planUsage || Date.now() - _planUsage.loadedAt > 30000) {
+      if (!_planUsagePending) {
+        const controller = new AbortController();
+        _planUsageAbort = controller;
+        const pending = readSdkPlanUsage({
+          codexPath: _codexPath || new _Codex(_codexOptions).exec.executablePath,
+          cwd: _cwd, codexOptions: _codexOptions, threadOptions: _threadOptions,
+          configOverrides: _configOverrides, signal: controller.signal,
+        }).then(planUsage => {
+          if (generation !== _sessionGeneration) throw Object.assign(new Error('SDK session changed'), { status: 409 });
+          _planUsage = { planUsage, loadedAt: Date.now() };
+        }).finally(() => {
+          if (_planUsagePending === pending) { _planUsagePending = null; _planUsageAbort = null; }
+        });
+        _planUsagePending = pending;
+      }
+      await _planUsagePending;
+    }
+    if (generation !== _sessionGeneration) throw Object.assign(new Error('SDK session changed'), { status: 409 });
+    return { instanceKey, planUsage: cloneJson(_planUsage.planUsage) };
+  }
+
+  async function listModels() {
+    const generation = _sessionGeneration;
+    if (!_modelCatalog || Date.now() - _modelCatalog.loadedAt > 60000) {
+      if (!_modelCatalogPending) {
+        const controller = new AbortController();
+        _modelCatalogAbort = controller;
+        const pending = readSdkModelCatalog({
+          codexPath: _codexPath || new _Codex(_codexOptions).exec.executablePath,
+          cwd: _cwd, codexOptions: _codexOptions, threadOptions: _threadOptions,
+          configOverrides: _configOverrides, signal: controller.signal,
+        }).then(result => {
+          if (generation !== _sessionGeneration) throw Object.assign(new Error('SDK session changed'), { status: 409 });
+          _modelCatalog = { ...result, loadedAt: Date.now() };
+          if (!_accumulatedMessages.length && !_threadOptions.model && result.configuredModel) {
+            observeSdkModel(result.configuredModel);
+          }
+        }).finally(() => {
+          if (_modelCatalogPending === pending) { _modelCatalogPending = null; _modelCatalogAbort = null; }
+        });
+        _modelCatalogPending = pending;
+      }
+      await _modelCatalogPending;
+    }
+    if (generation !== _sessionGeneration) throw Object.assign(new Error('SDK session changed'), { status: 409 });
+    return { ...modelState(), models: cloneJson(_modelCatalog.models) };
+  }
+
+  async function setModel(selection) {
+    if (!selection || typeof selection !== 'object' || Array.isArray(selection)
+        || typeof selection.model !== 'string' || !selection.model || selection.model.length > 256
+        || (selection.reasoningEffort != null && typeof selection.reasoningEffort !== 'string')
+        || typeof selection.revision !== 'string') throw Object.assign(new TypeError('Invalid SDK model selection'), { status: 400 });
+    if (modelState().busy) throw Object.assign(new Error('Wait for the current reply and queued messages to finish'), { status: 409, code: 'SDK_SESSION_BUSY' });
+    const catalog = await listModels();
+    // Reads can yield to input, close, resume or another browser's switch.
+    if (selection.revision !== modelState().revision) throw Object.assign(new Error('SDK model selection changed; reopen the model list'), { status: 409, code: 'SDK_MODEL_STALE' });
+    if (modelState().busy) throw Object.assign(new Error('Wait for the current reply and queued messages to finish'), { status: 409, code: 'SDK_SESSION_BUSY' });
+    const entry = catalog.models.find(m => m.model === selection.model);
+    if (!entry) throw Object.assign(new Error('Model is not available in the current Codex model list'), { status: 400, code: 'SDK_MODEL_UNAVAILABLE' });
+    const supported = value => entry.supportedReasoningEfforts.some(e => e.reasoningEffort === value);
+    if (selection.reasoningEffort != null && !supported(selection.reasoningEffort)) {
+      throw Object.assign(new Error('Reasoning effort is not supported by this model'), { status: 400, code: 'SDK_EFFORT_UNAVAILABLE' });
+    }
+    const effort = selection.reasoningEffort ?? (supported(catalog.reasoningEffort) ? catalog.reasoningEffort : entry.defaultReasoningEffort);
+    _transport?.setModel(entry.model, effort);
+    _threadOptions = { ..._threadOptions, model: entry.model, modelReasoningEffort: effort };
+    _model = entry.model; _reasoningEffort = effort;
+    _modelSelectionRevision++;
+    _activityRevision++;
+    _sendStreamingStatus(false);
+    return { ...modelState(), models: catalog.models };
+  }
+
   function initSdkSession(cwd, projectName, {
     onEntry,
     onStreamingStatus,
@@ -527,6 +634,7 @@ function createSdkSession(instanceKey) {
     _model = observeSdkModel(_threadOptions.model)
       || observeSdkModel(readCodexGlobalConfig().model)
       || null;
+    _reasoningEffort = _threadOptions.modelReasoningEffort || _codexOptions.config?.model_reasoning_effort || null;
     _sessionId = parsed.resumeThreadId || null;
 
     // 启动本地代理以拦截 SDK 模式下的真实 API 调用
@@ -1174,17 +1282,53 @@ function createSdkSession(instanceKey) {
 
   function _flushStreamProgress() {
     if (!_onStreamProgress || !_turnTimestamp) return;
-    const content = _streamContentFromItems();
-    if (!content.length) return;
     _streamingChunkCount += 1;
-    _onStreamProgress({
+    const progress = _buildStreamProgress();
+    if (progress) _onStreamProgress(progress);
+  }
+
+  function _buildStreamProgress() {
+    if (!_turnTimestamp) return null;
+    const content = _streamContentFromItems();
+    if (!content.length) return null;
+    // Reuse the authoritative current-turn item table. Only shell text enters
+    // this transient preview; raw results remain intact on TOOL/final entries.
+    // Bound output across the whole snapshot so a noisy command cannot make
+    // every 80ms progress frame resend an unbounded transcript.
+    let remaining = 128 * 1024;
+    const toolProgress = [];
+    for (let index = _itemOrder.length - 1; index >= 0; index--) {
+      const id = _itemOrder[index], item = _currentItems.get(id);
+      if (!['command_execution', 'commandExecution'].includes(item?.type)) continue;
+      const complete = _completedToolIds.has(id);
+      const failed = item.status === 'failed' || !!item.error
+        || (complete && Number.isInteger(item.exit_code ?? item.exitCode) && (item.exit_code ?? item.exitCode) !== 0);
+      const full = item.aggregated_output ?? item.aggregatedOutput ?? '';
+      const text = typeof full === 'string' ? full : '';
+      const limit = Math.min(16 * 1024, remaining);
+      const output = limit ? text.slice(-limit) : '';
+      remaining -= output.length;
+      toolProgress.push({ id, status: complete ? (failed ? 'failed' : 'completed') : 'in_progress',
+        output, outputTruncated: output.length < text.length,
+        ...(complete && Number.isInteger(item.exit_code ?? item.exitCode) ? { exitCode: item.exit_code ?? item.exitCode } : {}) });
+    }
+    return {
       timestamp: _turnTimestamp,
       url: `codex://sdk/${encodeURIComponent(_sessionId || _transport?.threadId || _model || 'thread')}`,
       content,
+      toolProgress: toolProgress.reverse(),
+      requestId: _streamingRequestId,
+      turnStartedAt: _turnStartTime,
+      sessionId: _sessionId || _transport?.threadId || null,
+      sequence: _streamingChunkCount,
       model: _model,
       cwd: _cwd,
       instanceKey,
-    });
+    };
+  }
+
+  function getStreamProgress() {
+    return _queryBusy && !_finalEntryEmittedThisTurn ? _buildStreamProgress() : null;
   }
 
   function _streamContentFromItems() {
@@ -1210,6 +1354,7 @@ function createSdkSession(instanceKey) {
       cwd: _cwd,
       instanceKey,
       model: _model,
+      reasoningEffort: modelState().reasoningEffort,
     };
   }
 
@@ -1340,6 +1485,11 @@ function createSdkSession(instanceKey) {
     // Invalidate continuations before aborting: proxy startup and SDK events may
     // settle after init/stop has installed another session's state and callbacks.
     _sessionGeneration += 1;
+    _modelCatalogAbort?.abort(new Error('SDK session changed'));
+    _modelCatalog = null; _modelCatalogPending = null; _modelCatalogAbort = null;
+    _planUsageAbort?.abort(new Error('SDK session changed'));
+    _planUsage = null; _planUsagePending = null; _planUsageAbort = null;
+    _modelSelectionRevision = 0; _reasoningEffort = keepConfig ? _threadOptions.modelReasoningEffort || null : null;
     if (_lastMcpStatus) {
       const clear = { ..._lastMcpStatus, servers: null, ts: Date.now(), trigger: 'session-switched' };
       _lastMcpStatus = null;
@@ -1385,9 +1535,9 @@ function createSdkSession(instanceKey) {
       cwd: _cwd, instanceKey, available: true, agents: [] },
     get revision() { return `${_sessionGeneration}:${_activityRevision}`; },
     resume,
-    initSdkSession, sendUserMessage, retryInterruptedTurn, interruptTurn, resolveApproval, stopSession,
+    initSdkSession, sendUserMessage, retryInterruptedTurn, interruptTurn, resolveApproval, stopSession, listModels, setModel, getPlanUsage,
     getTurnResult: () => ({ completed: _finalEntryEmittedThisTurn && !_taskTurnFailed, failed: _taskTurnFailed }),
-    getSessionId, getInitialPrompt, getStreamingState, getQueueState, getTaskState, removeQueuedMessage, sendQueuedNow, fetchMcpStatus, fetchSkills,
+    getSessionId, getInitialPrompt, getStreamingState, getStreamProgress, getQueueState, getTaskState, removeQueuedMessage, sendQueuedNow, fetchMcpStatus, fetchSkills,
   };
 }
 

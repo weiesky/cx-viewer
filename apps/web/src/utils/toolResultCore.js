@@ -149,7 +149,7 @@ const ANSI_ESCAPE = /\x1b\[[0-9;]*[A-Za-z]/g;
  *   - shell_command:strip ANSI 转义(`\x1b[31mERROR\x1b[0m` → `ERROR`)
  *
  * 截断策略:行数上限 maxLines(默认 50,留够内容让 CSS max-height + overflow:auto 触发
- * 滚动),每行字符上限 maxChars(默认 500,防止超长单行撑爆 popover)。
+ * 滚动),每行字符上限 maxChars(默认 500,防止超长单行撑爆 popover)。tail 仅供实时预览保留最新内容。
  */
 export function compactResultPreview(entry, opts = {}) {
   if (!entry || typeof entry !== 'object') return null;
@@ -174,15 +174,15 @@ export function compactResultPreview(entry, opts = {}) {
     }
     const lines = cleaned.split('\n');
     const totalLines = lines.length;
-    const slice = lines.slice(0, maxLines);
+    const slice = opts.tail ? lines.slice(-maxLines) : lines.slice(0, maxLines);
     const out = [];
     for (let i = 0; i < slice.length; i++) {
       let line = slice[i];
-      if (line.length > maxChars) line = line.slice(0, maxChars) + '…';
+      if (line.length > maxChars) line = opts.tail ? '…' + line.slice(-maxChars) : line.slice(0, maxChars) + '…';
       out.push(line);
     }
     text = out.join('\n');
-    if (totalLines > maxLines) text = text + '\n…';
+    if (totalLines > maxLines) text = opts.tail ? '…\n' + text : text + '\n…';
     if (text.trim().length === 0) text = null;
   }
 
