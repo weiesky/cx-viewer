@@ -1,0 +1,39 @@
+cc-viewer-alignment/SDK-live-tools-2026-11-24.md
+  s_ae2f56ae6ae11b::t_393e61fbe51e39 1-53
+cc-viewer-alignment/probes/sdk-live-tools-gui.mjs
+  s_ae2f56ae6ae11b::t_b024b671b6d552 91,102
+  s_ae2f56ae6ae11b::t_d2357a4038bc56 1-21,24-52,54,56-68,78-90,92-101,103-106,109-119
+  s_ae2f56ae6ae11b::t_de07fc98be34a4 53,55,69-77,107-108
+  s_ae2f56ae6ae11b::t_a0c8f8426c9e54 22-23
+cc-viewer-alignment/probes/sdk-live-tools-native.mjs
+  s_ae2f56ae6ae11b::t_f27fb8fef850df 11,58-60
+  s_ae2f56ae6ae11b::t_1019e310e1281c 1-10,12-57,61-91
+cc-viewer-alignment/README.md
+  s_ae2f56ae6ae11b::t_8e7ceb31051152 5-7
+cc-viewer-alignment/SDK-live-tools-2026-11-24.json
+  s_ae2f56ae6ae11b::t_8e7ceb31051152 1-242
+AGENTS.md
+  s_ae2f56ae6ae11b::t_8e7ceb31051152 26,28
+cc-viewer-alignment/cc-viewer-alignment-commit-ledger.md
+  s_ae2f56ae6ae11b::t_8e7ceb31051152 3-4
+cc-viewer-alignment/SDK-live-tools-native-2026-11-24.json
+  s_ae2f56ae6ae11b::t_19dfcaebd5f397 1-42
+cc-viewer-alignment/evidence/SDK-live-tools-2026-11-24/result.json
+  s_ae2f56ae6ae11b::t_eb609905b79d64 1-110
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f80576839a9668764c77d66d12da76ade63dca98",
+  "prompts": {},
+  "sessions": {
+    "s_ae2f56ae6ae11b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20bec-c330-7481-89ea-5a753a0e854e",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
