@@ -17034,3 +17034,11 @@ f9467bfc83到本笔 `refactor(server): group native IM approval and proxy helper
 - 本地实现：分支`feature/sdk-model-switch-2026-11-24`的独立实现提交，主题`feat(sdk): switch native models and reasoning effort in the composer`。保留原slot/几何/端门控/显式代理profile编辑器，新增原生目录读取、exec同线程resumeThread/AppServer turn model/effort、精确实例与revision校验、忙碌拒绝、SSE重连回放。
 - 验证：最终2842/2842、0skip、build、533边界/603源码/628稳定tarball通过；真实Codex0.169+SDK0.142.5+Chrome，Astra/high→Sol/high实际loopback请求、同会话历史与刷新通过。初跑PID0故障和探针失败保留，未改既有测试掩盖失败。
 - 当前包为B11后SDK维护；下一步正常重启后的活动实例验收。未重启用户实例/未改旧归档/未发布npm；Windows/Electron/WebKit/真机未验。完整证据见[实施](./SDK-model-switch-2026-11-24.md)与[回执](./SDK-model-switch-2026-11-24.json)。
+
+
+## 2026-11-24：B11后SDK血条回跳修复
+
+- 上游固定基线仍为`74cd752d99caf122e750216d2af3bb9f467c4de1`；本轮为既有Codex SDK上下文适配的数据所有权修复，不迁移新B0项，不改原DOM/CSS/百分比口径。前一独立模型切换提交为8227874。
+- 本地实现提交主题：`fix(sdk): reject stale context snapshots and competing archive events`。SDK exec原生manager保持实时/重连事实源；归档保留冷加载数据但不再推第二份竞争事件；AppBase按control source、精确实例/cwd/session与测量时间拒绝旧事件，允许真实更新后的低用量。
+- 修复前实际AppBase/AppHeader断言复现224,203被旧21,380覆盖；定向152、真实HTTP/SSE归档隔离与最终2843/2843、0skip/build/533边界/603源码/628稳定tarball通过。只读活动原生记录对上4%与86%；短时活动采样未捕到完整自然回跳顺序，不作过度结论。独立Chrome重放见[实施](./SDK-context-jump-2026-11-24.md)与[回执](./SDK-context-jump-2026-11-24.json)。
+- 当前为B11后SDK维护；下一步正常重启后的活动验收。用户实例未重启，已有历史/全局配置未改，未发布npm；Windows/Electron/真机及活动修复后GUI未验。

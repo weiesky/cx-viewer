@@ -1225,6 +1225,47 @@ test('SDK model snapshot survives idle/reconnect, rejects a sibling or retired s
   assert.equal(app.state.sdkModel, null);
 });
 
+test('SDK context cannot oscillate from a live 86% measurement back to a stale 4% snapshot', t => {
+  const f = voiceFixture(t), app = f.app;
+  app.setState = (patch, done) => { Object.assign(app.state, typeof patch === 'function' ? patch(app.state) : patch); done?.(); };
+  app.state.sdkMode = true;
+  const measurement = (total, timestamp = '2026-11-24T03:47:21.409Z') => ({
+    source: 'codex-rollout', instanceKey: 'a', cwd: '/project', sessionId: 'root', turnId: 'current',
+    turn_timestamp: '2026-11-24T03:38:23.427Z', timestamp,
+    current_usage: { total_tokens: total }, context_window_size: 258400,
+  });
+  const current = measurement(224203);
+  const header = new (require(output).AppHeader)({ contextBarSlot: { nodeType: 1 }, requests: [{
+    _sdkSource: true, mainAgent: true, timestamp: '2026-11-24T03:27:09.927Z',
+    body: { metadata: { transport: 'exec', thread_id: 'root', cwd: '/project', instance_key: 'a' } },
+    response: { body: { usage: { total_tokens: 21380 }, context_usage: { total_tokens: 21380 }, context_window: 258400 } },
+  }] });
+  const displayed = () => {
+    header.props = { ...header.props, contextWindow: app.state.contextWindow };
+    return header.renderContextBarPortal().children.props;
+  };
+  assert.equal(displayed().contextPercent, 4);
+  f.emit('context_window', current);
+  assert.equal(app.state.contextWindow.current_usage.total_tokens, 224203);
+  assert.equal(displayed().contextPercent, 86);
+  // A commit event has no measurement identity/time. It must not retire the
+  // owned native snapshot and make the display fall back to the first reply.
+  f.emit('context_window', { instanceKey: 'a', cwd: '/project', current_usage: { total_tokens: 21380 }, context_window_size: 258400 });
+  assert.equal(app.state.contextWindow.current_usage.total_tokens, 224203);
+  assert.equal(displayed().contextPercent, 86);
+  f.emit('context_window', measurement(21380, '2026-11-24T03:27:33.943Z'));
+  assert.equal(app.state.contextWindow.current_usage.total_tokens, 224203);
+  f.emit('context_window', { ...measurement(230000), instanceKey: 'b' });
+  assert.equal(app.state.contextWindow.current_usage.total_tokens, 224203);
+  app._initControlSSE();
+  f.emit('context_window', measurement(21380), 0);
+  assert.equal(app.state.contextWindow.current_usage.total_tokens, 224203, 'retired connection cannot overwrite state');
+  // A genuine newer reduction (including native compaction) must still work.
+  f.emit('context_window', measurement(25000, '2026-11-24T03:48:00.000Z'));
+  assert.equal(app.state.contextWindow.current_usage.total_tokens, 25000);
+  assert.equal(displayed().contextTokens, 25000);
+});
+
 test('native model picker handles keyboard opening, busy gating, errors and stale workspace responses', async t => {
   const f = fixture(t), { SdkModelPicker } = require(output), sent = [];
   const data = { instanceKey: 'a', revision: '1:0', model: 'alpha', reasoningEffort: 'low', busy: false,

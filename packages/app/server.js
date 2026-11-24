@@ -1573,6 +1573,11 @@ setLogV2CommitListener((entry, _result, context) => {
   notifyStatsWorker(context?.projectId);
   void _dingtalkImBridge?.notifyLogV2Commit(entry, _result, context);
   if (!isMainAgentEntry(entry)) return;
+  // Exec's owned rollout reader supplies the live/reconnect context snapshot.
+  // Archive commits are a separate, potentially delayed lane and lack its
+  // measurement identity/time. Cold views already read context_usage from the
+  // committed entry; do not let this lane overwrite the live native snapshot.
+  if (isSdkMode && entry._sdkSource === true && entry.body?.metadata?.transport !== 'appserver') return;
   const usage = contextUsageForEntry(entry);
   const contextEvent = usage ? buildContextWindowEvent(usage, nativeContextWindow(entry)) : null;
   if (contextEvent) {

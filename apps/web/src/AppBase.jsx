@@ -1791,16 +1791,38 @@ class AppBase extends React.Component {
           isStreaming: false,
         });
       });
+      const contextSource = this.eventSource;
+      const contextInstance = new URLSearchParams(window.location.search).get('instance');
       this.eventSource.addEventListener('context_window', (event) => {
+        if (this._unmounted || this._isLocalLog || this.eventSource !== contextSource
+          || new URLSearchParams(window.location.search).get('instance') !== contextInstance) return;
         this._resetSSETimeout();
         try {
           const data = JSON.parse(event.data);
+          if (!data || typeof data !== 'object' || Array.isArray(data)
+            || (contextInstance && data.instanceKey && data.instanceKey !== contextInstance)) return;
+          const native = data.source === 'codex-rollout';
+          if (native && (!data.instanceKey || !data.cwd || !data.sessionId
+            || !Number.isFinite(Date.parse(data.timestamp)) || !Number.isFinite(Date.parse(data.turn_timestamp)))) return;
           // 收到新的 context_window 测量 → 同步解锁血条。
           // 兜底场景：onUserMessageSent / load_end fallback 都没触发解锁时
           //（WS 抖动、非增量 load、纯外部输入），SSE 推送的真实测量值就是
           //「会话已推进」的最强信号，避免 lock 永久卡 0%。
-          this.setState({ contextWindow: data, contextBarOptimistic: false, contextBarLocked: false });
-          if (this._clearOptimisticTimer) { clearTimeout(this._clearOptimisticTimer); this._clearOptimisticTimer = null; }
+          this.setState(previous => {
+            const owned = previous.contextWindow;
+            if (owned?.source === 'codex-rollout') {
+              // A generic archive notification cannot replace the live native
+              // measurement and force rendering back to the last completed turn.
+              // Compare time, never token count: real compaction may reduce it.
+              if (!native || data.instanceKey !== owned.instanceKey || data.cwd !== owned.cwd
+                || data.sessionId !== owned.sessionId || Date.parse(data.timestamp) < Date.parse(owned.timestamp)) return null;
+            }
+            return { contextWindow: data, contextBarOptimistic: false, contextBarLocked: false };
+          }, () => {
+            if (this.state.contextWindow === data && this._clearOptimisticTimer) {
+              clearTimeout(this._clearOptimisticTimer); this._clearOptimisticTimer = null;
+            }
+          });
         } catch (e) { reportSwallowed('sse.context_window', e); }
       });
       this.eventSource.addEventListener('workflow_update', (event) => {

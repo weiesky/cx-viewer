@@ -886,6 +886,11 @@ test('owned SDK context reaches only its SSE view, replays on reconnect and surv
       assert.equal(replay.current_usage.total_tokens, total); assert.equal(replay.used_percentage, percent);
       assert.equal(channels[index].messages.some(frame => frame.type === 'context_window'
         && frame.data.instanceKey !== view.instanceKey), false);
+      await (await import('../interceptor.js')).flushLogV2Writes();
+      server.setSdkStreamingState({ active: false, cwd: view.cwd, instanceKey: view.instanceKey, contextCommitBarrier: true });
+      await channels[index].receive('streaming_status', frame => frame.data.contextCommitBarrier === true);
+      assert.equal(channels[index].messages.some(frame => frame.type === 'context_window'
+        && frame.data.source !== 'codex-rollout'), false, 'archive commits cannot replace the native live snapshot');
       const entry = captured.find(row => row.body.metadata.instance_key === view.instanceKey);
       assert.equal(entry.response.body.usage.total_tokens, 2, 'accounting is not overwritten by context');
       const logDir = join(root, 'context-cold-' + index);
