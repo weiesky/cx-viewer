@@ -504,6 +504,7 @@
   "lib/sdk-exec-transport.js",
   "lib/sdk-manager.js",
   "lib/sdk-model-catalog.js",
+  "lib/sdk-plan-usage.js",
   "lib/sdk-resume-history.js",
   "lib/search-candidates.js",
   "lib/search-worker.js",

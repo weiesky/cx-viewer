@@ -3002,6 +3002,18 @@ async function handleViewerRequest(req, res) {
     return;
   }
 
+  if (url === '/api/sdk-plan-usage' && method === 'GET') {
+    res.setHeader('Cache-Control', 'no-store');
+    try {
+      if (!isSdkMode || !requestSdkView?.instanceKey) throw Object.assign(new Error('SDK workspace is unavailable'), { status: 409 });
+      const result = await sdkManager.getSdkPlanUsage({ instanceKey: requestSdkView.instanceKey });
+      sendJson(res, 200, result);
+    } catch (error) {
+      sendJson(res, error.status || 502, { error: 'SDK plan usage is unavailable' });
+    }
+    return;
+  }
+
   if ((url === '/api/sdk-models' && method === 'GET') || (url === '/api/sdk-model' && method === 'POST')) {
     try {
       if (!isSdkMode || !requestSdkView?.instanceKey) throw Object.assign(new Error('SDK workspace is unavailable'), { status: 409 });

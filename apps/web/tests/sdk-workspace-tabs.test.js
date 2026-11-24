@@ -59,6 +59,7 @@ export { default as PreferencesForm } from './src/components/settings/Preference
 export { default as DetailPanel } from './src/components/dashboard/DetailPanel.jsx';
 export { default as ContextTab } from './src/components/dashboard/ContextTab.jsx';
 export { default as SdkModelPicker } from './src/components/chat/SdkModelPicker.jsx';
+export { default as SdkPlanUsagePill } from './src/components/dashboard/SdkPlanUsagePill.jsx';
 export { default as ProxyChip } from './src/components/chat/ProxyChip.jsx';
 export { default as ProxyModal } from './src/components/settings/ProxyModal.jsx';
 export { default as PluginPanelModal } from './src/components/plugins/PluginPanelModal.jsx';
@@ -322,6 +323,42 @@ function fixture(t, { blocked = false, component = 'Component', props = {} } = {
   return { draw, reload, tick, event, cleanup, moveFile: components.moveFile, canDropMoveOn: components.canDropMoveOn, importFiles: components.importFiles, expandEntries: components.expandEntries, fileMenu: components.createFileMenuHandler, menuItems: components.buildFileContextMenuItems, AppBase, ChatView: components.ChatView, DetailPanel: components.DetailPanel, ProxyChip: components.ProxyChip, values, windowEvents, documentEvents, timers, requests, focused, navigations,
     get tree() { return tree; }, set live(rows) { live = rows; }, set listed(rows) { listed = rows; }, set history(data) { history = data; } };
 }
+
+test('SDK footer loads native quota independently of request rows, refreshes, and clears unavailable quota', async t => {
+  const f = fixture(t, { component: 'SdkPlanUsagePill' }), timers = new Map(), requests = [];
+  let planUsage = { windows: [{ id: 'codex:primary', utilization: 0.23 }] }, fail = false;
+  t.mock.method(globalThis, 'setTimeout', (fn, delay) => { timers.set(1, { fn, delay }); return 1; });
+  t.mock.method(globalThis, 'clearTimeout', id => timers.delete(id));
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    requests.push({ url, options });
+    return { ok: !fail, json: async () => ({ instanceKey: 'a', planUsage }) };
+  });
+  f.draw(); await f.tick(); f.draw();
+  assert.equal(f.tree.props.planUsage.windows[0].utilization, 0.23);
+  assert.match(requests[0].url, /sdk-plan-usage\?instance=a/);
+  assert.equal(requests[0].options.cache, 'no-store');
+  assert.equal(timers.get(1).delay, 60000);
+  planUsage = { windows: [{ id: 'codex:primary', utilization: 0.31 }] };
+  await timers.get(1).fn(); f.draw();
+  assert.equal(f.tree.props.planUsage.windows[0].utilization, 0.31);
+  fail = true; await timers.get(1).fn(); f.draw();
+  assert.equal(f.tree.props.planUsage, null);
+  f.cleanup(); assert.equal(timers.size, 0); assert.equal(requests[0].options.signal.aborted, true);
+});
+
+test('SDK footer discards quota arriving after workspace switch or unmount', async t => {
+  const f = fixture(t, { component: 'SdkPlanUsagePill' });
+  let resolve;
+  t.mock.method(globalThis, 'fetch', () => new Promise(r => { resolve = r; }));
+  f.draw();
+  window.location.search = '?instance=b';
+  resolve({ ok: true, json: async () => ({ instanceKey: 'a', planUsage: { windows: [{ utilization: 0.99 }] } }) });
+  await f.tick(); f.draw(); assert.equal(f.tree.props.planUsage, null);
+  f.cleanup();
+  window.location.search = '?instance=a'; f.reload(); f.cleanup();
+  resolve({ ok: true, json: async () => ({ instanceKey: 'a', planUsage: { windows: [{ utilization: 0.99 }] } }) });
+  await f.tick(); f.draw(); assert.equal(f.tree.props.planUsage, null);
+});
 
 function voiceFixture(t) {
   const f = fixture(t), exports = require(output), plays = [], sources = [];

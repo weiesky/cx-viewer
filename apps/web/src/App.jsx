@@ -13,6 +13,7 @@ import PanelResizer from './components/common/PanelResizer';
 import OpenFolderIcon from './components/common/OpenFolderIcon';
 import CountryFlag from './components/common/CountryFlag';
 import UsageWindowPill from './components/dashboard/UsageWindowPill';
+import SdkPlanUsagePill from './components/dashboard/SdkPlanUsagePill';
 import { getPlanUsageSourceKey, shouldDisplayPlanUsage, transitionPlanUsage } from './utils/planUsageDisplay';
 import { t } from './i18n';
 import { filterRelevantRequests, visibleRequests, findPrevMainAgentTimestamp } from './utils/helpers';
@@ -503,8 +504,8 @@ class App extends AppBase {
           </Layout.Content>
           <div className={styles.footer}>
             {!this._isLocalLog && this.state.proxyOfficialDefault === true && this.state.planUsage && <CountryFlag />}
-            {/* Only live recorded usage mounts the footer indicator and geo lookup. */}
-            {shouldDisplayPlanUsage({ planUsage: this.state.planUsage, isLocalLog: this._isLocalLog }) && (
+            {/* SDK reads native account quota; other live views use captured headers. */}
+            {!this._isLocalLog && this.state.sdkMode ? <SdkPlanUsagePill /> : shouldDisplayPlanUsage({ planUsage: this.state.planUsage, isLocalLog: this._isLocalLog }) && (
               <UsageWindowPill
                 planUsage={this.state.planUsage}
               />

@@ -28,6 +28,7 @@ import { createSdkAppServerTransport } from './sdk-appserver-transport.js';
 import { createSdkAppServerApprovals } from './sdk-appserver-approvals.js';
 import { createSdkAppServerAgents } from './sdk-appserver-agents.js';
 import { readSdkModelCatalog } from './sdk-model-catalog.js';
+import { readSdkPlanUsage } from './sdk-plan-usage.js';
 
 let _Codex = null;
 let _sdkImportError = null;
@@ -149,6 +150,10 @@ export function getSdkStreamingState(anchor) {
 
 export function listSdkModels(anchor) {
   return sessionForAnchor(anchor)?.listModels();
+}
+
+export function getSdkPlanUsage(anchor) {
+  return sessionForAnchor(anchor)?.getPlanUsage();
 }
 
 export function setSdkModel(selection, anchor) {
@@ -395,6 +400,7 @@ function createSdkSession(instanceKey) {
   let _codexOptions = {};
   let _threadOptions = {};
   let _modelCatalog = null, _modelCatalogPending = null, _modelCatalogAbort = null;
+  let _planUsage = null, _planUsagePending = null, _planUsageAbort = null;
   let _modelSelectionRevision = 0, _reasoningEffort = null;
   let _initialPrompt = null;
 
@@ -491,6 +497,30 @@ function createSdkSession(instanceKey) {
       || _modelCatalog?.configuredReasoningEffort || entry?.defaultReasoningEffort || null,
     busy: _queryBusy || !!_dispatchingQueueItem || _messageQueue.length > 0,
     revision: `${_sessionGeneration}:${_modelSelectionRevision}` };
+  }
+
+  async function getPlanUsage() {
+    const generation = _sessionGeneration;
+    if (!_planUsage || Date.now() - _planUsage.loadedAt > 30000) {
+      if (!_planUsagePending) {
+        const controller = new AbortController();
+        _planUsageAbort = controller;
+        const pending = readSdkPlanUsage({
+          codexPath: _codexPath || new _Codex(_codexOptions).exec.executablePath,
+          cwd: _cwd, codexOptions: _codexOptions, threadOptions: _threadOptions,
+          configOverrides: _configOverrides, signal: controller.signal,
+        }).then(planUsage => {
+          if (generation !== _sessionGeneration) throw Object.assign(new Error('SDK session changed'), { status: 409 });
+          _planUsage = { planUsage, loadedAt: Date.now() };
+        }).finally(() => {
+          if (_planUsagePending === pending) { _planUsagePending = null; _planUsageAbort = null; }
+        });
+        _planUsagePending = pending;
+      }
+      await _planUsagePending;
+    }
+    if (generation !== _sessionGeneration) throw Object.assign(new Error('SDK session changed'), { status: 409 });
+    return { instanceKey, planUsage: cloneJson(_planUsage.planUsage) };
   }
 
   async function listModels() {
@@ -1417,6 +1447,8 @@ function createSdkSession(instanceKey) {
     _sessionGeneration += 1;
     _modelCatalogAbort?.abort(new Error('SDK session changed'));
     _modelCatalog = null; _modelCatalogPending = null; _modelCatalogAbort = null;
+    _planUsageAbort?.abort(new Error('SDK session changed'));
+    _planUsage = null; _planUsagePending = null; _planUsageAbort = null;
     _modelSelectionRevision = 0; _reasoningEffort = keepConfig ? _threadOptions.modelReasoningEffort || null : null;
     if (_lastMcpStatus) {
       const clear = { ..._lastMcpStatus, servers: null, ts: Date.now(), trigger: 'session-switched' };
@@ -1463,7 +1495,7 @@ function createSdkSession(instanceKey) {
       cwd: _cwd, instanceKey, available: true, agents: [] },
     get revision() { return `${_sessionGeneration}:${_activityRevision}`; },
     resume,
-    initSdkSession, sendUserMessage, retryInterruptedTurn, interruptTurn, resolveApproval, stopSession, listModels, setModel,
+    initSdkSession, sendUserMessage, retryInterruptedTurn, interruptTurn, resolveApproval, stopSession, listModels, setModel, getPlanUsage,
     getTurnResult: () => ({ completed: _finalEntryEmittedThisTurn && !_taskTurnFailed, failed: _taskTurnFailed }),
     getSessionId, getInitialPrompt, getStreamingState, getQueueState, getTaskState, removeQueuedMessage, sendQueuedNow, fetchMcpStatus, fetchSkills,
   };
