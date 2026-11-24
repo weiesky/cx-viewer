@@ -1,5 +1,7 @@
 # cc-viewer 逐提交对齐台账
 
+2026-11-24第二轮增量调查：用户要求查看最后一轮之后的新更新，已固定旧74cd752（1.9.29，不含）→d3c1f7f（源码1.9.35，含），25笔/17笔含功能修复/123净变更文件；完整映射候选、父提交、PR177–179及merge-tree证据见[新25笔台账](./upstream-delta-ledger-2026-11-24.md)与[机器索引](./upstream-delta-2026-11-24.json)，执行包见[B12–B20计划](./upstream-delta-plan-2026-11-24.md)。本轮只完成调查与规划，本地实现commit为空，产品测试/构建/GUI未运行；不把既有测试定义或旧通过数当本轮结果。此前SDK模型/上下文/套餐维护独立保留，不重复迁移。审批默认值/同cwd多SDK会话沿既有选择，列D1/D2待决策。旧337笔台账及B0–B11核销仍按原固定快照保留。
+
 2026-11-23 SDK修复交付：用户明确授权PR到main并自行合并。两项修复整为实现 `4a56de77fdea9584f7c1acb29aff008d45adfdf2`，经[PR #14](https://github.com/weiesky/cx-viewer/pull/14)于2026-11-23T14:56:09Z squash合并main `fcbaf59d2306105544a713cbfbbd17af934b87a0`；merge tree与已验证实现tree相同，精确head guard，无admin override。合并时9项远端成功/1项重复PR macOS仍无runner排队；相同head的Ubuntu Node20/22/24全套与macOS/Windows定向五类均成功，不把排队标通过。本地main已同步，合并后更新本轮文档。未发布npm、未重启活动实例、未改用户历史；原目录/分页/Windows完整运行/活动GUI未验边界保留。逐项检查与本地2833/2833证据见[回执](./SDK-context-usage-2026-11-23.json)。
 
 2026-11-23 SDK上下文维护（不新增上游迁移）：复核固定74cd752d中的Claude getContextUsage控制面/血条调用链及efc7f8ea实际adapter diff，完成Codex exec的精确线程原生last/window采集、累计记账分离、SSE隔离/重连及规范冷加载。真实同线程两轮2%/3%、独立Chrome血条/弹层9%与刷新通过，最终隔离全量2833/2833、0skip/build/531边界/602源码/627包门通过；首跑环境污染失败与复跑保留。代码/changeset/文档在工作区，未提交/PR/推送/发布；活动实例未重启、用户历史未改，目录/分页历史/Windows/活动GUI未验。上游依据、本地路径及完整验证见[本轮记录](./SDK-context-usage-2026-11-23.md)与[机器回执](./SDK-context-usage-2026-11-23.json)。

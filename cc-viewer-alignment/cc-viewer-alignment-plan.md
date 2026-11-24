@@ -1,5 +1,9 @@
 # cc-viewer → cx-viewer 分批对齐规划
 
+当前进度（2026-11-24）：用户要求调查最后一轮之后的上游更新，已另冻74cd752（不含）→d3c1f7f（含），25笔/17笔含行为/123净变更文件，并形成[第二轮B12–B20计划](./upstream-delta-plan-2026-11-24.md)、[逐提交台账](./upstream-delta-ledger-2026-11-24.md)与[机器索引](./upstream-delta-2026-11-24.json)。本页B0–B11仍为旧74cd752范围，不追写为覆盖新增代码。新批次尚未实施，下一步B12；D1审批默认值/D2同cwd多SDK会话沿既有决策，待新选择才变更。旧活动GUI及目标环境验收仍保留。
+
+以下为第一轮固定范围与交付记录。
+
 2026-11-23 B11已通过[PR #13](https://github.com/weiesky/cx-viewer/pull/13)合并main `3a4bf40`（第12/12工作包），34笔原始提交备份后整合为1笔 `539822e`，合并后更新本轮文档。201候选按子项核销，Changesets/core/content与边界门已落实。最终本地2823/2823、0skip/build/626稳定路径/601源码门，新生产1237/1237及825包/211Web精确字节，桌面stage825字节/395链接/独立启动，实际Node20.12启动+93、双浏览器14配置30图通过。PR的10项远端检查全成功：Ubuntu Node20/22/24全套及macOS/Windows定向合同；Windows完整运行、Electron GUI/签名/公证和真实外部环境仍未验。7008/PID97674及其他用户实例未停止/重启，正常重启才加载后端。下一步补齐目标环境验收；见[B11完成矩阵](./B11-completion-matrix.md)、[整合与合并记录](./B11-consolidation-and-merge-2026-11-23.md)与[最终回执](./B11-validation-2026-11-23.json)。
 
 2026-11-18 GitHub 同步：已按用户请求将 main 6045b53 与 codex/pnpm-workspace 2c0edc8 原子推送到 origin 同名分支，远端完整 hash 已读回核对，上游跟踪已设置。未执行强推、分支合并或活动安装切换；未提交的 AGENTS.md 与 cc-viewer-alignment 文档仍保留本地。
