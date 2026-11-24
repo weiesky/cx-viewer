@@ -17042,3 +17042,11 @@ f9467bfc83到本笔 `refactor(server): group native IM approval and proxy helper
 - 本地实现提交主题：`fix(sdk): reject stale context snapshots and competing archive events`。SDK exec原生manager保持实时/重连事实源；归档保留冷加载数据但不再推第二份竞争事件；AppBase按control source、精确实例/cwd/session与测量时间拒绝旧事件，允许真实更新后的低用量。
 - 修复前实际AppBase/AppHeader断言复现224,203被旧21,380覆盖；定向152、真实HTTP/SSE归档隔离与最终2843/2843、0skip/build/533边界/603源码/628稳定tarball通过。只读活动原生记录对上4%与86%；短时活动采样未捕到完整自然回跳顺序，不作过度结论。独立Chrome重放见[实施](./SDK-context-jump-2026-11-24.md)与[回执](./SDK-context-jump-2026-11-24.json)。
 - 当前为B11后SDK维护；下一步正常重启后的活动验收。用户实例未重启，已有历史/全局配置未改，未发布npm；Windows/Electron/真机及活动修复后GUI未验。
+
+
+## 2026-11-24：B11后SDK左下角套餐用量
+
+- 上游依据：`9eb178145bb218e0a84d806f350ac84f7287a537` 实际 diff 与固定 `74cd752d99caf122e750216d2af3bb9f467c4de1` 的完整 UsageWindowPill/CSS/footer/header 解析调用链；本轮为 SDK 原生数据源适配，不新增 B0 核销。
+- 本地独立实现 `b61814f6a99ae01d38fceb440849090753f314da`：原 footer/CSS/详情不变，原生只读 account/rateLimits/read → 白名单 quota → 精确实例 API；manager 缓存/并发/代次隔离，前端定时读取、错误清空与卸载取消。exec/AppServer 均适用，无线程创建/模型输入/传输切换。
+- 最终隔离全量2850/2850、0skip/build/535边界/604源码/629稳定tarball通过；真实账户到Chrome显示周85%/Pro Lite/重置倒计时，刷新与无pageerror通过；既有CSS未改。首次路径门/断言修正如实保留。
+- 当前包为B11后SDK套餐用量维护；下一步正常重启后活动GUI。7008/PID14189只读确认SDK，但新接口仍SPA fallback；未重启用户实例/未改旧归档与全局配置/未发布npm或运行version，Windows/Electron/WebKit/真机未验。见[实施](./SDK-plan-usage-2026-11-24.md)与[回执](./SDK-plan-usage-2026-11-24.json)。
