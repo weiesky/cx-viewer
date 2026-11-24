@@ -1,0 +1,45 @@
+apps/web/src/components/chat/ChatMessage.module.css
+  s_ae2f56ae6ae11b::t_99aa2787141c3f 380-394
+packages/app/tests/sdk-live-tools.test.js
+  s_ae2f56ae6ae11b::t_4bca5dcb7504a7 3,85-86
+  s_ae2f56ae6ae11b::t_1e5089bf5c2897 11,77,88-135,137-145
+  s_ae2f56ae6ae11b::t_ed28e3e829ab22 136
+  s_ae2f56ae6ae11b::t_e0faafceaab84f 6-10,12-18
+  s_ae2f56ae6ae11b::t_eecd36433cb781 1-2,4-5,19-76,78-84,87,146-148
+apps/web/tests/sdk-workspace-tabs.test.js
+  s_ae2f56ae6ae11b::t_61ab8e5cc67214 1007-1014,1019-1025,1030-1034,1039-1058,1064-1069
+  s_ae2f56ae6ae11b::t_455972e7203fcc 1026-1029,1059-1063
+  s_ae2f56ae6ae11b::t_5665aed8cdc074 1015-1018
+  s_ae2f56ae6ae11b::t_38fa8bbbc5ecf6 1035-1038
+apps/web/src/components/chat/ChatView.jsx
+  s_ae2f56ae6ae11b::t_eaea1ada7f2c0f 4856
+  s_ae2f56ae6ae11b::t_99aa2787141c3f 36,4647-4648,4658-4660,4679,4686-4695,4707-4708
+  s_ae2f56ae6ae11b::t_8b62ecb2920ea9 4661-4671,4674
+.changeset/sdk-live-tool-progress.md
+  s_ae2f56ae6ae11b::t_5c247ee921e7e7 1-5
+apps/web/src/AppBase.jsx
+  s_ae2f56ae6ae11b::t_99aa2787141c3f 56-68,706,1672,1676-1677,1680,1682,1692-1695,1707-1708,2110
+apps/web/src/components/chat/ChatMessage.jsx
+  s_ae2f56ae6ae11b::t_99aa2787141c3f 4,168,339,345-355,419,1094
+packages/app/lib/sdk-manager.js
+  s_ae2f56ae6ae11b::t_906bf05bfed29c 151-154,1286-1315,1319-1320,1322-1323,1327-1331,1540
+  s_ae2f56ae6ae11b::t_5665aed8cdc074 1321
+packages/app/server.js
+  s_ae2f56ae6ae11b::t_906bf05bfed29c 3161-3162,6867
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "817e698cc6b1f9353de55e21c7b423ced9e2d0c4",
+  "prompts": {},
+  "sessions": {
+    "s_ae2f56ae6ae11b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20bec-c330-7481-89ea-5a753a0e854e",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "weiesky.wangc <weiesky.wangc@antgroup.com>"
+    }
+  }
+}
