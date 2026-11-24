@@ -1042,6 +1042,39 @@ test('SDK shell-only progress uses existing tool cards and results before any ca
   assert.equal(messages().length, 0, 'a pinned historical view never receives current live tools');
 });
 
+test('long live shell output shows each new tail in full cards and compact popovers', t => {
+  let resultElement;
+  const f = fixture(t, { component: () => resultElement.type(resultElement.props) });
+  const { ChatMessage } = require(output);
+  const tool = { type: 'tool_use', id: 'long-shell', name: 'shell_command', input: { command: 'printf log' } };
+  const render = text => {
+    const view = new f.ChatView({ cliMode: true, sdkMode: true, requests: [], mainAgentSessions: [],
+      streamingLatest: { timestamp: 'long-turn', content: [tool], toolProgress: [{ id: tool.id, status: 'in_progress', output: text }] },
+      showFullToolContent: true, collapseToolResults: false });
+    const tree = view.render();
+    const bubble = descendants(view._virtuosoFooter || tree, node => node.props?.toolStatusMap)[0];
+    const message = new ChatMessage(bubble.props), result = bubble.props.toolResultMap[tool.id];
+    resultElement = message.renderToolResult(result); f.draw();
+    const full = descendants(f.tree, node => node.type === 'pre')[0].props.dangerouslySetInnerHTML.__html;
+    const compact = message._renderSimplifiedToolPill(tool, result).props.content();
+    const texts = descendants(compact, node => typeof node.props?.children === 'string').map(node => node.props.children);
+    return { full, compact: texts.join('\n'), result, message };
+  };
+  for (const prefix of ['stable output\n'.repeat(600), 'x'.repeat(9000)]) {
+    const before = render(prefix + 'LATEST_OUTPUT_ONE');
+    const after = render(prefix + 'LATEST_OUTPUT_TWO');
+    for (const key of ['full', 'compact']) {
+      assert.ok(before[key].includes('LATEST_OUTPUT_ONE'), key + ' shows the previous tail');
+      assert.ok(after[key].includes('LATEST_OUTPUT_TWO'), key + ' updates the latest tail');
+      assert.notEqual(before[key], after[key]);
+    }
+    assert.equal(after.result.resultText, prefix + 'LATEST_OUTPUT_TWO', 'rendering does not rewrite the result');
+    // Canonical results keep the existing head preview after the live layer is replaced.
+    resultElement = after.message.renderToolResult({ ...after.result, previewTail: undefined }); f.draw();
+    assert.ok(!descendants(f.tree, node => node.type === 'pre')[0].props.dangerouslySetInnerHTML.__html.includes('LATEST_OUTPUT_TWO'));
+  }
+});
+
 test('tool progress survives same-timestamp TOOL rows, rejects older frames and is replaced only by its MainAgent final', t => {
   const { app, row, raf } = coldIngestFixture(t), handlers = new Map();
   app._streamTransport = { open: () => ({ close() {}, addEventListener: (name, fn) => handlers.set(name, fn) }) };

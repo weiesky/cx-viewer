@@ -318,7 +318,7 @@ function highlight(text, lang) {
   return result;
 }
 
-function ToolResultView({ toolName, toolInput, resultText, images, workflow, defaultCollapsed }) {
+function ToolResultView({ toolName, toolInput, resultText, images, workflow, defaultCollapsed, previewTail }) {
   const [collapsed, setCollapsed] = useState(defaultCollapsed ?? false);
   useEffect(() => { setCollapsed(defaultCollapsed ?? false); }, [defaultCollapsed]);
 
@@ -330,7 +330,8 @@ function ToolResultView({ toolName, toolInput, resultText, images, workflow, def
 
   const isCodeTool = CODE_TOOLS.includes(toolName);
   const lang = isCodeTool ? detectLang(toolName, toolInput, resultText) : null;
-  const displayText = resultText.length > 5000 ? resultText.substring(0, 5000) + '\n... (truncated)' : resultText;
+  const displayText = resultText.length > 5000
+    ? (previewTail ? '…\n' + resultText.slice(-5000) : resultText.substring(0, 5000) + '\n... (truncated)') : resultText;
   const hasImages = Array.isArray(images) && images.length > 0;
   const imageBlock = hasImages ? (
     <div className={styles.imageBlock}>

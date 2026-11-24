@@ -4689,8 +4689,8 @@ class ChatView extends React.Component {
           if (!step) continue;
           liveStatuses[block.id] = step.status;
           if (typeof step.output === 'string' && (step.output || step.outputTruncated)) {
-            liveResults[block.id] = buildSingleToolResult({ type: 'tool_result', tool_use_id: block.id,
-              content: `${step.outputTruncated ? '…\n' : ''}${step.output}`, is_error: step.status === 'failed' }, block);
+            liveResults[block.id] = { ...buildSingleToolResult({ type: 'tool_result', tool_use_id: block.id,
+              content: `${step.outputTruncated ? '…\n' : ''}${step.output}`, is_error: step.status === 'failed' }, block), previewTail: true };
           }
         }
         streamingLiveItem = (
