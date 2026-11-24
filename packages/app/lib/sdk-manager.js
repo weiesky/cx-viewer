@@ -148,6 +148,10 @@ export function getSdkStreamingState(anchor) {
   return sessionForAnchor(anchor)?.getStreamingState() || null;
 }
 
+export function getSdkStreamProgress(anchor) {
+  return sessionForAnchor(anchor)?.getStreamProgress() || null;
+}
+
 export function listSdkModels(anchor) {
   return sessionForAnchor(anchor)?.listModels();
 }
@@ -1278,17 +1282,53 @@ function createSdkSession(instanceKey) {
 
   function _flushStreamProgress() {
     if (!_onStreamProgress || !_turnTimestamp) return;
-    const content = _streamContentFromItems();
-    if (!content.length) return;
     _streamingChunkCount += 1;
-    _onStreamProgress({
+    const progress = _buildStreamProgress();
+    if (progress) _onStreamProgress(progress);
+  }
+
+  function _buildStreamProgress() {
+    if (!_turnTimestamp) return null;
+    const content = _streamContentFromItems();
+    if (!content.length) return null;
+    // Reuse the authoritative current-turn item table. Only shell text enters
+    // this transient preview; raw results remain intact on TOOL/final entries.
+    // Bound output across the whole snapshot so a noisy command cannot make
+    // every 80ms progress frame resend an unbounded transcript.
+    let remaining = 128 * 1024;
+    const toolProgress = [];
+    for (let index = _itemOrder.length - 1; index >= 0; index--) {
+      const id = _itemOrder[index], item = _currentItems.get(id);
+      if (!['command_execution', 'commandExecution'].includes(item?.type)) continue;
+      const complete = _completedToolIds.has(id);
+      const failed = item.status === 'failed' || !!item.error
+        || (complete && Number.isInteger(item.exit_code ?? item.exitCode) && (item.exit_code ?? item.exitCode) !== 0);
+      const full = item.aggregated_output ?? item.aggregatedOutput ?? '';
+      const text = typeof full === 'string' ? full : '';
+      const limit = Math.min(16 * 1024, remaining);
+      const output = limit ? text.slice(-limit) : '';
+      remaining -= output.length;
+      toolProgress.push({ id, status: complete ? (failed ? 'failed' : 'completed') : 'in_progress',
+        output, outputTruncated: output.length < text.length,
+        ...(complete && Number.isInteger(item.exit_code ?? item.exitCode) ? { exitCode: item.exit_code ?? item.exitCode } : {}) });
+    }
+    return {
       timestamp: _turnTimestamp,
       url: `codex://sdk/${encodeURIComponent(_sessionId || _transport?.threadId || _model || 'thread')}`,
       content,
+      toolProgress: toolProgress.reverse(),
+      requestId: _streamingRequestId,
+      turnStartedAt: _turnStartTime,
+      sessionId: _sessionId || _transport?.threadId || null,
+      sequence: _streamingChunkCount,
       model: _model,
       cwd: _cwd,
       instanceKey,
-    });
+    };
+  }
+
+  function getStreamProgress() {
+    return _queryBusy && !_finalEntryEmittedThisTurn ? _buildStreamProgress() : null;
   }
 
   function _streamContentFromItems() {
@@ -1497,7 +1537,7 @@ function createSdkSession(instanceKey) {
     resume,
     initSdkSession, sendUserMessage, retryInterruptedTurn, interruptTurn, resolveApproval, stopSession, listModels, setModel, getPlanUsage,
     getTurnResult: () => ({ completed: _finalEntryEmittedThisTurn && !_taskTurnFailed, failed: _taskTurnFailed }),
-    getSessionId, getInitialPrompt, getStreamingState, getQueueState, getTaskState, removeQueuedMessage, sendQueuedNow, fetchMcpStatus, fetchSkills,
+    getSessionId, getInitialPrompt, getStreamingState, getStreamProgress, getQueueState, getTaskState, removeQueuedMessage, sendQueuedNow, fetchMcpStatus, fetchSkills,
   };
 }
 

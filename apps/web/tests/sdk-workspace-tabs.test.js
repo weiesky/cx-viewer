@@ -1004,6 +1004,69 @@ test('a cold V2 baseline clears an already-painted final overlay while preservin
   assert.equal(app.state.streamingLatest, live, 'an unrelated final baseline cannot erase a running turn');
 });
 
+test('SDK shell-only progress uses existing tool cards and results before any canonical MainAgent entry', t => {
+  const f = fixture(t), exports = require(output);
+  const tool = { type: 'tool_use', id: 'live-shell', name: 'shell_command', input: { command: 'printf live' } };
+  const progress = { timestamp: 'live-turn', requestId: 'owned-request', content: [tool],
+    toolProgress: [{ id: tool.id, status: 'in_progress', output: 'first line' }] };
+  const props = { cliMode: true, sdkMode: true, requests: [], mainAgentSessions: [],
+    streamingLatest: progress, showFullToolContent: true, isStreaming: true };
+  const view = new f.ChatView(props);
+  const messages = () => {
+    const tree = view.render();
+    return descendants(view._virtuosoFooter || tree, node => node.type?.name === 'ChatMessage' && node.props.toolStatusMap);
+  };
+  let cards = messages();
+  assert.equal(cards.length, 1, 'tool-only progress must not be discarded by the text/thinking filter');
+  assert.deepEqual(cards[0].props.content, [tool]);
+  assert.equal(cards[0].props.toolStatusMap[tool.id], 'in_progress');
+  assert.equal(cards[0].props.toolResultMap[tool.id].resultText, 'first line');
+  const card = new exports.ChatMessage(cards[0].props);
+  assert.equal(descendants(card.renderToolCall(tool), node => node.props?.role === 'status').length, 1);
+  card.props = { ...card.props, showFullToolContent: false };
+  const compact = card.renderAssistantContent(card.props.content, card.props.toolResultMap);
+  assert.equal(compact.flatMap(node => descendants(node, node => node.props?.role === 'status')).length, 1,
+    'compact tool pills retain the same live status without overriding the display preference');
+  view.props = { ...props, streamingLatest: { ...progress,
+    toolProgress: [{ id: tool.id, status: 'failed', output: 'exit failed', exitCode: 1 }] } };
+  cards = messages();
+  assert.equal(cards[0].props.toolStatusMap[tool.id], 'failed');
+  assert.equal(cards[0].props.toolResultMap[tool.id].resultText, 'exit failed');
+  view.props = { ...props, requests: [{ timestamp: progress.timestamp, mainAgent: true, inProgress: true,
+    body: { input: [{ role: 'assistant', content: [tool] }] } }] };
+  assert.equal(messages().length, 0, 'an Ask partial transcript already owns its completed shell cards');
+  view.props = props;
+  view.state.stopOptimistic = true;
+  assert.equal(messages().length, 0, 'optimistic Stop hides the live process immediately');
+  view.state.stopOptimistic = false; view.props = { ...props, sessionUpperBoundTs: 1 };
+  assert.equal(messages().length, 0, 'a pinned historical view never receives current live tools');
+});
+
+test('tool progress survives same-timestamp TOOL rows, rejects older frames and is replaced only by its MainAgent final', t => {
+  const { app, row, raf } = coldIngestFixture(t), handlers = new Map();
+  app._streamTransport = { open: () => ({ close() {}, addEventListener: (name, fn) => handlers.set(name, fn) }) };
+  app._armSSETimeout = app._resetSSETimeout = () => {};
+  app._initControlSSE();
+  const frame = (sequence, status) => ({ timestamp: 'held', requestId: 'owned', sequence,
+    content: [{ type: 'tool_use', id: 'shell', name: 'shell_command', input: { command: 'pwd' } }],
+    toolProgress: [{ id: 'shell', status, output: String(sequence) }] });
+  const emit = data => { handlers.get('stream-progress')({ data: JSON.stringify(data) }); if (app._streamingRaf) raf.get(app._streamingRaf)(); };
+  app.state.requests = [{ timestamp: 'held', mainAgent: false, method: 'TOOL', _sdkSource: true }];
+  emit(frame(2, 'completed'));
+  assert.equal(app.state.streamingLatest?.toolProgress[0].status, 'completed');
+  emit(frame(1, 'in_progress'));
+  assert.equal(app.state.streamingLatest?.toolProgress[0].status, 'completed', 'a delayed running frame cannot downgrade a completed tool');
+  emit({ ...frame(3, 'failed'), instanceKey: 'foreign-instance' });
+  assert.equal(app.state.streamingLatest?.toolProgress[0].status, 'completed', 'a sibling workspace cannot replace this process');
+  app.state.streamingLatest = { ...app.state.streamingLatest, turnStartedAt: 200 };
+  emit({ ...frame(4, 'failed'), requestId: 'older-turn', turnStartedAt: 100 });
+  assert.equal(app.state.streamingLatest?.toolProgress[0].status, 'completed', 'an older turn cannot replace a newer live process');
+  app.handleEntryObject(row('held')); app._flushPendingEntries();
+  assert.equal(app.state.streamingLatest, null);
+  emit(frame(3, 'completed'));
+  assert.equal(app.state.streamingLatest, null, 'a late snapshot cannot revive the finalized process');
+});
+
 function historyFixture(t) {
   const fixture = coldIngestFixture(t), { app, row } = fixture;
   const older = row('older'), current = row('current');

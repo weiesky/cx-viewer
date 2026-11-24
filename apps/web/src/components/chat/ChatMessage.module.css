@@ -377,6 +377,21 @@
   color: var(--color-code-purple);
 }
 
+.liveToolStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-inline-start: 8px;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+.liveToolStatus[data-status="completed"] { color: var(--color-success, #52c41a); }
+.liveToolStatus[data-status="failed"] { color: var(--color-error, #ff4d4f); }
+@media (prefers-reduced-motion: reduce) {
+  .liveToolStatus :global(.anticon-spin) { animation: none; }
+}
+
 .simplifiedToolLabel {
   display: inline-block;
   font-size: 12px;

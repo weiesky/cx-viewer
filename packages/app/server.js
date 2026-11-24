@@ -3158,6 +3158,8 @@ async function handleViewerRequest(req, res) {
     if (res.cxvSdkSession) {
       sendEventToClients([res], 'sdk_workspace', res.cxvSdkSession);
       sendEventToClients([res], 'streaming_status', sdkManager.getSdkStreamingState({ instanceKey: res.cxvSdkSession.instanceKey }));
+      const progress = sdkManager.getSdkStreamProgress({ instanceKey: res.cxvSdkSession.instanceKey });
+      if (progress) sendEventToClients([res], 'stream-progress', progress);
       const context = sdkManager.getSdkContextUsageSnapshot({ instanceKey: res.cxvSdkSession.instanceKey });
       if (context) sendEventToClients([res], 'context_window', context);
     } else {
@@ -6862,7 +6864,7 @@ export function setSdkContextUsage(data) {
   sendSdkEvent('context_window', data);
 }
 
-/** Push live SDK text/thinking blocks without polluting the JSONL request list. */
+/** Push transient SDK text/thinking/tool progress without changing canonical requests. */
 export function sendSdkStreamProgress(data) {
   sendSdkEvent('stream-progress', data);
 }
